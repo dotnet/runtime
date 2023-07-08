@@ -11,11 +11,6 @@ void NativeContextToPalContext(const void* context, PAL_LIMITED_CONTEXT* palCont
 // Redirect Unix native context to the PAL_LIMITED_CONTEXT and also set the first two argument registers
 void RedirectNativeContext(void* context, const PAL_LIMITED_CONTEXT* palContext, uintptr_t arg0Reg, uintptr_t arg1Reg);
 
-// Find LSDA and start address for a function at address controlPC
-bool FindProcInfo(uintptr_t controlPC, uintptr_t* startAddress, uintptr_t* endAddress, uintptr_t* lsda); 
-// Virtually unwind stack to the caller of the context specified by the REGDISPLAY
-bool VirtualUnwind(REGDISPLAY* pRegisterSet);
-
 #ifdef HOST_AMD64
 // Get value of a register from the native context. The index is the processor specific
 // register index stored in machine instructions.

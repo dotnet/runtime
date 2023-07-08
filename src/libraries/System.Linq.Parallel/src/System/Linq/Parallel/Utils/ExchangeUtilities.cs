@@ -122,5 +122,5 @@ namespace System.Linq.Parallel
     /// <summary>
     /// Used during hash partitioning, when the keys being memoized are not used for anything.
     /// </summary>
-    internal struct NoKeyMemoizationRequired { }
+    internal readonly struct NoKeyMemoizationRequired { }
 }

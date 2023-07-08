@@ -325,6 +325,9 @@ namespace System.Collections.Tests
             }
         }
 
+        public static IEnumerable<object[]> SetTestData() =>
+            new[] { EnumerableType.HashSet, EnumerableType.List }.SelectMany(GetEnumerableTestData);
+
         [Theory]
         [MemberData(nameof(EnumerableTestData))]
         public void ISet_Generic_ExceptWith(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
@@ -350,7 +353,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(SetTestData))]
         public void ISet_Generic_IsProperSubsetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -359,7 +362,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(SetTestData))]
         public void ISet_Generic_IsProperSupersetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -368,7 +371,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(SetTestData))]
         public void ISet_Generic_IsSubsetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -377,7 +380,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(SetTestData))]
         public void ISet_Generic_IsSupersetOf(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -386,7 +389,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(SetTestData))]
         public void ISet_Generic_Overlaps(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);
@@ -395,7 +398,7 @@ namespace System.Collections.Tests
         }
 
         [Theory]
-        [MemberData(nameof(EnumerableTestData))]
+        [MemberData(nameof(SetTestData))]
         public void ISet_Generic_SetEquals(EnumerableType enumerableType, int setLength, int enumerableLength, int numberOfMatchingElements, int numberOfDuplicateElements)
         {
             ISet<T> set = GenericISetFactory(setLength);

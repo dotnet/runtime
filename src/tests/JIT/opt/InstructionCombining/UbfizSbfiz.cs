@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -11,14 +12,15 @@ public class Program
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static T ToVar<T>(T t) => t;
 
-    public static void AssertTrue(bool cond, [CallerLineNumber] int line = 0)
+    internal static void AssertTrue(bool cond, [CallerLineNumber] int line = 0)
     {
         if (!cond) 
             throw new InvalidOperationException($"Test failed at line {line}.");
     }
 
     // Tests for https://github.com/dotnet/runtime/pull/61045 optimization
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         unchecked
         {

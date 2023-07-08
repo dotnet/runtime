@@ -112,12 +112,12 @@ namespace System.Threading.Tasks.Dataflow
             Action<ISourceBlock<TOutput>, int>? onItemsRemoved = null;
             if (dataflowBlockOptions.BoundedCapacity > 0)
             {
-                onItemsRemoved = (owningSource, count) => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.ChangeBoundingCount(-count);
+                onItemsRemoved = static (owningSource, count) => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.ChangeBoundingCount(-count);
             }
 
             // Initialize source component
             source = new SourceCore<TOutput>(this, dataflowBlockOptions,
-                owningSource => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.Complete(exception: null, dropPendingMessages: true),
+                static owningSource => ((TransformManyBlock<TInput, TOutput>)owningSource)._target.Complete(exception: null, dropPendingMessages: true),
                 onItemsRemoved);
 
             // If parallelism is employed, we will need to support reordering messages that complete out-of-order.
@@ -125,7 +125,7 @@ namespace System.Threading.Tasks.Dataflow
             if (dataflowBlockOptions.SupportsParallelExecution && dataflowBlockOptions.EnsureOrdered)
             {
                 reorderingBuffer = new ReorderingBuffer<IEnumerable<TOutput>>(
-                    this, (source, messages) => ((TransformManyBlock<TInput, TOutput>)source)._source.AddMessages(messages));
+                    this, static (source, messages) => ((TransformManyBlock<TInput, TOutput>)source)._source.AddMessages(messages));
             }
 
             // Create the underlying target and source
@@ -136,7 +136,7 @@ namespace System.Threading.Tasks.Dataflow
             // As the target has completed, and as the target synchronously pushes work
             // through the reordering buffer when async processing completes,
             // we know for certain that no more messages will need to be sent to the source.
-            target.Completion.ContinueWith((completed, state) =>
+            target.Completion.ContinueWith(static (completed, state) =>
             {
                 var sourceCore = (SourceCore<TOutput>)state!;
                 if (completed.IsFaulted) sourceCore.AddAndUnwrapAggregateException(completed.Exception!);
@@ -147,7 +147,7 @@ namespace System.Threading.Tasks.Dataflow
             // In those cases we need to fault the target half to drop its buffered messages and to release its
             // reservations. This should not create an infinite loop, because all our implementations are designed
             // to handle multiple completion requests and to carry over only one.
-            source.Completion.ContinueWith((completed, state) =>
+            source.Completion.ContinueWith(static (completed, state) =>
             {
                 var thisBlock = ((TransformManyBlock<TInput, TOutput>)state!) as IDataflowBlock;
                 Debug.Assert(completed.IsFaulted, "The source must be faulted in order to trigger a target completion.");
@@ -156,7 +156,7 @@ namespace System.Threading.Tasks.Dataflow
 
             // Handle async cancellation requests by declining on the target
             Common.WireCancellationToComplete(
-                dataflowBlockOptions.CancellationToken, Completion, state => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), target);
+                dataflowBlockOptions.CancellationToken, Completion, static (state, _) => ((TargetCore<TInput>)state!).Complete(exception: null, dropPendingMessages: true), target);
             DataflowEtwProvider etwLog = DataflowEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -237,7 +237,7 @@ namespace System.Threading.Tasks.Dataflow
             // We got back a task.  Now wait for it to complete and store its results.
             // Unlike with TransformBlock and ActionBlock, We run the continuation on the user-provided
             // scheduler as we'll be running user code through enumerating the returned enumerable.
-            task.ContinueWith((completed, state) =>
+            task.ContinueWith(static (completed, state) =>
             {
                 var tuple = (Tuple<TransformManyBlock<TInput, TOutput>, KeyValuePair<TInput, long>>)state!;
                 tuple.Item1.AsyncCompleteProcessMessageWithTask(completed, tuple.Item2);

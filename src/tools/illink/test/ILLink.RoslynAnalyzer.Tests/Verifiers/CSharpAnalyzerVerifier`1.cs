@@ -39,9 +39,14 @@ namespace ILLink.RoslynAnalyzer.Tests
 			=> CSharpAnalyzerVerifier<TAnalyzer, XUnitVerifier>.Diagnostic (DiagnosticDescriptors.GetDiagnosticDescriptor (diagnosticId));
 
 		/// <inheritdoc cref="AnalyzerVerifier{TAnalyzer, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-		public static async Task VerifyAnalyzerAsync (string src, (string, string)[]? analyzerOptions = null, IEnumerable<MetadataReference>? additionalReferences = null, params DiagnosticResult[] expected)
+		public static async Task VerifyAnalyzerAsync (
+			string src,
+			bool consoleApplication,
+			(string, string)[]? analyzerOptions = null,
+			IEnumerable<MetadataReference>? additionalReferences = null,
+			params DiagnosticResult[] expected)
 		{
-			var (comp, _, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (src, analyzerOptions, additionalReferences);
+			var (comp, _, exceptionDiagnostics) = await TestCaseCompilation.CreateCompilation (src, consoleApplication, analyzerOptions, additionalReferences);
 			var diags = (await comp.GetAllDiagnosticsAsync ()).AddRange (exceptionDiagnostics);
 			var analyzers = ImmutableArray.Create<DiagnosticAnalyzer> (new TAnalyzer ());
 			VerifyDiagnosticResults (diags, analyzers, expected, DefaultVerifier);
@@ -585,9 +590,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 			public MatchQuality (int value)
 			{
-				if (value < 0) {
-					throw new ArgumentOutOfRangeException (nameof (value));
-				}
+				ArgumentOutOfRangeException.ThrowIfNegative (value);
 
 				_value = value;
 			}

@@ -171,6 +171,18 @@ namespace DebuggerTests
             );
         }
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task CreateGoodBreakpointWithoutColumnAndHit()
+        {
+            var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, -1);
+
+            await EvaluateAndCheck(
+                "window.setTimeout(function() { invoke_add(); }, 1);",
+                "dotnet://debugger-test.dll/debugger-test.cs", 10, 8,
+                "Math.IntAdd"
+            );
+        }
+
         public static TheoryData<string, string, string, bool> FalseConditions = new TheoryData<string, string, string, bool>
         {
             { "invoke_add()", "IntAdd", "0.0", false },
@@ -205,6 +217,7 @@ namespace DebuggerTests
         [MemberData(nameof(FalseConditions))]
         [MemberData(nameof(TrueConditions))]
         [MemberData(nameof(InvalidConditions))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task ConditionalBreakpoint2(string function_to_call, string method_to_stop, string condition, bool bp_stop_expected)
         {
             Result [] bps = new Result[2];
@@ -221,7 +234,6 @@ namespace DebuggerTests
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("c == 15", 79, 3, 79, 11)]
         [InlineData("c == 17", 79, 3, 80, 11)]
-        [InlineData("g == 17", 79, 3, 80, 11)]
         [InlineData("true", 79, 3, 79, 11)]
         [InlineData("\"false\"", 79, 3, 79, 11)]
         [InlineData("\"true\"", 79, 3, 79, 11)]
@@ -233,7 +245,7 @@ namespace DebuggerTests
             await SetBreakpoint("/debugger-driver.html", line_bp, column_bp, condition: condition);
             await SetBreakpoint("/debugger-driver.html", 80, 11);
 
-            await EvaluateAndCheck(
+            var pause_location = await EvaluateAndCheck(
                 "window.setTimeout(function() { conditional_breakpoint_test(5, 10, null); }, 1);",
                 "debugger-driver.html", line_expected, column_expected, "conditional_breakpoint_test");
         }
@@ -472,7 +484,6 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("load_non_wasm_page")]
-        [InlineData("load_non_wasm_page_forcing_runtime_ready")] //to simulate the same behavior that has when debugging from VS and OnDefaultContextCreated is called
         public async Task CreateGoodBreakpointAndHitGoToNonWasmPageComeBackAndHitAgain(string func_name)
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
@@ -689,6 +700,7 @@ namespace DebuggerTests
         [InlineData(true, "Debugger.stepInto", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         [InlineData(false, "Debugger.resume", "RunStepThroughWithNonUserCode", "StepThroughWithNonUserCodeUserBp", 927, 8, "RunStepThroughWithNonUserCode", -1, 4)]
         [InlineData(true, "Debugger.resume", "RunStepThroughWithNonUserCode", "RunStepThroughWithNonUserCode", -1, 8, "RunStepThroughWithNonUserCode", -1, 4)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task StepThroughOrNonUserCodeAttributeWithUserBp(
             bool justMyCodeEnabled, string debuggingFunction, string evalFunName,
             string functionNameCheck1, int line1, int col1,

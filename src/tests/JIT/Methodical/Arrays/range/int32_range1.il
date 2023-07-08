@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'int32_range1'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

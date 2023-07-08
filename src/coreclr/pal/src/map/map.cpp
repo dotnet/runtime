@@ -2496,6 +2496,7 @@ done:
     }
     else
     {
+        SetLastError(palError);
         retval = NULL;
         LOGEXIT("MAPMapPEFile error: %d\n", palError);
 

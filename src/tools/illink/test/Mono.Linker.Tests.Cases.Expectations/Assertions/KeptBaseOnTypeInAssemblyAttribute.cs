@@ -10,8 +10,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	{
 		public KeptBaseOnTypeInAssemblyAttribute (string assemblyFileName, Type type, string baseAssemblyFileName, Type baseType)
 		{
-			if (type == null)
-				throw new ArgumentNullException (nameof (type));
+			ArgumentNullException.ThrowIfNull (type);
 			if (string.IsNullOrEmpty (assemblyFileName))
 				throw new ArgumentException ("Value cannot be null or empty.", nameof (assemblyFileName));
 

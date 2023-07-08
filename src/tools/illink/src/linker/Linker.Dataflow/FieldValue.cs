@@ -16,7 +16,7 @@ namespace ILLink.Shared.TrimAnalysis
 	/// <summary>
 	/// A representation of a field. Typically a result of ldfld.
 	/// </summary>
-	sealed partial record FieldValue : IValueWithStaticType
+	internal sealed partial record FieldValue : IValueWithStaticType
 	{
 		public FieldValue (TypeDefinition? staticType, FieldDefinition fieldToLoad, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 		{
@@ -38,4 +38,5 @@ namespace ILLink.Shared.TrimAnalysis
 
 		public override string ToString () => this.ValueToString (Field, DynamicallyAccessedMemberTypes);
 	}
+
 }

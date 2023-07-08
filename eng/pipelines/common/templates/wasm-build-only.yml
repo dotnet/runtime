@@ -25,12 +25,9 @@ jobs:
         value: $[
           or(
             eq(variables['wasmDarcDependenciesChanged'], true),
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
             eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
-            and(
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm.containsChange'], true),
-              eq(dependencies.evaluate_paths.outputs['SetPathVars_non_runtimetests.containsChange'], true)),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_libraries.containsChange'], true),
-            eq(dependencies.evaluate_paths.outputs['SetPathVars_mono_excluding_wasm.containsChange'], true))
+            eq(dependencies.evaluate_paths.outputs['SetPathVars_wasm_specific_except_wbt_dbg.containsChange'], true))
           ]
     jobParameters:
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}

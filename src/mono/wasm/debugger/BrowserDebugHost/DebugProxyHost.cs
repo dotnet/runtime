@@ -24,7 +24,7 @@ public static class DebugProxyHost
         {
             RunDevToolsProxyAsync(options, args, loggerFactory, token)
         };
-        if (!options.RunningForBlazor)
+        if (!options.RunningForBlazor || options.IsFirefoxDebugging)
             tasks.Add(RunFirefoxServerLoopAsync(options, args, loggerFactory, token));
 
         Task completedTask = await Task.WhenAny(tasks);

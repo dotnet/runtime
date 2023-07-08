@@ -491,9 +491,6 @@ mono_thread_info_suspend_lock (void);
 void
 mono_thread_info_suspend_unlock (void);
 
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid);
-
 MONO_COMPONENT_API void
 mono_thread_info_set_is_async_context (gboolean async_context);
 
@@ -634,6 +631,9 @@ void mono_threads_platform_init (void);
 gboolean mono_threads_platform_in_critical_region (THREAD_INFO_TYPE *info);
 gboolean mono_threads_platform_yield (void);
 void mono_threads_platform_exit (gsize exit_code);
+
+gboolean
+mono_thread_platform_external_eventloop_keepalive_check (void);
 
 void mono_threads_coop_begin_global_suspend (void);
 void mono_threads_coop_end_global_suspend (void);
@@ -846,7 +846,9 @@ void mono_threads_join_unlock (void);
 
 #ifdef HOST_WASM
 typedef void (*background_job_cb)(void);
-void mono_threads_schedule_background_job (background_job_cb cb);
+void mono_main_thread_schedule_background_job (background_job_cb cb);
+void mono_current_thread_schedule_background_job (background_job_cb cb);
+void mono_target_thread_schedule_background_job (MonoNativeThreadId target_thread, background_job_cb cb);
 #endif
 
 #ifdef USE_WINDOWS_BACKEND

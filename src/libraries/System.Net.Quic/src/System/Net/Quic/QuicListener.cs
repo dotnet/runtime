@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
@@ -79,14 +80,25 @@ public sealed partial class QuicListener : IAsyncDisposable
     private readonly ValueTaskSource _shutdownTcs = new ValueTaskSource();
 
     /// <summary>
+    /// Used to stop pending connections when <see cref="DisposeAsync"/> is requested.
+    /// </summary>
+    private readonly CancellationTokenSource _disposeCts = new CancellationTokenSource();
+
+    /// <summary>
     /// Selects connection options for incoming connections.
     /// </summary>
     private readonly Func<QuicConnection, SslClientHelloInfo, CancellationToken, ValueTask<QuicServerConnectionOptions>> _connectionOptionsCallback;
 
     /// <summary>
-    /// Incoming connections waiting to be accepted via AcceptAsync.
+    /// Incoming connections waiting to be accepted via AcceptAsync. The item will either be fully connected <see cref="QuicConnection"/> or <see cref="Exception"/> if the handshake failed.
     /// </summary>
-    private readonly Channel<PendingConnection> _acceptQueue;
+    private readonly Channel<object> _acceptQueue;
+    /// <summary>
+    /// Allowed number of pending incoming connections.
+    /// Actual value correspond to <c><see cref="QuicListenerOptions.ListenBacklog"/> - # <see cref="StartConnectionHandshake"/> in progress - <see cref="_acceptQueue"/>.Count</c> and is always <c>>= 0</c>.
+    /// Starts as <see cref="QuicListenerOptions.ListenBacklog"/>, decrements with each NEW_CONNECTION, increments with <see cref="AcceptConnectionAsync" />.
+    /// </summary>
+    private int _pendingConnectionsCapacity;
 
     /// <summary>
     /// The actual listening endpoint.
@@ -122,7 +134,8 @@ public sealed partial class QuicListener : IAsyncDisposable
 
         // Save the connection options before starting the listener
         _connectionOptionsCallback = options.ConnectionOptionsCallback;
-        _acceptQueue = Channel.CreateBounded<PendingConnection>(new BoundedChannelOptions(options.ListenBacklog) { SingleWriter = true });
+        _acceptQueue = Channel.CreateUnbounded<object>();
+        _pendingConnectionsCapacity = options.ListenBacklog;
 
         // Start the listener, from now on MsQuic events will come.
         using MsQuicBuffers alpnBuffers = new MsQuicBuffers();
@@ -151,9 +164,6 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// Accepts an inbound <see cref="QuicConnection" />.
     /// </summary>
     /// <remarks>
-    /// Note that <see cref="QuicListener" /> doesn't have a mechanism to report inbound connections that fail the handshake process.
-    /// Such connections are only logged by the listener and never surfaced on the outside.
-    ///
     /// Propagates exceptions from <see cref="QuicListenerOptions.ConnectionOptionsCallback"/>, including validation errors from misconfigured <see cref="QuicServerConnectionOptions"/>, e.g. <see cref="ArgumentException"/>.
     /// Also propagates exceptions from failed connection handshake, e.g. <see cref="AuthenticationException"/>, <see cref="QuicException"/>.
     /// </remarks>
@@ -166,15 +176,19 @@ public sealed partial class QuicListener : IAsyncDisposable
         GCHandle keepObject = GCHandle.Alloc(this);
         try
         {
-            PendingConnection pendingConnection = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
-            await using (pendingConnection.ConfigureAwait(false))
+            object item = await _acceptQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+            Interlocked.Increment(ref _pendingConnectionsCapacity);
+
+            if (item is QuicConnection connection)
             {
-                return await pendingConnection.FinishHandshakeAsync(cancellationToken).ConfigureAwait(false);
+                return connection;
             }
+            ExceptionDispatchInfo.Throw((Exception)item);
+            throw null; // Never reached.
         }
         catch (ChannelClosedException ex) when (ex.InnerException is not null)
         {
-            ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+            ExceptionDispatchInfo.Throw(ex.InnerException);
             throw;
         }
         finally
@@ -183,20 +197,102 @@ public sealed partial class QuicListener : IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Kicks off the handshake process. It doesn't propagate the result outside directly but rather stores it in <c>_acceptQueue</c> for <see cref="AcceptConnectionAsync" />.
+    /// </summary>
+    /// <remarks>
+    /// The method is <c>async void</c> on purpose so it starts an operation but doesn't wait for the result from the caller's perspective.
+    /// It does await <see cref="QuicConnection.FinishHandshakeAsync"/> but that never gets propagated to the caller for which the method ends with the first asynchronously processed <c>await</c>.
+    /// Once the asynchronous processing finishes, the result is stored in <c>_acceptQueue</c>.
+    /// </remarks>
+    /// <param name="connection">The new connection.</param>
+    /// <param name="clientHello">The TLS ClientHello data.</param>
+    private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
+    {
+        CancellationToken cancellationToken = default;
+        try
+        {
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
+            linkedCts.CancelAfter(QuicDefaults.HandshakeTimeout);
+            cancellationToken = linkedCts.Token;
+            QuicServerConnectionOptions options = await _connectionOptionsCallback(connection, clientHello, cancellationToken).ConfigureAwait(false);
+            options.Validate(nameof(options)); // Validate and fill in defaults for the options.
+            await connection.FinishHandshakeAsync(options, clientHello.ServerName, cancellationToken).ConfigureAwait(false);
+            if (!_acceptQueue.Writer.TryWrite(connection))
+            {
+                // Channel has been closed, dispose the connection as it'll never be handed out.
+                await connection.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (_disposeCts.IsCancellationRequested)
+        {
+            // Handshake stopped by QuicListener.DisposeAsync:
+            // 1. Dispose the connection and by that shut it down --> application error code doesn't matter here as this is a transport error.
+            // 2. Connection won't be handed out since listener has stopped --> do not propagate anything.
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(connection, $"{connection} Connection handshake stopped by listener");
+            }
+
+            await connection.DisposeAsync().ConfigureAwait(false);
+        }
+        catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
+        {
+            // Handshake cancelled by QuicDefaults.HandshakeTimeout, probably stalled:
+            // 1. Connection must be killed so dispose it and by that shut it down --> application error code doesn't matter here as this is a transport error.
+            // 2. Connection won't be handed out since it's useless --> propagate appropriate exception, listener will pass it to the caller.
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Error(connection, $"{connection} Connection handshake timed out: {oce}");
+            }
+
+            Exception ex = ExceptionDispatchInfo.SetCurrentStackTrace(new QuicException(QuicError.ConnectionTimeout, null, SR.Format(SR.net_quic_handshake_timeout, QuicDefaults.HandshakeTimeout), oce));
+            await connection.DisposeAsync().ConfigureAwait(false);
+            if (!_acceptQueue.Writer.TryWrite(ex))
+            {
+                // Channel has been closed, connection is already disposed, do nothing.
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handshake failed:
+            // 1. Dispose the connection and by that shut it down --> application error code doesn't matter here as this is a transport error.
+            // 2. Connection cannot be handed out since it's useless --> propagate the exception as-is, listener will pass it to the caller.
+
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Error(connection, $"{connection} Connection handshake failed: {ex}");
+            }
+
+            await connection.DisposeAsync().ConfigureAwait(false);
+            if (!_acceptQueue.Writer.TryWrite(ex))
+            {
+                // Channel has been closed, connection is already disposed, do nothing.
+            }
+        }
+    }
+
     private unsafe int HandleEventNewConnection(ref NEW_CONNECTION_DATA data)
     {
         // Check if there's capacity to have another connection waiting to be accepted.
-        PendingConnection pendingConnection = new PendingConnection();
-        if (!_acceptQueue.Writer.TryWrite(pendingConnection))
+        if (Interlocked.Decrement(ref _pendingConnectionsCapacity) < 0)
         {
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(this, $"{this} Refusing connection from {data.Info->RemoteAddress->ToIPEndPoint()} due to backlog limit");
+            }
+
+            Interlocked.Increment(ref _pendingConnectionsCapacity);
             return QUIC_STATUS_CONNECTION_REFUSED;
         }
 
         QuicConnection connection = new QuicConnection(data.Connection, data.Info);
         SslClientHelloInfo clientHello = new SslClientHelloInfo(data.Info->ServerNameLength > 0 ? Marshal.PtrToStringUTF8((IntPtr)data.Info->ServerName, data.Info->ServerNameLength) : "", SslProtocols.Tls13);
 
-        // Kicks off the rest of the handshake in the background.
-        pendingConnection.StartHandshake(connection, clientHello, _connectionOptionsCallback);
+        // Kicks off the rest of the handshake in the background, the process itself will enqueue the result in the accept queue.
+        StartConnectionHandshake(connection, clientHello);
 
         return QUIC_STATUS_SUCCESS;
 
@@ -237,7 +333,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type} {listenerEvent->ToString()}");
             }
             return instance.HandleListenerEvent(ref *listenerEvent);
         }
@@ -276,10 +372,14 @@ public sealed partial class QuicListener : IAsyncDisposable
         _handle.Dispose();
 
         // Flush the queue and dispose all remaining connections.
+        _disposeCts.Cancel();
         _acceptQueue.Writer.TryComplete(ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetOperationAbortedException()));
-        while (_acceptQueue.Reader.TryRead(out PendingConnection? pendingConnection))
+        while (_acceptQueue.Reader.TryRead(out object? item))
         {
-            await pendingConnection.DisposeAsync().ConfigureAwait(false);
+            if (item is QuicConnection connection)
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 }

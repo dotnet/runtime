@@ -76,6 +76,7 @@ namespace System.Numerics.Tests
         [InlineData(1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f)]
         [InlineData(3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f, 3.1434343f, 1.1234123f, 3.1434343f, 1.1234123f, 0.1234123f, -0.1234123f)]
         [InlineData(1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f, 1.0000001f, 0.0000001f, 1.0000001f, 0.0000001f, 2.0000001f, 0.0000002f)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80876", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void Matrix4x4IndexerSetTest(float m11, float m12, float m13, float m14, float m21, float m22, float m23, float m24, float m31, float m32, float m33, float m34, float m41, float m42, float m43, float m44)
         {
             var matrix = new Matrix4x4(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
@@ -886,6 +887,26 @@ namespace System.Numerics.Tests
 
             Matrix4x4 actual = Matrix4x4.CreateLookAt(cameraPosition, cameraTarget, cameraUpVector);
             Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.CreateLookAt did not return the expected value.");
+        }
+
+        // A test for CreateViewport (x, y, width, height, minDepth, maxDepth)
+        [Fact]
+        public void Matrix4x4CreateViewportTest()
+        {
+            float x = 10.0f, y = 20.0f;
+            float width = 3.0f, height = 4.0f;
+            float minDepth = 100.0f, maxDepth = 200.0f;
+
+            Matrix4x4 expected = Matrix4x4.Identity;
+            expected.M11 = width * 0.5f;
+            expected.M22 = -height * 0.5f;
+            expected.M33 = maxDepth - minDepth;
+            expected.M41 = x + expected.M11;
+            expected.M42 = y - expected.M22;
+            expected.M43 = minDepth;
+
+            Matrix4x4 actual = Matrix4x4.CreateViewport(x, y, width, height, minDepth, maxDepth);
+            Assert.True(MathHelper.Equal(expected, actual), "Matrix4x4.CreateViewport did not return the expected value.");
         }
 
         // A test for CreateWorld (Vector3f, Vector3f, Vector3f)

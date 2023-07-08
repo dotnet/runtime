@@ -9,7 +9,7 @@ using Xunit;
 
 // Tests that we value number certain intrinsics correctly.
 //
-unsafe class HwiValueNumbering
+public unsafe class HwiValueNumbering
 {
     [Fact]
     public static void TestProblemWithLoadLow_Sse()
@@ -160,7 +160,7 @@ unsafe class HwiValueNumbering
         if (v1.GetElement(0) == 0)
         {
             var v2 = Avx.MaskLoad(data, Vector128.Create(Mask, 0));
-            Assert.NotEqual(v2.GetElement(0), 0);
+            Assert.NotEqual(0, v2.GetElement(0));
         }
     }
 
@@ -188,10 +188,10 @@ unsafe class HwiValueNumbering
         if (v1.GetElement(0) == 0)
         {
             var v2 = Avx2.MaskLoad(data, Vector128.Create(Mask, 0));
-            Assert.NotEqual(v2.GetElement(0), 0);
+            Assert.NotEqual(0, v2.GetElement(0));
         }
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void JitUse<T>(T* arg) where T : unmanaged { }
+    static void JitUse<T>(T* arg) where T : unmanaged { }
 }

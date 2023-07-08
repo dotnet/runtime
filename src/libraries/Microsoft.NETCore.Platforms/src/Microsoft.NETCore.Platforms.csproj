@@ -1,13 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppToolCurrent);$(NetFrameworkToolCurrent)</TargetFrameworks>
+    <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
+
+    <!-- Opt out of features that aren't necessary for a local build task. -->
     <Nullable>disable</Nullable>
     <EnableBinPlacing>false</EnableBinPlacing>
     <!-- This project should not build against the live built .NETCoreApp targeting pack as it contributes to the build itself. -->
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
-    <AssemblyName>Microsoft.NETCore.Platforms.BuildTasks</AssemblyName>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <IncludeSymbols>false</IncludeSymbols>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
 
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
@@ -17,7 +20,8 @@
     <AvoidRestoreCycleOnSelfReference>true</AvoidRestoreCycleOnSelfReference>
     <!-- TODO: Remove with AvoidRestoreCycleOnSelfReference hack. -->
     <PackageValidationBaselineName>$(MSBuildProjectName)</PackageValidationBaselineName>
-    
+    <BeforePack Condition="'$(AdditionalRuntimeIdentifiers)' == ''">UpdateRuntimeJson;$(BeforePack)</BeforePack>
+
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' == 'core'">$(NetCoreAppToolCurrent)</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTargetFramework Condition="'$(MSBuildRuntimeType)' != 'core'">net472</_generateRuntimeGraphTargetFramework>
     <_generateRuntimeGraphTask>$([MSBuild]::NormalizePath('$(BaseOutputPath)', $(Configuration), '$(_generateRuntimeGraphTargetFramework)', '$(AssemblyName).dll'))</_generateRuntimeGraphTask>

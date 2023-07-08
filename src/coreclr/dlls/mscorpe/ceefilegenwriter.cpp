@@ -180,24 +180,11 @@ inline IMAGE_SYMBOL* GetSymbolEntry(IMAGE_SYMBOL* pHead, SIZE_T idx)
 }
 
 //*****************************************************************************
-// To get a new instance, call CreateNewInstance() or CreateNewInstanceEx() instead of new
+// To get a new instance, call CreateNewInstance() instead of new
 //*****************************************************************************
 
-HRESULT CeeFileGenWriter::CreateNewInstance(CCeeGen *pCeeFileGenFrom,
-                                            CeeFileGenWriter* & pGenWriter,
+HRESULT CeeFileGenWriter::CreateNewInstance(CeeFileGenWriter* & pGenWriter,
                                             DWORD createFlags)
-{
-    return CreateNewInstanceEx(pCeeFileGenFrom, pGenWriter, createFlags);
-}
-
-//
-// Seed file is used as the base file. The new file data will be "appended" to the seed file
-//
-
-HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
-                                              CeeFileGenWriter* & pGenWriter,
-                                              DWORD createFlags,
-                                              LPCWSTR seedFileName)
 {
     HRESULT hr = S_OK;
     ULONG preallocatedOffset = 0;
@@ -213,10 +200,7 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
     if (pPEWriter == NULL)
         IfFailGo(E_OUTOFMEMORY);
 
-    //workaround
-    //What's really the correct thing to be doing here?
-    //HRESULT hr = pPEWriter->Init(pCeeFileGenFrom ? pCeeFileGenFrom->getPESectionMan() : NULL);
-    hr = pPEWriter->Init(NULL, createFlags, seedFileName);
+    hr = pPEWriter->Init(NULL, createFlags);
     IfFailGo(hr);
 
     //Create the general PEWriter.
@@ -224,16 +208,13 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
     hr = pPrivateGenWriter->Init(); // base class member to finish init
     IfFailGo(hr);
 
-    if (!seedFileName) // Use base file's preferred base (if present)
+    if (pPEWriter->isPE32())
     {
-        if (pPEWriter->isPE32())
-        {
-            pPrivateGenWriter->setImageBase((DWORD) CEE_IMAGE_BASE_32);   // use same default as linker
-        }
-        else
-        {
-            pPrivateGenWriter->setImageBase64((ULONGLONG) CEE_IMAGE_BASE_64); // use same default as linker
-        }
+        pPrivateGenWriter->setImageBase((DWORD) CEE_IMAGE_BASE_32);   // use same default as linker
+    }
+    else
+    {
+        pPrivateGenWriter->setImageBase64((ULONGLONG) CEE_IMAGE_BASE_64); // use same default as linker
     }
 
     pPrivateGenWriter->setSubsystem(IMAGE_SUBSYSTEM_WINDOWS_CUI, CEE_IMAGE_SUBSYSTEM_MAJOR_VERSION, CEE_IMAGE_SUBSYSTEM_MINOR_VERSION);
@@ -246,11 +227,6 @@ HRESULT CeeFileGenWriter::CreateNewInstanceEx(CCeeGen *pCeeFileGenFrom,
 
     hr = pPrivateGenWriter->allocateCorHeader();   // get COR header near front
     IfFailGo(hr);
-
-    //If we were passed a CCeeGen at the beginning, copy it's data now.
-    if (pCeeFileGenFrom) {
-        pCeeFileGenFrom->cloneInstance((CCeeGen*)pPrivateGenWriter);
-    }
 
     hr = pPrivateGenWriter->getSectionCreate(".text0", sdExecute, &corHeaderSection);
     IfFailGo(hr);
@@ -490,7 +466,7 @@ HRESULT CeeFileGenWriter::setOutputFileName(_In_ LPWSTR fileName)
 {
     if (m_outputFileName)
         delete[] m_outputFileName;
-    size_t len = wcslen(fileName) + 1;
+    size_t len = u16_strlen(fileName) + 1;
     m_outputFileName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_outputFileName!=NULL, E_OUTOFMEMORY);
     wcscpy_s(m_outputFileName, len, fileName);
@@ -501,7 +477,7 @@ HRESULT CeeFileGenWriter::setResourceFileName(_In_ LPWSTR fileName)
 {
     if (m_resourceFileName)
         delete[] m_resourceFileName;
-    size_t len = wcslen(fileName) + 1;
+    size_t len = u16_strlen(fileName) + 1;
     m_resourceFileName = (LPWSTR)new (nothrow) WCHAR[len];
     TESTANDRETURN(m_resourceFileName!=NULL, E_OUTOFMEMORY);
     wcscpy_s(m_resourceFileName, len, fileName);
@@ -976,7 +952,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         pParam->hFile = WszCreateFile(pParam->szResFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         if (pParam->hFile == INVALID_HANDLE_VALUE)
         {
-            //dbprintf("Resource file %S not found\n", szResFileName);
             pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
@@ -1005,7 +980,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
 
         if (pParam->hMap == NULL)
         {
-            //dbprintf("Invalid .res file: %S\n", szResFileName);
             pParam->hr = HRESULT_FROM_GetLastError();
             goto lDone;
         }
@@ -1015,7 +989,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         // test failure conditions
         if (pbStartOfMappedMem == NULL)
         {
-            //dbprintf("Invalid .res file: %S:Can't get header\n", szResFileName);
             pParam->hr = HRESULT_FROM_GetLastError();
             goto lDone;
         }
@@ -1031,7 +1004,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
 
         if (VAL16(pParam->hMod->SizeOfOptionalHeader) != 0)
         {
-            //dbprintf("Invalid .res file: %S:Illegal optional header\n", szResFileName);
             pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND); // GetLastError() = 0 since API worked.
             goto lDone;
         }
@@ -1074,7 +1046,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
         // If we don't have both resources, fail.
         if (!rsrc[0] || !rsrc[1])
         {
-            //dbprintf("Invalid .res file: %S: Missing sections .rsrc$01 or .rsrc$02\n", szResFileName);
             pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
             goto lDone;
         }
@@ -1189,7 +1160,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
                 (VAL16(pSymbolEntry->Type) != IMAGE_SYM_TYPE_NULL) ||
                 (VAL16(pSymbolEntry->SectionNumber) != 3)) // 3rd section is .rsrc$02
             {
-                //dbprintf("Invalid .res file: %S:Illegal symbol entry\n", szResFileName);
                 pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
@@ -1197,7 +1167,6 @@ HRESULT CeeFileGenWriter::emitResourceSection()
             // Ensure that RVA is valid address (inside rsrc[1])
             if (VAL32(pSymbolEntry->Value) >= VAL32(rsrc[1]->SizeOfRawData))
             {
-                //dbprintf("Invalid .res file: %S:Illegal rva into .rsrc$02\n", szResFileName);
                 pParam->hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
                 goto lDone;
             }
@@ -1218,7 +1187,6 @@ lDone: ;
     }
     PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
     {
-        //dbprintf("Exception occurred manipulating .res file %S\n", szResFileName);
         param.hr = HRESULT_FROM_WIN32(ERROR_RESOURCE_DATA_NOT_FOUND);
     }
     PAL_ENDTRY

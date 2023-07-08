@@ -75,6 +75,12 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
             }
         }
 
+        public override Type GetModifiedPropertyType()
+        {
+            return ModifiedType.Create(PropertyType, _reader, _reader.GetPropertySignature(_property.Signature).Type);
+
+        }
+
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other)
         {
             ArgumentNullException.ThrowIfNull(other);
@@ -128,7 +134,8 @@ namespace System.Reflection.Runtime.PropertyInfos.NativeFormat
 
         protected sealed override bool GetDefaultValueIfAny(bool raw, out object? defaultValue)
         {
-            return DefaultValueParser.GetDefaultValueIfAny(_reader, _property.DefaultValue, PropertyType, CustomAttributes, raw, out defaultValue);
+            return DefaultValueParser.GetDefaultValueFromConstantIfAny(_reader, _property.DefaultValue, PropertyType, raw, out defaultValue)
+                || DefaultValueParser.GetDefaultValueFromAttributeIfAny(CustomAttributes, raw, out defaultValue);
         }
 
         protected sealed override RuntimeNamedMethodInfo GetPropertyMethod(PropertyMethodSemantics whichMethod)

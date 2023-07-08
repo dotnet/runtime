@@ -1214,6 +1214,10 @@ mono_decompose_vtype_opts (MonoCompile *cfg)
 				mono_simd_decompose_intrinsic (cfg, bb, ins);
 #endif
 				switch (ins->opcode) {
+				case OP_LDTOKEN_FIELD:
+					ins->opcode = OP_VMOVE;
+					restart = TRUE;
+					break;
 				case OP_VMOVE: {
 					g_assert (ins->klass);
 					if (COMPILE_LLVM (cfg) && !mini_is_gsharedvt_klass (ins->klass))

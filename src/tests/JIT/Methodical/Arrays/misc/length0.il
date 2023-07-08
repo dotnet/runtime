@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'length0'
+.assembly ASSEMBLY_NAME
 {
 
 

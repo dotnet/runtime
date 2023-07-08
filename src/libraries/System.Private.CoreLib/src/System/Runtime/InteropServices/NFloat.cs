@@ -27,7 +27,8 @@ namespace System.Runtime.InteropServices
     [NonVersionable] // This only applies to field layout
     public readonly struct NFloat
         : IBinaryFloatingPointIeee754<NFloat>,
-          IMinMaxValue<NFloat>
+          IMinMaxValue<NFloat>,
+          IUtf8SpanFormattable
     {
         private const NumberStyles DefaultNumberStyles = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -164,7 +165,7 @@ namespace System.Runtime.InteropServices
         /// <summary>Multiplies two values together to compute their product.</summary>
         /// <param name="left">The value which <paramref name="right" /> multiplies.</param>
         /// <param name="right">The value which multiplies <paramref name="left" />.</param>
-        /// <returns>The product of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <returns>The product of <paramref name="left" /> multiplied-by <paramref name="right" />.</returns>
         [NonVersionable]
         public static NFloat operator *(NFloat left, NFloat right) => new NFloat(left._value * right._value);
 
@@ -630,7 +631,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="s" /> is <c>null</c>.</exception>
         /// <exception cref="FormatException"><paramref name="s" /> does not represent a number in a valid format.</exception>
@@ -660,7 +661,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="s" /> is <c>null</c>.</exception>
         /// <exception cref="FormatException"><paramref name="s" /> does not represent a number in a valid format.</exception>
@@ -678,7 +679,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         /// <exception cref="FormatException"><paramref name="s" /> does not represent a number in a valid format.</exception>
         public static NFloat Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultNumberStyles, IFormatProvider? provider = null)
@@ -716,7 +717,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {
@@ -733,7 +734,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="ArgumentException">
         ///    <para><paramref name="style" /> is not a <see cref="NumberStyles" /> value.</para>
         ///    <para>-or-</para>
-        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> value.</para>
+        ///    <para><paramref name="style" /> includes the <see cref="NumberStyles.AllowHexSpecifier" /> or <see cref="NumberStyles.AllowBinarySpecifier" /> value.</para>
         /// </exception>
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out NFloat result)
         {
@@ -764,7 +765,7 @@ namespace System.Runtime.InteropServices
         ///         </item>
         ///     </list>
         /// </returns>
-        /// <exception cref="System.ArgumentException"><paramref name="obj" /> is not a <see cref="NFloat" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="obj" /> is not a <see cref="NFloat" />.</exception>
         public int CompareTo(object? obj)
         {
             if (obj is NFloat other)
@@ -859,6 +860,9 @@ namespace System.Runtime.InteropServices
         /// <param name="provider">An optional object that supplies culture-specific formatting information for <paramref name="destination" />.</param>
         /// <returns><c>true</c> if the formatting was successful; otherwise, <c>false</c>.</returns>
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) => _value.TryFormat(destination, out charsWritten, format, provider);
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) => _value.TryFormat(utf8Destination, out bytesWritten, format, provider);
 
         //
         // IAdditiveIdentity
@@ -1164,6 +1168,9 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(NFloat x) => NativeType.ILogB(x._value);
 
+        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Lerp(TSelf, TSelf, TSelf)" />
+        public static NFloat Lerp(NFloat value1, NFloat value2, NFloat amount) => new NFloat(NativeType.Lerp(value1._value, value2._value, amount._value));
+
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static NFloat ReciprocalEstimate(NFloat x) => new NFloat(NativeType.ReciprocalEstimate(x._value));
 
@@ -1368,21 +1375,21 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromChecked<TOther>(TOther value, out NFloat result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromSaturating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromSaturating<TOther>(TOther value, out NFloat result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromTruncating{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertFromTruncating<TOther>(TOther value, out NFloat result)
         {
-            return TryConvertFrom<TOther>(value, out result);
+            return TryConvertFrom(value, out result);
         }
 
         private static bool TryConvertFrom<TOther>(TOther value, out NFloat result)
@@ -1614,14 +1621,14 @@ namespace System.Runtime.InteropServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToSaturating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertToTruncating{TOther}(TSelf, out TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool INumberBase<NFloat>.TryConvertToTruncating<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)
         {
-            return TryConvertTo<TOther>(value, out result);
+            return TryConvertTo(value, out result);
         }
 
         private static bool TryConvertTo<TOther>(NFloat value, [MaybeNullWhen(false)] out TOther result)

@@ -95,6 +95,7 @@ typedef struct {
 	MonoMethod *start_method;
 	MonoMethod *last_method;
 	int last_line;
+	int last_column;
 	/* Whenever single stepping is performed using start/stop_single_stepping () */
 	gboolean global;
 	/* The list of breakpoints used to implement step-over */
@@ -113,7 +114,7 @@ typedef struct {
 typedef struct {
 	MonoContext *(*tls_get_restore_state) (void *tls);
 	gboolean (*try_process_suspend) (void *tls, MonoContext *ctx, gboolean from_breakpoint);
-	gboolean (*begin_breakpoint_processing) (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
+	bool (*begin_breakpoint_processing) (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal);
 	void (*begin_single_step_processing) (MonoContext *ctx, gboolean from_signal);
 
 	void (*ss_discard_frame_context) (void *tls);

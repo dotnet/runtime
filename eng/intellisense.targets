@@ -1,0 +1,53 @@
+<Project InitialTargets="VerifyAssemblySupportsDocsXmlGeneration">
+
+  <PropertyGroup>
+    <UseIntellisensePackageDocXmlFile Condition="'$(UseIntellisensePackageDocXmlFile)' == ''">true</UseIntellisensePackageDocXmlFile>
+  </PropertyGroup>
+
+  <Target Name="VerifyAssemblySupportsDocsXmlGeneration"
+          Condition="'$(UseIntellisensePackageDocXmlFile)' != 'true'">
+    <Error Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for partial facade assemblies: $(AssemblyName)"
+           Condition="'$(IsPartialFacadeAssembly)' == 'true'" />
+    <Error Text="The 'UseIntellisensePackageDocXmlFile' property is not supported for assemblies that throw PlatformNotSupportedException: $(AssemblyName)"
+           Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' != ''" />
+  </Target>
+
+  <PropertyGroup Condition="'$(UseIntellisensePackageDocXmlFile)' == 'true'">
+    <IntellisensePackageXmlRootFolder>$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.private.intellisense', '$(MicrosoftPrivateIntellisenseVersion)', 'IntellisenseFiles'))</IntellisensePackageXmlRootFolder>
+    <IntellisensePackageXmlFilePathFromNetFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'net', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromNetFolder>
+    <IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>$([MSBuild]::NormalizePath('$(IntellisensePackageXmlRootFolder)', 'dotnet-plat-ext', '1033', '$(AssemblyName).xml'))</IntellisensePackageXmlFilePathFromDotNetPlatExtFolder>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromNetFolder))">$(IntellisensePackageXmlFilePathFromNetFolder)</IntellisensePackageXmlFilePath>
+    <IntellisensePackageXmlFilePath Condition="'$(IntellisensePackageXmlFilePath)' == '' and Exists($(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder))">$(IntellisensePackageXmlFilePathFromDotNetPlatExtFolder)</IntellisensePackageXmlFilePath>
+    <!-- Suppress "CS1591 - Missing XML comment for publicly visible type or member" compiler errors if
+         - the intellisense package xml file is used or
+         - the assembly is private (i.e. System.Private.Uri) or
+         - the assembly is a PNSE assembly. -->
+    <NoWarn Condition="'$(IntellisensePackageXmlFilePath)' != '' or
+                       '$(IsPrivateAssembly)' == 'true' or
+                       '$(GeneratePlatformNotSupportedAssemblyMessage)' != ''">$(NoWarn);1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageDownload Include="Microsoft.Private.Intellisense" Version="[$(MicrosoftPrivateIntellisenseVersion)]" />
+  </ItemGroup>
+
+  <!-- Replace the compiler generated xml file in the obj folder with the one that comes from the intellisense package. -->
+  <Target Name="ChangeDocumentationFileForPackaging"
+          BeforeTargets="CopyFilesToOutputDirectory;DocumentationProjectOutputGroup"
+          Condition="'$(IntellisensePackageXmlFilePath)' != ''">
+    <ItemGroup>
+      <DocFileItem Remove="@(DocFileItem)" />
+      <DocFileItem Include="$(IntellisensePackageXmlFilePath)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Allow P2Ps to retrieve the DocFileItem path. -->
+  <Target Name="AnnotateTargetPathWithTargetPlatformMonikerWithDocFileItem"
+          DependsOnTargets="ChangeDocumentationFileForPackaging"
+          AfterTargets="GetTargetPathWithTargetPlatformMoniker">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker DocFileItem="@(DocFileItem)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

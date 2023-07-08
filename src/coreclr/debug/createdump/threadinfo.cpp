@@ -183,7 +183,7 @@ ThreadInfo::UnwindThread(IXCLRDataProcess* pClrDataProcess, ISOSDacInterface* pS
                         ArrayHolder<WCHAR> typeName = new WCHAR[MAX_LONGPATH + 1];
                         if (SUCCEEDED(pExceptionType->GetName(0, MAX_LONGPATH, nullptr, typeName.GetPtr())))
                         {
-                            m_exceptionType = FormatString("%S", typeName.GetPtr());
+                            m_exceptionType = ConvertString(typeName.GetPtr());
                             TRACE("Unwind: exception type %s\n", m_exceptionType.c_str());
                         }
                     }
@@ -285,11 +285,11 @@ ThreadInfo::GatherStackFrames(CONTEXT* pContext, IXCLRDataStackWalk* pStackwalk)
     AddStackFrame(frame);
 }
 
-// This function deals with two types of frames: duplicate stack frames (SP is equal) and repeated frames (IP is 
+// This function deals with two types of frames: duplicate stack frames (SP is equal) and repeated frames (IP is
 // equal) because of a stack overflow.
-// 
+//
 // The list of constraints:
-// 
+//
 // 1) The StackFrame is immutable i.e. can't add some kind of repeat count to the frame. Making it mutable is big hassle.
 // 2) The native unwinding can repeat the same frame SP/IP. These frames are not counted as repeated stack overflow ones.
 // 3) Only add the repeated stack overflow frames once to frames set. This saves time and memory.
@@ -334,7 +334,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
             }
         }
 
-        // Add the non-duplicate and (if stack overflow) non-repeating frames to set 
+        // Add the non-duplicate and (if stack overflow) non-repeating frames to set
         std::pair<std::set<StackFrame>::iterator, bool> result = m_frames.insert(frame);
         assert(result.second);
 
@@ -353,7 +353,7 @@ ThreadInfo::AddStackFrame(const StackFrame& frame)
             {
                 framesRepeated++;
             }
-            // The total number of individually repeated frames has to be greater than the number of frames in the repeating sequence 
+            // The total number of individually repeated frames has to be greater than the number of frames in the repeating sequence
             m_repeatedFrames = framesRepeated > 0 && m_repeatedFrames >= framesRepeated ? (m_repeatedFrames / framesRepeated) + 1 : 0;
         }
     }
@@ -386,4 +386,10 @@ ThreadInfo::GetThreadStack()
     {
         TRACE("Thread %04x null stack pointer\n", m_tid);
     }
+}
+
+bool
+ThreadInfo::IsCrashThread() const
+{
+    return m_tid == m_crashInfo.CrashThread();
 }

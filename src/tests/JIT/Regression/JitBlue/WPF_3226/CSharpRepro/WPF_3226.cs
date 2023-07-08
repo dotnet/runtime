@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
 [StructLayout(LayoutKind.Sequential)]
 class POINT 
@@ -34,7 +35,8 @@ public class Test_WPF_3226
         Marshal.StructureToPtr(mmi, lParam, true);
     }
 
-    public unsafe static int Main()
+    [Fact]
+    public unsafe static int TestEntryPoint()
     {
         MINMAXINFO mmi = new MINMAXINFO();
         IntPtr pmmi = Marshal.AllocHGlobal(Marshal.SizeOf(mmi));

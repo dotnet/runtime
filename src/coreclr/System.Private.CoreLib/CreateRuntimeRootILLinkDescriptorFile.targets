@@ -19,7 +19,6 @@
     <_ILLinkDescriptorsFilePaths Include="$(ILLinkDirectory)ILLink.Descriptors.Debug.xml"
                                  Condition="'$(Configuration)' == 'Debug' or '$(Configuration)' == 'Checked'" />
     <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.Shared.xml" />
-    <_ILLinkDescriptorsFilePaths Include="$(CoreLibSharedDir)ILLink\ILLink.Descriptors.EventSource.xml" />
   </ItemGroup>
 
   <!--

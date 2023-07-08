@@ -282,7 +282,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// (don't have specific I*Operation types), such as pointer dereferences.
 				if (targetOperation.Kind is OperationKind.None)
 					break;
-				throw new NotImplementedException ($"{targetOperation.GetType ().ToString ()}: {targetOperation.Syntax.GetLocation ().GetLineSpan ()}");
+				throw new NotImplementedException ($"{targetOperation.GetType ()}: {targetOperation.Syntax.GetLocation ().GetLineSpan ()}");
 			}
 			return Visit (operation.Value, state);
 		}
@@ -293,7 +293,7 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			if (!operation.GetValueUsageInfo (Method).HasFlag (ValueUsageInfo.Read)) {
 				// There are known cases where this assert doesn't hold, because LValueFlowCaptureProvider
 				// produces the wrong result in some cases for flow captures with IsInitialization = true.
-				// https://github.com/dotnet/linker/issues/2749 
+				// https://github.com/dotnet/linker/issues/2749
 				// Debug.Assert (IsLValueFlowCapture (operation.Id));
 				return TopValue;
 			}

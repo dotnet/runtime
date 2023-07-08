@@ -75,11 +75,11 @@ namespace System.Net
         private int _chunkRead;
         private int _totalWritten;
         private State _state;
-        private StringBuilder _saved;
+        private readonly StringBuilder _saved;
         private bool _sawCR;
         private bool _gotit;
         private int _trailerState;
-        private List<Chunk> _chunks;
+        private readonly List<Chunk> _chunks;
 
         public ChunkStream(WebHeaderCollection headers)
         {
@@ -304,12 +304,10 @@ namespace System.Net
             return State.Body;
         }
 
-        private static string RemoveChunkExtension(string input)
+        private static ReadOnlySpan<char> RemoveChunkExtension(ReadOnlySpan<char> input)
         {
             int idx = input.IndexOf(';');
-            if (idx == -1)
-                return input;
-            return input.Substring(0, idx);
+            return idx >= 0 ? input.Slice(0, idx) : input;
         }
 
         private State ReadCRLF(byte[] buffer, ref int offset, int size)

@@ -317,7 +317,7 @@ namespace System.Xml.Serialization
             {
                 foreach (Type t in scope.Types)
                 {
-                    compiler.AddImport(t, importedTypes);
+                    Compiler.AddImport(t, importedTypes);
                     Assembly a = t.Assembly;
                     string name = a.FullName!;
                     if (assemblies[name] != null)
@@ -331,7 +331,7 @@ namespace System.Xml.Serialization
 
             for (int i = 0; i < types.Length; i++)
             {
-                compiler.AddImport(types[i], importedTypes);
+                Compiler.AddImport(types[i], importedTypes);
             }
 
             var writer = new IndentedWriter(compiler.Source, false);
@@ -691,8 +691,8 @@ namespace System.Xml.Serialization
 
     internal sealed class TempAssemblyCache
     {
+        private readonly ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
         private Dictionary<TempAssemblyCacheKey, TempAssembly> _fastCache = new Dictionary<TempAssemblyCacheKey, TempAssembly>();
-        private ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>> _collectibleCaches = new ConditionalWeakTable<Assembly, Dictionary<TempAssemblyCacheKey, TempAssembly>>();
 
         internal TempAssembly? this[string? ns, Type t]
         {

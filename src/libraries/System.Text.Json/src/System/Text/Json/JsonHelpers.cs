@@ -94,7 +94,7 @@ namespace System.Text.Json
         public static string Utf8GetString(ReadOnlySpan<byte> bytes)
         {
             return Encoding.UTF8.GetString(bytes
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !NETCOREAPP
                         .ToArray()
 #endif
                 );
@@ -108,7 +108,7 @@ namespace System.Text.Json
             IEqualityComparer<TKey> comparer)
             where TKey : notnull
         {
-#if NETSTANDARD2_0 || NETFRAMEWORK
+#if !NETCOREAPP
             var dictionary = new Dictionary<TKey, TValue>(comparer);
 
             foreach (KeyValuePair<TKey, TValue> item in collection)
@@ -149,12 +149,12 @@ namespace System.Text.Json
             }
         }
 
-        public static bool AllBitsEqual(this BitArray bitArray, bool value)
+#if !NET8_0_OR_GREATER
+        public static bool HasAllSet(this BitArray bitArray)
         {
-            // Optimize this when https://github.com/dotnet/runtime/issues/72999 is fixed
             for (int i = 0; i < bitArray.Count; i++)
             {
-                if (bitArray[i] != value)
+                if (!bitArray[i])
                 {
                     return false;
                 }
@@ -162,5 +162,6 @@ namespace System.Text.Json
 
             return true;
         }
+#endif
     }
 }

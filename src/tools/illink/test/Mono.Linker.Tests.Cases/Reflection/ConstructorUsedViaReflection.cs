@@ -184,7 +184,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			[Kept]
 			public static void TestWithUnknownBindingFlags (BindingFlags bindingFlags)
 			{
-				// Since the binding flags are not known linker should mark all constructors on the type
+				// Since the binding flags are not known trimming tools should mark all constructors on the type
 				var constructor = typeof (UnknownBindingFlags).GetConstructor (bindingFlags, GetNullValue ("some argument", 2, 3), new Type[] { }, new ParameterModifier[] { });
 				constructor.Invoke (null, new object[] { });
 			}

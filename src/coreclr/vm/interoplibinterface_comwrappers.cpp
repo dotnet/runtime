@@ -822,16 +822,32 @@ namespace
         bool uniqueInstance = !!(flags & CreateObjectFlags::CreateObjectFlags_UniqueInstance);
         if (!uniqueInstance)
         {
-            // Query the external object cache
-            ExtObjCxtCache::LockHolder lock(cache);
-            extObjCxt = cache->Find(cacheKey);
+            bool objectFound = false;
+            {
+                // Query the external object cache
+                ExtObjCxtCache::LockHolder lock(cache);
+                extObjCxt = cache->Find(cacheKey);
+
+                objectFound = extObjCxt != NULL;
+                if (objectFound && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
+                {
+                    // If an EOC has been found but is marked detached, then we will remove it from the
+                    // cache here instead of letting the GC do it later and pretend like it wasn't found.
+                    STRESS_LOG1(LF_INTEROP, LL_INFO10, "Detached EOC requested: 0x%p\n", extObjCxt);
+                    cache->Remove(extObjCxt);
+                    extObjCxt->MarkNotInCache();
+                    extObjCxt = NULL;
+                }
+            }
 
             // If is no object found in the cache, check if the object COM instance is actually the CCW
             // representing a managed object. If the user passed the Unwrap flag, COM instances that are
             // actually CCWs should be unwrapped to the original managed object to allow for round
             // tripping object -> COM instance -> object.
-            if (extObjCxt == NULL && (flags & CreateObjectFlags::CreateObjectFlags_Unwrap))
+            if (!objectFound && (flags & CreateObjectFlags::CreateObjectFlags_Unwrap))
             {
+                GCX_PREEMP();
+
                 // If the COM instance is a CCW that is not COM-activated, use the object of that wrapper object.
                 InteropLib::OBJECTHANDLE handleLocal;
                 if (InteropLib::Com::GetObjectForWrapper(identity, &handleLocal) ==  S_OK
@@ -839,15 +855,6 @@ namespace
                 {
                     handle = handleLocal;
                 }
-            }
-            else if (extObjCxt != NULL && extObjCxt->IsSet(ExternalObjectContext::Flags_Detached))
-            {
-                // If an EOC has been found but is marked detached, then we will remove it from the
-                // cache here instead of letting the GC do it later and pretend like it wasn't found.
-                STRESS_LOG1(LF_INTEROP, LL_INFO10, "Detached EOC requested: 0x%p\n", extObjCxt);
-                cache->Remove(extObjCxt);
-                extObjCxt->MarkNotInCache();
-                extObjCxt = NULL;
             }
         }
 
@@ -859,12 +866,42 @@ namespace
         }
         else if (handle != NULL)
         {
-            // We have an object handle from the COM instance which is a CCW. Use that object.
-            // This allows for the round-trip from object -> COM instance -> object.
+            // We have an object handle from the COM instance which is a CCW.
             ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
-            gc.objRefMaybe = ObjectFromHandle(objectHandle);
+
+            // Now we need to check if this object is a CCW from the same ComWrappers instance
+            // as the one creating the EOC. If it is not, we need to create a new EOC for it.
+            // Otherwise, use it. This allows for the round-trip from object -> COM instance -> object.
+            OBJECTREF objRef = NULL;
+            GCPROTECT_BEGIN(objRef);
+            objRef = ObjectFromHandle(objectHandle);
+
+            SyncBlock* syncBlock = objRef->GetSyncBlock();
+            InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfo();
+
+            // If we found a managed object wrapper in this ComWrappers instance
+            // and it's the same identity pointer as the one we're creating an EOC for,
+            // unwrap it. We don't AddRef the wrapper as we don't take a reference to it.
+            //
+            // A managed object can have multiple managed object wrappers, with a max of one per context.
+            // Let's say we have a managed object A and ComWrappers instances C1 and C2. Let B1 and B2 be the
+            // managed object wrappers for A created with C1 and C2 respectively.
+            // If we are asked to create an EOC for B1 with the unwrap flag on the C2 ComWrappers instance,
+            // we will create a new wrapper. In this scenario, we'll only unwrap B2.
+            void* wrapperRawMaybe = NULL;
+            if (interopInfo->TryGetManagedObjectComWrapper(wrapperId, &wrapperRawMaybe)
+                && wrapperRawMaybe == identity)
+            {
+                gc.objRefMaybe = objRef;
+            }
+            else
+            {
+                STRESS_LOG2(LF_INTEROP, LL_INFO1000, "Not unwrapping handle (0x%p) because the object's MOW in this ComWrappers instance (if any) (0x%p) is not the provided identity\n", handle, wrapperRawMaybe);
+            }
+            GCPROTECT_END();
         }
-        else
+
+        if (gc.objRefMaybe == NULL)
         {
             // Create context instance for the possibly new external object.
             ExternalWrapperResultHolder resultHolder;
@@ -1521,6 +1558,81 @@ extern "C" void QCALLTYPE ComWrappers_GetIUnknownImpl(
     END_QCALL;
 }
 
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetComInstance(
+    _In_ QCall::ObjectHandleOnStack wrapperMaybe,
+    _Out_ void** externalComObject)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(externalComObject != NULL);
+
+    bool success = false;
+
+    BEGIN_QCALL;
+
+    // Switch to Cooperative mode since object references
+    // are being manipulated.
+    {
+        GCX_COOP();
+
+        SyncBlock* syncBlock = ObjectToOBJECTREF(*wrapperMaybe.m_ppObject)->PassiveGetSyncBlock();
+        if (syncBlock != nullptr)
+        {
+            InteropSyncBlockInfo* interopInfo = syncBlock->GetInteropInfoNoCreate();
+            if (interopInfo != nullptr)
+            {
+                void* contextMaybe;
+                if (interopInfo->TryGetExternalComObjectContext(&contextMaybe))
+                {
+                    ExternalObjectContext* context = reinterpret_cast<ExternalObjectContext*>(contextMaybe);
+                    IUnknown* identity = reinterpret_cast<IUnknown*>(context->Identity);
+                    GCX_PREEMP();
+                    success = SUCCEEDED(identity->QueryInterface(IID_IUnknown, externalComObject));
+                }
+            }
+        }
+    }
+
+    END_QCALL;
+
+    return (success ? TRUE : FALSE);
+}
+
+extern "C" BOOL QCALLTYPE ComWrappers_TryGetObject(
+    _In_ void* wrapperMaybe,
+    _Inout_ QCall::ObjectHandleOnStack instance)
+{
+    QCALL_CONTRACT;
+
+    _ASSERTE(wrapperMaybe != NULL);
+
+    bool success = false;
+
+    BEGIN_QCALL;
+
+    // Determine the true identity of the object
+    SafeComHolder<IUnknown> identity;
+    HRESULT hr = ((IUnknown*)wrapperMaybe)->QueryInterface(IID_IUnknown, &identity);
+    _ASSERTE(hr == S_OK);
+
+    InteropLib::OBJECTHANDLE handle;
+    if (InteropLib::Com::GetObjectForWrapper(identity, &handle) == S_OK)
+    {
+        // Switch to Cooperative mode since object references
+        // are being manipulated.
+        GCX_COOP();
+
+        // We have an object handle from the COM instance which is a CCW.
+        ::OBJECTHANDLE objectHandle = static_cast<::OBJECTHANDLE>(handle);
+        instance.Set(ObjectFromHandle(objectHandle));
+        success = true;
+    }
+
+    END_QCALL;
+
+    return (success ? TRUE : FALSE);
+}
+
 void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
 {
     CONTRACTL
@@ -1595,15 +1707,19 @@ void ComWrappersNative::MarkWrapperAsComActivated(_In_ IUnknown* wrapperMaybe)
 {
     CONTRACTL
     {
-        NOTHROW;
-        MODE_ANY;
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
         PRECONDITION(wrapperMaybe != NULL);
     }
     CONTRACTL_END;
 
-    // The IUnknown may or may not represent a wrapper, so E_INVALIDARG is okay here.
-    HRESULT hr = InteropLib::Com::MarkComActivated(wrapperMaybe);
-    _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
+    {
+        GCX_PREEMP();
+        // The IUnknown may or may not represent a wrapper, so E_INVALIDARG is okay here.
+        HRESULT hr = InteropLib::Com::MarkComActivated(wrapperMaybe);
+        _ASSERTE(SUCCEEDED(hr) || hr == E_INVALIDARG);
+    }
 }
 
 extern "C" void QCALLTYPE ComWrappers_SetGlobalInstanceRegisteredForMarshalling(INT64 id)

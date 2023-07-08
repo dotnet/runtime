@@ -16,6 +16,9 @@ public partial class FunctionPtr
 
         [DllImport(nameof(FunctionPointerNative))]
         static unsafe extern void FillOutPtr(IntPtr* p);
+
+	[DllImport(nameof(FunctionPointerNative))]
+	static unsafe extern void FillOutIntParameter(out IntPtr p);
     }
 
     delegate void VoidDelegate();
@@ -76,6 +79,28 @@ public partial class FunctionPtr
             IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
             DelegateToFillOutPtr OutPtrDelegate = Marshal.GetDelegateForFunctionPointer<DelegateToFillOutPtr>(ptr);
             OutPtrDelegate(&outVar);
+            GC.KeepAlive(d);
+        }
+        Assert.Equal(expectedValue, outVar);
+    }
+
+    [DllImport(nameof(FunctionPointerNative))]
+    static unsafe extern void FillOutIntParameter(out IntPtr p);
+
+    private unsafe delegate void DelegateToFillOutIntParameter(out IntPtr p);
+
+    public static void RunGetDelForOutIntTest()
+    {
+        Console.WriteLine($"Running {nameof(RunGetDelForOutIntTest)}...");
+        IntPtr outVar = 0;
+        int expectedValue = 50;
+        unsafe
+        {
+            DelegateToFillOutIntParameter d = new DelegateToFillOutIntParameter(FillOutIntParameter);
+            IntPtr ptr = Marshal.GetFunctionPointerForDelegate(d);
+            DelegateToFillOutIntParameter OutPtrDelegate = Marshal.GetDelegateForFunctionPointer<DelegateToFillOutIntParameter>(ptr);
+            OutPtrDelegate(out outVar);
+            GC.KeepAlive(d);
         }
         Assert.Equal(expectedValue, outVar);
     }
@@ -87,6 +112,7 @@ public partial class FunctionPtr
             RunGetDelForFcnPtrTest();
             RunGetFcnPtrSingleMulticastTest();
             RunGetDelForOutPtrTest();
+            RunGetDelForOutIntTest();
         }
         catch (Exception e)
         {

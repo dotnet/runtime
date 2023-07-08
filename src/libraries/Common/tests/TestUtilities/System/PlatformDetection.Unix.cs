@@ -17,17 +17,11 @@ namespace System
         public static bool IsLinux => RuntimeInformation.IsOSPlatform(OSPlatform.Linux);
         public static bool IsOpenSUSE => IsDistroAndVersion("opensuse");
         public static bool IsUbuntu => IsDistroAndVersion("ubuntu");
+        public static bool IsUbuntu2004 => IsDistroAndVersion("ubuntu", 20, 4);
         public static bool IsDebian => IsDistroAndVersion("debian");
         public static bool IsAlpine => IsDistroAndVersion("alpine");
-        public static bool IsDebian8 => IsDistroAndVersion("debian", 8);
-        public static bool IsDebian9 => IsDistroAndVersion("debian", 9);
         public static bool IsDebian10 => IsDistroAndVersion("debian", 10);
-        public static bool IsUbuntu1604 => IsDistroAndVersion("ubuntu", 16, 4);
-        public static bool IsUbuntu1704 => IsDistroAndVersion("ubuntu", 17, 4);
-        public static bool IsUbuntu1710 => IsDistroAndVersion("ubuntu", 17, 10);
-        public static bool IsUbuntu1710OrHigher => IsDistroAndVersionOrHigher("ubuntu", 17, 10);
-        public static bool IsUbuntu1804 => IsDistroAndVersion("ubuntu", 18, 04);
-        public static bool IsUbuntu1810OrHigher => IsDistroAndVersionOrHigher("ubuntu", 18, 10);
+        public static bool IsRaspbian10 => IsDistroAndVersion("raspbian", 10);
         public static bool IsMariner => IsDistroAndVersion("mariner");
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
@@ -52,6 +46,7 @@ namespace System
         public static bool IsRedHatFamily => IsRedHatFamilyAndVersion();
         public static bool IsNotRedHatFamily => !IsRedHatFamily;
         public static bool IsRedHatFamily7 => IsRedHatFamilyAndVersion(7);
+        public static bool IsCentos7 => IsDistroAndVersion("centos", 7);
         public static bool IsNotFedoraOrRedHatFamily => !IsFedora && !IsRedHatFamily;
         public static bool IsNotDebian10 => !IsDebian10;
 

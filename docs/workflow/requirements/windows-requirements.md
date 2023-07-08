@@ -35,8 +35,7 @@ Install [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/). The
 * It's recommended to use **Workloads** installation approach. The following are the minimum requirements:
   * **.NET Desktop Development** with all default components,
   * **Desktop Development with C++** with all default components.
-* To build for Arm32 or Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
-  * For Arm32, check the box for _MSVC v143* VS 2022 C++ ARM build tools (Latest)_.
+* To build for Arm64, make sure that you have the right architecture-specific compilers installed. In the **Individual components** window, in the **Compilers, build tools, and runtimes** section:
   * For Arm64, check the box for _MSVC v143* VS 2022 C++ ARM64 build tools (Latest)_.
 * To build the tests, you will need some additional components:
   * **C++/CLI support for v142 build tools (Latest)**.
@@ -52,7 +51,9 @@ These steps are required only in case the tools have not been installed as Visua
 * Install [CMake](https://cmake.org/download) for Windows.
 * Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable. The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The _dotnet/runtime_ repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
+The _dotnet/runtime_ repository requires using CMake 3.20 or newer.
+
+**NOTE**: If you plan on using the `-msbuild` flag for building the repo, you will need version 3.21 at least. This is because the VS2022 generator doesn't exist in CMake until said version.
 
 #### Ninja
 

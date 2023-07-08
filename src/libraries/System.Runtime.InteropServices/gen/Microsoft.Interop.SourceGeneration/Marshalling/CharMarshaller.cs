@@ -125,15 +125,15 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return info.IsManagedReturnPosition || (info.IsByRef && !context.SingleFrameSpansNativeContext);
+            return context.IsInStubReturnPosition(info) || (info.IsByRef && !context.SingleFrameSpansNativeContext);
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
 
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext
-                && !info.IsManagedReturnPosition
+                && !context.IsInStubReturnPosition(info)
                 && info.IsByRef;
         }
 

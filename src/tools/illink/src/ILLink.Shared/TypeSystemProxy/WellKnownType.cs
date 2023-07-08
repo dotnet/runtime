@@ -38,6 +38,7 @@ namespace ILLink.Shared.TypeSystemProxy
 				WellKnownType.System_NotSupportedException => ("System", "NotSupportedException"),
 				WellKnownType.System_Runtime_CompilerServices_DisablePrivateReflectionAttribute => ("System.Runtime.CompilerServices", "DisablePrivateReflectionAttribute"),
 				WellKnownType.System_Void => ("System", "Void"),
+				_ => throw new System.ArgumentException (type.ToString ())
 			};
 		}
 		public static string GetNamespace (this WellKnownType type) => GetNamespaceAndName (type).Namespace;

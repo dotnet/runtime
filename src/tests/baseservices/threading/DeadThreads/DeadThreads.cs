@@ -4,6 +4,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using Xunit;
 
 public class DeadThreads
 {
@@ -34,7 +35,8 @@ public class DeadThreads
         t.Start();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         GCTriggerSanityTest();
         return 100;

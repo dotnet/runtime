@@ -2,14 +2,14 @@ parameters:
   dependsOn: []
   PublishRidAgnosticPackagesFromPlatform: ''
   isOfficialBuild: false
-  logArtifactName: 'Logs-PrepareSignedArtifacts'
+  logArtifactName: 'Logs-PrepareSignedArtifacts_Attempt$(System.JobAttempt)'
 
 jobs:
 - job: PrepareSignedArtifacts
   displayName: Prepare Signed Artifacts
   dependsOn: ${{ parameters.dependsOn }}
   pool:
-    name: NetCore1ESPool-Internal
+    name: $(DncEngInternalBuildPool)
     demands: ImageOverride -equals 1es-windows-2022
   # Double the default timeout.
   timeoutInMinutes: 240

@@ -11,7 +11,7 @@ namespace System.Globalization
     public sealed class SortVersion : IEquatable<SortVersion?>
     {
         private readonly int m_NlsVersion; // Do not rename (binary serialization)
-        private Guid m_SortId; // Do not rename (binary serialization)
+        private readonly Guid m_SortId; // Do not rename (binary serialization)
 
         public int FullVersion => m_NlsVersion;
 

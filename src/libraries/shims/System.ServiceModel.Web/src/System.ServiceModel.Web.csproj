@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AssemblyVersion>4.0.0.0</AssemblyVersion>
+    <StrongNameKeyId>MicrosoftShared</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Json\src\System.Runtime.Serialization.Json.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.ServiceModel.Syndication\src\System.ServiceModel.Syndication.csproj" />
+  </ItemGroup>
+
+</Project>

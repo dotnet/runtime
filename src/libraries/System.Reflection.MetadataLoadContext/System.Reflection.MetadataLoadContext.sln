@@ -1,4 +1,6 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestILAssembly", "..\Common\tests\System\TestILAssembly\TestILAssembly.ilproj", "{6DA9926C-8763-42A2-A51A-EDF8684C80A8}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{6A69770F-4F95-411F-ACAE-2B902EB62161}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections.Immutable", "..\System.Collections.Immutable\ref\System.Collections.Immutable.csproj", "{22BDB23C-24DE-4C3C-9A18-A048C445EDC1}"
@@ -16,6 +18,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.MetadataLoadContext", "src\System.Reflection.MetadataLoadContext.csproj", "{DD06D785-53D2-4C11-895C-E9A24E23E276}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Reflection.MetadataLoadContext.Tests", "tests\System.Reflection.MetadataLoadContext.Tests.csproj", "{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{97806F4F-CCA5-4B86-9B71-B3B35DC990E1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{4361CEFA-8238-4247-9CC5-D99DF794843C}"
 EndProject
@@ -37,6 +41,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{6DA9926C-8763-42A2-A51A-EDF8684C80A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DA9926C-8763-42A2-A51A-EDF8684C80A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DA9926C-8763-42A2-A51A-EDF8684C80A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DA9926C-8763-42A2-A51A-EDF8684C80A8}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6A69770F-4F95-411F-ACAE-2B902EB62161}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6A69770F-4F95-411F-ACAE-2B902EB62161}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A69770F-4F95-411F-ACAE-2B902EB62161}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -73,6 +81,10 @@ Global
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651}.Release|Any CPU.Build.0 = Release|Any CPU
+		{97806F4F-CCA5-4B86-9B71-B3B35DC990E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{97806F4F-CCA5-4B86-9B71-B3B35DC990E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{97806F4F-CCA5-4B86-9B71-B3B35DC990E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{97806F4F-CCA5-4B86-9B71-B3B35DC990E1}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4361CEFA-8238-4247-9CC5-D99DF794843C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4361CEFA-8238-4247-9CC5-D99DF794843C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4361CEFA-8238-4247-9CC5-D99DF794843C}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -90,6 +102,7 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{6DA9926C-8763-42A2-A51A-EDF8684C80A8} = {F45DECCA-03D3-4087-AB01-F099C027DC33}
 		{6A69770F-4F95-411F-ACAE-2B902EB62161} = {F45DECCA-03D3-4087-AB01-F099C027DC33}
 		{D28B6414-C82C-4BDE-B8BB-A4E3297A0651} = {F45DECCA-03D3-4087-AB01-F099C027DC33}
 		{22BDB23C-24DE-4C3C-9A18-A048C445EDC1} = {B3731232-B2FE-401B-A9F1-5DFB1A90D687}
@@ -100,6 +113,7 @@ Global
 		{DDDE44A1-86F6-49C5-8DA5-5630C9F1E41C} = {C9409DA5-0A3B-4194-AEB8-3CA7A6D5387E}
 		{499E5241-B46A-4161-A27C-C6D599070148} = {C9409DA5-0A3B-4194-AEB8-3CA7A6D5387E}
 		{DD06D785-53D2-4C11-895C-E9A24E23E276} = {C9409DA5-0A3B-4194-AEB8-3CA7A6D5387E}
+		{97806F4F-CCA5-4B86-9B71-B3B35DC990E1} = {E86A915C-E800-4558-AFDC-F41C4095B2DF}
 		{4361CEFA-8238-4247-9CC5-D99DF794843C} = {E86A915C-E800-4558-AFDC-F41C4095B2DF}
 		{7393C7CD-4C31-4B1C-96DC-1D46D240538A} = {E86A915C-E800-4558-AFDC-F41C4095B2DF}
 	EndGlobalSection

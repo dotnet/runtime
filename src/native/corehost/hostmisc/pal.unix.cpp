@@ -842,8 +842,13 @@ pal::string_t pal::get_current_os_rid_platform()
                     size_t pos = line.find(strVersionID);
                     if ((pos != std::string::npos) && (pos == 0))
                     {
-                        valVersionID.append(line.substr(11));
-                        fFoundVersion = true;
+                        pal::string_t version = line.substr(11);
+                        // check if version characters are valid (quotes are trimmed at a later stage)
+                        if (!version.empty() && version.find_first_not_of("0123456789.\"'") == std::string::npos)
+                        {
+                            valVersionID.append(version);
+                            fFoundVersion = true;
+                        }
                     }
                 }
 
@@ -1099,5 +1104,16 @@ bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const st
 #else
     // On Linux, paths are case-sensitive
     return path1 == path2;
+#endif
+}
+
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+extern void initialize_static_createdump();
+#endif
+
+void pal::initialize_createdump()
+{
+#if defined(FEATURE_STATIC_HOST) && (defined(TARGET_OSX) || defined(TARGET_LINUX)) && !defined(TARGET_X86)
+    initialize_static_createdump();
 #endif
 }

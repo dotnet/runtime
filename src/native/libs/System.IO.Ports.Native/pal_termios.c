@@ -355,13 +355,16 @@ int32_t SystemIoPortsNative_TermiosSetSpeed(intptr_t handle, int32_t speed)
 
     if (brate == B0)
     {
-#if HAVE_IOSS_H
         // Looks like custom speed out of POSIX. Let see if we can set it via specialized call.
+#if HAVE_IOSS_H
         brate = speed;
         if (ioctl(fd, IOSSIOSPEED, &brate) != -1)
         {
             return speed;
         }
+#endif
+#if HAVE_TERMIOS2
+        return SystemIoPortsNative_Termios2SetSpeed(fd, speed);
 #endif
         errno = EINVAL;
         return -1;
@@ -518,7 +521,7 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
         brate = TermiosSpeed2Rate(speed);
         if (brate == B0)
         {
-#if !HAVE_IOSS_H
+#if !HAVE_IOSS_H && !HAVE_TERMIOS2
             // We can try to set non-standard speed after tcsetattr().
             errno = EINVAL;
             return -1;
@@ -539,17 +542,20 @@ int32_t SystemIoPortsNative_TermiosReset(intptr_t handle, int32_t speed, int32_t
         return -1;
     }
 
-#if HAVE_IOSS_H
     if (speed && brate == B0)
     {
+#if HAVE_IOSS_H
         // we have deferred non-standard speed.
         brate = speed;
         if (ioctl(fd, IOSSIOSPEED, &brate) == -1)
         {
            return  -1;
         }
-    }
 #endif
+#if HAVE_TERMIOS2
+        return SystemIoPortsNative_Termios2SetSpeed(fd, speed);
+#endif
+    }
 
     return 0;
 }

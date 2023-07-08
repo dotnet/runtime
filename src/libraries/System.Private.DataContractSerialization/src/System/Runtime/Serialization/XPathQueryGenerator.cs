@@ -64,7 +64,7 @@ namespace System.Runtime.Serialization
             {
                 return ProcessClassDataContract((ClassDataContract)contract, context, memberNode);
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
+            throw XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound);
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -80,7 +80,7 @@ namespace System.Runtime.Serialization
                     return member.MemberTypeContract;
                 }
             }
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound));
+            throw XmlObjectSerializer.CreateSerializationException(SR.QueryGeneratorPathToMemberNotFound);
         }
 
         private static IEnumerable<DataMember> GetDataMembers(ClassDataContract contract)
@@ -144,7 +144,7 @@ namespace System.Runtime.Serialization
             public string SetNamespace(string ns)
             {
                 string? prefix = _namespaces.LookupPrefix(ns);
-                if (prefix == null || prefix.Length == 0)
+                if (string.IsNullOrEmpty(prefix))
                 {
                     prefix = "xg" + (_nextPrefix++).ToString(NumberFormatInfo.InvariantInfo);
                     Namespaces.AddNamespace(prefix, ns);

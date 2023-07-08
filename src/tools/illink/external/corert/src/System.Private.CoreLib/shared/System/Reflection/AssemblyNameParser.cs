@@ -26,7 +26,7 @@ namespace System.Reflection
 			AssemblyNameLexer lexer = new AssemblyNameLexer(s);
 
 			// Name must come first.
-			string name;
+			string? name;
 			AssemblyNameLexer.Token token = lexer.GetNext(out name);
 			if (token != AssemblyNameLexer.Token.String)
 				throw new FileLoadException();
@@ -34,9 +34,9 @@ namespace System.Reflection
 			if (string.IsNullOrEmpty(name) || name.IndexOfAny(s_illegalCharactersInSimpleName) != -1)
 				throw new FileLoadException();
 
-			Version version = null;
-			string cultureName = null;
-			byte[] pkt = null;
+			Version? version = null;
+			string? cultureName = null;
+			byte[]? pkt = null;
 			AssemblyNameFlags flags = 0;
 
 			List<string> alreadySeen = new List<string>();
@@ -45,7 +45,7 @@ namespace System.Reflection
 			{
 				if (token != AssemblyNameLexer.Token.Comma)
 					throw new FileLoadException();
-				string attributeName;
+				string? attributeName;
 				token = lexer.GetNext(out attributeName);
 				if (token != AssemblyNameLexer.Token.String)
 					throw new FileLoadException();
@@ -59,12 +59,12 @@ namespace System.Reflection
 
 				if (token != AssemblyNameLexer.Token.Equals)
 					throw new FileLoadException();
-				string attributeValue;
+				string? attributeValue;
 				token = lexer.GetNext(out attributeValue);
 				if (token != AssemblyNameLexer.Token.String)
 					throw new FileLoadException();
 
-				if (String.IsNullOrEmpty(attributeName))
+				if (string.IsNullOrEmpty(attributeName))
 					throw new FileLoadException();
 
 				for (int i = 0; i < alreadySeen.Count; i++)
@@ -72,6 +72,7 @@ namespace System.Reflection
 					if (alreadySeen[i].Equals(attributeName, StringComparison.OrdinalIgnoreCase))
 						throw new FileLoadException(); // Cannot specify the same attribute twice.
 				}
+				Debug.Assert(attributeValue is not null);
 				alreadySeen.Add(attributeName);
 				if (attributeName.Equals("Version", StringComparison.OrdinalIgnoreCase))
 				{
@@ -116,7 +117,7 @@ namespace System.Reflection
 				// Desktop compat: If we got here, the attribute name is unknown to us. Ignore it (as long it's not duplicated.)
 				token = lexer.GetNext();
 			}
-			return new RuntimeAssemblyName(name, version, cultureName, flags, pkt);
+			return new RuntimeAssemblyName(name!, version!, cultureName!, flags, pkt!);
 		}
 
 		private static Version ParseVersion(string attributeValue)

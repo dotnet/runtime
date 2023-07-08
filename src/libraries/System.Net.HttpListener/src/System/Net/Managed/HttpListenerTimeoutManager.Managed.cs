@@ -64,10 +64,8 @@ namespace System.Net
             [SupportedOSPlatform("windows")]
             set
             {
-                if (value < 0 || value > uint.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, uint.MaxValue);
                 throw new PlatformNotSupportedException(); // low usage, not currently implemented
             }
         }
@@ -86,10 +84,8 @@ namespace System.Net
         private static void ValidateTimeout(TimeSpan value)
         {
             long timeoutValue = Convert.ToInt64(value.TotalSeconds);
-            if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
-            {
-                throw new ArgumentOutOfRangeException(nameof(value));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(timeoutValue, nameof(value));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(timeoutValue, ushort.MaxValue, nameof(value));
         }
     }
 }

@@ -5,6 +5,7 @@ include(configure.cmake)
 
 set(GC_PAL_SOURCES
     gcenv.unix.cpp
+    numasupport.cpp
     events.cpp
     cgroup.cpp)
 

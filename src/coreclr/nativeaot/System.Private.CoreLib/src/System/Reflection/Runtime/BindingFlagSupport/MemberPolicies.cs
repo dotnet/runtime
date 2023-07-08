@@ -15,14 +15,19 @@ namespace System.Reflection.Runtime.BindingFlagSupport
     //=================================================================================================================
     internal abstract class MemberPolicies<M> where M : MemberInfo
     {
+        public MemberPolicies(int index)
+        {
+            Index = index;
+        }
+
         //=================================================================================================================
         // Subclasses for specific MemberInfo types must override these:
         //=================================================================================================================
 
         //
-        // Returns all of the directly declared members on the given TypeInfo.
+        // Returns all of the directly declared members on the given Type.
         //
-        public abstract IEnumerable<M> GetDeclaredMembers(TypeInfo typeInfo);
+        public abstract IEnumerable<M> GetDeclaredMembers(Type type);
 
         //
         // Returns all of the directly declared members on the given TypeInfo whose name matches optionalNameFilter. If optionalNameFilter is null,
@@ -184,55 +189,13 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        static MemberPolicies()
-        {
-            Type t = typeof(M);
-            if (t.Equals(typeof(FieldInfo)))
-            {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Field;
-                Default = (MemberPolicies<M>)(object)(new FieldPolicies());
-            }
-            else if (t.Equals(typeof(MethodInfo)))
-            {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Method;
-                Default = (MemberPolicies<M>)(object)(new MethodPolicies());
-            }
-            else if (t.Equals(typeof(ConstructorInfo)))
-            {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Constructor;
-                Default = (MemberPolicies<M>)(object)(new ConstructorPolicies());
-            }
-            else if (t.Equals(typeof(PropertyInfo)))
-            {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Property; ;
-                Default = (MemberPolicies<M>)(object)(new PropertyPolicies());
-            }
-            else if (t.Equals(typeof(EventInfo)))
-            {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.Event;
-                Default = (MemberPolicies<M>)(object)(new EventPolicies());
-            }
-            else if (t.Equals(typeof(Type)))
-            {
-                MemberTypeIndex = BindingFlagSupport.MemberTypeIndex.NestedType;
-                Default = (MemberPolicies<M>)(object)(new NestedTypePolicies());
-            }
-            else
-            {
-                Debug.Fail("Unknown MemberInfo type.");
-            }
-        }
-
-        //
-        // This is a singleton class one for each MemberInfo category: Return the appropriate one.
-        //
-        public static readonly MemberPolicies<M> Default;
+        protected const BindingFlags DeclaredOnlyLookup = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
 
         //
         // This returns a fixed value from 0 to MemberIndex.Count-1 with each possible type of M
         // being assigned a unique index (see the MemberTypeIndex for possible values). This is useful
         // for converting a type reference to M to an array index or switch case label.
         //
-        public static readonly int MemberTypeIndex;
+        public int Index { get; }
     }
 }

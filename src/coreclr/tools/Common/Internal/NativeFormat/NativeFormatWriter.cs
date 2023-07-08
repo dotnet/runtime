@@ -195,14 +195,14 @@ namespace Internal.NativeFormat
         // This is the price we have to pay for using UTF8. Thing like High Surrogate Start Char - '\ud800'
         // can be expressed in UTF-16 (which is the format used to store ECMA metadata), but don't have
         // a representation in UTF-8.
-        private static Encoding _stringEncoding = new UTF8Encoding(false, false);
+        private static readonly UTF8Encoding s_stringEncoding = new UTF8Encoding(false, false);
 
         public void WriteString(string s)
         {
             // The actual bytes are only necessary for the final version during the growing phase
             if (IsGrowing())
             {
-                byte[] bytes = _stringEncoding.GetBytes(s);
+                byte[] bytes = s_stringEncoding.GetBytes(s);
 
                 _encoder.WriteUnsigned((uint)bytes.Length);
                 for (int i = 0; i < bytes.Length; i++)
@@ -210,7 +210,7 @@ namespace Internal.NativeFormat
             }
             else
             {
-                int byteCount = _stringEncoding.GetByteCount(s);
+                int byteCount = s_stringEncoding.GetByteCount(s);
                 _encoder.WriteUnsigned((uint)byteCount);
                 WritePad(byteCount);
             }
@@ -516,6 +516,12 @@ namespace Internal.NativeFormat
         public Vertex GetMDArrayTypeSignature(Vertex elementType, uint rank, uint[] bounds, uint[] lowerBounds)
         {
             MDArrayTypeSignature sig = new MDArrayTypeSignature(elementType, rank, bounds, lowerBounds);
+            return Unify(sig);
+        }
+
+        public Vertex GetFunctionPointerTypeSignature(Vertex methodSignature)
+        {
+            FunctionPointerTypeSignature sig = new FunctionPointerTypeSignature(methodSignature);
             return Unify(sig);
         }
     }
@@ -1459,6 +1465,37 @@ namespace Internal.NativeFormat
             }
 
             return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class FunctionPointerTypeSignature : Vertex
+    {
+        private Vertex _methodSignature;
+
+        public FunctionPointerTypeSignature(Vertex methodSignature)
+        {
+            _methodSignature = methodSignature;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.WriteUnsigned((uint)TypeSignatureKind.FunctionPointer);
+            _methodSignature.Save(writer);
+        }
+
+        public override int GetHashCode()
+        {
+            return _methodSignature.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FunctionPointerTypeSignature fnptrSig && _methodSignature.Equals(fnptrSig._methodSignature);
         }
     }
 

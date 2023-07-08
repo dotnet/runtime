@@ -429,6 +429,69 @@ main (int argc, char *argv [])
 	arm_blrabz (code, ARMREG_R1);
 	arm_blrab (code, ARMREG_R1, ARMREG_R2);
 
+	// neon int 3-reg same type
+	arm_neon_add (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_sub (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_mul (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_smax (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_smin (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_umax (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_umin (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmgt (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmge (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmeq (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmhi (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_cmhs (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+
+	// neon float 3-reg same type
+	arm_neon_fadd (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fsub (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fmax (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fmin (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fmul (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fdiv (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fcmeq (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fcmge (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_fcmgt (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+
+	// neon bitwise 3-reg
+	arm_neon_and (code, VREG_FULL, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_orr (code, VREG_FULL, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_eor (code, VREG_FULL, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+
+	// neon int 2-reg
+	arm_neon_abs (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1);
+	arm_neon_neg (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1);
+
+	// neon float 2-reg
+	arm_neon_fabs (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1);
+	arm_neon_fneg (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1);
+	arm_neon_fsqrt (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1);
+
+	// neon bitwise 2-reg
+	arm_neon_not (code, VREG_FULL, ARMREG_R0, ARMREG_R1); // aliased to mvn
+
+	// neon copy
+	arm_neon_ins_g (code, TYPE_I8, ARMREG_R0, ARMREG_R1, 3); // insert w1 into v0.b[3]
+	arm_neon_ins_g (code, TYPE_I32, ARMREG_R0, ARMREG_R1, 1);
+	arm_neon_ins_e (code, TYPE_I8, ARMREG_R0, ARMREG_R1, 1, 5); // insert v1.b[5] into v0.b[1]
+	arm_neon_ins_e (code, TYPE_I32, ARMREG_R0, ARMREG_R1, 1, 2); // insert v1.s[2] into v0.s[1]
+
+	// pairwise and horizontal adds
+	arm_neon_addv (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1);
+	arm_neon_addp (code, VREG_FULL, TYPE_I8, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+	arm_neon_faddp (code, VREG_FULL, TYPE_F32, ARMREG_R0, ARMREG_R1, ARMREG_R2);
+
+	// crc32
+	arm_crc32b (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32h (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32w (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32x (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32cb (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32ch (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32cw (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+	arm_crc32cx (code, ARMREG_R1, ARMREG_R2, ARMREG_R3);
+
 	for (i = 0; i < code - buf; ++i)
 		printf (".byte %d\n", buf [i]);
 	printf ("\n");

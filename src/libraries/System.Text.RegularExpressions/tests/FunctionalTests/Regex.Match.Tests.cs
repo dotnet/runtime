@@ -958,8 +958,17 @@ namespace System.Text.RegularExpressions.Tests
                 yield return ("z(a{0,5}|a{0,10}?)", "xyzaaaaaaaaaxyz", options, 0, 15, true, "zaaaaa");
             }
 
+            yield return (@"a{2}|a{3}", "aaa", RegexOptions.None, 0, 3, true, "aa");
+            yield return (@"a{3}|a{2}", "aaa", RegexOptions.None, 0, 3, true, "aaa");
+
             // Test for a bug in NonBacktracking's subsumption rule for XY subsuming X??Y, which didn't check that X is nullable
             yield return (@"XY|X??Y", "Y", RegexOptions.None, 0, 1, true, "Y");
+
+            // Tests for bugs in NonBacktracking, which didn't properly handle some combinations of loops and anchors
+            yield return (@"(a|\b){2}", "ac", RegexOptions.None, 0, 2, true, "a");
+            yield return (@"a?(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(a|())*(\b|c)", "ac", RegexOptions.None, 0, 2, true, "ac");
+            yield return (@"(\b|a)*", "a", RegexOptions.None, 0, 1, true, "");
         }
 
         [OuterLoop("Takes several seconds to run")]
@@ -1145,7 +1154,7 @@ namespace System.Text.RegularExpressions.Tests
 
         [Theory]
         [MemberData(nameof(Match_DeepNesting_MemberData))]
-        public async void Match_DeepNesting(RegexEngine engine, int count)
+        public async Task Match_DeepNesting(RegexEngine engine, int count)
         {
             const string Start = @"((?>abc|(?:def[ghi]", End = @")))";
             const string Match = "defg";
@@ -1228,7 +1237,7 @@ namespace System.Text.RegularExpressions.Tests
                         // Loop around a single-char loop
                         yield return new object[] { engine, @$"(a+{lazyInner})+{lazyOuter}$", $"{a50}b" };
                         yield return new object[] { engine, @$"([^a]+{lazyInner})+{lazyOuter}$", $"{b50}a" };
-                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a50}!" };
+                        yield return new object[] { engine, @$"(\w+{lazyInner})+{lazyOuter}$", $"{a100}!" };
 
                         // Loop around a loop (w/ and w/out inner capture)
                         yield return new object[] { engine, @$"((?:aa)+{lazyInner})+{lazyOuter}$", $"{a100}b" };
@@ -2153,13 +2162,17 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                if (engine != RegexEngine.NonBacktracking) // Hangs, or effectively hangs. https://github.com/dotnet/runtime/issues/84188
+                {
+                    yield return new object[] { engine, "(", "a", ")*", "a", 2000, 1000 };
+                }
+
                 yield return new object[] { engine, "(", "[aA]", ")+", "aA", 2000, 3000 };
                 yield return new object[] { engine, "(", "ab", "){0,1}", "ab", 2000, 1000 };
             }
         }
 
-        [OuterLoop("Can take over 10 seconds")]
+        [OuterLoop("Can take a few seconds")]
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // consumes a lot of memory
         [MemberData(nameof(StressTestDeepNestingOfLoops_TestData))]
         public async Task StressTestDeepNestingOfLoops(RegexEngine engine, string begin, string inner, string end, string input, int pattern_repetition, int input_repetition)

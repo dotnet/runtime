@@ -74,7 +74,7 @@ namespace System.IO.Enumeration
                         // is the directory separator and cannot be part of any path segment in Windows). The other three are the
                         // special case wildcards that we'll convert some * and ? into. They're also valid as filenames on Unix,
                         // which is not true in Windows and as such we'll escape any that occur on the input string.
-                        if (Path.DirectorySeparatorChar != '\\' && expression.AsSpan().IndexOfAny(@"\""<>") >= 0)
+                        if (Path.DirectorySeparatorChar != '\\' && expression.AsSpan().ContainsAny(@"\""<>"))
                         {
                             // Backslash isn't the default separator, need to escape (e.g. Unix)
                             expression = expression.Replace("\\", "\\\\");

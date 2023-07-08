@@ -141,7 +141,7 @@ namespace System.Net.WebSockets
 
                 if (!_inOpaqueMode)
                 {
-                    bytesRead = await _inputStream.ReadAsync(buffer, offset, count, cancellationToken).SuppressContextFlow<int>();
+                    bytesRead = await _inputStream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -165,7 +165,7 @@ namespace System.Net.WebSockets
                     }
                     else
                     {
-                        bytesRead = await _readTaskCompletionSource.Task.SuppressContextFlow<int>();
+                        bytesRead = await _readTaskCompletionSource.Task.ConfigureAwait(false);
                     }
                 }
             }
@@ -355,7 +355,7 @@ namespace System.Net.WebSockets
                 _writeEventArgs.BufferList = sendBuffers;
                 if (WriteAsyncFast(_writeEventArgs))
                 {
-                    await _writeTaskCompletionSource.Task.SuppressContextFlow();
+                    await _writeTaskCompletionSource.Task.ConfigureAwait(false);
                 }
             }
             catch (Exception error)
@@ -398,7 +398,7 @@ namespace System.Net.WebSockets
 
                 if (!_inOpaqueMode)
                 {
-                    await _outputStream.WriteAsync(buffer, offset, count, cancellationToken).SuppressContextFlow();
+                    await _outputStream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -414,7 +414,7 @@ namespace System.Net.WebSockets
                     _writeEventArgs.SetBuffer(buffer, offset, count);
                     if (WriteAsyncFast(_writeEventArgs))
                     {
-                        await _writeTaskCompletionSource.Task.SuppressContextFlow();
+                        await _writeTaskCompletionSource.Task.ConfigureAwait(false);
                     }
                 }
             }
@@ -476,7 +476,7 @@ namespace System.Net.WebSockets
                         eventArgs.EntityChunkCount,
                         (Interop.HttpApi.HTTP_DATA_CHUNK*)eventArgs.EntityChunks,
                         &bytesSent,
-                        SafeLocalAllocHandle.Zero,
+                        null,
                         0,
                         eventArgs.NativeOverlapped,
                         null);
@@ -573,7 +573,7 @@ namespace System.Net.WebSockets
                 _writeEventArgs!.SetShouldCloseOutput();
                 if (WriteAsyncFast(_writeEventArgs))
                 {
-                    await _writeTaskCompletionSource.Task.SuppressContextFlow();
+                    await _writeTaskCompletionSource.Task.ConfigureAwait(false);
                 }
             }
             catch (Exception error)

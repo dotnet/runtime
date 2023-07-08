@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // Multiple patchpoints each in a try
 
-class MainLoopTry2
+public class MainLoopTry2
 {
-   public static int Main()
+   [Fact]
+   public static int TestEntryPoint()
    {
        Console.WriteLine($"starting sum");
        int result = 0;

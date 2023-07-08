@@ -323,6 +323,179 @@ namespace System.Runtime.InteropServices.ComTypes
         TYMED_ENHMF = 64,
     }
 }
+namespace System.Runtime.InteropServices.Marshalling
+{
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited = false)]
+    [System.CLSCompliantAttribute(false)]
+    public sealed partial class ComExposedClassAttribute<T> : System.Attribute, System.Runtime.InteropServices.Marshalling.IComExposedDetails where T : System.Runtime.InteropServices.Marshalling.IComExposedClass
+    {
+        public ComExposedClassAttribute() { }
+        public unsafe System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count) { throw null; }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.ComInterfaceMarshaller<>))]
+    public static unsafe class ComInterfaceMarshaller<T>
+    {
+        public static void* ConvertToUnmanaged(T? managed) { throw null; }
+        public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
+    }
+    [System.Flags]
+    public enum ComInterfaceOptions
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        ManagedObjectWrapper = 0x1,
+        ComObjectWrapper = 0x2,
+    }
+    public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
+    {
+        internal ComObject() { }
+        public void FinalRelease() { }
+        ~ComObject() { }
+        System.RuntimeTypeHandle System.Runtime.InteropServices.IDynamicInterfaceCastable.GetInterfaceImplementation(System.RuntimeTypeHandle interfaceType) { throw null; }
+        bool System.Runtime.InteropServices.IDynamicInterfaceCastable.IsInterfaceImplemented(System.RuntimeTypeHandle interfaceType, bool throwIfNotImplemented) { throw null; }
+        System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider.GetVirtualMethodTableInfoForKey(System.Type type) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsDefaultMarshaller<>))]
+    public static partial class ExceptionAsDefaultMarshaller<T> where T : struct
+    {
+        public static T ConvertToUnmanaged(System.Exception e) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsHResultMarshaller<>))]
+    public static partial class ExceptionAsHResultMarshaller<T> where T : struct
+    {
+        public static T ConvertToUnmanaged(System.Exception e) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsNaNMarshaller<>))]
+    public static partial class ExceptionAsNaNMarshaller<T> where T : struct
+    {
+        public static T ConvertToUnmanaged(System.Exception e) { throw null; }
+    }
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Exception), System.Runtime.InteropServices.Marshalling.MarshalMode.UnmanagedToManagedOut, typeof(System.Runtime.InteropServices.Marshalling.ExceptionAsVoidMarshaller))]
+    public static partial class ExceptionAsVoidMarshaller
+    {
+        public static void ConvertToUnmanaged(System.Exception e) { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Class)]
+    public sealed partial class GeneratedComClassAttribute : System.Attribute
+    {
+        public GeneratedComClassAttribute() { }
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface)]
+    public partial class GeneratedComInterfaceAttribute : System.Attribute
+    {
+        public GeneratedComInterfaceAttribute() { }
+        public System.Runtime.InteropServices.Marshalling.ComInterfaceOptions Options { get { throw null; } set { } }
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IComExposedClass
+    {
+        unsafe static abstract System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IComExposedDetails
+    {
+        unsafe System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* GetComInterfaceEntries(out int count);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownCacheStrategy
+    {
+        void Clear(System.Runtime.InteropServices.Marshalling.IIUnknownStrategy unknownStrategy);
+        unsafe System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy.TableInfo ConstructTableInfo(System.RuntimeTypeHandle handle, System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails interfaceDetails, void* ptr);
+        bool TryGetTableInfo(System.RuntimeTypeHandle handle, out System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy.TableInfo info);
+        bool TrySetTableInfo(System.RuntimeTypeHandle handle, System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy.TableInfo info);
+        public readonly partial struct TableInfo
+        {
+            private readonly object _dummy;
+            private readonly int _dummyPrimitive;
+            public System.RuntimeTypeHandle ManagedType { get { throw null; } init { } }
+            public unsafe void** Table { get { throw null; } init { } }
+            public unsafe void* ThisPtr { get { throw null; } init { } }
+        }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownDerivedDetails
+    {
+        System.Guid Iid { get; }
+        System.Type Implementation { get; }
+        unsafe void** ManagedVirtualMethodTable { get; }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownInterfaceDetailsStrategy
+    {
+        System.Runtime.InteropServices.Marshalling.IComExposedDetails? GetComExposedTypeDetails(System.RuntimeTypeHandle type);
+        System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails? GetIUnknownDerivedDetails(System.RuntimeTypeHandle type);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownInterfaceType
+    {
+        static abstract System.Guid Iid { get; }
+        unsafe static abstract void** ManagedVirtualMethodTable { get; }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IIUnknownStrategy
+    {
+        unsafe void* CreateInstancePointer(void* unknown);
+        unsafe int QueryInterface(void* instancePtr, in System.Guid iid, out void* ppObj);
+        unsafe int Release(void* instancePtr);
+    }
+    [System.AttributeUsageAttribute(System.AttributeTargets.Interface, Inherited = false)]
+    [System.CLSCompliantAttribute(false)]
+    public partial class IUnknownDerivedAttribute<T, TImpl> : System.Attribute, System.Runtime.InteropServices.Marshalling.IIUnknownDerivedDetails where T : System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceType
+    {
+        public IUnknownDerivedAttribute() { }
+        public System.Guid Iid { get { throw null; } }
+        public System.Type Implementation { get { throw null; } }
+        public unsafe void** ManagedVirtualMethodTable { get { throw null; } }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial interface IUnmanagedVirtualMethodTableProvider
+    {
+        System.Runtime.InteropServices.Marshalling.VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(System.Type type);
+    }
+    [System.CLSCompliantAttribute(false)]
+    public partial class StrategyBasedComWrappers : System.Runtime.InteropServices.ComWrappers
+    {
+        public StrategyBasedComWrappers() { }
+        public static System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceDetailsStrategy DefaultIUnknownInterfaceDetailsStrategy { get { throw null; } }
+        public static System.Runtime.InteropServices.Marshalling.IIUnknownStrategy DefaultIUnknownStrategy { get { throw null; } }
+        protected unsafe sealed override System.Runtime.InteropServices.ComWrappers.ComInterfaceEntry* ComputeVtables(object obj, System.Runtime.InteropServices.CreateComInterfaceFlags flags, out int count) { throw null; }
+        protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateCacheStrategy() { throw null; }
+        protected static System.Runtime.InteropServices.Marshalling.IIUnknownCacheStrategy CreateDefaultCacheStrategy() { throw null; }
+        protected sealed override object CreateObject(nint externalComObject, System.Runtime.InteropServices.CreateObjectFlags flags) { throw null; }
+        protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy() { throw null; }
+        protected virtual System.Runtime.InteropServices.Marshalling.IIUnknownStrategy GetOrCreateIUnknownStrategy() { throw null; }
+        protected sealed override void ReleaseObjects(System.Collections.IEnumerable objects) { }
+    }
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
+    [System.CLSCompliantAttribute(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomMarshallerAttribute.GenericPlaceholder), System.Runtime.InteropServices.Marshalling.MarshalMode.Default, typeof(System.Runtime.InteropServices.Marshalling.UniqueComInterfaceMarshaller<>))]
+    public static unsafe class UniqueComInterfaceMarshaller<T>
+    {
+        public static void* ConvertToUnmanaged(T? managed) { throw null; }
+        public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
+    }
+    [System.CLSCompliantAttribute(false)]
+    public readonly partial struct VirtualMethodTableInfo
+    {
+        private readonly int _dummyPrimitive;
+        public unsafe VirtualMethodTableInfo(void* thisPointer, void** virtualMethodTable) { throw null; }
+        public unsafe void* ThisPointer { get { throw null; } }
+        public unsafe void** VirtualMethodTable { get { throw null; } }
+        public unsafe void Deconstruct(out void* thisPointer, out void** virtualMethodTable) { throw null; }
+    }
+}
 namespace System.Security
 {
     public static partial class SecureStringMarshal
@@ -345,6 +518,8 @@ namespace System
     public partial class DllNotFoundException : System.TypeLoadException
     {
         public DllNotFoundException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected DllNotFoundException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public DllNotFoundException(string? message) { }
         public DllNotFoundException(string? message, System.Exception? inner) { }
@@ -483,6 +658,7 @@ namespace System.Runtime.InteropServices
         public static System.Span<T> AsSpan<T>(System.Collections.Generic.List<T>? list) { throw null; }
         public static ref TValue GetValueRefOrNullRef<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key) where TKey : notnull { throw null; }
         public static ref TValue? GetValueRefOrAddDefault<TKey, TValue>(System.Collections.Generic.Dictionary<TKey, TValue> dictionary, TKey key, out bool exists) where TKey : notnull { throw null; }
+        public static void SetCount<T>(System.Collections.Generic.List<T> list, int count) { throw null; }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Class, Inherited=false)]
     public sealed partial class ComDefaultInterfaceAttribute : System.Attribute
@@ -510,6 +686,8 @@ namespace System.Runtime.InteropServices
     public partial class COMException : System.Runtime.InteropServices.ExternalException
     {
         public COMException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected COMException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public COMException(string? message) { }
         public COMException(string? message, System.Exception? inner) { }
@@ -545,13 +723,15 @@ namespace System.Runtime.InteropServices
         public ComSourceInterfacesAttribute(System.Type sourceInterface1, System.Type sourceInterface2, System.Type sourceInterface3, System.Type sourceInterface4) { }
         public string Value { get { throw null; } }
     }
-    [System.Runtime.Versioning.UnsupportedOSPlatform("android")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
-    [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
+    [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
     [System.CLSCompliantAttribute(false)]
     public abstract class ComWrappers
     {
+        public static unsafe bool TryGetComInstance(object obj, out System.IntPtr unknown) { throw null; }
+        public static unsafe bool TryGetObject(System.IntPtr unknown, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out object? obj) { throw null; }
         public struct ComInterfaceEntry
         {
             public System.Guid IID;
@@ -572,7 +752,7 @@ namespace System.Runtime.InteropServices
         public static void RegisterForTrackerSupport(ComWrappers instance) { }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void RegisterForMarshalling(ComWrappers instance) { }
-        protected static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
+        public static void GetIUnknownImpl(out System.IntPtr fpQueryInterface, out System.IntPtr fpAddRef, out System.IntPtr fpRelease) { throw null; }
     }
     [System.FlagsAttribute]
     public enum CreateComInterfaceFlags
@@ -746,6 +926,8 @@ namespace System.Runtime.InteropServices
     public partial class InvalidComObjectException : System.SystemException
     {
         public InvalidComObjectException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidComObjectException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidComObjectException(string? message) { }
         public InvalidComObjectException(string? message, System.Exception? inner) { }
@@ -753,6 +935,8 @@ namespace System.Runtime.InteropServices
     public partial class InvalidOleVariantTypeException : System.SystemException
     {
         public InvalidOleVariantTypeException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected InvalidOleVariantTypeException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public InvalidOleVariantTypeException(string? message) { }
         public InvalidOleVariantTypeException(string? message, System.Exception? inner) { }
@@ -1052,6 +1236,8 @@ namespace System.Runtime.InteropServices
     public partial class MarshalDirectiveException : System.SystemException
     {
         public MarshalDirectiveException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected MarshalDirectiveException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public MarshalDirectiveException(string? message) { }
         public MarshalDirectiveException(string? message, System.Exception? inner) { }
@@ -1095,7 +1281,7 @@ namespace System.Runtime.InteropServices
         [System.CLSCompliantAttribute(false)]
         public static void Fill(void* ptr, nuint byteCount, byte value) { throw null; }
     }
-    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>
+    public readonly partial struct NFloat : System.IComparable, System.IComparable<System.Runtime.InteropServices.NFloat>, System.IEquatable<System.Runtime.InteropServices.NFloat>, System.IFormattable, System.IParsable<System.Runtime.InteropServices.NFloat>, System.ISpanFormattable, System.ISpanParsable<System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IAdditiveIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IBinaryNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.IBitwiseOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IComparisonOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IDecrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.IDivisionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IEqualityOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, bool>, System.Numerics.IExponentialFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPoint<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointConstants<System.Runtime.InteropServices.NFloat>, System.Numerics.IFloatingPointIeee754<System.Runtime.InteropServices.NFloat>, System.Numerics.IHyperbolicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IIncrementOperators<System.Runtime.InteropServices.NFloat>, System.Numerics.ILogarithmicFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IMinMaxValue<System.Runtime.InteropServices.NFloat>, System.Numerics.IModulusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplicativeIdentity<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IMultiplyOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.INumber<System.Runtime.InteropServices.NFloat>, System.Numerics.INumberBase<System.Runtime.InteropServices.NFloat>, System.Numerics.IPowerFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IRootFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.ISignedNumber<System.Runtime.InteropServices.NFloat>, System.Numerics.ISubtractionOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.ITrigonometricFunctions<System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryNegationOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.Numerics.IUnaryPlusOperators<System.Runtime.InteropServices.NFloat, System.Runtime.InteropServices.NFloat>, System.IUtf8SpanFormattable
     {
         private readonly int _dummyPrimitive;
         public NFloat(double value) { throw null; }
@@ -1173,6 +1359,7 @@ namespace System.Runtime.InteropServices
         public static bool IsPow2(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsRealNumber(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static bool IsSubnormal(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Lerp(System.Runtime.InteropServices.NFloat value1, System.Runtime.InteropServices.NFloat value2, System.Runtime.InteropServices.NFloat amount) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log10(System.Runtime.InteropServices.NFloat x) { throw null; }
@@ -1328,6 +1515,7 @@ namespace System.Runtime.InteropServices
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Truncate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }
@@ -1390,6 +1578,8 @@ namespace System.Runtime.InteropServices
     public partial class SafeArrayRankMismatchException : System.SystemException
     {
         public SafeArrayRankMismatchException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SafeArrayRankMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SafeArrayRankMismatchException(string? message) { }
         public SafeArrayRankMismatchException(string? message, System.Exception? inner) { }
@@ -1397,6 +1587,8 @@ namespace System.Runtime.InteropServices
     public partial class SafeArrayTypeMismatchException : System.SystemException
     {
         public SafeArrayTypeMismatchException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SafeArrayTypeMismatchException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SafeArrayTypeMismatchException(string? message) { }
         public SafeArrayTypeMismatchException(string? message, System.Exception? inner) { }
@@ -1404,6 +1596,8 @@ namespace System.Runtime.InteropServices
     public partial class SEHException : System.Runtime.InteropServices.ExternalException
     {
         public SEHException() { }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected SEHException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public SEHException(string? message) { }
         public SEHException(string? message, System.Exception? inner) { }

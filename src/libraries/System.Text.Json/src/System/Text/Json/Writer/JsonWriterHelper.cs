@@ -47,13 +47,6 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidateBytes(ReadOnlySpan<byte> bytes)
-        {
-            if (bytes.Length > JsonConstants.MaxBase64ValueTokenSize)
-                ThrowHelper.ThrowArgumentException_ValueTooLarge(bytes.Length);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateDouble(double value)
         {
             if (!JsonHelpers.IsFinite(value))
@@ -114,17 +107,17 @@ namespace System.Text.Json
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndBytes(ReadOnlySpan<char> propertyName, ReadOnlySpan<byte> bytes)
+        public static void ValidatePropertyNameLength(ReadOnlySpan<char> propertyName)
         {
-            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize || bytes.Length > JsonConstants.MaxBase64ValueTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, bytes);
+            if (propertyName.Length > JsonConstants.MaxCharacterTokenSize)
+                ThrowHelper.ThrowPropertyNameTooLargeArgumentException(propertyName.Length);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ValidatePropertyAndBytes(ReadOnlySpan<byte> propertyName, ReadOnlySpan<byte> bytes)
+        public static void ValidatePropertyNameLength(ReadOnlySpan<byte> propertyName)
         {
-            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize || bytes.Length > JsonConstants.MaxBase64ValueTokenSize)
-                ThrowHelper.ThrowArgumentException(propertyName, bytes);
+            if (propertyName.Length > JsonConstants.MaxUnescapedTokenSize)
+                ThrowHelper.ThrowPropertyNameTooLargeArgumentException(propertyName.Length);
         }
 
         internal static void ValidateNumber(ReadOnlySpan<byte> utf8FormattedNumber)
@@ -232,10 +225,15 @@ namespace System.Text.Json
             }
         }
 
+#if !NET8_0_OR_GREATER
         private static readonly UTF8Encoding s_utf8Encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+#endif
 
         public static unsafe bool IsValidUtf8String(ReadOnlySpan<byte> bytes)
         {
+#if NET8_0_OR_GREATER
+            return Utf8.IsValid(bytes);
+#else
             try
             {
 #if NETCOREAPP
@@ -255,6 +253,7 @@ namespace System.Text.Json
             {
                 return false;
             }
+#endif
         }
 
         internal static unsafe OperationStatus ToUtf8(ReadOnlySpan<char> source, Span<byte> destination, out int written)

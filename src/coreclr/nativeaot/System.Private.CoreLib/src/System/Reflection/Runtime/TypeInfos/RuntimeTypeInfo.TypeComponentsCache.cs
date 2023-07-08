@@ -3,6 +3,7 @@
 
 using System.Threading;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
 using System.Reflection;
@@ -43,12 +44,16 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             //  BindingFlags == Public | NonPublic | Instance | Static | FlattenHierarchy
             //
-            public QueriedMemberList<M> GetQueriedMembers<M>(string name, bool ignoreCase) where M : MemberInfo
+            public QueriedMemberList<M> GetQueriedMembers<M>(MemberPolicies<M> policies, string name, bool ignoreCase) where M : MemberInfo
             {
-                int index = MemberPolicies<M>.MemberTypeIndex;
+                int index = policies.Index;
                 object obj = ignoreCase ? _perNameQueryCaches_CaseInsensitive[index] : _perNameQueryCaches_CaseSensitive[index];
                 Debug.Assert(obj is PerNameQueryCache<M>);
                 PerNameQueryCache<M> unifier = Unsafe.As<PerNameQueryCache<M>>(obj);
+
+                // Set the policies if they're not set yet. See the comment on SetPolicies on why we do this for details.
+                unifier.SetPolicies(policies, QueriedMemberList<M>.Create);
+
                 QueriedMemberList<M> result = unifier.GetOrAdd(name);
                 return result;
             }
@@ -58,13 +63,13 @@ namespace System.Reflection.Runtime.TypeInfos
             //
             //  BindingFlags == Public | NonPublic | Instance | Static | FlattenHierarchy
             //
-            public QueriedMemberList<M> GetQueriedMembers<M>() where M : MemberInfo
+            public QueriedMemberList<M> GetQueriedMembers<M>(MemberPolicies<M> policies) where M : MemberInfo
             {
-                int index = MemberPolicies<M>.MemberTypeIndex;
+                int index = policies.Index;
                 object result = Volatile.Read(ref _nameAgnosticQueryCaches[index]);
                 if (result == null)
                 {
-                    QueriedMemberList<M> newResult = QueriedMemberList<M>.Create(_type, optionalNameFilter: null, ignoreCase: false);
+                    QueriedMemberList<M> newResult = QueriedMemberList<M>.Create(policies, _type, optionalNameFilter: null, ignoreCase: false);
                     newResult.Compact();
                     result = newResult;
                     Volatile.Write(ref _nameAgnosticQueryCaches[index], result);
@@ -118,13 +123,25 @@ namespace System.Reflection.Runtime.TypeInfos
                     _ignoreCase = ignoreCase;
                 }
 
+                // This looks like something that should have been a parameter to the constructor, but we do this on
+                // purpose - the PerNameQueryCache instances are created eagerly, but not all apps might require
+                // MemberPolicies for all members. This allows us to delay creating the MemberPolicies instance
+                // until the need arises.
+                public void SetPolicies(MemberPolicies<M> policies, Func<MemberPolicies<M>, RuntimeTypeInfo, string, bool, QueriedMemberList<M>> factory)
+                {
+                    _policies = policies;
+                    _factory = factory;
+                }
+
                 protected sealed override QueriedMemberList<M> Factory(string key)
                 {
-                    QueriedMemberList<M> result = QueriedMemberList<M>.Create(_type, key, ignoreCase: _ignoreCase);
+                    QueriedMemberList<M> result = _factory(_policies, _type, key, _ignoreCase);
                     result.Compact();
                     return result;
                 }
 
+                private MemberPolicies<M> _policies;
+                private Func<MemberPolicies<M>, RuntimeTypeInfo, string, bool, QueriedMemberList<M>> _factory;
                 private readonly RuntimeTypeInfo _type;
                 private readonly bool _ignoreCase;
             }

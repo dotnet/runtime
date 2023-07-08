@@ -51,10 +51,7 @@ public class Delegates
             result = Fail;
         }
 
-#if !CODEGEN_CPP
         TestLinqExpressions.Run();
-#endif
-
         TestDefaultInterfaceMethods.Run();
 
         return result;

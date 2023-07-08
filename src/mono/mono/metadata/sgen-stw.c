@@ -27,6 +27,10 @@
 #include "metadata/gc-internals.h"
 #include "utils/mono-threads.h"
 #include "utils/mono-threads-debug.h"
+#ifdef HOST_BROWSER
+#include <emscripten.h>
+#include <mono/utils/mono-threads-wasm.h>
+#endif
 
 #if _MSC_VER
 #pragma warning(disable:4312) // FIXME pointer cast to different size
@@ -485,4 +489,42 @@ mono_restart_world (MonoThreadInfoFlags flags)
 	release_gc_locks ();
 	UNLOCK_GC;
 }
+
+#ifdef HOST_BROWSER
+
+EMSCRIPTEN_KEEPALIVE void mono_wasm_gc_lock(void);
+EMSCRIPTEN_KEEPALIVE void mono_wasm_gc_unlock(void);
+
+/* Allow the main thread to take the GC lock from JS */
+EMSCRIPTEN_KEEPALIVE
+void
+mono_wasm_gc_lock(void)
+{
+	MONO_ENTER_GC_UNSAFE;
+#ifndef DISABLE_THREADS
+	/* only the browser thread is allowed to take the GC lock */
+	g_assert (mono_threads_wasm_is_browser_thread ());
+	LOCK_GC;
+	acquire_gc_locks();
+#else
+	g_assert_not_reached ();
+#endif
+	MONO_EXIT_GC_UNSAFE;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void
+mono_wasm_gc_unlock(void)
+{
+	MONO_ENTER_GC_UNSAFE;
+#ifndef DISABLE_THREADS
+	release_gc_locks();
+	UNLOCK_GC;
+#else
+	g_assert_not_reached ();
+#endif
+	MONO_EXIT_GC_UNSAFE;
+}
+#endif /* HOST_BROWSER */
+
 #endif

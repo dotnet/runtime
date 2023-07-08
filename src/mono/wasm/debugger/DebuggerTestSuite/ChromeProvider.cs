@@ -47,12 +47,16 @@ internal class ChromeProvider : WasmHostProvider
                                                 string messagePrefix,
                                                 ILoggerFactory loggerFactory,
                                                 CancellationTokenSource cts,
-                                                int browserReadyTimeoutMs = 20000)
+                                                int browserReadyTimeoutMs = 20000,
+                                                string locale = "en-US")
     {
         string? line;
         try
         {
-            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort), targetUrl);
+            // for WIndows setting --lang arg is enough
+            if (!OperatingSystem.IsWindows())
+                Environment.SetEnvironmentVariable("LANGUAGE", locale);
+            ProcessStartInfo psi = GetProcessStartInfo(s_browserPath.Value, GetInitParms(remoteDebuggingPort, locale), "about:blank");
             line = await LaunchHostAsync(
                                     psi,
                                     context,
@@ -83,7 +87,7 @@ internal class ChromeProvider : WasmHostProvider
 
         _logger.LogInformation($"{messagePrefix} launching proxy for {con_str}");
 
-        _debuggerProxy = new DebuggerProxy(loggerFactory, null, loggerId: Id);
+        _debuggerProxy = new DebuggerProxy(loggerFactory, loggerId: Id);
         TestHarnessProxy.RegisterNewProxy(Id, _debuggerProxy);
         var browserUri = new Uri(con_str);
         WebSocket? ideSocket = await context.WebSockets.AcceptWebSocketAsync().ConfigureAwait(false);
@@ -161,9 +165,9 @@ internal class ChromeProvider : WasmHostProvider
         return wsURl;
     }
 
-    private static string GetInitParms(int port)
+    private static string GetInitParms(int port, string lang="en-US")
     {
-        string str = $"--headless --disable-gpu --lang=en-US --incognito --remote-debugging-port={port}";
+        string str = $"--headless --disable-gpu --lang={lang} --incognito --remote-debugging-port={port}";
         if (File.Exists("/.dockerenv"))
         {
             Console.WriteLine ("Detected a container, disabling sandboxing for debugger tests.");

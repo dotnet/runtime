@@ -916,7 +916,7 @@ static void VerifyObjectAndAge(_UNCHECKED_OBJECTREF from, _UNCHECKED_OBJECTREF o
     //    // for test programs - if the object is a string, print it
     //    if (obj->GetGCSafeMethodTable() == g_pStringClass)
     //    {
-    //        printf("'%ls'\n", ((StringObject *)obj)->GetBuffer());
+    //        wprintf("'%s'\n", ((StringObject *)obj)->GetBuffer());
     //    }
     //    else
     //    {

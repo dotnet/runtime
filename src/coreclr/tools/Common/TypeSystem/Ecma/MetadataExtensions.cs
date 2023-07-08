@@ -122,7 +122,7 @@ namespace Internal.TypeSystem.Ecma
             return default(CustomAttributeHandle);
         }
 
-        private static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader,
+        public static bool IsEqualCustomAttributeName(CustomAttributeHandle attributeHandle, MetadataReader metadataReader,
             string attributeNamespace, string attributeName)
         {
             StringHandle namespaceHandle, nameHandle;

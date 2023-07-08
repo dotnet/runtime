@@ -18,7 +18,7 @@ namespace System.Reflection
             }
             else if (LocalAppContextSwitches.ForceEmitInvoke && !LocalAppContextSwitches.ForceInterpretedInvoke)
             {
-                // Always use emit invoke (if IsDynamicCodeCompiled == true); useful for testing.
+                // Always use emit invoke (if IsDynamicCodeSupported == true); useful for testing.
                 _invoked = true;
             }
         }

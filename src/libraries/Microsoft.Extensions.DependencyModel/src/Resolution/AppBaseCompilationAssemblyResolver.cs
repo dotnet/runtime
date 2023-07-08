@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyModel.Resolution
 {
     public class AppBaseCompilationAssemblyResolver : ICompilationAssemblyResolver
     {
-        private static string RefsDirectoryName = "refs";
+        private const string RefsDirectoryName = "refs";
         private readonly IFileSystem _fileSystem;
         private readonly string _basePath;
         private readonly DependencyContextPaths _dependencyContextPaths;

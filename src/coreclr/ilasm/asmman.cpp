@@ -28,10 +28,10 @@ BinStr* BinStrToUnicode(BinStr* pSource, bool Swap)
             {
                 memset(wz,0,L);
                 WszMultiByteToWideChar(g_uCodePage,0,pb,-1,wz,l);
-                tmp->remove(L-(DWORD)wcslen(wz)*sizeof(WCHAR));
+                tmp->remove(L-(DWORD)u16_strlen(wz)*sizeof(WCHAR));
 #if BIGENDIAN
                 if (Swap)
-                    SwapStringLength(wz, (DWORD)wcslen(wz));
+                    SwapStringLength(wz, (DWORD)u16_strlen(wz));
 #endif
                 delete pSource;
             }
@@ -412,7 +412,8 @@ void    AsmMan::EndAssembly()
                     if(hFile == INVALID_HANDLE_VALUE)
                     {
                         hr = GetLastError();
-                        report->error("Failed to open key file '%S': 0x%08X\n",((Assembler*)m_pAssembler)->m_wzKeySourceName,hr);
+                        MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
+                        report->error("Failed to open key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         return;
                     }
@@ -439,7 +440,8 @@ void    AsmMan::EndAssembly()
                     DWORD dwBytesRead;
                     if (!ReadFile(hFile, m_sStrongName.m_pbPublicKey, m_sStrongName.m_cbPublicKey, &dwBytesRead, NULL)) {
                         hr = GetLastError();
-                        report->error("Failed to read key file '%S': 0x%08X\n",((Assembler*)m_pAssembler)->m_wzKeySourceName,hr);
+                        MAKE_UTF8PTR_FROMWIDE(keySourceNameUtf8, ((Assembler*)m_pAssembler)->m_wzKeySourceName);
+                        report->error("Failed to read key file '%s': 0x%08X\n",keySourceNameUtf8,hr);
                         m_pCurAsmRef = NULL;
                         CloseHandle(hFile);
                         return;
@@ -564,7 +566,7 @@ void    AsmMan::EmitAssemblyRefs()
                     (mdAssemblyRef*)&tk);         // [OUT] Returned AssemblyRef token.
         if(m_pCurAsmRef->tkTok != tk)
         {
-            report->error("AsmRef'%S' tok %8.8X -> %8.8X\n",wzUniBuf,m_pCurAsmRef->tkTok,tk);
+            report->error("AsmRef'%s' tok %8.8X -> %8.8X\n",m_pCurAsmRef->szName,m_pCurAsmRef->tkTok,tk);
         }
         if(FAILED(hr)) report->error("Failed to define assembly ref '%s': 0x%08X\n",m_pCurAsmRef->szName,hr);
         else
@@ -959,9 +961,9 @@ HRESULT AsmMan::EmitManifest()
                 for(j=0; (hFile == INVALID_HANDLE_VALUE)&&(pwzInputFiles[j] != NULL); j++)
                 {
                     wcscpy_s(wzFileName,2048,pwzInputFiles[j]);
-                    pwz = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
+                    pwz = (WCHAR*)u16_strrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
 #ifdef TARGET_WINDOWS
-                    if(pwz == NULL) pwz = wcsrchr(wzFileName,':');
+                    if(pwz == NULL) pwz = (WCHAR*)u16_strrchr(wzFileName,':');
 #endif
                     if(pwz == NULL) pwz = &wzFileName[0];
                     else pwz++;
@@ -992,8 +994,8 @@ HRESULT AsmMan::EmitManifest()
                         else
                         {
                             m_dwMResSizeTotal += m_dwMResSize[m_dwMResNum]+sizeof(DWORD);
-                            m_wzMResName[m_dwMResNum] = new WCHAR[wcslen(wzFileName)+1];
-                            wcscpy_s(m_wzMResName[m_dwMResNum],wcslen(wzFileName)+1,wzFileName);
+                            m_wzMResName[m_dwMResNum] = new WCHAR[u16_strlen(wzFileName)+1];
+                            wcscpy_s(m_wzMResName[m_dwMResNum],u16_strlen(wzFileName)+1,wzFileName);
                             m_fMResNew[m_dwMResNum] = TRUE;
                             m_dwMResNum++;
                         }

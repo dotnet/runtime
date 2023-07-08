@@ -5,6 +5,8 @@ namespace Sample
 {
     public partial class Test
     {
+        internal const string AssemblyName = "Wasm.Browser.Bench.Sample";
+
         public static int Main(string[] args)
         {
             return 0;

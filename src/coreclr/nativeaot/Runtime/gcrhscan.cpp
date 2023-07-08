@@ -20,7 +20,6 @@
 #include "thread.h"
 
 #include "shash.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "threadstore.h"
 #include "threadstore.inl"
@@ -29,6 +28,7 @@
 #ifndef DACCESS_COMPILE
 
 void GcEnumObjectsConservatively(PTR_PTR_Object ppLowerBound, PTR_PTR_Object ppUpperBound, EnumGcRefCallbackFunc * fnGcEnumRef, EnumGcRefScanContext * pSc);
+void GcEnumObject(PTR_PTR_Object ppObj, uint32_t flags, EnumGcRefCallbackFunc* fnGcEnumRef, EnumGcRefScanContext* pSc);
 
 /*
  * Scan all stack and statics roots
@@ -54,6 +54,17 @@ void GCToEEInterface::GcScanRoots(EnumGcRefCallbackFunc * fn,  int condemned, in
         else
 #endif
         {
+            InlinedThreadStaticRoot* pRoot = pThread->GetInlinedThreadStaticList();
+            while (pRoot != NULL)
+            {
+                STRESS_LOG2(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p inline thread statics root %p. \n", pThread, pRoot);
+                GcEnumObject(&pRoot->m_threadStaticsBase, 0 /*flags*/, fn, sc);
+                pRoot = pRoot->m_next;
+            }
+
+            STRESS_LOG1(LF_GC | LF_GCROOTS, LL_INFO100, "{ Scanning Thread's %p thread statics root. \n", pThread);
+            GcEnumObject(pThread->GetThreadStaticStorage(), 0 /*flags*/, fn, sc);
+
             STRESS_LOG1(LF_GC|LF_GCROOTS, LL_INFO100, "{ Starting scan of Thread %p\n", pThread);
             sc->thread_under_crawl = pThread;
 #if defined(FEATURE_EVENT_TRACE) && !defined(DACCESS_COMPILE)

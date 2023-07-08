@@ -10,7 +10,7 @@ namespace System.DirectoryServices.AccountManagement
     internal sealed class ADStoreKey : StoreKey
     {
         // For regular ADStoreKeys
-        private System.Guid _objectGuid;
+        private readonly System.Guid _objectGuid;
 
         // For ADStoreKeys corresponding to well-known SIDs
         private readonly bool _wellKnownSid;
@@ -33,7 +33,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public ADStoreKey(string domainName, byte[] sid)
         {
-            Debug.Assert(domainName != null && domainName.Length > 0);
+            Debug.Assert(!string.IsNullOrEmpty(domainName));
             Debug.Assert(sid != null && sid.Length != 0);
 
             // Make a copy of the SID, since a byte[] is mutable

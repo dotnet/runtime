@@ -95,7 +95,6 @@ class CsWriter : IDisposable
 
         _writer.WriteLine("#if SYSTEM_PRIVATE_CORELIB");
         WriteScopeAttribute("[CLSCompliant(false)]");
-        WriteScopeAttribute("[ReflectionBlocked]");
         _writer.WriteLine("#endif");
     }
 }

@@ -362,6 +362,11 @@ namespace System.IO.Pipelines
 
         internal ValueTask<FlushResult> FlushAsync(CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<FlushResult>(Task.FromCanceled<FlushResult>(cancellationToken));
+            }
+
             CompletionData completionData;
             ValueTask<FlushResult> result;
             lock (SyncObj)
@@ -1056,6 +1061,11 @@ namespace System.IO.Pipelines
             if (_readerCompletion.IsCompletedOrThrow())
             {
                 return new ValueTask<FlushResult>(new FlushResult(isCanceled: false, isCompleted: true));
+            }
+
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<FlushResult>(Task.FromCanceled<FlushResult>(cancellationToken));
             }
 
             CompletionData completionData;

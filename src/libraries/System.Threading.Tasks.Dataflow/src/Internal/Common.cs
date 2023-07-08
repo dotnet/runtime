@@ -173,24 +173,35 @@ namespace System.Threading.Tasks.Dataflow.Internal
         /// <param name="completeAction">An action that will decline permanently on the state passed to it.</param>
         /// <param name="completeState">The block on which to decline permanently.</param>
         internal static void WireCancellationToComplete(
-            CancellationToken cancellationToken, Task completionTask, Action<object?> completeAction, object completeState)
+            CancellationToken cancellationToken, Task completionTask, Action<object?, CancellationToken> completeAction, object completeState)
         {
             Debug.Assert(completionTask != null, "A task to wire up for completion is needed.");
             Debug.Assert(completeAction != null, "An action to invoke upon cancellation is required.");
 
-            // If a cancellation request has already occurred, just invoke the declining action synchronously.
-            // CancellationToken would do this anyway but we can short-circuit it further and avoid a bunch of unnecessary checks.
             if (cancellationToken.IsCancellationRequested)
             {
-                completeAction(completeState);
+                // If a cancellation request has already occurred, just invoke the declining action synchronously.
+                // CancellationToken would do this anyway but we can short-circuit it further and avoid a bunch of unnecessary checks.
+                completeAction(completeState, cancellationToken);
             }
-            // Otherwise, if a cancellation request occurs, we want to prevent the block from accepting additional
-            // data, and we also want to dispose of that registration when we complete so that we don't
-            // leak into a long-living cancellation token.
             else if (cancellationToken.CanBeCanceled)
             {
-                CancellationTokenRegistration reg = cancellationToken.Register(completeAction, completeState);
-                completionTask.ContinueWith((completed, state) => ((CancellationTokenRegistration)state!).Dispose(),
+                // Otherwise, if a cancellation request occurs, we want to prevent the block from accepting additional
+                // data, and we also want to dispose of that registration when we complete so that we don't
+                // leak into a long-living cancellation token.
+                CancellationTokenRegistration reg = cancellationToken.Register(
+#if NET6_0_OR_GREATER
+                    completeAction, completeState
+#else
+                    state =>
+                    {
+                        var tuple = (Tuple<Action<object?, CancellationToken>, object, CancellationToken>)state!;
+                        tuple.Item1(tuple.Item2, tuple.Item3);
+                    },
+                    Tuple.Create(completeAction, completeState, cancellationToken)
+#endif
+                    );
+                completionTask.ContinueWith(static (completed, state) => ((CancellationTokenRegistration)state!).Dispose(),
                     reg, cancellationToken, Common.GetContinuationOptions(), TaskScheduler.Default);
             }
         }
@@ -289,7 +300,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         internal static void ThrowAsync(Exception error)
         {
             ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(error);
-            ThreadPool.QueueUserWorkItem(state => { ((ExceptionDispatchInfo)state!).Throw(); }, edi);
+            ThreadPool.QueueUserWorkItem(static state => { ((ExceptionDispatchInfo)state!).Throw(); }, edi);
         }
 
         /// <summary>Adds the exception to the list, first initializing the list if the list is null.</summary>
@@ -559,7 +570,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         {
             Debug.Assert(sourceCompletionTask != null, "sourceCompletionTask may not be null.");
             Debug.Assert(target != null, "The target where completion is to be propagated may not be null.");
-            sourceCompletionTask.ContinueWith((task, state) => Common.PropagateCompletion(task, (IDataflowBlock)state!, AsyncExceptionHandler),
+            sourceCompletionTask.ContinueWith(static (task, state) => Common.PropagateCompletion(task, (IDataflowBlock)state!, AsyncExceptionHandler),
                 target, CancellationToken.None, Common.GetContinuationOptions(), TaskScheduler.Default);
         }
 
@@ -582,7 +593,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
         private static class CachedGenericDelegates<T>
         {
             /// <summary>A function that returns the default value of T.</summary>
-            internal static readonly Func<T> DefaultTResultFunc = () => default(T)!;
+            internal static readonly Func<T> DefaultTResultFunc = static () => default(T)!;
             /// <summary>
             /// A function to use as the body of ActionOnDispose in CreateUnlinkerShim.
             /// Passed a tuple of the sync obj, the target registry, and the target block as the state parameter.
@@ -676,5 +687,5 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// that in the future could lead to compat problems.
     /// </summary>
     [DebuggerNonUserCode]
-    internal struct VoidResult { }
+    internal readonly struct VoidResult { }
 }

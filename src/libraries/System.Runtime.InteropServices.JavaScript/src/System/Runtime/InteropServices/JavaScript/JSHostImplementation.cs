@@ -15,7 +15,20 @@ namespace System.Runtime.InteropServices.JavaScript
         private const string TaskGetResultName = "get_Result";
         private static MethodInfo? s_taskGetResultMethodInfo;
         // we use this to maintain identity of JSHandle for a JSObject proxy
-        public static readonly Dictionary<int, WeakReference<JSObject>> s_csOwnedObjects = new Dictionary<int, WeakReference<JSObject>>();
+#if FEATURE_WASM_THREADS
+        [ThreadStatic]
+#endif
+        private static Dictionary<int, WeakReference<JSObject>>? s_csOwnedObjects;
+
+        public static Dictionary<int, WeakReference<JSObject>> ThreadCsOwnedObjects
+        {
+            get
+            {
+                s_csOwnedObjects ??= new();
+                return s_csOwnedObjects;
+            }
+        }
+
         // we use this to maintain identity of GCHandle for a managed object
         public static Dictionary<object, IntPtr> s_gcHandleFromJSOwnedObject = new Dictionary<object, IntPtr>(ReferenceEqualityComparer.Instance);
 
@@ -24,10 +37,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             if (jsHandle != IntPtr.Zero)
             {
-                lock (s_csOwnedObjects)
-                {
-                    s_csOwnedObjects.Remove((int)jsHandle);
-                }
+                ThreadCsOwnedObjects.Remove((int)jsHandle);
                 Interop.Runtime.ReleaseCSOwnedObject(jsHandle);
             }
         }
@@ -40,13 +50,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 return method.Invoke(task, null);
             }
             throw new InvalidOperationException();
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void ReleaseInFlight(object obj)
-        {
-            JSObject? jsObj = obj as JSObject;
-            jsObj?.ReleaseInFlight();
         }
 
         // A JSOwnedObject is a managed object with its lifetime controlled by javascript.
@@ -128,8 +131,9 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Task<JSObject> modulePromise = JavaScriptImports.DynamicImport(moduleName, moduleUrl);
             var wrappedTask = CancelationHelper(modulePromise, cancellationToken);
-            await Task.Yield();// this helps to finish the import before we bind the module in [JSImport]
-            return await wrappedTask.ConfigureAwait(true);
+            return await wrappedTask.ConfigureAwait(
+                ConfigureAwaitOptions.ContinueOnCapturedContext |
+                ConfigureAwaitOptions.ForceYielding); // this helps to finish the import before we bind the module in [JSImport]
         }
 
         public static async Task<JSObject> CancelationHelper(Task<JSObject> jsTask, CancellationToken cancellationToken)
@@ -173,21 +177,95 @@ namespace System.Runtime.InteropServices.JavaScript
             return signature;
         }
 
+        public static unsafe void FreeMethodSignatureBuffer(JSFunctionBinding signature)
+        {
+            Marshal.FreeHGlobal((nint)signature.Header);
+            signature.Header = null;
+            signature.Sigs = null;
+        }
+
         public static JSObject CreateCSOwnedProxy(nint jsHandle)
         {
-            JSObject? res = null;
+            JSObject? res;
 
-            lock (s_csOwnedObjects)
+            if (!ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+                !reference.TryGetTarget(out res) ||
+                res.IsDisposed)
             {
-                if (!s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out res) ||
-                    res.IsDisposed)
-                {
-                    res = new JSObject(jsHandle);
-                    s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
+                res = new JSObject(jsHandle);
+                ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
         }
+
+#if FEATURE_WASM_THREADS
+        public static void InstallWebWorkerInterop(bool installJSSynchronizationContext, bool isMainThread)
+        {
+            Interop.Runtime.InstallWebWorkerInterop(installJSSynchronizationContext);
+            if (installJSSynchronizationContext)
+            {
+                var currentThreadId = GetNativeThreadId();
+                var ctx = JSSynchronizationContext.CurrentJSSynchronizationContext;
+                if (ctx == null)
+                {
+                    ctx = new JSSynchronizationContext(Thread.CurrentThread, currentThreadId);
+                    ctx.previousSynchronizationContext = SynchronizationContext.Current;
+                    JSSynchronizationContext.CurrentJSSynchronizationContext = ctx;
+                    SynchronizationContext.SetSynchronizationContext(ctx);
+                    if (isMainThread)
+                    {
+                        JSSynchronizationContext.MainJSSynchronizationContext = ctx;
+                    }
+                }
+                else if (ctx.TargetThreadId != currentThreadId)
+                {
+                    Environment.FailFast($"JSSynchronizationContext.Install failed has wrong native thread id {ctx.TargetThreadId} != {currentThreadId}");
+                }
+                ctx.AwaitNewData();
+            }
+        }
+
+        public static void UninstallWebWorkerInterop()
+        {
+            var ctx = SynchronizationContext.Current as JSSynchronizationContext;
+            var uninstallJSSynchronizationContext = ctx != null;
+            if (uninstallJSSynchronizationContext)
+            {
+                SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
+                JSSynchronizationContext.CurrentJSSynchronizationContext = null;
+                ctx.isDisposed = true;
+            }
+            Interop.Runtime.UninstallWebWorkerInterop(uninstallJSSynchronizationContext);
+        }
+
+        private static FieldInfo? thread_id_Field;
+        private static FieldInfo? external_eventloop_Field;
+
+        // FIXME: after https://github.com/dotnet/runtime/issues/86040 replace with
+        // [UnsafeAccessor(UnsafeAccessorKind.Field, Name="external_eventloop")]
+        // static extern ref bool ThreadExternalEventloop(Thread @this);
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicMethods, "System.Threading.Thread", "System.Private.CoreLib")]
+        public static void SetHasExternalEventLoop(Thread thread)
+        {
+            if (external_eventloop_Field == null)
+            {
+                external_eventloop_Field = typeof(Thread).GetField("external_eventloop", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            }
+            external_eventloop_Field.SetValue(thread, true);
+        }
+
+        // FIXME: after https://github.com/dotnet/runtime/issues/86040
+        [DynamicDependency(DynamicallyAccessedMemberTypes.NonPublicFields, "System.Threading.Thread", "System.Private.CoreLib")]
+        public static IntPtr GetNativeThreadId()
+        {
+            if (thread_id_Field == null)
+            {
+                thread_id_Field = typeof(Thread).GetField("thread_id", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            }
+            return (int)(long)thread_id_Field.GetValue(Thread.CurrentThread)!;
+        }
+
+#endif
+
     }
 }

@@ -10,14 +10,14 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
-.assembly 'Jittailcall2'// as "aaa"
+.assembly 'JitTailcall2'// as "aaa"
 {
   
   
 }
 .namespace DefaultNamespace
 {
-  .class auto ansi dotailcall extends [mscorlib]System.Object
+  .class public auto ansi dotailcall extends [mscorlib]System.Object
   {
     .field private static int32 ifoo
     .field private static int32 iboo

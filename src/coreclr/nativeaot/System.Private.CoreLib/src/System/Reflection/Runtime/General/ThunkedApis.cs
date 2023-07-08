@@ -199,7 +199,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ns != null && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(match);
                 match = ifc;
             }
             return match;
@@ -210,7 +210,7 @@ namespace System.Reflection.Runtime.TypeInfos
             Debug.Assert(fullname != null);
 
             // Get namespace
-            int nsDelimiter = fullname.LastIndexOf(".", StringComparison.Ordinal);
+            int nsDelimiter = fullname.LastIndexOf('.');
             if (nsDelimiter != -1)
             {
                 ns = fullname.Substring(0, nsDelimiter);

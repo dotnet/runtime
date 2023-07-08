@@ -1839,8 +1839,6 @@ collect_nursery (const char *reason, gboolean is_overflow)
 	TV_GETTIME (btv);
 	time_minor_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
-	sgen_client_pre_collection_checks ();
-
 	sgen_major_collector.start_nursery_collection ();
 
 	sgen_memgov_minor_collection_start ();
@@ -2077,8 +2075,6 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	time_major_pre_collection_fragment_clear += TV_ELAPSED (atv, btv);
 
 	objects_pinned = 0;
-
-	sgen_client_pre_collection_checks ();
 
 	if (mode != COPY_OR_MARK_FROM_ROOTS_START_CONCURRENT) {
 		/* Remsets are not useful for a major collection */
@@ -2331,8 +2327,6 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	SGEN_ASSERT (0, sgen_workers_all_done (), "Can't have workers working after joining");
 
 	if (objects_pinned) {
-		g_assert (!sgen_concurrent_collection_in_progress);
-
 		/*
 		 * This is slow, but we just OOM'd.
 		 *
@@ -2737,7 +2731,9 @@ gc_pump_callback (void)
 	sgen_perform_collection_inner (gc_request.requested_size, gc_request.generation_to_collect, gc_request.reason, TRUE, TRUE);
 	gc_request.generation_to_collect = 0;
 }
+#endif
 
+#if defined(HOST_BROWSER) || defined(HOST_WASI)
 extern gboolean mono_wasm_enable_gc;
 #endif
 
@@ -2844,13 +2840,6 @@ sgen_object_is_live (GCObject *obj)
  */
 
 static volatile gboolean pending_unqueued_finalizer = FALSE;
-volatile gboolean sgen_suspend_finalizers = FALSE;
-
-void
-sgen_set_suspend_finalizers (void)
-{
-	sgen_suspend_finalizers = TRUE;
-}
 
 int
 sgen_gc_invoke_finalizers (void)
@@ -2906,8 +2895,6 @@ sgen_gc_invoke_finalizers (void)
 gboolean
 sgen_have_pending_finalizers (void)
 {
-	if (sgen_suspend_finalizers)
-		return FALSE;
 	return pending_unqueued_finalizer || !sgen_pointer_queue_is_empty (&fin_ready_queue) || !sgen_pointer_queue_is_empty (&critical_fin_queue);
 }
 
@@ -3152,8 +3139,6 @@ mono_gc_wbarrier_generic_nostore_internal (gpointer ptr)
 	gpointer obj;
 
 	HEAVY_STAT (++stat_wbarrier_generic_store);
-
-	sgen_client_wbarrier_generic_nostore_check (ptr);
 
 	obj = *(gpointer*)ptr;
 	if (obj)
@@ -3944,12 +3929,6 @@ sgen_gc_unlock (void)
 }
 
 void
-sgen_major_collector_iterate_live_block_ranges (sgen_cardtable_block_callback callback)
-{
-	sgen_major_collector.iterate_live_block_ranges (callback);
-}
-
-void
 sgen_major_collector_iterate_block_ranges (sgen_cardtable_block_callback callback)
 {
 	sgen_major_collector.iterate_block_ranges (callback);
@@ -4081,4 +4060,104 @@ sgen_check_canary_for_object (gpointer addr)
 	}
 }
 
+
+#define MEM_PRESSURE_COUNT  4
+#define MAX_MEMORYPRESSURE_RATIO  10  
+guint64 memory_pressure_gc_count = 0;
+guint64 memory_pressure_iteration = 0;
+guint64 memory_pressure_adds[MEM_PRESSURE_COUNT] = {0, 0, 0, 0}; 
+guint64 memory_pressure_removes[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // history of memory pressure removals
+const unsigned min_memorypressure_budget = 4 * 1024 * 1024;		// 4 MB
+
+// Resets pressure accounting after a gen2 GC has occurred.
+static void check_pressure_counts (void)
+{
+	if (memory_pressure_gc_count != sgen_gc_collection_count(GENERATION_OLD)) {
+		memory_pressure_gc_count = sgen_gc_collection_count(GENERATION_OLD);
+		mono_atomic_inc_i64((gint64*)&memory_pressure_iteration);
+
+		guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+		memory_pressure_adds[p] = 0;   // new pressure will be accumulated here
+		memory_pressure_removes[p] = 0;
+	}
+}
+
+void sgen_remove_memory_pressure (guint64 bytes_allocated)
+{
+	check_pressure_counts();
+
+	guint32 p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+	mono_atomic_fetch_add_i64((gint64*)&memory_pressure_removes[p], bytes_allocated);
+}
+
+
+static gboolean pressure_check_heuristic (guint64 new_mem_value)
+{
+
+	guint64 add = 0;
+	guint64 rem = 0;
+
+	guint p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+	for (gint i = 0; i < MEM_PRESSURE_COUNT; i++) {
+		add += memory_pressure_adds[i];
+		rem += memory_pressure_removes[i];
+	} 
+
+	add -= memory_pressure_adds[p];
+	rem -= memory_pressure_removes[p];
+
+	if (new_mem_value >= min_memorypressure_budget) {
+		guint64 budget = min_memorypressure_budget;
+
+		if (memory_pressure_iteration >= MEM_PRESSURE_COUNT) { // wait until we have enough data points
+			// Adjust according to effectiveness of GC
+			// Scale budget according to past memory_pressure_adds / memory_pressure_removes ratio
+			if (add >= rem * MAX_MEMORYPRESSURE_RATIO)
+			{
+				budget = min_memorypressure_budget * MAX_MEMORYPRESSURE_RATIO;
+			}
+			else if (add > rem)
+			{
+				g_assert (rem != 0);
+				// Avoid overflow by calculating addPressure / remPressure as fixed point (1 = 1024)
+				budget = (add * 1024 / rem) * budget / 1024;
+			}
+		}
+
+		// If still over budget, check current managed heap size
+		if (new_mem_value >= budget) {
+		guint64 heap_over_3 =  sgen_gc_info.heap_size_bytes / 3;
+
+			if (budget < heap_over_3) {
+				budget = heap_over_3;
+			}
+			if (new_mem_value >= budget) {
+				// last check - if we would exceed 20% of GC "duty cycle", do not trigger GC at this time
+				if ((size_t)(mono_time_since_last_stw() + time_last) > (time_last * 5)) {	
+					return TRUE;
+				}
+			}
+		}
+	}
+
+	return FALSE;
+}
+
+void sgen_add_memory_pressure (guint64 bytes_allocated)
+{
+
+	check_pressure_counts ();
+
+	guint p = memory_pressure_iteration % MEM_PRESSURE_COUNT;
+
+	guint64 new_mem_value = mono_atomic_fetch_add_i64 ((gint64*)&memory_pressure_adds[p], bytes_allocated);
+
+	if (pressure_check_heuristic(new_mem_value)) {
+		sgen_gc_collect (GENERATION_OLD);
+  		check_pressure_counts ();
+	}
+}
 #endif /* HAVE_SGEN_GC */

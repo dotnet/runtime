@@ -15,7 +15,7 @@ extern BOOL g_bDacBroken;
 #define NameForMT_s(a,b,c)
 #define DEBUG_OUTPUT_NORMAL            0x00000001
 
-extern WCHAR g_mdName[1];
+extern char g_mdName[1];
 
 struct SOS
 {

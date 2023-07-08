@@ -15,63 +15,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 	[ExpectedNoWarnings]
 	public class MemberTypes
 	{
-		// Some of the types below declare delegates and will mark all members on them, this includes the Delegate .ctor(object, string) which has RUC and other members
-		[ExpectedWarning ("IL2026", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2026", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2026", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2026", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2026", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2026", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2026", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2026", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2026", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2026", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		// Some of the types below declare delegates and will mark all members on them, this includes the Delegate .ctor(Type, string) which has DAM annotations and other members
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".Delegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (Delegate.CreateDelegate))]
-		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (MulticastDelegate) + ".MulticastDelegate")]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
-		[ExpectedWarning ("IL2111", nameof (Delegate) + ".BindToMethodName", ProducedBy = ProducedBy.Trimmer)]
+		// This is an easy way to suppress all trim related warnings in the Main method
+		// This test is about marking, not diagnostics and this Main will produce several warnings due to it accssing
+		// some problematic APIs (Delegate.Create for example) via reflection.
+		[RequiresUnreferencedCode("test")]
+		[KeptAttributeAttribute(typeof(RequiresUnreferencedCodeAttribute))]
 		public static void Main ()
 		{
 			RequirePublicParameterlessConstructor (typeof (PublicParameterlessConstructorType));
@@ -134,7 +82,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private PublicParameterlessConstructorType (int i, int j) { }
 
 			// Not implied by the DynamicallyAccessedMemberTypes logic, but
-			// explicit cctors would be kept by the linker.
+			// explicit cctors would be kept by ILLink.
 			// [Kept]
 			// static PublicParameterlessConstructorType () { }
 
@@ -207,7 +155,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			private PublicConstructorsType (int i, int j) { }
 
 			// Not implied by the DynamicallyAccessedMemberTypes logic, but
-			// explicit cctors would be kept by the linker.
+			// explicit cctors would be kept by ILLink.
 			// [Kept]
 			// static PublicConstructorsType () { }
 

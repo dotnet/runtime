@@ -10,4 +10,4 @@
 
 #include "unixasmmacros.inc"
 
-#error "TODO-RISCV64: missing implementation"
+// #error "TODO-RISCV64: missing implementation"

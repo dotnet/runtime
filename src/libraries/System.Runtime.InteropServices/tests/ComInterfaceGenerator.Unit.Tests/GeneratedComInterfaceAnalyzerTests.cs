@@ -7,11 +7,10 @@ using Microsoft.Interop;
 using Microsoft.Interop.Analyzers;
 using Xunit;
 
-using VerifyCS = LibraryImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
+using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.Analyzers.GeneratedComInterfaceAttributeAnalyzer>;
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class GeneratedComInterfaceAnalyzerTests
     {
         static string _usings = $$"""
@@ -21,7 +20,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             #pragma warning restore CS8019
             """;
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class InterfaceHasInterfaceTypeAttributeOnly
         {
             [Fact]
@@ -34,11 +32,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         void Bar() {}
                     }
-
-                    public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                    {
-                    }
-
                     """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -53,11 +46,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     {
                         void Bar() {}
                     }
-
-                    public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                    {
-                    }
-
                     """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -73,11 +61,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -93,11 +76,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -113,11 +91,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -133,11 +106,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -153,11 +121,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -173,17 +136,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class InterfaceHasGeneratedComInterfaceAttributeOnly
         {
             [Fact]
@@ -192,22 +149,16 @@ namespace ComInterfaceGenerator.Unit.Tests
                 string snippet =
                     $$$"""
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class InterfaceHasGeneratedComInterfaceAttributeAndInterfaceTypeAttribute
         {
             [Fact]
@@ -217,16 +168,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIUnknown)]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -238,16 +184,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [InterfaceTypeAttribute((short)1)]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -259,22 +200,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIDispatch)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
             }
 
             [Fact]
@@ -284,20 +220,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)2)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("2"));
             }
@@ -309,22 +240,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsIInspectable)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
             }
 
             [Fact]
@@ -334,20 +260,15 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)3)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("3"));
             }
@@ -359,22 +280,17 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute(ComInterfaceType.InterfaceIsDual)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsDual)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsDual)));
             }
 
             [Fact]
@@ -384,26 +300,20 @@ namespace ComInterfaceGenerator.Unit.Tests
                     $$$"""
 
                 [{|#0:InterfaceTypeAttribute((short)0)|}]
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 interface IFoo
                 {
                     void Bar() {}
                 }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("0"));
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
         public class PartialInterfaceHasGeneratedComInterfaceAttributeAndInterfaceTypeAttribute
         {
             [Fact]
@@ -418,13 +328,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -441,13 +346,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(_usings + snippet);
             }
@@ -464,19 +364,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIDispatch)));
             }
 
             [Fact]
@@ -491,17 +386,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("2"));
             }
@@ -518,19 +408,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsIInspectable)));
             }
 
             [Fact]
@@ -545,17 +430,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("3"));
             }
@@ -572,19 +452,14 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
-                        .WithArguments(TypeNames.ComInterfaceTypeAttribute + "." + nameof(ComInterfaceType.InterfaceIsDual)));
+                        .WithArguments(TypeNames.ComInterfaceType + "." + nameof(ComInterfaceType.InterfaceIsDual)));
             }
 
             [Fact]
@@ -599,17 +474,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     void Bar() {}
                 }
 
-                [GeneratedComInterface(typeof(MyComWrappers))]
+                [GeneratedComInterface]
                 partial interface IFoo { }
-
-                public partial class MyComWrappers : GeneratedComWrappersBase<ComObject>
-                {
-                }
-
                 """;
                 await VerifyCS.VerifyAnalyzerAsync(
                     _usings + snippet,
-                    VerifyCS.Diagnostic(AnalyzerDiagnostics.InterfaceTypeNotSupported)
+                    VerifyCS.Diagnostic(GeneratorDiagnostics.InterfaceTypeNotSupported)
                         .WithLocation(0)
                         .WithArguments("0"));
             }

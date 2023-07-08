@@ -422,6 +422,12 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
+                if (!isField && ((DefType)type).IsVectorTOrHasVectorTFields)
+                {
+                    // Vector<T> types or structs that contain them cannot be passed by value
+                    return MarshallerKind.Invalid;
+                }
+
                 if (MarshalUtils.IsBlittableType(type))
                 {
                     if (nativeType != NativeTypeKind.Default && nativeType != NativeTypeKind.Struct)
@@ -927,7 +933,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static bool ShouldCheckForPendingException(TargetDetails target, PInvokeMetadata metadata)
         {
-            if (!target.IsOSX)
+            if (!target.IsOSXLike)
                 return false;
 
             const string ObjectiveCMsgSend = "objc_msgSend";
@@ -944,7 +950,7 @@ namespace Internal.TypeSystem.Interop
 
         internal static int? GetObjectiveCMessageSendFunction(TargetDetails target, string pinvokeModule, string pinvokeFunction)
         {
-            if (!target.IsOSX || pinvokeModule != ObjectiveCLibrary)
+            if (!target.IsOSXLike || pinvokeModule != ObjectiveCLibrary)
                 return null;
 
 #pragma warning disable CA1416

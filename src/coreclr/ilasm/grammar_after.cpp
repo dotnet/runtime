@@ -153,7 +153,7 @@ unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppR
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
     dbuff[L+1] = 0;
-    *ppRes = new double(wcstod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
+    *ppRes = new double(u16_strtod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
     return ((unsigned)(pdummy - dbuff));
 }
 /*--------------------------------------------------------------------------*/
@@ -200,7 +200,7 @@ char* yygetline(int Line)
 
 void yyerror(_In_ __nullterminated const char* str) {
     char tokBuff[64];
-    WCHAR *wzfile = (WCHAR*)(PENV->in->namew());
+    const char* szfile = PENV->in->name();
     int iline = PENV->curLine;
 
     size_t len = PENV->curPos - PENV->curTok;
@@ -210,15 +210,23 @@ void yyerror(_In_ __nullterminated const char* str) {
     tokBuff[len+1] = 0;
     if(PENV->bExternSource)
     {
-        wzfile = PASM->m_wzSourceFileName;
+        szfile = PASM->m_szSourceFileName;
         iline = PENV->nExtLine;
     }
+
+    const char* fmt = "%s(%d) : error : %s at token '%s' in: %s\n";
     if(Sym == SymW) // Unicode file
-        fprintf(stderr, "%S(%d) : error : %s at token '%S' in: %S\n",
-                wzfile, iline, str, (WCHAR*)tokBuff, (WCHAR*)yygetline(PENV->curLine));
+    {
+        MAKE_UTF8PTR_FROMWIDE(tokBuffUtf8, (WCHAR*)tokBuff);
+        MAKE_UTF8PTR_FROMWIDE(curLineUtf8, (WCHAR*)yygetline(PENV->curLine));
+        fprintf(stderr, fmt,
+                szfile, iline, str, tokBuffUtf8, curLineUtf8);
+    }
     else
-        fprintf(stderr, "%S(%d) : error : %s at token '%s' in: %s\n",
-                wzfile, iline, str, tokBuff, yygetline(PENV->curLine));
+    {
+        fprintf(stderr, fmt,
+                szfile, iline, str, tokBuff, yygetline(PENV->curLine));
+    }
     parser->success = false;
 }
 
@@ -665,7 +673,6 @@ int ProcessEOF()
     PARSING_ENVIRONMENT* prev_penv = parser->PEStack.POP();
     if(prev_penv != NULL)
     {
-        //delete [] (WCHAR*)(PENV->in->namew());
         delete PENV->in;
         delete PENV;
         parser->penv = prev_penv;
@@ -971,9 +978,9 @@ Its_An_Id:
                             if(wzFile != NULL)
                             {
                                 if((parser->wzIncludePath != NULL)
-                                 &&(wcschr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
+                                 &&(u16_strchr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
 #ifdef TARGET_WINDOWS
-                                 &&(wcschr(wzFile,':')==NULL)
+                                 &&(u16_strchr(wzFile,':')==NULL)
 #endif
                                 )
                                 {
@@ -991,12 +998,16 @@ Its_An_Id:
 
                                 }
                                 if(PASM->m_fReportProgress)
-                                    parser->msg("\nIncluding '%S'\n",wzFile);
+                                {
+                                    MAKE_UTF8PTR_FROMWIDE(fileUtf8, wzFile);
+                                    parser->msg("\nIncluding '%s'\n",fileUtf8);
+                                }
                                 MappedFileStream *pIn = new MappedFileStream(wzFile);
                                 if((pIn != NULL)&&pIn->IsValid())
                                 {
                                     parser->PEStack.PUSH(PENV);
                                     PASM->SetSourceFileName(FullFileName(wzFile,CP_UTF8)); // deletes the argument!
+                                    delete [] wzFile;
                                     parser->CreateEnvironment(pIn);
                                     NEXT_TOKEN;
                                 }
@@ -1787,7 +1798,7 @@ void AsmParse::error(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%S(%d) : ", penv->in->namew(), penv->curLine);
+    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
     psz+=sprintf_s(psz, (dwUniBuf >> 1), "error : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);
@@ -1802,7 +1813,7 @@ void AsmParse::warn(const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
 
-    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%S(%d) : ", penv->in->namew(), penv->curLine);
+    if((penv) && (penv->in)) psz+=sprintf_s(psz, (dwUniBuf >> 1), "%s(%d) : ", penv->in->name(), penv->curLine);
     psz+=sprintf_s(psz, (dwUniBuf >> 1), "warning : ");
     _vsnprintf_s(psz, (dwUniBuf >> 1),(dwUniBuf >> 1)-strlen(sz)-1, fmt, args);
     PrintANSILine(pF,sz);

@@ -37,7 +37,7 @@ set(libunwind_la_SOURCES_generic
     # the source is excluded here to prevent name clash
     #mi/Gget_accessors.c
     mi/Gget_proc_info_by_ip.c mi/Gget_proc_name.c
-    mi/Gget_proc_info_in_range.c
+    dwarf/Gget_proc_info_in_range.c
     mi/Gput_dynamic_unwind_info.c mi/Gdestroy_addr_space.c
     mi/Gget_reg.c mi/Gset_reg.c
     mi/Gget_fpreg.c mi/Gset_fpreg.c
@@ -117,7 +117,7 @@ set(libunwind_la_SOURCES_local_nounwind
     mi/Ldyn-extract.c mi/Lfind_dynamic_proc_info.c
     mi/Lget_accessors.c
     mi/Lget_proc_info_by_ip.c mi/Lget_proc_name.c
-    mi/Lget_proc_info_in_range.c
+    dwarf/Lget_proc_info_in_range.c
     mi/Lput_dynamic_unwind_info.c mi/Ldestroy_addr_space.c
     mi/Lget_reg.c   mi/Lset_reg.c
     mi/Lget_fpreg.c mi/Lset_fpreg.c
@@ -198,6 +198,7 @@ set(libunwind_la_SOURCES_riscv
     riscv/Lget_proc_info.c  riscv/Linit.c  riscv/Lis_signal_frame.c
     riscv/Lstep.c
     riscv/getcontext.S
+    riscv/setcontext.S
     riscv/Lget_save_loc.c
     riscv/Linit_local.c   riscv/Lregs.c
     riscv/Lcreate_addr_space.c  riscv/Lglobal.c  riscv/Linit_remote.c  riscv/Lresume.c
@@ -372,7 +373,6 @@ set(libunwind_la_SOURCES_ppc64le_common
 set(libunwind_la_SOURCES_ppc64le
     ${libunwind_la_SOURCES_ppc64le_common}
     ${libunwind_la_SOURCES_local}
-    ppc64/setcontext.S
     ppc64/Lapply_reg_state.c ppc64/Lreg_states_iterate.c
     ppc64/Lcreate_addr_space.c ppc/Lget_save_loc.c ppc64/Lglobal.c
     ppc64/Linit.c ppc/Linit_local.c

@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly han3 // as "han3"
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

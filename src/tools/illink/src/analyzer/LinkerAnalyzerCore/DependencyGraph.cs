@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 //
-// DependencyGraph.cs: linker dependencies graph
+// DependencyGraph.cs: ILLink dependencies graph
 //
 // Author:
 //   Radek Doulik (rodo@xamarin.com)

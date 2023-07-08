@@ -7,7 +7,7 @@ using ILLink.Shared.TypeSystemProxy;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	partial struct RequireDynamicallyAccessedMembersAction
+	internal partial struct RequireDynamicallyAccessedMembersAction
 	{
 		readonly ReflectionAccessAnalyzer _reflectionAccessAnalyzer;
 #pragma warning disable CA1822 // Mark members as static - the other partial implementations might need to be instance methods

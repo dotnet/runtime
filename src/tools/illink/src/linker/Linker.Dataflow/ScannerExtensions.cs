@@ -22,7 +22,7 @@ namespace Mono.Linker.Dataflow
 			foreach (Instruction operation in methodIL.Instructions) {
 				if (!operation.OpCode.IsControlFlowInstruction ())
 					continue;
-				Object value = operation.Operand;
+				object value = operation.Operand;
 				if (value is Instruction inst) {
 					branchTargets.Add (inst.Offset);
 				} else if (value is Instruction[] instructions) {

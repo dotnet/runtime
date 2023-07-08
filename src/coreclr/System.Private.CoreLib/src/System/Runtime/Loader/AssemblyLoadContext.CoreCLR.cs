@@ -156,7 +156,7 @@ namespace System.Runtime.Loader
                 {
                     // If the load context is returned null, then the assembly was bound using the TPA binder
                     // and we shall return reference to the "Default" binder.
-                    loadContextForAssembly = AssemblyLoadContext.Default;
+                    loadContextForAssembly = Default;
                 }
                 else
                 {
@@ -184,7 +184,7 @@ namespace System.Runtime.Loader
             return
                 asm == null ? null :
                 asm is RuntimeAssembly rtAssembly ? rtAssembly :
-                asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
+                asm is System.Reflection.Emit.RuntimeAssemblyBuilder ab ? ab.InternalAssembly :
                 null;
         }
 
@@ -217,7 +217,7 @@ namespace System.Runtime.Loader
         /// </summary>
         private static void InitializeDefaultContext()
         {
-            _ = AssemblyLoadContext.Default;
+            _ = Default;
         }
     }
 }

@@ -193,6 +193,7 @@
 
       <DownloadedSymbolNupkgFile Include="$(DownloadDirectory)**\*.symbols.nupkg" />
       <DownloadedWixPdbFile Include="$(DownloadDirectory)**\*.wixpdb" />
+      <DownloadedWixpackFile Include="$(DownloadDirectory)**\*.wixpack.zip" Condition="'$(PostBuildSign)' != 'true'" />
       <DownloadedWorkloadsVSInsertionFile Include="$(DownloadDirectory)*\workloads-vs\**\*" />
       <DownloadedNupkgFile
         Include="$(DownloadDirectory)**\*.nupkg"
@@ -201,7 +202,7 @@
       <!-- Add files that are not affected by filtering. -->
       <UploadToBlobStorageFile
         Include="@(DownloadedArtifactFile)"
-        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile)" />
+        Exclude="@(DownloadedSymbolNupkgFile);@(DownloadedNupkgFile);@(DownloadedWixPdbFile);@(DownloadedWorkloadsVSInsertionFile);@(DownloadedWixpackFile)" />
 
       <!--
         Filter out the RID-specific (Runtime) nupkgs and RID-agnostic nupkgs. RID-specific packages
@@ -248,6 +249,7 @@
       <RidAgnosticNupkgToPublishFile
         Include="
           $(DownloadDirectory)**\Microsoft.NET.Workload.Mono.Toolchain.*Manifest-*.nupkg;
+          $(DownloadDirectory)**\Microsoft.NET.Sdk.WebAssembly.Pack.*.nupkg;
           $(DownloadDirectory)*\$(PublishRidAgnosticPackagesFromPlatform)\**\*.nupkg;
           $(DownloadDirectory)*\*AllConfigurations\**\*.nupkg"
         Exclude="@(RuntimeNupkgFile);@(DownloadedSymbolNupkgFile)" />

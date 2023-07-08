@@ -37,13 +37,13 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
     if (pTrace->GetTraceType() == TRACE_UNJITTED_METHOD)
     {
         MethodDesc * md = pTrace->GetMethodDesc();
-        LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to method 0x%p for input 0x%p.\n",
+        LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to method %p for input %p.\n",
             szHint, GetTType(pTrace->GetTraceType()),
             md, stubAddr));
     }
     else
     {
-        LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to address 0x%p for input 0x%p.\n",
+        LOG((LF_CORDB, LL_INFO10000, "'%s' yields '%s' to address %p for input %p.\n",
             szHint, GetTType(pTrace->GetTraceType()),
             pTrace->GetAddress(), stubAddr));
     }
@@ -81,40 +81,40 @@ const CHAR * TraceDestination::DbgToString(SString & buffer)
         switch(this->type)
         {
             case TRACE_ENTRY_STUB:
-                buffer.Printf("TRACE_ENTRY_STUB(addr=0x%p)", GetAddress());
+                buffer.Printf("TRACE_ENTRY_STUB(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_STUB:
-                buffer.Printf("TRACE_STUB(addr=0x%p)", GetAddress());
+                buffer.Printf("TRACE_STUB(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNMANAGED:
-                buffer.Printf("TRACE_UNMANAGED(addr=0x%p)", GetAddress());
+                buffer.Printf("TRACE_UNMANAGED(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MANAGED:
-                buffer.Printf("TRACE_MANAGED(addr=0x%p)", GetAddress());
+                buffer.Printf("TRACE_MANAGED(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_UNJITTED_METHOD:
             {
                 MethodDesc * md = this->GetMethodDesc();
-                buffer.Printf("TRACE_UNJITTED_METHOD(md=0x%p, %s::%s)", md, md->m_pszDebugClassName, md->m_pszDebugMethodName);
+                buffer.Printf("TRACE_UNJITTED_METHOD(md=%p, %s::%s)", md, md->m_pszDebugClassName, md->m_pszDebugMethodName);
                 pValue = buffer.GetUTF8();
             }
                 break;
 
             case TRACE_FRAME_PUSH:
-                buffer.Printf("TRACE_FRAME_PUSH(addr=0x%p)", GetAddress());
+                buffer.Printf("TRACE_FRAME_PUSH(addr=%p)", GetAddress());
                 pValue = buffer.GetUTF8();
                 break;
 
             case TRACE_MGR_PUSH:
-                buffer.Printf("TRACE_MGR_PUSH(addr=0x%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
+                buffer.Printf("TRACE_MGR_PUSH(addr=%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
                 pValue = buffer.GetUTF8();
                 break;
 
@@ -471,7 +471,7 @@ BOOL StubManager::CheckIsStub_Worker(PCODE stubStartAddress)
     EX_CATCH
 #endif
     {
-        LOG((LF_CORDB, LL_INFO10000, "D::GASTSI: exception indicated addr is bad.\n"));
+        LOG((LF_CORDB, LL_INFO10000, "SM::CISWorker: exception indicated addr is bad.\n"));
 
         param.fIsStub = FALSE;
     }
@@ -505,10 +505,15 @@ PTR_StubManager StubManager::FindStubManager(PCODE stubAddress)
         if (it.Current()->CheckIsStub_Worker(stubAddress))
         {
             _ASSERTE_IMPL(IsSingleOwner(stubAddress, it.Current()));
+
+            LOG((LF_CORDB, LL_INFO10000, "SM::FSM: %p claims %p\n",
+                it.Current(), stubAddress));
             return it.Current();
         }
     }
 
+    LOG((LF_CORDB, LL_INFO10000, "SM::FSM: no stub manager claims %p\n",
+        stubAddress));
     return NULL;
 }
 
@@ -524,19 +529,19 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
     while (it.Next())
     {
         StubManager * pCurrent = it.Current();
-        if (pCurrent->CheckIsStub_Worker(stubStartAddress))
-        {
-            LOG((LF_CORDB, LL_INFO10000,
-                 "StubManager::TraceStub: addr 0x%p claimed by mgr "
-                 "0x%p.\n", stubStartAddress, pCurrent));
+        if (!pCurrent->CheckIsStub_Worker(stubStartAddress))
+            continue;
 
-            _ASSERTE_IMPL(IsSingleOwner(stubStartAddress, pCurrent));
+        LOG((LF_CORDB, LL_INFO10000,
+                "StubManager::TraceStub: '%s' (%p) claimed %p.\n", pCurrent->DbgGetName(), pCurrent, stubStartAddress));
 
-            BOOL fValid = pCurrent->DoTraceStub(stubStartAddress, trace);
+        _ASSERTE_IMPL(IsSingleOwner(stubStartAddress, pCurrent));
+
+        BOOL fValid = pCurrent->DoTraceStub(stubStartAddress, trace);
 #ifdef _DEBUG
-            if (IsStubLoggingEnabled())
-            {
-            DbgWriteLog("Doing TraceStub for Address 0x%p, claimed by '%s' (0x%p)\n", stubStartAddress, pCurrent->DbgGetName(), pCurrent);
+        if (IsStubLoggingEnabled())
+        {
+            DbgWriteLog("Doing TraceStub for %p, claimed by '%s' (%p)\n", stubStartAddress, pCurrent->DbgGetName(), pCurrent);
             if (fValid)
             {
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -547,35 +552,32 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
             else
             {
                 DbgWriteLog("  stubmanager returned false. Does not expect to call managed code\n");
-
             }
-            } // logging
+        } // logging
 #endif
-            return fValid;
-        }
+        return fValid;
     }
 
     if (ExecutionManager::IsManagedCode(stubStartAddress))
     {
+        LOG((LF_CORDB, LL_INFO10000,
+             "StubManager::TraceStub: addr %p is managed code\n",
+             stubStartAddress));
+
         trace->InitForManaged(stubStartAddress);
 
 #ifdef _DEBUG
-        DbgWriteLog("Doing TraceStub for Address 0x%p is jitted code claimed by codemanager\n", stubStartAddress);
+        DbgWriteLog("Doing TraceStub for Address %p is jitted code claimed by codemanager\n", stubStartAddress);
 #endif
-
-        LOG((LF_CORDB, LL_INFO10000,
-             "StubManager::TraceStub: addr 0x%p is managed code\n",
-             stubStartAddress));
-
         return TRUE;
     }
 
     LOG((LF_CORDB, LL_INFO10000,
-         "StubManager::TraceStub: addr 0x%p unknown. TRACE_OTHER...\n",
+         "StubManager::TraceStub: addr %p unknown. TRACE_OTHER...\n",
          stubStartAddress));
 
 #ifdef _DEBUG
-    DbgWriteLog("Doing TraceStub for Address 0x%p is unknown!!!\n", stubStartAddress);
+    DbgWriteLog("Doing TraceStub for Address %p is unknown!!!\n", stubStartAddress);
 #endif
 
     trace->InitForOther(stubStartAddress);
@@ -593,7 +595,7 @@ BOOL StubManager::FollowTrace(TraceDestination *trace)
     while (trace->GetTraceType() == TRACE_STUB)
     {
         LOG((LF_CORDB, LL_INFO10000,
-             "StubManager::FollowTrace: TRACE_STUB for 0x%p\n",
+             "StubManager::FollowTrace: TRACE_STUB for %p\n",
              trace->GetAddress()));
 
         if (!TraceStub(trace->GetAddress(), trace))
@@ -963,7 +965,6 @@ BOOL ThePreStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     LIMITED_METHOD_DAC_CONTRACT;
     return stubStartAddress == GetPreStubEntryPoint();
-
 }
 
 
@@ -1003,7 +1004,8 @@ BOOL PrecodeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     }
     CONTRACTL_END;
 
-    return GetStubPrecodeRangeList()->IsInRange(stubStartAddress) || GetFixupPrecodeRangeList()->IsInRange(stubStartAddress);
+    auto stubKind = RangeSectionStubManager::GetStubKind(stubStartAddress);
+    return (stubKind == STUB_CODE_BLOCK_FIXUPPRECODE) || (stubKind == STUB_CODE_BLOCK_STUBPRECODE);
 }
 
 BOOL PrecodeStubManager::DoTraceStub(PCODE stubStartAddress,
@@ -1174,13 +1176,13 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
     CONTRACTL_END
 
     LOG((LF_CORDB, LL_INFO10000,
-         "StubLinkStubManager::DoTraceStub: stubStartAddress=0x%p\n",
+         "StubLinkStubManager::DoTraceStub: stubStartAddress=%p\n",
          stubStartAddress));
 
     Stub *stub = Stub::RecoverStub(stubStartAddress);
 
     LOG((LF_CORDB, LL_INFO10000,
-         "StubLinkStubManager::DoTraceStub: stub=0x%p\n", stub));
+         "StubLinkStubManager::DoTraceStub: stub=%p\n", stub));
 
     //
     // If this is an intercept stub, we may be able to step
@@ -1264,7 +1266,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
 
     LPVOID pc = (LPVOID)GetIP(pContext);
     *pRetAddr = (BYTE *)StubManagerHelpers::GetReturnAddress(pContext);
-    LOG((LF_CORDB,LL_INFO10000, "SLSM:TM 0x%p, retAddr is 0x%p\n", pc, (*pRetAddr)));
+    LOG((LF_CORDB,LL_INFO10000, "SLSM:TM %p, retAddr is %p\n", pc, (*pRetAddr)));
 
     Stub *stub = Stub::RecoverStub((PCODE)pc);
     if (stub->IsInstantiatingStub())
@@ -1276,7 +1278,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
         PCODE target = GetStubTarget(pMD);
         if (target == NULL)
         {
-            LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Unable to determine stub target, fd 0x%p\n", pMD));
+            LOG((LF_CORDB,LL_INFO10000, "SLSM:TM Unable to determine stub target, pMD %p\n", pMD));
             trace->InitForUnjittedMethod(pMD);
             return TRUE;
         }
@@ -1433,6 +1435,10 @@ BOOL RangeSectionStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
     case STUB_CODE_BLOCK_VIRTUAL_METHOD_THUNK:
     case STUB_CODE_BLOCK_EXTERNAL_METHOD_THUNK:
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
         return TRUE;
     default:
         break;
@@ -1463,6 +1469,12 @@ BOOL RangeSectionStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestinati
 
     case STUB_CODE_BLOCK_STUBLINK:
         return StubLinkStubManager::g_pManager->DoTraceStub(stubStartAddress, trace);
+
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return VirtualCallStubManagerManager::GlobalManager()->DoTraceStub(stubStartAddress, trace);
 
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
 #ifdef DACCESS_COMPILE
@@ -1528,6 +1540,18 @@ LPCWSTR RangeSectionStubManager::GetStubManagerName(PCODE addr)
     case STUB_CODE_BLOCK_METHOD_CALL_THUNK:
         return W("MethodCallThunk");
 
+    case STUB_CODE_BLOCK_VSD_DISPATCH_STUB:
+        return W("VSD_DispatchStub");
+
+    case STUB_CODE_BLOCK_VSD_RESOLVE_STUB:
+        return W("VSD_ResolveStub");
+
+    case STUB_CODE_BLOCK_VSD_LOOKUP_STUB:
+        return W("VSD_LookupStub");
+
+    case STUB_CODE_BLOCK_VSD_VTABLE_STUB:
+        return W("VSD_VTableStub");
+
     default:
         break;
     }
@@ -1551,7 +1575,7 @@ RangeSectionStubManager::GetStubKind(PCODE stubStartAddress)
     if (pRS == NULL)
         return STUB_CODE_BLOCK_UNKNOWN;
 
-    return pRS->pjit->GetStubCodeBlockKind(pRS, stubStartAddress);
+    return pRS->_pjit->GetStubCodeBlockKind(pRS, stubStartAddress);
 }
 
 //
@@ -1765,7 +1789,9 @@ BOOL ILStubManager::TraceManager(Thread *thread,
         MethodDesc *pMD = (MethodDesc *)arg;
         if (pMD->IsNDirect())
         {
-            target = (PCODE)((NDirectMethodDesc *)pMD)->GetNativeNDirectTarget();
+            NDirectMethodDesc* pNMD = reinterpret_cast<NDirectMethodDesc*>(pMD);
+            _ASSERTE_IMPL(!pNMD->NDirectTargetIsImportThunk());
+            target = (PCODE)pNMD->GetNDirectTarget();
             LOG((LF_CORDB, LL_INFO10000, "ILSM::TraceManager: Forward P/Invoke case 0x%p\n", target));
             trace->InitForUnmanaged(target);
         }
@@ -1827,7 +1853,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64) && !defined(TARGET_RISCV64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif
@@ -2021,7 +2047,7 @@ BOOL DelegateInvokeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 
     fIsStub = fIsStub || GetRangeList()->IsInRange(stubStartAddress);
 
-    return fIsStub;
+    return fIsStub ? TRUE : FALSE;
 }
 
 BOOL DelegateInvokeStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
@@ -2380,8 +2406,6 @@ PrecodeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p PrecodeStubManager\n", dac_cast<TADDR>(this)));
-    GetStubPrecodeRangeList()->EnumMemoryRegions(flags);
-    GetFixupPrecodeRangeList()->EnumMemoryRegions(flags);
 }
 
 void
@@ -2457,9 +2481,6 @@ VirtualCallStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p VirtualCallStubManager\n", dac_cast<TADDR>(this)));
-    GetLookupRangeList()->EnumMemoryRegions(flags);
-    GetResolveRangeList()->EnumMemoryRegions(flags);
-    GetDispatchRangeList()->EnumMemoryRegions(flags);
     GetCacheEntryRangeList()->EnumMemoryRegions(flags);
 }
 

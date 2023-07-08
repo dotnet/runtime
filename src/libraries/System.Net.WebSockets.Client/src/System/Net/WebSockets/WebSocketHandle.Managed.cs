@@ -179,9 +179,9 @@ namespace System.Net.WebSockets
 
                 if (options.DangerousDeflateOptions is not null && response.Headers.TryGetValues(HttpKnownHeaderNames.SecWebSocketExtensions, out IEnumerable<string>? extensions))
                 {
-                    foreach (ReadOnlySpan<char> extension in extensions)
+                    foreach (string extension in extensions)
                     {
-                        if (extension.TrimStart().StartsWith(ClientWebSocketDeflateConstants.Extension))
+                        if (extension.AsSpan().TrimStart().StartsWith(ClientWebSocketDeflateConstants.Extension))
                         {
                             negotiatedDeflateOptions = ParseDeflateOptions(extension, options.DangerousDeflateOptions);
                             break;

@@ -266,9 +266,6 @@
   <data name="net_cookie_exists" xml:space="preserve">
     <value>Cookie already exists.</value>
   </data>
-  <data name="net_clsmall" xml:space="preserve">
-    <value>The Content-Length value must be greater than or equal to zero.</value>
-  </data>
   <data name="net_wrongversion" xml:space="preserve">
     <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
   </data>
@@ -305,9 +302,6 @@
   <data name="net_WebSockets_AcceptUnsupportedWebSocketVersion" xml:space="preserve">
     <value>The {0} operation was called on an incoming request with WebSocket version '{1}', expected '{2}'. </value>
   </data>
-  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
-    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
-  </data>
   <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
     <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
   </data>
@@ -319,12 +313,6 @@
   </data>
   <data name="net_WebSockets_InvalidCloseStatusDescription" xml:space="preserve">
     <value>The close status description '{0}' is too long. The UTF8-representation of the status description must not be longer than {1} bytes.</value>
-  </data>
-  <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
-    <value>The argument must be a value greater than {0}.</value>
-  </data>
-  <data name="net_WebSockets_ArgumentOutOfRange_TooBig" xml:space="preserve">
-    <value>The value of the '{0}' parameter ({1}) must be less than or equal to {2}.</value>
   </data>
   <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
     <value>The WebSocket protocol is not supported on this platform.</value>
@@ -361,9 +349,6 @@
   </data>
   <data name="net_MethodNotImplementedException" xml:space="preserve">
     <value>This method is not implemented by this class.</value>
-  </data>
-  <data name="event_OperationReturnedSomething" xml:space="preserve">
-    <value>{0} returned {1}.</value>
   </data>
   <data name="net_invalid_enum" xml:space="preserve">
     <value>The specified value is not valid in the '{0}' enumeration.</value>

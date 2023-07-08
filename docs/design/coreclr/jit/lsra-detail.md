@@ -552,7 +552,7 @@ Loc RP#  Name Type  Action Reg  │rax │rcx │rdx │rbx │rbp │rsi │rdi
         -   This is generally not required, as the block will
             normally have a predecessor block that has already
             been allocated. This facility is exercised by the 0x100
-            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) or 0x200 (`LSRA_BLOCK_BOUNDARY_ROTATE`) settings of `COMPlus_JitStressRegs`.
+            (`LSRA_BLOCK_BOUNDARY_LAYOUT`) or 0x200 (`LSRA_BLOCK_BOUNDARY_ROTATE`) settings of `DOTNET_JitStressRegs`.
 
 -   At the end of a block, for any exposed uses that do not have downstream
     `RefPosition`s (e.g. variables that are live across the backedge, so there is no
@@ -733,7 +733,7 @@ LinearScanAllocation(List<RefPosition> refPositions)
 
     -   Resolution of exception edges
 
-        -   When `COMPlus_EnableEHWriteThru == 0`, any variable that's
+        -   When `DOTNET_EnableEHWriteThru == 0`, any variable that's
             live in to an exception region is always referenced on the stack.
 
         -   See [Enable EHWriteThru by default](#enable-ehwritethru-by-default).
@@ -962,7 +962,7 @@ The following dumps and debugging modes are provided:
 LSRA Stress Modes
 -----------------
 
-The implementation uses the `COMPlus_JitStressRegs` environment variable.
+The implementation uses the `DOTNET_JitStressRegs` environment variable.
 The following are the stress modes associated with this variable. For
 the most part they can be combined, though in some cases the values are
 exclusive:
@@ -1201,7 +1201,7 @@ Issues [\#8552](https://github.com/dotnet/runtime/issues/8552) and [\#40264](htt
 
 ### Enable EHWriteThru by default
 
-When `COMPlus_EnableEHWriteThru` is set, some performance regressions are observed. When an EH write-thru variable (i.e. one that is live into an exception region) is defined, its value is
+When `DOTNET_EnableEHWriteThru` is set, some performance regressions are observed. When an EH write-thru variable (i.e. one that is live into an exception region) is defined, its value is
 always stored, in addition to potentially remaining live in a register. This increases register
 pressure which may result in worse code.
 
@@ -1381,7 +1381,7 @@ kill site.
 ## Test and Cleanup Issues
 
 Issue [\#9767](https://github.com/dotnet/runtime/issues/9767) captures the issue that the
-"spill always" stress mode, `LSRA_SPILL_ALWAYS`, `COMPlus_JitStressRegs=0x800` doesn't work properly.
+"spill always" stress mode, `LSRA_SPILL_ALWAYS`, `DOTNET_JitStressRegs=0x800` doesn't work properly.
 
 Issue [\#6261](https://github.com/dotnet/runtime/issues/6261) has to do with `RegOptional`
 `RefPositions` that are marked as `copyReg` or `moveReg`. See the notes on this issue;

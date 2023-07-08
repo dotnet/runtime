@@ -115,6 +115,7 @@ extern "C" void IDynamicCastableGetInterfaceImplementation();
 extern "C" void ObjectiveCMarshalTryGetTaggedMemory();
 extern "C" void ObjectiveCMarshalGetIsTrackedReferenceCallback();
 extern "C" void ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback();
+extern "C" void ObjectiveCMarshalGetUnhandledExceptionPropagationHandler();
 #endif
 
 typedef void(*pfn)();
@@ -134,7 +135,9 @@ static const pfn c_classlibFunctions[] = {
     &ObjectiveCMarshalTryGetTaggedMemory,
     &ObjectiveCMarshalGetIsTrackedReferenceCallback,
     &ObjectiveCMarshalGetOnEnteredFinalizerQueueCallback,
+    &ObjectiveCMarshalGetUnhandledExceptionPropagationHandler,
 #else
+    nullptr,
     nullptr,
     nullptr,
     nullptr,

@@ -1,13 +1,6 @@
-cmake_minimum_required(VERSION 3.6.2)
-include(CheckCCompilerFlag)
+cmake_minimum_required(VERSION 3.20)
 
-if (CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
-    # CMake 3.14.5 contains bug fixes for iOS
-    cmake_minimum_required(VERSION 3.14.5)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    # CMake 3.18.1 properly generates MacCatalyst C compiler
-    cmake_minimum_required(VERSION 3.18.1)
-endif ()
+include(CheckCCompilerFlag)
 
 if (WIN32)
     cmake_policy(SET CMP0091 NEW)
@@ -121,7 +114,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         message(FATAL_ERROR "Unknown build type. Set CMAKE_BUILD_TYPE to DEBUG or RELEASE.")
     endif ()
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
         add_definitions(-D__APPLE_USE_RFC_3542)
     endif ()
 
@@ -156,9 +149,14 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         add_compile_options(-Wno-typedef-redefinition)
         add_compile_options(-Wno-c11-extensions)
         add_compile_options(-Wno-thread-safety-analysis)
+        if (CLR_CMAKE_TARGET_BROWSER)
+            add_compile_options(-Wno-unsafe-buffer-usage)
+            add_compile_options(-Wno-cast-function-type-strict)
+        endif ()
     endif ()
 
     add_subdirectory(System.Native)
+    add_subdirectory(System.Globalization.Native)
 
     if (CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
         # skip for now
@@ -179,12 +177,11 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER OR CLR_CMAKE_TARGET_WASI)
     elseif (FORCE_ANDROID_OPENSSL)
         add_subdirectory(System.Security.Cryptography.Native)
     else ()
-        add_subdirectory(System.Globalization.Native)
         add_subdirectory(System.Net.Security.Native)
         add_subdirectory(System.Security.Cryptography.Native)
     endif ()
 
-    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    if (CLR_CMAKE_TARGET_APPLE)
         add_subdirectory(System.Security.Cryptography.Native.Apple)
     endif ()
 endif ()

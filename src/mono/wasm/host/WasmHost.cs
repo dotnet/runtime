@@ -24,5 +24,10 @@ internal enum WasmHost
     /// <summary>
     /// Browser
     /// </summary>
-    Browser
+    Browser,
+
+    /// <summary>
+    /// wasmtime
+    /// </summary>
+    Wasmtime
 }

@@ -13,5 +13,4 @@ View the official trimming docs at [docs.microsoft.com](https://docs.microsoft.c
 - [Authoring Custom Steps](custom-steps.md)
 
 ## Design Docs
-- [Trimmer Steps Explained](../../design/tools/illink/steps-explained.md)
 - [Reflection Handling](../../design/tools/illink/reflection-flow.md)

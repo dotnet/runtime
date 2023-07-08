@@ -32,7 +32,7 @@ namespace
 
         if (max_ver == fx_ver_t())
         {
-            trace::error(_X("A fatal error occurred, the folder [%s] does not contain any version-numbered child folders"), fxr_root.c_str());
+            trace::error(_X("Error: [%s] does not contain any version-numbered child folders"), fxr_root.c_str());
             return false;
         }
 
@@ -46,7 +46,7 @@ namespace
             return true;
         }
 
-        trace::error(_X("A fatal error occurred, the required library %s could not be found in [%s]"), LIBFXR_NAME, fxr_root.c_str());
+        trace::error(_X("Error: the required library %s could not be found in [%s]"), LIBFXR_NAME, fxr_root.c_str());
 
         return false;
     }
@@ -81,7 +81,7 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         }
         else
         {
-            trace::error(_X("A fatal error occurred, the default install location cannot be obtained."));
+            trace::error(_X("Error: the default install location cannot be obtained."));
             return false;
         }
     }
@@ -111,21 +111,12 @@ bool fxr_resolver::try_get_path(const pal::string_t& root_path, pal::string_t* o
         pal::string_t host_path;
         pal::get_own_executable_path(&host_path);
         trace::error(
-            INSTALL_NET_ERROR_MESSAGE
-            _X("\n\n")
-            _X("App: %s\n")
-            _X("Architecture: %s\n")
-            _X("App host version: %s\n")
-            _X(".NET location: Not found\n")
-            _X("\n")
-            _X("Learn about runtime installation:\n")
-            DOTNET_APP_LAUNCH_FAILED_URL
-            _X("\n\n")
-            _X("Download the .NET runtime:\n")
-            _X("%s&apphost_version=%s"),
+            MISSING_RUNTIME_ERROR_FORMAT,
+            INSTALL_NET_ERROR_MESSAGE,
             host_path.c_str(),
             get_current_arch_name(),
             _STRINGIFY(COMMON_HOST_PKG_VER),
+            _X("Not found"),
             get_download_url().c_str(),
             _STRINGIFY(COMMON_HOST_PKG_VER));
         return false;
@@ -150,7 +141,7 @@ bool fxr_resolver::try_get_path_from_dotnet_root(const pal::string_t& dotnet_roo
     append_path(&fxr_dir, _X("fxr"));
     if (!pal::directory_exists(fxr_dir))
     {
-        trace::error(_X("A fatal error occurred. The folder [%s] does not exist"), fxr_dir.c_str());
+        trace::error(_X("Error: [%s] does not exist"), fxr_dir.c_str());
         return false;
     }
 

@@ -14,7 +14,7 @@ namespace Microsoft.NET.HostModel.ComHost
     /// </summary>
     internal sealed class TypeLibReader
     {
-        private byte[] tlbBytes;
+        private readonly byte[] tlbBytes;
 
         public TypeLibReader(byte[] tlbBytes)
         {

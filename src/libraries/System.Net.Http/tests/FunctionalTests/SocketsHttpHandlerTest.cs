@@ -7,13 +7,12 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Net.Http.Headers;
-using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -32,6 +31,72 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Asynchrony_Test : HttpClientHandler_Asynchrony_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Asynchrony_Test(ITestOutputHelper output) : base(output) { }
+
+        [OuterLoop("Relies on finalization")]
+        [Fact]
+        public async Task ReadAheadTaskOnScavenge_ExceptionsAreObserved()
+        {
+            bool seenUnobservedExceptions = false;
+
+            EventHandler<UnobservedTaskExceptionEventArgs> eventHandler = (_, e) =>
+            {
+                if (e.Exception.InnerException?.Message == nameof(ReadAheadTaskOnScavenge_ExceptionsAreObserved))
+                {
+                    seenUnobservedExceptions = true;
+                }
+            };
+
+            TaskScheduler.UnobservedTaskException += eventHandler;
+            try
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    await MakeARequestWithoutDisposingTheHandlerAsync();
+                    GC.Collect();
+                    GC.WaitForPendingFinalizers();
+                    await Task.Delay(1000);
+                }
+            }
+            finally
+            {
+                TaskScheduler.UnobservedTaskException -= eventHandler;
+            }
+
+            Assert.False(seenUnobservedExceptions);
+
+            static async Task MakeARequestWithoutDisposingTheHandlerAsync()
+            {
+                var cts = new CancellationTokenSource();
+                var requestCompleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+                var handler = new SocketsHttpHandler();
+                handler.ConnectCallback = async (_, _) =>
+                {
+                    cts.Cancel();
+                    await requestCompleted.Task;
+
+                    Task completedWhenFinalized = new SetOnFinalized().CompletedWhenFinalized.Task;
+
+                    return new DelegateDelegatingStream(Stream.Null)
+                    {
+                        ReadAsyncMemoryFunc = async (_, _) =>
+                        {
+                            await completedWhenFinalized.WaitAsync(TestHelper.PassingTestTimeout);
+
+                            throw new Exception(nameof(ReadAheadTaskOnScavenge_ExceptionsAreObserved));
+                        }
+                    };
+                };
+
+                handler.PooledConnectionIdleTimeout = TimeSpan.FromSeconds(1);
+
+                var client = new HttpClient(handler);
+
+                await Assert.ThrowsAsync<TaskCanceledException>(() => client.GetStringAsync("http://foo", cts.Token));
+
+                requestCompleted.SetResult();
+            }
+        }
 
         [Fact]
         public async Task ExecutionContext_Suppressed_Success()
@@ -91,10 +156,9 @@ namespace System.Net.Http.Functional.Tests
         [MethodImpl(MethodImplOptions.NoInlining)] // avoid JIT extending lifetime of the finalizable object
         private static (Task completedOnFinalized, Task getRequest) MakeHttpRequestWithTcsSetOnFinalizationInAsyncLocal(HttpClient client, Uri uri)
         {
-            var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-
             // Put something in ExecutionContext, start the HTTP request, then undo the EC change.
-            var al = new AsyncLocal<object>() { Value = new SetOnFinalized() { _completedWhenFinalized = tcs } };
+            var al = new AsyncLocal<SetOnFinalized>() { Value = new SetOnFinalized() };
+            TaskCompletionSource tcs = al.Value.CompletedWhenFinalized;
             Task t = client.GetStringAsync(uri);
             al.Value = null;
 
@@ -108,8 +172,9 @@ namespace System.Net.Http.Functional.Tests
 
         private sealed class SetOnFinalized
         {
-            internal TaskCompletionSource _completedWhenFinalized;
-            ~SetOnFinalized() => _completedWhenFinalized.SetResult();
+            public readonly TaskCompletionSource CompletedWhenFinalized = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            ~SetOnFinalized() => CompletedWhenFinalized.SetResult();
         }
     }
 
@@ -590,6 +655,45 @@ namespace System.Net.Http.Functional.Tests
     public sealed class SocketsHttpHandler_HttpClientHandler_Proxy_Test : HttpClientHandler_Proxy_Test
     {
         public SocketsHttpHandler_HttpClientHandler_Proxy_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task Proxy_Https_Succeeds(bool secureUri)
+        {
+            var releaseServer = new TaskCompletionSource();
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                bool validationCalled = false;
+                using SocketsHttpHandler handler = CreateSocketsHttpHandler(allowAllCertificates: true);
+
+                handler.Proxy = new UseSpecifiedUriWebProxy(uri, new NetworkCredential("abc", "password"));
+                handler.SslOptions.RemoteCertificateValidationCallback = (sender, certificate, chain, error) =>
+                {
+                    validationCalled = true;
+                    return true;
+                };
+
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(secureUri ? "https://foo.bar/" : "http://foo.bar/");
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    Assert.True(validationCalled);
+
+                }
+            }, server => server.AcceptConnectionAsync(async connection =>
+            {
+                await connection.ReadRequestHeaderAndSendResponseAsync();
+                if (secureUri)
+                {
+                    // client will send CONNECT and if that succeeds it will negotiate TLS
+
+                    var sslConnection = await LoopbackServer.Connection.CreateAsync(null, connection.Stream, new LoopbackServer.Options { UseSsl = true });
+                    await sslConnection.ReadRequestHeaderAndSendResponseAsync();
+                }
+            }),
+            new LoopbackServer.Options { UseSsl = true });
+        }
     }
 
     public abstract class SocketsHttpHandler_TrailingHeaders_Test : HttpClientHandlerTestBase
@@ -4076,7 +4180,6 @@ namespace System.Net.Http.Functional.Tests
         public SocketsHttpHandler_SecurityTest(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_CustomTrust_Ok()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -4113,7 +4216,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_InvalidName_Throws()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -4144,7 +4246,6 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
         public async Task SslOptions_CustomPolicy_IgnoresNameMismatch()
         {
             X509Certificate2Collection caCerts = new X509Certificate2Collection();
@@ -4188,6 +4289,51 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version11;
+
+#if DEBUG
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpMessageHandler handler = useSocketHandler ? CreateSocketsHttpHandler(allowAllCertificates: true) : CreateHttpClientHandler();
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpRequestMessage request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    request.Headers.Add("Connection", "close");
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    SslStream ssl = (SslStream)connection.Stream;
+                    object connectionInfo = typeof(SslStream).GetField(
+                                     "_connectionInfo",
+                                     BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ssl);
+
+                    bool resumed = (bool)connectionInfo.GetType().GetProperty("TlsResumed").GetValue(connectionInfo);
+                    Assert.True(resumed);
+
+                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                });
+            },
+            new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 });
+        }
+#endif
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]

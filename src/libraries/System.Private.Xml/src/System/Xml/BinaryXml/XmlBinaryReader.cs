@@ -16,9 +16,6 @@ namespace System.Xml
 {
     internal sealed partial class XmlSqlBinaryReader : XmlReader, IXmlNamespaceResolver
     {
-        internal static readonly Type TypeOfObject = typeof(object);
-        internal static readonly Type TypeOfString = typeof(string);
-
         private static volatile Type?[] s_tokenTypeMap = null!;
 
         private static ReadOnlySpan<byte> XsdKatmaiTimeScaleToValueLengthMap => new byte[8] { // rely on C# compiler optimization to eliminate allocation
@@ -350,7 +347,7 @@ namespace System.Xml
             AddInitNamespace(string.Empty, string.Empty);
             AddInitNamespace(_xml, _xnt.Add(XmlReservedNs.NsXml));
             AddInitNamespace(_xmlns, _nsxmlns);
-            _valueType = TypeOfString;
+            _valueType = typeof(string);
             // init buffer position, etc
             _inStrm = stream;
             if (data != null)
@@ -690,8 +687,8 @@ namespace System.Xml
             }
             else
             {
-                if (i < 0 || i >= _attrCount)
-                    throw new ArgumentOutOfRangeException(nameof(i));
+                ArgumentOutOfRangeException.ThrowIfNegative(i);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
                 return GetAttributeText(i);
             }
         }
@@ -747,10 +744,8 @@ namespace System.Xml
             }
             else
             {
-                if (i < 0 || i >= _attrCount)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(i));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegative(i);
+                ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(i, _attrCount);
                 PositionOnAttribute(i + 1);
             }
         }
@@ -856,7 +851,7 @@ namespace System.Xml
                     else
                     {
                         _token = BinXmlToken.Error;
-                        _valueType = TypeOfString;
+                        _valueType = typeof(string);
                         _state = ScanState.AttrValPseudoValue;
                     }
                     _qnameOther.Clear();
@@ -2406,7 +2401,7 @@ namespace System.Xml
             _token = BinXmlToken.Attr;
             _nodetype = XmlNodeType.Attribute;
             _state = ScanState.Attr;
-            _valueType = TypeOfObject;
+            _valueType = typeof(object);
             _stringValue = null;
         }
 
@@ -2830,7 +2825,7 @@ namespace System.Xml
 
             ClearAttributes();
             _attrCount = 0;
-            _valueType = TypeOfString;
+            _valueType = typeof(string);
             _stringValue = null;
             _hasTypedValue = false;
 
@@ -2962,7 +2957,7 @@ namespace System.Xml
                 case BinXmlToken.SQL_NCHAR:
                 case BinXmlToken.SQL_NVARCHAR:
                 case BinXmlToken.SQL_NTEXT:
-                    _valueType = TypeOfString;
+                    _valueType = typeof(string);
                     _hasTypedValue = false;
                     break;
                 default:
@@ -3092,7 +3087,7 @@ namespace System.Xml
                 }
             }
             _nodetype = XmlNodeType.Element;
-            _valueType = TypeOfObject;
+            _valueType = typeof(object);
             _posAfterAttrs = _pos;
         }
 
@@ -3310,6 +3305,7 @@ namespace System.Xml
             map[(int)BinXmlToken.SQL_UDT] = TypeOfByteArray;
             map[(int)BinXmlToken.XSD_BINHEX] = TypeOfByteArray;
             map[(int)BinXmlToken.XSD_BASE64] = TypeOfByteArray;
+            Type TypeOfString = typeof(string);
             map[(int)BinXmlToken.SQL_CHAR] = TypeOfString;
             map[(int)BinXmlToken.SQL_VARCHAR] = TypeOfString;
             map[(int)BinXmlToken.SQL_TEXT] = TypeOfString;
@@ -3491,7 +3487,9 @@ namespace System.Xml
             Debug.Assert(_checkCharacters, "this.checkCharacters");
             // grab local copy (perf)
 
-            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _end - _tokDataPos);
+            // Get the bytes for the current token. _tokDataPos is the beginning position,
+            // and _pos has advanced to the next token (1 past the end of this token).
+            ReadOnlySpan<byte> data = _data.AsSpan(_tokDataPos, _pos - _tokDataPos);
             Debug.Assert(data.Length % 2 == 0, "Data size should not be odd");
 
             if (!attr)

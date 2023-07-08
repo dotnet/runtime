@@ -14,18 +14,17 @@
 enum CrstType
 {
     CrstHandleTable,
-    CrstDispatchCache,
     CrstAllocHeap,
-    CrstGenericInstHashtab,
-    CrstMemAccessMgr,
     CrstInterfaceDispatchGlobalLists,
     CrstStressLog,
     CrstRestrictedCallouts,
     CrstObjectiveCMarshalCallouts,
     CrstGcStressControl,
     CrstThreadStore,
-    CrstCastCache,
+    CrstThunkPool,
     CrstYieldProcessorNormalized,
+    CrstEventPipe,
+    CrstEventPipeConfig,
 };
 
 enum CrstFlags

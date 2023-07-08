@@ -108,5 +108,8 @@ namespace ILLink.Shared.DataFlow
 		// Prevent warning CS0659 https://docs.microsoft.com/en-us/dotnet/csharp/misc/cs0659.
 		// This type should never be used as a dictionary key.
 		public override int GetHashCode () => throw new NotImplementedException ();
+
+		public static bool operator == (DefaultValueDictionary<TKey, TValue> left, DefaultValueDictionary<TKey, TValue> right) => left.Equals (right);
+		public static bool operator != (DefaultValueDictionary<TKey, TValue> left, DefaultValueDictionary<TKey, TValue> right) => !(left == right);
 	}
 }

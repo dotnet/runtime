@@ -398,15 +398,13 @@ namespace System.Xml.XPath
             Debug.Assert(pageElem[idxElem].NodeType == XPathNodeType.Element);
 
             // Check whether this element has any local namespaces
-            if (_mapNmsp == null || !_mapNmsp.ContainsKey(nodeRef))
+            if (_mapNmsp == null || !_mapNmsp.TryGetValue(nodeRef, out nodeRef))
             {
                 pageNmsp = null;
                 return 0;
             }
 
             // Yes, so return the page and index of the first local namespace node
-            nodeRef = _mapNmsp[nodeRef];
-
             pageNmsp = nodeRef.Page;
             return nodeRef.Index;
         }
@@ -429,14 +427,13 @@ namespace System.Xml.XPath
         {
             XPathNodeRef nodeRef;
 
-            if (_idValueMap == null || !_idValueMap.ContainsKey(id))
+            if (_idValueMap == null || !_idValueMap.TryGetValue(id, out nodeRef))
             {
                 pageElem = null;
                 return 0;
             }
 
             // Extract page and index from XPathNodeRef
-            nodeRef = _idValueMap[id];
             pageElem = nodeRef.Page;
             return nodeRef.Index;
         }

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 public class TestClass
 {
@@ -20,7 +21,8 @@ public class mem035
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int RetInt = 1;
 

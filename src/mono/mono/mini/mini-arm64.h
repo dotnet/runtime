@@ -23,6 +23,8 @@
 
 #if !defined(DISABLE_SIMD)
 #define MONO_ARCH_SIMD_INTRINSICS 1
+#define MONO_ARCH_NEED_SIMD_BANK 1
+#define MONO_ARCH_USE_SHARED_FP_SIMD_BANK 1
 #endif
 
 #define MONO_CONTEXT_SET_LLVM_EXC_REG(ctx, exc) do { (ctx)->regs [0] = (gsize)exc; } while (0)
@@ -52,7 +54,7 @@
 /* v8..v15 */
 #define MONO_ARCH_CALLEE_SAVED_FREGS 0xff00
 
-#define MONO_ARCH_CALLEE_SAVED_XREGS 0
+#define MONO_ARCH_CALLEE_SAVED_XREGS MONO_ARCH_CALLEE_SAVED_FREGS
 
 #define MONO_ARCH_CALLEE_XREGS MONO_ARCH_CALLEE_FREGS
 
@@ -177,10 +179,8 @@ typedef struct {
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
 #define MONO_ARCH_FLOAT32_SUPPORTED 1
 #define MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP 1
+#define MONO_ARCH_HAVE_INIT_MRGCTX 1
 #define MONO_ARCH_LLVM_TARGET_LAYOUT "e-i64:64-i128:128-n32:64-S128"
-#ifdef TARGET_OSX
-#define MONO_ARCH_FORCE_FLOAT32 1
-#endif
 
 // Does the ABI have a volatile non-parameter register, so tailcall
 // can pass context to generics or interfaces?
@@ -222,11 +222,13 @@ typedef enum {
 	ArgOnStackR4,
 	/*
 	 * Vtype passed in consecutive int registers.
-	 * ainfo->reg is the firs register,
+	 * ainfo->reg is the first register,
 	 * ainfo->nregs is the number of registers,
 	 * ainfo->size is the size of the structure.
 	 */
 	ArgVtypeInIRegs,
+	/* SIMD arg in NEON register */
+	ArgInSIMDReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,

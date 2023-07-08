@@ -62,7 +62,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        public async void Invalid_Token()
+        public async Task Invalid_Token()
         {
             using var kerberosExecutor = new KerberosExecutor(_testOutputHelper, "LINUX.CONTOSO.COM");
             // Force a non-empty keytab to make macOS happy

@@ -228,6 +228,8 @@ class BitSetOps
 
     // Destructively modify "bs1" to be the union of "bs1" and "bs2".
     static void UnionD(Env env, BitSetType& bs1, BitSetValueArgType bs2);
+    // Destructively modify "bs1" to be the union of "bs1" and "bs2"; return `true` if `bs1` changed.
+    static bool UnionDChanged(Env env, BitSetType& bs1, BitSetValueArgType bs2);
     // Returns a new BitSet that is the union of "bs1" and "bs2".
     static BitSetValueRetType Union(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2);
 
@@ -373,6 +375,11 @@ public:
     {
         BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_UnionD);
         BSO::UnionD(env, bs1, bs2);
+    }
+    static bool UnionDChanged(Env env, BitSetType& bs1, BitSetValueArgType bs2)
+    {
+        BitSetTraits::GetOpCounter(env)->RecordOp(BitSetSupport::BSOP_UnionDChanged);
+        return BSO::UnionDChanged(env, bs1, bs2);
     }
     static BitSetValueRetType Union(Env env, BitSetValueArgType bs1, BitSetValueArgType bs2)
     {

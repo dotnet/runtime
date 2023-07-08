@@ -19,10 +19,60 @@ namespace Microsoft.Extensions.Hosting.Tests
 {
     public class HostApplicationBuilderTests
     {
-        [Fact]
-        public void DefaultConfigIsMutable()
+        public delegate HostApplicationBuilder CreateBuilderFunc();
+        public delegate HostApplicationBuilder CreateBuilderSettingsFunc(HostApplicationBuilderSettings settings);
+
+        private static HostApplicationBuilder CreateNoDefaultsBuilder() =>
+            new HostApplicationBuilder(new HostApplicationBuilderSettings
+            {
+                DisableDefaults = true,
+            });
+        private static HostApplicationBuilder CreateEmptyBuilder() => Host.CreateEmptyApplicationBuilder(settings: null);
+
+        public static IEnumerable<object[]> CreateNoDefaultsBuilderFuncs
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            get
+            {
+                yield return new[] { (CreateBuilderFunc)CreateNoDefaultsBuilder };
+                yield return new[] { (CreateBuilderFunc)CreateEmptyBuilder };
+            }
+        }
+
+        private static HostApplicationBuilder CreateBuilderSettingsConstructor(HostApplicationBuilderSettings settings) =>
+            new HostApplicationBuilder(settings);
+        private static HostApplicationBuilder CreateBuilderSettings(HostApplicationBuilderSettings settings)
+            => Host.CreateApplicationBuilder(settings);
+        private static HostApplicationBuilder CreateEmptyBuilderSettings(HostApplicationBuilderSettings settings)
+            => Host.CreateEmptyApplicationBuilder(settings);
+
+        public static IEnumerable<object[]> CreateBuilderSettingsFuncs
+        {
+            get
+            {
+                yield return new[] { (CreateBuilderSettingsFunc)CreateBuilderSettingsConstructor };
+                yield return new[] { (CreateBuilderSettingsFunc)CreateBuilderSettings };
+                yield return new[] { (CreateBuilderSettingsFunc)CreateEmptyBuilderSettings };
+            }
+        }
+
+        public static IEnumerable<object[]> CreateBuilderDisableDefaultsData
+        {
+            get
+            {
+                foreach (bool disableDefaults in new[] { true, false })
+                {
+                    yield return new object[] { (CreateBuilderSettingsFunc)CreateBuilderSettingsConstructor, disableDefaults };
+                    yield return new object[] { (CreateBuilderSettingsFunc)CreateBuilderSettings, disableDefaults };
+                    yield return new object[] { (CreateBuilderSettingsFunc)CreateEmptyBuilderSettings, disableDefaults };
+                }
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void DefaultConfigIsMutable(CreateBuilderFunc createBuilder)
+        {
+            HostApplicationBuilder builder = createBuilder();
 
             builder.Configuration["key1"] = "value1";
 
@@ -72,7 +122,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 using var _ = DiagnosticListener.AllListeners.Subscribe(listener);
 
-                HostApplicationBuilder builder = CreateEmptyBuilder();
+                HostApplicationBuilder builder = CreateNoDefaultsBuilder();
                 IHost host = builder.Build();
 
                 Assert.NotNull(hostBuilderFromEvent);
@@ -107,7 +157,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 using var _ = DiagnosticListener.AllListeners.Subscribe(listener);
 
-                HostApplicationBuilder builder = CreateEmptyBuilder();
+                HostApplicationBuilder builder = CreateNoDefaultsBuilder();
                 Assert.Throws<NotSupportedException>(() => builder.Build());
             });
         }
@@ -136,7 +186,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
                 using var _ = DiagnosticListener.AllListeners.Subscribe(listener);
 
-                HostApplicationBuilder builder = CreateEmptyBuilder();
+                HostApplicationBuilder builder = CreateNoDefaultsBuilder();
 
                 using IHost host = builder.Build();
                 var fakeServices = host.Services.GetRequiredService<FakeServiceCollection>();
@@ -144,10 +194,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             });
         }
 
-        [Fact]
-        public void CanConfigureAppConfigurationAndRetrieveFromDI()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void CanConfigureAppConfigurationAndRetrieveFromDI(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
 
             builder.Configuration.AddInMemoryCollection(
                     new KeyValuePair<string, string>[]
@@ -180,10 +231,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("value3", config["key2"]);
         }
 
-        [Fact]
-        public void CanConfigureAppConfigurationFromFile()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void CanConfigureAppConfigurationFromFile(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
 
             builder.Configuration.AddJsonFile("appSettings.json", optional: false);
 
@@ -196,10 +248,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("value", config["key"]);
         }
 
-        [Fact]
-        public void DisableDefaultIHostEnvironmentValues()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void DisableDefaultIHostEnvironmentValues(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
 
             Assert.Equal(Environments.Production, builder.Environment.EnvironmentName);
 #if NETCOREAPP
@@ -230,9 +283,8 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void ConfigurationSettingCanInfluenceEnvironment(bool disableDefaults)
+        [MemberData(nameof(CreateBuilderDisableDefaultsData))]
+        public void ConfigurationSettingCanInfluenceEnvironment(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
         {
             var tempPath = CreateTempSubdirectory();
 
@@ -247,7 +299,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     new(HostDefaults.ContentRootKey, tempPath)
                 });
 
-                var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+                var builder = createBuilder(new HostApplicationBuilderSettings
                 {
                     DisableDefaults = disableDefaults,
                     Configuration = config,
@@ -279,9 +331,8 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public void DirectSettingsOverrideConfigurationSetting(bool disableDefaults)
+        [MemberData(nameof(CreateBuilderDisableDefaultsData))]
+        public void DirectSettingsOverrideConfigurationSetting(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
         {
             var tempPath = CreateTempSubdirectory();
 
@@ -295,7 +346,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                     new(HostDefaults.EnvironmentKey, "EnvA" ),
                 });
 
-                var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+                var builder = createBuilder(new HostApplicationBuilderSettings
                 {
                     DisableDefaults = disableDefaults,
                     Configuration = config,
@@ -353,8 +404,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             return path;
         }
 
-        [Fact]
-        public void ChangingConfigurationPostBuilderConsturctionDoesNotChangeEnvironment()
+        [Theory]
+        [MemberData(nameof(CreateBuilderSettingsFuncs))]
+        public void ChangingConfigurationPostBuilderConstructionDoesNotChangeEnvironment(CreateBuilderSettingsFunc createBuilder)
         {
             using var config = new ConfigurationManager();
 
@@ -364,7 +416,7 @@ namespace Microsoft.Extensions.Hosting.Tests
                 new(HostDefaults.EnvironmentKey, "EnvA" ),
             });
 
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
                 Configuration = config,
@@ -389,16 +441,18 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("EnvA", hostEnvironmentFromServices.EnvironmentName);
         }
 
-        [Fact]
-        public void BuildAndDispose()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void BuildAndDispose(CreateBuilderFunc createBuilder)
         {
-            using IHost host = CreateEmptyBuilder().Build();
+            using IHost host = createBuilder().Build();
         }
 
-        [Fact]
-        public void ContentRootConfiguresBasePath()
+        [Theory]
+        [MemberData(nameof(CreateBuilderSettingsFuncs))]
+        public void ContentRootConfiguresBasePath(CreateBuilderSettingsFunc createBuilder)
         {
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
                 ContentRootPath = "/",
@@ -408,8 +462,9 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal("/", host.Services.GetService<IHostEnvironment>().ContentRootPath);
         }
 
-        [Fact]
-        public void HostConfigParametersReadCorrectly()
+        [Theory]
+        [MemberData(nameof(CreateBuilderSettingsFuncs))]
+        public void HostConfigParametersReadCorrectly(CreateBuilderSettingsFunc createBuilder)
         {
             var parameters = new Dictionary<string, string>()
             {
@@ -421,7 +476,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var config = new ConfigurationManager();
             config.AddInMemoryCollection(parameters);
 
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
                 Configuration = config
@@ -439,10 +494,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Path.GetFullPath("."), env.ContentRootPath);
         }
 
-        [Fact]
-        public void RelativeContentRootIsResolved()
+        [Theory]
+        [MemberData(nameof(CreateBuilderSettingsFuncs))]
+        public void RelativeContentRootIsResolved(CreateBuilderSettingsFunc createBuilder)
         {
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
                 ContentRootPath = "testroot",
@@ -452,10 +508,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.EndsWith(Path.DirectorySeparatorChar + "testroot", builder.Environment.ContentRootPath);
         }
 
-        [Fact]
-        public void DisableDefaultContentRootIsApplicationBasePath()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void DisableDefaultContentRootIsApplicationBasePath(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
             Assert.Equal(AppContext.BaseDirectory, builder.Environment.ContentRootPath);
         }
 
@@ -466,10 +523,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(Directory.GetCurrentDirectory(), builder.Environment.ContentRootPath);
         }
 
-        [Fact]
-        public void DisableDefaultServicesAreAvailable()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void DisableDefaultServicesAreAvailable(CreateBuilderFunc createBuilder)
         {
-            using IHost host = CreateEmptyBuilder().Build();
+            using IHost host = createBuilder().Build();
 
 #pragma warning disable CS0618 // Type or member is obsolete
             Assert.NotNull(host.Services.GetRequiredService<IHostingEnvironment>());
@@ -513,10 +571,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Equal(testShutdown, hostOptions.ShutdownTimeout);
         }
 
-        [Fact]
-        public void ConfigureDefaultServiceProvider()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void ConfigureDefaultServiceProvider(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
 
             builder.Services.AddTransient<ServiceD>();
             builder.Services.AddScoped<ServiceC>();
@@ -533,10 +592,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => { host.Services.GetRequiredService<ServiceC>(); });
         }
 
-        [Fact]
-        public void ConfigureCustomServiceProvider()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void ConfigureCustomServiceProvider(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
 
             builder.Services.AddTransient<ServiceD>();
             builder.Services.AddScoped<ServiceC>();
@@ -550,10 +610,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
 
-        [Fact]
-        public void Build_DoesNotAllowBuildingMuiltipleTimes()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void Build_DoesNotAllowBuildingMultipleTimes(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
             using (builder.Build())
             {
                 var ex = Assert.Throws<InvalidOperationException>(() => builder.Build());
@@ -561,10 +622,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             }
         }
 
-        [Fact]
-        public void SetsFullPathToContentRoot()
+        [Theory]
+        [MemberData(nameof(CreateBuilderSettingsFuncs))]
+        public void SetsFullPathToContentRoot(CreateBuilderSettingsFunc createBuilder)
         {
-            var builder = new HostApplicationBuilder(new HostApplicationBuilderSettings
+            var builder = createBuilder(new HostApplicationBuilderSettings
             {
                 DisableDefaults = true,
                 ContentRootPath = Path.GetFullPath(".")
@@ -577,10 +639,11 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.IsAssignableFrom<PhysicalFileProvider>(env.ContentRootFileProvider);
         }
 
-        [Fact]
-        public void HostServicesSameServiceProviderAsInHostBuilder()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void HostServicesSameServiceProviderAsInHostBuilder(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
             using IHost host = builder.Build();
 
             Type type = builder.GetType();
@@ -590,10 +653,11 @@ namespace Microsoft.Extensions.Hosting.Tests
         }
 
 
-        [Fact]
-        public void HostApplicationBuilderThrowsExceptionIfServicesAlreadyBuilt()
+        [Theory]
+        [MemberData(nameof(CreateNoDefaultsBuilderFuncs))]
+        public void HostApplicationBuilderThrowsExceptionIfServicesAlreadyBuilt(CreateBuilderFunc createBuilder)
         {
-            HostApplicationBuilder builder = CreateEmptyBuilder();
+            HostApplicationBuilder builder = createBuilder();
             using IHost host = builder.Build();
 
             Assert.Throws<InvalidOperationException>(() => builder.Services.AddSingleton(new ServiceA()));
@@ -603,12 +667,20 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.Throws<InvalidOperationException>(() => builder.Services.RemoveAt(0));
         }
 
-        private static HostApplicationBuilder CreateEmptyBuilder()
+        [Theory]
+        [MemberData(nameof(CreateBuilderDisableDefaultsData))]
+        public void RespectsArgsWhenDisableDefaults(CreateBuilderSettingsFunc createBuilder, bool disableDefaults)
         {
-            return new HostApplicationBuilder(new HostApplicationBuilderSettings
+            HostApplicationBuilder builder = createBuilder(new HostApplicationBuilderSettings
             {
-                DisableDefaults = true,
+                DisableDefaults = disableDefaults,
+                Args = new string[] { "mySetting=settingValue" }
             });
+
+            using IHost host = builder.Build();
+            IConfiguration config = host.Services.GetRequiredService<IConfiguration>();
+
+            Assert.Equal("settingValue", config["mySetting"]);
         }
 
         private class HostingListener : IObserver<DiagnosticListener>, IObserver<KeyValuePair<string, object?>>

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Text.RegularExpressions
@@ -9,7 +9,7 @@ namespace System.Text.RegularExpressions
         // PLEASE DON'T MODIFY BY HAND
         // IF YOU NEED TO UPDATE UNICODE VERSION FOLLOW THE GUIDE AT src/libraries/System.Private.CoreLib/Tools/GenUnicodeProp/Updating-Unicode-Versions.md
 
-        private static char[] EquivalenceCasingValues { get; } = new char[2336]
+        private static ReadOnlySpan<char> EquivalenceCasingValues => new char[2336]
         {
             '\u0041', '\u0061', '\u0042', '\u0062', '\u0043', '\u0063', '\u0044', '\u0064', '\u0045', '\u0065', '\u0046', '\u0066', '\u0047', '\u0067', '\u0048', '\u0068',
             '\u0049', '\u0069', '\u004A', '\u006A', '\u004B', '\u006B', '\u212A', '\u004C', '\u006C', '\u004D', '\u006D', '\u004E', '\u006E', '\u004F', '\u006F', '\u0050',
@@ -159,7 +159,7 @@ namespace System.Text.RegularExpressions
             '\uFF33', '\uFF53', '\uFF34', '\uFF54', '\uFF35', '\uFF55', '\uFF36', '\uFF56', '\uFF37', '\uFF57', '\uFF38', '\uFF58', '\uFF39', '\uFF59', '\uFF3A', '\uFF5A'
         };
 
-        private static ushort[] EquivalenceFirstLevelLookup { get; } = new ushort[64]
+        private static ReadOnlySpan<ushort> EquivalenceFirstLevelLookup => new ushort[64]
         {
             0x0000, 0x0400, 0xffff, 0xffff, 0x0800, 0xffff, 0xffff, 0x0c00, 0x1000, 0x1400, 0xffff, 0x1800, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
@@ -167,7 +167,7 @@ namespace System.Text.RegularExpressions
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0x2400
         };
 
-        private static ushort[] EquivalenceCasingMap { get; } = new ushort[10240]
+        private static ReadOnlySpan<ushort> EquivalenceCasingMap => new ushort[10240]
         {
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,
             0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff, 0xffff,

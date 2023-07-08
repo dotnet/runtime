@@ -83,10 +83,10 @@ namespace System.Text
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
-            => TaskToApm.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
+            => TaskToAsyncResult.Begin(WriteAsync(buffer, offset, count, CancellationToken.None), callback, state);
 
         protected override void Dispose(bool disposing)
         {
@@ -162,10 +162,10 @@ namespace System.Text
         }
 
         public override int EndRead(IAsyncResult asyncResult)
-            => TaskToApm.End<int>(asyncResult);
+            => TaskToAsyncResult.End<int>(asyncResult);
 
         public override void EndWrite(IAsyncResult asyncResult)
-            => TaskToApm.End(asyncResult);
+            => TaskToAsyncResult.End(asyncResult);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
 #pragma warning disable CS8774 // Member must have a non-null value when exiting.

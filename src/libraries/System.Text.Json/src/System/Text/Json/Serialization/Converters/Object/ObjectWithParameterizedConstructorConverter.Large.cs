@@ -17,13 +17,12 @@ namespace System.Text.Json.Serialization.Converters
         protected sealed override bool ReadAndCacheConstructorArgument(scoped ref ReadStack state, ref Utf8JsonReader reader, JsonParameterInfo jsonParameterInfo)
         {
             Debug.Assert(jsonParameterInfo.ShouldDeserialize);
-            Debug.Assert(jsonParameterInfo.Options != null);
 
-            bool success = jsonParameterInfo.ConverterBase.TryReadAsObject(ref reader, jsonParameterInfo.Options!, ref state, out object? arg);
+            bool success = jsonParameterInfo.EffectiveConverter.TryReadAsObject(ref reader, jsonParameterInfo.ParameterType, jsonParameterInfo.Options, ref state, out object? arg);
 
             if (success && !(arg == null && jsonParameterInfo.IgnoreNullTokensOnRead))
             {
-                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.ClrInfo.Position] = arg!;
+                ((object[])state.Current.CtorArgumentState!.Arguments)[jsonParameterInfo.Position] = arg!;
 
                 // if this is required property IgnoreNullTokensOnRead will always be false because we don't allow for both to be true
                 state.Current.MarkRequiredPropertyAsRead(jsonParameterInfo.MatchingProperty);
@@ -60,7 +59,7 @@ namespace System.Text.Json.Serialization.Converters
             for (int i = 0; i < typeInfo.ParameterCount; i++)
             {
                 JsonParameterInfo parameterInfo = cache[i].Value;
-                arguments[parameterInfo.ClrInfo.Position] = parameterInfo.DefaultValue;
+                arguments[parameterInfo.Position] = parameterInfo.DefaultValue;
             }
 
             state.Current.CtorArgumentState!.Arguments = arguments;

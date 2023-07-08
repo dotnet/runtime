@@ -333,7 +333,6 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Add both grouping separators and zero padding to the string representation of a number
-#if true
             unsafe
             {
                 char* result = stackalloc char[newLen];
@@ -364,30 +363,6 @@ namespace System.Xml.Xsl.Runtime
                 }
                 return new string(result, 0, newLen);
             }
-#else
-            // Safe version is about 20% slower after NGEN
-            char[] result = new char[newLen];
-            char separator = (groupSeparator.Length > 0) ? groupSeparator[0] : ' ';
-
-            int oldEnd = oldLen - 1;
-            int newEnd = newLen - 1;
-            int cnt = groupSize;
-
-            while (true) {
-                // Move digit to its new location (zero if we've run out of digits)
-                result[newEnd--] = (oldEnd >= 0) ? (char)(str[oldEnd--] + shift) : zero;
-                if (newEnd < 0) {
-                    break;
-                }
-                if (/*groupSize > 0 && */--cnt == 0) {
-                    // Every groupSize digits insert the separator
-                    result[newEnd--] = separator;
-                    cnt = groupSize;
-                    Debug.Assert(newEnd >= 0, "Separator cannot be the first character");
-                }
-            }
-            return new string(result, 0, newLen);
-#endif
         }
     }
 }

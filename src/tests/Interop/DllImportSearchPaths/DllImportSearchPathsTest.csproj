@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="../NativeLibrary/NativeLibraryToLoad/NativeLibraryToLoad.cs" />
+    <CMakeProjectReference Include="../NativeLibrary/NativeLibraryToLoad/CMakeLists.txt" />
+  </ItemGroup>
+
+  <Target Name="SetUpSubdirectory" AfterTargets="CopyNativeProjectBinaries">
+    <PropertyGroup>
+      <NativeLibrarySubdirectory>$(OutDir)/subdirectory</NativeLibrarySubdirectory>
+      <FileNameSuffix>-in-subdirectory</FileNameSuffix>
+    </PropertyGroup>
+    <ItemGroup>
+      <_FilesToCopy Include="$(OutDir)/$(TargetName).dll" />
+      <_FilesToMove Include="$(OutDir)/libNativeLibrary.*" />
+      <_FilesToMove Include="$(OutDir)/NativeLibrary.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_FilesToCopy)" DestinationFiles="@(_FilesToCopy -> '$(NativeLibrarySubdirectory)/%(Filename)%(Extension)')" />
+    <Move SourceFiles="@(_FilesToMove)" DestinationFiles="@(_FilesToMove -> '$(NativeLibrarySubdirectory)/%(Filename)%(Extension)')" />
+  </Target>
+</Project>

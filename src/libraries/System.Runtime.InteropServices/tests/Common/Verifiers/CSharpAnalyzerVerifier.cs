@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis.CSharp.Testing.XUnit;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 
-namespace LibraryImportGenerator.UnitTests.Verifiers
+namespace Microsoft.Interop.UnitTests.Verifiers
 {
     public static class CSharpAnalyzerVerifier<TAnalyzer>
         where TAnalyzer : DiagnosticAnalyzer, new()

@@ -100,8 +100,8 @@ namespace System.Runtime
         internal static extern int InterlockedCompareExchange(ref int location1, int value, int comparand);
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        [RuntimeImport(RuntimeLibrary, "RhpMemoryBarrier")]
-        internal static extern void MemoryBarrier();
+        [RuntimeImport(RuntimeLibrary, "RhpLockCmpXchg64")]
+        internal static extern long InterlockedCompareExchange(ref long location1, long value, long comparand);
 
         // Moves memory from smem to dmem. Size must be a positive value.
         // This copy uses an intrinsic to be safe for copying arbitrary bits of

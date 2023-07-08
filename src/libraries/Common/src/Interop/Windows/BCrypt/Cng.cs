@@ -45,6 +45,7 @@ namespace Internal.NativeCrypto
             public const string Hash = "HASH";                  // BCRYPT_KDF_HASH
             public const string Hmac = "HMAC";                  // BCRYPT_KDF_HMAC
             public const string Tls = "TLS_PRF";                // BCRYPT_KDF_TLS_PRF
+            public const string Raw = "TRUNCATE";               // BCRYPT_KDF_RAW_SECRET
         }
     }
 

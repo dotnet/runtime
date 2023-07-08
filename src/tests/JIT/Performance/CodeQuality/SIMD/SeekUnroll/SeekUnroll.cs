@@ -4,6 +4,7 @@
 using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public static class SeekUnroll
 {
@@ -95,8 +96,15 @@ public static class SeekUnroll
     // Set of indices to pass to Test(int)
     static int[] IndicesToTest = new int[] { 1, 3, 11, 19, 27 };
 
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        return TestEntry(null);
+    }
+
     // Main method entrypoint runs the manual timer loop
-    public static int Main(string[] args)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int TestEntry(int? arg)
     {
         int failures = 0;
 
@@ -108,14 +116,14 @@ public static class SeekUnroll
         }
 
         int manualLoopCount = 1;
-        if (args == null || args.Length == 0)
+        if (arg == null)
         {
             Console.WriteLine("Warning: no iteration count specified; defaulting to 1 iteration per case");
             Console.WriteLine("To use multiple iterations per case, pass the desired number of iterations as the first command-line argument to this test");
         }
         else
         {
-            manualLoopCount = int.Parse(args[0]);
+            manualLoopCount = (int)arg;
         }
 
         foreach(int index in IndicesToTest)

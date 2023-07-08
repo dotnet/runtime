@@ -47,6 +47,7 @@ namespace System.Text.Json
         private Memory<byte> _memory;
 
         private bool _inObject;
+        private bool _commentAfterNoneOrPropertyName;
         private JsonTokenType _tokenType;
         private BitStack _bitStack;
 
@@ -261,6 +262,7 @@ namespace System.Text.Json
 
             _inObject = default;
             _tokenType = default;
+            _commentAfterNoneOrPropertyName = default;
             _currentDepth = default;
 
             _bitStack = default;
@@ -568,12 +570,9 @@ namespace System.Text.Json
                 output[BytesPending++] = JsonConstants.ListSeparator;
             }
 
-            if (_tokenType != JsonTokenType.PropertyName)
+            if (_tokenType is not JsonTokenType.PropertyName and not JsonTokenType.None || _commentAfterNoneOrPropertyName)
             {
-                if (_tokenType != JsonTokenType.None)
-                {
-                    WriteNewLine(output);
-                }
+                WriteNewLine(output);
                 JsonWriterHelper.WriteIndentation(output.Slice(BytesPending), indent);
                 BytesPending += indent;
             }

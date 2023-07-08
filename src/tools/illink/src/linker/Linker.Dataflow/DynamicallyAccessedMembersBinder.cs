@@ -105,7 +105,7 @@ namespace Mono.Linker
 					yield return e;
 			}
 
-			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypesOverlay.Interfaces)) {
+			if (memberTypes.HasFlag (DynamicallyAccessedMemberTypes.Interfaces)) {
 				foreach (var i in typeDefinition.GetAllInterfaceImplementations (context, declaredOnly))
 					yield return i;
 			}

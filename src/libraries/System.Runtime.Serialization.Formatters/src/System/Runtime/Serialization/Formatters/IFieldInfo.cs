@@ -3,6 +3,7 @@
 
 namespace System.Runtime.Serialization.Formatters
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public interface IFieldInfo
     {
         string[]? FieldNames { get; set; }

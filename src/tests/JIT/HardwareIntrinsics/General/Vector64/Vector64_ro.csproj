@@ -1,16 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <BuildAsStandalone>false</BuildAsStandalone>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <HWITestsArm64Only>true</HWITestsArm64Only>
   </PropertyGroup>
   <PropertyGroup>
     <DebugType>Embedded</DebugType>
     <Optimize>True</Optimize>
-  </PropertyGroup>
-  <PropertyGroup>
-    <!-- We have a lot of tests here so run them in outerloop on platforms where they aren't accelerated -->
-    <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestPriority Condition="'$(TargetArchitecture)' == 'arm64'">0</CLRTestPriority>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.Vector64.cs" />

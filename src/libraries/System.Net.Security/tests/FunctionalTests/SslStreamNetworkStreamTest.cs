@@ -754,7 +754,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerUntrustedCaWithCustomTrust_OK(bool usePartialChain)
         {
             int split = Random.Shared.Next(0, _certificates.serverChain.Count - 1);
@@ -854,7 +854,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/73862", TestPlatforms.OSX)]
         public async Task SslStream_ClientCertificate_SendsChain()
         {
@@ -915,7 +915,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Android, "Self-signed certificates are rejected by Android before the .NET validation is reached")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientCertificateContext_SendsChain()
         {
             (X509Certificate2 clientCertificate, X509Certificate2Collection clientChain) = TestHelper.GenerateCertificates(nameof(SslStream_ClientCertificateContext_SendsChain), serverCertificate: false);
@@ -933,6 +933,43 @@ namespace System.Net.Security.Tests
             TestHelper.CleanupCertificates(nameof(SslStream_ClientCertificateContext_SendsChain));
             clientCertificate.Dispose();
             foreach (X509Certificate c in clientChain)
+            {
+                c.Dispose();
+            }
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public async Task SslStream_EphemeralKey_Throws()
+        {
+            (X509Certificate2 serverCertificate, X509Certificate2Collection chain) = TestHelper.GenerateCertificates(nameof(SslStream_EphemeralKey_Throws), ephemeralKey: true);
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+
+            var clientOptions = new SslClientAuthenticationOptions()
+            {
+                TargetHost = "localhost",
+                RemoteCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) => true
+            };
+
+            var serverOptions = new SslServerAuthenticationOptions()
+            {
+                ServerCertificate = serverCertificate
+            };
+
+            (SslStream client, SslStream server) = TestHelper.GetConnectedSslStreams();
+
+            Task t1 = client.AuthenticateAsClientAsync(clientOptions, CancellationToken.None);
+            Task t2 = server.AuthenticateAsServerAsync(serverOptions, CancellationToken.None);
+
+            AuthenticationException e = await Assert.ThrowsAsync<AuthenticationException>(() => t2);
+            Assert.Contains("ephemeral", e.Message);
+            server.Dispose();
+            await Assert.ThrowsAsync<IOException>(() => t1);
+            client.Dispose();
+
+            TestHelper.CleanupCertificates(nameof(SslStream_EphemeralKey_Throws));
+            serverCertificate.Dispose();
+            foreach (X509Certificate c in chain)
             {
                 c.Dispose();
             }

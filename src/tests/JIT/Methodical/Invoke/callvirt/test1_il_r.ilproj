@@ -6,6 +6,7 @@
     <DebugType>PdbOnly</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="test1_r.il" />
     <Compile Include="test1.il" />
   </ItemGroup>
 </Project>

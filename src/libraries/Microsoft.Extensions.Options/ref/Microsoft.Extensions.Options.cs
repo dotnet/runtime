@@ -215,6 +215,10 @@ namespace Microsoft.Extensions.Options
         public string OptionsName { get { throw null; } }
         public System.Type OptionsType { get { throw null; } }
     }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct)]
+    public sealed class OptionsValidatorAttribute : System.Attribute
+    {
+    }
     public partial class OptionsWrapper<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions> : Microsoft.Extensions.Options.IOptions<TOptions> where TOptions : class
     {
         public OptionsWrapper(TOptions options) { }
@@ -282,6 +286,20 @@ namespace Microsoft.Extensions.Options
         public virtual void PostConfigure(string? name, TOptions options) { }
         public void PostConfigure(TOptions options) { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+    public sealed class ValidateEnumeratedItemsAttribute : System.Attribute
+    {
+        public ValidateEnumeratedItemsAttribute() {}
+        public ValidateEnumeratedItemsAttribute(System.Type validator) { throw null; }
+        public System.Type? Validator { get {throw null; } }
+    }
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field)]
+    public sealed class ValidateObjectMembersAttribute : System.Attribute
+    {
+        public ValidateObjectMembersAttribute() {}
+        public ValidateObjectMembersAttribute(System.Type validator) { throw null; }
+        public System.Type? Validator { get { throw null; } }
+    }
     public partial class ValidateOptionsResult
     {
         public static readonly Microsoft.Extensions.Options.ValidateOptionsResult Skip;
@@ -296,6 +314,16 @@ namespace Microsoft.Extensions.Options
         public bool Succeeded { get { throw null; } protected set { } }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(System.Collections.Generic.IEnumerable<string> failures) { throw null; }
         public static Microsoft.Extensions.Options.ValidateOptionsResult Fail(string failureMessage) { throw null; }
+    }
+    public class ValidateOptionsResultBuilder
+    {
+        public ValidateOptionsResultBuilder() { }
+        public void AddError(string error, string? propertyName = null) { throw null; }
+        public void AddResult(System.ComponentModel.DataAnnotations.ValidationResult? result) { throw null; }
+        public void AddResults(System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult?>? results) { throw null; }
+        public void AddResult(ValidateOptionsResult result) { throw null; }
+        public ValidateOptionsResult Build() { throw null; }
+        public void Clear() { throw null; }
     }
     public partial class ValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {

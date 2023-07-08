@@ -38,7 +38,7 @@ extends:
       - job: EnterpriseLinuxTests
         timeoutInMinutes: 120
         pool:
-          name: NetCore-Public
+          name: $(DncEngPublicBuildPool)
           demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
         steps:
         - bash: |

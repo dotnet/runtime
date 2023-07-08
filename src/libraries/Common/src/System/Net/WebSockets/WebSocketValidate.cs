@@ -29,8 +29,8 @@ namespace System.Net.WebSockets
         private const int InvalidCloseStatusCodesTo = 999;
 
         // [0x21, 0x7E] except separators "()<>@,;:\\\"/[]?={} ".
-        private static readonly IndexOfAnyValues<char> s_validSubprotocolChars =
-            IndexOfAnyValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
+        private static readonly SearchValues<char> s_validSubprotocolChars =
+            SearchValues.Create("!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~");
 
         internal static void ThrowIfInvalidState(WebSocketState currentState, bool isDisposed, WebSocketState[] validStates)
         {
@@ -58,10 +58,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateSubprotocol(string subProtocol)
         {
-            if (string.IsNullOrWhiteSpace(subProtocol))
-            {
-                throw new ArgumentException(SR.net_WebSockets_InvalidEmptySubProtocol, nameof(subProtocol));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(subProtocol);
 
             int indexOfInvalidChar = subProtocol.AsSpan().IndexOfAnyExcept(s_validSubprotocolChars);
             if (indexOfInvalidChar >= 0)
@@ -132,15 +129,11 @@ namespace System.Net.WebSockets
         {
             ArgumentNullException.ThrowIfNull(buffer);
 
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, buffer.Length);
 
-            if (count < 0 || count > (buffer.Length - offset))
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, buffer.Length - offset);
         }
     }
 }

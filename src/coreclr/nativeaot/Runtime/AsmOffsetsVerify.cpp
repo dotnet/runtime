@@ -13,11 +13,9 @@
 #include "thread.h"
 #include "TargetPtrs.h"
 #include "rhbinder.h"
-#include "RWLock.h"
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
-#include "CallDescr.h"
 
 class AsmOffsets
 {

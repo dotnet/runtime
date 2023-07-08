@@ -10,9 +10,10 @@ namespace System
     public partial class BinaryData
     {
         public BinaryData(byte[] data) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public BinaryData(object? jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null, System.Type? type = null) { }
-        public BinaryData(object? jsonSerializable, System.Text.Json.Serialization.JsonSerializerContext context, Type? type = null) { }
+        public BinaryData(object? jsonSerializable, System.Text.Json.Serialization.JsonSerializerContext context, System.Type? type = null) { }
         public BinaryData(System.ReadOnlyMemory<byte> data) { }
         public BinaryData(string data) { }
         public static System.BinaryData Empty { get { throw null; } }
@@ -20,6 +21,7 @@ namespace System
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.BinaryData FromBytes(byte[] data) { throw null; }
         public static System.BinaryData FromBytes(System.ReadOnlyMemory<byte> data) { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public static System.BinaryData FromObjectAsJson<T>(T jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public static System.BinaryData FromObjectAsJson<T>(T jsonSerializable, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo) { throw null; }
@@ -28,10 +30,13 @@ namespace System
         public static System.BinaryData FromString(string data) { throw null; }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override int GetHashCode() { throw null; }
+        public bool IsEmpty { get { throw null; } }
+        public int Length { get { throw null; } }
         public static implicit operator System.ReadOnlyMemory<byte> (System.BinaryData? data) { throw null; }
         public static implicit operator System.ReadOnlySpan<byte> (System.BinaryData? data) { throw null; }
         public byte[] ToArray() { throw null; }
         public System.ReadOnlyMemory<byte> ToMemory() { throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed and might need runtime code generation.")]
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public T? ToObjectFromJson<T>(System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
         public T? ToObjectFromJson<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo) { throw null; }

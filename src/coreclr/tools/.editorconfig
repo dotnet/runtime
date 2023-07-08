@@ -1,0 +1,6 @@
+### Code Style Analyzers
+
+[*.cs]
+
+# TODO: Update tools to use LibraryImport instead of DllImport
+dotnet_diagnostic.SYSLIB1054.severity = suggestion

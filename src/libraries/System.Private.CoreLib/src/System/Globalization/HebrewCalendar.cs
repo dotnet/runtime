@@ -389,10 +389,8 @@ namespace System.Globalization
             // Get the offset into the LunarMonthLen array and the lunar day
             //  for January 1st.
             int index = gregorianYear - FirstGregorianTableYear;
-            if (index < 0 || index > TableSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(gregorianYear));
-            }
+            ArgumentOutOfRangeException.ThrowIfNegative(index, nameof(gregorianYear));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(index, TableSize, nameof(gregorianYear));
 
             index *= 2;
             lunarDate.day = HebrewTable[index];
@@ -585,7 +583,7 @@ namespace System.Globalization
             int d = GetDatePart(time.Ticks, DatePartDay);
 
             y += years;
-            CheckHebrewYearValue(y, Calendar.CurrentEra, nameof(years));
+            CheckHebrewYearValue(y, CurrentEra, nameof(years));
 
             int months = GetMonthsInYear(y, CurrentEra);
             if (m > months)
@@ -600,7 +598,7 @@ namespace System.Globalization
             }
 
             long ticks = ToDateTime(y, m, d, 0, 0, 0, 0).Ticks + (time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return new DateTime(ticks);
         }
 
@@ -713,7 +711,7 @@ namespace System.Globalization
                 CheckHebrewDayValue(year, month, day, era);
                 return true;
             }
-            else if (IsLeapYear(year, Calendar.CurrentEra))
+            else if (IsLeapYear(year, CurrentEra))
             {
                 // There is an additional day in the 6th month in the leap year (the extra day is the 30th day in the 6th month),
                 // so we should return true for 6/30 if that's in a leap year.

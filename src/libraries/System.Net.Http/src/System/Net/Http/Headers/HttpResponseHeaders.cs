@@ -16,7 +16,7 @@ namespace System.Net.Http.Headers
 
         private object[]? _specialCollectionsSlots;
         private HttpGeneralHeaders? _generalHeaders;
-        private bool _containsTrailingHeaders;
+        private readonly bool _containsTrailingHeaders;
 
         #region Response Headers
 

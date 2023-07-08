@@ -3,12 +3,14 @@
 
 using System;
 using System.Collections.Generic;
+using Xunit;
 
 namespace GCHangCSharp
 {
     public class Program
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestClass t = new TestClass();
             List<TestClass.LongStruct> x = t.Test();

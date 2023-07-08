@@ -4,7 +4,10 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <UnicodeUcdVersion>14.0</UnicodeUcdVersion>
+    <UnicodeUcdVersion>15.0</UnicodeUcdVersion>
+
+     <!-- some tests require full ICU data, force it -->
+    <WasmIncludeFullIcuData>true</WasmIncludeFullIcuData>
   </PropertyGroup>
   <ItemGroup>
     <RdXmlFile Include="default.rd.xml" />
@@ -13,6 +16,7 @@
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="IcuTests.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.cs" />
+    <Compile Include="CompareInfo\CompareInfoTestsBase.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IndexOf.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="CompareInfo\CompareInfoTests.Compare.cs" />

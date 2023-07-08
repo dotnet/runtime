@@ -94,8 +94,8 @@ namespace DebuggerTests
         public async Task DuplicateAssemblyLoadedEventForAssemblyFromBundle(bool load_pdb, int expected_count)
             => await AssemblyLoadedEventTest(
                 "debugger-test",
-                Path.Combine(DebuggerTestAppPath, "managed/debugger-test.dll"),
-                load_pdb ? Path.Combine(DebuggerTestAppPath, "managed/debugger-test.pdb") : null,
+                Path.Combine(DebuggerTestAppPath, "_framework/debugger-test.dll"),
+                load_pdb ? Path.Combine(DebuggerTestAppPath, "_framework/debugger-test.pdb") : null,
                 "/debugger-test.cs",
                 expected_count
             );
@@ -136,7 +136,7 @@ namespace DebuggerTests
                             :  await Task.FromResult(ProtocolEventHandlerReturn.KeepHandler);
             });
 
-            byte[] bytes = File.ReadAllBytes(asm_path);
+            byte[] bytes = File.Exists(asm_path) ? File.ReadAllBytes(asm_path) : File.ReadAllBytes(Path.ChangeExtension(asm_path, WebcilInWasmExtension)); // hack!
             string asm_base64 = Convert.ToBase64String(bytes);
 
             string pdb_base64 = String.Empty;

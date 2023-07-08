@@ -55,7 +55,6 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(CodeCompileUnit_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void FromDom_ValidCodeCompileUnit_ReturnsExpected(CodeCompileUnit compilationUnit)
         {
             var compiler = new StubCompiler();
@@ -67,7 +66,6 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(CodeCompileUnit_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void FromDom_ValidCodeCompileUnit_ThrowsPlatformNotSupportedException(CodeCompileUnit compilationUnit)
         {
             var compiler = new Compiler();
@@ -363,7 +361,6 @@ namespace System.CodeDom.Compiler.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         [MemberData(nameof(Source_TestData))]
         public void FromSource_ValidSource_ReturnsExpected(string source)
         {
@@ -374,7 +371,6 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(Source_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void FromSource_ValidSource_ThrowsPlatformNotSupportedException(string source)
         {
             var compiler = new Compiler();
@@ -398,7 +394,6 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(Sources_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void CompileAssemblyFromSourceBatch_ValidSources_ReturnsExpected(string[] sources)
         {
             ICodeCompiler compiler = new StubCompiler();
@@ -430,7 +425,6 @@ namespace System.CodeDom.Compiler.Tests
 
         [Theory]
         [MemberData(nameof(Sources_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void FromSourceBatch_ValidSources_ReturnsExpected(string[] sources)
         {
             var compiler = new StubCompiler();
@@ -440,7 +434,6 @@ namespace System.CodeDom.Compiler.Tests
         [Theory]
         [MemberData(nameof(Sources_TestData))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void FromSourceBatch_ValidSources_ThrowsPlatformNotSupportedException(string[] sources)
         {
             var compiler = new Compiler();
@@ -466,7 +459,6 @@ namespace System.CodeDom.Compiler.Tests
         [InlineData("")]
         [InlineData("cmdArgs")]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Occasionally fails in .NET framework, probably caused from a very edge case bug in .NET Framework which we will not be fixing")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/73721", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJSOnWindows))]
         public void GetResponseFileCmdArgs_ValidCmdArgs_ReturnsExpected(string cmdArgs)
         {
             var compiler = new Compiler();

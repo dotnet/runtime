@@ -17,7 +17,7 @@ bool
 CrashInfo::Initialize()
 {
     char memPath[128];
-    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%lu/mem", m_pid);
+    _snprintf_s(memPath, sizeof(memPath), sizeof(memPath), "/proc/%u/mem", m_pid);
 
     m_fdMem = open(memPath, O_RDONLY);
     if (m_fdMem == -1)
@@ -36,12 +36,22 @@ CrashInfo::Initialize()
         return false;
     }
 
-    char pagemapPath[128];
-    _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%lu/pagemap", m_pid);
-    m_fdPagemap = open(pagemapPath, O_RDONLY);
-    if (m_fdPagemap == -1)
+    CLRConfigNoCache disablePagemapUse = CLRConfigNoCache::Get("DbgDisablePagemapUse", /*noprefix*/ false, &getenv);
+    DWORD val = 0;
+    if (disablePagemapUse.IsSet() && disablePagemapUse.TryAsInteger(10, val) && val == 0)
     {
-        TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        TRACE("DbgDisablePagemapUse detected - pagemap file checking is enabled\n");
+        char pagemapPath[128];
+        _snprintf_s(pagemapPath, sizeof(pagemapPath), sizeof(pagemapPath), "/proc/%u/pagemap", m_pid);
+        m_fdPagemap = open(pagemapPath, O_RDONLY);
+        if (m_fdPagemap == -1)
+        {
+            TRACE("open(%s) FAILED %d (%s), will fallback to dumping all memory regions without checking if they are committed\n", pagemapPath, errno, strerror(errno));
+        }
+    }
+    else
+    {
+        m_fdPagemap = -1;
     }
 
     // Get the process info
@@ -85,7 +95,7 @@ bool
 CrashInfo::EnumerateAndSuspendThreads()
 {
     char taskPath[128];
-    snprintf(taskPath, sizeof(taskPath), "/proc/%d/task", m_pid);
+    _snprintf_s(taskPath, sizeof(taskPath), sizeof(taskPath), "/proc/%u/task", m_pid);
 
     DIR* taskDir = opendir(taskPath);
     if (taskDir == nullptr)
@@ -129,7 +139,7 @@ bool
 CrashInfo::GetAuxvEntries()
 {
     char auxvPath[128];
-    snprintf(auxvPath, sizeof(auxvPath), "/proc/%d/auxv", m_pid);
+    _snprintf_s(auxvPath, sizeof(auxvPath), sizeof(auxvPath), "/proc/%u/auxv", m_pid);
 
     int fd = open(auxvPath, O_RDONLY, 0);
     if (fd == -1)
@@ -185,7 +195,7 @@ CrashInfo::EnumerateMemoryRegions()
 
     // Making something like: /proc/123/maps
     char mapPath[128];
-    int chars = snprintf(mapPath, sizeof(mapPath), "/proc/%d/maps", m_pid);
+    int chars = _snprintf_s(mapPath, sizeof(mapPath), sizeof(mapPath), "/proc/%u/maps", m_pid);
     assert(chars > 0 && (size_t)chars <= sizeof(mapPath));
 
     FILE* mapsFile = fopen(mapPath, "r");
@@ -329,7 +339,7 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                 }
             }
         }
-        else if (g_checkForSingleFile)
+        else if (m_appModel == AppModelType::SingleFile)
         {
             if (PopulateForSymbolLookup(baseAddress))
             {
@@ -339,7 +349,8 @@ CrashInfo::VisitModule(uint64_t baseAddress, std::string& moduleName)
                     m_coreclrPath = GetDirectory(moduleName);
                     m_runtimeBaseAddress = baseAddress;
 
-                    RuntimeInfo runtimeInfo { };
+                    // explicit initialization for old gcc support; instead of just runtimeInfo { }
+                    RuntimeInfo runtimeInfo { .Signature = { }, .Version = 0, .RuntimeModuleIndex = { }, .DacModuleIndex = { }, .DbiModuleIndex = { } };
                     if (ReadMemory((void*)(baseAddress + symbolOffset), &runtimeInfo, sizeof(RuntimeInfo)))
                     {
                         if (strcmp(runtimeInfo.Signature, RUNTIME_INFO_SIGNATURE) == 0)
@@ -478,7 +489,7 @@ bool
 GetStatus(pid_t pid, pid_t* ppid, pid_t* tgid, std::string* name)
 {
     char statusPath[128];
-    snprintf(statusPath, sizeof(statusPath), "/proc/%d/status", pid);
+    _snprintf_s(statusPath, sizeof(statusPath), sizeof(statusPath), "/proc/%d/status", pid);
 
     FILE *statusFile = fopen(statusPath, "r");
     if (statusFile == nullptr)
@@ -527,6 +538,13 @@ ModuleInfo::LoadModule()
     if (m_module == nullptr)
     {
         m_module = dlopen(m_moduleName.c_str(), RTLD_LAZY);
-        m_localBaseAddress = ((struct link_map*)m_module)->l_addr;
+        if (m_module != nullptr)
+        {
+            m_localBaseAddress = ((struct link_map*)m_module)->l_addr;
+        }
+        else
+        {
+            TRACE("LoadModule: dlopen(%s) FAILED %s\n", m_moduleName.c_str(), dlerror());
+        }
     }
 }

@@ -7,14 +7,14 @@ using System.Collections.Generic;
 namespace System.Reflection.Runtime.TypeParsing
 {
 	//
-	// Parser for type names passed to GetType() apis. 
+	// Parser for type names passed to GetType() apis.
 	//
 	public sealed class TypeParser
 	{
 		//
 		// Parses a typename. The typename may be optionally postpended with a "," followed by a legal assembly name.
 		//
-		public static TypeName ParseTypeName(string s)
+		public static TypeName? ParseTypeName(string s)
 		{
 			try
 			{
@@ -29,15 +29,15 @@ namespace System.Reflection.Runtime.TypeParsing
 		//
 		// Parses a typename. The typename may be optionally postpended with a "," followed by a legal assembly name.
 		//
-		private static TypeName ParseAssemblyQualifiedTypeName(String s)
-        {
+		private static TypeName? ParseAssemblyQualifiedTypeName(string s)
+		{
 			if (string.IsNullOrEmpty(s))
 				return null;
 
 			// Desktop compat: a whitespace-only "typename" qualified by an assembly name throws an ArgumentException rather than
 			// a TypeLoadException.
 			int idx = 0;
-			while (idx < s.Length && Char.IsWhiteSpace(s[idx]))
+			while (idx < s.Length && char.IsWhiteSpace(s[idx]))
 			{
 				idx++;
 			}
@@ -64,11 +64,11 @@ namespace System.Reflection.Runtime.TypeParsing
 			catch (TypeLexer.IllegalEscapeSequenceException)
 			{
 				// Emulates a CLR4.5 bug that causes any string that contains an illegal escape sequence to be parsed as the empty string.
-				return ParseAssemblyQualifiedTypeName(String.Empty);
+				return ParseAssemblyQualifiedTypeName(string.Empty);
 			}
 		}
 
-		private TypeParser(String s)
+		private TypeParser(string s)
 		{
 			_lexer = new TypeLexer(s);
 		}
@@ -161,14 +161,14 @@ namespace System.Reflection.Runtime.TypeParsing
 
 		//
 		// Foo or Foo+Inner
-		// 
+		//
 		private NamedTypeName ParseNamedTypeName()
 		{
 			NamedTypeName namedType = ParseNamespaceTypeName();
 			while (_lexer.Peek == TokenType.Plus)
 			{
 				_lexer.Skip();
-				String nestedTypeName = _lexer.GetNextIdentifier();
+				string nestedTypeName = _lexer.GetNextIdentifier();
 				namedType = new NestedTypeName(nestedTypeName, namedType);
 			}
 			return namedType;
@@ -176,7 +176,7 @@ namespace System.Reflection.Runtime.TypeParsing
 
 		//
 		// Non-nested named type.
-		// 
+		//
 		private NamespaceTypeName ParseNamespaceTypeName()
 		{
 			string fullName = _lexer.GetNextIdentifier();
@@ -202,7 +202,7 @@ namespace System.Reflection.Runtime.TypeParsing
 			}
 			else if (token == TokenType.OpenSqBracket)
 			{
-				RuntimeAssemblyName assemblyName = null;
+				RuntimeAssemblyName? assemblyName = null;
 				NonQualifiedTypeName typeName = ParseNonQualifiedTypeName();
 				token = _lexer.GetNextToken();
 				if (token == TokenType.Comma)

@@ -1,7 +1,7 @@
 using System;
 using System.Reflection;
 
-// Disable warning about ambigous types - linker only looks at names, not definition assemblies
+// Disable warning about ambigous types - trimming tools only looks at names, not definition assemblies
 #pragma warning disable 0436
 
 namespace Mono.Linker.Tests.Cases.Reflection.Dependencies

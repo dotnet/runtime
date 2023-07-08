@@ -4,6 +4,8 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <Nullable>enable</Nullable>
     <EnablePreviewFeatures>True</EnablePreviewFeatures>
+    <NoWarn>CA2252</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -13,6 +15,11 @@
     <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
     <PackageReference Include="System.CommandLine.Experimental" Version="0.3.0-alpha.19577.1" />
     <PackageReference Include="System.Net.Http.WinHttpHandler" Version="4.5.4" />
+  </ItemGroup>
+
+  <!-- Shared production code -->
+  <ItemGroup>
+    <Compile Include="$(MsQuicInteropIncludes)" LinkBase="MsQuicInterop" />
   </ItemGroup>
 
   <PropertyGroup>

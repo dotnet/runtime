@@ -1,11 +1,36 @@
-//! Licensed to the .NET Foundation under one or more agreements.
-//! The .NET Foundation licenses this file to you under the MIT license.
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
 
-import BuildConfiguration from "consts:configuration";
-import { INTERNAL, Module, runtimeHelpers } from "./imports";
+/* eslint-disable no-console */
+import { INTERNAL, runtimeHelpers } from "./globals";
+import { utf8ToString } from "./strings";
 import { CharPtr, VoidPtr } from "./types/emscripten";
 
-const wasm_func_map = new Map<number, string>();
+let prefix = "MONO_WASM: ";
+
+export function mono_set_thread_id(tid: string) {
+    prefix = `MONO_WASM [${tid}]: `;
+}
+
+export function mono_log_debug(msg: string, ...data: any) {
+    if (runtimeHelpers.diagnosticTracing) {
+        console.debug(prefix + msg, ...data);
+    }
+}
+
+export function mono_log_info(msg: string, ...data: any) {
+    console.info(prefix + msg, ...data);
+}
+
+export function mono_log_warn(msg: string, ...data: any) {
+    console.warn(prefix + msg, ...data);
+}
+
+export function mono_log_error(msg: string, ...data: any) {
+    console.error(prefix + msg, ...data);
+}
+
+export const wasm_func_map = new Map<number, string>();
 const regexes: any[] = [];
 
 // V8
@@ -55,15 +80,15 @@ export function mono_wasm_symbolicate_string(message: string): string {
 
         return origMessage;
     } catch (error) {
-        console.debug(`MONO_WASM: failed to symbolicate: ${error}`);
+        console.debug(`failed to symbolicate: ${error}`);
         return message;
     }
 }
 
 export function mono_wasm_stringify_as_error_with_stack(err: Error | string): string {
     let errObj: any = err;
-    if (!(errObj instanceof Error)) {
-        errObj = new Error(errObj);
+    if (!errObj || !errObj.stack || !(errObj instanceof Error)) {
+        errObj = new Error(errObj || "Unknown error");
     }
 
     // Error
@@ -71,11 +96,11 @@ export function mono_wasm_stringify_as_error_with_stack(err: Error | string): st
 }
 
 export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: CharPtr, message_ptr: CharPtr, fatal: number, user_data: VoidPtr): void {
-    const origMessage = Module.UTF8ToString(message_ptr);
+    const origMessage = utf8ToString(message_ptr);
     const isFatal = !!fatal;
-    const domain = Module.UTF8ToString(log_domain_ptr);
+    const domain = utf8ToString(log_domain_ptr);
     const dataPtr = user_data;
-    const log_level = Module.UTF8ToString(log_level_ptr);
+    const log_level = utf8ToString(log_level_ptr);
 
     const message = `[MONO] ${origMessage}`;
 
@@ -107,107 +132,16 @@ export function mono_wasm_trace_logger(log_domain_ptr: CharPtr, log_level_ptr: C
     }
 }
 
-export let consoleWebSocket: WebSocket;
 
-export function setup_proxy_console(id: string, console: Console, origin: string): void {
-    // this need to be copy, in order to keep reference to original methods
-    const originalConsole = {
-        log: console.log,
-        error: console.error
-    };
-    const anyConsole = console as any;
+export function parseSymbolMapFile(text: string) {
+    text.split(/[\r\n]/).forEach((line: string) => {
+        const parts: string[] = line.split(/:/);
+        if (parts.length < 2)
+            return;
 
-    function proxyConsoleMethod(prefix: string, func: any, asJson: boolean) {
-        return function (...args: any[]) {
-            try {
-                let payload = args[0];
-                if (payload === undefined) payload = "undefined";
-                else if (payload === null) payload = "null";
-                else if (typeof payload === "function") payload = payload.toString();
-                else if (typeof payload !== "string") {
-                    try {
-                        payload = JSON.stringify(payload);
-                    } catch (e) {
-                        payload = payload.toString();
-                    }
-                }
-
-                if (typeof payload === "string" && id !== "main")
-                    payload = `[${id}] ${payload}`;
-
-                if (asJson) {
-                    func(JSON.stringify({
-                        method: prefix,
-                        payload: payload,
-                        arguments: args
-                    }));
-                } else {
-                    func([prefix + payload, ...args.slice(1)]);
-                }
-            } catch (err) {
-                originalConsole.error(`proxyConsole failed: ${err}`);
-            }
-        };
-    }
-
-    const methods = ["debug", "trace", "warn", "info", "error"];
-    for (const m of methods) {
-        if (typeof (anyConsole[m]) !== "function") {
-            anyConsole[m] = proxyConsoleMethod(`console.${m}: `, console.log, false);
-        }
-    }
-
-    const consoleUrl = `${origin}/console`.replace("https://", "wss://").replace("http://", "ws://");
-
-    consoleWebSocket = new WebSocket(consoleUrl);
-    consoleWebSocket.addEventListener("open", () => {
-        originalConsole.log(`browser: [${id}] Console websocket connected.`);
-    });
-    consoleWebSocket.addEventListener("error", (event) => {
-        originalConsole.error(`[${id}] websocket error: ${event}`, event);
-    });
-    consoleWebSocket.addEventListener("close", (event) => {
-        originalConsole.error(`[${id}] websocket closed: ${event}`, event);
+        parts[1] = parts.splice(1).join(":");
+        wasm_func_map.set(Number(parts[0]), parts[1]);
     });
 
-    const send = (msg: string) => {
-        if (consoleWebSocket.readyState === WebSocket.OPEN) {
-            consoleWebSocket.send(msg);
-        }
-        else {
-            originalConsole.log(msg);
-        }
-    };
-
-    for (const m of ["log", ...methods])
-        anyConsole[m] = proxyConsoleMethod(`console.${m}`, send, true);
-}
-
-export function readSymbolMapFile(filename: string): void {
-    if (runtimeHelpers.mono_wasm_symbols_are_ready) return;
-    runtimeHelpers.mono_wasm_symbols_are_ready = true;
-    try {
-        const res = Module.FS_readFile(filename, { flags: "r", encoding: "utf8" });
-        res.split(/[\r\n]/).forEach((line: string) => {
-            const parts: string[] = line.split(/:/);
-            if (parts.length < 2)
-                return;
-
-            parts[1] = parts.splice(1).join(":");
-            wasm_func_map.set(Number(parts[0]), parts[1]);
-        });
-        if (BuildConfiguration === "Debug") {
-            console.debug(`MONO_WASM: Loaded ${wasm_func_map.size} symbols`);
-        }
-    } catch (error: any) {
-        if (error.errno == 44) {// NOENT
-            if (BuildConfiguration === "Debug") {
-                console.debug(`MONO_WASM: Could not find symbols file ${filename}. Ignoring.`);
-            }
-        }
-        else {
-            console.log(`MONO_WASM: Error loading symbol file ${filename}: ${JSON.stringify(error)}`);
-        }
-        return;
-    }
+    mono_log_debug(`Loaded ${wasm_func_map.size} symbols`);
 }

@@ -25,9 +25,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            if (jsonTypeInfo.CreateObject != null)
+            if (jsonTypeInfo.CreateObject != null || state.Current.IsPopulating)
             {
-                // Contract customization: fall back to default object converter if user has set a default constructor delegate.
+                // Fall back to default object converter in following cases:
+                // - if user has set a default constructor delegate with contract customization
+                // - we're continuing populating an object.
                 return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
             }
 
@@ -40,7 +42,15 @@ namespace System.Text.Json.Serialization.Converters
 
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                    ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
+                }
+
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                {
+                    object populatedObject = state.Current.ReturnValue!;
+                    PopulatePropertiesFastPath(populatedObject, jsonTypeInfo, options, ref reader, ref state);
+                    value = (T)populatedObject;
+                    return true;
                 }
 
                 ReadOnlySpan<byte> originalSpan = reader.OriginalSpan;
@@ -107,7 +117,7 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     if (reader.TokenType != JsonTokenType.StartObject)
                     {
-                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
+                        ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Type);
                     }
 
                     state.Current.ObjectState = StackFrameObjectState.StartToken;
@@ -132,15 +142,29 @@ namespace System.Text.Json.Serialization.Converters
                 }
 
                 // Dispatch to any polymorphic converters: should always be entered regardless of ObjectState progress
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Type) &&
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Type) != 0 &&
                     state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted &&
                     ResolvePolymorphicConverter(jsonTypeInfo, ref state) is JsonConverter polymorphicConverter)
                 {
                     Debug.Assert(!IsValueType);
-                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, options, ref state, out object? objectResult);
+                    bool success = polymorphicConverter.OnTryReadAsObject(ref reader, polymorphicConverter.Type!, options, ref state, out object? objectResult);
                     value = (T)objectResult!;
                     state.ExitPolymorphicConverter(success);
                     return success;
+                }
+
+                // We need to populate before we started reading constructor arguments.
+                // Metadata is disallowed with Populate option and therefore ordering here is irrelevant.
+                // Since state.Current.IsPopulating is being checked early on in this method the continuation
+                // will be handled there.
+                if (state.ParentProperty?.TryGetPrePopulatedValue(ref state) == true)
+                {
+                    object populatedObject = state.Current.ReturnValue!;
+
+                    jsonTypeInfo.OnDeserializing?.Invoke(populatedObject);
+                    state.Current.ObjectState = StackFrameObjectState.CreatedObject;
+                    state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);
+                    return base.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
                 }
 
                 // Handle metadata post polymorphic dispatch
@@ -170,7 +194,7 @@ namespace System.Text.Json.Serialization.Converters
 
                 obj = (T)CreateObject(ref state.Current);
 
-                if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
+                if ((state.Current.MetadataPropertyNames & MetadataPropertyName.Id) != 0)
                 {
                     Debug.Assert(state.ReferenceId != null);
                     Debug.Assert(options.ReferenceHandlingStrategy == ReferenceHandlingStrategy.Preserve);
@@ -445,7 +469,7 @@ namespace System.Text.Json.Serialization.Converters
                 // Returning false below will cause the read-ahead functionality to finish the read.
                 state.Current.PropertyState = StackFramePropertyState.ReadValue;
 
-                if (!SingleValueReadWithReadAhead(jsonParameterInfo.ConverterBase.RequiresReadAhead, ref reader, ref state))
+                if (!SingleValueReadWithReadAhead(jsonParameterInfo.EffectiveConverter.RequiresReadAhead, ref reader, ref state))
                 {
                     return false;
                 }
@@ -541,11 +565,11 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
 
-            jsonTypeInfo.ValidateCanBeUsedForMetadataSerialization();
+            jsonTypeInfo.ValidateCanBeUsedForPropertyMetadataSerialization();
 
             if (jsonTypeInfo.ParameterCount != jsonTypeInfo.ParameterCache!.Count)
             {
-                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_ConstructorParameterIncompleteBinding(Type);
             }
 
             state.Current.InitializeRequiredPropertiesValidationState(jsonTypeInfo);

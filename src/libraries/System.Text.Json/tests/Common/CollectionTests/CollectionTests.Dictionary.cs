@@ -1355,23 +1355,18 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Multi-dim arrays not supported.")]
-#endif
         public async Task DictionaryNotSupported()
         {
             string json = @"{""MyDictionary"":{""Key"":""Value""}}";
 
             NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.DeserializeWrapper<ClassWithNotSupportedDictionary>(json));
 
-            // The exception contains the type.
-            Assert.Contains(typeof(Dictionary<int[,], int>).ToString(), ex.Message);
+            // The exception contains the key type.
+            Assert.Contains(typeof(int[,]).ToString(), ex.Message);
+            Assert.Contains("$.MyDictionary", ex.Message);
         }
 
         [Fact]
-#if BUILDING_SOURCE_GENERATOR_TESTS
-        [ActiveIssue("Multi-dim arrays not supported.")]
-#endif
         public async Task DictionaryNotSupportedButIgnored()
         {
             string json = @"{""MyDictionary"":{""Key"":1}}";

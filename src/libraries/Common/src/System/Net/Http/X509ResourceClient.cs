@@ -12,7 +12,7 @@ namespace System.Net.Http
 {
     internal static partial class X509ResourceClient
     {
-        private static readonly Func<string, CancellationToken, bool, ValueTask<byte[]?>>? s_downloadBytes = CreateDownloadBytesFunc();
+        private static readonly Func<string, CancellationToken, bool, Task<byte[]?>>? s_downloadBytes = CreateDownloadBytesFunc();
 
         static partial void ReportNoClient();
         static partial void ReportNegativeTimeout();
@@ -24,18 +24,17 @@ namespace System.Net.Http
 
         internal static byte[]? DownloadAsset(string uri, TimeSpan downloadTimeout)
         {
-            ValueTask<byte[]?> task = DownloadAssetCore(uri, downloadTimeout, async: false);
+            Task<byte[]?> task = DownloadAssetCore(uri, downloadTimeout, async: false);
             Debug.Assert(task.IsCompletedSuccessfully);
             return task.Result;
         }
 
         internal static Task<byte[]?> DownloadAssetAsync(string uri, TimeSpan downloadTimeout)
         {
-            ValueTask<byte[]?> task = DownloadAssetCore(uri, downloadTimeout, async: true);
-            return task.AsTask();
+            return DownloadAssetCore(uri, downloadTimeout, async: true);
         }
 
-        private static async ValueTask<byte[]?> DownloadAssetCore(string uri, TimeSpan downloadTimeout, bool async)
+        private static async Task<byte[]?> DownloadAssetCore(string uri, TimeSpan downloadTimeout, bool async)
         {
             if (s_downloadBytes is null)
             {
@@ -60,8 +59,12 @@ namespace System.Net.Http
 
             try
             {
-                ret = await s_downloadBytes(uri, cts?.Token ?? default, async).ConfigureAwait(false);
-                return ret;
+                Task<byte[]?> task = s_downloadBytes(uri, cts?.Token ?? default, async);
+                await ((Task)task).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+                if (task.IsCompletedSuccessfully)
+                {
+                    return task.Result;
+                }
             }
             catch { }
             finally
@@ -74,7 +77,7 @@ namespace System.Net.Http
             return null;
         }
 
-        private static Func<string, CancellationToken, bool, ValueTask<byte[]?>>? CreateDownloadBytesFunc()
+        private static Func<string, CancellationToken, bool, Task<byte[]?>>? CreateDownloadBytesFunc()
         {
             try
             {
@@ -83,28 +86,21 @@ namespace System.Net.Http
                 // the latter can't in turn have an explicit dependency on the former.
 
                 // Get the relevant types needed.
-                Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpMessageHandlerType = Type.GetType("System.Net.Http.HttpMessageHandler, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpRequestMessageType = Type.GetType("System.Net.Http.HttpRequestMessage, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpResponseMessageType = Type.GetType("System.Net.Http.HttpResponseMessage, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpResponseHeadersType = Type.GetType("System.Net.Http.Headers.HttpResponseHeaders, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
-                Type? httpContentType = Type.GetType("System.Net.Http.HttpContent, System.Net.Http, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a", throwOnError: false);
+                Type? socketsHttpHandlerType = Type.GetType("System.Net.Http.SocketsHttpHandler, System.Net.Http", throwOnError: false);
+                Type? httpMessageHandlerType = Type.GetType("System.Net.Http.HttpMessageHandler, System.Net.Http", throwOnError: false);
+                Type? httpClientType = Type.GetType("System.Net.Http.HttpClient, System.Net.Http", throwOnError: false);
+                Type? httpRequestMessageType = Type.GetType("System.Net.Http.HttpRequestMessage, System.Net.Http", throwOnError: false);
+                Type? httpResponseMessageType = Type.GetType("System.Net.Http.HttpResponseMessage, System.Net.Http", throwOnError: false);
+                Type? httpResponseHeadersType = Type.GetType("System.Net.Http.Headers.HttpResponseHeaders, System.Net.Http", throwOnError: false);
+                Type? httpContentType = Type.GetType("System.Net.Http.HttpContent, System.Net.Http", throwOnError: false);
+                Type? taskOfHttpResponseMessageType = Type.GetType("System.Threading.Tasks.Task`1[[System.Net.Http.HttpResponseMessage, System.Net.Http]], System.Runtime", throwOnError: false);
 
                 if (socketsHttpHandlerType == null || httpMessageHandlerType == null || httpClientType == null || httpRequestMessageType == null ||
-                    httpResponseMessageType == null || httpResponseHeadersType == null || httpContentType == null)
+                    httpResponseMessageType == null || httpResponseHeadersType == null || httpContentType == null || taskOfHttpResponseMessageType == null)
                 {
                     Debug.Fail("Unable to load required type.");
                     return null;
                 }
-
-                // Workaround until https://github.com/dotnet/runtime/issues/72833 is fixed
-                [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
-                   Justification = "The type HttpResponseMessage is a reference type")]
-                [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
-                static Type GetTaskOfHttpResponseMessageType([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? httpResponseMessageType) => typeof(Task<>).MakeGenericType(httpResponseMessageType!);
-
-                Type taskOfHttpResponseMessageType = GetTaskOfHttpResponseMessageType(httpResponseMessageType);
 
                 // Get the methods on those types.
                 ConstructorInfo? socketsHttpHandlerCtor = socketsHttpHandlerType.GetConstructor(Type.EmptyTypes);

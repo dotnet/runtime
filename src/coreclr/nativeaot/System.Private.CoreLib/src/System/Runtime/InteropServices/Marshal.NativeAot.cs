@@ -117,7 +117,7 @@ namespace System.Runtime.InteropServices
                 structureTypeHandle.IsInterface() ||
                 InteropExtensions.AreTypesAssignable(typeof(Delegate).TypeHandle, structureTypeHandle))
             {
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
+                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             }
 
             if (structureTypeHandle.IsBlittable())
@@ -128,7 +128,7 @@ namespace System.Runtime.InteropServices
 
             IntPtr destroyStructureStub = RuntimeInteropData.GetDestroyStructureStub(structureTypeHandle, out bool hasInvalidLayout);
             if (hasInvalidLayout)
-                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structureTypeHandle.LastResortToString));
+                throw new ArgumentException(SR.Format(SR.Argument_MustHaveLayoutOrBeBlittable, structuretype));
             // DestroyStructureStub == IntPtr.Zero means its fields don't need to be destroyed
             if (destroyStructureStub != IntPtr.Zero)
             {
@@ -212,7 +212,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object o)
         {
-            return (o == null) || !o.GetEETypePtr().HasPointers;
+            return (o == null) || !o.GetEETypePtr().ContainsGCPointers;
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -296,8 +296,7 @@ namespace System.Runtime.InteropServices
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
 #pragma warning disable 8500 // sizeof of managed types
-            if (checked(ofs + sizeof(T)) > size)
-                throw new ArgumentOutOfRangeException(nameof(ofs));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
 #pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);
@@ -377,8 +376,7 @@ namespace System.Runtime.InteropServices
             // Compat note: CLR wouldn't bother with a range check. If someone does this,
             // they're likely taking dependency on some CLR implementation detail quirk.
 #pragma warning disable 8500 // sizeof of managed types
-            if (checked(ofs + sizeof(T)) > size)
-                throw new ArgumentOutOfRangeException(nameof(ofs));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(checked(ofs + sizeof(T)), size, nameof(ofs));
 #pragma warning restore 8500
 
             IntPtr nativeBytes = AllocCoTaskMem(size);

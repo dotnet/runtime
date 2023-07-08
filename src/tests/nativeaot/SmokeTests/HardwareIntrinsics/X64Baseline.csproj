@@ -5,7 +5,7 @@
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants>$(DefineConstants);BASELINE_INTRINSICS</DefineConstants>
+    <DefineConstants>$(DefineConstants);BASELINE_INTRINSICS;VECTORT128_INTRINSICS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />

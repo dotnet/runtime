@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Bug
 {
     using System;
@@ -16,7 +17,8 @@ namespace Bug
             return new double[5];
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             m_static3[0] = new DD();
             m_static3[0].m_field1 = m_static3[0].Method2();

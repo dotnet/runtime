@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
@@ -10,9 +10,13 @@
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)SourceGenerators\LiveReferencePack.cs"
-             Link="Common\SourceGenerators\LiveReferencePack.cs" />
+            Link="Common\SourceGenerators\LiveReferencePack.cs" />
+    <Compile Include="$(CommonTestPath)SourceGenerators\GlobalOptionsOnlyProvider.cs"
+            Link="Common\SourceGenerators\GlobalOptionsOnlyProvider.cs" />
     <Compile Include="..\Common\TestUtils.cs"
             Link="Common\TestUtils.cs" />
+    <Compile Include="..\Common\TargetFrameworkOptions.cs"
+            Link="Common\TargetFrameworkOptions.cs" />
     <Compile Include="..\Common\CustomCollectionMarshallingCodeSnippets.cs"
             Link="Common\CustomCollectionMarshallingCodeSnippets.cs" />
     <Compile Include="..\Common\CustomStructMarshallingCodeSnippets.cs"
@@ -23,6 +27,8 @@
             Link="Verifiers\CSharpAnalyzerVerifier.cs"/>
     <Compile Include="..\Common\Verifiers\CSharpCodeFixVerifier.cs"
             Link="Verifiers\CSharpCodeFixVerifier.cs"/>
+    <Compile Include="..\Common\Verifiers\CSharpSourceGeneratorVerifier.cs"
+            Link="Verifiers\CSharpSourceGeneratorVerifier.cs"/>
     <Compile Include="..\Common\Verifiers\CSharpVerifierHelper.cs"
             Link="Verifiers\CSharpVerifierHelper.cs"/>
   </ItemGroup>
@@ -31,6 +37,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
   </ItemGroup>
 
   <ItemGroup>

@@ -149,14 +149,12 @@ AssemblySpecHash::~AssemblySpecHash()
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
                                   IMDInternalImport *pImport,
-                                  DomainAssembly *pStaticParent,
-                                  BOOL fAllowAllocation)
+                                  DomainAssembly *pStaticParent)
 {
     CONTRACTL
     {
         INSTANCE_CHECK;
-        if (fAllowAllocation) {GC_TRIGGERS;} else {GC_NOTRIGGER;};
-        if (fAllowAllocation) {INJECT_FAULT(COMPlusThrowOM());} else {FORBID_FAULT;};
+        GC_NOTRIGGER;
         NOTHROW;
         MODE_ANY;
         PRECONDITION(pImport->IsValidToken(kAssemblyToken));
@@ -194,7 +192,7 @@ void AssemblySpec::InitializeSpec(PEAssembly * pFile)
     {
         INSTANCE_CHECK;
         THROWS;
-        GC_TRIGGERS;
+        GC_NOTRIGGER;
         MODE_ANY;
         PRECONDITION(CheckPointer(pFile));
         INJECT_FAULT(COMPlusThrowOM(););

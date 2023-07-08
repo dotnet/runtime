@@ -9,7 +9,7 @@ using Xunit;
 
 // Tests that side effects induced by the HWI nodes are correctly accounted for.
 
-unsafe class HwiSideEffects
+public unsafe class HwiSideEffects
 {
     [Fact]
     public static void TestProblemWithInterferenceChecks()

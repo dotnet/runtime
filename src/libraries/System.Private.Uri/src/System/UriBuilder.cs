@@ -180,10 +180,8 @@ namespace System
             get => _port;
             set
             {
-                if (value < -1 || value > 0xFFFF)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value));
-                }
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, -1);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 0xFFFF);
                 _port = value;
                 _changed = true;
             }
@@ -259,12 +257,12 @@ namespace System
         // The following characters ("/" / "\" / "?" / "#" / "@") are from the gen-delims group.
         // We have to escape them to avoid corrupting the rest of the Uri string.
         // Other characters like spaces or non-ASCII will be escaped by Uri, we can ignore them here.
-        private static readonly IndexOfAnyValues<char> s_userInfoReservedChars =
-            IndexOfAnyValues.Create(@"/\?#@");
+        private static readonly SearchValues<char> s_userInfoReservedChars =
+            SearchValues.Create(@"/\?#@");
 
         private static string EncodeUserInfo(string input)
         {
-            if (input.AsSpan().IndexOfAny(s_userInfoReservedChars) < 0)
+            if (!input.AsSpan().ContainsAny(s_userInfoReservedChars))
             {
                 return input;
             }

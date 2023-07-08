@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
 {
 	[SkipKeptItemsValidation]
 	[SetupLinkerArgument ("--singlewarn")]
-	[LogContains ("warning IL2104: Assembly 'test' produced trim warnings")]
+	[LogContains ("warning IL2104: Assembly 'test' produced trim warnings", ProducedBy = Tool.Trimmer)]
 	[LogDoesNotContain ("IL2121")]
 	class DetectRedundantSuppressionsSingleWarn
 	{

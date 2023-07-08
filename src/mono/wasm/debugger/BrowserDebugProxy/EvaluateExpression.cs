@@ -24,7 +24,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal static class ExpressionEvaluator
+    internal static partial class ExpressionEvaluator
     {
         internal static Script<object> script = CSharpScript.Create(
             "",
@@ -33,9 +33,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 typeof(Enumerable).Assembly,
                 typeof(JObject).Assembly
                 ));
-        private sealed class ExpressionSyntaxReplacer : CSharpSyntaxWalker
+        private sealed partial class ExpressionSyntaxReplacer : CSharpSyntaxWalker
         {
-            private static Regex regexForReplaceVarName = new Regex(@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+#pragma warning disable SYSLIB1045
+            private static Regex regexForReplaceVarName = new (@"[^A-Za-z0-9_]", RegexOptions.Singleline);
+#pragma warning restore SYSLIB1045
             public List<IdentifierNameSyntax> identifiers = new List<IdentifierNameSyntax>();
             public List<InvocationExpressionSyntax> methodCalls = new List<InvocationExpressionSyntax>();
             public List<MemberAccessExpressionSyntax> memberAccesses = new List<MemberAccessExpressionSyntax>();
@@ -58,7 +60,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (visitCount == 0)
                 {
                     if (node is MemberAccessExpressionSyntax maes
-                        && node.Kind() == SyntaxKind.SimpleMemberAccessExpression
+                        && node.IsKind(SyntaxKind.SimpleMemberAccessExpression)
                         && !(node.Parent is MemberAccessExpressionSyntax)
                         && !(node.Parent is InvocationExpressionSyntax)
                         && !(node.Parent is ElementAccessExpressionSyntax))
@@ -300,7 +302,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private static async Task<IList<JObject>> Resolve<T>(IList<T> collectionToResolve, MemberReferenceResolver resolver,
                                 Func<T, MemberReferenceResolver, CancellationToken, Task<JObject>> resolutionFunc, CancellationToken token)
         {
-            IList<JObject> values = new List<JObject>();
+            var values = new List<JObject>();
             foreach (T element in collectionToResolve)
                 values.Add(await resolutionFunc(element, resolver, token));
             return values;
@@ -393,7 +395,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             SyntaxTree syntaxTree = CSharpSyntaxTree.ParseText(expression + @";", cancellationToken: token);
 
-            SyntaxNode expressionTree = syntaxTree.GetCompilationUnitRoot(token);
+            CompilationUnitSyntax expressionTree = syntaxTree.GetCompilationUnitRoot(token);
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
             ExpressionSyntaxReplacer replacer = new ExpressionSyntaxReplacer();
@@ -401,7 +403,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             // this fails with `"a)"`
             // because the code becomes: return (a));
             // and the returned expression from GetExpressionFromSyntaxTree is `a`!
-            if (expressionTree.Kind() == SyntaxKind.IdentifierName || expressionTree.Kind() == SyntaxKind.ThisExpression)
+            if (expressionTree.IsKind(SyntaxKind.IdentifierName) || expressionTree.IsKind(SyntaxKind.ThisExpression))
             {
                 string varName = expressionTree.ToString();
                 JObject value = await resolver.Resolve(varName, token);
@@ -416,7 +418,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             syntaxTree = replacer.ReplaceVars(syntaxTree, memberAccessValues, identifierValues, null, null);
 
             // eg. "this.dateTime", "  dateTime.TimeOfDay"
-            if (expressionTree.Kind() == SyntaxKind.SimpleMemberAccessExpression && replacer.memberAccesses.Count == 1)
+            if (expressionTree.IsKind(SyntaxKind.SimpleMemberAccessExpression) && replacer.memberAccesses.Count == 1)
             {
                 return memberAccessValues[0];
             }
@@ -480,7 +482,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             get
             {
-                _error.Value["exceptionDetails"]["stackTrace"] = StackTrace;
                 return _error;
             }
             set { }
@@ -504,8 +505,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     result = result,
                     exceptionDetails = new
                     {
-                        exception = result,
-                        stackTrace = StackTrace
+                        exception = result
                     }
                 }));
         }

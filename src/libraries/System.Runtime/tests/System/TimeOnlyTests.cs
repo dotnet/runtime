@@ -87,6 +87,77 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("ticks", () => new TimeOnly(-1));
         }
 
+        [Theory]
+        [InlineData(12, 59)]
+        [InlineData(14, 2)]
+        [InlineData(1, 13)]
+        public static void DeconstructionTest_Hour_Minute(int hour, int minute)
+        {
+            var time = new TimeOnly(hour, minute);
+            (int obtainedHour, int obtainedMinute) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+        }
+
+        [Theory]
+        [InlineData(12, 59, 31)]
+        [InlineData(14, 2, 2)]
+        [InlineData(1, 13, 1)]
+        public static void DeconstructionTest_Hour_Minute_Second(int hour, int minute, int second)
+        {
+            var time = new TimeOnly(hour, minute, second);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+            Assert.Equal(second, obtainedSecond);
+        }
+
+        [Theory]
+        [InlineData(12, 59, 31, 1)]
+        [InlineData(14, 2, 29, 2)]
+        [InlineData(1, 13, 1, 100)]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond(int hour, int minute, int second, int millisecond)
+        {
+            var time = new TimeOnly(hour, minute, second, millisecond);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+            Assert.Equal(second, obtainedSecond);
+            Assert.Equal(millisecond, obtainedMillisecond);
+        }
+
+        [Theory]
+        [InlineData(12, 59, 31, 1, 7)]
+        [InlineData(14, 2, 29, 2, 3)]
+        [InlineData(1, 13, 1, 100, 2)]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond_Microsecond(int hour, int minute, int second, int millisecond, int microsecond)
+        {
+            var time = new TimeOnly(hour, minute, second, millisecond, microsecond);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond, int obtainedMicrosecond) = time;
+
+            Assert.Equal(hour, obtainedHour);
+            Assert.Equal(minute, obtainedMinute);
+            Assert.Equal(second, obtainedSecond);
+            Assert.Equal(millisecond, obtainedMillisecond);
+            Assert.Equal(microsecond, obtainedMicrosecond);
+        }
+
+        [Fact]
+        public static void DeconstructionTest_Hour_Minute_Second_Millisecond_Microsecond_Now()
+        {
+            var time = TimeOnly.FromDateTime(DateTime.Now);
+            (int obtainedHour, int obtainedMinute, int obtainedSecond, int obtainedMillisecond, int obtainedMicrosecond) = time;
+
+            Assert.Equal(time.Hour, obtainedHour);
+            Assert.Equal(time.Minute, obtainedMinute);
+            Assert.Equal(time.Second, obtainedSecond);
+            Assert.Equal(time.Millisecond, obtainedMillisecond);
+            Assert.Equal(time.Microsecond, obtainedMicrosecond);
+        }
+
         [Fact]
         public static void AddTest()
         {
@@ -491,37 +562,63 @@ namespace System.Tests
         [Fact]
         public static void TryFormatTest()
         {
-            Span<char> buffer = stackalloc char[100];
-            TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
+            // UTF16
+            {
+                Span<char> buffer = stackalloc char[100];
+                TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
 
-            buffer.Fill(' ');
-            Assert.True(timeOnly.TryFormat(buffer, out int charsWritten));
-            Assert.Equal(charsWritten, buffer.TrimEnd().Length);
+                buffer.Fill(' ');
+                Assert.True(timeOnly.TryFormat(buffer, out int charsWritten));
+                Assert.Equal(charsWritten, buffer.TrimEnd().Length);
 
-            buffer.Fill(' ');
-            Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "o"));
-            Assert.Equal(16, charsWritten);
-            Assert.Equal(16, buffer.TrimEnd().Length);
+                buffer.Fill(' ');
+                Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "o"));
+                Assert.Equal(16, charsWritten);
+                Assert.Equal(16, buffer.TrimEnd().Length);
 
-            buffer.Fill(' ');
-            Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "R"));
-            Assert.Equal(8, charsWritten);
-            Assert.Equal(8, buffer.TrimEnd().Length);
+                buffer.Fill(' ');
+                Assert.True(timeOnly.TryFormat(buffer, out charsWritten, "R"));
+                Assert.Equal(8, charsWritten);
+                Assert.Equal(8, buffer.TrimEnd().Length);
 
-            Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
-            Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
-            Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "r"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out charsWritten, "O"));
 
-            Assert.Throws<FormatException>(() => {
-                    Span<char> buff = stackalloc char[100];
-                    timeOnly.TryFormat(buff, out charsWritten, "u");
-                });
-            Assert.Throws<FormatException>(() => {
-                    Span<char> buff = stackalloc char[100];
-                    timeOnly.TryFormat(buff, out charsWritten, "dd-yyyy");
-                });
-            Assert.Throws<FormatException>(() => $"{timeOnly:u}");
-            Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(stackalloc char[100], out charsWritten, "u"));
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(stackalloc char[100], out charsWritten, "dd-yyyy"));
+                Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+                Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+            }
+
+            // UTF8
+            {
+                Span<byte> buffer = stackalloc byte[100];
+                TimeOnly timeOnly = TimeOnly.FromDateTime(DateTime.Now);
+
+                buffer.Fill((byte)' ');
+                Assert.True(timeOnly.TryFormat(buffer, out int bytesWritten));
+                Assert.Equal(bytesWritten, buffer.TrimEnd(" "u8).Length);
+
+                buffer.Fill((byte)' ');
+                Assert.True(timeOnly.TryFormat(buffer, out bytesWritten, "o"));
+                Assert.Equal(16, bytesWritten);
+                Assert.Equal(16, buffer.TrimEnd(" "u8).Length);
+
+                buffer.Fill((byte)' ');
+                Assert.True(timeOnly.TryFormat(buffer, out bytesWritten, "R"));
+                Assert.Equal(8, bytesWritten);
+                Assert.Equal(8, buffer.TrimEnd(" "u8).Length);
+
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten, "r"));
+                Assert.False(timeOnly.TryFormat(buffer.Slice(0, 3), out bytesWritten, "O"));
+
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(new byte[100], out bytesWritten, "u"));
+                Assert.Throws<FormatException>(() => timeOnly.TryFormat(new byte[100], out bytesWritten, "dd-yyyy"));
+                Assert.Throws<FormatException>(() => $"{timeOnly:u}");
+                Assert.Throws<FormatException>(() => $"{timeOnly:dd-yyyy}");
+            }
         }
     }
 }

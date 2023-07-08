@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 // The GC infra has to correctly mark registers with pointers as alive and must not report registers without pointers.
 
 using nint = System.Int64;
+using Xunit;
 
 namespace GitHub_23199_64Bit
 {
@@ -181,7 +182,8 @@ namespace GitHub_23199_64Bit
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TestCrossgenedReturnWith2PointersStruct();
             TestTwoPointers();

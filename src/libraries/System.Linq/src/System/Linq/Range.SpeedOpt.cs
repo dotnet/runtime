@@ -7,7 +7,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        private sealed partial class RangeIterator : IPartition<int>
+        private sealed partial class RangeIterator : IPartition<int>, IList<int>, IReadOnlyList<int>
         {
             public override IEnumerable<TResult> Select<TResult>(Func<int, TResult> selector)
             {
@@ -17,28 +17,31 @@ namespace System.Linq
             public int[] ToArray()
             {
                 int[] array = new int[_end - _start];
-                int cur = _start;
-                for (int i = 0; i != array.Length; ++i)
-                {
-                    array[i] = cur;
-                    ++cur;
-                }
-
+                Fill(array, _start);
                 return array;
             }
 
             public List<int> ToList()
             {
                 List<int> list = new List<int>(_end - _start);
-                for (int cur = _start; cur != _end; cur++)
-                {
-                    list.Add(cur);
-                }
-
+                Fill(SetCountAndGetSpan(list, _end - _start), _start);
                 return list;
             }
 
+            public void CopyTo(int[] array, int arrayIndex) =>
+                Fill(array.AsSpan(arrayIndex, _end - _start), _start);
+
+            private static void Fill(Span<int> destination, int value)
+            {
+                for (int i = 0; i < destination.Length; i++, value++)
+                {
+                    destination[i] = value;
+                }
+            }
+
             public int GetCount(bool onlyIfCheap) => unchecked(_end - _start);
+
+            public int Count => _end - _start;
 
             public IPartition<int> Skip(int count)
             {
@@ -84,6 +87,34 @@ namespace System.Linq
                 found = true;
                 return _end - 1;
             }
+
+            public bool Contains(int item) =>
+                (uint)(item - _start) < (uint)(_end - _start);
+
+            public int IndexOf(int item) =>
+                Contains(item) ? item - _start : -1;
+
+            public int this[int index]
+            {
+                get
+                {
+                    if ((uint)index >= (uint)(_end - _start))
+                    {
+                        ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.index);
+                    }
+
+                    return _start + index;
+                }
+                set => ThrowHelper.ThrowNotSupportedException();
+            }
+
+            public bool IsReadOnly => true;
+
+            void ICollection<int>.Add(int item) => ThrowHelper.ThrowNotSupportedException();
+            void ICollection<int>.Clear() => ThrowHelper.ThrowNotSupportedException();
+            void IList<int>.Insert(int index, int item) => ThrowHelper.ThrowNotSupportedException();
+            bool ICollection<int>.Remove(int item) => ThrowHelper.ThrowNotSupportedException_Boolean();
+            void IList<int>.RemoveAt(int index) => ThrowHelper.ThrowNotSupportedException();
         }
     }
 }

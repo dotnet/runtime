@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <Optimize>True</Optimize>
   </PropertyGroup>
   <ItemGroup>

@@ -1257,15 +1257,33 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void InitializeWithArgumentList()
+        public void InitializeWithArgumentList_Add()
         {
             ProcessStartInfo psi = new ProcessStartInfo("filename");
-            psi.ArgumentList.Add("arg1");
-            psi.ArgumentList.Add("arg2");
 
-            Assert.Equal(2, psi.ArgumentList.Count);
-            Assert.Equal("arg1", psi.ArgumentList[0]);
-            Assert.Equal("arg2", psi.ArgumentList[1]);
+            string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
+            foreach (string arg in args)
+            {
+                psi.ArgumentList.Add(arg);
+            }
+
+            Assert.Equal(args, psi.ArgumentList);
+        }
+
+        [Fact]
+        public void InitializeWithArgumentList_Enumerable()
+        {
+            string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
+
+            Assert.Equal(args, psi.ArgumentList);
+        }
+
+        [Fact]
+        public void InitializeWithArgumentList_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => new ProcessStartInfo(null, new[] { "a", "b" }));
+            Assert.Throws<ArgumentNullException>("arguments", () => new ProcessStartInfo("a", (IEnumerable<string>)null));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano

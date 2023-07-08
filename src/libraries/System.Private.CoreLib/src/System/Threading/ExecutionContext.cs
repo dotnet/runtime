@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -47,6 +48,8 @@ namespace System.Threading
             m_isFlowSuppressed = isFlowSuppressed;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -102,15 +105,14 @@ namespace System.Threading
         {
             Thread currentThread = Thread.CurrentThread;
             ExecutionContext? executionContext = currentThread._executionContext ?? Default;
-            if (executionContext.m_isFlowSuppressed)
+
+            AsyncFlowControl asyncFlowControl = default;
+            if (!executionContext.m_isFlowSuppressed)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotSuppressFlowMultipleTimes);
+                currentThread._executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
+                asyncFlowControl.Initialize(currentThread);
             }
 
-            executionContext = executionContext.ShallowClone(isFlowSuppressed: true);
-            AsyncFlowControl asyncFlowControl = default;
-            currentThread._executionContext = executionContext;
-            asyncFlowControl.Initialize(currentThread);
             return asyncFlowControl;
         }
 
@@ -212,7 +214,7 @@ namespace System.Threading
         /// </summary>
         /// <remarks>
         /// To revert to the current execution context; capture it before Restore, and Restore it again.
-        /// It will not automatically be reverted unlike <see cref="ExecutionContext.Run"/>.
+        /// It will not automatically be reverted unlike <see cref="Run"/>.
         /// </remarks>
         /// <param name="executionContext">The ExecutionContext to set.</param>
         /// <exception cref="InvalidOperationException"><paramref name="executionContext"/> is null.</exception>
@@ -348,7 +350,7 @@ namespace System.Threading
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
+        [Conditional("DEBUG")]
         internal static void CheckThreadPoolAndContextsAreDefault()
         {
             Debug.Assert(!Thread.IsThreadStartSupported || Thread.CurrentThread.IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
@@ -563,10 +565,11 @@ namespace System.Threading
 
         public void Undo()
         {
-            if (_thread == null)
+            if (_thread is null)
             {
-                throw new InvalidOperationException(SR.InvalidOperation_CannotUseAFCMultiple);
+                return;
             }
+
             if (Thread.CurrentThread != _thread)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CannotUseAFCOtherThread);

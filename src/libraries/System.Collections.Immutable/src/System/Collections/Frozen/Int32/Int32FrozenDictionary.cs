@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -9,7 +10,7 @@ namespace System.Collections.Frozen
 {
     /// <summary>Provides a frozen dictionary to use when the key is an <see cref="int"/> and the default comparer is used.</summary>
     /// <remarks>
-    /// This key type is specialized as a memory optimization, as the frozen hash table already contains the array of all
+    /// This dictionary type is specialized as a memory optimization, as the frozen hash table already contains the array of all
     /// int values, and we can thus use its array as the keys rather than maintaining a duplicate copy.
     /// </remarks>
     internal sealed class Int32FrozenDictionary<TValue> : FrozenDictionary<int, TValue>
@@ -19,6 +20,7 @@ namespace System.Collections.Frozen
 
         internal Int32FrozenDictionary(Dictionary<int, TValue> source) : base(EqualityComparer<int>.Default)
         {
+            Debug.Assert(ReferenceEquals(source.Comparer, EqualityComparer<int>.Default));
             Debug.Assert(source.Count != 0);
 
             KeyValuePair<int, TValue>[] entries = new KeyValuePair<int, TValue>[source.Count];
@@ -26,10 +28,23 @@ namespace System.Collections.Frozen
 
             _values = new TValue[entries.Length];
 
-            _hashTable = FrozenHashTable.Create(
-                entries,
-                pair => pair.Key,
-                (index, pair) => _values[index] = pair.Value);
+            int[] arrayPoolHashCodes = ArrayPool<int>.Shared.Rent(entries.Length);
+            Span<int> hashCodes = arrayPoolHashCodes.AsSpan(0, entries.Length);
+            for (int i = 0; i < entries.Length; i++)
+            {
+                hashCodes[i] = entries[i].Key;
+            }
+
+            _hashTable = FrozenHashTable.Create(hashCodes, hashCodesAreUnique: true);
+
+            for (int srcIndex = 0; srcIndex < hashCodes.Length; srcIndex++)
+            {
+                int destIndex = hashCodes[srcIndex];
+
+                _values[destIndex] = entries[srcIndex].Value;
+            }
+
+            ArrayPool<int>.Shared.Return(arrayPoolHashCodes);
         }
 
         /// <inheritdoc />

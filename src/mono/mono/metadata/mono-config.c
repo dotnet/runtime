@@ -17,7 +17,6 @@
 #include "mono/metadata/loader.h"
 #include "mono/metadata/loader-internals.h"
 #include "mono/metadata/mono-config.h"
-#include "mono/metadata/mono-config-internals.h"
 #include "mono/metadata/metadata-internals.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/utils/mono-logger-internals.h"

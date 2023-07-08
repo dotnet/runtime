@@ -5,8 +5,10 @@
     <NoWarn>$(NoWarn),CA1050</NoWarn>
     <!-- Ignore nullable warnings on net4* -->
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(NoWarn),CS8604,CS8602</NoWarn>
+    <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETFramework'">$(NoWarn),CA1850</NoWarn>
     <EnableSingleFileAnalyzer>false</EnableSingleFileAnalyzer>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
@@ -17,9 +19,17 @@
   <ItemGroup>
     <Compile Include="..\Common\Utils.cs" />
     <Compile Include="..\Common\LogAsErrorException.cs" />
+    <Compile Include="..\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\BootJsonData.cs" />
 
     <PackageReference Include="Microsoft.Build" Version="$(MicrosoftBuildVersion)" />
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
+    <!-- FIXME: is this the correct version of SRM to use when building for .NET Framework? -->
+    <PackageReference Include="System.Reflection.Metadata" Version="$(SystemReflectionMetadataVersion)" />
+    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+      <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.NET.WebAssembly.Webcil\src\Microsoft.NET.WebAssembly.Webcil.csproj" Private="true" />
   </ItemGroup>
 
   <Target Name="GetFilesToPackage" Returns="@(FilesToPackage)">
@@ -29,6 +39,9 @@
                       TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\System.Reflection.MetadataLoadContext.dll"
                       TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+      <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETCoreTasks)\Microsoft.NET.WebAssembly.Webcil.dll"
+                      TargetPath="tasks\$(TargetFrameworkForNETCoreTasks)" />
+
 
       <!-- for net472 we need all the dependent assemblies too, so copy from the publish folder -->
       <FilesToPackage Include="$(OutputPath)$(TargetFrameworkForNETFrameworkTasks)\*"

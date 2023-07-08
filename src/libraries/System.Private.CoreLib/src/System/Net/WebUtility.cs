@@ -688,15 +688,14 @@ namespace System.Net
         {
             if (bytes == null && count == 0)
                 return false;
+
             ArgumentNullException.ThrowIfNull(bytes);
-            if (offset < 0 || offset > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-            if (count < 0 || offset + count > bytes.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(offset);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(offset, bytes.Length);
+
+            ArgumentOutOfRangeException.ThrowIfNegative(count);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(count, bytes.Length - offset);
 
             return true;
         }

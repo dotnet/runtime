@@ -28,7 +28,6 @@ namespace System.Runtime.Intrinsics
     [DebuggerTypeProxy(typeof(Vector512DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector512.Size)]
     public readonly struct Vector512<T> : IEquatable<Vector512<T>>
-        where T : struct
     {
         internal readonly Vector256<T> _lower;
         internal readonly Vector256<T> _upper;
@@ -62,6 +61,7 @@ namespace System.Runtime.Intrinsics
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>
         public static bool IsSupported
         {
+            [Intrinsic]
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {

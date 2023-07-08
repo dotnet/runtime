@@ -7,7 +7,6 @@
     <OutputPath>bin</OutputPath>
 
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
-    <WasmMainJSPath>main.js</WasmMainJSPath>
     <EnableDefaultItems>false</EnableDefaultItems>
 
     <!-- Important - deltas don't support trimming! -->
@@ -57,9 +56,4 @@
   <Target Name="RunSample" DependsOnTargets="Build">
     <Exec Command="$(_Dotnet) serve -o -d:bin/$(Configuration)/AppBundle -p:8000 --mime .mjs=text/javascript" IgnoreExitCode="true" YieldDuringToolExecution="true" />
   </Target>
-
-  <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.InteropServices.JavaScript\gen\JSImportGenerator\JSImportGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-  </ItemGroup>
 </Project>

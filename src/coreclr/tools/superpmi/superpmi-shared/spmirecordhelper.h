@@ -109,6 +109,9 @@ public:
     static Agnostic_CORINFO_LOOKUP StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup);
 
     static CORINFO_LOOKUP RestoreCORINFO_LOOKUP(Agnostic_CORINFO_LOOKUP& agnosticLookup);
+
+    static Agnostic_CORINFO_TYPE_LAYOUT_NODE StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(const CORINFO_TYPE_LAYOUT_NODE& node);
+    static CORINFO_TYPE_LAYOUT_NODE RestoreCORINFO_TYPE_LAYOUT_NODE(const Agnostic_CORINFO_TYPE_LAYOUT_NODE& node);
 };
 
 inline Agnostic_CORINFO_RESOLVED_TOKENin SpmiRecordsHelper::CreateAgnostic_CORINFO_RESOLVED_TOKENin(
@@ -486,7 +489,6 @@ inline Agnostic_CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_
     runtimeLookup.helper               = (DWORD)pLookup->helper;
     runtimeLookup.indirections         = (DWORD)pLookup->indirections;
     runtimeLookup.testForNull          = (DWORD)pLookup->testForNull;
-    runtimeLookup.testForFixup         = (DWORD)pLookup->testForFixup;
     runtimeLookup.sizeOffset           = pLookup->sizeOffset;
     runtimeLookup.indirectFirstOffset  = (DWORD)pLookup->indirectFirstOffset;
     runtimeLookup.indirectSecondOffset = (DWORD)pLookup->indirectSecondOffset;
@@ -503,13 +505,12 @@ inline CORINFO_RUNTIME_LOOKUP SpmiRecordsHelper::RestoreCORINFO_RUNTIME_LOOKUP(
     runtimeLookup.helper               = (CorInfoHelpFunc)lookup.helper;
     runtimeLookup.indirections         = (WORD)lookup.indirections;
     runtimeLookup.testForNull          = lookup.testForNull != 0;
-    runtimeLookup.testForFixup         = lookup.testForFixup != 0;
     runtimeLookup.sizeOffset           = lookup.sizeOffset;
     runtimeLookup.indirectFirstOffset  = lookup.indirectFirstOffset != 0;
     runtimeLookup.indirectSecondOffset = lookup.indirectSecondOffset != 0;
     for (int i                   = 0; i < CORINFO_MAXINDIRECTIONS; i++)
         runtimeLookup.offsets[i] = (size_t)lookup.offsets[i];
-    return CORINFO_RUNTIME_LOOKUP();
+    return runtimeLookup;
 }
 
 inline Agnostic_CORINFO_LOOKUP SpmiRecordsHelper::StoreAgnostic_CORINFO_LOOKUP(CORINFO_LOOKUP* pLookup)
@@ -542,6 +543,34 @@ inline CORINFO_LOOKUP SpmiRecordsHelper::RestoreCORINFO_LOOKUP(Agnostic_CORINFO_
         lookup.constLookup = RestoreCORINFO_CONST_LOOKUP(agnosticLookup.constLookup);
     }
     return lookup;
+}
+
+inline Agnostic_CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::StoreAgnostic_CORINFO_TYPE_LAYOUT_NODE(const CORINFO_TYPE_LAYOUT_NODE& node)
+{
+    Agnostic_CORINFO_TYPE_LAYOUT_NODE result;
+    result.simdTypeHnd = CastHandle(node.simdTypeHnd);
+    result.diagFieldHnd = CastHandle(node.diagFieldHnd);
+    result.parent = node.parent;
+    result.offset = node.offset;
+    result.size = node.size;
+    result.numFields = node.numFields;
+    result.type = (BYTE)node.type;
+    result.hasSignificantPadding = node.hasSignificantPadding;
+    return result;
+}
+
+inline CORINFO_TYPE_LAYOUT_NODE SpmiRecordsHelper::RestoreCORINFO_TYPE_LAYOUT_NODE(const Agnostic_CORINFO_TYPE_LAYOUT_NODE& node)
+{
+    CORINFO_TYPE_LAYOUT_NODE result;
+    result.simdTypeHnd = (CORINFO_CLASS_HANDLE)node.simdTypeHnd;
+    result.diagFieldHnd = (CORINFO_FIELD_HANDLE)node.diagFieldHnd;
+    result.parent = node.parent;
+    result.offset = node.offset;
+    result.size = node.size;
+    result.numFields = node.numFields;
+    result.type = (CorInfoType)node.type;
+    result.hasSignificantPadding = node.hasSignificantPadding;
+    return result;
 }
 
 #endif

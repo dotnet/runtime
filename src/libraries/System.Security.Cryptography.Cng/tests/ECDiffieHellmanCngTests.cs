@@ -193,39 +193,14 @@ namespace System.Security.Cryptography.EcDiffieHellman.Tests
         [OuterLoop("Hardware backed key generation takes several seconds.")]
         public static void PlatformCryptoProvider_DeriveKeyMaterial()
         {
-            CngKey key1 = null;
-            CngKey key2 = null;
-
-            try
+            using (CngPlatformProviderKey platformKey1 = new CngPlatformProviderKey(CngAlgorithm.ECDiffieHellmanP256, "key1"))
+            using (CngPlatformProviderKey platformKey2 = new CngPlatformProviderKey(CngAlgorithm.ECDiffieHellmanP256, "key2"))
+            using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(platformKey1.Key))
+            using (ECDiffieHellmanCng ecdhCng2 = new ECDiffieHellmanCng(platformKey2.Key))
             {
-                CngKeyCreationParameters cngCreationParameters = new CngKeyCreationParameters
-                {
-                    Provider = CngProvider.MicrosoftPlatformCryptoProvider,
-                    KeyCreationOptions = CngKeyCreationOptions.OverwriteExistingKey,
-                };
-
-                key1 = CngKey.Create(
-                    CngAlgorithm.ECDiffieHellmanP256,
-                    $"{nameof(PlatformCryptoProvider_DeriveKeyMaterial)}{nameof(key1)}",
-                    cngCreationParameters);
-
-                key2 = CngKey.Create(
-                    CngAlgorithm.ECDiffieHellmanP256,
-                    $"{nameof(PlatformCryptoProvider_DeriveKeyMaterial)}{nameof(key2)}",
-                    cngCreationParameters);
-
-                using (ECDiffieHellmanCng ecdhCng1 = new ECDiffieHellmanCng(key1))
-                using (ECDiffieHellmanCng ecdhCng2 = new ECDiffieHellmanCng(key2))
-                {
-                    byte[] derivedKey1 = ecdhCng1.DeriveKeyMaterial(key2);
-                    byte[] derivedKey2 = ecdhCng2.DeriveKeyMaterial(key1);
-                    Assert.Equal(derivedKey1, derivedKey2);
-                }
-            }
-            finally
-            {
-                key1?.Delete();
-                key2?.Delete();
+                byte[] derivedKey1 = ecdhCng1.DeriveKeyMaterial(platformKey2.Key);
+                byte[] derivedKey2 = ecdhCng2.DeriveKeyMaterial(platformKey1.Key);
+                Assert.Equal(derivedKey1, derivedKey2);
             }
         }
     }

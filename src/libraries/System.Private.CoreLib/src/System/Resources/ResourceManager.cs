@@ -141,8 +141,6 @@ namespace System.Resources
         // there yet because CultureInfo's class initializer hasn't finished.  If we move SystemResMgr off of
         // Assembly (or at least make it an internal property) we should be able to circumvent this problem.
 
-        // This is our min required ResourceSet type.
-        private static readonly Type s_minResourceSet = typeof(ResourceSet);
         // These Strings are used to avoid using Reflection in CreateResourceSet.
         internal const string ResReaderTypeName = "System.Resources.ResourceReader";
         internal const string ResSetTypeName = "System.Resources.RuntimeResourceSet";
@@ -212,7 +210,7 @@ namespace System.Resources
             MainAssembly = assembly;
             BaseNameField = baseName;
 
-            if (usingResourceSet != null && (usingResourceSet != s_minResourceSet) && !usingResourceSet.IsSubclassOf(s_minResourceSet))
+            if (usingResourceSet != null && (usingResourceSet != typeof(ResourceSet)) && !usingResourceSet.IsSubclassOf(typeof(ResourceSet)))
                 throw new ArgumentException(SR.Arg_ResMgrNotResSet, nameof(usingResourceSet));
             _userResourceSet = usingResourceSet;
 
@@ -507,7 +505,7 @@ namespace System.Resources
                 // If another thread added this culture, return that.
                 if (localResourceSets.TryGetValue(cultureName, out ResourceSet? lostRace))
                 {
-                    if (!object.ReferenceEquals(lostRace, rs))
+                    if (!ReferenceEquals(lostRace, rs))
                     {
                         // Note: In certain cases, we can be trying to add a ResourceSet for multiple
                         // cultures on one thread, while a second thread added another ResourceSet for one
@@ -778,7 +776,7 @@ namespace System.Resources
             }
 
             internal static Version? ObtainSatelliteContractVersion(Assembly a) =>
-                ResourceManager.GetSatelliteContractVersion(a);
+                GetSatelliteContractVersion(a);
 
             internal UltimateResourceFallbackLocation FallbackLoc
             {

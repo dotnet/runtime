@@ -51,11 +51,11 @@ nativeStringResourceTable_mscorrc
 #PAL_Random
 #PAL_malloc
 #PAL_realloc
-#PAL_printf
 #PAL_qsort
 #PAL_fprintf
 #PAL__wcstoui64
 #PAL_wcstoul
+#PAL_wcstod
 #PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange
 #PAL_VirtualUnwindOutOfProc
 #PAL_wcslen

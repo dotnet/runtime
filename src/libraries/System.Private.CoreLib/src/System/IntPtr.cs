@@ -32,7 +32,8 @@ namespace System
           ISerializable,
           IBinaryInteger<nint>,
           IMinMaxValue<nint>,
-          ISignedNumber<nint>
+          ISignedNumber<nint>,
+          IUtf8SpanFormattable
     {
         private readonly nint _value;
 
@@ -210,6 +211,10 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            ((nint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
+
         public static nint Parse(string s) => (nint)nint_t.Parse(s);
         public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);
         public static nint Parse(string s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
@@ -284,18 +289,23 @@ namespace System
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        [Intrinsic]
         public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        [Intrinsic]
         public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        [Intrinsic]
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryReadBigEndian(ReadOnlySpan{byte}, bool, out TSelf)" />
@@ -324,7 +334,7 @@ namespace System
 
                 if (source.Length > sizeof(nint_t))
                 {
-                    if (source[..^sizeof(nint_t)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(nint_t)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -406,7 +416,7 @@ namespace System
 
                 if (source.Length > sizeof(nint_t))
                 {
-                    if (source[sizeof(nint_t)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(nint_t)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -540,6 +550,8 @@ namespace System
         public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint Log2(nint value)
         {
             if (value < 0)

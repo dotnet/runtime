@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Tests
@@ -18,7 +19,8 @@ namespace System.Tests
             "Windows",
             "Linux",
             "FreeBSD",
-            "Browser"
+            "Browser",
+            "Wasi",
         };
 
         [Theory]
@@ -79,6 +81,12 @@ namespace System.Tests
 
         [Fact, PlatformSpecific(TestPlatforms.Browser)]
         public static void TestIsOSVersionAtLeast_Browser() => TestIsOSVersionAtLeast("BROWSER");
+
+        [Fact, PlatformSpecific(TestPlatforms.Wasi)]
+        public static void TestIsOSPlatform_Wasi() => TestIsOSPlatform("WASI", OperatingSystem.IsWasi);
+
+        [Fact, PlatformSpecific(TestPlatforms.Wasi)]
+        public static void TestIsOSVersionAtLeast_Wasi() => TestIsOSVersionAtLeast("WASI");
 
         [Fact, PlatformSpecific(TestPlatforms.Linux)]
         public static void TestIsOSPlatform_Linux() => TestIsOSPlatform("Linux", OperatingSystem.IsLinux);
@@ -180,38 +188,39 @@ namespace System.Tests
 
             Assert.True(currentOSCheck());
 
-            bool[] allResults = new bool[]
+            Dictionary<string, bool> allResults = new()
             {
-                OperatingSystem.IsBrowser(),
-                OperatingSystem.IsLinux(),
-                OperatingSystem.IsFreeBSD(),
-                OperatingSystem.IsAndroid(),
-                OperatingSystem.IsIOS(),
-                OperatingSystem.IsMacCatalyst(),
-                OperatingSystem.IsMacOS(),
-                OperatingSystem.IsTvOS(),
-                OperatingSystem.IsWatchOS(),
-                OperatingSystem.IsWindows()
+                { "IsBrowser", OperatingSystem.IsBrowser() },
+                { "IsLinux", OperatingSystem.IsLinux() },
+                { "IsFreeBSD", OperatingSystem.IsFreeBSD() },
+                { "IsAndroid", OperatingSystem.IsAndroid() },
+                { "IsIOS", OperatingSystem.IsIOS() },
+                { "IsMacCatalyst", OperatingSystem.IsMacCatalyst() },
+                { "IsMacOS", OperatingSystem.IsMacOS() },
+                { "IsTvOS", OperatingSystem.IsTvOS() },
+                { "IsWatchOS", OperatingSystem.IsWatchOS() },
+                { "IsWindows", OperatingSystem.IsWindows() },
+                { "IsWasi", OperatingSystem.IsWasi() },
             };
 
             // MacCatalyst is a special case since it also returns true for iOS
             if (currentOSName == "MacCatalyst")
             {
-                Assert.Equal(10, allResults.Length);
-                Assert.False(allResults[0]); // IsBrowser()
-                Assert.False(allResults[1]); // IsLinux()
-                Assert.False(allResults[2]); // IsFreeBSD()
-                Assert.False(allResults[3]); // IsAndroid()
-                Assert.True(allResults[4]);  // IsIOS()
-                Assert.True(allResults[5]);  // IsMacCatalyst()
-                Assert.False(allResults[6]); // IsMacOS()
-                Assert.False(allResults[7]); // IsTvOS()
-                Assert.False(allResults[8]); // IsWatchOS()
-                Assert.False(allResults[9]); // IsWindows()
+                foreach (var result in allResults)
+                {
+                    if (result.Key == "IsMacCatalyst" || result.Key == "IsIOS")
+                    {
+                        Assert.True(result.Value);
+                    }
+                    else
+                    {
+                        Assert.False(result.Value);
+                    }
+                }
             }
             else
             {
-                Assert.Single(allResults, true);
+                Assert.Single(allResults.Values, true);
             }
         }
 

@@ -35,6 +35,8 @@ namespace System.Reflection.TypeLoading
         public sealed override bool IsVariableBoundArray => false;
         protected sealed override bool IsByRefImpl() => false;
         protected sealed override bool IsPointerImpl() => false;
+        public sealed override bool IsFunctionPointer => false;
+        public sealed override bool IsUnmanagedFunctionPointer => false;
         public sealed override bool IsConstructedGenericType => true;
         public sealed override bool IsGenericParameter => false;
         public sealed override bool IsGenericTypeParameter => false;
@@ -52,6 +54,9 @@ namespace System.Reflection.TypeLoading
                 return false;
             }
         }
+
+        public sealed override Type GetFunctionPointerReturnType() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
+        public sealed override Type[] GetFunctionPointerParameterTypes() => throw new InvalidOperationException(SR.InvalidOperation_NotFunctionPointer);
 
         internal sealed override RoModule GetRoModule() => _genericTypeDefinition.GetRoModule();
 
@@ -98,8 +103,8 @@ namespace System.Reflection.TypeLoading
         public sealed override MethodBase DeclaringMethod => throw new InvalidOperationException(SR.Arg_NotGenericParameter);
         protected sealed override RoType? ComputeDeclaringType() => _genericTypeDefinition.GetRoDeclaringType();
 
-        protected sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => _genericTypeDefinition.SpecializeBaseType(Instantiation);
-        protected sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => _genericTypeDefinition.SpecializeInterfaces(Instantiation);
+        internal sealed override RoType? ComputeBaseTypeWithoutDesktopQuirk() => _genericTypeDefinition.SpecializeBaseType(Instantiation);
+        internal sealed override IEnumerable<RoType> ComputeDirectlyImplementedInterfaces() => _genericTypeDefinition.SpecializeInterfaces(Instantiation);
 
         public sealed override IEnumerable<CustomAttributeData> CustomAttributes => _genericTypeDefinition.CustomAttributes;
         internal sealed override bool IsCustomAttributeDefined(ReadOnlySpan<byte> ns, ReadOnlySpan<byte> name) => _genericTypeDefinition.IsCustomAttributeDefined(ns, name);
@@ -116,6 +121,7 @@ namespace System.Reflection.TypeLoading
         internal sealed override RoType[] GetGenericTypeParametersNoCopy() => Array.Empty<RoType>();
         internal sealed override RoType[] GetGenericTypeArgumentsNoCopy() => _genericTypeArguments;
         protected internal sealed override RoType[] GetGenericArgumentsNoCopy() => _genericTypeArguments;
+        public sealed override Type[] GetGenericArguments() => _genericTypeArguments.CloneArrayToUnmodifiedTypes();
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override Type MakeGenericType(params Type[] typeArguments) => throw new InvalidOperationException(SR.Format(SR.Arg_NotGenericTypeDefinition, this));
 

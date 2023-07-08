@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class C
 {
@@ -55,48 +56,49 @@ public struct S5
 public static class GitHub_18542
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ViaClass()
+    internal static void ViaClass()
     {
         var c = new C();
         c.M();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ViaStruct1()
+    internal static void ViaStruct1()
     {
         var s1 = new S1(new C());
         s1.M();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ViaStruct2()
+    internal static void ViaStruct2()
     {
         var s2 = new S2(new S1(new C()));
         s2.M();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ViaStruct3()
+    internal static void ViaStruct3()
     {
         var s3 = new S3(new S2(new S1(new C())));
         s3.M();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ViaStruct4()
+    internal static void ViaStruct4()
     {
         var s4 = new S4(new S3(new S2(new S1(new C()))));
         s4.M();
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void ViaStruct5()
+    internal static void ViaStruct5()
     {
         var s5 = new S5(new S4(new S3(new S2(new S1(new C())))));
         s5.M();
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         ViaClass();
         ViaStruct1();

@@ -222,18 +222,78 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
-        [Fact]
-        public static void InvalidRootOnRead()
+        [Theory]
+        [InlineData(typeof(UIntPtr))]
+        [InlineData(typeof(IntPtr))]
+        [InlineData(typeof(Type))]
+        [InlineData(typeof(int[,]))]
+        [InlineData(typeof(System.Delegate))]
+        public static void InvalidRootOnRead(Type type)
         {
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null"));
-
-            var options = new JsonSerializerOptions
+            if (type.IsValueType)
             {
-                IgnoreNullValues = true
-            };
+                // Unsupported struct types throw
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("null", type));
 
-            // We still throw when we have an unsupported root.
-            Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<int[,]>("null", options));
+                var options = new JsonSerializerOptions
+                {
+                    IgnoreNullValues = true
+                };
+
+                // We still throw when we have an unsupported root.
+                Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize("null", type, options));
+            }
+            else
+            {
+                // Unsupported reference types handle null values.
+                Assert.Null(JsonSerializer.Deserialize("null", type));
+
+                var options = new JsonSerializerOptions
+                {
+                    IgnoreNullValues = true
+                };
+
+                Assert.Null(JsonSerializer.Deserialize("null", type, options));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBuiltInConvertersForNullableTypes))]
+        public static void ReadNullValue_BuiltInConverter<T>(JsonConverter<T> converter)
+        {
+            var reader = new Utf8JsonReader("null"u8);
+            Assert.True(reader.Read());
+            Assert.Equal(JsonTokenType.Null, reader.TokenType);
+
+            T? result = converter.Read(ref reader, typeof(T), JsonSerializerOptions.Default);
+            Assert.True(result is null or JsonDocument { RootElement.ValueKind: JsonValueKind.Null } or JsonElement { ValueKind: JsonValueKind.Null });
+        }
+
+        [Theory]
+        [MemberData(nameof(GetBuiltInConvertersForNullableTypes))]
+        public static void DeserializeNullValue_BuiltInConverter<T>(JsonConverter<T> converter)
+        {
+            _ = converter; // Not needed here.
+
+            T? value = JsonSerializer.Deserialize<T>("null");
+            AssertNull(value);
+
+            T[]? array = JsonSerializer.Deserialize<T[]>("[null]");
+            AssertNull(array[0]);
+
+            List<T>? list = JsonSerializer.Deserialize<List<T>>("[null]");
+            AssertNull(list[0]);
+
+            GenericRecord<T>? record = JsonSerializer.Deserialize<GenericRecord<T>>("""{"Value":null}""");
+            AssertNull(record.Value);
+
+            Dictionary<string, T>? dictionary = JsonSerializer.Deserialize<Dictionary<string, T>>("""{"Key":null}""");
+            AssertNull(dictionary["Key"]);
+
+            static void AssertNull(T? result) => Assert.True(
+                result is null
+                       or JsonDocument { RootElement.ValueKind: JsonValueKind.Null }
+                       or JsonElement { ValueKind: JsonValueKind.Null });
         }
     }
 }

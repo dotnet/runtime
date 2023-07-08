@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)</TargetFrameworks>
-    <NoWarn>$(NoWarn);nullable</NoWarn>
+    <NoWarn>$(NoWarn);nullable;CA1859</NoWarn>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -9,6 +9,8 @@
     <EnableComBinder Condition="'$(TargetPlatformIdentifier)' == 'windows'">true</EnableComBinder>
     <DefineConstants Condition="'$(EnableComBinder)' == 'true'">$(DefineConstants);ENABLECOMBINDER</DefineConstants>
     <AllowUnsafeBlocks Condition="'$(EnableComBinder)' == 'true'">true</AllowUnsafeBlocks>
+    <DefineConstants>$(DefineConstants);LEGACY_GETRESOURCESTRING_USER</DefineConstants>
+    <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
   </PropertyGroup>
   <ItemGroup>
     <ILLinkDescriptorsXmls Include="$(ILLinkDirectory)ILLink.Descriptors.Shared.xml" />
@@ -167,6 +169,8 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Syntax\TokenKind.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Numerics\Hashing\HashHelpers.cs"
              Link="Common\System\Collections\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(EnableComBinder)'=='true'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"

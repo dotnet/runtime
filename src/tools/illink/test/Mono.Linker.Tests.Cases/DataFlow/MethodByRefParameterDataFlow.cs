@@ -111,7 +111,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This second warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with out parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
 		static void TestReadFromRefParameter_MismatchOnInput ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -124,7 +124,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		// https://github.com/dotnet/linker/issues/2632
 		// This third warning should not be generated, the value of typeWithMethods should have PublicMethods
 		// after the call with ref parameter.
-		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = ProducedBy.Analyzer)]
+		[ExpectedWarning ("IL2072", nameof (DataFlowTypeExtensions.RequiresPublicMethods), ProducedBy = Tool.Analyzer)]
 		static void TestReadFromRefParameter_MismatchOnInput_PassedTwice ()
 		{
 			Type typeWithMethods = GetTypeWithFields ();
@@ -201,11 +201,11 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[return: DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)]
 			static ref Type GetTypeRefWithMethodsAndFields () { throw null; }
 
-			[ExpectedWarning ("IL2067", "t", "InnerMethodWithDam")]
-			[ExpectedWarning ("IL2067", "tWithMethodsAndFields", "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2067", "'t'", "InnerMethodWithDam")]
+			[ExpectedWarning ("IL2067", "'tWithMethodsAndFields'", "InnerMethodWithDam")]
 			[ExpectedWarning ("IL2072", nameof (GetTypeRefWithoutAnnotations), "InnerMethodWithDam")]
 			[ExpectedWarning ("IL2068", nameof (GetTypeRefWithMethodsAndFields), "InnerMethodWithDam")]
-			static void MethodWithLocaMethodWithDam (Type t, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tWithMethods, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)] Type tWithMethodsAndFields)
+			static void MethodWithLocalMethodWithDam (Type t, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] Type tWithMethods, [DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.PublicFields)] Type tWithMethodsAndFields)
 			{
 				// 2067
 				InnerMethodWithDam (ref t);
@@ -232,7 +232,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 			public static void Test ()
 			{
-				MethodWithLocaMethodWithDam (null, null, null);
+				MethodWithLocalMethodWithDam (null, null, null);
 			}
 		}
 

@@ -1,19 +1,27 @@
-# Linker Analyzer
+# ILLink Analyzer
 
-Linker analyzer is a command line tool to analyze dependencies, which
-were recorded during linker processing, and led linker to mark an item
+The ILLink analyzer is a command line tool to analyze dependencies, which
+were recorded during ILLink processing, and led ILLink to mark an item
 to keep it in the resulting linked assembly.
 
 It works on an oriented graph of dependencies, which are collected and
-dumped during the linker run. The vertices of this graph are the items
+dumped during the ILLink run. The vertices of this graph are the items
 of interest like assemblies, types, methods, fields, linker steps,
 etc. The edges represent the dependencies.
 
 ## How to dump dependencies
 
-The linker analyzer needs a linker dependencies file as an input. It
+The ILLink analyzer needs a ILLink dependencies file as an input. It
 can be retrieved by enabling dependencies dumping during trimming of a
-Xamarin.Android, Xamarin.iOS, or .NET SDK style project.
+project.
+
+For console .NET projects you need to publish the application
+with trimming enabled and use the `_TrimmerDumpDependencies` property:
+
+```dotnet publish /p:PublishTrimmed=true /p:_TrimmerDumpDependencies=true```
+
+In this case the dependencies file will be in
+`obj/<Configuration>/<TargetFramework>/<RID>/linked/linker-dependencies.xml`.
 
 For Xamarin.Android and Xamarin.iOS, that can be done on the command line by setting
 `LinkerDumpDependencies` property to `true` and building the
@@ -33,7 +41,7 @@ file created, containing the information for the analyzer.
 ## How to use the analyzer
 
 Let say you would like to know, why a type, Android.App.Activity for
-example, was marked by the linker. So run the analyzer like this:
+example, was marked by ILLink. So run the analyzer like this:
 
 ```illinkanalyzer -t Android.App.Activity linker-dependencies.xml```
 
@@ -52,19 +60,19 @@ Dependency #1
 	| Other:Mono.Linker.Steps.ResolveFromAssemblyStep
 ```
 
-The output contains dependencies string(s), starting with the type and continuing with the item of interest, which depends on the type. The dependency could be a result of multiple reasons. For example, the type was referenced from a method, or the type was listed in the linker XML descriptor file.
+The output contains dependencies string(s), starting with the type and continuing with the item of interest, which depends on the type. The dependency could be a result of multiple reasons. For example, the type was referenced from a method, or the type was listed in the ILLink XML descriptor file.
 
 In our example there is only one dependency string called `Dependency
 #1`. It shows us that the type `Android.App.Activity` was marked
-during processing of type `XA.App.MainActivity` by the linker. In this
+during processing of type `XA.App.MainActivity` by ILLink. In this
 case because the `MainActivity` type is based on the `Activity` type
-and thus the linker marked it and kept it in the linked assembly. We
+and thus ILLink marked it and kept it in the linked assembly. We
 can also see that there are 2 dependencies for the `MainActivity`
 class. Note that in the string (above) we see only 1st dependency of
 the 2, the dependency on the assembly `XA.App`. And finally the
 assembly vertex depends on the `ResolveFromAssemblyStep` vertex. So we
 see that the assembly was processed in the `ResolveFromAssembly`
-linker step.
+ILLink step.
 
 Now we might want to see the `MainActivity` dependencies. That could
 be done by the following analyzer run:
@@ -93,7 +101,7 @@ Dependency #2
 
 ### Known issues
 
-Sometimes the linker processing is not straight forward and the
+Sometimes ILLink processing is not straight forward and the
 marking is postponed, like processing of some of the methods. They are
 queued to be processed later. In such case the dependencies are
 "interrupted" and the dependecy string for the method usually shows
@@ -111,7 +119,7 @@ Options:
   -a, --alldeps              show all dependencies
   -h, --help                 show this message and exit.
   -r, --rawdeps=VALUE        show raw vertex dependencies. Raw vertex VALUE is
-                               in the raw format written by linker to the
+                               in the raw format written by ILLink to the
                                dependency XML file. VALUE can be regular
                                expression
       --roots                show root dependencies.

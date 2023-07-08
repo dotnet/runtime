@@ -22,7 +22,7 @@ namespace System.Threading
     /// <remarks>
     /// <para>
     /// Spin locks can be used for leaf-level locks where the object allocation implied by using a <see
-    /// cref="System.Threading.Monitor"/>, in size or due to garbage collection pressure, is overly
+    /// cref="Monitor"/>, in size or due to garbage collection pressure, is overly
     /// expensive. Avoiding blocking is another reason that a spin lock can be useful, however if you expect
     /// any significant amount of blocking, you are probably best not using spin locks due to excessive
     /// spinning. Spinning can be beneficial when locks are fine grained and large in number (for example, a
@@ -69,10 +69,10 @@ namespace System.Threading
         // After how many yields, check the timeout
         private const int TIMEOUT_CHECK_FREQUENCY = 10;
 
-        // Thr thread tracking disabled mask
+        // The thread tracking disabled mask
         private const int LOCK_ID_DISABLE_MASK = unchecked((int)0x80000000);        // 1000 0000 0000 0000 0000 0000 0000 0000
 
-        // the lock is held by some thread, but we don't know which
+        // The lock is held by some thread, but we don't know which
         private const int LOCK_ANONYMOUS_OWNED = 0x1;                               // 0000 0000 0000 0000 0000 0000 0000 0001
 
         // Waiters mask if the thread tracking is disabled
@@ -100,7 +100,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Threading.SpinLock"/>
+        /// Initializes a new instance of the <see cref="SpinLock"/>
         /// structure with the option to track thread IDs to improve debugging.
         /// </summary>
         /// <remarks>
@@ -119,7 +119,7 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="System.Threading.SpinLock"/>
+        /// Initializes a new instance of the <see cref="SpinLock"/>
         /// structure with the option to track thread IDs to improve debugging.
         /// </summary>
         /// <remarks>
@@ -139,10 +139,10 @@ namespace System.Threading
         /// </remarks>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="System.Threading.LockRecursionException">
+        /// <exception cref="LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling Enter.
         /// </exception>
         public void Enter(ref bool lockTaken)
@@ -167,10 +167,10 @@ namespace System.Threading
         /// </remarks>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="System.Threading.LockRecursionException">
+        /// <exception cref="LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling TryEnter.
         /// </exception>
         public void TryEnter(ref bool lockTaken)
@@ -204,18 +204,18 @@ namespace System.Threading
         /// name="timeout"/>
         /// has expired.
         /// </remarks>
-        /// <param name="timeout">A <see cref="System.TimeSpan"/> that represents the number of milliseconds
-        /// to wait, or a <see cref="System.TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
+        /// <param name="timeout">A <see cref="TimeSpan"/> that represents the number of milliseconds
+        /// to wait, or a <see cref="TimeSpan"/> that represents -1 milliseconds to wait indefinitely.
         /// </param>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="System.Threading.LockRecursionException">
+        /// <exception cref="LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling TryEnter.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="timeout"/> is a negative
         /// number other than -1 milliseconds, which represents an infinite time-out -or- timeout is greater
         /// than <see cref="int.MaxValue"/> milliseconds.
         /// </exception>
@@ -225,7 +225,7 @@ namespace System.Threading
             long totalMilliseconds = (long)timeout.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
-                throw new System.ArgumentOutOfRangeException(
+                throw new ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SpinLock_TryEnter_ArgumentOutOfRange);
             }
 
@@ -244,16 +244,16 @@ namespace System.Threading
         /// name="millisecondsTimeout"/> has expired.
         /// </remarks>
         /// <param name="millisecondsTimeout">The number of milliseconds to wait, or <see
-        /// cref="System.Threading.Timeout.Infinite"/> (-1) to wait indefinitely.</param>
+        /// cref="Timeout.Infinite"/> (-1) to wait indefinitely.</param>
         /// <param name="lockTaken">True if the lock is acquired; otherwise, false. <paramref
         /// name="lockTaken"/> must be initialized to false prior to calling this method.</param>
-        /// <exception cref="System.Threading.LockRecursionException">
+        /// <exception cref="LockRecursionException">
         /// Thread ownership tracking is enabled, and the current thread has already acquired this lock.
         /// </exception>
-        /// <exception cref="System.ArgumentException">
+        /// <exception cref="ArgumentException">
         /// The <paramref name="lockTaken"/> argument must be initialized to false prior to calling TryEnter.
         /// </exception>
-        /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="millisecondsTimeout"/> is
         /// a negative number other than -1, which represents an infinite time-out.</exception>
         public void TryEnter(int millisecondsTimeout, ref bool lockTaken)
         {
@@ -562,7 +562,7 @@ namespace System.Threading
         /// by the current thread. It is invalid to use this property when the lock was initialized to not
         /// track thread ownership.
         /// </remarks>
-        /// <exception cref="System.InvalidOperationException">
+        /// <exception cref="InvalidOperationException">
         /// Thread ownership tracking is disabled.
         /// </exception>
         public bool IsHeldByCurrentThread

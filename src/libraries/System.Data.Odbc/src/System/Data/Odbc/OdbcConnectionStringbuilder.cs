@@ -194,7 +194,7 @@ namespace System.Data.Odbc
             return DbConnectionStringBuilderUtil.ConvertToString(value);
         }
 
-        private object GetAt(Keywords index)
+        private string GetAt(Keywords index)
         {
             switch (index)
             {

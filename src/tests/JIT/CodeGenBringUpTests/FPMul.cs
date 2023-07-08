@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPMul
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_FPMul
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static float FPMul(float x, float y) { return x*y; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPMul(7f, 9f);
         Console.WriteLine(y);

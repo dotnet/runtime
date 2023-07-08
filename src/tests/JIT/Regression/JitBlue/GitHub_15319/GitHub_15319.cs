@@ -3,13 +3,15 @@
 
 using System;
 using System.Linq;
+using Xunit;
 
 // Bug where interacting CSEs of N - Old.Length and Old.Length
 // were not handled properly in optCSE
 
 public class P
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var ar = new double[]
         {
@@ -21,7 +23,7 @@ public class P
         return (int)ar[4];
     }
     
-    public static void FillTo1(ref double[] dd, int N)
+    internal static void FillTo1(ref double[] dd, int N)
     {
         if (dd.Length >= N)
         return;

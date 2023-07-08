@@ -203,8 +203,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     try
                     {
                         var loggerFactory = context.RequestServices.GetService<ILoggerFactory>();
-                        context.Request.Query.TryGetValue("urlSymbolServer", out StringValues urlSymbolServerList);
-                        var proxy = new DebuggerProxy(loggerFactory, urlSymbolServerList.ToList(), runtimeId, options: options);
+                        var proxy = new DebuggerProxy(loggerFactory, runtimeId, options: options);
 
                         System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 

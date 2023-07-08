@@ -12,6 +12,7 @@
     <PublishTrimmed>false</PublishTrimmed>
     <!-- CI builds turn this on, but it interferes with Roslyn's ability to generate EnC deltas -->
     <DeterministicSourcePaths>false</DeterministicSourcePaths>
+    <IsWasmTestProject>false</IsWasmTestProject>
   </PropertyGroup>
 
   <ItemGroup>

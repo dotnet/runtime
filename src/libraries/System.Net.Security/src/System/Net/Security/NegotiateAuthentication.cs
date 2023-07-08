@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Principal;
 using System.Security.Authentication.ExtendedProtection;
 
@@ -18,11 +19,11 @@ namespace System.Net.Security
         private readonly NTAuthentication? _ntAuthentication;
         private readonly string _requestedPackage;
         private readonly bool _isServer;
+        private readonly TokenImpersonationLevel _requiredImpersonationLevel;
+        private readonly ProtectionLevel _requiredProtectionLevel;
+        private readonly ExtendedProtectionPolicy? _extendedProtectionPolicy;
+        private readonly bool _isSecureConnection;
         private IIdentity? _remoteIdentity;
-        private TokenImpersonationLevel _requiredImpersonationLevel;
-        private ProtectionLevel _requiredProtectionLevel;
-        private ExtendedProtectionPolicy? _extendedProtectionPolicy;
-        private bool _isSecureConnection;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="NegotiateAuthentication"/>
@@ -397,7 +398,7 @@ namespace System.Net.Security
         /// Wrap an input message with signature and optionally with an encryption.
         /// </summary>
         /// <param name="input">Input message to be wrapped.</param>
-        /// <param name="outputWriter">Buffer writter where the wrapped message is written.</param>
+        /// <param name="outputWriter">Buffer writer where the wrapped message is written.</param>
         /// <param name="requestEncryption">Specifies whether encryption is requested.</param>
         /// <param name="isEncrypted">Specifies whether encryption was applied in the wrapping.</param>
         /// <returns>
@@ -425,7 +426,7 @@ namespace System.Net.Security
         /// Unwrap an input message with signature or encryption applied by the other party.
         /// </summary>
         /// <param name="input">Input message to be unwrapped.</param>
-        /// <param name="outputWriter">Buffer writter where the unwrapped message is written.</param>
+        /// <param name="outputWriter">Buffer writer where the unwrapped message is written.</param>
         /// <param name="wasEncrypted">
         /// On output specifies whether the wrapped message had encryption applied.
         /// </param>
@@ -474,6 +475,49 @@ namespace System.Net.Security
             }
 
             return _ntAuthentication.UnwrapInPlace(input, out unwrappedOffset, out unwrappedLength, out wasEncrypted);
+        }
+
+        /// <summary>
+        /// Computes the message integrity check of a given message.
+        /// </summary>
+        /// <param name="message">Input message for MIC calculation.</param>
+        /// <param name="signature">Buffer writer where the MIC is written.</param>
+        /// <remarks>
+        /// The method modifies the internal state and may update sequence numbers depending on the
+        /// selected algorithm. Two successive invocations thus don't produce the same result and
+        /// it's important to carefully pair GetMIC and VerifyMIC calls on the both sides of the
+        /// authenticated session.
+        /// </remarks>
+        internal void GetMIC(ReadOnlySpan<byte> message, IBufferWriter<byte> signature)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            _ntAuthentication.GetMIC(message, signature);
+        }
+
+        /// <summary>
+        /// Verifies the message integrity check of a given message.
+        /// </summary>
+        /// <param name="message">Input message for MIC calculation.</param>
+        /// <param name="signature">MIC to be verified.</param>
+        /// <returns>For successfully verified MIC, the method returns true.</returns>
+        /// <remarks>
+        /// The method modifies the internal state and may update sequence numbers depending on the
+        /// selected algorithm. Two successive invocations thus don't produce the same result and
+        /// it's important to carefully pair GetMIC and VerifyMIC calls on the both sides of the
+        /// authenticated session.
+        /// </remarks>
+        internal bool VerifyMIC(ReadOnlySpan<byte> message, ReadOnlySpan<byte> signature)
+        {
+            if (!IsAuthenticated || _ntAuthentication == null)
+            {
+                throw new InvalidOperationException(SR.net_auth_noauth);
+            }
+
+            return _ntAuthentication.VerifyMIC(message, signature);
         }
 
         private bool CheckSpn()

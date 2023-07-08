@@ -32,14 +32,8 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works
                 test.RunLclVarScenario_UnsafeRead();
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -92,16 +86,9 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static {Op1BaseType} _data;
 
-        private static {Op1BaseType} _clsVar;
-
         private {Op1BaseType} _fld;
 
         private ScalarSimdUnaryOpTest__DataTable<{RetBaseType}> _dataTable;
-
-        static ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
-        {
-            _clsVar = {NextValueOp1};
-        }
 
         public ScalarSimdUnaryOpTest__{Method}{RetBaseType}()
         {
@@ -141,18 +128,6 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_data, _dataTable.outArrayPtr);
         }
 
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar
-            );
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(_clsVar, _dataTable.outArrayPtr);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -162,17 +137,6 @@ namespace JIT.HardwareIntrinsics.X86
 
             Unsafe.Write(_dataTable.outArrayPtr, result);
             ValidateResult(data, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new ScalarSimdUnaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld);
-
-            Unsafe.Write(_dataTable.outArrayPtr, result);
-            ValidateResult(test._fld, _dataTable.outArrayPtr);
         }
 
         public void RunClassFldScenario()

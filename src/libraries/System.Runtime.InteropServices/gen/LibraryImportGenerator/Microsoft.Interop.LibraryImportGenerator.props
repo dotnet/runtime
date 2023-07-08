@@ -15,5 +15,9 @@
         of generating a stub that handles all of the marshalling.
       -->
       <CompilerVisibleProperty Include="LibraryImportGenerator_GenerateForwarders" />
+
+      <!-- These properies are defined by the MSBuild SDK but are used in the interop source generators' TFM calculations -->
+      <CompilerVisibleProperty Include="TargetFrameworkIdentifier" />
+      <CompilerVisibleProperty Include="TargetFrameworkVersion" />
   </ItemGroup>
 </Project>

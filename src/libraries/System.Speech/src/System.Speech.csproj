@@ -4,10 +4,11 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
-    <!-- CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
-    <NoWarn>$(NoWarn);CS0649;SA1129;CA1846;CA1847;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
+    <NoWarn>$(NoWarn);CS0649;SA1129;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
     <Nullable>annotations</Nullable>
     <IsTrimmable>false</IsTrimmable>
+    <!-- Public API not fully documented. -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>
@@ -224,6 +225,8 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
             Link="Common\Interop\Windows\WinMm\Interop.waveOutRestart.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
             Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+            Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">

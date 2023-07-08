@@ -163,12 +163,6 @@ const char* sgen_client_vtable_get_namespace (GCVTable vtable);
 const char* sgen_client_vtable_get_name (GCVTable vtable);
 
 /*
- * Called before starting collections.  The world is already stopped.  No action is
- * necessary.
- */
-void sgen_client_pre_collection_checks (void);
-
-/*
  * Must set the thread's thread info to `info`.  If the thread's small ID was not already
  * initialized in `sgen_client_init()` (for the main thread, usually), it must be done here.
  *

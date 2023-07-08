@@ -11,4 +11,5 @@
 # 3. - n. Additional arguments that were passed to the test .sh
 
 exename=$(basename $2 .dll)
+chmod +x $1/native/$exename
 $_DebuggerFullPath $1/native/$exename "${@:3}"

@@ -23,9 +23,9 @@ namespace ILCompiler
 
         protected ManifestResourceBlockingPolicy() { }
 
-        public ManifestResourceBlockingPolicy(IEnumerable<KeyValuePair<string, bool>> switchValues)
+        public ManifestResourceBlockingPolicy(Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
-            _hashtable = new FeatureSwitchHashtable(new Dictionary<string, bool>(switchValues));
+            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
         }
 
         /// <summary>
@@ -42,9 +42,11 @@ namespace ILCompiler
         private sealed class FeatureSwitchHashtable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
             private readonly Dictionary<string, bool> _switchValues;
+            private readonly Logger _logger;
 
-            public FeatureSwitchHashtable(Dictionary<string, bool> switchValues)
+            public FeatureSwitchHashtable(Logger logger, Dictionary<string, bool> switchValues)
             {
+                _logger = logger;
                 _switchValues = switchValues;
             }
 
@@ -55,7 +57,7 @@ namespace ILCompiler
 
             protected override AssemblyFeatureInfo CreateValueFromKey(EcmaModule key)
             {
-                return new AssemblyFeatureInfo(key, _switchValues);
+                return new AssemblyFeatureInfo(key, _logger, _switchValues);
             }
         }
 
@@ -65,7 +67,7 @@ namespace ILCompiler
 
             public HashSet<string> BlockedResources { get; }
 
-            public AssemblyFeatureInfo(EcmaModule module, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public AssemblyFeatureInfo(EcmaModule module, Logger logger, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
                 Module = module;
                 BlockedResources = new HashSet<string>();
@@ -94,7 +96,7 @@ namespace ILCompiler
                             ms = new UnmanagedMemoryStream(reader.CurrentPointer, length);
                         }
 
-                        BlockedResources = SubstitutionsReader.GetSubstitutions(module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
+                        BlockedResources = SubstitutionsReader.GetSubstitutions(logger, module.Context, ms, resource, module, "resource " + resourceName + " in " + module.ToString(), featureSwitchValues);
                     }
                 }
             }
@@ -104,14 +106,14 @@ namespace ILCompiler
         {
             private readonly HashSet<string> _substitutions = new();
 
-            private SubstitutionsReader(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
-                : base(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
+            private SubstitutionsReader(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+                : base(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues)
             {
             }
 
-            public static HashSet<string> GetSubstitutions(TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
+            public static HashSet<string> GetSubstitutions(Logger logger, TypeSystemContext context, Stream documentStream, ManifestResource resource, ModuleDesc resourceAssembly, string xmlDocumentLocation, IReadOnlyDictionary<string, bool> featureSwitchValues)
             {
-                var rdr = new SubstitutionsReader(context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
+                var rdr = new SubstitutionsReader(logger, context, documentStream, resource, resourceAssembly, xmlDocumentLocation, featureSwitchValues);
                 rdr.ProcessXml(false);
                 return rdr._substitutions;
             }

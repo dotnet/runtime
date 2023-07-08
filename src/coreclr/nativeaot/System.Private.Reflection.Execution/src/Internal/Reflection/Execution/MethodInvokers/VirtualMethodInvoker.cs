@@ -59,7 +59,14 @@ namespace Internal.Reflection.Execution.MethodInvokers
             {
                 ValidateThis(thisObject, _declaringTypeHandle);
 
-                resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+                try
+                {
+                    resolvedVirtual = OpenMethodResolver.ResolveMethod(MethodInvokeInfo.VirtualResolveData, thisObject);
+                }
+                catch (Exception ex) when (wrapInTargetInvocationException)
+                {
+                    throw new TargetInvocationException(ex);
+                }
             }
 
             object? result = MethodInvokeInfo.Invoke(
@@ -70,6 +77,11 @@ namespace Internal.Reflection.Execution.MethodInvokers
                 wrapInTargetInvocationException);
             System.Diagnostics.DebugAnnotations.PreviousCallContainsDebuggerStepInCode();
             return result;
+        }
+
+        protected sealed override object CreateInstance(object[] arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw NotImplemented.ByDesign;
         }
 
         internal IntPtr ResolveTarget(RuntimeTypeHandle type)

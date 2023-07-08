@@ -225,8 +225,12 @@ namespace System.Diagnostics
                     // Convert flags to binary.
                     Span<char> flagsChars = stackalloc char[2];
                     HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _w3CIdFlags), flagsChars, 0, HexConverter.Casing.Lower);
-                    string id = "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
-
+                    string id =
+#if NET6_0_OR_GREATER
+                        string.Create(null, stackalloc char[128], $"00-{_traceId}-{_spanId}-{flagsChars}");
+#else
+                        "00-" + _traceId + "-" + _spanId + "-" + flagsChars.ToString();
+#endif
                     Interlocked.CompareExchange(ref _id, id, null);
 
                 }
@@ -253,7 +257,12 @@ namespace System.Diagnostics
                     {
                         Span<char> flagsChars = stackalloc char[2];
                         HexConverter.ToCharsBuffer((byte)((~ActivityTraceFlagsIsSet) & _parentTraceFlags), flagsChars, 0, HexConverter.Casing.Lower);
-                        string parentId = "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
+                        string parentId =
+#if NET6_0_OR_GREATER
+                            string.Create(null, stackalloc char[128], $"00-{_traceId}-{_parentSpanId}-{flagsChars}");
+#else
+                            "00-" + _traceId + "-" + _parentSpanId + "-" + flagsChars.ToString();
+#endif
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
                     else if (Parent != null)
@@ -564,7 +573,12 @@ namespace System.Diagnostics
         /// <param name="parentId">The id of the parent operation.</param>
         public Activity SetParentId(string parentId)
         {
-            if (Parent != null)
+            if (_id != null || _spanId != null)
+            {
+                // Cannot set the parent on already started Activity.
+                NotifyError(new InvalidOperationException(SR.ActivitySetParentAlreadyStarted));
+            }
+            else if (Parent != null)
             {
                 NotifyError(new InvalidOperationException(SR.SetParentIdOnActivityWithParent));
             }
@@ -589,7 +603,12 @@ namespace System.Diagnostics
         /// </summary>
         public Activity SetParentId(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None)
         {
-            if (Parent != null)
+            if (_id != null || _spanId != null)
+            {
+                // Cannot set the parent on already started Activity.
+                NotifyError(new InvalidOperationException(SR.ActivitySetParentAlreadyStarted));
+            }
+            else if (Parent != null)
             {
                 NotifyError(new InvalidOperationException(SR.SetParentIdOnActivityWithParent));
             }

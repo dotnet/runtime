@@ -56,7 +56,6 @@ public:
 
     static FCDECL0(void,            SetLastError            );
     static FCDECL0(void,            ClearLastError          );
-    static FCDECL1(void*,           GetNDirectTarget,       NDirectMethodDesc* pNMD);
     static FCDECL1(void*,           GetDelegateTarget,      DelegateObject *pThisUNSAFE);
 
     static FCDECL2(void,            ThrowInteropParamException, UINT resID, UINT paramIdx);

@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class TestClass13
 {
     // The test exposed a place where we were using uninitialized `gtUseNum` variable.
@@ -47,7 +48,7 @@ public class TestClass13
             return s_s3_16;
         }
     }
-    public void Method0()
+    internal void Method0()
     {
         unchecked
         {
@@ -60,7 +61,8 @@ public class TestClass13
             return;
         }
     }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

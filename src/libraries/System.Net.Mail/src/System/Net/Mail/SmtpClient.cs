@@ -272,7 +272,7 @@ namespace System.Net.Mail
                 // be usable, whereas in .NET Framework it throws an exception that "This property is not supported for
                 // protocols that do not use URI."
 #pragma warning disable SYSLIB0014
-                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri("mailto:" + _host + ":" + _port));
+                return _servicePoint ??= ServicePointManager.FindServicePoint(new Uri($"mailto:{_host}:{_port}"));
 #pragma warning restore SYSLIB0014
             }
         }
@@ -811,7 +811,7 @@ namespace System.Net.Mail
 
         private void CheckHostAndPort()
         {
-            if (_host == null || _host.Length == 0)
+            if (string.IsNullOrEmpty(_host))
             {
                 throw new InvalidOperationException(SR.UnspecifiedHost);
             }

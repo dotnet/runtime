@@ -5,8 +5,9 @@
 // to local buffer
 
 using System;
+using Xunit;
 
-unsafe class Program
+public unsafe class Program
 {
     struct Element
     {
@@ -35,7 +36,8 @@ unsafe class Program
         return sum;
     }
 
-    static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         return foo(10) + 55;
     }

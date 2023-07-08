@@ -11,6 +11,8 @@ using ILCompiler.DependencyAnalysis;
 using Internal.IL;
 using Internal.TypeSystem;
 
+using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
+
 namespace ILCompiler
 {
     // Class that computes the initial state of static fields on a type by interpreting the static constructor.
@@ -895,11 +897,11 @@ namespace ILCompiler
                             }
 
                             TypeDesc token = (TypeDesc)methodIL.GetObject(reader.ReadILToken());
-                            if (token.IsGCPointer)
+                            if (token.IsGCPointer || popped.Value is not ByRefValue byrefVal)
                             {
                                 return Status.Fail(methodIL.OwningMethod, opcode);
                             }
-                            ((ByRefValue)popped.Value).Initialize(token.GetElementSize().AsInt);
+                            byrefVal.Initialize(token.GetElementSize().AsInt);
                         }
                         break;
 
@@ -1415,6 +1417,53 @@ namespace ILCompiler
                         }
                         break;
 
+                    case ILOpcode.ldind_i1:
+                    case ILOpcode.ldind_u1:
+                    case ILOpcode.ldind_i2:
+                    case ILOpcode.ldind_u2:
+                    case ILOpcode.ldind_i4:
+                    case ILOpcode.ldind_u4:
+                    case ILOpcode.ldind_i8:
+                        {
+                            StackEntry entry = stack.Pop();
+                            if (entry.Value is ByRefValue byRefVal)
+                            {
+                                switch (opcode)
+                                {
+                                    case ILOpcode.ldind_i1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsSByte()));
+                                        break;
+                                    case ILOpcode.ldind_u1:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((byte)byRefVal.DereferenceAsSByte()));
+                                        break;
+                                    case ILOpcode.ldind_i2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt16()));
+                                        break;
+                                    case ILOpcode.ldind_u2:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32((ushort)byRefVal.DereferenceAsInt16()));
+                                        break;
+                                    case ILOpcode.ldind_i4:
+                                    case ILOpcode.ldind_u4:
+                                        stack.Push(StackValueKind.Int32, ValueTypeValue.FromInt32(byRefVal.DereferenceAsInt32()));
+                                        break;
+                                    case ILOpcode.ldind_i8:
+                                        stack.Push(StackValueKind.Int64, ValueTypeValue.FromInt64(byRefVal.DereferenceAsInt64()));
+                                        break;
+                                    case ILOpcode.ldind_r4:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsSingle()));
+                                        break;
+                                    case ILOpcode.ldind_r8:
+                                        stack.Push(StackValueKind.Float, ValueTypeValue.FromDouble(byRefVal.DereferenceAsDouble()));
+                                        break;
+                                }
+                            }
+                            else
+                            {
+                                ThrowHelper.ThrowInvalidProgramException();
+                            }
+                        }
+                        break;
+
                     case ILOpcode.constrained:
                         // Fallthrough. If this is ever implemented, make sure delegates to static virtual methods
                         // are also handled. We currently assume the frozen delegate will not be to a static
@@ -1428,11 +1477,19 @@ namespace ILCompiler
             return Status.Fail(methodIL.OwningMethod, "Control fell through");
         }
 
-        private static Value NewUninitializedLocationValue(TypeDesc locationType)
+        private static BaseValueTypeValue NewUninitializedLocationValue(TypeDesc locationType)
         {
             if (locationType.IsGCPointer || locationType.IsByRef)
             {
                 return null;
+            }
+            else if (locationType.IsByRefLike && locationType is MetadataType maybeReadOnlySpan
+                && maybeReadOnlySpan.Module == locationType.Context.SystemModule
+                && maybeReadOnlySpan.Name == "ReadOnlySpan`1"
+                && maybeReadOnlySpan.Namespace == "System"
+                && maybeReadOnlySpan.Instantiation[0] is MetadataType readOnlySpanElementType)
+            {
+                return new ReadOnlySpanValue(readOnlySpanElementType, Array.Empty<byte>());
             }
             else
             {
@@ -1458,6 +1515,33 @@ namespace ILCompiler
                     {
                         byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(ecmaField);
                         return array.TryInitialize(rvaData);
+                    }
+                    return false;
+                case "CreateSpan":
+                    if (method.OwningType is MetadataType createSpanType
+                        && createSpanType.Name == "RuntimeHelpers" && createSpanType.Namespace == "System.Runtime.CompilerServices"
+                        && createSpanType.Module == createSpanType.Context.SystemModule
+                        && parameters[0] is RuntimeFieldHandleValue createSpanFieldHandle
+                        && createSpanFieldHandle.Field.IsStatic && createSpanFieldHandle.Field.HasRva
+                        && createSpanFieldHandle.Field is Internal.TypeSystem.Ecma.EcmaField createSpanEcmaField
+                        && method.Instantiation[0].IsValueType)
+                    {
+                        var elementType = (MetadataType)method.Instantiation[0];
+                        int elementSize = elementType.InstanceFieldSize.AsInt;
+                        byte[] rvaData = Internal.TypeSystem.Ecma.EcmaFieldExtensions.GetFieldRvaData(createSpanEcmaField);
+                        if (rvaData.Length % elementSize != 0)
+                            return false;
+                        retVal = new ReadOnlySpanValue(elementType, rvaData);
+                        return true;
+                    }
+                    return false;
+                case "get_Item":
+                    if (method.OwningType is MetadataType readonlySpanType
+                        && readonlySpanType.Name == "ReadOnlySpan`1" && readonlySpanType.Namespace == "System"
+                        && parameters[0] is ReadOnlySpanReferenceValue spanRef
+                        && parameters[1] is ValueTypeValue spanIndex)
+                    {
+                        return spanRef.TryAccessElement(spanIndex.AsInt32(), out retVal);
                     }
                     return false;
             }
@@ -1730,6 +1814,7 @@ namespace ILCompiler
         {
             TypeDesc Type { get; }
             void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory);
+            void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory);
             bool IsKnownImmutable { get; }
             int ArrayLength { get; }
         }
@@ -1938,6 +2023,93 @@ namespace ILCompiler
             }
         }
 
+        private sealed class ReadOnlySpanValue : BaseValueTypeValue, IInternalModelingOnlyValue
+        {
+            private readonly MetadataType _elementType;
+            private readonly byte[] _bytes;
+
+            public ReadOnlySpanValue(MetadataType elementType, byte[] bytes)
+            {
+                _elementType = elementType;
+                _bytes = bytes;
+            }
+
+            public override int Size => 2 * _elementType.Context.Target.PointerSize;
+
+            public override bool Equals(Value value)
+            {
+                // ceq instruction on ReadOnlySpans is hard to support.
+                // We should not see it in the first place.
+                ThrowHelper.ThrowInvalidProgramException();
+                return false;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
+            public override Value Clone()
+            {
+                // ReadOnlySpan is immutable and there's no way for the data to escape
+                return this;
+            }
+
+            public override bool TryCreateByRef(out Value value)
+            {
+                value = new ReadOnlySpanReferenceValue(_elementType, _bytes);
+                return true;
+            }
+        }
+
+        private sealed class ReadOnlySpanReferenceValue : Value
+        {
+            private readonly MetadataType _elementType;
+            private readonly byte[] _bytes;
+
+            public ReadOnlySpanReferenceValue(MetadataType elementType, byte[] bytes)
+            {
+                _elementType = elementType;
+                _bytes = bytes;
+            }
+
+            public override bool Equals(Value value)
+            {
+                // ceq instruction on refs to ReadOnlySpans is hard to support.
+                // We should not see it in the first place.
+                ThrowHelper.ThrowInvalidProgramException();
+                return false;
+            }
+
+            public override void WriteFieldData(ref ObjectDataBuilder builder, NodeFactory factory)
+            {
+                throw new NotSupportedException();
+            }
+
+            public override bool GetRawData(NodeFactory factory, out object data)
+            {
+                data = null;
+                return false;
+            }
+
+            public bool TryAccessElement(int index, out Value value)
+            {
+                value = default;
+                int limit = _bytes.Length / _elementType.InstanceFieldSize.AsInt;
+                if (index >= limit)
+                    return false;
+
+                value = new ByRefValue(_bytes, index * _elementType.InstanceFieldSize.AsInt);
+                return true;
+            }
+        }
+
         private sealed class MethodPointerValue : BaseValueTypeValue, IInternalModelingOnlyValue
         {
             public MethodDesc PointedToMethod { get; }
@@ -2021,6 +2193,20 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
+
+            private ReadOnlySpan<byte> AsExactByteCount(int count)
+            {
+                if (PointedToOffset + count > PointedToBytes.Length)
+                    ThrowHelper.ThrowInvalidProgramException();
+                return new ReadOnlySpan<byte>(PointedToBytes, PointedToOffset, count);
+            }
+
+            public sbyte DereferenceAsSByte() => (sbyte)AsExactByteCount(1)[0];
+            public short DereferenceAsInt16() => BitConverter.ToInt16(AsExactByteCount(2));
+            public int DereferenceAsInt32() => BitConverter.ToInt32(AsExactByteCount(4));
+            public long DereferenceAsInt64() => BitConverter.ToInt64(AsExactByteCount(8));
+            public float DereferenceAsSingle() => BitConverter.ToSingle(AsExactByteCount(4));
+            public double DereferenceAsDouble() => BitConverter.ToDouble(AsExactByteCount(8));
         }
 
         private abstract class ReferenceTypeValue : Value
@@ -2078,11 +2264,13 @@ namespace ILCompiler
                 data = null;
                 return false;
             }
+
+            public virtual void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+            {
+            }
         }
 
-#pragma warning disable CA1852
-        private class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
-#pragma warning restore CA1852
+        private sealed class DelegateInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly MethodDesc _methodPointed;
             private readonly ReferenceTypeValue _firstParameter;
@@ -2094,16 +2282,27 @@ namespace ILCompiler
                 _firstParameter = firstParameter;
             }
 
-            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
-            {
-                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
-
-                var creationInfo = DelegateCreationInfo.Create(
+            private DelegateCreationInfo GetDelegateCreationInfo(NodeFactory factory)
+                => DelegateCreationInfo.Create(
                     Type.ConvertToCanonForm(CanonicalFormKind.Specific),
                     _methodPointed,
                     constrainedType: null,
                     factory,
                     followVirtualDispatch: false);
+
+            public override void GetNonRelocationDependencies(ref DependencyList dependencies, NodeFactory factory)
+            {
+                DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
+
+                MethodDesc targetMethod = creationInfo.PossiblyUnresolvedTargetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
+                factory.MetadataManager.GetDependenciesDueToDelegateCreation(ref dependencies, factory, targetMethod);
+            }
+
+            public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            {
+                Debug.Assert(_methodPointed.Signature.IsStatic == (_firstParameter == null));
+
+                DelegateCreationInfo creationInfo = GetDelegateCreationInfo(factory);
 
                 Debug.Assert(!creationInfo.TargetNeedsVTableLookup);
 
@@ -2157,9 +2356,7 @@ namespace ILCompiler
             public int ArrayLength => throw new NotSupportedException();
         }
 
-#pragma warning disable CA1852
-        private class ArrayInstance : AllocatedReferenceTypeValue, ISerializableReference
-#pragma warning restore CA1852
+        private sealed class ArrayInstance : AllocatedReferenceTypeValue, ISerializableReference
         {
             private readonly int _elementCount;
             private readonly int _elementSize;
@@ -2222,7 +2419,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
@@ -2335,9 +2532,7 @@ namespace ILCompiler
             ByRefValue IHasInstanceFields.GetFieldAddress(FieldDesc field) => new FieldAccessor(_value).GetFieldAddress(field);
         }
 
-#pragma warning disable CA1852
-        private class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
-#pragma warning restore CA1852
+        private sealed class ObjectInstance : AllocatedReferenceTypeValue, IHasInstanceFields, ISerializableReference
         {
             private readonly byte[] _data;
 
@@ -2391,7 +2586,7 @@ namespace ILCompiler
                 builder.EmitPointerReloc(factory.SerializedFrozenObject(AllocationSite.OwningType, AllocationSite.InstructionCounter, this));
             }
 
-            public virtual void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
+            public void WriteContent(ref ObjectDataBuilder builder, ISymbolNode thisNode, NodeFactory factory)
             {
                 // MethodTable
                 var node = factory.ConstructedTypeSymbol(Type);
@@ -2420,7 +2615,7 @@ namespace ILCompiler
                 _offset = offset;
             }
 
-            public Value GetField(FieldDesc field)
+            public ValueTypeValue GetField(FieldDesc field)
             {
                 Debug.Assert(!field.IsStatic);
                 Debug.Assert(!field.FieldType.IsGCPointer);

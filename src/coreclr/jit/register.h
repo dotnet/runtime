@@ -69,9 +69,18 @@ REGALIAS(EDI, RDI)
 #ifdef TARGET_AMD64
 #define XMMBASE 16
 #define XMMMASK(x) ((__int64)(1) << ((x)+XMMBASE))
+
+#define KBASE 48
+#define KMASK(x) ((__int64)(1) << ((x)+KBASE))
+
 #else // !TARGET_AMD64
 #define XMMBASE 8
 #define XMMMASK(x) ((__int32)(1) << ((x)+XMMBASE))
+
+#define KBASE 16
+#define KMASK(x) ((__int32)(1) << ((x)+KBASE))
+
+
 #endif // !TARGET_AMD64
 
 REGDEF(XMM0,    0+XMMBASE,  XMMMASK(0),   "mm0"  )
@@ -83,9 +92,7 @@ REGDEF(XMM5,    5+XMMBASE,  XMMMASK(5),   "mm5"  )
 REGDEF(XMM6,    6+XMMBASE,  XMMMASK(6),   "mm6"  )
 REGDEF(XMM7,    7+XMMBASE,  XMMMASK(7),   "mm7"  )
 
-#ifdef TARGET_X86
-REGDEF(STK,     8+XMMBASE,  0x0000,       "STK"  )
-#else // !TARGET_X86
+#ifdef TARGET_AMD64
 REGDEF(XMM8,    8+XMMBASE,  XMMMASK(8),   "mm8"  )
 REGDEF(XMM9,    9+XMMBASE,  XMMMASK(9),   "mm9"  )
 REGDEF(XMM10,  10+XMMBASE,  XMMMASK(10),  "mm10" )
@@ -94,8 +101,37 @@ REGDEF(XMM12,  12+XMMBASE,  XMMMASK(12),  "mm12" )
 REGDEF(XMM13,  13+XMMBASE,  XMMMASK(13),  "mm13" )
 REGDEF(XMM14,  14+XMMBASE,  XMMMASK(14),  "mm14" )
 REGDEF(XMM15,  15+XMMBASE,  XMMMASK(15),  "mm15" )
-REGDEF(STK,    16+XMMBASE,  0x0000,       "STK"  )
-#endif // !TARGET_X86
+
+REGDEF(XMM16,  16+XMMBASE,  XMMMASK(16),  "mm16" )
+REGDEF(XMM17,  17+XMMBASE,  XMMMASK(17),  "mm17" )
+REGDEF(XMM18,  18+XMMBASE,  XMMMASK(18),  "mm18" )
+REGDEF(XMM19,  19+XMMBASE,  XMMMASK(19),  "mm19" )
+REGDEF(XMM20,  20+XMMBASE,  XMMMASK(20),  "mm20" )
+REGDEF(XMM21,  21+XMMBASE,  XMMMASK(21),  "mm21" )
+REGDEF(XMM22,  22+XMMBASE,  XMMMASK(22),  "mm22" )
+REGDEF(XMM23,  23+XMMBASE,  XMMMASK(23),  "mm23" )
+
+REGDEF(XMM24,  24+XMMBASE,  XMMMASK(24),  "mm24" )
+REGDEF(XMM25,  25+XMMBASE,  XMMMASK(25),  "mm25" )
+REGDEF(XMM26,  26+XMMBASE,  XMMMASK(26),  "mm26" )
+REGDEF(XMM27,  27+XMMBASE,  XMMMASK(27),  "mm27" )
+REGDEF(XMM28,  28+XMMBASE,  XMMMASK(28),  "mm28" )
+REGDEF(XMM29,  29+XMMBASE,  XMMMASK(29),  "mm29" )
+REGDEF(XMM30,  30+XMMBASE,  XMMMASK(30),  "mm30" )
+REGDEF(XMM31,  31+XMMBASE,  XMMMASK(31),  "mm31" )
+
+#endif // !TARGET_AMD64
+
+REGDEF(K0,     0+KBASE,    KMASK(0),     "k0"   )
+REGDEF(K1,     1+KBASE,    KMASK(1),     "k1"   )
+REGDEF(K2,     2+KBASE,    KMASK(2),     "k2"   )
+REGDEF(K3,     3+KBASE,    KMASK(3),     "k3"   )
+REGDEF(K4,     4+KBASE,    KMASK(4),     "k4"   )
+REGDEF(K5,     5+KBASE,    KMASK(5),     "k5"   )
+REGDEF(K6,     6+KBASE,    KMASK(6),     "k6"   )
+REGDEF(K7,     7+KBASE,    KMASK(7),     "k7"   )
+
+REGDEF(STK,    8+KBASE,    0x0000,       "STK"  )
 
 #elif defined(TARGET_ARM)
  #include "registerarm.h"
@@ -105,6 +141,9 @@ REGDEF(STK,    16+XMMBASE,  0x0000,       "STK"  )
 
 #elif defined(TARGET_LOONGARCH64)
  #include "registerloongarch64.h"
+
+#elif defined(TARGET_RISCV64)
+ #include "registerriscv64.h"
 
 #else
   #error Unsupported or unset target architecture

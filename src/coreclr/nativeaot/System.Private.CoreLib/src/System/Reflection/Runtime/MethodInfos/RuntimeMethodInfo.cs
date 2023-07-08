@@ -20,7 +20,6 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeMethodInfo : MethodInfo
     {
         protected RuntimeMethodInfo()
@@ -118,7 +117,7 @@ namespace System.Reflection.Runtime.MethodInfos
 
             while (true)
             {
-                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember();
+                MethodInfo next = method.GetImplicitlyOverriddenBaseClassMember(MethodPolicies.Instance);
                 if (next == null)
                     return ((RuntimeMethodInfo)method).WithReflectedTypeSetToDeclaringType;
 
@@ -312,7 +311,7 @@ namespace System.Reflection.Runtime.MethodInfos
             Debug.Assert(runtimeDelegateType.IsDelegate);
 
             ExecutionEnvironment executionEnvironment = ReflectionCoreExecution.ExecutionEnvironment;
-            MethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
+            RuntimeMethodInfo invokeMethod = runtimeDelegateType.GetInvokeMethod();
 
             // Make sure the return type is assignment-compatible.
             Type expectedReturnType = ReturnParameter.ParameterType;
@@ -447,21 +446,18 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected RuntimeMethodInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = RuntimeName;
             }
+#endif
             return this;
         }
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

@@ -511,7 +511,18 @@ register_thread (MonoThreadInfo *info)
 	mono_native_tls_set_value (thread_info_key, info);
 
 	mono_thread_info_get_stack_bounds (&staddr, &stsize);
+
+	/* for wasm, the stack can be placed at the start of the linear memory */
+#ifndef TARGET_WASM
 	g_assert (staddr);
+#endif /* TARGET_WASM */
+
+#ifdef HOST_WASM
+#ifndef DISABLE_THREADS
+	mono_native_tls_set_value (jobs_key, NULL);
+#endif /* DISABLE_THREADS */
+#endif /* HOST_WASM */
+
 	g_assert (stsize);
 	info->stack_start_limit = staddr;
 	info->stack_end = staddr + stsize;
@@ -636,6 +647,10 @@ unregister_thread (void *arg)
 	mono_threads_transition_detach (info);
 
 	mono_thread_info_suspend_unlock ();
+
+#ifdef HOST_BROWSER
+	mono_threads_wasm_on_thread_detached ();
+#endif
 
 	g_byte_array_free (info->stackdata, /*free_segment=*/TRUE);
 
@@ -957,6 +972,12 @@ mono_thread_info_init (size_t info_size)
 	char *sleepLimit;
 
 	mono_threads_suspend_policy_init ();
+
+#ifdef HOST_WASM
+#ifndef DISABLE_THREADS
+	res = mono_native_tls_alloc (&jobs_key, NULL);
+#endif /* DISABLE_THREADS */
+#endif /* HOST_BROWSER */
 
 #ifdef HOST_WIN32
 	res = mono_native_tls_alloc (&thread_info_key, NULL);
@@ -1532,43 +1553,6 @@ STATE_BLOCKING: All those are invalid suspend states.
 STATE_BLOCKING_SUSPEND_REQUESTED: Invalid if we're preemptively suspending blocking threads.
 */
 	g_error ("Cannot read suspend state when target %p is in the %s state", mono_thread_info_get_tid (info), mono_thread_state_name (cur_state));
-}
-
-/*
- * This is a very specific function whose only purpose is to
- * break a given thread from socket syscalls.
- *
- * This only exists because linux won't fail a call to connect
- * if the underlying is closed.
- *
- * TODO We should cleanup and unify this with the other syscall abort
- * facility.
- */
-void
-mono_thread_info_abort_socket_syscall_for_close (MonoNativeThreadId tid)
-{
-	MonoThreadHazardPointers *hp;
-	MonoThreadInfo *info;
-
-	if (tid == mono_native_thread_id_get ())
-		return;
-
-	mono_thread_info_suspend_lock ();
-	hp = mono_hazard_pointer_get ();
-	info = mono_thread_info_lookup (tid);
-	if (!info) {
-		mono_thread_info_suspend_unlock ();
-		return;
-	}
-	mono_threads_begin_global_suspend ();
-
-	mono_threads_suspend_abort_syscall (info);
-	mono_threads_wait_pending_operations ();
-
-	mono_hazard_pointer_clear (hp, 1);
-
-	mono_threads_end_global_suspend ();
-	mono_thread_info_suspend_unlock ();
 }
 
 /*

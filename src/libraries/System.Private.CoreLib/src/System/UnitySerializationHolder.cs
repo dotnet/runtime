@@ -10,6 +10,7 @@ namespace System
     /// This only exists for compatibility with .NET Framework.
     /// </summary>
     [Serializable]
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     // Needs to be public to support binary serialization compatibility
     public sealed class UnitySerializationHolder : ISerializable, IObjectReference
     {
