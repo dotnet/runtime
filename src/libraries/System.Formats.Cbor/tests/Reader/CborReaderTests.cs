@@ -106,6 +106,7 @@ namespace System.Formats.Cbor.Tests
             }
             
             reader.Reset(encoding);
+            Assert.Equal(0, reader.CurrentDepth);
             Assert.Equal(encoding.Length, reader.BytesRemaining);
 
             for (int i = 0; i < depth; i++)
