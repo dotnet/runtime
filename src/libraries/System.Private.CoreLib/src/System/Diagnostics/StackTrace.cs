@@ -133,9 +133,7 @@ namespace System.Diagnostics
         {
             ArgumentNullException.ThrowIfNull(frames);
 
-            List<StackFrame> frameList = new List<StackFrame>();
-            foreach (var frame in frames)
-                frameList.Add(frame);
+            List<StackFrame> frameList = new List<StackFrame>(frames);
 
             _stackFrames = frameList.ToArray();
             _numOfFrames = frameList.Count;
