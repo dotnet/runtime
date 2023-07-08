@@ -105,7 +105,7 @@ namespace System.Formats.Cbor
             _isConformanceModeCheckEnabled = true;
             _cachedState = CborReaderState.Undefined;
 
-            //_pooledKeyEncodingRangeAllocations?.Clear(); // We don't need to clean the pool of sets
+            //_pooledKeyEncodingRangeAllocations?.Clear(); // We don't need to clear the pool of allocated sets
             //_indefiniteLengthStringRangeAllocation?.Clear(); // We don't need to clean pooled list
         }
 
