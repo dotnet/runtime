@@ -1058,7 +1058,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			EMIT_NEW_TEMPLOAD (cfg, ins, span->inst_c0);
 			return ins;
 		} else
-			return NULL;
+			return emit_runtime_helpers_intrinsics (cfg, cmethod, fsig, args);
 	} else if (cmethod->klass == mono_class_try_get_memory_marshal_class ()) {
 		if (!strcmp (cmethod->name, "GetArrayDataReference")) {
 			// Logic below works for both SZARRAY and MDARRAY
@@ -2057,10 +2057,6 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
 			   !strcmp (cmethod_klass_name, "Unsafe")) {
 		return emit_unsafe_intrinsics (cfg, cmethod, fsig, args);
-	} else if (in_corlib &&
-			   !strcmp (cmethod_klass_name_space, "System.Runtime.CompilerServices") &&
-			   !strcmp (cmethod_klass_name, "RuntimeHelpers")) {
-		return emit_runtime_helpers_intrinsics (cfg, cmethod, fsig, args);
 	}  else if (in_corlib &&
 			   (strcmp (cmethod_klass_name_space, "System") == 0) &&
 			   (strcmp (cmethod_klass_name, "Activator") == 0)) {
