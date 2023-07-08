@@ -43,7 +43,6 @@ namespace System.Net.Http.Metrics
         {
             if (_currentRequests.Enabled || _failedRequests.Enabled || _requestsDuration.Enabled)
             {
-                ArgumentNullException.ThrowIfNull(request);
                 return SendAsyncWithMetrics(request, async, cancellationToken);
             }
             else

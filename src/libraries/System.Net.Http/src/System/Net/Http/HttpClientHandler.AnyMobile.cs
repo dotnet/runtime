@@ -717,6 +717,7 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(request);
             MetricsHandler handler = _metricsHandler ?? SetupHandlerChain();
             return handler.SendAsync(request, cancellationToken);
         }

@@ -339,11 +339,17 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Handler.Send(request, cancellationToken);
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return Handler.Send(request, cancellationToken);
+        }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            Handler.SendAsync(request, cancellationToken);
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return Handler.SendAsync(request, cancellationToken);
+        }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
