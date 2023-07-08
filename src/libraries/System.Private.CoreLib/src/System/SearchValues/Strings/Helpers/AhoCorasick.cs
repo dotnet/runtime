@@ -237,9 +237,7 @@ namespace System.Buffers
                 }
                 else
                 {
-                    c = GlobalizationMode.Invariant ? InvariantModeCasing.ToUpper(c) :
-                        GlobalizationMode.UseNls ? TextInfo.ToUpperOrdinalNls(c) :
-                        OrdinalCasing.ToUpper(c);
+                    c = TextInfo.ToUpperOrdinal(c);
                 }
 
 #if DEBUG

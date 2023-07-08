@@ -190,14 +190,22 @@ namespace System.Globalization
             return dst;
         }
 
-        internal static char ToUpperOrdinalNls(char c)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static char ToUpperOrdinal(char c)
         {
-            if (char.IsAscii(c))
+            if (GlobalizationMode.Invariant)
             {
-                return ToUpperAsciiInvariant(c);
+                return InvariantModeCasing.ToUpper(c);
             }
 
-            return Invariant.ChangeCase(c, toUpper: true);
+            if (GlobalizationMode.UseNls)
+            {
+                return char.IsAscii(c)
+                    ? ToUpperAsciiInvariant(c)
+                    : Invariant.ChangeCase(c, toUpper: true);
+            }
+
+            return OrdinalCasing.ToUpper(c);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
