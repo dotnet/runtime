@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
@@ -17,6 +18,8 @@ namespace System.Net.Http.Metrics
         private HttpResponseMessage? _response;
         private Exception? _exception;
         private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
+
+        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new ();
 
         public HttpRequestMessage Request
         {
@@ -62,7 +65,11 @@ namespace System.Net.Http.Metrics
             HttpRequestOptions options = request.Options;
             if (!options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context))
             {
-                context = new HttpMetricsEnrichmentContext();
+                if (!s_contextCache.TryDequeue(out context))
+                {
+                    context = new HttpMetricsEnrichmentContext();
+                }
+
                 options.Set(s_optionsKeyForContext, context);
             }
             context._callbacks.Add(callback);
@@ -90,6 +97,8 @@ namespace System.Net.Http.Metrics
         {
             if (!recordRequestDuration && !recordFailedRequests)
             {
+                _callbacks.Clear();
+                s_contextCache.Enqueue(this);
                 return;
             }
 
@@ -125,10 +134,12 @@ namespace System.Net.Http.Metrics
             }
             finally
             {
+                _callbacks.Clear();
                 _tags.Clear();
                 _request = null;
                 _response = null;
                 _exception = null;
+                s_contextCache.Enqueue(this);
             }
         }
 
