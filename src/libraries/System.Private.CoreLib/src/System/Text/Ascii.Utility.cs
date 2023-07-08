@@ -1771,8 +1771,15 @@ namespace System.Text
                     goto FoundNonAsciiData;
                 }
 
-                // Same logic works regardless of endianness.
-                *(uint*)(pUtf16Buffer + currentOffset) = (asciiData | (asciiData << 8)) & 0x00ff00ffu;
+                if (BitConverter.IsLittleEndian)
+                {
+                    *(uint*)(pUtf16Buffer + currentOffset) = (asciiData | (asciiData << 8)) & 0x00ff00ffu;
+                }
+                else
+                {
+                    // this should cause test failure
+                    throw new NotImplementedException();
+                }
 
                 currentOffset += 2;
             }
