@@ -174,7 +174,7 @@ bool pal::load_library(const string_t* in_path, dll_t* dll)
 
     if (LongFile::IsPathNotFullyQualified(path))
     {
-        if (!pal::realpath(&path))
+        if (!pal::fullpath(&path))
         {
             trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path.c_str(), HRESULT_FROM_WIN32(GetLastError()));
             return false;
@@ -649,7 +649,7 @@ bool get_extraction_base_parent_directory(pal::string_t& directory)
     assert(len < max_len);
     directory.assign(temp_path);
 
-    return pal::realpath(&directory);
+    return pal::fullpath(&directory);
 }
 
 bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
@@ -663,7 +663,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     append_path(&extraction_dir, _X(".net"));
     // Windows Temp-Path is already user-private.
 
-    if (realpath(&extraction_dir))
+    if (fullpath(&extraction_dir))
     {
         return true;
     }
@@ -676,7 +676,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
         return false;
     }
 
-    return realpath(&extraction_dir);
+    return fullpath(&extraction_dir);
 }
 
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, size_t len, pal::string_t* out)
@@ -729,15 +729,15 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 }
 
 // Return if path is valid and file exists, return true and adjust path as appropriate.
-bool pal::realpath(string_t* path, bool skip_error_logging)
-{
-    return fullpath(path, skip_error_logging);
-}
+//bool pal::realpath(string_t* path, bool skip_error_logging)
+//{
+//    return fullpath(path, skip_error_logging);
+//}
 
 typedef std::unique_ptr<std::remove_pointer<HANDLE>::type, decltype(&::CloseHandle)> SmartHandle;
 
 // Like realpath, but resolves symlinks.
-static bool realpath2(pal::string_t* path, bool skip_error_logging)
+bool pal::realpath2(pal::string_t* path, bool skip_error_logging)
 {
     if (path->empty())
     {
@@ -893,7 +893,7 @@ bool pal::fullpath(string_t* path, bool skip_error_logging)
 bool pal::file_exists(const string_t& path)
 {
     string_t tmp(path);
-    return pal::realpath(&tmp, true);
+    return pal::fullpath(&tmp, true);
 }
 
 static void readdir(const pal::string_t& path, const pal::string_t& pattern, bool onlydirectories, std::vector<pal::string_t>* list)
@@ -905,7 +905,7 @@ static void readdir(const pal::string_t& path, const pal::string_t& pattern, boo
 
     if (LongFile::ShouldNormalize(normalized_path))
     {
-        if (!pal::realpath(&normalized_path))
+        if (!pal::fullpath(&normalized_path))
         {
             return;
         }

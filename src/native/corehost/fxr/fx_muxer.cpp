@@ -226,7 +226,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 {
     pal::string_t probe_path = path;
 
-    if (pal::realpath(&probe_path, true))
+    if (pal::fullpath(&probe_path, true))
     {
         realpaths->push_back(probe_path);
     }
@@ -249,7 +249,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
 
-            if (pal::realpath(&probe_path, true))
+            if (pal::fullpath(&probe_path, true))
             {
                 realpaths->push_back(probe_path);
             }
@@ -274,7 +274,7 @@ namespace
         const runtime_config_t::settings_t& override_settings)
     {
         // Check for the runtimeconfig.json file specified at the command line
-        if (!runtime_config.empty() && !pal::realpath(&runtime_config))
+        if (!runtime_config.empty() && !pal::fullpath(&runtime_config))
         {
             trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());
             return StatusCode::InvalidConfigFile;
@@ -377,7 +377,7 @@ namespace
 
         // This check is for --depsfile option, which must be an actual file.
         pal::string_t deps_file = command_line::get_option_value(opts, known_options::deps_file, _X(""));
-        if (!deps_file.empty() && !pal::realpath(&deps_file))
+        if (!deps_file.empty() && !pal::fullpath(&deps_file))
         {
             trace::error(_X("The specified deps.json [%s] does not exist"), deps_file.c_str());
             return StatusCode::InvalidArgFailure;

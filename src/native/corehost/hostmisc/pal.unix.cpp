@@ -270,7 +270,7 @@ bool pal::get_default_breadcrumb_store(string_t* recv)
 {
     recv->clear();
     pal::string_t ext;
-    if (pal::getenv(_X("CORE_BREADCRUMBS"), &ext) && pal::realpath(&ext))
+    if (pal::getenv(_X("CORE_BREADCRUMBS"), &ext) && pal::fullpath(&ext))
     {
         // We should have the path in ext.
         trace::info(_X("Realpath CORE_BREADCRUMBS [%s]"), ext.c_str());
@@ -302,7 +302,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 {
     recv->clear();
     pal::string_t ext;
-    if (pal::getenv(_X("CORE_SERVICING"), &ext) && pal::realpath(&ext))
+    if (pal::getenv(_X("CORE_SERVICING"), &ext) && pal::fullpath(&ext))
     {
         // We should have the path in ext.
         trace::info(_X("Realpath CORE_SERVICING [%s]"), ext.c_str());
@@ -333,7 +333,7 @@ bool pal::get_default_servicing_directory(string_t* recv)
 
 bool is_read_write_able_directory(pal::string_t& dir)
 {
-    return pal::realpath(&dir) &&
+    return pal::fullpath(&dir) &&
         (access(dir.c_str(), R_OK | W_OK | X_OK) == 0);
 }
 
@@ -947,10 +947,10 @@ bool pal::getenv(const pal::char_t* name, pal::string_t* recv)
 
 bool pal::fullpath(pal::string_t* path, bool skip_error_logging)
 {
-    return realpath(path, skip_error_logging);
+    return realpath2(path, skip_error_logging);
 }
 
-bool pal::realpath(pal::string_t* path, bool skip_error_logging)
+bool pal::realpath2(pal::string_t* path, bool skip_error_logging)
 {
     auto resolved = ::realpath(path->c_str(), nullptr);
     if (resolved == nullptr)
