@@ -3343,6 +3343,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				// }
 				break;
 			case ArgOnStack:
+			case ArgVtypeOnStack:
 				break;
 			default:
 				g_print ("can't process Storage type %d\n", ainfo->storage);
