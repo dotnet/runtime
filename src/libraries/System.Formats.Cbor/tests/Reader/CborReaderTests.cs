@@ -74,7 +74,7 @@ namespace System.Formats.Cbor.Tests
         }
 
         [Fact]
-        public static void Reset_AllowMultipleRootLevelValues()
+        public static void Reset_DoesNotAffect_AllowMultipleRootLevelValues()
         {
             var reader = new CborReader(Array.Empty<byte>(),  allowMultipleRootLevelValues: false);
             Assert.False(reader.AllowMultipleRootLevelValues);
