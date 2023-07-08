@@ -1701,6 +1701,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
 #endif
+	case OP_FNEG:
 	case OP_IAND:
 	case OP_IAND_IMM:
 	case OP_LAND_IMM:
@@ -1748,6 +1749,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_LCONV_TO_OVF_I4_UN:
 	case OP_LCONV_TO_OVF_U4_UN:
 
+	case OP_LADD_OVF:
 	case OP_LADD_OVF_UN:
 	case OP_IMUL_OVF:
 	case OP_LMUL_OVF_UN:
@@ -2117,6 +2119,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Float Ext */
 		case OP_R8CONST:
+		case OP_FNEG:
 		case OP_ICONV_TO_R8:
 		case OP_RCONV_TO_R8:
 		case OP_RCONV_TO_I4:
@@ -2209,7 +2212,19 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				}else {
+				}
+				else if (ins->next->opcode == OP_FBEQ) {
+					// fcmp rd, rs1, rs2; fbeq rd -> fceq rd, rs2, rs1; bne rd, X0
+					ins->opcode = OP_FCEQ;
+					ins->dreg = mono_alloc_ireg (cfg);
+					int tmp_reg = ins->sreg1;
+					ins->sreg1 = ins->sreg2;
+					ins->sreg2 = tmp_reg;
+
+					ins->next->opcode = OP_RISCV_BNE;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
+				} else {
 					g_print ("Unhandaled op %s following after OP_FCOMPARE\n", mono_inst_name (ins->next->opcode));
 					NOT_IMPLEMENTED;
 				}
@@ -2651,7 +2666,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->opcode = OP_IADD;
 			MonoInst *branch_ins = ins->next;
 			if (branch_ins) {
-				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_IOV) {
+				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_IOV || OP_COND_EXC_OV) {
 					// bne t3, t4, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
 					branch_ins->sreg1 = mono_alloc_ireg (cfg);
@@ -3879,9 +3894,20 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_fsub_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
-			else
+			else{
 				NOT_IMPLEMENTED;
 				riscv_fsub_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			}
+			break;
+		case OP_FNEG:
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fsgnjn_d (code, ins->dreg, ins->sreg1, ins->sreg1);
+			else{
+				NOT_IMPLEMENTED;
+				riscv_fsgnjn_s (code, ins->dreg, ins->sreg1, ins->sreg1);
+			}
+			break;
 			break;
 		case OP_IMUL:
 #ifdef TARGET_RISCV64

@@ -111,6 +111,7 @@ long_add: dest:i src1:i src2:i len:4
 int_sub: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
 float_sub: dest:f src1:f src2:f len:4
+float_neg: dest:f src1:f len:4
 int_mul: dest:i src1:i src2:i len:4
 r4_mul: dest:f src1:f src2:f len:4
 long_mul: dest:i src1:i src2:i len:4
