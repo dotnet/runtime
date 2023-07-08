@@ -279,7 +279,7 @@ namespace pal
     void* mmap_copy_on_write(const string_t& path, size_t* length = nullptr);
 
     bool touch_file(const string_t& path);
-    bool realpath(string_t* path, bool skip_error_logging = false);
+    bool realpath2(string_t* path, bool skip_error_logging = false);
     bool fullpath(string_t* path, bool skip_error_logging = false);
     bool file_exists(const string_t& path);
     inline bool directory_exists(const string_t& path) { return file_exists(path); }
