@@ -1546,20 +1546,12 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	MonoCallInst *call = (MonoCallInst *)ins->inst_p0;
 	ArgInfo *ainfo = (ArgInfo *)ins->inst_p1;
 	MonoInst *load;
-	int op_load = 0;
-
-#ifdef TARGET_RISCV64
-	op_load = OP_LOADI8_MEMBASE;
-#else // TARGET_RISCV32
-	op_load = OP_LOADI4_MEMBASE;
-#endif
 
 	if (ins->backend.size == 0)
 		return;
-
 	switch (ainfo->storage) {
 	case ArgVtypeInIReg:
-		MONO_INST_NEW (cfg, load, op_load);
+		MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 		load->dreg = mono_alloc_ireg (cfg);
 		load->inst_basereg = src->dreg;
 		load->inst_offset = 0;
@@ -1567,7 +1559,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		add_outarg_reg (cfg, call, ArgInIReg, ainfo->reg, load);
 
 		if (ainfo->size > sizeof (host_mgreg_t)) {
-			MONO_INST_NEW (cfg, load, op_load);
+			MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 			load->dreg = mono_alloc_ireg (cfg);
 			load->inst_basereg = src->dreg;
 			load->inst_offset = sizeof (target_mgreg_t);
@@ -1578,12 +1570,12 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 	case ArgVtypeOnStack:
 		g_assert (ainfo->offset >= 0);
 		for (int i = 0; i < ainfo->slot_size; i += sizeof (target_mgreg_t)) {
-			MONO_INST_NEW (cfg, load, op_load);
+			MONO_INST_NEW (cfg, load, OP_LOAD_MEMBASE);
 			load->dreg = mono_alloc_ireg (cfg);
 			load->inst_basereg = src->dreg;
 			load->inst_offset = i;
 			MONO_ADD_INS (cfg->cbb, load);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, op_load, RISCV_FP, -ainfo->offset + i, load->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_FP, -ainfo->offset + i, load->dreg);
 		}
 		break;
 	case ArgVtypeByRef: {
