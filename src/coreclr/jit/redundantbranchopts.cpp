@@ -734,9 +734,9 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 //    Given the following flow shape
 //
 //         domBlock
-//           |    \
-//           |     \
-//           |      \
+//           |    \.
+//           |     \.
+//           |      \.
 //          block   |
 //           |  \   |
 //           |   \  |
@@ -755,9 +755,10 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 //   Then by altering the predicate in domBlock, we can rewire flow from block directly to D:
 //
 //         domBlock
-//           |    \
-//           |     \
-//         block    \
+//           |    \.
+//           |     \.
+//           |      \.
+//         block    |
 //           |      |
 //           |      |
 //           D      C
