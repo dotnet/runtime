@@ -3316,6 +3316,15 @@ function emit_arrayop(builder: WasmBuilder, frame: NativePointer, ip: MintOpcode
             builder.callImport("value_copy");
             return true;
         }
+        case MintOpcode.MINT_STELEM_VT_NOREF: {
+            const elementSize = getArgU16(ip, 5);
+            // dest
+            append_getelema1(builder, ip, objectOffset, indexOffset, elementSize);
+            // src
+            append_ldloca(builder, valueOffset, 0);
+            append_memmove_dest_src(builder, elementSize);
+            return true;
+        }
         default:
             return false;
     }

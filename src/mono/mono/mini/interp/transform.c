@@ -7095,7 +7095,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int size = mono_class_value_size (klass, NULL);
 					g_assert (size < G_MAXUINT16);
 
-					handle_stelem (td, MINT_STELEM_VT);
+					handle_stelem (td, m_class_has_references (klass) ? MINT_STELEM_VT : MINT_STELEM_VT_NOREF);
 					td->last_ins->data [0] = get_data_item_index (td, klass);
 					td->last_ins->data [1] = GINT_TO_UINT16 (size);
 					break;
