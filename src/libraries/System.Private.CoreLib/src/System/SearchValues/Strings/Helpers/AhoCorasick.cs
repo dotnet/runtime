@@ -67,12 +67,9 @@ namespace System.Buffers
             where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity
             where TFastScanVariant : struct, IFastScan
         {
-            if (typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode))
-            {
-                return IndexOfAnyCaseInsensitiveUnicode<TFastScanVariant>(span);
-            }
-
-            return IndexOfAnyCore<TCaseSensitivity, TFastScanVariant>(span);
+            return typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode)
+                ? IndexOfAnyCaseInsensitiveUnicode<TFastScanVariant>(span)
+                : IndexOfAnyCore<TCaseSensitivity, TFastScanVariant>(span);
         }
 
         private readonly int IndexOfAnyCore<TCaseSensitivity, TFastScanVariant>(ReadOnlySpan<char> span)

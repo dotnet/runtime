@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -51,7 +50,7 @@ namespace System.Buffers
             _hashLength = minimumLength;
             _hashUpdateMultiplier = (nuint)1 << ((minimumLength - 1) * HashShiftPerElement);
 
-            var bucketLists = new List<string>?[BucketCount];
+            string[][] buckets = _buckets = new string[BucketCount][];
 
             foreach (string value in values)
             {
@@ -62,37 +61,36 @@ namespace System.Buffers
                 }
 
                 nuint bucket = hash % BucketCount;
-                var bucketList = bucketLists[bucket] ??= new List<string>();
-                bucketList.Add(value);
-            }
+                string[] newBucket;
 
-            var buckets = new string[BucketCount][];
-            for (int i = 0; i < bucketLists.Length; i++)
-            {
-                if (bucketLists[i] is List<string> list)
+                if (buckets[bucket] is string[] existingBucket)
                 {
-                    buckets[i] = list.ToArray();
+                    newBucket = new string[existingBucket.Length + 1];
+                    existingBucket.AsSpan().CopyTo(newBucket);
                 }
-            }
+                else
+                {
+                    newBucket = new string[1];
+                }
 
-            _buckets = buckets;
+                newBucket[^1] = value;
+                buckets[bucket] = newBucket;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly int IndexOfAny<TCaseSensitivity>(ReadOnlySpan<char> span)
-            where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity =>
-            typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode)
+            where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity
+        {
+            return typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode)
                 ? IndexOfAnyCaseInsensitiveUnicode(span)
                 : IndexOfAnyCore<TCaseSensitivity>(span);
+        }
 
         private readonly int IndexOfAnyCore<TCaseSensitivity>(ReadOnlySpan<char> span)
             where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity
         {
-            if (typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode))
-            {
-                throw new UnreachableException();
-            }
-
+            Debug.Assert(typeof(TCaseSensitivity) != typeof(StringSearchValuesHelper.CaseInsensitiveUnicode));
             Debug.Assert(span.Length <= MaxInputLength, "Teddy should have handled short inputs.");
 
             ref char current = ref MemoryMarshal.GetReference(span);
