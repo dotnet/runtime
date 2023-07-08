@@ -88,8 +88,7 @@ namespace System.Formats.Cbor
         /// <param name="data">The CBOR-encoded data to read.</param>
         public void Reset(ReadOnlyMemory<byte> data)
         {
-            // ConformanceMode = conformanceMode;
-            // AllowMultipleRootLevelValues = allowMultipleRootLevelValues;
+            // ConformanceMode and AllowMultipleRootLevelValues are set in ctor, they remain unchanged.
 
             _data = data;
             _offset = 0;
