@@ -1,20 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Http.Metrics
 {
     public sealed class HttpMetricsEnrichmentContext
     {
-        private static readonly HttpRequestOptionsKey<List<Action<HttpMetricsEnrichmentContext>>> s_callbackCollectionKey = new("MetricsEnrichmentCallbackCollection");
+        private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new("HttpMetricsEnrichmentContext");
 
+        private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new List<Action<HttpMetricsEnrichmentContext>>();
         private HttpRequestMessage? _request;
         private HttpResponseMessage? _response;
         private Exception? _exception;
-        private List<KeyValuePair<string, object?>> _tags = new();
+        private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
 
         public HttpRequestMessage Request
         {
@@ -58,17 +60,35 @@ namespace System.Net.Http.Metrics
         public static void AddCallback(HttpRequestMessage request, Action<HttpMetricsEnrichmentContext> callback)
         {
             HttpRequestOptions options = request.Options;
-            if (!options.TryGetValue(s_callbackCollectionKey, out List<Action<HttpMetricsEnrichmentContext>>? callbackCollection))
+            if (!options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context))
             {
-                callbackCollection = new List<Action<HttpMetricsEnrichmentContext>>();
-                options.Set(s_callbackCollectionKey, callbackCollection);
+                context = new HttpMetricsEnrichmentContext();
+                options.Set(s_optionsKeyForContext, context);
             }
-            callbackCollection.Add(callback);
+            context._callbacks.Add(callback);
         }
 
-        internal void ApplyEnrichment(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, ref TagList tags)
+        internal static HttpMetricsEnrichmentContext? GetEnrichmentContextForRequest(HttpRequestMessage request)
         {
-            if (request._options?.TryGetValue(s_callbackCollectionKey, out List<Action<HttpMetricsEnrichmentContext>>? callbackCollection) != true)
+            if (request._options is null)
+            {
+                return null;
+            }
+            request._options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context);
+            return context;
+        }
+
+        internal void RecordWithEnrichment(HttpRequestMessage request,
+            HttpResponseMessage? response,
+            Exception? exception,
+            in TagList commonTags,
+            bool recordRequestDuration,
+            bool recordFailedRequests,
+            long startTimestamp,
+            Histogram<double> requestDuration,
+            Counter<long> failedRequests)
+        {
+            if (!recordRequestDuration && !recordFailedRequests)
             {
                 return;
             }
@@ -77,16 +97,30 @@ namespace System.Net.Http.Metrics
             _response = response;
             _exception = exception;
 
+            Debug.Assert(_tags.Count == 0);
+            // TagList.GetEnumerator() allocates, use a for loop instead.
+            // https://github.com/dotnet/runtime/issues/87022
+            for (int i = 0; i < commonTags.Count; i++)
+            {
+                _tags.Add(commonTags[i]);
+            }
+
             try
             {
-                foreach (Action<HttpMetricsEnrichmentContext> callback in callbackCollection!)
+                foreach (Action<HttpMetricsEnrichmentContext> callback in _callbacks)
                 {
                     callback(this);
                 }
 
-                foreach (KeyValuePair<string, object?> tag in _tags)
+                if (recordRequestDuration)
                 {
-                    tags.Add(tag);
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
+                    requestDuration.Record(duration.TotalSeconds, CollectionsMarshal.AsSpan(_tags));
+                }
+
+                if (recordFailedRequests)
+                {
+                    failedRequests.Add(1, CollectionsMarshal.AsSpan(_tags));
                 }
             }
             finally
@@ -100,7 +134,7 @@ namespace System.Net.Http.Metrics
 
         private void EnsureRunningCallback()
         {
-            if (_request == null) throw new InvalidOperationException("Enrichment callback should not cache HttpMetricsEnrichmentContext");
+            if (_request == null) throw new InvalidOperationException("An attempt has been made to use HttpMetricsEnrichmentContext outside of an enrichment callback.");
         }
     }
 }

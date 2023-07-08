@@ -17,9 +17,6 @@ namespace System.Net.Http.Metrics
         private readonly Counter<long> _failedRequests;
         private readonly Histogram<double> _requestsDuration;
 
-        [ThreadStatic]
-        private static HttpMetricsEnrichmentContext? s_cachedEnrichmentContext;
-
         public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory)
         {
             _innerHandler = innerHandler;
@@ -112,40 +109,36 @@ namespace System.Net.Http.Metrics
             bool recordRequestDuration = _requestsDuration.Enabled;
             bool recordFailedRequests = _failedRequests.Enabled && response is null;
 
+            HttpMetricsEnrichmentContext? enrichmentContext = null;
             if (recordRequestDuration || recordFailedRequests)
             {
-                ApplyExtendedTags(ref tags, request, response, exception);
+                if (response is not null)
+                {
+                    tags.Add("status-code", GetBoxedStatusCode((int)response.StatusCode));
+                    tags.Add("protocol", GetProtocolName(response.Version));
+                }
+                enrichmentContext = HttpMetricsEnrichmentContext.GetEnrichmentContextForRequest(request);
             }
 
-            if (recordRequestDuration)
+            if (enrichmentContext is null)
             {
-                TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
-                _requestsDuration.Record(duration.TotalSeconds, tags);
-            }
+                if (recordRequestDuration)
+                {
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
+                    _requestsDuration.Record(duration.TotalSeconds, tags);
+                }
 
-            if (recordFailedRequests)
+                if (recordFailedRequests)
+                {
+                    _failedRequests.Add(1, tags);
+                }
+            }
+            else
             {
-                _failedRequests.Add(1, tags);
+                enrichmentContext.RecordWithEnrichment(request, response, exception, tags, recordRequestDuration, recordFailedRequests, startTimestamp, _requestsDuration, _failedRequests);
             }
         }
 
-        private static void ApplyExtendedTags(ref TagList tags, HttpRequestMessage request, HttpResponseMessage? response, Exception? exception)
-        {
-            if (response is not null)
-            {
-                tags.Add("status-code", GetBoxedStatusCode((int)response.StatusCode));
-                tags.Add("protocol", GetProtocolName(response.Version));
-            }
-
-            s_cachedEnrichmentContext ??= new HttpMetricsEnrichmentContext();
-
-            // Protect against re-entrancy
-            HttpMetricsEnrichmentContext enrichmentContext = s_cachedEnrichmentContext.InProgress ?
-                new HttpMetricsEnrichmentContext() :
-                s_cachedEnrichmentContext;
-
-            enrichmentContext.ApplyEnrichment(request, response, exception, ref tags);
-        }
 
         private static string GetProtocolName(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
         {
