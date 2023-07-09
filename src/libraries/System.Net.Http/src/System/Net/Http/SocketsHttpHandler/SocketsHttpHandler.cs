@@ -10,6 +10,8 @@ using System.Threading.Tasks;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Net.Http.Metrics;
 
 namespace System.Net.Http
 {
@@ -450,6 +452,17 @@ namespace System.Net.Http
             }
         }
 
+        [CLSCompliant(false)]
+        public IMeterFactory? MeterFactory
+        {
+            get => _settings._meterFactory;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._meterFactory = value;
+            }
+        }
+
         internal ClientCertificateOption ClientCertificateOptions
         {
             get => _settings._clientCertificateOptions;
@@ -459,6 +472,7 @@ namespace System.Net.Http
                 _settings._clientCertificateOptions = value;
             }
         }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
@@ -494,6 +508,8 @@ namespace System.Net.Http
             {
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
+
+            handler = new MetricsHandler(handler, _settings._meterFactory);
 
             if (settings._allowAutoRedirect)
             {
