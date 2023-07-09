@@ -494,22 +494,46 @@ namespace System.Net.Http.Functional.Tests
                 using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                _output.WriteLine("************ C1");
                 await Assert.ThrowsAsync<HttpRequestException>(async () =>
                 {
                     using HttpResponseMessage response = await SendAsync(client, request);
                 }).WaitAsync(timeout);
-                _output.WriteLine("************ C2");
 
                 Measurement<long> m = recorder.GetMeasurements().Single();
                 VerifyFailedRequests(m, 1, uri, null, null);
             }, async server =>
             {
-                _output.WriteLine("************ S1");
                 var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(timeout);
-                _output.WriteLine("************ S2");
                 await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("\n\n\n\n"));
-                _output.WriteLine("************ S3");
+            });
+        }
+
+        [Fact]
+        public async Task FailedRequests_EofWhileReceivingHeaders_Recorded()
+        {
+            if (TestHttpMessageInvoker)
+            {
+                // MessageInvoker doesn't buffer the response content, skipping.
+                return;
+            }
+            TimeSpan timeout = TimeSpan.FromSeconds(30);
+            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpMessageInvoker client = CreateHttpMessageInvoker();
+                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+
+                await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                {
+                    using HttpResponseMessage response = await SendAsync(client, request);
+                }).WaitAsync(timeout);
+
+                Measurement<long> m = recorder.GetMeasurements().Single();
+                VerifyFailedRequests(m, 1, uri, null, null);
+            }, async server =>
+            {
+                var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(timeout);
+                connection.Socket.Shutdown(Sockets.SocketShutdown.Both);
             });
         }
     }
