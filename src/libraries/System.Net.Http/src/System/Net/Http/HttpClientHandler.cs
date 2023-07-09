@@ -347,8 +347,12 @@ namespace System.Net.Http
         //[UnsupportedOSPlatform("tvos")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+#if TARGET_BROWSER
+            throw new PlatformNotSupportedException();
+#else
             ArgumentNullException.ThrowIfNull(request);
             return Handler.Send(request, cancellationToken);
+#endif
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
