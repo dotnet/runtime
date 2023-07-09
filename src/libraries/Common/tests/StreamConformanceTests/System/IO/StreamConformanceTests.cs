@@ -109,10 +109,6 @@ namespace System.IO.Tests
             from mode in Enum.GetValues<SeekMode>()
             select new object[] { mode };
 
-        public static IEnumerable<object[]> AllSeekModesAndValue(object value) =>
-            from mode in Enum.GetValues<SeekMode>()
-            select new object[] { mode, value };
-
         public static async Task<int> ReadAsync(ReadWriteMode mode, Stream stream, byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             if (mode == ReadWriteMode.SyncByte)
