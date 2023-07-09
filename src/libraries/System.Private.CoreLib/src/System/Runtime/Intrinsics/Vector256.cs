@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.Wasm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -2349,6 +2351,44 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].
+        /// On hardware with <see cref="Avx2"/> support, indices are treated as modulo 32, and if the high bit is set, the result will be set to 0 for that element.
+        /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx2))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        [CompExactlyDependsOn(typeof(PackedSimd))]
+        public static Vector256<byte> ShuffleUnsafe(Vector256<byte> vector, Vector256<byte> indices)
+        {
+            if (Avx2.IsSupported)
+            {
+                return Avx2.Shuffle(vector, indices);
+            }
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                (Vector128<byte>, Vector128<byte>) table = (vector.GetLower(), vector.GetUpper());
+                return Vector256.Create(
+                    AdvSimd.Arm64.VectorTableLookup(table, indices.GetLower()),
+                    AdvSimd.Arm64.VectorTableLookup(table, indices.GetUpper()));
+            }
+
+            if (PackedSimd.IsSupported)
+            {
+                return Vector256.Create(
+                    PackedSimd.Shuffle(vector.GetLower(), vector.GetUpper(), indices.GetLower()),
+                    PackedSimd.Shuffle(vector.GetLower(), vector.GetUpper(), indices.GetUpper()));
+            }
+
+            return Shuffle(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>

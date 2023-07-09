@@ -2157,8 +2157,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector128ByteShuffleOneInputTest()
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<byte> result = Vector128.Shuffle(vector, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
 
+            Vector128<byte> result = Vector128.Shuffle(vector, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+
+            result = Vector128.ShuffleUnsafe(vector, Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
                 Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
@@ -2277,7 +2283,12 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector128ByteShuffleOneInputWithDirectVectorTest()
         {
             Vector128<byte> result = Vector128.Shuffle(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
 
+            result = Vector128.ShuffleUnsafe(Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16), Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0));
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
                 Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
@@ -2388,8 +2399,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
             Vector128<byte> indices = Vector128.Create((byte)15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
-            Vector128<byte> result = Vector128.Shuffle(vector, indices);
 
+            Vector128<byte> result = Vector128.Shuffle(vector, indices);
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
+            }
+
+            result = Vector128.ShuffleUnsafe(vector, indices);
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
                 Assert.Equal((byte)(Vector128<byte>.Count - index), result.GetElement(index));
@@ -2517,8 +2534,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector128ByteShuffleOneInputWithAllBitsSetIndicesTest()
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<byte> result = Vector128.Shuffle(vector, Vector128<byte>.AllBitsSet);
 
+            Vector128<byte> result = Vector128.Shuffle(vector, Vector128<byte>.AllBitsSet);
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)0, result.GetElement(index));
+            }
+
+            result = Vector128.ShuffleUnsafe(vector, Vector128<byte>.AllBitsSet);
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
                 Assert.Equal((byte)0, result.GetElement(index));
@@ -2637,8 +2660,14 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         public void Vector128ByteShuffleOneInputWithZeroIndicesTest()
         {
             Vector128<byte> vector = Vector128.Create((byte)1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16);
-            Vector128<byte> result = Vector128.Shuffle(vector, Vector128<byte>.Zero);
 
+            Vector128<byte> result = Vector128.Shuffle(vector, Vector128<byte>.Zero);
+            for (int index = 0; index < Vector128<byte>.Count; index++)
+            {
+                Assert.Equal((byte)1, result.GetElement(index));
+            }
+
+            result = Vector128.ShuffleUnsafe(vector, Vector128<byte>.Zero);
             for (int index = 0; index < Vector128<byte>.Count; index++)
             {
                 Assert.Equal((byte)1, result.GetElement(index));

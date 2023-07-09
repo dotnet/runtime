@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
 namespace System.Runtime.Intrinsics
@@ -2402,6 +2403,41 @@ namespace System.Runtime.Intrinsics
             }
 
             return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.
+        /// Behavior is platform-dependent for out-of-range indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 63].
+        /// On hardware with <see cref="Avx512BW"/> support, indices are treated as modulo 64, and if the high bit is set, the result will be set to 0 for that element.
+        /// On hardware with <see cref="AdvSimd.Arm64"/> support, this method behaves the same as Shuffle.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Avx512BW))]
+        [CompExactlyDependsOn(typeof(AdvSimd))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
+        public static Vector512<byte> ShuffleUnsafe(Vector512<byte> vector, Vector512<byte> indices)
+        {
+            if (Avx512BW.IsSupported)
+            {
+                return Avx512BW.Shuffle(vector, indices);
+            }
+
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                (Vector128<byte>, Vector128<byte>, Vector128<byte>, Vector128<byte>) table =
+                    (vector.GetLower().GetLower(), vector.GetLower().GetUpper(), vector.GetUpper().GetLower(), vector.GetUpper().GetUpper());
+                return Vector512.Create(
+                    Vector256.Create(
+                        AdvSimd.Arm64.VectorTableLookup(table, indices.GetLower().GetLower()),
+                        AdvSimd.Arm64.VectorTableLookup(table, indices.GetLower().GetUpper())),
+                    Vector256.Create(
+                        AdvSimd.Arm64.VectorTableLookup(table, indices.GetUpper().GetLower()),
+                        AdvSimd.Arm64.VectorTableLookup(table, indices.GetUpper().GetUpper())));
+            }
+
+            return Shuffle(vector, indices);
         }
 
         /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
