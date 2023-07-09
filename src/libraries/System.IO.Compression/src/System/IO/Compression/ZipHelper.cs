@@ -210,6 +210,19 @@ namespace System.IO.Compression
                 return encoding.GetBytes(text);
             }
 
+            var byteCount = encoding.GetByteCount(text);
+            var buffer = ArrayPool<byte>.Shared.Rent(byteCount);
+            try
+            {
+                encoding.GetBytes(text, 0, text.Length, buffer, 0);
+            }
+            catch (Exception)
+            {
+                // Make sure that the buffer will definitely be recycled
+                ArrayPool<byte>.Shared.Return(buffer);
+                throw;
+            }
+
             byte[] bytes;
             if (isUTF8)
             {
@@ -223,16 +236,17 @@ namespace System.IO.Compression
                     totalCodePoints += rune.Utf8SequenceLength;
                 }
 
-                bytes = encoding.GetBytes(text);
-
                 Debug.Assert(totalCodePoints > 0);
-                Debug.Assert(totalCodePoints <= bytes.Length);
+                Debug.Assert(totalCodePoints <= byteCount);
 
-                return bytes[0..totalCodePoints];
+                bytes = buffer[0..totalCodePoints];
+                ArrayPool<byte>.Shared.Return(buffer);
+                return bytes;
             }
 
-            bytes = encoding.GetBytes(text);
-            return maxBytes < bytes.Length ? bytes[0..maxBytes] : bytes;
+            bytes = maxBytes <= byteCount ? buffer[0..maxBytes] : buffer[0..byteCount];
+            ArrayPool<byte>.Shared.Return(buffer);
+            return bytes;
         }
     }
 }
