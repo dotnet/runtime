@@ -253,14 +253,8 @@ namespace System.IO
         {
             ThrowIfDisposed();
 
-            int currPos = 0;
-            int n;
-            int stringLength;
-            int readLength;
-            int charsRead;
-
             // Length of the string in bytes, not chars
-            stringLength = Read7BitEncodedInt();
+            int stringLength = Read7BitEncodedInt();
             if (stringLength < 0)
             {
                 throw new IOException(SR.Format(SR.IO_InvalidStringLen_Len, stringLength));
@@ -273,12 +267,13 @@ namespace System.IO
 
             Span<byte> charBytes = stackalloc byte[MaxCharBytesSize];
 
+            int currPos = 0;
             StringBuilder? sb = null;
             do
             {
-                readLength = Math.Min(MaxCharBytesSize, stringLength - currPos);
+                int readLength = Math.Min(MaxCharBytesSize, stringLength - currPos);
 
-                n = _stream.Read(charBytes[..readLength]);
+                int n = _stream.Read(charBytes[..readLength]);
                 if (n == 0)
                 {
                     ThrowHelper.ThrowEndOfFileException();
@@ -292,7 +287,7 @@ namespace System.IO
                 _decoder ??= _encoding.GetDecoder();
                 _charBuffer ??= new char[_maxCharsSize];
 
-                charsRead = _decoder.GetChars(charBytes[..n], _charBuffer, flush: false);
+                int charsRead = _decoder.GetChars(charBytes[..n], _charBuffer, flush: false);
 
                 // Since we could be reading from an untrusted data source, limit the initial size of the
                 // StringBuilder instance we're about to get or create. It'll expand automatically as needed.
