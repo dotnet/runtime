@@ -276,7 +276,7 @@ namespace System.IO
             StringBuilder? sb = null;
             do
             {
-                readLength = ((stringLength - currPos) > MaxCharBytesSize) ? MaxCharBytesSize : (stringLength - currPos);
+                readLength = Math.Min(MaxCharBytesSize, stringLength - currPos);
 
                 n = _stream.Read(charBytes[..readLength]);
                 if (n == 0)
