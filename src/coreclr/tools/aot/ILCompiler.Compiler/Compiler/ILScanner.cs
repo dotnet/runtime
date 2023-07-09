@@ -412,6 +412,7 @@ namespace ILCompiler
             private HashSet<TypeDesc> _canonConstructedTypes = new HashSet<TypeDesc>();
             private HashSet<TypeDesc> _unsealedTypes = new HashSet<TypeDesc>();
             private Dictionary<TypeDesc, HashSet<TypeDesc>> _interfaceImplementators = new();
+            private Dictionary<TypeDesc, HashSet<TypeDesc>> _classSubclasses = new();
             private HashSet<TypeDesc> _disqualifiedInterfaces = new();
 
             public ScannedDevirtualizationManager(NodeFactory factory, ImmutableArray<DependencyNodeCore<NodeFactory>> markedNodes)
@@ -465,6 +466,11 @@ namespace ILCompiler
                                         RecordImplementation(baseInterface, type);
                                     }
                                 }
+                            }
+
+                            if (!type.IsInterface && type.HasBaseType)
+                            {
+                                RecordSubclass(type.BaseType, type);
                             }
 
                             if (type.IsCanonicalSubtype(CanonicalFormKind.Any))
@@ -557,6 +563,20 @@ namespace ILCompiler
                 implList.Add(implType);
             }
 
+            private void RecordSubclass(TypeDesc type, TypeDesc subType)
+            {
+                Debug.Assert(!type.IsInterface);
+                Debug.Assert(!subType.IsInterface);
+
+                HashSet<TypeDesc> subclasses;
+                if (!_classSubclasses.TryGetValue(type, out subclasses))
+                {
+                    subclasses = new();
+                    _classSubclasses[type] = subclasses;
+                }
+                subclasses.Add(subType);
+            }
+
             public override bool IsEffectivelySealed(TypeDesc type)
             {
                 // If we know we scanned a type that derives from this one, this for sure can't be reported as sealed.
@@ -607,17 +627,56 @@ namespace ILCompiler
                 if (_disqualifiedInterfaces.Contains(type))
                     return null;
 
-                if (type.IsInterface && _interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
+                if (type.IsInterface)
                 {
-                    var types = new TypeDesc[implementations.Count];
-                    int index = 0;
-                    foreach (TypeDesc implementation in implementations)
+                    if (_interfaceImplementators.TryGetValue(type, out HashSet<TypeDesc> implementations))
                     {
-                        types[index++] = implementation;
+                        var types = new TypeDesc[implementations.Count];
+                        int index = 0;
+                        foreach (TypeDesc implementation in implementations)
+                        {
+                            types[index++] = implementation;
+                        }
+                        return types;
                     }
-                    return types;
+                }
+                else
+                {
+                    List<TypeDesc> subClasses = new();
+                    if (PopulateSubclassesList(type, subClasses))
+                    {
+                        return subClasses.ToArray();
+                    }
                 }
                 return null;
+            }
+
+            private bool PopulateSubclassesList(TypeDesc type, List<TypeDesc> allSubclasses)
+            {
+                if (_classSubclasses.TryGetValue(type, out HashSet<TypeDesc> subclasses))
+                {
+                    foreach (TypeDesc subclass in subclasses)
+                    {
+                        if (subclass.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        {
+                            // We won't have the full view of all subclasses - bail out.
+                            return false;
+                        }
+
+                        // We don't need to report abstract classes as "subclasses" but we still need
+                        // to inspect their subclasses.
+                        if (subclass is not MetadataType { IsAbstract: true })
+                        {
+                            allSubclasses.Add(subclass);
+                        }
+
+                        if (!PopulateSubclassesList(subclass, allSubclasses))
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
         }
 
