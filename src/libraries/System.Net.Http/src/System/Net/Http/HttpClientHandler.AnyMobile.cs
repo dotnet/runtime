@@ -70,7 +70,11 @@ namespace System.Net.Http
             get => _meterFactory;
             set
             {
-                CheckDisposedOrStarted();
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_metricsHandler != null)
+                {
+                    throw new InvalidOperationException(SR.net_http_operation_started);
+                }
                 _meterFactory = value;
             }
         }
@@ -748,15 +752,6 @@ namespace System.Net.Http
                 handler.Dispose();
             }
             return _metricsHandler;
-        }
-
-        private void CheckDisposedOrStarted()
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_metricsHandler != null)
-            {
-                throw new InvalidOperationException(SR.net_http_operation_started);
-            }
         }
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()

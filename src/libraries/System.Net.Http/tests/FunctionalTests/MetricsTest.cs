@@ -158,7 +158,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        //[OuterLoop("Uses Task.Delay")]
+        [OuterLoop("Uses Task.Delay")]
         public async Task CurrentRequests_InstrumentEnabledAfterSending_NotRecorded()
         {
             SemaphoreSlim instrumentEnabledSemaphore = new SemaphoreSlim(0);
@@ -240,6 +240,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("System.Net.Http.HttpRequestOut.Start")]
         [InlineData("System.Net.Http.Request")]
+        [InlineData("System.Net.Http.HttpRequestOut.Stop")]
         public void RequestDuration_CustomTags_DiagnosticListener_Recorded(string eventName)
         {
             RemoteExecutor.Invoke(static async (testClassName, eventNameInner) =>
@@ -259,6 +260,7 @@ namespace System.Net.Http.Functional.Tests
                     HttpMetricsEnrichmentContext.AddCallback(request, static ctx =>
                     {
                         ctx.AddCustomTag("observed?", "observed!");
+                        Assert.NotNull(ctx.Response);
                     });
                 }
             });
@@ -778,6 +780,48 @@ namespace System.Net.Http.Functional.Tests
             };
             handler.Dispose();
             Assert.False(factory.IsDisposed);
+        }
+
+        [Fact]
+        public void HttpClientHandler_SetMeterFactoryAfterDispose_ThrowsObjectDisposedException()
+        {
+            HttpClientHandler handler = new();
+            handler.Dispose();
+            Assert.ThrowsAny<ObjectDisposedException>(() => handler.MeterFactory = new TestMeterFactory());
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public void SocketsHttpHandler_SetMeterFactoryAfterDispose_ThrowsObjectDisposedException()
+        {
+            SocketsHttpHandler handler = new();
+            handler.Dispose();
+            Assert.ThrowsAny<ObjectDisposedException>(() => handler.MeterFactory = new TestMeterFactory());
+        }
+
+        [Fact]
+        public void HttpClientHandler_SetMeterFactoryAfterStart_ThrowsInvalidOperationException()
+        {
+            Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                using HttpClientHandler handler = new();
+                using HttpClient client = new HttpClient(handler);
+                await client.GetAsync(uri);
+
+                Assert.Throws<InvalidOperationException>(() => handler.MeterFactory = new TestMeterFactory());
+            }, server => server.AcceptConnectionSendResponseAndCloseAsync());
+        }
+
+        [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
+        public void SocketsHttpHandler_SetMeterFactoryAfterStart_ThrowsInvalidOperationException()
+        {
+            Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+            {
+                using SocketsHttpHandler handler = new();
+                using HttpClient client = new HttpClient(handler);
+                await client.GetAsync(uri);
+
+                Assert.Throws<InvalidOperationException>(() => handler.MeterFactory = new TestMeterFactory());
+            }, server => server.AcceptConnectionSendResponseAndCloseAsync());
         }
     }
 
