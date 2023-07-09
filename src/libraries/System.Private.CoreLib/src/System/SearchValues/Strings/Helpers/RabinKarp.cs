@@ -50,6 +50,14 @@ namespace System.Buffers
             _hashLength = minimumLength;
             _hashUpdateMultiplier = (nuint)1 << ((minimumLength - 1) * HashShiftPerElement);
 
+            if (minimumLength > MaxInputLength)
+            {
+                // All the values are long. They'll either be handled by Teddy or won't match at all.
+                // There's no point in allocating the buckets as they will never be accessed.
+                _buckets = null!;
+                return;
+            }
+
             string[][] buckets = _buckets = new string[BucketCount][];
 
             foreach (string value in values)
@@ -141,6 +149,12 @@ namespace System.Buffers
         private readonly int IndexOfAnyCaseInsensitiveUnicode(ReadOnlySpan<char> span)
         {
             Debug.Assert(span.Length <= MaxInputLength, "Teddy should have handled long inputs.");
+
+            if (_hashLength > span.Length)
+            {
+                // Can't possibly match, all the values are longer than our input span.
+                return -1;
+            }
 
             Span<char> upperCase = stackalloc char[MaxInputLength].Slice(0, span.Length);
 
