@@ -486,23 +486,29 @@ namespace System.Net.Http.Functional.Tests
                 // MessageInvoker doesn't buffer the response content, skipping.
                 return;
             }
+            TimeSpan timeout = TimeSpan.FromSeconds(30);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
+                _output.WriteLine("************ C1");
                 await Assert.ThrowsAsync<HttpRequestException>(async () =>
                 {
                     using HttpResponseMessage response = await SendAsync(client, request);
-                });
+                }).WaitAsync(timeout);
+                _output.WriteLine("************ C2");
 
                 Measurement<long> m = recorder.GetMeasurements().Single();
                 VerifyFailedRequests(m, 1, uri, null, null);
             }, async server =>
             {
-                var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync();
+                _output.WriteLine("************ S1");
+                var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(timeout);
+                _output.WriteLine("************ S2");
                 await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("\n\n\n\n"));
+                _output.WriteLine("************ S3");
             });
         }
     }
