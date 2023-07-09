@@ -84,8 +84,8 @@ namespace System.Net.Http
         /// Gets or sets the <see cref="IMeterFactory"/> to create a custom <see cref="Meter"/> for the <see cref="HttpClientHandler"/> instance.
         /// </summary>
         /// <remarks>
-        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics recorded by the <see cref="HttpClientHandler"/> instance
-        /// will use the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
+        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics emitted by the <see cref="HttpClientHandler"/> instance
+        /// will be recorded using the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
         /// </remarks>
         [CLSCompliant(false)]
         public IMeterFactory? MeterFactory
