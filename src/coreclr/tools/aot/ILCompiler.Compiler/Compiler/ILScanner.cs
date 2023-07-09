@@ -653,11 +653,16 @@ namespace ILCompiler
 
             private bool PopulateSubclassesList(TypeDesc type, List<TypeDesc> allSubclasses)
             {
+                if (type.IsCanonicalSubtype(CanonicalFormKind.Any) || type.IsArray)
+                {
+                    return false;
+                }
+
                 if (_classSubclasses.TryGetValue(type, out HashSet<TypeDesc> subclasses))
                 {
                     foreach (TypeDesc subclass in subclasses)
                     {
-                        if (subclass.IsCanonicalSubtype(CanonicalFormKind.Any))
+                        if (subclass.IsCanonicalSubtype(CanonicalFormKind.Any) || subclass.IsArray)
                         {
                             // We won't have the full view of all subclasses - bail out.
                             return false;
