@@ -1,153 +1,171 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.Runtime.InteropServices;
+using System.Threading;
 
-namespace System.Net.Http.Metrics;
-
-public class HttpMetricsEnrichmentContext
+namespace System.Net.Http.Metrics
 {
-    private HttpRequestMessage? _request;
-    private HttpResponseMessage? _response;
-    private Exception? _exception;
-    private TagCollection _tags = new TagCollection();
-
-    public HttpRequestMessage Request
+    /// <summary>
+    /// Provides functionality for enriching request metrics `http-client-request-duration` and `http-client-failed-requests`.
+    /// </summary>
+    /// <remarks>
+    /// Enrichment is done on per-request basis by callbacks registered with <see cref="AddCallback(HttpRequestMessage, Action{HttpMetricsEnrichmentContext})"/>.
+    /// The callbacks are responsible for adding custom tags via <see cref="AddCustomTag(string, object?)"/> for which they can use the request, response and error
+    /// information exposed on the <see cref="HttpMetricsEnrichmentContext"/> instance.
+    ///
+    /// > [!IMPORTANT]
+    /// > The <see cref="HttpMetricsEnrichmentContext"/> intance must not be used from outside of the enrichment callbacks.
+    /// </remarks>
+    public sealed class HttpMetricsEnrichmentContext
     {
-        get
+        private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new("HttpMetricsEnrichmentContext");
+        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new();
+        private static int s_contextCacheItemCount;
+        private const int ContextCacheCapacity = 1024;
+
+        private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new();
+        private HttpRequestMessage? _request;
+        private HttpResponseMessage? _response;
+        private Exception? _exception;
+        private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
+
+        /// <summary>
+        /// Gets the <see cref="HttpRequestMessage"/> that has been sent.
+        /// </summary>
+        /// <remarks>
+        /// This property must not be used from outside of the enrichment callbacks.
+        /// </remarks>
+        public HttpRequestMessage Request => _request!;
+
+        /// <summary>
+        /// Gets the <see cref="HttpRequestMessage"/> received from the server or <see langword="null"/> if the request failed.
+        /// </summary>
+        /// <remarks>
+        /// This property must not be used from outside of the enrichment callbacks.
+        /// </remarks>
+        public HttpResponseMessage? Response => _response;
+
+        /// <summary>
+        /// Gets the exception that occured or <see langword="null"/> if there was no error.
+        /// </summary>
+        /// <remarks>
+        /// This property must not be used from outside of the enrichment callbacks.
+        /// </remarks>
+        public Exception? Exception => _exception;
+
+        /// <summary>
+        /// Appends a custom tag to the list of tags to be recorded with the request metrics `http-client-request-duration` and `http-client-failed-requests`.
+        /// </summary>
+        /// <param name="name">The name of the tag.</param>
+        /// <param name="value">The value of the tag.</param>
+        /// <remarks>
+        /// This method must not be used from outside of the enrichment callbacks.
+        /// </remarks>
+        public void AddCustomTag(string name, object? value) => _tags.Add(new KeyValuePair<string, object?>(name, value));
+
+        /// <summary>
+        /// Adds a callback to register custom tags for request metrics `http-client-request-duration` and `http-client-failed-requests`.
+        /// </summary>
+        /// <param name="request">The <see cref="HttpRequestMessage"/> to apply enrichment to.</param>
+        /// <param name="callback">The callback responsible to add custom tags via <see cref="AddCustomTag(string, object?)"/>.</param>
+        public static void AddCallback(HttpRequestMessage request, Action<HttpMetricsEnrichmentContext> callback)
         {
-            EnsureRunningCallback();
-            return _request!;
-        }
-    }
+            HttpRequestOptions options = request.Options;
 
-    public HttpResponseMessage? Response
-    {
-        get
-        {
-            EnsureRunningCallback();
-            return _response;
-        }
-    }
-
-    public Exception? Exception
-    {
-        get
-        {
-            EnsureRunningCallback();
-            return _exception;
-        }
-    }
-
-    internal bool InProgress => _request != null;
-
-    public ICollection<KeyValuePair<string, object?>> CustomTags => _tags;
-
-    internal void ApplyEnrichment(HttpRequestMessage request, HttpResponseMessage? response, Exception? exception, ref TagList tags)
-    {
-        if (request._options?.TryGetMetricsEnrichmentCallbackCollection(out List<Action<HttpMetricsEnrichmentContext>>? callbackCollection) != true)
-        {
-            return;
-        }
-
-        _request = request;
-        _response = response;
-        _exception = exception;
-        _tags._runningCallback = true;
-
-        try
-        {
-            foreach (Action<HttpMetricsEnrichmentContext> callback in callbackCollection!)
+            // We associate an HttpMetricsEnrichmentContext with the request on the first call to AddCallback(),
+            // and store the callbacks in the context. This allows us to cache all the enrichment objects together.
+            if (!options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context))
             {
-                callback(this);
+                if (s_contextCache.TryDequeue(out context))
+                {
+                    Debug.Assert(context._callbacks.Count == 0);
+                    Interlocked.Decrement(ref s_contextCacheItemCount);
+                }
+                else
+                {
+                    context = new HttpMetricsEnrichmentContext();
+                }
+
+                options.Set(s_optionsKeyForContext, context);
+            }
+            context._callbacks.Add(callback);
+        }
+
+        internal static HttpMetricsEnrichmentContext? GetEnrichmentContextForRequest(HttpRequestMessage request)
+        {
+            if (request._options is null)
+            {
+                return null;
+            }
+            request._options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context);
+            return context;
+        }
+
+        internal void RecordWithEnrichment(HttpRequestMessage request,
+            HttpResponseMessage? response,
+            Exception? exception,
+            long startTimestamp,
+            in TagList commonTags,
+            bool recordRequestDuration,
+            bool recordFailedRequests,
+            Histogram<double> requestDuration,
+            Counter<long> failedRequests)
+        {
+            _request = request;
+            _response = response;
+            _exception = exception;
+
+            Debug.Assert(_tags.Count == 0);
+
+            // Adding the enrichment tags to the TagList would likely exceed its' on-stack capacity, leading to an allocation.
+            // To avoid this, we add all the tags to a List<T> which is cached together with HttpMetricsEnrichmentContext.
+            // Use a for loop to iterate over the TagList, since TagList.GetEnumerator() allocates, see
+            // https://github.com/dotnet/runtime/issues/87022.
+            for (int i = 0; i < commonTags.Count; i++)
+            {
+                _tags.Add(commonTags[i]);
             }
 
-            foreach (KeyValuePair<string, object?> tag in _tags._tags)
+            try
             {
-                tags.Add(tag);
+                foreach (Action<HttpMetricsEnrichmentContext> callback in _callbacks)
+                {
+                    callback(this);
+                }
+
+                if (recordRequestDuration)
+                {
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startTimestamp, Stopwatch.GetTimestamp());
+                    requestDuration.Record(duration.TotalSeconds, CollectionsMarshal.AsSpan(_tags));
+                }
+
+                if (recordFailedRequests)
+                {
+                    failedRequests.Add(1, CollectionsMarshal.AsSpan(_tags));
+                }
             }
-        }
-        finally
-        {
-            _tags._tags.Clear();
-            _tags._runningCallback = false;
-            _request = null;
-            _response = null;
-            _exception = null;
-        }
-    }
-
-    private void EnsureRunningCallback()
-    {
-        if (_request == null) throw new InvalidOperationException("Enrichment callback should not cache HttpMetricsEnrichmentContext");
-    }
-
-    private sealed class TagCollection : ICollection<KeyValuePair<string, object?>>
-    {
-        public bool _runningCallback;
-        internal List<KeyValuePair<string, object?>> _tags = new();
-
-        public int Count
-        {
-            get
+            finally
             {
-                EnsureRunningCallback();
-                return _tags.Count;
+                _request = null;
+                _response = null;
+                _exception = null;
+                _callbacks.Clear();
+                _tags.Clear();
+
+                if (Interlocked.Increment(ref s_contextCacheItemCount) <= ContextCacheCapacity)
+                {
+                    s_contextCache.Enqueue(this);
+                }
+                else
+                {
+                    Interlocked.Decrement(ref s_contextCacheItemCount);
+                }
             }
-        }
-
-        public bool IsReadOnly
-        {
-            get
-            {
-                EnsureRunningCallback();
-                return false;
-            }
-        }
-
-        public void Add(KeyValuePair<string, object?> item)
-        {
-            EnsureRunningCallback();
-            _tags.Add(item);
-        }
-
-        public void Clear()
-        {
-            EnsureRunningCallback();
-            _tags.Clear();
-        }
-
-        public bool Contains(KeyValuePair<string, object?> item)
-        {
-            EnsureRunningCallback();
-            return _tags.Contains(item);
-        }
-
-        public void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
-        {
-            EnsureRunningCallback();
-            _tags.CopyTo(array, arrayIndex);
-        }
-
-        public IEnumerator<KeyValuePair<string, object?>> GetEnumerator()
-        {
-            EnsureRunningCallback();
-            return _tags.GetEnumerator();
-        }
-
-        public bool Remove(KeyValuePair<string, object?> item)
-        {
-            EnsureRunningCallback();
-            return _tags.Remove(item);
-        }
-
-        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-        private void EnsureRunningCallback()
-        {
-            if (!_runningCallback) throw new InvalidOperationException("Enrichment callback should not cache HttpMetricsEnrichmentContext");
         }
     }
 }

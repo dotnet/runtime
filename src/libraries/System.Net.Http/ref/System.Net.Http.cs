@@ -136,7 +136,7 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int MaxResponseHeadersLength { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public System.Diagnostics.Metrics.Meter Meter { get { throw null; } set { } }
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
@@ -400,7 +400,7 @@ namespace System.Net.Http
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
         [System.CLSCompliantAttribute(false)]
-        public System.Diagnostics.Metrics.Meter Meter { get { throw null; } set { } }
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionIdleTimeout { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
         public bool PreAuthenticate { get { throw null; } set { } }
@@ -907,17 +907,12 @@ namespace System.Net.Http.Headers
 }
 namespace System.Net.Http.Metrics
 {
-    public class HttpMetricsEnrichmentContext
+    public sealed class HttpMetricsEnrichmentContext
     {
-        public HttpRequestMessage Request { get { throw null; } }
-
-        public HttpResponseMessage? Response { get { throw null; } }
-
-        public Exception? Exception { get { throw null; } }
-        public ICollection<KeyValuePair<string, object?>> CustomTags { get { throw null; } }
-    }
-    public static class MetricsHttpRequestOptionsExtensions
-    {
-        public static void AddMetricsEnrichmentCallback(this HttpRequestOptions options, Action<HttpMetricsEnrichmentContext> callback) { throw null; }
+        public System.Net.Http.HttpRequestMessage Request { get { throw null; } }
+        public System.Net.Http.HttpResponseMessage? Response { get { throw null; } }
+        public System.Exception? Exception { get { throw null; } }
+        public void AddCustomTag(string name, object? value) { throw null; }
+        public static void AddCallback(System.Net.Http.HttpRequestMessage request, System.Action<System.Net.Http.Metrics.HttpMetricsEnrichmentContext> callback) { throw null; }
     }
 }

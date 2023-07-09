@@ -93,7 +93,7 @@ namespace System.Net.Http
         }
 
         [CLSCompliant(false)]
-        public Meter Meter
+        public IMeterFactory? MeterFactory
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();

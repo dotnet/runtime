@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -23,12 +22,12 @@ namespace System.Net.Http
     {
         private readonly SocketsHttpHandler? _socketHandler;
         private readonly HttpMessageHandler? _nativeHandler;
-        private HttpMessageHandler? _handler;
+        private MetricsHandler? _metricsHandler;
 
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
             new ConcurrentDictionary<string, MethodInfo?>();
 
-        private Meter _meter = MetricsHandler.DefaultMeter;
+        private IMeterFactory? _meterFactory;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
@@ -66,19 +65,17 @@ namespace System.Net.Http
         }
 
         [CLSCompliant(false)]
-        public Meter Meter
+        public IMeterFactory? MeterFactory
         {
-            get => _meter;
+            get => _meterFactory;
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (value.Name != "System.Net.Http")
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_metricsHandler != null)
                 {
-                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+                    throw new InvalidOperationException(SR.net_http_operation_started);
                 }
-
-                CheckDisposedOrStarted();
-                _meter = value;
+                _meterFactory = value;
             }
         }
 
@@ -722,7 +719,8 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            HttpMessageHandler handler = _handler ?? SetupHandlerChain();
+            ArgumentNullException.ThrowIfNull(request);
+            MetricsHandler handler = _metricsHandler ?? SetupHandlerChain();
             return handler.SendAsync(request, cancellationToken);
         }
 
@@ -739,30 +737,21 @@ namespace System.Net.Http
             }
         }
 
-        private HttpMessageHandler SetupHandlerChain()
+        private MetricsHandler SetupHandlerChain()
         {
             HttpMessageHandler handler = IsNativeHandlerEnabled ? _nativeHandler! : _socketHandler!;
             if (DiagnosticsHandler.IsGloballyEnabled())
             {
                 handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
-            handler = new MetricsHandler(handler, _meter);
+            MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
 
             // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
+            if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
             {
                 handler.Dispose();
             }
-            return handler;
-        }
-
-        private void CheckDisposedOrStarted()
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_handler != null)
-            {
-                throw new InvalidOperationException(SR.net_http_operation_started);
-            }
+            return _metricsHandler;
         }
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()

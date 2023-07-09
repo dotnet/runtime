@@ -9,9 +9,10 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics;
 using System.Diagnostics.Metrics;
 #if TARGET_BROWSER
+using System.Diagnostics;
+using System.Net.Http.Metrics;
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
 #else
 using HttpHandlerType = System.Net.Http.SocketsHttpHandler;
@@ -22,10 +23,37 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly HttpHandlerType _underlyingHandler;
-        private HttpMessageHandler? _handler;
 
 #if TARGET_BROWSER
-        private Meter _meter = MetricsHandler.DefaultMeter;
+        private IMeterFactory? _meterFactory;
+        private MetricsHandler? _metricsHandler;
+
+        private MetricsHandler Handler
+        {
+            get
+            {
+                if (_metricsHandler != null)
+                {
+                    return _metricsHandler;
+                }
+
+                HttpMessageHandler handler = _underlyingHandler;
+                if (DiagnosticsHandler.IsGloballyEnabled())
+                {
+                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+                }
+                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
+
+                // Ensure a single handler is used for all requests.
+                if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
+                {
+                    metricsHandler.Dispose();
+                }
+                return _metricsHandler;
+            }
+        }
+#else
+        private HttpHandlerType Handler => _underlyingHandler;
 #endif
 
         private volatile bool _disposed;
@@ -35,24 +63,6 @@ namespace System.Net.Http
             _underlyingHandler = new HttpHandlerType();
 
             ClientCertificateOptions = ClientCertificateOption.Manual;
-        }
-
-        private HttpMessageHandler SetupHandlerChain()
-        {
-            HttpMessageHandler handler = _underlyingHandler;
-#if TARGET_BROWSER
-            if (DiagnosticsHandler.IsGloballyEnabled())
-            {
-                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
-            }
-            handler = new MetricsHandler(handler, _meter);
-#endif
-            // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
-            {
-                handler.Dispose();
-            }
-            return handler;
         }
 
         protected override void Dispose(bool disposing)
@@ -70,25 +80,30 @@ namespace System.Net.Http
         public virtual bool SupportsProxy => HttpHandlerType.SupportsProxy;
         public virtual bool SupportsRedirectConfiguration => HttpHandlerType.SupportsRedirectConfiguration;
 
+        /// <summary>
+        /// Gets or sets the <see cref="IMeterFactory"/> to create a custom <see cref="Meter"/> for the <see cref="HttpClientHandler"/> instance.
+        /// </summary>
+        /// <remarks>
+        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics recorded by the <see cref="HttpClientHandler"/> instance
+        /// will use the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
+        /// </remarks>
         [CLSCompliant(false)]
-        public Meter Meter
+        public IMeterFactory? MeterFactory
         {
 #if TARGET_BROWSER
-            get => _meter;
+            get => _meterFactory;
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (value.Name != "System.Net.Http")
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_metricsHandler != null)
                 {
-                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
+                    throw new InvalidOperationException(SR.net_http_operation_started);
                 }
-
-                CheckDisposedOrStarted();
-                _meter = value;
+                _meterFactory = value;
             }
 #else
-            get => _underlyingHandler.Meter;
-            set => _underlyingHandler.Meter = value;
+            get => _underlyingHandler.MeterFactory;
+            set => _underlyingHandler.MeterFactory = value;
 #endif
         }
 
@@ -328,11 +343,21 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            (_handler ?? SetupHandlerChain()).Send(request, cancellationToken);
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+#if TARGET_BROWSER
+            throw new PlatformNotSupportedException();
+#else
+            ArgumentNullException.ThrowIfNull(request);
+            return Handler.Send(request, cancellationToken);
+#endif
+        }
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
-            (_handler ?? SetupHandlerChain()).SendAsync(request, cancellationToken);
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            return Handler.SendAsync(request, cancellationToken);
+        }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;
@@ -348,16 +373,5 @@ namespace System.Net.Http
             // SslOptions is changed, since SslOptions itself does not do any such checks.
             _underlyingHandler.SslOptions = _underlyingHandler.SslOptions;
         }
-
-#if TARGET_BROWSER
-        private void CheckDisposedOrStarted()
-        {
-            ObjectDisposedException.ThrowIf(_disposed, this);
-            if (_handler != null)
-            {
-                throw new InvalidOperationException(SR.net_http_operation_started);
-            }
-        }
-#endif
     }
 }
