@@ -886,7 +886,7 @@ namespace System.Text.RegularExpressions
 
                                     if (IsCaptureName(capname))
                                     {
-                                        capnum = CaptureSlotFromName(capname);
+                                        capnum = (int)_capnames![capname]!;
                                     }
 
                                     // check if we have bogus character after the name
@@ -933,7 +933,7 @@ namespace System.Text.RegularExpressions
 
                                         if (IsCaptureName(uncapname))
                                         {
-                                            uncapnum = CaptureSlotFromName(uncapname);
+                                            uncapnum = (int)_capnames![uncapname]!;
                                         }
                                         else
                                         {
@@ -993,7 +993,7 @@ namespace System.Text.RegularExpressions
 
                                 if (IsCaptureName(capname) && _pos < _pattern.Length && _pattern[_pos++] == ')')
                                 {
-                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, CaptureSlotFromName(capname));
+                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, (int)_capnames![capname]!);
                                 }
                             }
                         }
@@ -1299,7 +1299,7 @@ namespace System.Text.RegularExpressions
                 {
                     return
                         scanOnly ? null :
-                        IsCaptureName(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, CaptureSlotFromName(capname)) :
+                        IsCaptureName(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!) :
                         throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, capname));
                 }
             }
@@ -1397,7 +1397,7 @@ namespace System.Text.RegularExpressions
                 {
                     if (IsCaptureName(capname))
                     {
-                        return new RegexNode(RegexNodeKind.Backreference, _options, CaptureSlotFromName(capname));
+                        return new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!);
                     }
                 }
             }
@@ -1945,9 +1945,6 @@ namespace System.Text.RegularExpressions
                 }
             }
         }
-
-        /// <summary>Looks up the slot number for a given name.</summary>
-        private int CaptureSlotFromName(string capname) => (int)_capnames![capname]!;
 
         /// <summary>True if the capture slot was noted</summary>
         private bool IsCaptureSlot(int i)
