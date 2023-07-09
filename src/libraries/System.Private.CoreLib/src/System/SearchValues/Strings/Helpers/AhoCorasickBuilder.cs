@@ -18,7 +18,6 @@ namespace System.Buffers
         private ValueListBuilder<AhoCorasickNode> _nodes;
         private ValueListBuilder<int> _parents;
         private Vector256<byte> _startingCharsAsciiBitmap;
-        private int _maxValueLength; // Only used by the NLS fallback
 
         public AhoCorasickBuilder(ReadOnlySpan<string> values, bool ignoreCase, ref HashSet<string>? unreachableValues)
         {
@@ -54,7 +53,7 @@ namespace System.Buffers
                 GenerateStartingAsciiCharsBitmap();
             }
 
-            return new AhoCorasick(_nodes.AsSpan().ToArray(), _startingCharsAsciiBitmap, _maxValueLength);
+            return new AhoCorasick(_nodes.AsSpan().ToArray(), _startingCharsAsciiBitmap);
         }
 
         public void Dispose()
@@ -101,7 +100,6 @@ namespace System.Buffers
                     if (i == value.Length - 1)
                     {
                         node.MatchLength = value.Length;
-                        _maxValueLength = Math.Max(_maxValueLength, value.Length);
                         break;
                     }
                 }

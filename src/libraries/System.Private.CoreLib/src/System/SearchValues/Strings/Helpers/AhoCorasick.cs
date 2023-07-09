@@ -18,13 +18,11 @@ namespace System.Buffers
     {
         private readonly AhoCorasickNode[] _nodes;
         private readonly Vector256<byte> _startingCharsAsciiBitmap;
-        private readonly int _maxValueLength; // Only used by the NLS fallback
 
-        public AhoCorasick(AhoCorasickNode[] nodes, Vector256<byte> startingAsciiBitmap, int maxValueLength)
+        public AhoCorasick(AhoCorasickNode[] nodes, Vector256<byte> startingAsciiBitmap)
         {
             _nodes = nodes;
             _startingCharsAsciiBitmap = startingAsciiBitmap;
-            _maxValueLength = maxValueLength;
         }
 
         public readonly bool ShouldUseAsciiFastScan
