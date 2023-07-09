@@ -82,6 +82,7 @@ namespace System.Net.Http.Functional.Tests
             VerifyOptionalTag(tags, "protocol", protocol);
             VerifyOptionalTag(tags, "status-code", statusCode);
         }
+
         protected sealed class InstrumentRecorder<T> : IDisposable where T : struct
         {
             private readonly string _instrumentName;

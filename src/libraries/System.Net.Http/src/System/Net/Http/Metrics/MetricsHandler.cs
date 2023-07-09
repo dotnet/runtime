@@ -139,7 +139,6 @@ namespace System.Net.Http.Metrics
             }
         }
 
-
         private static string GetProtocolName(Version httpVersion) => (httpVersion.Major, httpVersion.Minor) switch
         {
             (1, 0) => "HTTP/1.0",
@@ -166,6 +165,16 @@ namespace System.Net.Http.Metrics
             tags.Add("method", request.Method.Method);
 
             return tags;
+        }
+
+        private static object GetBoxedStatusCode(int statusCode)
+        {
+            if (s_boxedStatusCodes.TryGetValue(statusCode, out object? result))
+            {
+                return result;
+            }
+
+            return statusCode;
         }
 
         // Status Codes listed at http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
@@ -239,16 +248,6 @@ namespace System.Net.Http.Metrics
             KeyValuePair.Create<int, object>(510, 510),
             KeyValuePair.Create<int, object>(511, 511)
         });
-
-        private static object GetBoxedStatusCode(int statusCode)
-        {
-            if (s_boxedStatusCodes.TryGetValue(statusCode, out object? result))
-            {
-                return result;
-            }
-
-            return statusCode;
-        }
 
         private sealed class SharedMeter : Meter
         {
