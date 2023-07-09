@@ -15,7 +15,7 @@ namespace System.Net.Http.Metrics
         private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new("HttpMetricsEnrichmentContext");
         private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new();
         private static int s_contextCacheItemCount;
-        private static readonly int ContextCacheMaxCapacity = Environment.ProcessorCount * 2;
+        private const int ContextCacheCapacity = 1024;
 
         private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new();
         private HttpRequestMessage? _request;
@@ -23,37 +23,13 @@ namespace System.Net.Http.Metrics
         private Exception? _exception;
         private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
 
-        public HttpRequestMessage Request
-        {
-            get
-            {
-                EnsureRunningCallback();
-                return _request!;
-            }
-        }
+        public HttpRequestMessage Request => _request!;
 
-        public HttpResponseMessage? Response
-        {
-            get
-            {
-                EnsureRunningCallback();
-                return _response;
-            }
-        }
+        public HttpResponseMessage? Response => _response;
 
-        public Exception? Exception
-        {
-            get
-            {
-                EnsureRunningCallback();
-                return _exception;
-            }
-        }
+        public Exception? Exception => _exception;
 
-        public void AddCustomTag(string name, object? value)
-        {
-            _tags.Add(new KeyValuePair<string, object?>(name, value));
-        }
+        public void AddCustomTag(string name, object? value) => _tags.Add(new KeyValuePair<string, object?>(name, value));
 
         /// <summary>
         /// Adds a callback to register enrichment for request metrics instruments that support it.
@@ -92,10 +68,10 @@ namespace System.Net.Http.Metrics
         internal void RecordWithEnrichment(HttpRequestMessage request,
             HttpResponseMessage? response,
             Exception? exception,
+            long startTimestamp,
             in TagList commonTags,
             bool recordRequestDuration,
             bool recordFailedRequests,
-            long startTimestamp,
             Histogram<double> requestDuration,
             Counter<long> failedRequests)
         {
@@ -104,7 +80,10 @@ namespace System.Net.Http.Metrics
             _exception = exception;
 
             Debug.Assert(_tags.Count == 0);
-            // TagList.GetEnumerator() allocates, use a for loop instead.
+
+            // Adding the enrichment tags to TagList would likely exceed its' on-stack capacity, leading to an allocation.
+            // To avoid this, we copy all the tags to a List<T> which is cached together with HttpMetricsEnrichmentContext.
+            // Use a for loop to iterate over TagList, since TagList.GetEnumerator() allocates.
             // https://github.com/dotnet/runtime/issues/87022
             for (int i = 0; i < commonTags.Count; i++)
             {
@@ -131,13 +110,13 @@ namespace System.Net.Http.Metrics
             }
             finally
             {
-                _callbacks.Clear();
-                _tags.Clear();
                 _request = null;
                 _response = null;
                 _exception = null;
+                _callbacks.Clear();
+                _tags.Clear();
 
-                if (Interlocked.Increment(ref s_contextCacheItemCount) <= ContextCacheMaxCapacity)
+                if (Interlocked.Increment(ref s_contextCacheItemCount) <= ContextCacheCapacity)
                 {
                     s_contextCache.Enqueue(this);
                 }
@@ -146,11 +125,6 @@ namespace System.Net.Http.Metrics
                     Interlocked.Decrement(ref s_contextCacheItemCount);
                 }
             }
-        }
-
-        private void EnsureRunningCallback()
-        {
-            if (_request == null) throw new InvalidOperationException("An attempt has been made to use HttpMetricsEnrichmentContext outside of an enrichment callback.");
         }
     }
 }

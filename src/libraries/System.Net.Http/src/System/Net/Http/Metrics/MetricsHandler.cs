@@ -135,7 +135,7 @@ namespace System.Net.Http.Metrics
             }
             else
             {
-                enrichmentContext.RecordWithEnrichment(request, response, exception, tags, recordRequestDuration, recordFailedRequests, startTimestamp, _requestsDuration, _failedRequests);
+                enrichmentContext.RecordWithEnrichment(request, response, exception, startTimestamp, tags, recordRequestDuration, recordFailedRequests, _requestsDuration, _failedRequests);
             }
         }
 
