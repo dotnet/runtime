@@ -551,7 +551,9 @@
     <SmokeTestProject Remove="@(SmokeTestProject)" />
     <SmokeTestProject Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.WebSockets.Client\tests\System.Net.WebSockets.Client.Tests.csproj" />
+    <!-- ActiveIssue https://github.com/dotnet/runtime/issues/88084
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
+    -->
   </ItemGroup>
 
   <ItemGroup>
@@ -714,12 +716,12 @@
 
     <ItemGroup>
       <NormalTestAppBundles Include="$(NormalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
       <NormalTestCMakeEntries Include="project(NormalTestAppBundles)" />
       <NormalTestCMakeEntries Include="add_subdirectory(%(NormalTestAppBundles.RootDir)%(NormalTestAppBundles.Directory) %(NormalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
 
       <FunctionalTestAppBundles Include="$(FunctionalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
       <FunctionalTestCMakeEntries Include="project(FunctionalTestAppBundles)" />
       <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
     </ItemGroup>

@@ -50,12 +50,14 @@ System.Diagnostics.DiagnosticSource</PackageDescription>
     <Compile Include="System\Diagnostics\Metrics\Counter.cs" />
     <Compile Include="System\Diagnostics\Metrics\ExponentialHistogramAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Histogram.cs" />
+    <Compile Include="System\Diagnostics\Metrics\IMeterFactory.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.cs" />
     <Compile Include="System\Diagnostics\Metrics\Instrument.common.cs" />
     <Compile Include="System\Diagnostics\Metrics\InstrumentState.cs" />
     <Compile Include="System\Diagnostics\Metrics\LastValueAggregator.cs" />
     <Compile Include="System\Diagnostics\Metrics\Measurement.cs" />
     <Compile Include="System\Diagnostics\Metrics\Meter.cs" />
+    <Compile Include="System\Diagnostics\Metrics\MeterFactoryExtensions.cs" />
     <Compile Include="System\Diagnostics\Metrics\MeterListener.cs" />
     <Compile Include="System\Diagnostics\Metrics\MetricsEventSource.cs" />
     <Compile Include="System\Diagnostics\Metrics\MeterOptions.cs" />

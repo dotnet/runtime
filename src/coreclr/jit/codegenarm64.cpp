@@ -2944,6 +2944,13 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
                 inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
                                 emitActualTypeSize(targetType));
             }
+            else if (TargetOS::IsUnix && data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr attr = emitActualTypeSize(targetType);
+                // On non-windows, need to load the address from system register.
+                emit->emitIns_R(INS_mrs_tpid0, attr, targetReg);
+            }
             else
             {
                 inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
