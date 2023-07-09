@@ -213,12 +213,35 @@ namespace System.Net.WebSockets
                 _disposed = true;
                 _keepAliveTimer?.Dispose();
                 _stream.Dispose();
-                _inflater?.Dispose();
-                _deflater?.Dispose();
 
                 if (_state < WebSocketState.Aborted)
                 {
                     _state = WebSocketState.Closed;
+                }
+
+                DisposeSafe(_inflater, _receiveMutex);
+                DisposeSafe(_deflater, _sendMutex);
+            }
+        }
+
+        private static void DisposeSafe(IDisposable? resource, AsyncMutex mutex)
+        {
+            if (resource is not null)
+            {
+                Task lockTask = mutex.EnterAsync(CancellationToken.None);
+
+                if (lockTask.IsCompleted)
+                {
+                    resource.Dispose();
+                    mutex.Exit();
+                }
+                else
+                {
+                    lockTask.GetAwaiter().UnsafeOnCompleted(() =>
+                    {
+                        resource.Dispose();
+                        mutex.Exit();
+                    });
                 }
             }
         }
@@ -511,6 +534,8 @@ namespace System.Net.WebSockets
         /// <summary>Writes a frame into the send buffer, which can then be sent over the network.</summary>
         private int WriteFrameToSendBuffer(MessageOpcode opcode, bool endOfMessage, bool disableCompression, ReadOnlySpan<byte> payloadBuffer)
         {
+            ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
             if (_deflater is not null && !disableCompression)
             {
                 payloadBuffer = _deflater.Deflate(payloadBuffer, endOfMessage);
@@ -680,6 +705,8 @@ namespace System.Net.WebSockets
             try
             {
                 await _receiveMutex.EnterAsync(cancellationToken).ConfigureAwait(false);
+                ObjectDisposedException.ThrowIf(_disposed, typeof(WebSocket));
+
                 try
                 {
                     while (true) // in case we get control frames that should be ignored from the user's perspective
