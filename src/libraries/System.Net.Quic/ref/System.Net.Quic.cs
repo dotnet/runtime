@@ -63,7 +63,9 @@ namespace System.Net.Quic
     public sealed partial class QuicException : System.IO.IOException
     {
         public QuicException(System.Net.Quic.QuicError error, long? applicationErrorCode, string message) { }
+        public QuicException(System.Net.Quic.QuicError error, long? applicationErrorCode, long? transportErrorCode, string message) { }
         public long? ApplicationErrorCode { get { throw null; } }
+        public long? TransportErrorCode { get { throw null; } }
         public System.Net.Quic.QuicError QuicError { get { throw null; } }
     }
     public sealed partial class QuicListener : System.IAsyncDisposable

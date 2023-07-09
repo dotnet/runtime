@@ -31,7 +31,7 @@ namespace System.Net.Quic;
 /// Apart from stream API, <see cref="QuicStream"/> also exposes QUIC specific features:
 /// <list type="bullet">
 /// <item>
-/// <term><see cref="WriteAsync(System.ReadOnlyMemory{byte},bool,System.Threading.CancellationToken)"/></term>
+/// <term><see cref="WriteAsync(ReadOnlyMemory{byte},bool,CancellationToken)"/></term>
 /// <description>Allows to close the writing side of the stream as a single operation with the write itself.</description>
 /// </item>
 /// <item>
@@ -131,7 +131,7 @@ public sealed partial class QuicStream
 
     /// <summary>
     /// A <see cref="Task"/> that will get completed once reading side has been closed.
-    /// Which might be by reading till end of stream (<see cref="ReadAsync(System.Memory{byte},System.Threading.CancellationToken)"/> will return <c>0</c>),
+    /// Which might be by reading till end of stream (<see cref="ReadAsync(Memory{byte}, CancellationToken)"/> will return <c>0</c>),
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/>.
     /// </summary>
@@ -140,7 +140,7 @@ public sealed partial class QuicStream
     /// <summary>
     /// A <see cref="Task"/> that will get completed once writing side has been closed.
     /// Which might be by closing the write side via <see cref="CompleteWrites"/>
-    /// or <see cref="WriteAsync(System.ReadOnlyMemory{byte},bool,System.Threading.CancellationToken)"/> with <c>completeWrites: true</c> and getting acknowledgement from the peer for it,
+    /// or <see cref="WriteAsync(ReadOnlyMemory{byte}, bool, CancellationToken)"/> with <c>completeWrites: true</c> and getting acknowledgement from the peer for it,
     /// or when <see cref="Abort"/> for <see cref="QuicAbortDirection.Write"/> is called,
     /// or when the peer called <see cref="Abort"/> for <see cref="QuicAbortDirection.Read"/>.
     /// </summary>
@@ -466,7 +466,7 @@ public sealed partial class QuicStream
 
     /// <summary>
     /// Gracefully completes the writing side of the stream.
-    /// Equivalent to using <see cref="WriteAsync(System.ReadOnlyMemory{byte},bool,System.Threading.CancellationToken)"/> with <c>completeWrites: true</c>.
+    /// Equivalent to using <see cref="WriteAsync(ReadOnlyMemory{byte}, bool, CancellationToken)"/> with <c>completeWrites: true</c>.
     /// </summary>
     /// <remarks>
     /// Corresponds to an empty <see href="https://www.rfc-editor.org/rfc/rfc9000.html#frame-stream">STREAM</see> frame with <c>FIN</c> flag set to <c>true</c>.
@@ -583,7 +583,7 @@ public sealed partial class QuicStream
                 // It's remote shutdown by transport, we received a CONNECTION_CLOSE frame with a QUIC transport error code, throw error based on the status.
                 // TODO: we should propagate the transport error code
                 // https://github.com/dotnet/runtime/issues/72666
-                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, $"Shutdown by transport {data.ConnectionErrorCode}"),
+                (shutdownByApp: false, closedRemotely: true) => ThrowHelper.GetExceptionForMsQuicStatus(data.ConnectionCloseStatus, message: $"Shutdown by transport {data.ConnectionErrorCode}"),
                 // It's local shutdown by transport, most likely due to a timeout, throw error based on the status.
                 // TODO: we should propagate the transport error code
                 // https://github.com/dotnet/runtime/issues/72666

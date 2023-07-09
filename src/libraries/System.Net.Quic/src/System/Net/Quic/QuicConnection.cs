@@ -31,10 +31,10 @@ namespace System.Net.Quic;
 /// </summary>
 /// <remarks>
 /// <see cref="QuicConnection" /> can either be accepted from <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)" /> (inbound connection),
-/// or create with a static method <see cref="QuicConnection.ConnectAsync(System.Net.Quic.QuicClientConnectionOptions, CancellationToken)" /> (outbound connection).
+/// or create with a static method <see cref="ConnectAsync(QuicClientConnectionOptions, CancellationToken)" /> (outbound connection).
 ///
-/// Each connection can then open outbound stream: <see cref="QuicConnection.OpenOutboundStreamAsync(QuicStreamType, CancellationToken)" />,
-/// or accept an inbound stream: <see cref="QuicConnection.AcceptInboundStreamAsync(CancellationToken)" />.
+/// Each connection can then open outbound stream: <see cref="OpenOutboundStreamAsync(QuicStreamType, CancellationToken)" />,
+/// or accept an inbound stream: <see cref="AcceptInboundStreamAsync(CancellationToken)" />.
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
@@ -42,7 +42,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <summary>
     /// The actual secret structure wrapper passed to MsQuic.
     /// </summary>
-    private MsQuicTlsSecret? _tlsSecret;
+    private readonly MsQuicTlsSecret? _tlsSecret;
 #endif
 
     /// <summary>
@@ -304,7 +304,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals
             // DNI mapping is handled by MsQuic
-            var hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
+            string hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
                 ? string.Empty
                 : options.ClientAuthenticationOptions.TargetHost ?? string.Empty;
 
@@ -494,7 +494,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         // TODO: we should propagate transport error code.
         // https://github.com/dotnet/runtime/issues/72666
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, data.ErrorCode));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
