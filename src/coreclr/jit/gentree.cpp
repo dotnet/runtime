@@ -8214,6 +8214,24 @@ GenTreeBlk* Compiler::gtNewBlkIndir(ClassLayout* layout, GenTree* addr, GenTreeF
 //
 GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags indirFlags)
 {
+    if (addr->IsIconHandle())
+    {
+        GenTreeFlags handleKind = addr->GetIconHandleFlag();
+
+        if ((handleKind == GTF_ICON_STATIC_HDL) ||
+            (handleKind == GTF_ICON_BBC_PTR) ||
+            (handleKind == GTF_ICON_GLOBAL_PTR))
+        {
+            indirFlags |= GTF_GLOB_REF;
+        }
+        else
+        {
+            indirFlags |= GTF_IND_INVARIANT;
+        }
+
+        indirFlags |= GTF_IND_NONFAULTING;
+    }
+
     GenTreeIndir* indir = new (this, GT_IND) GenTreeIndir(GT_IND, typ, addr, nullptr);
     gtInitializeIndirNode(indir, indirFlags);
 

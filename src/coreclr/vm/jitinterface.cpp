@@ -3842,8 +3842,8 @@ bool CEEInfo::isValueClass(CORINFO_CLASS_HANDLE clsHnd)
 bool CEEInfo::isBitwiseEquatable(CORINFO_CLASS_HANDLE cls)
 {
     CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
+        THROWS;
+        GC_TRIGGERS;
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
