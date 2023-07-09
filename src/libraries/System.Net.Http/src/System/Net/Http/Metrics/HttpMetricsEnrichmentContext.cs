@@ -6,20 +6,22 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Net.Http.Metrics
 {
     public sealed class HttpMetricsEnrichmentContext
     {
         private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new("HttpMetricsEnrichmentContext");
+        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new();
+        private static int s_contextCacheItemCount;
+        private static readonly int ContextCacheMaxCapacity = Environment.ProcessorCount * 2;
 
-        private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new List<Action<HttpMetricsEnrichmentContext>>();
+        private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new();
         private HttpRequestMessage? _request;
         private HttpResponseMessage? _response;
         private Exception? _exception;
         private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
-
-        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new ();
 
         public HttpRequestMessage Request
         {
@@ -48,8 +50,6 @@ namespace System.Net.Http.Metrics
             }
         }
 
-        internal bool InProgress => _request != null;
-
         public void AddCustomTag(string name, object? value)
         {
             _tags.Add(new KeyValuePair<string, object?>(name, value));
@@ -65,7 +65,11 @@ namespace System.Net.Http.Metrics
             HttpRequestOptions options = request.Options;
             if (!options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context))
             {
-                if (!s_contextCache.TryDequeue(out context))
+                if (s_contextCache.TryDequeue(out context))
+                {
+                    Interlocked.Decrement(ref s_contextCacheItemCount);
+                }
+                else
                 {
                     context = new HttpMetricsEnrichmentContext();
                 }
@@ -95,13 +99,6 @@ namespace System.Net.Http.Metrics
             Histogram<double> requestDuration,
             Counter<long> failedRequests)
         {
-            if (!recordRequestDuration && !recordFailedRequests)
-            {
-                _callbacks.Clear();
-                s_contextCache.Enqueue(this);
-                return;
-            }
-
             _request = request;
             _response = response;
             _exception = exception;
@@ -139,7 +136,15 @@ namespace System.Net.Http.Metrics
                 _request = null;
                 _response = null;
                 _exception = null;
-                s_contextCache.Enqueue(this);
+
+                if (Interlocked.Increment(ref s_contextCacheItemCount) <= ContextCacheMaxCapacity)
+                {
+                    s_contextCache.Enqueue(this);
+                }
+                else
+                {
+                    Interlocked.Decrement(ref s_contextCacheItemCount);
+                }
             }
         }
 
