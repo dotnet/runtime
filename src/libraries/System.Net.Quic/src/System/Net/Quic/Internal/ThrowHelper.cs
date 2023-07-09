@@ -50,7 +50,7 @@ internal static class ThrowHelper
         return false;
     }
 
-    internal static Exception GetExceptionForMsQuicStatus(int status, ulong errorCode = 0, string? message = null)
+    internal static Exception GetExceptionForMsQuicStatus(int status, ulong? errorCode = default, string? message = null)
     {
         Exception ex = GetExceptionInternal(status, errorCode, message);
         if (status != 0)
@@ -61,17 +61,17 @@ internal static class ThrowHelper
 
         return ex;
 
-        static Exception GetExceptionInternal(int status, ulong errorCode, string? message)
+        static Exception GetExceptionInternal(int status, ulong? errorCode, string? message)
         {
             //
             // Start by checking for statuses mapped to QuicError enum
             //
-            if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused);
-            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, SR.net_quic_timeout);
-            if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error);
-            if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle);
-            if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.TransportError, null, errorCode == 0 ? null : (long)errorCode, SR.net_quic_protocol_error);
-            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, (long?)errorCode, SR.net_quic_connection_refused);
+            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, (long?)errorCode, SR.net_quic_timeout);
+            if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, (long?)errorCode, SR.net_quic_ver_neg_error);
+            if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, (long?)errorCode, SR.net_quic_connection_idle);
+            if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.TransportError, null, (long?)errorCode, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, (long?)errorCode, SR.net_quic_protocol_error);
 
             //
             // Transport errors will throw SocketException
@@ -81,7 +81,7 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_UNREACHABLE) return new SocketException((int)SocketError.HostUnreachable);
 
             //
-            // TLS and certificate erros throw AuthenticationException to match SslStream
+            // TLS and certificate errors throw AuthenticationException to match SslStream
             //
             if (status == QUIC_STATUS_TLS_ERROR ||
                 status == QUIC_STATUS_CERT_EXPIRED ||

@@ -27,7 +27,7 @@ public sealed class QuicException : IOException
     /// <param name="applicationErrorCode">The application protocol error code associated with the error.</param>
     /// <param name="transportErrorCode">The transport protocol error code associated with the error.</param>
     /// <param name="message">The message for the exception.</param>
-    public QuicException(QuicError error, long? applicationErrorCode, long? transportErrorCode, string message)
+    internal QuicException(QuicError error, long? applicationErrorCode, long? transportErrorCode, string message)
         : this(error, applicationErrorCode, transportErrorCode, message, null)
     { }
 
