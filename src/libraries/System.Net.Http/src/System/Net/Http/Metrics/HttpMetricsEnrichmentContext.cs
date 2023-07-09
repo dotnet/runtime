@@ -24,9 +24,9 @@ namespace System.Net.Http.Metrics
     public sealed class HttpMetricsEnrichmentContext
     {
         private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new("HttpMetricsEnrichmentContext");
-        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new();
-        private static int s_contextCacheItemCount;
-        private const int ContextCacheCapacity = 1024;
+        private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_pool = new();
+        private static int s_poolItemCount;
+        private const int PoolCapacity = 1024;
 
         private readonly List<Action<HttpMetricsEnrichmentContext>> _callbacks = new();
         private HttpRequestMessage? _request;
@@ -81,10 +81,10 @@ namespace System.Net.Http.Metrics
             // and store the callbacks in the context. This allows us to cache all the enrichment objects together.
             if (!options.TryGetValue(s_optionsKeyForContext, out HttpMetricsEnrichmentContext? context))
             {
-                if (s_contextCache.TryDequeue(out context))
+                if (s_pool.TryDequeue(out context))
                 {
                     Debug.Assert(context._callbacks.Count == 0);
-                    Interlocked.Decrement(ref s_contextCacheItemCount);
+                    Interlocked.Decrement(ref s_poolItemCount);
                 }
                 else
                 {
@@ -157,13 +157,13 @@ namespace System.Net.Http.Metrics
                 _callbacks.Clear();
                 _tags.Clear();
 
-                if (Interlocked.Increment(ref s_contextCacheItemCount) <= ContextCacheCapacity)
+                if (Interlocked.Increment(ref s_poolItemCount) <= PoolCapacity)
                 {
-                    s_contextCache.Enqueue(this);
+                    s_pool.Enqueue(this);
                 }
                 else
                 {
-                    Interlocked.Decrement(ref s_contextCacheItemCount);
+                    Interlocked.Decrement(ref s_poolItemCount);
                 }
             }
         }
