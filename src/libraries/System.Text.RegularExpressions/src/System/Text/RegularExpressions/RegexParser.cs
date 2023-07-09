@@ -1576,7 +1576,15 @@ namespace System.Text.RegularExpressions
                 }
                 else
                 {
-                    RegexOptions options = OptionFromCode(ch);
+                    RegexOptions options = (char)(ch | 0x20) switch
+                    {
+                        'i' => RegexOptions.IgnoreCase,
+                        'm' => RegexOptions.Multiline,
+                        'n' => RegexOptions.ExplicitCapture,
+                        's' => RegexOptions.Singleline,
+                        'x' => RegexOptions.IgnorePatternWhitespace,
+                        _ => RegexOptions.None,
+                    };
                     if (options == 0)
                     {
                         return;
@@ -1684,18 +1692,6 @@ namespace System.Text.RegularExpressions
                 'Z' => RegexNodeKind.EndZ,
                 'z' => RegexNodeKind.End,
                 _ => RegexNodeKind.Nothing,
-            };
-
-        /// <summary>Returns option bit from single-char (?imnsx) code.</summary>
-        private static RegexOptions OptionFromCode(char ch) =>
-            (char)(ch | 0x20) switch
-            {
-                'i' => RegexOptions.IgnoreCase,
-                'm' => RegexOptions.Multiline,
-                'n' => RegexOptions.ExplicitCapture,
-                's' => RegexOptions.Singleline,
-                'x' => RegexOptions.IgnorePatternWhitespace,
-                _ => RegexOptions.None,
             };
 
         /// <summary>
