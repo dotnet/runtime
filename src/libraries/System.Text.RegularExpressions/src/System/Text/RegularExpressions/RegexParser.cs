@@ -345,7 +345,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
-                        PushOptions();
+                        _optionsStack.Append((int)_options);
                         if (ScanGroupOpen() is RegexNode grouper)
                         {
                             PushGroup();
@@ -353,7 +353,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            PopKeepOptions();
+                            _optionsStack.Length--;
                         }
                         continue;
 
@@ -362,14 +362,14 @@ namespace System.Text.RegularExpressions
                         goto ContinueOuterScan;
 
                     case ')':
-                        if (EmptyStack())
+                        if (_stack == null)
                         {
                             throw MakeException(RegexParseError.InsufficientOpeningParentheses, SR.InsufficientOpeningParentheses);
                         }
 
                         AddGroup();
                         PopGroup();
-                        PopOptions();
+                        _options = (RegexOptions)_optionsStack.Pop();
 
                         if (_unit == null)
                         {
@@ -498,7 +498,7 @@ namespace System.Text.RegularExpressions
         BreakOuterScan:
             ;
 
-            if (!EmptyStack())
+            if (_stack != null)
             {
                 throw MakeException(RegexParseError.InsufficientClosingParentheses, SR.InsufficientClosingParentheses);
             }
@@ -1745,9 +1745,9 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case ')':
-                        if (!EmptyOptionsStack())
+                        if (_optionsStack.Length != 0)
                         {
-                            PopOptions();
+                            _options = (RegexOptions)_optionsStack.Pop();
                         }
                         break;
 
@@ -1760,7 +1760,7 @@ namespace System.Text.RegularExpressions
                         }
                         else
                         {
-                            PushOptions();
+                            _optionsStack.Append((int)_options);
                             if (_pos < _pattern.Length && _pattern[_pos] == '?')
                             {
                                 // we have (?...
@@ -1799,7 +1799,7 @@ namespace System.Text.RegularExpressions
                                         {
                                             // (?cimsx-cimsx)
                                             _pos++;
-                                            PopKeepOptions();
+                                            _optionsStack.Length--;
                                         }
                                         else if (_pattern[_pos] == '(')
                                         {
@@ -2113,9 +2113,6 @@ namespace System.Text.RegularExpressions
             }
         }
 
-        /// <summary>True if the group stack is empty.</summary>
-        private bool EmptyStack() => _stack == null;
-
         /// <summary>Start a new round for the parser state (in response to an open paren or string start)</summary>
         private void StartGroup(RegexNode openGroup)
         {
@@ -2177,18 +2174,6 @@ namespace System.Text.RegularExpressions
 
             _unit = _group;
         }
-
-        /// <summary>Saves options on a stack.</summary>
-        private void PushOptions() => _optionsStack.Append((int)_options);
-
-        /// <summary>Recalls options from the stack.</summary>
-        private void PopOptions() => _options = (RegexOptions)_optionsStack.Pop();
-
-        /// <summary>True if options stack is empty.</summary>
-        private bool EmptyOptionsStack() => _optionsStack.Length == 0;
-
-        /// <summary>Pops the options stack, but keeps the current options unchanged.</summary>
-        private void PopKeepOptions() => _optionsStack.Length--;
 
         /// <summary>Fills in a RegexParseException</summary>
         private RegexParseException MakeException(RegexParseError error, string message) =>
