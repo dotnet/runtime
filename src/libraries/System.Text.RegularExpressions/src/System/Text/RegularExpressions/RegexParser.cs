@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1675,7 +1674,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Returns the node kind for zero-length assertions with a \ code.</summary>
-        private RegexNodeKind TypeFromCode(char ch) =>
+        private readonly RegexNodeKind TypeFromCode(char ch) =>
             ch switch
             {
                 'b' => (_options & RegexOptions.ECMAScript) != 0 ? RegexNodeKind.ECMABoundary : RegexNodeKind.Boundary,
@@ -1936,7 +1935,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>True if the capture slot was noted</summary>
-        private bool IsCaptureSlot(int i)
+        private readonly bool IsCaptureSlot(int i)
         {
             if (_caps != null)
             {
@@ -1958,7 +1957,7 @@ namespace System.Text.RegularExpressions
             capnum;
 
         /// <summary>Looks up the slot number for a given name</summary>
-        private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
+        private readonly bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
         private const byte Q = 4;    // quantifier          * + ? {
         private const byte S = 3;    // stopper             $ ( ) . [ \ ^ |
@@ -2009,7 +2008,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Returns true for whitespace.</summary>
         private static bool IsSpace(char ch) => ch <= ' ' && Category[ch] == W;
 
-        private bool IsTrueQuantifier()
+        private readonly bool IsTrueQuantifier()
         {
             Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
 
@@ -2162,7 +2161,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Fills in a RegexParseException</summary>
-        private RegexParseException MakeException(RegexParseError error, string message) =>
+        private readonly RegexParseException MakeException(RegexParseError error, string message) =>
             new RegexParseException(error, _pos, SR.Format(SR.MakeException, _pattern, _pos, message));
 
         /// <summary>Gets group name from its number.</summary>
