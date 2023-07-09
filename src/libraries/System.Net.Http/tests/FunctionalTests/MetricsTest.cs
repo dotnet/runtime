@@ -480,6 +480,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [PlatformSpecific(~TestPlatforms.Browser)] // This scenario results in timeout with BrowserHttpHandler
         public async Task FailedRequests_InvalidResponseStatusLine_Recorded()
         {
             if (TestHttpMessageInvoker)
@@ -509,7 +510,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        public async Task FailedRequests_EofWhileReceivingHeaders_Recorded()
+        public async Task FailedRequests_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
             if (TestHttpMessageInvoker)
             {
@@ -533,7 +534,7 @@ namespace System.Net.Http.Functional.Tests
             }, async server =>
             {
                 var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(timeout);
-                connection.Socket.Shutdown(Sockets.SocketShutdown.Both);
+                connection.Socket.Close();
             });
         }
     }
