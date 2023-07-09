@@ -883,7 +883,7 @@ namespace System.Text.RegularExpressions
                                 {
                                     string capname = ScanCapname();
 
-                                    if (IsCaptureName(capname))
+                                    if (_capnames != null && _capnames.ContainsKey(capname))
                                     {
                                         capnum = (int)_capnames![capname]!;
                                     }
@@ -930,7 +930,7 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (IsCaptureName(uncapname))
+                                        if (_capnames != null && _capnames.ContainsKey(uncapname))
                                         {
                                             uncapnum = (int)_capnames![uncapname]!;
                                         }
@@ -990,7 +990,7 @@ namespace System.Text.RegularExpressions
                             {
                                 string capname = ScanCapname();
 
-                                if (IsCaptureName(capname) && _pos < _pattern.Length && _pattern[_pos++] == ')')
+                                if (_capnames != null && _capnames.ContainsKey(capname) && _pos < _pattern.Length && _pattern[_pos++] == ')')
                                 {
                                     return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, (int)_capnames![capname]!);
                                 }
@@ -1298,7 +1298,7 @@ namespace System.Text.RegularExpressions
                 {
                     return
                         scanOnly ? null :
-                        IsCaptureName(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!) :
+                        _capnames != null && _capnames.ContainsKey(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!) :
                         throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, capname));
                 }
             }
@@ -1394,7 +1394,7 @@ namespace System.Text.RegularExpressions
                 string capname = ScanCapname();
                 if (_pos < _pattern.Length && _pattern[_pos++] == '}')
                 {
-                    if (IsCaptureName(capname))
+                    if (_capnames != null && _capnames.ContainsKey(capname))
                     {
                         return new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!);
                     }
@@ -1951,9 +1951,6 @@ namespace System.Text.RegularExpressions
             capnum == -1 ? -1 :
             caps != null ? (int)caps[capnum]! :
             capnum;
-
-        /// <summary>Looks up the slot number for a given name</summary>
-        private readonly bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
 
         private const byte Q = 4;    // quantifier          * + ? {
         private const byte S = 3;    // stopper             $ ( ) . [ \ ^ |
