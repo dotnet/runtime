@@ -37,6 +37,21 @@ namespace System.Buffers
             return TCaseSensitivity.Equals(ref matchStart, candidate);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool ScalarEquals<TCaseSensitivity>(ref char matchStart, string candidate)
+            where TCaseSensitivity : struct, ICaseSensitivity
+        {
+            for (int i = 0; i < candidate.Length; i++)
+            {
+                if (TCaseSensitivity.TransformInput(candidate[i]) != Unsafe.Add(ref matchStart, i))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public interface ICaseSensitivity
         {
             static abstract char TransformInput(char input);
@@ -61,25 +76,8 @@ namespace System.Buffers
             public static Vector512<byte> TransformInput(Vector512<byte> input) => input;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals(ref char matchStart, string candidate)
-            {
-                ref char end = ref Unsafe.Add(ref matchStart, candidate.Length);
-                ref char candidateRef = ref Unsafe.AsRef(candidate.GetPinnableReference());
-
-                do
-                {
-                    if (candidateRef != matchStart)
-                    {
-                        return false;
-                    }
-
-                    matchStart = ref Unsafe.Add(ref matchStart, 1);
-                    candidateRef = ref Unsafe.Add(ref candidateRef, 1);
-                }
-                while (Unsafe.IsAddressLessThan(ref matchStart, ref end));
-
-                return true;
-            }
+            public static bool Equals(ref char matchStart, string candidate) =>
+                ScalarEquals<CaseSensitive>(ref matchStart, candidate);
         }
 
         public readonly struct CaseInsensitiveAsciiLetters : ICaseSensitivity
@@ -97,18 +95,8 @@ namespace System.Buffers
             public static Vector512<byte> TransformInput(Vector512<byte> input) => input & Vector512.Create(unchecked((byte)~0x20));
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals(ref char matchStart, string candidate)
-            {
-                for (int i = 0; i < candidate.Length; i++)
-                {
-                    if ((Unsafe.Add(ref matchStart, i) & ~0x20) != candidate[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
+            public static bool Equals(ref char matchStart, string candidate) =>
+                ScalarEquals<CaseInsensitiveAsciiLetters>(ref matchStart, candidate);
         }
 
         public readonly struct CaseInsensitiveAscii : ICaseSensitivity
@@ -150,18 +138,8 @@ namespace System.Buffers
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals(ref char matchStart, string candidate)
-            {
-                for (int i = 0; i < candidate.Length; i++)
-                {
-                    if (TextInfo.ToUpperAsciiInvariant(Unsafe.Add(ref matchStart, i)) != candidate[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
-            }
+            public static bool Equals(ref char matchStart, string candidate) =>
+                ScalarEquals<CaseInsensitiveAscii>(ref matchStart, candidate);
         }
 
         public readonly struct CaseInsensitiveUnicode : ICaseSensitivity
@@ -172,10 +150,8 @@ namespace System.Buffers
             public static Vector512<byte> TransformInput(Vector512<byte> input) => throw new UnreachableException();
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool Equals(ref char matchStart, string candidate)
-            {
-                return Ordinal.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
-            }
+            public static bool Equals(ref char matchStart, string candidate) =>
+                Ordinal.EqualsIgnoreCase(ref matchStart, ref candidate.GetRawStringData(), candidate.Length);
         }
     }
 }
