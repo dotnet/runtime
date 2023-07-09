@@ -1511,13 +1511,19 @@ namespace System.Text.RegularExpressions
         private char ScanHex(int c)
         {
             int i = 0;
-            int d;
 
             if (_pos + c <= _pattern.Length)
             {
-                for (; c > 0 && ((d = HexDigit(_pattern[_pos++])) >= 0); c -= 1)
+                for (; c > 0; c -= 1)
                 {
-                    i = (i * 0x10) + d;
+                    int d;
+                    char ch = _pattern[_pos++];
+                    if ((uint)(d = ch - '0') <= 9)
+                        i = (i * 0x10) + d;
+                    else if ((uint)(d = (ch | 0x20) - 'a') <= 5)
+                        i = (i * 0x10) + d + 0xa;
+                    else
+                        break;
                 }
             }
 
@@ -1527,23 +1533,6 @@ namespace System.Text.RegularExpressions
             }
 
             return (char)i;
-        }
-
-        /// <summary>Returns n &lt;= 0xF for a hex digit.</summary>
-        private static int HexDigit(char ch)
-        {
-            int d;
-
-            if ((uint)(d = ch - '0') <= 9)
-                return d;
-
-            if ((uint)(d = ch - 'a') <= 5)
-                return d + 0xa;
-
-            if ((uint)(d = ch - 'A') <= 5)
-                return d + 0xa;
-
-            return -1;
         }
 
         /// <summary>Grabs and converts an ASCII control character</summary>
