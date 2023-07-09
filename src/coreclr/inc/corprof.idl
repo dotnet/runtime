@@ -836,6 +836,22 @@ typedef struct
     UINT32 reserved;
 } COR_PRF_EVENT_DATA;
 
+typedef struct
+{
+    UINT64 Ptr;
+    UINT32 Size;
+    UINT32 Type;
+} COR_PRF_FILTER_DATA;
+
+typedef STDMETHODCALLTYPE void EventPipeProviderCallback(
+    const UINT8 *source_id,
+    UINT32 is_enabled,
+    UINT8 level,
+    UINT64 match_any_keywords,
+    UINT64 match_all_keywords,
+    COR_PRF_FILTER_DATA *filter_data,
+    void *callback_data);
+
 typedef enum _COR_PRF_HANDLE_TYPE
 {
     COR_PRF_HANDLE_TYPE_WEAK    = 0x1,
@@ -4270,6 +4286,25 @@ interface ICorProfilerInfo14 : ICorProfilerInfo13
                     [in] ULONG cObjectRanges,
                     [out] ULONG *pcObjectRanges,
                     [out, size_is(cObjectRanges), length_is(*pcObjectRanges)] COR_PRF_NONGC_HEAP_RANGE ranges[]);
+
+
+    // EventPipeCreateProvider2 allows you to pass in a callback which will be called whenever a 
+    // session enables your provider. The behavior of the callback matches the ETW behavior which
+    // can be counter intuitive. You will get a callback any time a session changes with the updated 
+    // global keywords enabled for your session. The is_enabled parameter will be true if any 
+    // session has your provider enabled. The source_id parameter will be a valid id if the callback
+    // was triggered due to a session enabling and it will be NULL if it was triggered due to a session
+    // disabling.
+    //
+    // Example:
+    //      Session A enables your provider: callback with is_enabled == true, session_id == A,  and keywords == Session A
+    //      Session B enables your provider: callback with is_enabled == true, session_id == B, and keywords == Session A | Session B
+    //      Session B disables your provider: callback with is_enabled == true, session_id == NULL, and keywords == Session A
+    //      Session A disables your provider: callback with is_enabled == false, session_id == NULL, and keywords == 0
+    HRESULT EventPipeCreateProvider2(
+                [in, string] const WCHAR        *providerName,
+                [in]  EventPipeProviderCallback *pCallback,
+                [out] EVENTPIPE_PROVIDER        *pProvider);
 }
 
 /*

@@ -698,7 +698,8 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
 //    cls       - The class handle
 //    helper    - The helper function
 //    typeIndex - The static block type index. Used only for
-//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED or
+//                CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
 //                the static block in an array at index typeIndex.
 //
 // Return Value:
@@ -715,6 +716,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     switch (helper)
     {
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             bNeedClassID = false;
             FALLTHROUGH;
 
@@ -795,7 +797,8 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
 
         result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
     }
-    else if (helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
+    else if ((helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+             (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
     {
         result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
         result->SetExpTLSFieldAccess();
@@ -1225,47 +1228,6 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // Looks like we will need the cast
     //
     return true;
-}
-
-// If assigning to a local var, add a cast if the target is
-// marked as NormalizedOnStore. Returns true if any change was made
-GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
-{
-    //
-    // Only normalize the stores in the global morph phase
-    //
-    if (fgGlobalMorph)
-    {
-        noway_assert(tree->OperGet() == GT_ASG);
-
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->AsOp()->gtOp2;
-
-        if (op1->gtOper == GT_LCL_VAR && genActualType(op1->TypeGet()) == TYP_INT)
-        {
-            // Small-typed arguments and aliased locals are normalized on load.
-            // Other small-typed locals are normalized on store.
-            // If it is an assignment to one of the latter, insert the cast on RHS
-            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
-
-            if (varDsc->lvNormalizeOnStore())
-            {
-                noway_assert(op1->gtType <= TYP_INT);
-                op1->gtType = TYP_INT;
-
-                if (fgCastNeeded(op2, varDsc->TypeGet()))
-                {
-                    op2                 = gtNewCastNode(TYP_INT, op2, false, varDsc->TypeGet());
-                    tree->AsOp()->gtOp2 = op2;
-
-                    // Propagate GTF_COLON_COND
-                    op2->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-                }
-            }
-        }
-    }
-
-    return tree;
 }
 
 /*****************************************************************************
@@ -1720,9 +1682,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     //
     if (!opts.IsOSR())
     {
-        GenTree* zero     = gtNewZeroConNode(genActualType(typeMonAcquired));
-        GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-        GenTree* initNode = gtNewAssignNode(varNode, zero);
+        GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
+        GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
         fgNewStmtAtEnd(fgFirstBB, initNode);
 
@@ -1747,9 +1708,8 @@ void Compiler::fgAddSyncMethodEnterExit()
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
 
-        GenTree* thisNode = gtNewLclvNode(info.compThisArg, TYP_REF);
-        GenTree* copyNode = gtNewLclvNode(lvaCopyThis, TYP_REF);
-        GenTree* initNode = gtNewAssignNode(copyNode, thisNode);
+        GenTree* thisNode = gtNewLclVarNode(info.compThisArg);
+        GenTree* initNode = gtNewStoreLclVarNode(lvaCopyThis, thisNode);
 
         fgNewStmtAtEnd(tryBegBB, initNode);
     }
@@ -1814,8 +1774,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 
     if (block->bbJumpKind == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
     {
-        GenTree* retNode = block->lastStmt()->GetRootNode();
-        GenTree* retExpr = retNode->AsOp()->gtOp1;
+        GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
+        GenTree*     retExpr = retNode->gtOp1;
 
         if (retExpr != nullptr)
         {
@@ -1823,16 +1783,16 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             // ret(...) ->
             // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
-            GenTree* temp   = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1);
-            GenTree* lclVar = retNode->AsOp()->gtOp1->AsOp()->gtOp2;
+            TempInfo tempInfo = fgMakeTemp(retExpr);
+            GenTree* lclVar   = tempInfo.load;
 
-            // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
-            // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
-            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
-            // 0",
-            // which downstream phases can't handle.
+            // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
-            retNode->AsOp()->gtOp1->AsOp()->gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
+
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
+            retNode->gtOp1 = retExpr;
+            retNode->AddAllEffectsFlags(retExpr);
         }
         else
         {
@@ -2559,32 +2519,15 @@ PhaseStatus Compiler::fgAddInternal()
             noway_assert(lvaTable[lvaArg0Var].IsAddressExposed() || lvaTable[lvaArg0Var].lvHasILStoreOp ||
                          lva0CopiedForGenericsCtxt);
 
-            var_types thisType = lvaTable[info.compThisArg].TypeGet();
-
-            // Now assign the original input "this" to the temp
-
-            GenTree* tree;
-
-            tree = gtNewLclvNode(lvaArg0Var, thisType);
-
-            tree = gtNewAssignNode(tree,                                     // dst
-                                   gtNewLclvNode(info.compThisArg, thisType) // src
-                                   );
-
-            /* Create a new basic block and stick the assignment in it */
+            // Now assign the original input "this" to the temp.
+            GenTree* store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
 
             fgEnsureFirstBBisScratch();
+            fgNewStmtAtEnd(fgFirstBB, store);
 
-            fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
-                gtDispTree(tree);
-                printf("\n");
-            }
-#endif
+            JITDUMP("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
+            DISPTREE(store);
+            JITDUMP("\n");
 
             madeChanges = true;
         }
@@ -2842,158 +2785,6 @@ PhaseStatus Compiler::fgFindOperOrder()
 }
 
 //------------------------------------------------------------------------
-// fgRationalizeAssignments: Rewrite assignment nodes into stores.
-//
-// TODO-ASG: delete.
-//
-PhaseStatus Compiler::fgRationalizeAssignments()
-{
-    class AssignmentRationalizationVisitor : public GenTreeVisitor<AssignmentRationalizationVisitor>
-    {
-    public:
-        enum
-        {
-            DoPreOrder = true
-        };
-
-        AssignmentRationalizationVisitor(Compiler* compiler) : GenTreeVisitor(compiler)
-        {
-        }
-
-        fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
-        {
-            GenTree* node = *use;
-
-            // GTF_ASG is sometimes not propagated from setup arg assignments so we have to check for GTF_CALL too.
-            if ((node->gtFlags & (GTF_ASG | GTF_CALL)) == 0)
-            {
-                return fgWalkResult::WALK_SKIP_SUBTREES;
-            }
-
-            if (node->OperIs(GT_ASG))
-            {
-                GenTreeFlags lhsRhsFlags = node->gtGetOp1()->gtFlags | node->gtGetOp2()->gtFlags;
-                *use                     = m_compiler->fgRationalizeAssignment(node->AsOp());
-
-                // TP: return early quickly for simple assignments.
-                if ((lhsRhsFlags & (GTF_ASG | GTF_CALL)) == 0)
-                {
-                    return fgWalkResult::WALK_SKIP_SUBTREES;
-                }
-            }
-
-            return fgWalkResult::WALK_CONTINUE;
-        }
-    };
-
-    AssignmentRationalizationVisitor visitor(this);
-    for (BasicBlock* block : Blocks())
-    {
-        for (Statement* stmt : block->Statements())
-        {
-            GenTree** use = stmt->GetRootNodePointer();
-            if (visitor.PreOrderVisit(use, nullptr) == fgWalkResult::WALK_CONTINUE)
-            {
-                visitor.WalkTree(use, nullptr);
-            }
-        }
-    }
-
-    compAssignmentRationalized = true;
-
-#ifdef DEBUG
-    if (JitConfig.JitStressMorphStores())
-    {
-        for (BasicBlock* block : Blocks())
-        {
-            for (Statement* stmt : block->Statements())
-            {
-                fgMorphBlockStmt(block, stmt DEBUGARG("fgRationalizeAssignments"));
-            }
-        }
-    }
-#endif // DEBUG
-
-    return PhaseStatus::MODIFIED_EVERYTHING;
-}
-
-//------------------------------------------------------------------------
-// fgRationalizeAssignment: Rewrite GT_ASG into a store node.
-//
-// Arguments:
-//    assignment - The assignment node to rewrite
-//
-// Return Value:
-//    Assignment's location, turned into the appropriate store node.
-//
-GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
-{
-    assert(assignment->OperGet() == GT_ASG);
-
-    bool     isReverseOp = assignment->IsReverseOp();
-    GenTree* location    = assignment->gtGetOp1();
-    GenTree* value       = assignment->gtGetOp2();
-    if (location->OperIsLocal())
-    {
-        assert((location->gtFlags & GTF_VAR_DEF) != 0);
-    }
-    else if (value->OperIs(GT_LCL_VAR))
-    {
-        assert((value->gtFlags & GTF_VAR_DEF) == 0);
-    }
-
-    if (assignment->OperIsInitBlkOp())
-    {
-        // No SIMD types are allowed for InitBlks (including zero-inits).
-        assert(assignment->TypeIs(TYP_STRUCT) && location->TypeIs(TYP_STRUCT));
-    }
-
-    genTreeOps storeOp;
-    switch (location->OperGet())
-    {
-        case GT_LCL_VAR:
-            storeOp = GT_STORE_LCL_VAR;
-            break;
-        case GT_LCL_FLD:
-            storeOp = GT_STORE_LCL_FLD;
-            break;
-        case GT_BLK:
-            storeOp = GT_STORE_BLK;
-            break;
-        case GT_IND:
-            storeOp = GT_STOREIND;
-            break;
-        default:
-            unreached();
-    }
-
-    JITDUMP("Rewriting GT_ASG(%s, X) to %s(X)\n", GenTree::OpName(location->OperGet()), GenTree::OpName(storeOp));
-
-    GenTree* store = location;
-    store->SetOperRaw(storeOp);
-    store->Data() = value;
-    store->gtFlags |= GTF_ASG;
-    store->AddAllEffectsFlags(value);
-    store->AddAllEffectsFlags(assignment->gtFlags & GTF_GLOB_REF); // TODO-ASG: zero-diff quirk, delete.
-    if (isReverseOp && !store->OperIsLocalStore())
-    {
-        store->SetReverseOp();
-    }
-    store->ClearDoNotCSE();
-    store->CopyRawCosts(assignment);
-
-    if (storeOp == GT_STOREIND)
-    {
-        store->AsStoreInd()->SetRMWStatusDefault();
-    }
-
-    DISPNODE(store);
-    JITDUMP("\n");
-
-    return store;
-}
-
-//------------------------------------------------------------------------
 // fgSimpleLowering: do full walk of all IR, lowering selected operations
 // and computing lvaOutgoingArgSpaceSize.
 //
@@ -3002,13 +2793,6 @@ GenTree* Compiler::fgRationalizeAssignment(GenTreeOp* assignment)
 //
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
-//
-//    For target ABIs with fixed out args area, computes upper bound on
-//    the size of this area from the calls in the IR.
-//
-//    Outgoing arg area size is computed here because we want to run it
-//    after optimization (in case calls are removed) and need to look at
-//    all possible calls in the method.
 //
 PhaseStatus Compiler::fgSimpleLowering()
 {
@@ -3084,8 +2868,8 @@ PhaseStatus Compiler::fgSimpleLowering()
                     }
 
                     // Change to a GT_IND.
-                    tree->ChangeOperUnchecked(GT_IND);
-                    tree->AsOp()->gtOp1 = addr;
+                    tree->ChangeOper(GT_IND);
+                    tree->AsIndir()->Addr() = addr;
 
                     JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
                     DISPRANGE(LIR::ReadOnlyRange(arr, tree));

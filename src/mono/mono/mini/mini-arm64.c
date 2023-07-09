@@ -25,6 +25,7 @@
 #include <mono/arch/arm64/arm64-codegen.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-memory-model.h>
+#include <mono/utils/mono-hwcap.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/tokentype.h>
 #include "llvm-intrinsics-types.h"
@@ -1529,7 +1530,7 @@ is_hfa (MonoType *t, int *out_nfields, int *out_esize, int *field_offsets)
 }
 
 static void
-add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
+add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 {
 	int i, size, align_size, nregs, nfields, esize;
 	int field_offsets [16];
@@ -1537,6 +1538,19 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 
 	size = mini_type_stack_size_full (t, &align, cinfo->pinvoke);
 	align_size = ALIGN_TO (size, 8);
+
+	/* FIXME: gshared, gsharedvt, dyncalls */
+#if 0
+	MonoClass *klass = mono_class_from_mono_type_internal (t);
+	if (m_class_is_simd_type (klass) && size <= 16 && !cinfo->pinvoke && !is_return && cinfo->fr < FP_PARAM_REGS) {
+		ainfo->storage = ArgInSIMDReg;
+		ainfo->reg = cinfo->fr;
+		ainfo->nregs = 1;
+		ainfo->size = size;
+		cinfo->fr ++;
+		return;
+	}
+#endif
 
 	nregs = align_size / 8;
 	if (is_hfa (t, &nfields, &esize, field_offsets)) {
@@ -1593,7 +1607,7 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 }
 
 static void
-add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
+add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 {
 	MonoType *ptype;
 
@@ -1645,7 +1659,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 		break;
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_TYPEDBYREF:
-		add_valuetype (cinfo, ainfo, ptype);
+		add_valuetype (cinfo, ainfo, ptype, is_return);
 		break;
 	case MONO_TYPE_VOID:
 		ainfo->storage = ArgNone;
@@ -1660,7 +1674,7 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 			ainfo->storage = ArgVtypeByRef;
 			ainfo->gsharedvt = TRUE;
 		} else {
-			add_valuetype (cinfo, ainfo, ptype);
+			add_valuetype (cinfo, ainfo, ptype, is_return);
 		}
 		break;
 	case MONO_TYPE_VAR:
@@ -1702,7 +1716,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 #endif
 
 	/* Return value */
-	add_param (cinfo, &cinfo->ret, sig->ret);
+	add_param (cinfo, &cinfo->ret, sig->ret, TRUE);
 	if (cinfo->ret.storage == ArgVtypeByRef)
 		cinfo->ret.reg = ARMREG_R8;
 	/* Reset state */
@@ -1723,10 +1737,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 			cinfo->gr = PARAM_REGS;
 			cinfo->fr = FP_PARAM_REGS;
 			/* Emit the signature cookie just before the implicit arguments */
-			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
+			add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
 		}
 
-		add_param (cinfo, ainfo, sig->params [pindex]);
+		add_param (cinfo, ainfo, sig->params [pindex], FALSE);
 		if (ainfo->storage == ArgVtypeByRef) {
 			/* Pass the argument address in the next register */
 			if (cinfo->gr >= PARAM_REGS) {
@@ -1748,7 +1762,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 		cinfo->gr = PARAM_REGS;
 		cinfo->fr = FP_PARAM_REGS;
 		/* Emit the signature cookie just before the implicit arguments */
-		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type ());
+		add_param (cinfo, &cinfo->sig_cookie, mono_get_int_type (), FALSE);
 	}
 
 	cinfo->stack_usage = ALIGN_TO (cinfo->stack_usage, MONO_ARCH_FRAME_ALIGNMENT);
@@ -2538,7 +2552,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 		/* Allocate a local to hold the result, the epilog will copy it to the correct place */
 		MonoType *ret_type = mini_get_underlying_type (sig->ret);
 		MonoClass *klass = mono_class_from_mono_type_internal (ret_type);
-		if (MONO_CLASS_IS_SIMD (cfg, klass)) {
+		if (mini_class_is_simd (cfg, klass)) {
 			int align_simd = mono_type_size (m_class_get_byval_arg (klass), NULL);
 			offset = ALIGN_TO (offset, align_simd);
 		}
@@ -2600,6 +2614,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		case ArgVtypeInIRegs:
 		case ArgHFA:
+		case ArgInSIMDReg:
 			ins->opcode = OP_REGOFFSET;
 			ins->inst_basereg = cfg->frame_reg;
 			/* These arguments are saved to the stack in the prolog */
@@ -2805,21 +2820,6 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			break;
 		}
 		case ArgVtypeInIRegs:
-#if 0
-			/* FIXME: the non-LLVM codegen should also pass arguments in registers or
-			 * else there could a mismatch when LLVM code calls non-LLVM code
-			 *
-			 * See https://github.com/dotnet/runtime/issues/73454
-			 */
-			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
-				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (MONO_CLASS_IS_SIMD (cfg, klass)) {
-					lainfo->storage = LLVMArgVtypeInSIMDReg;
-					break;
-				}
-			}
-#endif
-
 			lainfo->storage = LLVMArgAsIArgs;
 			lainfo->nslots = ainfo->nregs;
 			break;
@@ -2837,6 +2837,9 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 				lainfo->storage = LLVMArgAsIArgs;
 				lainfo->nslots = ainfo->size / 8;
 			}
+			break;
+		case ArgInSIMDReg:
+			lainfo->storage = LLVMArgVtypeInSIMDReg;
 			break;
 		default:
 			g_assert_not_reached ();
@@ -3000,6 +3003,7 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case ArgVtypeByRef:
 		case ArgVtypeByRefOnStack:
 		case ArgVtypeOnStack:
+		case ArgInSIMDReg:
 		case ArgHFA: {
 			MonoInst *ins;
 			guint32 align;
@@ -3108,6 +3112,15 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			MONO_ADD_INS (cfg->cbb, load);
 			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STOREI8_MEMBASE_REG, ARMREG_SP, ainfo->offset + (i * 8), load->dreg);
 		}
+		break;
+	case ArgInSIMDReg:
+		MONO_INST_NEW (cfg, load, OP_LOADX_MEMBASE);
+		load->dreg = mono_alloc_ireg (cfg);
+		load->inst_basereg = src->dreg;
+		load->inst_offset = 0;
+		load->klass = src->klass;
+		MONO_ADD_INS (cfg->cbb, load);
+		add_outarg_reg (cfg, call, ArgInFReg, ainfo->reg, load);
 		break;
 	default:
 		g_assert_not_reached ();
@@ -3835,6 +3848,28 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		}
+		case OP_XOP_OVR_X_X_X_X: {
+			IntrinsicId iid = (IntrinsicId) ins->inst_c0;
+			g_assert (dreg == sreg1);
+			g_assert (mono_class_value_size (ins->klass, NULL) == 16);
+			switch (iid) {
+			case INTRINS_AARCH64_ADV_SIMD_SDOT:
+				arm_neon_sdot_4s (code, dreg, sreg2, sreg3);
+				break;
+			case INTRINS_AARCH64_ADV_SIMD_UDOT:
+				arm_neon_udot_4s (code, dreg, sreg2, sreg3);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_ARM64_BROADCAST_ELEM:
+			arm_neon_smov (code, TYPE_I32, ARMREG_IP0, sreg1, ins->inst_c0);
+			arm_neon_dup_g_4s (code, dreg, ARMREG_IP0);
+			break;
+
 		case OP_XZERO:
 			arm_neon_eor_16b (code, dreg, dreg, dreg);
 			break;
@@ -3846,10 +3881,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = emit_xextract (code, VREG_FULL, ins->inst_c0, dreg, sreg1);
 			break;
 		case OP_STOREX_MEMBASE:
-			code = emit_strfpq (code, sreg1, dreg, ins->inst_offset);
+			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
+				code = emit_strfpx (code, sreg1, dreg, ins->inst_offset);
+			else
+				code = emit_strfpq (code, sreg1, dreg, ins->inst_offset);
 			break;
 		case OP_LOADX_MEMBASE:
-			code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
+			if (ins->klass && mono_class_value_size (ins->klass, NULL) == 8)
+				code = emit_ldrfpx (code, dreg, sreg1, ins->inst_offset);
+			else
+				code = emit_ldrfpq (code, dreg, sreg1, ins->inst_offset);
 			break;
 		case OP_XMOVE:
 			if(dreg != sreg1)
@@ -4044,7 +4085,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_CREATE_SCALAR_UNSAFE_INT: {
 			const int t = get_type_size_macro (ins->inst_c1);
-			arm_neon_ins_g(code, t, dreg, sreg1, 0);
+			arm_neon_ins_g (code, t, dreg, sreg1, 0);
 			break;
 		}
 		case OP_CREATE_SCALAR_UNSAFE_FLOAT: {
@@ -4058,14 +4099,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					t = SIZE_8;
 					break;
 				}
-				arm_neon_ins_e(code, t, dreg, sreg1, 0, 0);
+				arm_neon_ins_e (code, t, dreg, sreg1, 0, 0);
 			}
 			break;
 		}
-		// This requires Vector64 SIMD support
-		// case OP_XCONCAT:
-		// 	arm_neon_ext_16b(code, dreg, sreg1, sreg2, 8);
-		// 	break;
+		case OP_XCONCAT: {
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, 1, 0); 
+		 	break;
+		}
 		case OP_ARM64_USHL: {
 			arm_neon_ushl (code, get_vector_size_macro (ins), get_type_size_macro (ins->inst_c1), dreg, sreg1, sreg2);
 			break;
@@ -4077,6 +4121,33 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				arm_neon_ext_16b (code, dreg, sreg1, sreg2, ins->inst_c0);
 			break;
 		}
+		case OP_XLOWER: {
+			if (dreg == sreg1) {
+				// clean the upper half
+				arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+				arm_neon_ins_e (code, SIZE_8, dreg, NEON_TMP_REG, 1, 0); 
+			} else {
+				arm_neon_eor (code, VREG_FULL, dreg, dreg, dreg);
+				arm_neon_mov_8b (code, dreg, sreg1);
+			}
+			break;
+		}
+		case OP_XUPPER:
+			// shift in 64 zeros from the left
+			arm_neon_eor (code, VREG_FULL, NEON_TMP_REG, NEON_TMP_REG, NEON_TMP_REG);
+			arm_neon_ext_16b (code, dreg, sreg1, NEON_TMP_REG, 8);
+			break;
+	
+		case OP_XINSERT_LOWER:
+		case OP_XINSERT_UPPER: {
+			if (dreg != sreg1)
+				arm_neon_mov (code, dreg, sreg1);
+
+			int insert_at = (ins->opcode == OP_XINSERT_LOWER) ? 0 : 1;
+			arm_neon_ins_e (code, SIZE_8, dreg, sreg2, insert_at, 0);
+			break;
+		}
+
 		/* BRANCH */
 		case OP_BR:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_B);
@@ -4830,11 +4901,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_FCONV_TO_I4:
-			arm_fcvtzs_dx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_U4:
-			arm_fcvtzu_dx (code, dreg, sreg1);
+			arm_fcvtzu_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_I8:
 			arm_fcvtzs_dx (code, dreg, sreg1);
@@ -4931,11 +5001,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_RCONV_TO_I4:
-			arm_fcvtzs_sx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_U4:
-			arm_fcvtzu_sx (code, dreg, sreg1);
+			arm_fcvtzu_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_I8:
 			arm_fcvtzs_sx (code, dreg, sreg1);
@@ -5383,7 +5452,46 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (ins->inst_c0 == INTRINS_BITREVERSE_I32);
 			arm_rbitw (code, dreg, sreg1);
 			break;
-
+		case OP_XOP_I4_I4_I4: {
+			switch (ins->inst_c0) {
+			case INTRINS_AARCH64_CRC32B:
+				arm_crc32b (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32H:
+				arm_crc32h (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32W:
+				arm_crc32w (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CB:
+				arm_crc32cb (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CH:
+				arm_crc32ch (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CW:
+				arm_crc32cw (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XOP_I4_I4_I8: {
+			switch (ins->inst_c0) {
+			case INTRINS_AARCH64_CRC32X:
+				arm_crc32x (code, dreg, sreg1, sreg2);
+				break;
+			case INTRINS_AARCH64_CRC32CX:
+				arm_crc32cx (code, dreg, sreg1, sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_ARM64_HINT:
 			g_assert (ins->inst_c0 <= ARMHINT_SEVL);
 			arm_hint (code, ins->inst_c0);
@@ -5515,6 +5623,9 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 					else
 						code = emit_strfpx (code, ainfo->reg + part, ins->inst_basereg, ins->inst_offset + ainfo->foffsets [part]);
 				}
+				break;
+			case ArgInSIMDReg:
+				code = emit_strfpq (code, ainfo->reg, ins->inst_basereg, ins->inst_offset);
 				break;
 			default:
 				g_assert_not_reached ();
@@ -6381,4 +6492,21 @@ guint8*
 mono_arm_emit_brx (guint8 *code, int reg)
 {
 	return emit_brx (code, reg);
+}
+
+MonoCPUFeatures
+mono_arch_get_cpu_features (void)
+{
+	guint64 features = MONO_CPU_INITED;
+
+	if (mono_hwcap_arm64_has_crc32)
+		features |= MONO_CPU_ARM64_CRC;
+	if (mono_hwcap_arm64_has_dot)
+		features |= MONO_CPU_ARM64_DP;
+	if (mono_hwcap_arm64_has_rdm)
+		features |= MONO_CPU_ARM64_RDM;
+	if (mono_hwcap_arm64_has_sha1 && mono_hwcap_arm64_has_sha256 && mono_hwcap_arm64_has_aes)
+		features |= MONO_CPU_ARM64_CRYPTO;
+
+	return features;
 }

@@ -20,13 +20,15 @@ namespace Internal.Runtime.CompilerHelpers
                 return offset;
             }
 
+            Type structureType = Type.GetTypeFromHandle(structureTypeHandle)!;
+
             // if we can find the struct but couldn't find its field, throw Argument Exception
             if (structExists)
             {
-                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, RuntimeAugments.GetLastResortString(structureTypeHandle)), nameof(fieldName));
+                throw new ArgumentException(SR.Format(SR.Argument_OffsetOfFieldNotFound, structureType), nameof(fieldName));
             }
 
-            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, Type.GetTypeFromHandle(structureTypeHandle)));
+            throw new NotSupportedException(SR.Format(SR.StructMarshalling_MissingInteropData, structureType));
         }
 
         public static int GetStructUnsafeStructSize(RuntimeTypeHandle structureTypeHandle)

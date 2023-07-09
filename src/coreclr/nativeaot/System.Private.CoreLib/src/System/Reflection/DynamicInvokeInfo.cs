@@ -324,7 +324,7 @@ namespace System.Reflection
             return ref ret;
         }
 
-        private object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
+        private unsafe object? GetCoercedDefaultValue(int index, in ArgumentInfo argumentInfo)
         {
             object? defaultValue = Method.GetParametersNoCopy()[index].DefaultValue;
             if (defaultValue == DBNull.Value)
@@ -337,7 +337,7 @@ namespace System.Reflection
                 EETypePtr nullableType = argumentInfo.Type.NullableType;
                 if (nullableType.IsEnum)
                 {
-                    defaultValue = Enum.ToObject(Type.GetTypeFromEETypePtr(nullableType), defaultValue);
+                    defaultValue = Enum.ToObject(Type.GetTypeFromMethodTable(nullableType.ToPointer()), defaultValue);
                 }
             }
 
@@ -444,7 +444,7 @@ namespace System.Reflection
                 {
                     if ((transform & Transform.Pointer) != 0)
                     {
-                        Type type = Type.GetTypeFromEETypePtr(argumentInfo.Type);
+                        Type type = Type.GetTypeFromMethodTable(argumentInfo.Type.ToPointer());
                         Debug.Assert(type.IsPointer);
                         obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), type);
                     }
@@ -476,7 +476,7 @@ namespace System.Reflection
             object obj;
             if ((_returnTransform & Transform.Pointer) != 0)
             {
-                Type type = Type.GetTypeFromEETypePtr(_returnType);
+                Type type = Type.GetTypeFromMethodTable(_returnType.ToPointer());
                 Debug.Assert(type.IsPointer);
                 obj = Pointer.Box((void*)Unsafe.As<byte, IntPtr>(ref byref), type);
             }

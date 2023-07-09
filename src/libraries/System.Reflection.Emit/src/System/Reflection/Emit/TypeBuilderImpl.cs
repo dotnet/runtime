@@ -91,16 +91,15 @@ namespace System.Reflection.Emit
             if (_typeParameters != null)
                 throw new InvalidOperationException();
 
-            _typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
-
+            var typeParameters = new GenericTypeParameterBuilderImpl[names.Length];
             for (int i = 0; i < names.Length; i++)
             {
                 string name = names[i];
                 ArgumentNullException.ThrowIfNull(name, nameof(names));
-                _typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this);
+                typeParameters[i] = new GenericTypeParameterBuilderImpl(name, i, this, _handle);
             }
 
-            return _typeParameters;
+            return _typeParameters = typeParameters;
         }
 
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
@@ -320,14 +319,7 @@ namespace System.Reflection.Emit
             => throw new NotSupportedException();
         [DynamicallyAccessedMembers(GetAllMembers)]
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr) => throw new NotSupportedException();
-
         public override bool IsAssignableFrom([NotNullWhen(true)] Type? c) => throw new NotSupportedException();
-        public override Type MakePointerType() => throw new NotSupportedException();
-        public override Type MakeByRefType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType() => throw new NotSupportedException();
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank) => throw new NotSupportedException();
 
         internal const DynamicallyAccessedMemberTypes GetAllMembers = DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields |
             DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods |

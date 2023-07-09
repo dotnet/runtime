@@ -195,17 +195,21 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
+        $(LibrariesNativeArtifactsPath)dotnet.js.map;
+        $(LibrariesNativeArtifactsPath)dotnet.native.js;
+        $(LibrariesNativeArtifactsPath)dotnet.runtime.js;
+        $(LibrariesNativeArtifactsPath)dotnet.runtime.js.map;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
         $(LibrariesNativeArtifactsPath)dotnet-legacy.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
-        $(LibrariesNativeArtifactsPath)dotnet.wasm;
-        $(LibrariesNativeArtifactsPath)dotnet.js.symbols;
+        $(LibrariesNativeArtifactsPath)dotnet.native.wasm;
+        $(LibrariesNativeArtifactsPath)dotnet.native.js.symbols;
         $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
       <!-- for threaded wasm -->
-      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.worker.js')"
+      <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser' and Exists('$(LibrariesNativeArtifactsPath)dotnet.native.worker.js')"
                              Include="
-        $(LibrariesNativeArtifactsPath)dotnet.worker.js"
+        $(LibrariesNativeArtifactsPath)dotnet.native.worker.js"
         IsNative="true" />
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'browser'"
                              Include="

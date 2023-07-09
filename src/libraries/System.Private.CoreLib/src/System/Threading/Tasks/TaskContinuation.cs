@@ -13,7 +13,7 @@ namespace System.Threading.Tasks
 
         public ContinuationTaskFromTask(
             Task antecedent, Delegate action, object? state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(action, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
+            base(action, state, InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(action is Action<Task> || action is Action<Task, object?>,
                 "Invalid delegate type in ContinuationTaskFromTask");
@@ -59,7 +59,7 @@ namespace System.Threading.Tasks
 
         public ContinuationResultTaskFromTask(
             Task antecedent, Delegate function, object? state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(function, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
+            base(function, state, InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(function is Func<Task, TResult> || function is Func<Task, object?, TResult>,
                 "Invalid delegate type in ContinuationResultTaskFromTask");
@@ -105,7 +105,7 @@ namespace System.Threading.Tasks
 
         public ContinuationTaskFromResultTask(
             Task<TAntecedentResult> antecedent, Delegate action, object? state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(action, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
+            base(action, state, InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(action is Action<Task<TAntecedentResult>> || action is Action<Task<TAntecedentResult>, object?>,
                 "Invalid delegate type in ContinuationTaskFromResultTask");
@@ -151,7 +151,7 @@ namespace System.Threading.Tasks
 
         public ContinuationResultTaskFromResultTask(
             Task<TAntecedentResult> antecedent, Delegate function, object? state, TaskCreationOptions creationOptions, InternalTaskOptions internalOptions) :
-            base(function, state, Task.InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
+            base(function, state, InternalCurrentIfAttached(creationOptions), default, creationOptions, internalOptions, null)
         {
             Debug.Assert(function is Func<Task<TAntecedentResult>, TResult> || function is Func<Task<TAntecedentResult>, object?, TResult>,
                 "Invalid delegate type in ContinuationResultTaskFromResultTask");
@@ -434,9 +434,9 @@ namespace System.Threading.Tasks
             return () =>
                 {
                     Guid activityId = TplEventSource.CreateGuidForTaskID(continuationId);
-                    System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out Guid savedActivityId);
+                    Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out Guid savedActivityId);
                     try { action(); }
-                    finally { System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId); }
+                    finally { Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId); }
                 };
         }
 
@@ -632,7 +632,7 @@ namespace System.Threading.Tasks
             if (log.IsEnabled() && log.TasksSetActivityIds && m_continuationId != 0)
             {
                 Guid activityId = TplEventSource.CreateGuidForTaskID(m_continuationId);
-                System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
+                Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(activityId, out savedActivityId);
             }
             try
             {
@@ -658,7 +658,7 @@ namespace System.Threading.Tasks
             {
                 if (log.IsEnabled() && log.TasksSetActivityIds && m_continuationId != 0)
                 {
-                    System.Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId);
+                    Diagnostics.Tracing.EventSource.SetCurrentThreadActivityId(savedActivityId);
                 }
             }
         }

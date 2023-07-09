@@ -45,6 +45,26 @@ namespace JIT.HardwareIntrinsics.X86
             return value != z;
         }
 
+        public static ushort SumAbsoluteDifferences(byte[] left, byte[] right, int i)
+        {
+            int b = (i / 4) * 8;
+
+            if ((i & 3) != 0)
+            {
+                return 0;
+            }
+
+            ushort result = 0;
+
+            for (int n = 0; n < 8; n++)
+            {
+                int tmp = int.Abs(left[b + n] - right[b + n]);
+                result += (ushort)(tmp);
+            }
+
+            return result;
+        }
+
         public static bool SubtractSaturate(byte x, byte y, byte z)
         {
             int value = (int)x - y;

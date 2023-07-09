@@ -178,7 +178,7 @@ ep_thread_get_threads (dn_vector_ptr_t *threads)
 	EP_ASSERT (threads != NULL);
 
 	EP_SPIN_LOCK_ENTER (&_ep_threads_lock, section1)
-		DN_VECTOR_PTR_FOREACH_BEGIN (EventPipeThread *, thread, threads) {
+		DN_LIST_FOREACH_BEGIN (EventPipeThread *, thread, _ep_threads) {
 			if (thread) {
 				// Add ref so the thread doesn't disappear when we release the lock
 				ep_thread_addref (thread);

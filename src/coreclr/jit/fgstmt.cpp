@@ -82,7 +82,7 @@ void Compiler::fgInsertStmtAtBeg(BasicBlock* block, Statement* stmt)
     }
     else
     {
-        Statement* insertBeforeStmt = block->FirstNonPhiDefOrCatchArgAsg();
+        Statement* insertBeforeStmt = block->FirstNonPhiDefOrCatchArgStore();
         if (insertBeforeStmt != nullptr)
         {
             fgInsertStmtBefore(block, insertBeforeStmt, stmt);

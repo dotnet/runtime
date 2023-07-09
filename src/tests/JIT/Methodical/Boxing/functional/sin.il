@@ -9,7 +9,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly sin
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

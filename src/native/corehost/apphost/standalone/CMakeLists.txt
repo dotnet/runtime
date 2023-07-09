@@ -48,7 +48,7 @@ if(CLR_CMAKE_TARGET_WIN32)
         )
 endif()
 
-# Specify non-default Windows libs to be used for Arm/Arm64 builds
-if (CLR_CMAKE_TARGET_WIN32 AND (CLR_CMAKE_TARGET_ARCH_ARM OR CLR_CMAKE_TARGET_ARCH_ARM64))
+# Specify non-default Windows libs to be used for Arm64 builds
+if (CLR_CMAKE_TARGET_WIN32 AND CLR_CMAKE_TARGET_ARCH_ARM64)
     target_link_libraries(apphost PRIVATE shell32.lib)
 endif()

@@ -10,7 +10,7 @@
   .ver 4:0:0:0
 }
 .assembly extern eh_common {}
-.assembly 'deadcodeincatch'
+.assembly ASSEMBLY_NAME
 {
   // --- The following custom attribute is added automatically, do not uncomment -------
   //  .custom instance void [mscorlib]System.Diagnostics.DebuggableAttribute::.ctor(bool,

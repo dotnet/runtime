@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace ConsoleApplication1
 {
@@ -12,14 +13,15 @@ namespace ConsoleApplication1
         public string fieldinStruct;
     }
 
-    internal class TestStruct
+    public class TestStruct
     {
         private static void StructTaker_Inline(TheStruct s)
         {
             s.fieldinStruct = "xyz";
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             TheStruct testStruct = new TheStruct();
 

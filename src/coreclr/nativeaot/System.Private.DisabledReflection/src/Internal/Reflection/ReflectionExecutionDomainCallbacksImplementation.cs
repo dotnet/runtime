@@ -13,7 +13,6 @@ namespace Internal.Reflection
         public override Exception CreateMissingMetadataException(Type typeWithMissingMetadata) => throw new NotImplementedException();
         public override Type GetArrayTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override Assembly GetAssemblyForHandle(RuntimeTypeHandle typeHandle) => new RuntimeAssemblyInfo(typeHandle);
-        public override string GetBetterDiagnosticInfoIfAvailable(RuntimeTypeHandle runtimeTypeHandle) => null;
         public override Type GetByRefTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override Type GetConstructedGenericTypeForHandle(RuntimeTypeHandle typeHandle) => RuntimeTypeInfo.GetRuntimeTypeInfo(typeHandle);
         public override MethodInfo GetDelegateMethod(Delegate del) => throw new NotSupportedException(SR.Reflection_Disabled);

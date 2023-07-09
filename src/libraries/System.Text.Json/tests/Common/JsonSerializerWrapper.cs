@@ -17,6 +17,8 @@ namespace System.Text.Json.Serialization.Tests
         /// </summary>
         public abstract JsonSerializerOptions DefaultOptions { get; }
 
+        public bool IsSourceGeneratedSerializer => DefaultOptions.TypeInfoResolver is JsonSerializerContext;
+
         /// <summary>
         /// Do the deserialize methods allow a value of 'null'.
         /// For example, deserializing JSON to a String supports null by returning a 'null' String reference from a literal value of "null".
@@ -59,24 +61,28 @@ namespace System.Text.Json.Serialization.Tests
             JsonSerializerOptions defaultOptions = DefaultOptions;
             return new JsonSerializerOptions(defaultOptions)
             {
-                TypeInfoResolver = defaultOptions.TypeInfoResolver.WithModifier(modifier)
+                TypeInfoResolver = defaultOptions.TypeInfoResolver.WithAddedModifier(modifier)
             };
         }
 
         public JsonSerializerOptions CreateOptions(
             Action<JsonSerializerOptions> configure = null,
-            bool includeFields = false,
-            List<JsonConverter> customConverters = null,
-            Action<JsonTypeInfo> modifier = null)
+            bool? includeFields = false,
+            List<JsonConverter>? customConverters = null,
+            Action<JsonTypeInfo>? modifier = null,
+            bool makeReadOnly = true)
         {
-            IJsonTypeInfoResolver resolver = DefaultOptions.TypeInfoResolver;
-            resolver = modifier != null ? resolver.WithModifier(modifier) : resolver;
+            var options = new JsonSerializerOptions(DefaultOptions);
 
-            JsonSerializerOptions options = new()
+            if (includeFields != null)
             {
-                TypeInfoResolver = resolver,
-                IncludeFields = includeFields,
-            };
+                options.IncludeFields = includeFields.Value;
+            }
+
+            if (modifier != null && options.TypeInfoResolver != null)
+            {
+                options.TypeInfoResolver = DefaultOptions.TypeInfoResolver.WithAddedModifier(modifier);
+            }
 
             if (customConverters != null)
             {
@@ -88,39 +94,12 @@ namespace System.Text.Json.Serialization.Tests
 
             configure?.Invoke(options);
 
-            options.MakeReadOnly();
+            if (makeReadOnly)
+            {
+                options.MakeReadOnly();
+            }
 
             return options;
-        }
-    }
-
-    public static class JsonTypeInfoResolverExtensions
-    {
-        public static IJsonTypeInfoResolver WithModifier(this IJsonTypeInfoResolver resolver, Action<JsonTypeInfo> modifier)
-            => new JsonTypeInfoResolverWithModifier(resolver, modifier);
-
-        private class JsonTypeInfoResolverWithModifier : IJsonTypeInfoResolver
-        {
-            private readonly IJsonTypeInfoResolver _source;
-            private readonly Action<JsonTypeInfo> _modifier;
-
-            public JsonTypeInfoResolverWithModifier(IJsonTypeInfoResolver source, Action<JsonTypeInfo> modifier)
-            {
-                _source = source;
-                _modifier = modifier;
-            }
-
-            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options)
-            {
-                JsonTypeInfo? typeInfo = _source.GetTypeInfo(type, options);
-
-                if (typeInfo != null)
-                {
-                    _modifier(typeInfo);
-                }
-
-                return typeInfo;
-            }
         }
     }
 }

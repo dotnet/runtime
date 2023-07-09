@@ -283,7 +283,7 @@ namespace Mono.Linker.Dataflow
 			// Now that we have instantiating methods fully filled out, walk the generated types and fill in the attribute
 			// providers
 			foreach (var generatedType in generatedTypeToTypeArgs.Keys) {
-				if (HasGenericParameters (generatedType)) {
+				if (generatedType.HasGenericParameters) {
 					MapGeneratedTypeTypeParameters (generatedType, generatedTypeToTypeArgs, _context);
 					// Finally, add resolved type arguments to the cache
 					var info = generatedTypeToTypeArgs[generatedType];
@@ -297,19 +297,6 @@ namespace Mono.Linker.Dataflow
 
 			_cachedTypeToCompilerGeneratedMembers.Add (type, compilerGeneratedCallees);
 			return type;
-
-			/// <summary>
-			/// Check if the type itself is generic. The only difference is that
-			/// if the type is a nested type, the generic parameters from its
-			/// parent type don't count.
-			/// </summary>
-			static bool HasGenericParameters (TypeDefinition typeDef)
-			{
-				if (!typeDef.IsNested)
-					return typeDef.HasGenericParameters;
-
-				return typeDef.GenericParameters.Count > typeDef.DeclaringType.GenericParameters.Count;
-			}
 
 			/// <summary>
 			/// Attempts to reverse the process of the compiler's alpha renaming. So if the original code was

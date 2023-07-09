@@ -1164,7 +1164,7 @@ namespace System.ComponentModel
         public System.Type[] TabClasses { get { throw null; } }
         protected string[]? TabClassNames { get { throw null; } }
         public System.ComponentModel.PropertyTabScope[] TabScopes { get { throw null; } }
-        public bool Equals(System.ComponentModel.PropertyTabAttribute other) { throw null; }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] System.ComponentModel.PropertyTabAttribute? other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? other) { throw null; }
         public override int GetHashCode() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("The Types referenced by tabClassNames may be trimmed.")]

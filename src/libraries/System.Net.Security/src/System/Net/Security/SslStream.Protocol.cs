@@ -544,7 +544,9 @@ namespace System.Net.Security
                     _sslAuthenticationOptions.EnabledSslProtocols,
                     _sslAuthenticationOptions.IsServer,
                     _sslAuthenticationOptions.EncryptionPolicy,
-                    _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck);
+                    _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                    _sslAuthenticationOptions.AllowTlsResume,
+                    sendTrustList: false);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -688,6 +690,8 @@ namespace System.Net.Security
                                                                 _sslAuthenticationOptions.EnabledSslProtocols,
                                                                 _sslAuthenticationOptions.IsServer,
                                                                 _sslAuthenticationOptions.EncryptionPolicy,
+                                                                _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                                                                _sslAuthenticationOptions.AllowTlsResume,
                                                                 sendTrustedList);
             if (cachedCredentialHandle != null)
             {
@@ -751,20 +755,20 @@ namespace System.Net.Security
         }
 
         //
-        internal ProtocolToken NextMessage(ReadOnlySpan<byte> incomingBuffer)
+        internal void NextMessage(ReadOnlySpan<byte> incomingBuffer, out ProtocolToken token)
         {
             byte[]? nextmsg = null;
-            SecurityStatusPal status = GenerateToken(incomingBuffer, ref nextmsg);
-            ProtocolToken token = new ProtocolToken(nextmsg, status);
+            token.Status = GenerateToken(incomingBuffer, ref nextmsg);
+            token.Size = nextmsg?.Length ?? 0;
+            token.Payload = nextmsg;
 
             if (NetEventSource.Log.IsEnabled())
             {
                 if (token.Failed)
                 {
-                    NetEventSource.Error(this, $"Authentication failed. Status: {status}, Exception message: {token.GetException()!.Message}");
+                    NetEventSource.Error(this, $"Authentication failed. Status: {token.Status}, Exception message: {token.GetException()!.Message}");
                 }
             }
-            return token;
         }
 
         /*++
@@ -895,6 +899,7 @@ namespace System.Net.Security
                             _sslAuthenticationOptions.IsServer,
                             _sslAuthenticationOptions.EncryptionPolicy,
                             _sslAuthenticationOptions.CertificateRevocationCheckMode != X509RevocationMode.NoCheck,
+                            _sslAuthenticationOptions.AllowTlsResume,
                             sendTrustList);
                     }
                 }
@@ -933,6 +938,14 @@ namespace System.Net.Security
             Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
             SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
+#if DEBUG
+            if (NetEventSource.Log.IsEnabled())
+            {
+                // This keeps the property alive only for tests via reflection
+                // Otherwise it could be optimized out as it is not used by production code.
+                NetEventSource.Info(this, $"TLS resumed {_connectionInfo.TlsResumed}");
+            }
+#endif
         }
 
         /*++
@@ -992,7 +1005,7 @@ namespace System.Net.Security
         --*/
 
         //This method validates a remote certificate.
-        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
+        internal bool VerifyRemoteCertificate(RemoteCertificateValidationCallback? remoteCertValidationCallback, SslCertificateTrust? trust, ref ProtocolToken alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
             sslPolicyErrors = SslPolicyErrors.None;
             chainStatus = X509ChainStatusFlags.NoError;
@@ -1085,7 +1098,7 @@ namespace System.Net.Security
 
                 if (!success)
                 {
-                    alertToken = CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!);
+                    CreateFatalHandshakeAlertToken(sslPolicyErrors, chain!, ref alertToken);
                     if (chain != null)
                     {
                         foreach (X509ChainStatus status in chain.ChainStatus)
@@ -1115,7 +1128,7 @@ namespace System.Net.Security
             return success;
         }
 
-        private ProtocolToken? CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain)
+        private void CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain, ref ProtocolToken alertToken)
         {
             TlsAlertMessage alertMessage;
 
@@ -1148,15 +1161,14 @@ namespace System.Net.Security
                 {
                     ExceptionDispatchInfo.Throw(status.Exception);
                 }
-
-                return null;
             }
 
-            return GenerateAlertToken();
+            GenerateAlertToken(ref alertToken);
         }
 
-        private ProtocolToken? CreateShutdownToken()
+        private byte[]? CreateShutdownToken()
         {
+            byte[]? nextmsg = null;
             SecurityStatusPal status;
             status = SslStreamPal.ApplyShutdownToken(_securityContext!);
 
@@ -1173,17 +1185,21 @@ namespace System.Net.Security
                 return null;
             }
 
-            return GenerateAlertToken();
+            GenerateToken(default, ref nextmsg);
+
+            return nextmsg;
         }
 
-        private ProtocolToken GenerateAlertToken()
+        private void GenerateAlertToken(ref ProtocolToken alertToken)
         {
             byte[]? nextmsg = null;
 
             SecurityStatusPal status;
             status = GenerateToken(default, ref nextmsg);
 
-            return new ProtocolToken(nextmsg, status);
+            alertToken.Payload = nextmsg;
+            alertToken.Size = nextmsg?.Length ?? 0;
+            alertToken.Status = status;
         }
 
         private static TlsAlertMessage GetAlertMessageFromChain(X509Chain chain)
@@ -1286,7 +1302,7 @@ namespace System.Net.Security
     }
 
     // ProtocolToken - used to process and handle the return codes from the SSPI wrapper
-    internal sealed class ProtocolToken
+    internal struct ProtocolToken
     {
         internal SecurityStatusPal Status;
         internal byte[]? Payload;

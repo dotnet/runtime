@@ -8,6 +8,10 @@
 #include "pal_errors.h"
 
 typedef struct SortHandle SortHandle;
+typedef struct _Range {
+    int32_t location;
+    int32_t length;
+} Range;
 
 PALEXPORT ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandle** ppSortHandle);
 
@@ -61,3 +65,39 @@ PALEXPORT int32_t GlobalizationNative_GetSortKey(SortHandle* pSortHandle,
                                                  uint8_t* sortKey,
                                                  int32_t cbSortKeyLength,
                                                  int32_t options);
+
+#ifdef __APPLE__
+PALEXPORT int32_t GlobalizationNative_CompareStringNative(const uint16_t* localeName,
+                                                          int32_t lNameLength,
+                                                          const uint16_t* lpTarget,
+                                                          int32_t cwTargetLength,
+                                                          const uint16_t* lpSource,
+                                                          int32_t cwSourceLength,
+                                                          int32_t options);
+
+PALEXPORT Range GlobalizationNative_IndexOfNative(const uint16_t* localeName,
+                                                  int32_t lNameLength,
+                                                  const uint16_t* lpTarget,
+                                                  int32_t cwTargetLength,
+                                                  const uint16_t* lpSource,
+                                                  int32_t cwSourceLength,
+                                                  int32_t options,
+                                                  int32_t fromBeginning);   
+
+PALEXPORT int32_t GlobalizationNative_StartsWithNative(const uint16_t* localeName,
+                                                       int32_t lNameLength,
+                                                       const uint16_t* lpPrefix,
+                                                       int32_t cwPrefixLength,
+                                                       const uint16_t* lpSource,
+                                                       int32_t cwSourceLength,
+                                                       int32_t options);
+
+PALEXPORT int32_t GlobalizationNative_EndsWithNative(const uint16_t* localeName,
+                                                     int32_t lNameLength,
+                                                     const uint16_t* lpSuffix,
+                                                     int32_t cwSuffixLength,
+                                                     const uint16_t* lpSource,
+                                                     int32_t cwSourceLength,
+                                                     int32_t options);                                               
+
+#endif

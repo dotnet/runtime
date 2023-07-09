@@ -21,11 +21,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        public sealed override object NewObject(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.NewObject(typeHandle);
-        }
-
         public sealed override Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             return RuntimeAugments.NewArray(typeHandleForArrayType, count);
@@ -113,11 +108,6 @@ namespace Internal.Reflection.Execution
 
             interfaceMethods = ifaceMethods;
             targetMethods = tMethods;
-        }
-
-        public sealed override string GetLastResortString(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.GetLastResortString(typeHandle);
         }
 
         //==============================================================================================

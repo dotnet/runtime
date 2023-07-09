@@ -19,7 +19,13 @@ public class DllImportSearchPathsTest
     }
 
     public static bool CanLoadAssemblyInSubdirectory =>
-        !TestLibrary.Utilities.IsNativeAot && !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT;
+        !TestLibrary.Utilities.IsNativeAot &&
+        !TestLibrary.PlatformDetection.IsMonoLLVMFULLAOT &&
+        !OperatingSystem.IsAndroid() &&
+        !OperatingSystem.IsIOS() &&
+        !OperatingSystem.IsTvOS() &&
+        !OperatingSystem.IsBrowser() &&
+        !OperatingSystem.IsWasi();
 
     [ConditionalFact(nameof(CanLoadAssemblyInSubdirectory))]
     public static void AssemblyDirectory_Found()

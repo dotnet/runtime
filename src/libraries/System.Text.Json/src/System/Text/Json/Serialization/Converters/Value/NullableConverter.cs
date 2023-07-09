@@ -10,6 +10,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override Type? ElementType => typeof(T);
         public override bool HandleNull => true;
         internal override bool CanPopulate => _elementConverter.CanPopulate;
+        internal override bool ConstructorIsParameterized => _elementConverter.ConstructorIsParameterized;
 
         // It is possible to cache the underlying converter since this is an internal converter and
         // an instance is created only once for each JsonSerializerOptions instance.
@@ -20,6 +21,7 @@ namespace System.Text.Json.Serialization.Converters
             _elementConverter = elementConverter;
             IsInternalConverterForNumberType = elementConverter.IsInternalConverterForNumberType;
             ConverterStrategy = elementConverter.ConverterStrategy;
+            ConstructorInfo = elementConverter.ConstructorInfo;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, scoped ref ReadStack state, out T? value)

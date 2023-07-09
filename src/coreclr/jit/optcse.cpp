@@ -1201,6 +1201,13 @@ public:
     //
     bool EndMerge(BasicBlock* block)
     {
+        // If this block is marked BBF_NO_CSE_IN (because of RBO), kill all CSEs.
+        //
+        if ((block->bbFlags & BBF_NO_CSE_IN) != 0)
+        {
+            BitVecOps::ClearD(m_comp->cseLivenessTraits, block->bbCseIn);
+        }
+
         // We can skip the calls kill step when our block doesn't have a callsite
         // or we don't have any available CSEs in our bbCseIn
         //
@@ -3131,7 +3138,7 @@ public:
                 }
 
                 /* Create a store of the value to the temp */
-                GenTree* store     = m_pCompiler->gtNewTempAssign(cseLclVarNum, val);
+                GenTree* store     = m_pCompiler->gtNewTempStore(cseLclVarNum, val);
                 GenTree* origStore = store;
 
                 if (!store->OperIs(GT_STORE_LCL_VAR))
@@ -3166,11 +3173,11 @@ public:
                     // These should not have been set yet, since this is the first and
                     // only def for this CSE.
                     assert(ssaVarDsc->GetBlock() == nullptr);
-                    assert(ssaVarDsc->GetAssignment() == nullptr);
+                    assert(ssaVarDsc->GetDefNode() == nullptr);
 
                     ssaVarDsc->m_vnPair = val->gtVNPair;
                     ssaVarDsc->SetBlock(blk);
-                    ssaVarDsc->SetAssignment(store->AsLclVarCommon());
+                    ssaVarDsc->SetDefNode(store->AsLclVarCommon());
                 }
 
                 /* Create a reference to the CSE temp */

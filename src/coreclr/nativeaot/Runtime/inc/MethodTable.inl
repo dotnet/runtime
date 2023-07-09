@@ -106,12 +106,7 @@ __forceinline uint32_t MethodTable::GetFieldOffset(EETypeField eField)
     // First part of MethodTable consists of the fixed portion followed by the vtable.
     uint32_t cbOffset = offsetof(MethodTable, m_VTable) + (sizeof(UIntTarget) * m_usNumVtableSlots);
 
-    // Then we have the interface map.
-    if (eField == ETF_InterfaceMap)
-    {
-        ASSERT(GetNumInterfaces() > 0);
-        return cbOffset;
-    }
+    // Followed by interface list
     cbOffset += sizeof(MethodTable*) * GetNumInterfaces();
 
     const uint32_t relativeOrFullPointerOffset =

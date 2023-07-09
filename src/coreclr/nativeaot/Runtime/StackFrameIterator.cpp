@@ -44,9 +44,6 @@ GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransitionAddr, PointerToReturnFro
 
 EXTERN_C PTR_VOID PointerToReturnFromUniversalTransition_DebugStepTailCall;
 GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromUniversalTransition_DebugStepTailCallAddr, PointerToReturnFromUniversalTransition_DebugStepTailCall);
-
-EXTERN_C PTR_VOID PointerToReturnFromCallDescrThunk;
-GVAL_IMPL_INIT(PTR_VOID, g_ReturnFromCallDescrThunkAddr, PointerToReturnFromCallDescrThunk);
 #endif
 
 #ifdef TARGET_X86
@@ -1200,130 +1197,6 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 #define STACK_ALIGN_SIZE 4
 #endif
 
-#ifdef TARGET_AMD64
-struct CALL_DESCR_CONTEXT
-{
-    uintptr_t  Rbp;
-    uintptr_t  Rsi;
-    uintptr_t  Rbx;
-    uintptr_t  IP;
-};
-#elif defined(TARGET_ARM)
-struct CALL_DESCR_CONTEXT
-{
-    uintptr_t  R4;
-    uintptr_t  R5;
-    uintptr_t  R7;
-    uintptr_t  IP;
-};
-#elif defined(TARGET_ARM64)
-struct CALL_DESCR_CONTEXT
-{
-    uintptr_t  FP;
-    uintptr_t  IP;
-    uintptr_t  X19;
-    uintptr_t  X20;
-};
-#elif defined(TARGET_X86)
-struct CALL_DESCR_CONTEXT
-{
-    uintptr_t  Rbx;
-    uintptr_t  Rbp;
-    uintptr_t  IP;
-};
-#elif defined (TARGET_WASM)
-struct CALL_DESCR_CONTEXT
-{
-    uintptr_t  IP;
-};
-#else
-#error NYI - For this arch
-#endif
-
-typedef DPTR(CALL_DESCR_CONTEXT) PTR_CALL_DESCR_CONTEXT;
-
-void StackFrameIterator::UnwindCallDescrThunk()
-{
-    ASSERT((m_dwFlags & MethodStateCalculated) == 0);
-
-#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
-    return;
-#else // defined(USE_PORTABLE_HELPERS)
-    ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InCallDescrThunk);
-
-    uintptr_t newSP;
-#ifdef TARGET_AMD64
-    // RBP points to the SP that we want to capture. (This arrangement allows for
-    // the arguments from this function to be loaded into memory with an adjustment
-    // to SP, like an alloca
-    newSP = *(PTR_UIntNative)m_RegDisplay.pRbp;
-
-    PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)newSP;
-
-    m_RegDisplay.pRbp = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, Rbp);
-    m_RegDisplay.pRsi = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, Rsi);
-    m_RegDisplay.pRbx = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, Rbx);
-
-    // And adjust SP to be the state that it should be in just after returning from
-    // the CallDescrFunction
-    newSP += sizeof(CALL_DESCR_CONTEXT);
-#elif defined(TARGET_ARM)
-    // R7 points to the SP that we want to capture. (This arrangement allows for
-    // the arguments from this function to be loaded into memory with an adjustment
-    // to SP, like an alloca
-    newSP = *(PTR_UIntNative)m_RegDisplay.pR7;
-    PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)newSP;
-
-    m_RegDisplay.pR4 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, R4);
-    m_RegDisplay.pR5 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, R5);
-    m_RegDisplay.pR7 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, R7);
-
-    // And adjust SP to be the state that it should be in just after returning from
-    // the CallDescrFunction
-    newSP += sizeof(CALL_DESCR_CONTEXT);
-
-#elif defined(TARGET_ARM64)
-    // pFP points to the SP that we want to capture. (This arrangement allows for
-    // the arguments from this function to be loaded into memory with an adjustment
-    // to SP, like an alloca
-    newSP = *(PTR_UIntNative)m_RegDisplay.pFP;
-    PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)newSP;
-
-    m_RegDisplay.pX19 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, X19);
-    m_RegDisplay.pX20 = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, X20);
-
-    // And adjust SP to be the state that it should be in just after returning from
-    // the CallDescrFunction
-    newSP += sizeof(CALL_DESCR_CONTEXT);
-
-#elif defined(TARGET_X86)
-    // RBP points to the SP that we want to capture. (This arrangement allows for
-    // the arguments from this function to be loaded into memory with an adjustment
-    // to SP, like an alloca
-    newSP = *(PTR_UIntNative)m_RegDisplay.pRbp;
-
-    PTR_CALL_DESCR_CONTEXT pContext = (PTR_CALL_DESCR_CONTEXT)(newSP - offsetof(CALL_DESCR_CONTEXT, Rbp));
-
-    m_RegDisplay.pRbp = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, Rbp);
-    m_RegDisplay.pRbx = PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, Rbx);
-
-    // And adjust SP to be the state that it should be in just after returning from
-    // the CallDescrFunction
-    newSP += sizeof(CALL_DESCR_CONTEXT) - offsetof(CALL_DESCR_CONTEXT, Rbp);
-
-#else
-    PORTABILITY_ASSERT("UnwindCallDescrThunk");
-    PTR_CALL_DESCR_CONTEXT pContext = NULL;
-#endif
-
-    m_RegDisplay.SetAddrOfIP(PTR_TO_MEMBER(CALL_DESCR_CONTEXT, pContext, IP));
-    m_RegDisplay.SetIP(pContext->IP);
-    m_RegDisplay.SetSP(newSP);
-    SetControlPC(dac_cast<PTR_VOID>(pContext->IP));
-
-#endif // defined(USE_PORTABLE_HELPERS)
-}
-
 void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
@@ -1440,6 +1313,11 @@ UnwindOutOfCurrentManagedFrame:
     if ((m_dwFlags & SkipNativeFrames) != 0)
     {
         unwindFlags |= USFF_StopUnwindOnTransitionFrame;
+    }
+
+    if ((m_dwFlags & GcStackWalkFlags) == GcStackWalkFlags)
+    {
+        unwindFlags |= USFF_GcUnwind;
     }
 
     FAILFAST_OR_DAC_FAIL(GetCodeManager()->UnwindStackFrame(&m_methodInfo, unwindFlags, &m_RegDisplay,
@@ -1654,11 +1532,7 @@ void StackFrameIterator::UnwindNonEHThunkSequence()
     {
         ASSERT(m_pConservativeStackRangeLowerBound == NULL);
 
-        if (category == InCallDescrThunk)
-        {
-            UnwindCallDescrThunk();
-        }
-        else if (category == InUniversalTransitionThunk)
+        if (category == InUniversalTransitionThunk)
         {
             UnwindUniversalTransitionThunk();
             ASSERT(m_pConservativeStackRangeLowerBound != NULL);
@@ -1851,7 +1725,6 @@ bool StackFrameIterator::IsNonEHThunk(ReturnAddressCategory category)
         default:
             return false;
         case InUniversalTransitionThunk:
-        case InCallDescrThunk:
             return true;
     }
 }
@@ -1921,11 +1794,7 @@ StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjust
 #else // defined(USE_PORTABLE_HELPERS)
 
 #if defined(FEATURE_DYNAMIC_CODE)
-    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromCallDescrThunk))
-    {
-        return InCallDescrThunk;
-    }
-    else if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
+    if (EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition) ||
              EQUALS_RETURN_ADDRESS(returnAddress, ReturnFromUniversalTransition_DebugStepTailCall))
     {
         return InUniversalTransitionThunk;

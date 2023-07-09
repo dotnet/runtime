@@ -377,7 +377,7 @@ namespace System.Threading.Tasks.Tests
         [Fact]
         public static void TaskMethodBuilderDecimal_DoesntUseCompletedCache()
         {
-            TaskMethodBuilderT_UsesCompletedCache(0m, shouldBeCached: false);
+            TaskMethodBuilderT_UsesCompletedCache(default(decimal), shouldBeCached: true);
             TaskMethodBuilderT_UsesCompletedCache(0.0m, shouldBeCached: false);
             TaskMethodBuilderT_UsesCompletedCache(42m, shouldBeCached: false);
         }

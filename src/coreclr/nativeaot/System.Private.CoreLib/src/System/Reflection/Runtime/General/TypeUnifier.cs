@@ -65,12 +65,8 @@ namespace System.Reflection.Runtime.General
             // type would be an open type.
             RuntimeTypeHandle typeHandle = arrayType.InternalTypeHandleIfAvailable;
             if (IsTypeConstructionEagerlyValidated
-                && typeHandle.IsNull() && !elementType.ContainsGenericParameters
-#if FEATURE_COMINTEROP
-                && !(elementType is RuntimeCLSIDTypeInfo)
-#endif
-                )
-                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingArrayTypeException(elementType, isMultiDim: false, 1);
+                && typeHandle.IsNull() && !elementType.ContainsGenericParameters)
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(arrayType);
 
             return arrayType;
         }
@@ -109,7 +105,7 @@ namespace System.Reflection.Runtime.General
                         atLeastOneOpenType = true;
                 }
                 if (!atLeastOneOpenType)
-                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingConstructedGenericTypeException(genericType.GetGenericTypeDefinition(), genericTypeArguments.CloneTypeArray());
+                    throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(genericType);
             }
 
             return genericType;
@@ -473,25 +469,4 @@ namespace System.Reflection.Runtime.TypeInfos
             public static readonly ConstructedGenericTypeTable Table = new ConstructedGenericTypeTable();
         }
     }
-
-#if FEATURE_COMINTEROP
-    internal sealed partial class RuntimeCLSIDTypeInfo
-    {
-        public static RuntimeCLSIDTypeInfo GetRuntimeCLSIDTypeInfo(Guid clsid, string server)
-        {
-            UnificationKey key = new UnificationKey(clsid, server);
-            return ClsIdTypeTable.Table.GetOrAdd(key);
-        }
-
-        private sealed class ClsIdTypeTable : ConcurrentUnifierWKeyed<UnificationKey, RuntimeCLSIDTypeInfo>
-        {
-            protected sealed override RuntimeCLSIDTypeInfo Factory(UnificationKey key)
-            {
-                return new RuntimeCLSIDTypeInfo(key.ClsId, key.Server);
-            }
-
-            public static readonly ClsIdTypeTable Table = new ClsIdTypeTable();
-        }
-    }
-#endif
 }

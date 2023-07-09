@@ -54,6 +54,11 @@ namespace Mono.Linker.Tests.TestCases
 			return TestNamesBySuiteName ();
 		}
 
+		public static IEnumerable<object[]> UnreachableBlock ()
+		{
+			return TestNamesBySuiteName ();
+		}
+
 		public static IEnumerable<object[]> Warnings ()
 		{
 			return TestNamesBySuiteName ();

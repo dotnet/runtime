@@ -19,7 +19,7 @@ namespace System.Net.Http.Headers
             get { return _unit; }
             set
             {
-                HeaderUtilities.CheckValidToken(value, nameof(value));
+                HeaderUtilities.CheckValidToken(value);
                 _unit = value;
             }
         }

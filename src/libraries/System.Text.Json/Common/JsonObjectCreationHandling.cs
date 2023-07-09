@@ -7,12 +7,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Determines how deserialization will handle object creation for fields or properties.
     /// </summary>
-#if BUILDING_SOURCE_GENERATOR
-    internal
-#else
-    public
-#endif
-    enum JsonObjectCreationHandling
+    public enum JsonObjectCreationHandling
     {
         /// <summary>
         /// A new instance will always be created when deserializing a field or property.

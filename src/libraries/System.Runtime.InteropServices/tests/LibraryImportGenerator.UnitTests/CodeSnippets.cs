@@ -426,7 +426,7 @@ namespace LibraryImportGenerator.UnitTests
                 static class Marshaller
                 {
                     public static nint ConvertToUnmanaged({{typeName}} s) => default;
-                
+
                     public static {{typeName}} ConvertToManaged(nint i) => default;
                 }
                 """;
@@ -501,6 +501,21 @@ namespace LibraryImportGenerator.UnitTests
             """;
 
         public static string ByValueParameterWithModifier<T>(string attributeName, string preDeclaration = "") => ByValueParameterWithModifier(typeof(T).ToString(), attributeName, preDeclaration);
+
+        /// <summary>
+        /// Declaration with one parameter with custom modifiers.
+        /// </summary>
+        public static string SingleParameterWithModifier(string typeName, string modifiers, string preDeclaration = "") => $$"""
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+            {{preDeclaration}}
+            partial class Test
+            {
+                [LibraryImport("DoesNotExist")]
+                public static partial void Method(
+                    {{modifiers}} {{typeName}} {|#0:p|});
+            }
+            """;
 
         /// <summary>
         /// Declaration with by-value parameter with custom name.
@@ -754,10 +769,18 @@ namespace LibraryImportGenerator.UnitTests
             class MySafeHandle : SafeHandle
             {
                 {{(privateCtor ? "private" : "public")}} MySafeHandle() : base(System.IntPtr.Zero, true) { }
-            
+
                 public override bool IsInvalid => handle == System.IntPtr.Zero;
-            
+
                 protected override bool ReleaseHandle() => true;
+            }
+            """;
+
+        public static string GeneratedComInterface => BasicParametersAndModifiers("MyInterfaceType", "using System.Runtime.InteropServices.Marshalling;") + """
+            [GeneratedComInterface]
+            interface MyInterfaceType
+            {
+                void Method();
             }
             """;
 

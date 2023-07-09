@@ -48,26 +48,24 @@ private:
     pid_t m_pid;                                    // pid
     pid_t m_ppid;                                   // parent pid
     pid_t m_tgid;                                   // process group
-    HMODULE m_hdac;                                 // dac module handle when loaded
+    void* m_dacModule;                              // dac module pointer when loaded
     ICLRDataEnumMemoryRegions* m_pClrDataEnumRegions; // dac enumerate memory interface instance
     IXCLRDataProcess* m_pClrDataProcess;            // dac process interface instance
+    AppModelType m_appModel;                        // Normal, single-file or native AOT app.
     bool m_gatherFrames;                            // if true, add the native and managed stack frames to the thread info
     pid_t m_crashThread;                            // crashing thread id or 0 if none
     uint32_t m_signal;                              // crash signal code or 0 if none
     std::string m_name;                             // exe name
+    siginfo_t m_siginfo;                            // signal info (if any)
+    std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
+    uint64_t m_runtimeBaseAddress;                  // base address of the runtime module
 #ifdef __APPLE__
     vm_map_t m_task;                                // the mach task for the process
+    std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
 #else
-    siginfo_t m_siginfo;                            // signal info (if any)
     bool m_canUseProcVmReadSyscall;
     int m_fdMem;                                    // /proc/<pid>/mem handle
     int m_fdPagemap;                                // /proc/<pid>/pagemap handle
-#endif
-    std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
-    uint64_t m_runtimeBaseAddress;
-#ifdef __APPLE__
-    std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
-#else
     std::array<elf_aux_val_t, AT_MAX> m_auxvValues; // auxv values
     std::vector<elf_aux_entry> m_auxvEntries;       // full auxv entries
 #endif
@@ -95,9 +93,9 @@ public:
     bool Initialize();
     void CleanupAndResumeProcess();
     bool EnumerateAndSuspendThreads();
-    bool GatherCrashInfo(MINIDUMP_TYPE minidumpType);
+    bool GatherCrashInfo(DumpType dumpType);
     void CombineMemoryRegions();
-    bool EnumerateMemoryRegionsWithDAC(MINIDUMP_TYPE minidumpType);
+    bool EnumerateMemoryRegionsWithDAC(DumpType dumpType);
     bool ReadMemory(void* address, void* buffer, size_t size);                          // read memory and add to dump
     bool ReadProcessMemory(void* address, void* buffer, size_t size, size_t* read);     // read raw memory
     uint64_t GetBaseAddressFromAddress(uint64_t address);
@@ -125,10 +123,10 @@ public:
     inline const std::set<MemoryRegion>& ModuleMappings() const { return m_moduleMappings; }
     inline const std::set<MemoryRegion>& OtherMappings() const { return m_otherMappings; }
     inline const std::set<MemoryRegion>& MemoryRegions() const { return m_memoryRegions; }
+    inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #ifndef __APPLE__
     inline const std::vector<elf_aux_entry>& AuxvEntries() const { return m_auxvEntries; }
     inline size_t GetAuxvSize() const { return m_auxvEntries.size() * sizeof(elf_aux_entry); }
-    inline const siginfo_t* SigInfo() const { return &m_siginfo; }
 #endif
 
     // IUnknown
@@ -156,7 +154,7 @@ private:
     void VisitProgramHeader(uint64_t loadbias, uint64_t baseAddress, ElfW(Phdr)* phdr);
     bool EnumerateMemoryRegions();
 #endif
-    bool InitializeDAC();
+    bool InitializeDAC(DumpType dumpType);
     bool EnumerateManagedModules();
     bool UnwindAllThreads();
     void AddOrReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& pszName);

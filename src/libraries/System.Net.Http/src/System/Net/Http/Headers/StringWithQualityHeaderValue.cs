@@ -20,7 +20,7 @@ namespace System.Net.Http.Headers
 
         public StringWithQualityHeaderValue(string value)
         {
-            HeaderUtilities.CheckValidToken(value, nameof(value));
+            HeaderUtilities.CheckValidToken(value);
 
             _value = value;
             _quality = NotSetSentinel;
@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
 
         public StringWithQualityHeaderValue(string value, double quality)
         {
-            HeaderUtilities.CheckValidToken(value, nameof(value));
+            HeaderUtilities.CheckValidToken(value);
 
             ArgumentOutOfRangeException.ThrowIfNegative(quality);
             ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, 1.0);

@@ -148,7 +148,7 @@ namespace System.Globalization.Tests
         private int[] ConvertWin32GroupString(string win32Str)
         {
             // None of these cases make any sense
-            if (win32Str == null || win32Str.Length == 0)
+            if (string.IsNullOrEmpty(win32Str))
             {
                 return (new int[] { 3 });
             }

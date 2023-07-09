@@ -466,7 +466,7 @@ namespace System
             // We continue to support these but expect them to be incredibly rare.  As such, we
             // optimize for correctly formed strings where all the digits are valid hex, and only
             // fall back to supporting these other forms if parsing fails.
-            if (guidString.IndexOfAny('X', 'x', '+') >= 0 && TryCompatParsing(guidString, ref result))
+            if (guidString.ContainsAny('X', 'x', '+') && TryCompatParsing(guidString, ref result))
             {
                 return true;
             }
@@ -727,27 +727,17 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
+        private static byte DecodeByte(char ch1, char ch2, ref int invalidIfNegative)
         {
-            // TODO https://github.com/dotnet/runtime/issues/13464:
-            // Replace the Unsafe.Add with HexConverter.FromChar once the bounds checks are eliminated.
-
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
+            Debug.Assert(lookup.Length == 256);
 
-            int h1 = -1;
-            if (ch1 < (nuint)lookup.Length)
-            {
-                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch1);
-            }
-            h1 <<= 4;
+            int upper = (sbyte)lookup[(byte)ch1];
+            int lower = (sbyte)lookup[(byte)ch2];
+            int result = (upper << 4) | lower;
 
-            int h2 = -1;
-            if (ch2 < (nuint)lookup.Length)
-            {
-                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch2);
-            }
-
-            int result = h1 | h2;
+            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
+            result = (ch1 | ch2) >> 8 == 0 ? result : -1;
             invalidIfNegative |= result;
             return (byte)result;
         }
@@ -849,7 +839,7 @@ namespace System
             var g = new byte[16];
             if (BitConverter.IsLittleEndian)
             {
-                MemoryMarshal.TryWrite<Guid>(g, ref Unsafe.AsRef(in this));
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
             }
             else
             {
@@ -1381,6 +1371,8 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(Ssse3))]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static (Vector128<byte>, Vector128<byte>, Vector128<byte>) FormatGuidVector128Utf8(Guid value, bool useDashes)
         {
             Debug.Assert((Ssse3.IsSupported || AdvSimd.Arm64.IsSupported) && BitConverter.IsLittleEndian);
@@ -1403,7 +1395,7 @@ namespace System
 
             if (useDashes)
             {
-                // We divide 16 bytes into 3 x Vector128<byte>:
+                // We divide 32 bytes into 3 x Vector128<byte>:
                 //
                 // ________-____-____-____-____________
                 // xxxxxxxxxxxxxxxx
@@ -1419,14 +1411,28 @@ namespace System
                     Vector128.Create(0x7060504FF030201, 0xF0E0D0C0B0A0908).AsByte());
 
                 // Vector "z" - we need to merge some elements of hexLow with hexHigh and add 4 dashes.
-                Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
-                    Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
-                Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
-                    Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
-                Vector128<byte> dashesMask = Vector128.Shuffle(Vector128.CreateScalarUnsafe((byte)'-'),
-                    Vector128.Create(0xFFFF00FFFFFFFF00, 0x00FFFFFFFF00FFFF).AsByte());
+                Vector128<byte> vecZ;
+                Vector128<byte> dashesMask = Vector128.Create(0x00002D000000002D, 0x2D000000002D0000).AsByte();
+                if (AdvSimd.Arm64.IsSupported)
+                {
+                    // Arm64 allows shuffling values using a 32-byte wide look-up table consisting of two 128-bit registers.
+                    // Each byte in the second arg represents a value between 0 to 31 that acts as an index in the look-up table.
+                    // Now we can create a "z" vector by selecting 12 values starting from the 9th element (index 0x08) and
+                    // leaving gaps for dashes. Thus, the wider look-up table allows combining two shuffles, as used in the
+                    // generic else-case, into a single instruction on Arm64.
+                    Vector128<byte> mid = AdvSimd.Arm64.VectorTableLookup((hexLow, hexHigh),
+                        Vector128.Create(0x0D0CFF0B0A0908FF, 0xFF13121110FF0F0E).AsByte());
+                    vecZ = (mid | dashesMask);
+                }
+                else
+                {
+                    Vector128<byte> mid1 = Vector128.Shuffle(hexLow,
+                        Vector128.Create(0x0D0CFF0B0A0908FF, 0xFFFFFFFFFFFF0F0E).AsByte());
+                    Vector128<byte> mid2 = Vector128.Shuffle(hexHigh,
+                        Vector128.Create(0xFFFFFFFFFFFFFFFF, 0xFF03020100FFFFFF).AsByte());
+                    vecZ = (mid1 | mid2 | dashesMask);
+                }
 
-                Vector128<byte> vecZ = (mid1 | mid2 | dashesMask);
                 return (vecX, vecY, vecZ);
             }
 

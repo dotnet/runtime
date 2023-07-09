@@ -100,6 +100,7 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
         private static readonly MethodInfo s_memoryMarshalGetArrayDataReferenceSearchValues = typeof(MemoryMarshal).GetMethod("GetArrayDataReference", new Type[] { Type.MakeGenericMethodParameter(0).MakeArrayType() })!.MakeGenericMethod(typeof(SearchValues<char>))!;
+        private static readonly MethodInfo s_unsafeAs = typeof(Unsafe).GetMethod("As", new Type[] { typeof(object) })!;
         // Note:
         // Single-range helpers like IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
         // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
@@ -6117,16 +6118,21 @@ namespace System.Text.RegularExpressions
             // Logically do _searchValues[index], but avoid the bounds check on accessing the array,
             // and cast to the known derived sealed type to enable devirtualization.
 
-            // DerivedSearchValues d = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._searchValues), index);
+            // DerivedSearchValues d = Unsafe.As<DerivedSearchValues>(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(this._searchValues), index));
             // ... = d;
             Ldthisfld(s_searchValuesArrayField);
             Call(s_memoryMarshalGetArrayDataReferenceSearchValues);
             Ldc(index * IntPtr.Size);
             Add();
             _ilg!.Emit(OpCodes.Ldind_Ref);
-            LocalBuilder ioavLocal = _ilg!.DeclareLocal(list[index].GetType());
-            Stloc(ioavLocal);
-            Ldloc(ioavLocal);
+            Call(MakeUnsafeAs(list[index].GetType())); // provide JIT with details necessary to devirtualize calls on this instance
+
+            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2060:MakeGenericMethod", Justification =
+                "Calling Unsafe.As<T> is safe since the T doesn't have trimming annotations.")]
+            static MethodInfo MakeUnsafeAs(Type type)
+            {
+                return s_unsafeAs.MakeGenericMethod(type);
+            }
         }
     }
 }

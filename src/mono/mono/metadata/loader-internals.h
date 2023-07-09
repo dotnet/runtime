@@ -52,11 +52,12 @@ struct _MonoDllMap {
 #endif
 
 typedef struct {
+	GHashTable *delegate_invoke_cache;
+	GHashTable *delegate_invoke_virtual_cache;
 	/*
 	 * indexed by MonoMethodSignature
 	 * Protected by the marshal lock
 	 */
-	GHashTable *delegate_invoke_cache;
 	GHashTable *delegate_begin_invoke_cache;
 	GHashTable *delegate_end_invoke_cache;
 	GHashTable *runtime_invoke_signature_cache;
@@ -307,9 +308,6 @@ mono_alc_get_all_loaded_assemblies (void);
 
 GPtrArray*
 mono_alc_get_all (void);
-
-MONO_API void
-mono_loader_save_bundled_library (int fd, uint64_t offset, uint64_t size, const char *destfname);
 
 MonoMemoryManager *
 mono_mem_manager_new (MonoAssemblyLoadContext **alcs, int nalcs, gboolean collectible);

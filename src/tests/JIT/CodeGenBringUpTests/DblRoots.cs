@@ -5,20 +5,22 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_DblRoots
 {
     const int Pass = 100;
     const int Fail = -1;
 
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
-    public static void DblRoots(double a, double b, double c, ref double r1, ref double r2) 
+    internal static void DblRoots(double a, double b, double c, ref double r1, ref double r2) 
     { 
        r1 = (-b + Math.Sqrt(b*b - 4*a*c))/(2*a);
        r2 = (-b - Math.Sqrt(b*b - 4*a*c))/(2*a);
        return ; 
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         double x1 = 0;
         double x2 = 0;

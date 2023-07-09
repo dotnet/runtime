@@ -1350,7 +1350,7 @@ BOOL MethodTable::IsEquivalentTo_WorkerInner(MethodTable *pOtherMT COMMA_INDEBUG
     // Check if type is generic
     if (HasInstantiation())
     {
-        // Limit variance on generics only to interfaces
+        // Limit equivalence on generics only to interfaces
         if (!IsInterface() || !pOtherMT->IsInterface())
         {
             fEquivalent = FALSE;
@@ -1753,13 +1753,6 @@ MethodTable::IsExternallyVisible()
 
     return bIsVisible;
 } // MethodTable::IsExternallyVisible
-
-BOOL MethodTable::CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule)
-{
-    WRAPPER_NO_CONTRACT;
-
-    return pTargetMT->GetLoaderModule() == pCurrentLoaderModule;
-}
 
 BOOL MethodTable::IsAllGCPointers()
 {
@@ -3443,6 +3436,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                         size = STRUCT_FIRST_FIELD_SIZE_IS8;
                     }
                 }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
+                }
                 else if (pFieldStart[0].GetSize() == 8)
                 {
                     size = STRUCT_FIRST_FIELD_SIZE_IS8;
@@ -3533,6 +3531,11 @@ int MethodTable::GetLoongArch64PassStructInRegisterFlags(CORINFO_CLASS_HANDLE cl
                     {
                         size |= STRUCT_SECOND_FIELD_SIZE_IS8;
                     }
+                }
+                else if (fieldType == ELEMENT_TYPE_CLASS)
+                {
+                    size = STRUCT_NO_FLOAT_FIELD;
+                    goto _End_arg;
                 }
                 else if ((size & STRUCT_FLOAT_FIELD_FIRST) == 0)
                 {
@@ -5158,7 +5161,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
         , fHasEquivalentStructParameter(FALSE)
 #endif
-        , fDependsOnEquivalentOrForwardedStructs(FALSE)
     {
         LIMITED_METHOD_CONTRACT;
     }
@@ -5170,7 +5172,6 @@ struct DoFullyLoadLocals
 #ifdef FEATURE_TYPEEQUIVALENCE
     BOOL fHasEquivalentStructParameter;
 #endif
-    BOOL fDependsOnEquivalentOrForwardedStructs;
 };
 
 #if defined(FEATURE_TYPEEQUIVALENCE) && !defined(DACCESS_COMPILE)
@@ -5193,7 +5194,6 @@ static void CheckForEquivalenceAndFullyLoadType(Module *pModule, mdToken token, 
         CONSISTENCY_CHECK(!th.IsNull());
 
         th.DoFullyLoad(&pLocals->newVisited, pLocals->level, pLocals->pPending, &pLocals->fBailed, NULL);
-        pLocals->fDependsOnEquivalentOrForwardedStructs = TRUE;
         pLocals->fHasEquivalentStructParameter = TRUE;
     }
 }
@@ -5446,13 +5446,6 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
         }
     }
 #endif //FEATURE_TYPEEQUIVALENCE
-
-    if (locals.fDependsOnEquivalentOrForwardedStructs)
-    {
-        // if this type declares a method that has an equivalent or type forwarded structure as a parameter type,
-        // make sure we come here and pre-load these structure types in NGENed cases as well
-        SetDependsOnEquivalentOrForwardedStructs();
-    }
 
     // The rules for constraint cycles are same as rules for access checks
     if (fNeedAccessChecks)
@@ -7103,7 +7096,7 @@ void MethodTable::GetGuid(GUID *pGuid, BOOL bGenerateIfNotFound, BOOL bClassic /
             szName = GetFullyQualifiedNameForClassNestedAwareW(this);
             if (szName == NULL)
                 return;
-            cchName = wcslen(szName);
+            cchName = u16_strlen(szName);
 
             // Enlarge buffer for class name.
             cbCur = cchName * sizeof(WCHAR);
@@ -8702,24 +8695,9 @@ PCODE MethodTable::GetRestoredSlot(DWORD slotNumber)
     // Keep in sync with code:MethodTable::GetRestoredSlotMT
     //
 
-    MethodTable * pMT = this;
-    while (true)
-    {
-        pMT = pMT->GetCanonicalMethodTable();
-
-        _ASSERTE(pMT != NULL);
-
-        PCODE slot = pMT->GetSlot(slotNumber);
-
-        if (slot != NULL)
-        {
-            return slot;
-        }
-
-        // This is inherited slot that has not been fixed up yet. Find
-        // the value by walking up the inheritance chain
-        pMT = pMT->GetParentMethodTable();
-    }
+    PCODE slot = GetCanonicalMethodTable()->GetSlot(slotNumber);
+    _ASSERTE(slot != NULL);
+    return slot;
 }
 
 //==========================================================================================
@@ -8736,24 +8714,7 @@ MethodTable * MethodTable::GetRestoredSlotMT(DWORD slotNumber)
     // Keep in sync with code:MethodTable::GetRestoredSlot
     //
 
-    MethodTable * pMT = this;
-    while (true)
-    {
-        pMT = pMT->GetCanonicalMethodTable();
-
-        _ASSERTE(pMT != NULL);
-
-        PCODE slot = pMT->GetSlot(slotNumber);
-
-        if (slot != NULL)
-        {
-            return pMT;
-        }
-
-        // This is inherited slot that has not been fixed up yet. Find
-        // the value by walking up the inheritance chain
-        pMT = pMT->GetParentMethodTable();
-    }
+    return GetCanonicalMethodTable();
 }
 
 //==========================================================================================

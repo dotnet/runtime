@@ -4451,11 +4451,9 @@ user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 {
 	UserBreakCbData *data = (UserBreakCbData*)user_data;
 
-	if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED || frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
-		data->found = TRUE;
-		return TRUE;
-	}
-	if (frame->managed) {
+	if (frame->managed ||
+			frame->type == FRAME_TYPE_INTERP_TO_MANAGED ||
+			frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
 		data->found = TRUE;
 		*data->ctx = *ctx;
 
@@ -8847,6 +8845,7 @@ set_value:
 	case MDBGPROT_CMD_TYPE_ELEMENT_TYPE: 
 	{
 		buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
+		buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass)));
 		break;
 	}
 	case MDBGPROT_CMD_TYPE_RANK: 

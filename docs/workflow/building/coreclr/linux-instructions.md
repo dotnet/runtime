@@ -30,7 +30,11 @@ Please note that choosing the same image as the host OS you are running on will 
 Once you have chosen an image, the build is one command run from the root of the runtime repository:
 
 ```bash
-docker run --rm -v <RUNTIME_REPO_PATH>:/runtime -w /runtime mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2 ./build.sh --subset clr
+docker run --rm \
+  -v <RUNTIME_REPO_PATH>:/runtime \
+  -w /runtime \
+  mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-22.04 \
+  ./build.sh --subset clr
 ```
 
 Dissecting the command:
@@ -42,21 +46,27 @@ Dissecting the command:
 * `./build.sh`: Command to be run in the container: run the root build command.
 * `-subset clr`: Build the clr subset (excluding libraries and installers).
 
-To do cross-building for ARM32 or ARM64 using Docker, you need to use either specific images designated for this purpose, or configure your own. Detailed information on this can be found in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#cross-building-using-docker).
+To do cross-building using Docker, you need to use either specific images designated for this purpose, or configure your own. Detailed information on this can be found in the [cross-building doc](/docs/workflow/building/coreclr/cross-building.md#cross-building-using-docker). Note that the official build images are all cross-build images, even when targeting the same architecture as the host image. This is because they target versions of glibc or musl libc that are included in the cross-build rootfs, and not the host OS.
 
 ### Docker Images
 
-This table of images might often become stale as we change our images as our requirements change. The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build.
+This table of images might often become stale as we change our images as our requirements change. The images used for our official builds can be found in [the pipeline resources](/eng/pipelines/common/templates/pipeline-with-resources.yml) of our Azure DevOps builds under the `container` key of the platform you plan to build. These image tags don't include version numbers, and our build infrastructure will automatically use the latest version of the image. You can ensure you are using the latest version by using `docker pull`, for example:
 
-| OS                                | Target Arch     | Image location                                                                                       | crossrootfs location | Clang Version |
-| --------------------------------- | --------------- | ---------------------------------------------------------------------------------------------------- | -------------------- | ------------- |
-| Alpine                            | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:alpine-3.13-WithNode-20210910135845-c401c85`            | -                    | -clang5.0     |
-| CentOS 7 (build for RHEL 7)       | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-20210714125435-9b5bbc2`                        | -                    | -clang9       |
-| Ubuntu 18.04 (x64, arm ROOTFS)    | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-20220426130400-6e40d49`              | `/crossrootfs/arm`   | -clang9       |
-| Ubuntu 18.04  (x64, arm64 ROOTFS) | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-arm64-20220427171722-6e40d49`        | `/crossrootfs/arm64` | -clang9       |
-| Alpine (x64, arm ROOTFS)          | arm             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm-alpine-20210923140502-78f7860`   | `/crossrootfs/arm64` | -clang9       |
-| Alpine (x64, arm64 ROOTFS)        | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-16.04-cross-arm64-alpine-20210923140502-78f7860` | `/crossrootfs/arm64` | -clang9       |
-| FreeBSD (x64 ROOTFS)              | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12-20210917001307-f13d79e`   | `/crossrootfs/x64`   | (default)     |
+```
+docker pull mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64
+```
+
+All official builds are cross-builds with a rootfs for the target OS, and will use the clang version available on the container.
+
+| Host OS               | Target OS    | Target Arch     | Image location                                                                   | crossrootfs location |
+| --------------------- | ------------ | --------------- | -------------------------------------------------------------------------------- | -------------------- |
+| CBL-mariner 2.0 (x64) | Alpine 3.13  | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64-alpine` | `/crossrootfs/x64`   |
+| CBL-mariner 2.0 (x64) | Ubuntu 16.04 | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-amd64`        | `/crossrootfs/x64`   |
+| CBL-mariner 2.0 (x64) | Alpine       | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm-alpine`   | `/crossrootfs/arm`   |
+| CBL-mariner 2.0 (x64) | Ubuntu 16.04 | arm32 (armhf)   | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm`          | `/crossrootfs/arm`   |
+| CBL-mariner 2.0 (x64) | Alpine       | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64-alpine` | `/crossrootfs/arm64` |
+| CBL-mariner 2.0 (x64) | Ubuntu 16.04 | arm64 (arm64v8) | `mcr.microsoft.com/dotnet-buildtools/prereqs:cbl-mariner-2.0-cross-arm64`        | `/crossrootfs/arm64` |
+| Ubuntu 18.04 (x64)    | FreeBSD      | x64             | `mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-cross-freebsd-12`      | `/crossrootfs/x64`   |
 
 These Docker images are built using the Dockerfiles maintained in the [dotnet-buildtools-prereqs-docker repo](https://github.com/dotnet/dotnet-buildtools-prereqs-docker).
 

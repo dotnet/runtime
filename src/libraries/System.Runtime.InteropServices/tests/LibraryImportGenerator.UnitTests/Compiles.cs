@@ -20,6 +20,7 @@ using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
+using GeneratorDiagnostics = Microsoft.Interop.GeneratorDiagnostics;
 
 namespace LibraryImportGenerator.UnitTests
 {
@@ -56,6 +57,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<double>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+
+            // Parameter / return types for specially considered "strictly blittable" types.
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CLong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<CULong>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<NFloat>() };
+            yield return new[] { ID(), CodeSnippets.BasicParametersAndModifiers<Guid>() };
 
             // Arrays
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParametersAndModifiers<byte>() };
@@ -124,10 +131,19 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.LPStr) };
             yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.BStr) };
+            yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<object>(UnmanagedType.Interface) };
+            // TODO: Do we want to limit support of UnmanagedType.Interface to a subset of types?
+            // TODO: Should we block delegate types as they use to have special COM interface marshalling that we have since
+            // blocked? Blocking it would help .NET Framework->.NET migration as there wouldn't be a silent behavior change.
+            yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<string>(UnmanagedType.Interface) };
+            yield return new[] { ID(), CodeSnippets.MarshalAsParametersAndModifiers<Action>(UnmanagedType.Interface) };
+
+            // MarshalAs with array element UnmanagedType
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPWStr) };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPUTF8Str) };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.LPStr) };
             yield return new[] { ID(), CodeSnippets.MarshalAsArrayParameterWithNestedMarshalInfo<string>(UnmanagedType.BStr) };
+
 
             // [In, Out] attributes
             // By value non-blittable array
@@ -236,6 +252,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<IntPtr>() };
             yield return new[] { ID(), CodeSnippets.MaybeBlittableGenericTypeParametersAndModifiers<UIntPtr>() };
             yield return new[] { ID(), CodeSnippets.GenericsStress };
+
+            // Type-level interop generator trigger attributes
+            yield return new[] { ID(), CodeSnippets.GeneratedComInterface };
+
+            // Parameter modifiers
+            yield return new[] { ID(), CodeSnippets.SingleParameterWithModifier("int", "scoped ref") };
         }
 
         public static IEnumerable<object[]> CustomCollections()
@@ -723,6 +745,35 @@ namespace LibraryImportGenerator.UnitTests
                 Assert.Same(originalCompilation, newCompilation);
                 return (newCompilation, diagnostics);
             }
+        }
+
+        public static IEnumerable<object[]> ByValueMarshalKindSnippets()
+        {
+            // Blittable array
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:Out|}"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(10)
+                    .WithArguments("[In] and [Out] attributes", "p")
+            } };
+
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("{|#10:In|}, {|#11:Out|}"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(10)
+                    .WithLocation(11)
+                    .WithArguments("[In] and [Out] attributes", "p")
+            } };
+        }
+
+        [MemberData(nameof(ByValueMarshalKindSnippets))]
+        [Theory]
+        public async Task ValidateDiagnosticsForUnnecessaryByValueMarshalKindAttributes(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+            await VerifyCS.VerifySourceGeneratorAsync(source, diagnostics);
         }
     }
 }

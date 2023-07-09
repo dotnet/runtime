@@ -14,7 +14,7 @@
 #include <mono/metadata/tabledefs.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-error-internals.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/unlocked.h>
@@ -1150,6 +1150,7 @@ mono_delegate_trampoline (host_mgreg_t *regs, guint8 *code, gpointer *arg, guint
 gconstpointer
 mono_get_trampoline_func (MonoTrampolineType tramp_type)
 {
+#ifndef HOST_WASM
 	switch (tramp_type) {
 	case MONO_TRAMPOLINE_JIT:
 	case MONO_TRAMPOLINE_JUMP:
@@ -1170,6 +1171,9 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 		g_assert_not_reached ();
 		return NULL;
 	}
+#else
+	return NULL;
+#endif
 }
 
 static guchar*
