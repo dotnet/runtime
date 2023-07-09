@@ -685,22 +685,23 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    //[ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
-    //public class HttpMetricsTest_Http30 : HttpMetricsTest
-    //{
-    //    protected override Version UseVersion => HttpVersion.Version30;
-    //    public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
-    //    {
-    //    }
-    //}
+    [Collection(nameof(DisableParallelization))]
+    [ConditionalClass(typeof(HttpClientHandlerTestBase), nameof(IsQuicSupported))]
+    public class HttpMetricsTest_Http30 : HttpMetricsTest
+    {
+        protected override Version UseVersion => HttpVersion.Version30;
+        public HttpMetricsTest_Http30(ITestOutputHelper output) : base(output)
+        {
+        }
+    }
 
-    //public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
-    //{
-    //    protected override bool TestHttpMessageInvoker => true;
-    //    public HttpMetricsTest_Http30_HttpMessageInvoker(ITestOutputHelper output) : base(output)
-    //    {
-    //    }
-    //}
+    public class HttpMetricsTest_Http30_HttpMessageInvoker : HttpMetricsTest_Http30
+    {
+        protected override bool TestHttpMessageInvoker => true;
+        public HttpMetricsTest_Http30_HttpMessageInvoker(ITestOutputHelper output) : base(output)
+        {
+        }
+    }
 
     // Make sure the instruments are working with the default Meter.
     [Collection(nameof(DisableParallelization))]
