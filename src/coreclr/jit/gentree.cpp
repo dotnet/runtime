@@ -8218,13 +8218,8 @@ GenTreeIndir* Compiler::gtNewIndir(var_types typ, GenTree* addr, GenTreeFlags in
     {
         GenTreeFlags handleKind = addr->GetIconHandleFlag();
 
-        if ((handleKind == GTF_ICON_STATIC_HDL) ||
-            (handleKind == GTF_ICON_BBC_PTR) ||
-            (handleKind == GTF_ICON_GLOBAL_PTR))
-        {
-            indirFlags |= GTF_GLOB_REF;
-        }
-        else
+        if ((handleKind != GTF_ICON_STATIC_HDL) && (handleKind != GTF_ICON_BBC_PTR) &&
+            (handleKind != GTF_ICON_GLOBAL_PTR))
         {
             indirFlags |= GTF_IND_INVARIANT;
         }
