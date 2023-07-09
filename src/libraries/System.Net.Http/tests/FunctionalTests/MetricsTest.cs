@@ -454,22 +454,24 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task RequestDuration_EnrichmentHandler_ContentLengthError_Recorded()
         {
-            if (TestHttpMessageInvoker)
-            {
-                // HttpMessageInvoker doesn't buffer content, skipping.
-                return;
-            }
-
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker(new EnrichmentHandler(Handler));
                 using InstrumentRecorder<double> recorder = SetupInstrumentRecorder<double>("http-client-request-duration");
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                if (TestHttpMessageInvoker)
                 {
                     using HttpResponseMessage response = await SendAsync(client, request);
-                });
+                }
+                else
+                {
+                    await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                    {
+                        using HttpResponseMessage response = await SendAsync(client, request);
+                    });
+                }
+                
                 Measurement<double> m = recorder.GetMeasurements().Single();
                 VerifyRequestDuration(m, uri, ExpectedProtocolString, 200); ;
                 Assert.Equal("before!", m.Tags.ToArray().Single(t => t.Key == "before").Value);
@@ -480,43 +482,8 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Browser)] // This scenario results in timeout with BrowserHttpHandler
-        public async Task FailedRequests_InvalidResponseStatusLine_Recorded()
-        {
-            if (TestHttpMessageInvoker)
-            {
-                // MessageInvoker doesn't buffer the response content, skipping.
-                return;
-            }
-            TimeSpan timeout = TimeSpan.FromSeconds(30);
-            await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
-            {
-                using HttpMessageInvoker client = CreateHttpMessageInvoker();
-                using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>("http-client-failed-requests");
-                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-
-                await Assert.ThrowsAsync<HttpRequestException>(async () =>
-                {
-                    using HttpResponseMessage response = await SendAsync(client, request);
-                }).WaitAsync(timeout);
-
-                Measurement<long> m = recorder.GetMeasurements().Single();
-                VerifyFailedRequests(m, 1, uri, null, null);
-            }, async server =>
-            {
-                var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(timeout);
-                await connection.Stream.WriteAsync(Encoding.ASCII.GetBytes("\n\n\n\n"));
-            });
-        }
-
-        [Fact]
         public async Task FailedRequests_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
-            if (TestHttpMessageInvoker)
-            {
-                // MessageInvoker doesn't buffer the response content, skipping.
-                return;
-            }
             TimeSpan timeout = TimeSpan.FromSeconds(30);
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
