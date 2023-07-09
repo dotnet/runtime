@@ -465,17 +465,11 @@ namespace System.Net.Http
             get => _settings._meterFactory;
             set
             {
-                ArgumentNullException.ThrowIfNull(value);
-                if (value.Name != "System.Net.Http")
-                {
-                    throw new ArgumentException("Meter name must be 'System.Net.Http'.");
-                }
-
                 CheckDisposedOrStarted();
                 _settings._meterFactory = value;
             }
         }
-        
+
         internal ClientCertificateOption ClientCertificateOptions
         {
             get => _settings._clientCertificateOptions;
