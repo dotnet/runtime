@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { createPromiseController } from "./globals";
+import { createPromiseController, mono_assert } from "./globals";
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";

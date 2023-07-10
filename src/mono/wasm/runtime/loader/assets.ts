@@ -3,7 +3,7 @@
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
 import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
 
@@ -184,6 +184,7 @@ export async function mono_download_assets(): Promise<void> {
         }).catch(e => {
             loaderHelpers.err("Error in mono_download_assets: " + e);
             loaderHelpers.abort_startup(e, true);
+            throw e;
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)

@@ -40,6 +40,7 @@ export async function mono_run_main(main_assembly_name: string, args: string[]):
 }
 
 export function find_entry_point(assembly: string) {
+    loaderHelpers.assert_runtime_running();
     assert_bindings();
     const asm = assembly_load(assembly);
     if (!asm)

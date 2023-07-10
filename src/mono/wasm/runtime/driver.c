@@ -249,6 +249,8 @@ mono_wasm_add_satellite_assembly (const char *name, const char *culture, const u
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_setenv (const char *name, const char *value)
 {
+	assert (name);
+	assert (value);
 	monoeg_g_setenv (strdup (name), strdup (value), 1);
 }
 
@@ -1185,6 +1187,12 @@ mono_wasm_exit (int exit_code)
 {
 	mono_jit_cleanup (root_domain);
 	exit (exit_code);
+}
+
+EMSCRIPTEN_KEEPALIVE int
+mono_wasm_abort ()
+{
+	abort ();
 }
 
 EMSCRIPTEN_KEEPALIVE void

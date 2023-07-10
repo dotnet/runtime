@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { Module, runtimeHelpers } from "../../globals";
+import { Module, mono_assert, runtimeHelpers } from "../../globals";
 import { MonoConfig } from "../../types";
 import { pthreadPtr } from "./types";
 import { mono_log_debug } from "../../logging";
@@ -136,13 +136,11 @@ export function isMonoWorkerMessagePreload<TPort>(message: MonoWorkerMessage<TPo
     return false;
 }
 
-let worker_js_synchronization_context_installed = false;
-
 export function mono_wasm_install_js_worker_interop(install_js_synchronization_context: number): void {
     if (!MonoWasmThreads) return;
     bindings_init();
-    if (install_js_synchronization_context && !worker_js_synchronization_context_installed) {
-        worker_js_synchronization_context_installed = true;
+    if (install_js_synchronization_context && !runtimeHelpers.jsSynchronizationContextInstalled) {
+        runtimeHelpers.jsSynchronizationContextInstalled = true;
         mono_log_debug("Installed JSSynchronizationContext");
     }
     if (install_js_synchronization_context) {
@@ -155,21 +153,21 @@ export function mono_wasm_install_js_worker_interop(install_js_synchronization_c
 export function mono_wasm_uninstall_js_worker_interop(uninstall_js_synchronization_context: number): void {
     if (!MonoWasmThreads) return;
     mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "JS interop is not installed on this worker.");
-    mono_assert(!uninstall_js_synchronization_context || worker_js_synchronization_context_installed, "JSSynchronizationContext is not installed on this worker.");
+    mono_assert(!uninstall_js_synchronization_context || runtimeHelpers.jsSynchronizationContextInstalled, "JSSynchronizationContext is not installed on this worker.");
 
     forceDisposeProxies(false);
     if (uninstall_js_synchronization_context) {
         Module.runtimeKeepalivePop();
     }
 
-    worker_js_synchronization_context_installed = false;
+    runtimeHelpers.jsSynchronizationContextInstalled = false;
     runtimeHelpers.mono_wasm_bindings_is_ready = false;
     set_thread_info(pthread_self ? pthread_self.pthreadId : 0, true, false, false);
 }
 
 export function assert_synchronization_context(): void {
     if (MonoWasmThreads) {
-        mono_assert(worker_js_synchronization_context_installed, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
+        mono_assert(runtimeHelpers.jsSynchronizationContextInstalled, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     }
 }
 

@@ -277,7 +277,7 @@ namespace Sample
                 Console.WriteLine($"smoke: FetchBackground 2 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var x = JSHost.ImportAsync(fetchhelper, "../fetchhelper.js");
                 Console.WriteLine($"smoke: FetchBackground 3A ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
-                // using var import = await x.ConfigureAwait(false);
+                using var import = await x;
                 Console.WriteLine($"smoke: FetchBackground 3B ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");
                 var r = await GlobalThisFetch(url);
                 Console.WriteLine($"smoke: FetchBackground 4 ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}, SynchronizationContext: {SynchronizationContext.Current?.GetType().FullName ?? "null"}");

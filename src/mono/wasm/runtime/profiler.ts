@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_WEB, linkerEnableAotProfiler, linkerEnableBrowserProfiler, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, linkerEnableAotProfiler, linkerEnableBrowserProfiler, mono_assert, runtimeHelpers } from "./globals";
 import { MonoMethod, AOTProfilerOptions, BrowserProfilerOptions } from "./types/internal";
 import { profiler_c_functions as cwraps } from "./cwraps";
 import { utf8ToString } from "./strings";

@@ -109,7 +109,7 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
 
 export function assert_not_disposed(result: any): GCHandle {
     const gc_handle = result[js_owned_gc_handle_symbol];
-    mono_assert(gc_handle != GCHandleNull, "ObjectDisposedException");
+    mono_check(gc_handle != GCHandleNull, "ObjectDisposedException");
     return gc_handle;
 }
 

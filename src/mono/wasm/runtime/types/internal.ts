@@ -72,6 +72,7 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
+    assertAfterExit?: boolean
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
@@ -118,7 +119,10 @@ export type LoaderHelpers = {
     wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
     runtimeModuleLoaded: PromiseAndController<void>,
 
-    abort_startup: (reason: any, should_exit: boolean) => void,
+    is_exited: () => boolean,
+    is_runtime_running: () => boolean,
+    assert_runtime_running: () => void,
+    abort_startup: (reason: any, should_exit: boolean, should_throw?: boolean) => void,
     mono_exit: (exit_code: number, reason?: any) => void,
     createPromiseController: <T>(afterResolve?: () => void, afterReject?: () => void) => PromiseAndController<T>,
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
@@ -154,12 +158,15 @@ export type RuntimeHelpers = {
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
+    mono_wasm_exit?: (code: number) => void,
+    mono_wasm_abort?: () => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
     runtimeModuleUrl: string

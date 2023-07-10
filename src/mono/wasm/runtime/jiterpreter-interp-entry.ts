@@ -3,7 +3,7 @@
 
 import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./globals";
+import { Module, mono_assert } from "./globals";
 import {
     setI32, getU32_unaligned, _zero_region
 } from "./memory";

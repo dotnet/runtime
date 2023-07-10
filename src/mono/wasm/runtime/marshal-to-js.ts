@@ -3,7 +3,7 @@
 
 import cwraps from "./cwraps";
 import { _lookup_js_owned_object, mono_wasm_get_jsobj_from_js_handle, mono_wasm_get_js_handle, setup_managed_proxy } from "./gc-handles";
-import { Module, createPromiseController, loaderHelpers, runtimeHelpers } from "./globals";
+import { Module, createPromiseController, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import {
     ManagedObject, ManagedError,
     get_arg_gc_handle, get_arg_js_handle, get_arg_type, get_arg_i32, get_arg_f64, get_arg_i52, get_arg_i16, get_arg_u8, get_arg_f32,

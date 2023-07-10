@@ -63,6 +63,9 @@ declare interface EmscriptenModule {
     onAbort?: {
         (error: any): void;
     };
+    onExit?: {
+        (code: number): void;
+    };
 }
 type InstantiateWasmSuccessCallback = (instance: WebAssembly.Instance, module: WebAssembly.Module | undefined) => void;
 type InstantiateWasmCallBack = (imports: WebAssembly.Imports, successCallback: InstantiateWasmSuccessCallback) => any;

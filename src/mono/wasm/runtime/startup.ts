@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
 
 import { DotnetModuleInternal, CharPtrNull } from "./types/internal";
-import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers } from "./globals";
+import { linkerDisableLegacyJsInterop, ENVIRONMENT_IS_PTHREAD, exportedRuntimeAPI, INTERNAL, loaderHelpers, Module, runtimeHelpers, createPromiseController, mono_assert } from "./globals";
 import cwraps, { init_c_exports } from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { toBase64StringImpl } from "./base64";
@@ -97,8 +97,14 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = (error) => {
-            loaderHelpers.abort_startup(error, false);
-            loaderHelpers.mono_exit(1, error);
+            const is_exited = loaderHelpers.is_exited();
+            if (!runtimeHelpers.runtimeReady) loaderHelpers.abort_startup(error, is_exited, false);
+        };
+    }
+    if (!module.onExit) {
+        module.onExit = (code) => {
+            if (!runtimeHelpers.runtimeReady) loaderHelpers.abort_startup("exit " + code, false, false);
+            if (!loaderHelpers.is_exited()) loaderHelpers.mono_exit(code, null);
         };
     }
 }
@@ -197,6 +203,7 @@ async function preInitWorkerAsync() {
 
 export function preRunWorker() {
     // signal next stage
+    runtimeHelpers.runtimeReady = true;
     runtimeHelpers.afterPreRun.promise_control.resolve();
 }
 
@@ -247,7 +254,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
                 : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
             reason.silent = true;
 
-            loaderHelpers.abort_startup(reason, false);
+            loaderHelpers.abort_startup(reason, false, true);
             return;
         }
 
@@ -258,6 +265,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         bindings_init();
         if (MonoWasmThreads) {
             runtimeHelpers.javaScriptExports.install_synchronization_context();
+            runtimeHelpers.jsSynchronizationContextInstalled = true;
         }
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
@@ -312,6 +320,12 @@ async function postRunAsync(userpostRun: (() => void)[]) {
     runtimeHelpers.afterPostRun.promise_control.resolve();
 }
 
+export function postRunWorker() {
+    // signal next stage
+    runtimeHelpers.runtimeReady = false;
+    runtimeHelpers.afterPreRun = createPromiseController<void>();
+}
+
 async function mono_wasm_init_threads() {
     if (!MonoWasmThreads) {
         return;
@@ -329,6 +343,8 @@ function mono_wasm_pre_init_essential(isWorker: boolean): void {
     mono_log_debug("mono_wasm_pre_init_essential");
 
     init_c_exports();
+    runtimeHelpers.mono_wasm_exit = cwraps.mono_wasm_exit;
+    runtimeHelpers.mono_wasm_abort = cwraps.mono_wasm_abort;
     cwraps_internal(INTERNAL);
     if (WasmEnableLegacyJsInterop && !linkerDisableLegacyJsInterop) {
         cwraps_mono_api(MONO);
@@ -571,6 +587,7 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
     } catch (err: any) {
         _print_error("mono_wasm_load_runtime () failed", err);
         loaderHelpers.abort_startup(err, false);
+        throw err;
     }
 }
 

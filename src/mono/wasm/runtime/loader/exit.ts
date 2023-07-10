@@ -1,10 +1,38 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, runtimeHelpers } from "./globals";
-import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix } from "./logging";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
+import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
 
-export function abort_startup(reason: any, should_exit: boolean): void {
+
+let ABORT = false;
+let EXIT = false;
+let EXIT_CODE: number | undefined = undefined;
+
+export function is_exited() {
+    return EXIT;
+}
+
+export function is_runtime_running() {
+    return runtimeHelpers.runtimeReady && !EXIT && !ABORT;
+}
+
+
+export function assert_runtime_running() {
+    mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
+    mono_assert(!ABORT, "startup of the mono runtime was aborted");
+
+    const assertAfterExit = !ENVIRONMENT_IS_WEB || // always assert on shell and node
+        (loaderHelpers.config && loaderHelpers.config.assertAfterExit); // assert on web when enabled
+
+    mono_assert(assertAfterExit || typeof EXIT_CODE == "undefined", () => `mono runtime already exited with ${EXIT_CODE}`);
+}
+
+export function abort_startup(reason: any, should_exit: boolean, should_throw?: boolean): void {
+    if (ABORT) return;
+    ABORT = true;
+    EXIT_CODE = 1;
+
     mono_log_debug("abort_startup");
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
@@ -25,11 +53,21 @@ export function abort_startup(reason: any, should_exit: boolean): void {
         if (should_exit || ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
             mono_exit(1, reason);
         }
-        throw reason;
+        if (should_throw) {
+            throw reason;
+        }
     }
 }
 
+// this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
+    if (EXIT) {
+        mono_log_warn("mono_exit called more than once", new Error().stack);
+        return;
+    }
+    EXIT = true;
+    EXIT_CODE = exit_code;
+
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
         (async () => {
@@ -98,6 +136,17 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     }
 
     appendElementOnExit(exit_code);
+    if (!ABORT && !runtimeHelpers.runtimeReady) abort_startup(reason, false, false);
+    if (runtimeHelpers.mono_wasm_exit) {
+        try {
+            runtimeHelpers.mono_wasm_exit(exit_code);
+        }
+        catch (expected) {
+            if (expected && runtimeHelpers.ExitStatus && !(expected instanceof runtimeHelpers.ExitStatus)) {
+                throw expected;
+            }
+        }
+    }
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
         if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
             INTERNAL.process.exit(exit_code);

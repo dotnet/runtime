@@ -13,6 +13,7 @@ import {
     EventPipeCollectTracingCommandProvider,
 } from "./protocol-client-commands";
 import { createEventPipeStreamingSession } from "../shared/create-session";
+import { mono_assert } from "../../globals";
 
 /// The streaming session holds all the pieces of an event pipe streaming session that the
 ///  diagnostic server knows about: the session ID, a

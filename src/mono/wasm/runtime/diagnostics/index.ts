@@ -11,7 +11,7 @@ import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
 import { mono_log_warn } from "../logging";
-import { runtimeHelpers } from "../globals";
+import { mono_assert, runtimeHelpers } from "../globals";
 
 
 // called from C on the main thread

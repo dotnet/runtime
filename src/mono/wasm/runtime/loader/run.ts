@@ -4,9 +4,9 @@
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
-import { mono_exit } from "./exit";
+import { is_exited, mono_exit } from "./exit";
 import { setup_proxy_console } from "./logging";
 import { resolve_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
@@ -52,7 +52,7 @@ export class HostBuilder implements DotnetHostBuilder {
         const handler = function fatal_handler(event: Event, error: any) {
             event.preventDefault();
             try {
-                if (!error || !error.silent) mono_exit(1, error);
+                if ((!error || !error.silent) && !is_exited()) mono_exit(1, error);
             } catch (err) {
                 // no not re-throw from the fatal handler
             }
@@ -101,6 +101,19 @@ export class HostBuilder implements DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
                 appendElementOnExit: true
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
+    withAssertAfterExit(): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                assertAfterExit: true
             });
             return this;
         } catch (err) {

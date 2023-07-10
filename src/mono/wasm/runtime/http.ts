@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { Module, loaderHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
 
