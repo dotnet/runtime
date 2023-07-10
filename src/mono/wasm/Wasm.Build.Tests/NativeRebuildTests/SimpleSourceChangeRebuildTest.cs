@@ -28,7 +28,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             string mainAssembly = $"{buildArgs.ProjectName}.dll";
             var pathsDict = GetFilesTable(buildArgs, paths, unchanged: true);
             pathsDict.UpdateTo(unchanged: false, mainAssembly);
-            pathsDict.UpdateTo(unchanged: !buildArgs.AOT, "dotnet.wasm", "dotnet.js");
+            pathsDict.UpdateTo(unchanged: !buildArgs.AOT, "dotnet.native.wasm", "dotnet.native.js");
 
             if (buildArgs.AOT)
                 pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");

@@ -9,5 +9,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Assertions
 	public class SkipKeptItemsValidationAttribute : BaseExpectedLinkedBehaviorAttribute
 	{
 		public SkipKeptItemsValidationAttribute () { }
+
+		public Tool By { get; set; } = Tool.TrimmerAnalyzerAndNativeAot;
 	}
 }

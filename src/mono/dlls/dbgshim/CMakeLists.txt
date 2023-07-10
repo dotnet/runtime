@@ -82,4 +82,4 @@ if(CLR_CMAKE_HOST_UNIX)
 endif()
 
 target_link_libraries(dbgshim PRIVATE ${DBGSHIM_LIBRARIES} monoapi)
-install(TARGETS dbgshim DESTINATION lib)
+install_with_stripped_symbols(dbgshim TARGETS lib)

@@ -223,7 +223,7 @@ struct DispIDCacheElement
     {
         LIMITED_METHOD_CONTRACT;
         return (pMT == var.pMT && strNameLength == var.strNameLength
-                && lcid == var.lcid && wcscmp (strName, var.strName) == 0);
+                && lcid == var.lcid && u16_strcmp (strName, var.strName) == 0);
     }
 
     DispIDCacheElement& operator= (const DispIDCacheElement& var)

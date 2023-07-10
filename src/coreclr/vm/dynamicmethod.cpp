@@ -437,7 +437,7 @@ HeapList* HostCodeHeap::InitializeHeapList(CodeHeapRequestInfo *pInfo)
 
     TrackAllocation *pTracker = NULL;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
     pTracker = AllocMemory_NoThrow(0, JUMP_ALLOCATE_SIZE, sizeof(void*), 0);
     if (pTracker == NULL)
@@ -1102,6 +1102,17 @@ ChunkAllocator* LCGMethodResolver::GetJitMetaHeap()
 {
     LIMITED_METHOD_CONTRACT;
     return &m_jitMetaHeap;
+}
+
+bool LCGMethodResolver::RequiresAccessCheck()
+{
+    LIMITED_METHOD_CONTRACT;
+    return true;
+}
+
+CORJIT_FLAGS LCGMethodResolver::GetJitFlags()
+{
+    return{};
 }
 
 BYTE* LCGMethodResolver::GetCodeInfo(unsigned *pCodeSize, unsigned *pStackSize, CorInfoOptions *pOptions, unsigned *pEHSize)

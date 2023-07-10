@@ -584,14 +584,14 @@ namespace System.Text.Unicode.Tests
                 _value = value;
             }
 
-            public bool TryFormat(Span<byte> destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider provider)
+            public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider provider)
             {
                 ToStringState.LastFormat = format.ToString();
                 ToStringState.LastProvider = provider;
                 ToStringState.ToStringMode = ToStringMode.ISpanFormattableTryFormat;
 
                 ReadOnlySpan<byte> src = Encoding.UTF8.GetBytes(_value.ToString(format.ToString(), provider)).AsSpan();
-                if (src.TryCopyTo(destination))
+                if (src.TryCopyTo(utf8Destination))
                 {
                     bytesWritten = src.Length;
                     return true;

@@ -33,7 +33,7 @@
 
 // =============== CLASS MEMBERS DECLARATION ===================
 
-.class private sequential ansi sealed beforefieldinit MS.VT
+.class public sequential ansi sealed beforefieldinit MS.VT
        extends [mscorlib]System.ValueType
 {
   .field private string path
@@ -356,8 +356,7 @@
     IL_01c2:  ret
   } // end of method VT::RunTests
 
-  .method private hidebysig static int32 
-          Main() cil managed
+  .method public hidebysig static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 
 namespace System.Text.RegularExpressions
@@ -50,6 +51,8 @@ namespace System.Text.RegularExpressions
         /// <param name="inner">The exception that is the cause of the current exception, or a <code>null</code>.</param>
         public RegexMatchTimeoutException(string message, Exception inner) : base(message, inner) { }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected RegexMatchTimeoutException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -58,6 +61,7 @@ namespace System.Text.RegularExpressions
             MatchTimeout = new TimeSpan(info.GetInt64("timeoutTicks"));
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

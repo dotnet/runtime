@@ -17,8 +17,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 	[SetupLinkerDescriptorFile ("RequiresViaXml.descriptor.xml")]
 	[SkipKeptItemsValidation]
 	[ExpectedNoWarnings]
-	// [LogContains ("--RequiresOnlyViaDescriptor--")]  // https://github.com/dotnet/linker/issues/2103
-	[ExpectedWarning ("IL2026", "RequiresOnFieldOnlyViaDescriptor.Field", FileName = "RequiresViaXml.descriptor.xml", ProducedBy = Tool.Trimmer)]
 	class RequiresViaXml
 	{
 

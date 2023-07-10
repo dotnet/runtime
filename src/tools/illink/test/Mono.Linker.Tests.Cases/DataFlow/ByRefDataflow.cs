@@ -179,7 +179,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			}
 
 			[Kept]
-			// https://github.com/dotnet/linker/issues/2874
+			// https://github.com/dotnet/runtime/issues/85464
 			[ExpectedWarning ("IL2069", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			[ExpectedWarning ("IL2069", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
 			public static void Test ()

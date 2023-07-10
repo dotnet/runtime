@@ -62,8 +62,6 @@ namespace ETW
 };
 
 #ifdef TARGET_UNIX
-#define _tcslen wcslen
-#define _tcscpy wcscpy
 #define _tfopen _wfopen
 #endif
 

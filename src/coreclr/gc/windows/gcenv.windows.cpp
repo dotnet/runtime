@@ -17,8 +17,6 @@
 
 GCSystemInfo g_SystemInfo;
 
-static size_t g_RestrictedPhysicalMemoryLimit = (size_t)UINTPTR_MAX;
-
 static bool g_SeLockMemoryPrivilegeAcquired = false;
 
 static AffinitySet g_processAffinitySet;
@@ -252,10 +250,6 @@ static size_t GetRestrictedPhysicalMemoryLimit()
 {
     LIMITED_METHOD_CONTRACT;
 
-    // The limit was cached already
-    if (g_RestrictedPhysicalMemoryLimit != (size_t)UINTPTR_MAX)
-        return g_RestrictedPhysicalMemoryLimit;
-
     size_t job_physical_memory_limit = (size_t)UINTPTR_MAX;
     uint64_t total_virtual = 0;
     uint64_t total_physical = 0;
@@ -337,8 +331,7 @@ exit:
         job_physical_memory_limit = 0;
     }
 
-    VolatileStore(&g_RestrictedPhysicalMemoryLimit, job_physical_memory_limit);
-    return g_RestrictedPhysicalMemoryLimit;
+    return job_physical_memory_limit;
 }
 
 // This function checks to see if GetLogicalProcessorInformation API is supported.

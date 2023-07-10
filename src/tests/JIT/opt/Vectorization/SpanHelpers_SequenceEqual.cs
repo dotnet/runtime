@@ -5,10 +5,12 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class UnrollSequenceEqualTests
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var testMethods = typeof(UnrollSequenceEqualTests)
             .GetMethods(BindingFlags.Static | BindingFlags.NonPublic)

@@ -3,18 +3,19 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class MainApp
+public class MainApp
 {
     private static int s_s = 0;
 
-    public static void MethodThatAlwaysThrows_NoInline()
+    internal static void MethodThatAlwaysThrows_NoInline()
     {
         Console.WriteLine("In method that always throws");
         throw new Exception("methodthatalwaysthrows");
     }
 
-    public static void MethodThatMightThrow_Inline()
+    internal static void MethodThatMightThrow_Inline()
     {
         if (s_s == 1)
         {
@@ -22,7 +23,8 @@ internal class MainApp
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

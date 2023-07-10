@@ -83,6 +83,8 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
     <Compile Include="System\Media\SystemSound.cs" />
     <Compile Include="System\Media\SystemSounds.cs" />
     <Compile Include="System\Xaml\Permissions\XamlAccessLevel.cs" />
+    <Compile Include="$(CommonPath)System\Obsoletions.cs"
+             Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
@@ -91,6 +93,7 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" />
+    <!-- Avoid a PackageReference to System.Drawing.Common this reference is only needed for TypeForwards -->
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" PrivateAssets="All" />
   </ItemGroup>
 </Project>

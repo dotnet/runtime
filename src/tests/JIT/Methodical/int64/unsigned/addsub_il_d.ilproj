@@ -5,6 +5,7 @@
     <DebugType>Full</DebugType>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="addsub_d.il" />
     <Compile Include="addsub.il" />
   </ItemGroup>
 </Project>

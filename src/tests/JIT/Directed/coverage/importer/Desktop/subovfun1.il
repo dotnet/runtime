@@ -4,7 +4,7 @@
 
 .assembly extern legacy library mscorlib {}
 .assembly extern xunit.core {}
-.assembly 'subovfun1_Desktop' { }
+.assembly ASSEMBLY_NAME { }
 .method public static uint32 f(uint32 arg)
 {
 ldarg.0

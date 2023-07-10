@@ -75,11 +75,11 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 	MonoObject *exc = NULL;
 	guint32 ex_token_index, ex_token;
 	if (!corlib)
-		exc = (MonoObject*)arg;
+		exc = (MonoObject *)arg;
 	else {
 		ex_token_index = (guint64)arg;
 		ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
-		exc = (MonoObject*)mono_exception_from_token (mono_defaults.corlib, ex_token);
+		exc = (MonoObject *)mono_exception_from_token (mono_defaults.corlib, ex_token);
 	}
 
 	/* Adjust pc so it points into the call instruction */
@@ -90,10 +90,10 @@ mono_riscv_throw_exception (gpointer arg, host_mgreg_t pc, host_mgreg_t *int_reg
 	memcpy (&(ctx.gregs [0]), int_regs, sizeof (host_mgreg_t) * RISCV_N_GREGS);
 	memcpy (&(ctx.fregs [0]), fp_regs, sizeof (host_mgreg_t) * RISCV_N_FREGS);
 
-	ctx.gregs[0] = pc;
+	ctx.gregs [0] = pc;
 
 	if (mono_object_isinst_checked (exc, mono_defaults.exception_class, error)) {
-		MonoException *mono_ex = (MonoException*)exc;
+		MonoException *mono_ex = (MonoException *)exc;
 		if (!rethrow && !mono_ex->caught_in_unmanaged) {
 			mono_ex->stack_trace = NULL;
 			mono_ex->trace_ips = NULL;
@@ -130,38 +130,38 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* Compute stack frame size and offsets */
 	offset = 0;
 	/* ra & fp */
-	offset += 2 * sizeof(host_mgreg_t);
+	offset += 2 * sizeof (host_mgreg_t);
 
 	/* gregs */
-	offset += RISCV_N_GREGS * sizeof(host_mgreg_t);
+	offset += RISCV_N_GREGS * sizeof (host_mgreg_t);
 	gregs_offset = offset;
-	
+
 	/* fregs */
 	num_fregs = RISCV_N_FREGS;
-	offset += num_fregs * sizeof(host_mgreg_t);
+	offset += num_fregs * sizeof (host_mgreg_t);
 	fregs_offset = offset;
 	frame_size = ALIGN_TO (offset, MONO_ARCH_FRAME_ALIGNMENT);
 
 	MINI_BEGIN_CODEGEN ();
 
 	/* Setup a frame */
-	g_assert(RISCV_VALID_I_IMM(-frame_size));
+	g_assert (RISCV_VALID_I_IMM (-frame_size));
 	riscv_addi (code, RISCV_SP, RISCV_SP, -frame_size);
-	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, frame_size - sizeof(host_mgreg_t), 0);
-	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, frame_size - 2 * sizeof(host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_RA, RISCV_SP, frame_size - sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_SP, frame_size - 2 * sizeof (host_mgreg_t), 0);
 	riscv_addi (code, RISCV_FP, RISCV_SP, frame_size);
 
 	/* Save gregs */
 	code = mono_riscv_emit_store_stack (code, 0xffffffff, RISCV_FP, -gregs_offset, FALSE);
 	if (corlib && !llvm)
 		/* The real ra is in A1 */
-		code = mono_riscv_emit_store (code, RISCV_A1, RISCV_FP, -gregs_offset + (RISCV_RA * sizeof(host_mgreg_t)), 0);
-	
+		code = mono_riscv_emit_store (code, RISCV_A1, RISCV_FP, -gregs_offset + (RISCV_RA * sizeof (host_mgreg_t)), 0);
+
 	/* Save previous fp/sp */
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -2 * sizeof(host_mgreg_t), 0);
-	code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -gregs_offset + (RISCV_FP * sizeof(host_mgreg_t)), 0);
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -2 * sizeof (host_mgreg_t), 0);
+	code = mono_riscv_emit_store (code, RISCV_T0, RISCV_FP, -gregs_offset + (RISCV_FP * sizeof (host_mgreg_t)), 0);
 	// current fp is previous sp
-	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_FP, -gregs_offset + (RISCV_SP * sizeof(host_mgreg_t)), 0);
+	code = mono_riscv_emit_store (code, RISCV_FP, RISCV_FP, -gregs_offset + (RISCV_SP * sizeof (host_mgreg_t)), 0);
 
 	/* Save fregs */
 	if (riscv_stdext_f || riscv_stdext_d)
@@ -171,13 +171,12 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* Arg1 =  exception object/type token */
 	// riscv_addi (code, RISCV_A0, RISCV_A0, 0);
 	/* Arg2 = caller ip, should be return address in this case */
-	if (corlib){
+	if (corlib) {
 		// caller ip are set to A1 already
 		if (llvm)
 			NOT_IMPLEMENTED;
-	}
-	else
-		code = mono_riscv_emit_load (code, RISCV_A1, RISCV_FP, -sizeof(host_mgreg_t), 0);
+	} else
+		code = mono_riscv_emit_load (code, RISCV_A1, RISCV_FP, -sizeof (host_mgreg_t), 0);
 	/* Arg 3 = gregs */
 	riscv_addi (code, RISCV_A2, RISCV_FP, -gregs_offset);
 	/* Arg 4 = fregs */
@@ -194,8 +193,7 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 	/* Call the function */
 	if (aot) {
 		NOT_IMPLEMENTED;
-	}
-	else {
+	} else {
 		gpointer icall_func;
 
 		if (resume_unwind)
@@ -203,10 +201,10 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 			NOT_IMPLEMENTED;
 		else
 			icall_func = (gpointer)mono_riscv_throw_exception;
-		
+
 		code = mono_riscv_emit_imm (code, RISCV_RA, (guint64)icall_func);
 	}
-	riscv_jalr(code, RISCV_ZERO, RISCV_RA, 0);
+	riscv_jalr (code, RISCV_ZERO, RISCV_RA, 0);
 	/* This shouldn't return */
 	/* hang in debugger */
 	riscv_ebreak (code);
@@ -218,7 +216,6 @@ get_throw_trampoline (int size, gboolean corlib, gboolean rethrow, gboolean llvm
 		*info = mono_tramp_info_create (tramp_name, start, code - start, ji, unwind_ops);
 
 	return MINI_ADDR_TO_FTNPTR (start);
-
 }
 
 gpointer

@@ -167,7 +167,7 @@ void Compiler::fgInit()
 #endif // DEBUG
 
 #ifdef FEATURE_SIMD
-    fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+    fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
 #endif
 
     fgHasSwitch                  = false;
@@ -1125,6 +1125,20 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                 break;
                             }
 
+                            case NI_System_SpanHelpers_SequenceEqual:
+                            case NI_System_Buffer_Memmove:
+                            {
+                                if (FgStack::IsConstArgument(pushedStack.Top(), impInlineInfo))
+                                {
+                                    // Constant (at its call-site) argument feeds the Memmove/Memcmp length argument.
+                                    // We most likely will be able to unroll it.
+                                    // It is important to only raise this hint for constant arguments, if it's just a
+                                    // constant in the inlinee itself then we don't need to inline it for unrolling.
+                                    compInlineResult->Note(InlineObservation::CALLSITE_UNROLLABLE_MEMOP);
+                                }
+                                break;
+                            }
+
                             case NI_System_Span_get_Item:
                             case NI_System_ReadOnlySpan_get_Item:
                             {
@@ -1824,8 +1838,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 // Compute jump target address
                 signed jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if (compIsForInlining() && jmpDist == 0 &&
-                    (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S))
+                if ((jmpDist == 0) &&
+                    (opcode == CEE_LEAVE || opcode == CEE_LEAVE_S || opcode == CEE_BR || opcode == CEE_BR_S) &&
+                    opts.DoEarlyBlockMerging())
                 {
                     break; /* NOP */
                 }
@@ -2536,7 +2551,6 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
         {
             LclVarDsc* lclDsc = lvaGetDesc(lclNum);
             assert(lclDsc->lvSingleDef == 0);
-            // could restrict this to TYP_REF
             lclDsc->lvSingleDef = !lclDsc->lvHasMultipleILStoreOp && !lclDsc->lvHasLdAddrOp;
 
             if (lclDsc->lvSingleDef)
@@ -2975,7 +2989,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
 
                 jmpDist = (sz == 1) ? getI1LittleEndian(codeAddr) : getI4LittleEndian(codeAddr);
 
-                if (compIsForInlining() && jmpDist == 0 && (opcode == CEE_BR || opcode == CEE_BR_S))
+                if ((jmpDist == 0) && (opcode == CEE_BR || opcode == CEE_BR_S) && opts.DoEarlyBlockMerging())
                 {
                     continue; /* NOP */
                 }
@@ -3494,19 +3508,20 @@ void Compiler::fgFindBasicBlocks()
                 // This temp should already have the type of the return value.
                 JITDUMP("\nInliner: re-using pre-existing spill temp V%02u\n", lvaInlineeReturnSpillTemp);
 
-                if (info.compRetType == TYP_REF)
+                // We may have co-opted an existing temp for the return spill.
+                // We likely assumed it was single-def at the time, but now
+                // we can see it has multiple definitions.
+                if ((fgReturnCount > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
                 {
-                    // We may have co-opted an existing temp for the return spill.
-                    // We likely assumed it was single-def at the time, but now
-                    // we can see it has multiple definitions.
-                    if ((fgReturnCount > 1) && (lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef == 1))
+                    // Make sure it is no longer marked single def. This is only safe
+                    // to do if we haven't ever updated the type.
+                    if (info.compRetType == TYP_REF)
                     {
-                        // Make sure it is no longer marked single def. This is only safe
-                        // to do if we haven't ever updated the type.
                         assert(!lvaTable[lvaInlineeReturnSpillTemp].lvClassInfoUpdated);
-                        JITDUMP("Marked return spill temp V%02u as NOT single def temp\n", lvaInlineeReturnSpillTemp);
-                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 0;
                     }
+
+                    JITDUMP("Marked return spill temp V%02u as NOT single def temp\n", lvaInlineeReturnSpillTemp);
+                    lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 0;
                 }
             }
             else
@@ -3514,19 +3529,23 @@ void Compiler::fgFindBasicBlocks()
                 // The lifetime of this var might expand multiple BBs. So it is a long lifetime compiler temp.
                 lvaInlineeReturnSpillTemp = lvaGrabTemp(false DEBUGARG("Inline return value spill temp"));
                 lvaTable[lvaInlineeReturnSpillTemp].lvType = info.compRetType;
+                if (varTypeIsStruct(info.compRetType))
+                {
+                    lvaSetStruct(lvaInlineeReturnSpillTemp, info.compMethodInfo->args.retTypeClass, false);
+                }
+
+                // The return spill temp is single def only if the method has a single return block.
+                if (fgReturnCount == 1)
+                {
+                    lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
+                    JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
+                }
 
                 // If the method returns a ref class, set the class of the spill temp
                 // to the method's return value. We may update this later if it turns
                 // out we can prove the method returns a more specific type.
                 if (info.compRetType == TYP_REF)
                 {
-                    // The return spill temp is single def only if the method has a single return block.
-                    if (fgReturnCount == 1)
-                    {
-                        lvaTable[lvaInlineeReturnSpillTemp].lvSingleDef = 1;
-                        JITDUMP("Marked return spill temp V%02u as a single def temp\n", lvaInlineeReturnSpillTemp);
-                    }
-
                     CORINFO_CLASS_HANDLE retClassHnd = impInlineInfo->inlineCandidateInfo->methInfo.args.retTypeClass;
                     if (retClassHnd != nullptr)
                     {
@@ -4699,6 +4718,17 @@ BasicBlock* Compiler::fgSplitBlockBeforeTree(
     prevBb->bbFlags = originalFlags & (~(BBF_SPLIT_LOST | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL) | BBF_GC_SAFE_POINT);
     block->bbFlags |=
         originalFlags & (BBF_SPLIT_GAINED | BBF_IMPORTED | BBF_GC_SAFE_POINT | BBF_LOOP_PREHEADER | BBF_RETLESS_CALL);
+
+    if (optLoopTableValid && prevBb->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+    {
+        block->bbNatLoopNum = prevBb->bbNatLoopNum;
+
+        // Update lpBottom after block split
+        if (optLoopTable[prevBb->bbNatLoopNum].lpBottom == prevBb)
+        {
+            optLoopTable[prevBb->bbNatLoopNum].lpBottom = block;
+        }
+    }
 
     return block;
 }
@@ -6012,12 +6042,18 @@ bool Compiler::fgMightHaveLoop()
     {
         BitVecOps::AddElemD(&blockVecTraits, blocksSeen, block->bbNum);
 
-        for (BasicBlock* const succ : block->GetAllSuccs(this))
-        {
+        BasicBlockVisit result = block->VisitAllSuccs(this, [&](BasicBlock* succ) {
             if (BitVecOps::IsMember(&blockVecTraits, blocksSeen, succ->bbNum))
             {
-                return true;
+                return BasicBlockVisit::Abort;
             }
+
+            return BasicBlockVisit::Continue;
+        });
+
+        if (result == BasicBlockVisit::Abort)
+        {
+            return true;
         }
     }
     return false;
@@ -6099,6 +6135,40 @@ BasicBlock* Compiler::fgNewBBafter(BBjumpKinds jumpKind, BasicBlock* block, bool
     newBlk->bbFlags |= (block->bbFlags & BBF_COLD);
 
     return newBlk;
+}
+
+//------------------------------------------------------------------------
+// fgNewBBFromTreeAfter: Create a basic block from the given tree and insert it
+//    after the specified block.
+//
+// Arguments:
+//    jumpKind          - jump kind for the new block.
+//    block             - insertion point.
+//    tree              - tree that will be wrapped into a statement and
+//                        inserted in the new block.
+//    debugInfo         - debug info to propagate into the new statement.
+//    updateSideEffects - update side effects for the whole statement.
+//
+// Return Value:
+//    The new block
+//
+// Notes:
+//    The new block will have BBF_INTERNAL flag and EH region will be extended
+//
+BasicBlock* Compiler::fgNewBBFromTreeAfter(
+    BBjumpKinds jumpKind, BasicBlock* block, GenTree* tree, DebugInfo& debugInfo, bool updateSideEffects)
+{
+    BasicBlock* newBlock = fgNewBBafter(jumpKind, block, true);
+    newBlock->bbFlags |= BBF_INTERNAL;
+    Statement* stmt = fgNewStmtFromTree(tree, debugInfo);
+    fgInsertStmtAtEnd(newBlock, stmt);
+    newBlock->bbCodeOffs    = block->bbCodeOffsEnd;
+    newBlock->bbCodeOffsEnd = block->bbCodeOffsEnd;
+    if (updateSideEffects)
+    {
+        gtUpdateStmtSideEffects(stmt);
+    }
+    return newBlock;
 }
 
 /*****************************************************************************

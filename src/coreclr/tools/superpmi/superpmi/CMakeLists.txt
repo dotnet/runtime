@@ -12,6 +12,15 @@ if(CLR_CMAKE_HOST_WIN32)
   set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
 endif(CLR_CMAKE_HOST_WIN32)
 
+if(CLR_CMAKE_HOST_UNIX)
+    # Make sure a public symbol is created for Instrumentor_GetInsCount
+    if(CLR_CMAKE_HOST_APPLE)
+        add_linker_flag(-Wl,-export_dynamic)
+    else()
+        add_linker_flag(-Wl,--export-dynamic)
+    endif(CLR_CMAKE_HOST_APPLE)
+endif(CLR_CMAKE_HOST_UNIX)
+
 include_directories(.)
 include_directories(../superpmi-shared)
 
@@ -56,12 +65,14 @@ if(CLR_CMAKE_HOST_UNIX)
         mscorrc
         coreclrpal
         palrt
+        coreclrminipal
     )
 else()
     target_link_libraries(superpmi
         PRIVATE
         version.lib
         advapi32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_CPP_LIB}
     )

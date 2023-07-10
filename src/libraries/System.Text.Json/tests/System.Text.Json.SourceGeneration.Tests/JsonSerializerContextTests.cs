@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
+using System.Text.Json.Serialization.Tests;
+using System.Text.Json.SourceGeneration.Tests.NETStandard;
 using System.Threading.Tasks;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
@@ -119,8 +120,30 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
+        [Fact]
+        public static async Task SupportsBoxedRootLevelValues()
+        {
+            PersonJsonContext context = PersonJsonContext.Default;
+            object person = new Person("John", "Smith");
+            string expectedJson = """{"firstName":"John","lastName":"Smith"}""";
+            // Sanity check -- context resolver does not specify object metadata
+            Assert.Null(((IJsonTypeInfoResolver)context).GetTypeInfo(typeof(object), new()));
+
+            string json = JsonSerializer.Serialize(person, context.Options);
+            Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, typeof(object), context);
+            Assert.Equal(expectedJson, json);
+
+            json = JsonSerializer.Serialize(person, context.GetTypeInfo(typeof(object)));
+            Assert.NotNull(context.GetTypeInfo(typeof(object)));
+
+            var stream = new Utf8MemoryStream();
+            await JsonSerializer.SerializeAsync(stream, person, context.Options);
+            Assert.Equal(expectedJson, stream.AsString());
+        }
+
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
@@ -151,6 +174,22 @@ namespace System.Text.Json.SourceGeneration.Tests
                         Assert.NotNull(fieldInfo);
                         Assert.Null(fieldInfo.GetValue(null));
                     }
+                }).Dispose();
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void JsonSerializerContext_GeneratedDefault_IsSingleton()
+        {
+            RemoteExecutor.Invoke(
+                static () =>
+                {
+                    const int Count = 30;
+                    var contexts = new MetadataContext[Count];
+                    Parallel.For(0, Count, i => contexts[i] = MetadataContext.Default);
+
+                    Assert.All(contexts, ctx => Assert.Same(MetadataContext.Default, ctx));
+
                 }).Dispose();
         }
 
@@ -223,6 +262,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             JsonTypeInfo personInfo = options.GetTypeInfo(typeof(Person));
             Assert.IsAssignableFrom<JsonTypeInfo<Person>>(personInfo);
             Assert.Same(options, personInfo.Options);
+
+            NotSupportedException exn = Assert.Throws<NotSupportedException>(() => options.GetTypeInfo(typeof(MyStruct)));
+            Assert.Contains(typeof(NestedContext).FullName, exn.Message);
+            Assert.Contains(typeof(PersonJsonContext).FullName, exn.Message);
         }
 
         [Fact]
@@ -492,6 +535,7 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSourceGenerationOptions(GenerationMode = JsonSourceGenerationMode.Serialization)]
         [JsonSerializable(typeof(JsonMessage))]
+        [JsonSerializable(typeof(AllocatingOnPropertyAccess))]
         public partial class FastPathSerializationContext : JsonSerializerContext
         { }
 
@@ -646,7 +690,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         [Fact]
         public static void SupportsPropertiesWithCustomConverterFactory()
         {
-            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = Serialization.Tests.SampleEnum.MinZero };
+            var value = new ClassWithCustomConverterFactoryProperty { MyEnum = SourceGenSampleEnum.MinZero };
             string json = JsonSerializer.Serialize(value, SingleClassWithCustomConverterFactoryPropertyContext.Default.ClassWithCustomConverterFactoryProperty);
             Assert.Equal(@"{""MyEnum"":""MinZero""}", json);
         }
@@ -661,19 +705,19 @@ namespace System.Text.Json.SourceGeneration.Tests
         {
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61860
         [Fact]
         public static void SupportsGenericParameterWithCustomConverterFactory()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/61860
             var value = new List<TestEnum> { TestEnum.Cee };
             string json = JsonSerializer.Serialize(value, GenericParameterWithCustomConverterFactoryContext.Default.ListTestEnum);
             Assert.Equal(@"[""Cee""]", json);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/74652
         [Fact]
         public static void ClassWithStringValuesRoundtrips()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/74652
             JsonSerializerOptions options = ClassWithStringValuesContext.Default.Options;
 
             ClassWithStringValues obj = new()
@@ -685,10 +729,10 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"StringValuesProperty":["abc","def"]}""", json);
         }
 
-        // Regression test for https://github.com/dotnet/runtime/issues/61734
         [Fact]
         public static void ClassWithDictionaryPropertyRoundtrips()
         {
+            // Regression test for https://github.com/dotnet/runtime/issues/61734
             JsonSerializerOptions options = ClassWithDictionaryPropertyContext.Default.Options;
 
             ClassWithDictionaryProperty obj = new(new Dictionary<string, object?>()
@@ -701,7 +745,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Equal("""{"DictionaryProperty":{"foo":"bar","test":"baz"}}""", json);
         }
 
-        [JsonConverter(typeof(JsonStringEnumConverter))]
+        [JsonConverter(typeof(JsonStringEnumConverter<TestEnum>))]
         public enum TestEnum
         {
             Aye, Bee, Cee
@@ -724,6 +768,26 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         [JsonSerializable(typeof(ClassWithDictionaryProperty))]
         internal partial class ClassWithDictionaryPropertyContext : JsonSerializerContext
+        {
+        }
+
+        [Fact]
+        public static void DoesNotReferenceInternalMembersFromOtherAssemblies()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/66679
+
+            Assert.Equal(1, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties.Count);
+            Assert.Equal("PublicValue", ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers.Properties[0].Name);
+
+            var value = new ClassFromOtherAssemblyWithNonPublicMembers();
+            string json = JsonSerializer.Serialize(value, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+            Assert.Equal("""{"PublicValue":1}""", json);
+
+            JsonSerializer.Deserialize(json, ContextForClassesFromAnotherAssembly.Default.ClassFromOtherAssemblyWithNonPublicMembers);
+        }
+
+        [JsonSerializable(typeof(ClassFromOtherAssemblyWithNonPublicMembers))]
+        internal partial class ContextForClassesFromAnotherAssembly : JsonSerializerContext
         {
         }
 
@@ -752,6 +816,35 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
 
             public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => _getTypeInfo(type, options);
+        }
+
+        [Fact]
+        public static void FastPathSerialization_EvaluatePropertyOnlyOnceWhenIgnoreNullOrDefaultIsSpecified()
+        {
+            JsonSerializerOptions options = FastPathSerializationContext.Default.Options;
+            JsonTypeInfo<AllocatingOnPropertyAccess> allocatingOnPropertyAccessInfo = (JsonTypeInfo<AllocatingOnPropertyAccess>)options.GetTypeInfo(typeof(AllocatingOnPropertyAccess));
+            Assert.NotNull(allocatingOnPropertyAccessInfo.SerializeHandler);
+
+            var value = new AllocatingOnPropertyAccess();
+            Assert.Equal(0, value.WhenWritingNullAccessCounter);
+            Assert.Equal(0, value.WhenWritingDefaultAccessCounter);
+
+            string expectedJson = """{"SomeAllocatingProperty":"Current Value: 1","SomeAllocatingProperty2":"Current Value: 1"}""";
+            Assert.Equal(expectedJson, JsonSerializer.Serialize(value, options));
+            Assert.Equal(1, value.WhenWritingNullAccessCounter);
+            Assert.Equal(1, value.WhenWritingDefaultAccessCounter);
+        }
+
+        [Fact]
+        public static void ContextWithInterpolatedAnnotations_WorksAsExpected()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/82997 and https://github.com/dotnet/runtime/issues/69207
+            Assert.IsAssignableFrom<JsonTypeInfo<TestPoco>>(ContextWithInterpolatedAnnotations.Default.TestPocoSomeUniqueSuffixSuffix2);
+        }
+
+        [JsonSerializable(type: typeof(TestPoco), TypeInfoPropertyName = $"{nameof(TestPoco)}SomeUniqueSuffix" + "Suffix2")]
+        internal partial class ContextWithInterpolatedAnnotations : JsonSerializerContext
+        {
         }
     }
 }

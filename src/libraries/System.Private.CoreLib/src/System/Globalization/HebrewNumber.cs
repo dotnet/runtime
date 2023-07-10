@@ -1,8 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Text;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -80,7 +83,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static void Append(ref ValueStringBuilder outputBuffer, int Number)
+        internal static void Append<TChar>(ref ValueListBuilder<TChar> outputBuffer, int Number) where TChar : unmanaged, IUtfChar<TChar>
         {
             int outputBufferStartingLength = outputBuffer.Length;
 
@@ -113,13 +116,13 @@ namespace System.Globalization
                 // If the number is greater than 400, use the multiples of 400.
                 for (int i = 0; i < (Hundreds / 4); i++)
                 {
-                    outputBuffer.Append('\x05ea');
+                    DateTimeFormat.AppendChar(ref outputBuffer, '\x05ea');
                 }
 
                 int remains = Hundreds % 4;
                 if (remains > 0)
                 {
-                    outputBuffer.Append((char)((int)'\x05e6' + remains));
+                    DateTimeFormat.AppendChar(ref outputBuffer, (char)('\x05e6' + remains));
                 }
             }
 
@@ -188,24 +191,35 @@ namespace System.Globalization
 
             if (cTens != '\x0')
             {
-                outputBuffer.Append(cTens);
+                DateTimeFormat.AppendChar(ref outputBuffer, cTens);
             }
 
             if (cUnits != '\x0')
             {
-                outputBuffer.Append(cUnits);
+                DateTimeFormat.AppendChar(ref outputBuffer, cUnits);
             }
 
             if (outputBuffer.Length - outputBufferStartingLength > 1)
             {
-                char last = outputBuffer[outputBuffer.Length - 1];
-                outputBuffer.Length--;
-                outputBuffer.Append('"');
-                outputBuffer.Append(last);
+                if (typeof(TChar) == typeof(char))
+                {
+                    TChar last = outputBuffer[outputBuffer.Length - 1];
+                    outputBuffer.Length--;
+                    outputBuffer.Append(TChar.CastFrom('"'));
+                    outputBuffer.Append(last);
+                }
+                else
+                {
+                    Debug.Assert(typeof(TChar) == typeof(byte));
+                    Rune.DecodeLastFromUtf8(MemoryMarshal.AsBytes(outputBuffer.AsSpan()), out Rune value, out int bytesConsumed);
+                    outputBuffer.Length -= bytesConsumed;
+                    outputBuffer.Append(TChar.CastFrom('"'));
+                    DateTimeFormat.AppendChar(ref outputBuffer, (char)value.Value);
+                }
             }
             else
             {
-                outputBuffer.Append('\'');
+                DateTimeFormat.AppendChar(ref outputBuffer, '\'');
             }
         }
 

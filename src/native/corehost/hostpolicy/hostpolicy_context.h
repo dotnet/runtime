@@ -31,6 +31,9 @@ public:
     host_runtime_contract host_contract;
 
     int initialize(const hostpolicy_init_t &hostpolicy_init, const arguments_t &args, bool enable_breadcrumbs);
+
+public: // static
+    static bool should_read_rid_fallback_graph(const hostpolicy_init_t &init);
 };
 
 #endif // __HOSTPOLICY_CONTEXT_H__

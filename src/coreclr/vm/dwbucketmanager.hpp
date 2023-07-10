@@ -64,7 +64,7 @@ DWORD GetCountBucketParamsForEvent(LPCWSTR wzEventName)
     DWORD countParams = kInvalidParamsCount;
     for (int index = 0; index < EndOfWerBucketTypes; ++index)
     {
-        if (wcscmp(wzEventName, g_WerEventTraits[index].EventNameW) == 0)
+        if (u16_strcmp(wzEventName, g_WerEventTraits[index].EventNameW) == 0)
         {
             _ASSERTE(index == g_WerEventTraits[index].BucketType);
             countParams = g_WerEventTraits[index].CountParams;
@@ -454,7 +454,7 @@ void BaseBucketParamsManager::GetAppName(_Out_writes_(maxLength) WCHAR* targetPa
     if (GetCurrentModuleFileName(appPath) == S_OK)
     {
         // Get just the module name; remove the path
-        const WCHAR* appName = wcsrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
+        const WCHAR* appName = u16_strrchr(appPath, DIRECTORY_SEPARATOR_CHAR_W);
         appName = appName ? appName + 1 : appPath;
 
         CopyStringToBucket(targetParam, maxLength, appName);
@@ -1087,7 +1087,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
         0
     };
 
-    int srcLen = static_cast<int>(wcslen(pSource));
+    int srcLen = static_cast<int>(u16_strlen(pSource));
 
     // If the source contains unicode characters, they'll be encoded at 4 chars per char.
     int targLen = ContainsUnicodeChars(pSource) ? targetMaxLength / 4 : targetMaxLength;
@@ -1098,7 +1098,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
         for (int i = 0; truncations[i]; ++i)
         {
             // how long is this suffix?
-            int slen = static_cast<int>(wcslen(truncations[i]));
+            int slen = static_cast<int>(u16_strlen(truncations[i]));
 
             // Could the string have this suffix?
             if (slen < srcLen)
@@ -1129,7 +1129,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
 
     // String didn't fit, so hash it.
     SHA1Hash hash;
-    hash.AddData(reinterpret_cast<BYTE*>(const_cast<LPWSTR>(pSource)), (static_cast<int>(wcslen(pSource))) * sizeof(WCHAR));
+    hash.AddData(reinterpret_cast<BYTE*>(const_cast<LPWSTR>(pSource)), (static_cast<int>(u16_strlen(pSource))) * sizeof(WCHAR));
 
     // Encode in base32.  The hash is a fixed size; we'll accept up to maxLen characters of the encoding.
     BytesToBase32 b32(hash.GetHash(), SHA1_HASH_SIZE);

@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Text.Unicode;
 
 #pragma warning disable SA1648 // TODO: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3595
 
@@ -20,7 +21,7 @@ namespace System.Net
     /// In other words, <see cref="BaseAddress"/> is always the first usable address of the network.
     /// The constructor and the parsing methods will throw in case there are non-zero bits after the prefix.
     /// </remarks>
-    public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>
+    public readonly struct IPNetwork : IEquatable<IPNetwork>, ISpanFormattable, ISpanParsable<IPNetwork>, IUtf8SpanFormattable
     {
         private readonly IPAddress? _baseAddress;
 
@@ -251,6 +252,15 @@ namespace System.Net
             destination.TryWrite(CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out charsWritten);
 
         /// <summary>
+        /// Attempts to write the <see cref="IPNetwork"/>'s CIDR notation to the given <paramref name="utf8Destination"/> UTF8 span and returns a value indicating whether the operation succeeded.
+        /// </summary>
+        /// <param name="utf8Destination">The destination span of UTF8 bytes.</param>
+        /// <param name="bytesWritten">When this method returns, contains the number of bytes that were written to <paramref name="utf8Destination"/>.</param>
+        /// <returns><see langword="true"/> if the formatting was succesful; otherwise <see langword="false"/>.</returns>
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten) =>
+            Utf8.TryWrite(utf8Destination, CultureInfo.InvariantCulture, $"{BaseAddress}/{(uint)PrefixLength}", out bytesWritten);
+
+        /// <summary>
         /// Determines whether two <see cref="IPNetwork"/> instances are equal.
         /// </summary>
         /// <param name="other">The <see cref="IPNetwork"/> instance to compare to this instance.</param>
@@ -297,7 +307,13 @@ namespace System.Net
 
         /// <inheritdoc />
         bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are ignored
             TryFormat(destination, out charsWritten);
+
+        /// <inheritdoc />
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
+            // format and provider are ignored
+            TryFormat(utf8Destination, out bytesWritten);
 
         /// <inheritdoc />
         static IPNetwork IParsable<IPNetwork>.Parse([NotNull] string s, IFormatProvider? provider) => Parse(s);

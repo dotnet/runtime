@@ -29,7 +29,6 @@ namespace System.Threading
         private ThreadState state;
         private object? abort_exc;
         private int abort_state_handle;
-        /* thread_id is only accessed from unmanaged code */
         internal long thread_id;
         private IntPtr debugger_thread; // FIXME switch to bool as soon as CI testing with corlib version bump works
         private UIntPtr static_data; /* GC-tracked */
@@ -37,6 +36,7 @@ namespace System.Threading
         private int interruption_requested;
         private IntPtr longlived;
         internal bool threadpool_thread;
+        internal bool external_eventloop; // browser-wasm: thread will return to the JS eventloop
         /* These are used from managed code */
         internal byte apartment_state;
         internal int managed_id;
@@ -352,5 +352,17 @@ namespace System.Threading
         private static extern void SetPriority(Thread thread, int priority);
 
         internal int GetSmallId() => small_id;
+
+        internal bool HasExternalEventLoop
+        {
+            get
+            {
+                return external_eventloop;
+            }
+            set
+            {
+                external_eventloop = value;
+            }
+        }
     }
 }

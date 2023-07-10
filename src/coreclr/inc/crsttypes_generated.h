@@ -94,47 +94,48 @@ enum CrstType
     CrstObjectList = 76,
     CrstPEImage = 77,
     CrstPendingTypeLoadEntry = 78,
-    CrstPgoData = 79,
-    CrstPinnedByrefValidation = 80,
-    CrstPinnedHeapHandleTable = 81,
-    CrstProfilerGCRefDataFreeList = 82,
-    CrstProfilingAPIStatus = 83,
-    CrstRCWCache = 84,
-    CrstRCWCleanupList = 85,
-    CrstReadyToRunEntryPointToMethodDescMap = 86,
-    CrstReflection = 87,
-    CrstReJITGlobalRequest = 88,
-    CrstRetThunkCache = 89,
-    CrstSavedExceptionInfo = 90,
-    CrstSaveModuleProfileData = 91,
-    CrstSecurityStackwalkCache = 92,
-    CrstSigConvert = 93,
-    CrstSingleUseLock = 94,
-    CrstSpecialStatics = 95,
-    CrstStackSampler = 96,
-    CrstStaticBoxInit = 97,
-    CrstStressLog = 98,
-    CrstStubCache = 99,
-    CrstStubDispatchCache = 100,
-    CrstStubUnwindInfoHeapSegments = 101,
-    CrstSyncBlockCache = 102,
-    CrstSyncHashLock = 103,
-    CrstSystemBaseDomain = 104,
-    CrstSystemDomain = 105,
-    CrstSystemDomainDelayedUnloadList = 106,
-    CrstThreadIdDispenser = 107,
-    CrstThreadStore = 108,
-    CrstTieredCompilation = 109,
-    CrstTypeEquivalenceMap = 110,
-    CrstTypeIDMap = 111,
-    CrstUMEntryThunkCache = 112,
-    CrstUMEntryThunkFreeListLock = 113,
-    CrstUniqueStack = 114,
-    CrstUnresolvedClassLock = 115,
-    CrstUnwindInfoTableLock = 116,
-    CrstVSDIndirectionCellLock = 117,
-    CrstWrapperTemplate = 118,
-    kNumberOfCrstTypes = 119
+    CrstPerfMap = 79,
+    CrstPgoData = 80,
+    CrstPinnedByrefValidation = 81,
+    CrstPinnedHeapHandleTable = 82,
+    CrstProfilerGCRefDataFreeList = 83,
+    CrstProfilingAPIStatus = 84,
+    CrstRCWCache = 85,
+    CrstRCWCleanupList = 86,
+    CrstReadyToRunEntryPointToMethodDescMap = 87,
+    CrstReflection = 88,
+    CrstReJITGlobalRequest = 89,
+    CrstRetThunkCache = 90,
+    CrstSavedExceptionInfo = 91,
+    CrstSaveModuleProfileData = 92,
+    CrstSecurityStackwalkCache = 93,
+    CrstSigConvert = 94,
+    CrstSingleUseLock = 95,
+    CrstSpecialStatics = 96,
+    CrstStackSampler = 97,
+    CrstStaticBoxInit = 98,
+    CrstStressLog = 99,
+    CrstStubCache = 100,
+    CrstStubDispatchCache = 101,
+    CrstStubUnwindInfoHeapSegments = 102,
+    CrstSyncBlockCache = 103,
+    CrstSyncHashLock = 104,
+    CrstSystemBaseDomain = 105,
+    CrstSystemDomain = 106,
+    CrstSystemDomainDelayedUnloadList = 107,
+    CrstThreadIdDispenser = 108,
+    CrstThreadStore = 109,
+    CrstTieredCompilation = 110,
+    CrstTypeEquivalenceMap = 111,
+    CrstTypeIDMap = 112,
+    CrstUMEntryThunkCache = 113,
+    CrstUMEntryThunkFreeListLock = 114,
+    CrstUniqueStack = 115,
+    CrstUnresolvedClassLock = 116,
+    CrstUnwindInfoTableLock = 117,
+    CrstVSDIndirectionCellLock = 118,
+    CrstWrapperTemplate = 119,
+    kNumberOfCrstTypes = 120
 };
 
 #endif // __CRST_TYPES_INCLUDED
@@ -147,7 +148,7 @@ int g_rgCrstLevelMap[] =
 {
     10,         // CrstAppDomainCache
     3,          // CrstArgBasedStubCache
-    0,          // CrstAssemblyList
+    3,          // CrstAssemblyList
     12,         // CrstAssemblyLoader
     4,          // CrstAvailableClass
     5,          // CrstAvailableParamTypes
@@ -224,6 +225,7 @@ int g_rgCrstLevelMap[] =
     2,          // CrstObjectList
     5,          // CrstPEImage
     19,         // CrstPendingTypeLoadEntry
+    0,          // CrstPerfMap
     4,          // CrstPgoData
     0,          // CrstPinnedByrefValidation
     14,         // CrstPinnedHeapHandleTable
@@ -348,6 +350,7 @@ LPCSTR g_rgCrstNameMap[] =
     "CrstObjectList",
     "CrstPEImage",
     "CrstPendingTypeLoadEntry",
+    "CrstPerfMap",
     "CrstPgoData",
     "CrstPinnedByrefValidation",
     "CrstPinnedHeapHandleTable",

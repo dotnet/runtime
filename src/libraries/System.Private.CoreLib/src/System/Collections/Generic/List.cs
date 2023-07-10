@@ -306,7 +306,7 @@ namespace System.Collections.Generic
             if (_size - index < count)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
-            return Array.BinarySearch<T>(_items, index, count, item, comparer);
+            return Array.BinarySearch(_items, index, count, item, comparer);
         }
 
         public int BinarySearch(T item)
@@ -1074,7 +1074,7 @@ namespace System.Collections.Generic
 
             if (count > 1)
             {
-                Array.Sort<T>(_items, index, count, comparer);
+                Array.Sort(_items, index, count, comparer);
             }
             _version++;
         }

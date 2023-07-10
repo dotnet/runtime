@@ -505,7 +505,9 @@ namespace System.Runtime.Serialization
         [MethodImpl(MethodImplOptions.NoInlining)]
         internal static void GetObjectData(ISerializable obj, SerializationInfo serInfo, StreamingContext context)
         {
+#pragma warning disable SYSLIB0050 // ISerializable.GetObjectData is obsolete
             obj.GetObjectData(serInfo, context);
+#pragma warning restore SYSLIB0050
         }
 
         [RequiresDynamicCode(DataContract.SerializerAOTWarning)]
@@ -513,7 +515,9 @@ namespace System.Runtime.Serialization
         public void WriteISerializable(XmlWriterDelegator xmlWriter, ISerializable obj)
         {
             Type objType = obj.GetType();
+#pragma warning disable SYSLIB0050 // SerializationInfo ctor is obsolete
             var serInfo = new SerializationInfo(objType, XmlObjectSerializer.FormatterConverter /*!UnsafeTypeForwardingEnabled is always false*/);
+#pragma warning restore SYSLIB0050
             GetObjectData(obj, serInfo, GetStreamingContext());
 
             // (!UnsafeTypeForwardingEnabled) is always false

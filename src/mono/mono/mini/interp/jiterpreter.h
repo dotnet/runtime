@@ -60,8 +60,7 @@ mono_interp_jit_wasm_entry_trampoline (
 // Fast-path implemented in C
 JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter_fast (
-	void *frame, MonoMethod *method, const guint16 *ip,
-	const guint16 *start_of_body, int size_of_body
+	void *_frame, const guint16 *ip
 );
 
 // HACK: Pass void* so that this header can include safely in files without definition for InterpFrame
@@ -69,7 +68,7 @@ mono_interp_tier_prepare_jiterpreter_fast (
 extern JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter (
 	void *frame, MonoMethod *method, const guint16 *ip, gint32 trace_index,
-	const guint16 *start_of_body, int size_of_body
+	const guint16 *start_of_body, int size_of_body, int is_verbose
 );
 
 // HACK: Pass void* so that this header can include safely in files without definition for InterpMethod,
@@ -106,6 +105,7 @@ typedef struct {
 	ThreadContext *context;
 	gpointer orig_domain;
 	gpointer attach_cookie;
+	int params_count;
 } JiterpEntryDataHeader;
 
 // we optimize delegate calls by attempting to cache the delegate invoke
@@ -136,7 +136,7 @@ void
 mono_jiterp_do_safepoint (InterpFrame *frame, guint16 *ip);
 
 void
-mono_jiterp_interp_entry (JiterpEntryData *_data, stackval *sp_args, void *res);
+mono_jiterp_interp_entry (JiterpEntryData *_data, void *res);
 
 gpointer
 mono_jiterp_imethod_to_ftnptr (InterpMethod *imethod);

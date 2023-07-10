@@ -32,7 +32,7 @@ Note that you can omit the `-c Debug` flag, since it's the default one when none
 If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it with the following command, instead of having to go through the whole build again:
 
 ```cmd
-.\build.cmd -s clr.corelib+clr.corelibnative -c Debug
+.\build.cmd -s clr.corelib+clr.nativecorelib -c Debug
 ```
 
 **NOTE**: When debugging with _CORE\_LIBRARIES_, the `libs` subset must also be built prior to attempting any debugging.
@@ -41,6 +41,7 @@ If for some reason `System.Private.CoreLib.dll` is missing, you can rebuild it w
 
 Visual Studio's capabilities as a full IDE provide a lot of help making the runtime debugging more amiable.
 
+0. Run `.\build.cmd clr.nativeprereqs -a <architecture> -c <configuration>`. This will build some of the tools requiremented for the native build. This step only needs to be run once as long you don't clean the `artifacts` directory.
 1. Open the CoreCLR solution _(coreclr.sln)_ in Visual Studio.
    * _Method 1_: Use the build scripts to open the solution:
       1. Run `.\build.cmd -vs coreclr.sln -a <architecture> -c <configuration>`. This will create and launch the CoreCLR solution in VS for the specified architecture and configuration. By default, this will be `x64 Debug`.
@@ -233,4 +234,4 @@ If the target process is using a .NET Runtime that is either from a daily build,
 There are three ways to configure Visual Studio to disable signature validation:
 1.	The [`DOTNET_ROOT` environment variable](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86): if Visual Studio is started from a command prompt where `DOTNET_ROOT` is set, it will ignore unsigned .NET runtime debugger libraries which are under the `DOTNET_ROOT` directory.
 2.	The `VSDebugger_ValidateDotnetDebugLibSignatures` environment variable: If you want to temporarily disable signature validation, run `set VSDebugger_ValidateDotnetDebugLibSignatures=0` in a command prompt, and start Visual Studio (devenv.exe) from this command prompt.
-3.	Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent bases, you can set the VS registry key to turn it off. To do so, open a Developer Command Prompt, and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`
+3.	Set the `ValidateDotnetDebugLibSignatures` registry key: To disable signature validation on a more permanent basis, you can set the VS registry key to turn it off. To do so, open a Developer Command Prompt, and run `Common7\IDE\VsRegEdit.exe set local HKCU Debugger\EngineSwitches ValidateDotnetDebugLibSignatures dword 0`

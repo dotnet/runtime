@@ -739,7 +739,7 @@ namespace System.Diagnostics
         {
             int counterNameHashCode = GetWstrHashCode(counterName);
             int instanceNameHashCode;
-            if (instanceName != null && instanceName.Length != 0)
+            if (!string.IsNullOrEmpty(instanceName))
                 instanceNameHashCode = GetWstrHashCode(instanceName);
             else
             {
@@ -1423,7 +1423,7 @@ namespace System.Diagnostics
 
         internal unsafe void RemoveInstance(string instanceName, PerformanceCounterInstanceLifetime instanceLifetime)
         {
-            if (instanceName == null || instanceName.Length == 0)
+            if (string.IsNullOrEmpty(instanceName))
                 return;
 
             int instanceNameHashCode = GetWstrHashCode(instanceName);

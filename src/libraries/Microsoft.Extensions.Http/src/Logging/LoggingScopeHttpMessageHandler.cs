@@ -47,9 +47,7 @@ namespace Microsoft.Extensions.Http.Logging
             _options = options;
         }
 
-        /// <inheritdoc />
-        /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        private Task<HttpResponseMessage> SendCoreAsync(HttpRequestMessage request, bool useAsync, CancellationToken cancellationToken)
         {
             ThrowHelper.ThrowIfNull(request);
             return Core(request, cancellationToken);
@@ -63,13 +61,31 @@ namespace Microsoft.Extensions.Http.Logging
                 using (Log.BeginRequestPipelineScope(_logger, request))
                 {
                     Log.RequestPipelineStart(_logger, request, shouldRedactHeaderValue);
-                    HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage response = useAsync
+                        ? await base.SendAsync(request, cancellationToken).ConfigureAwait(false)
+#if NET5_0_OR_GREATER
+                        : base.Send(request, cancellationToken);
+#else
+                        : throw new NotImplementedException("Unreachable code");
+#endif
                     Log.RequestPipelineEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
 
                     return response;
                 }
             }
         }
+
+        /// <inheritdoc />
+        /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => SendCoreAsync(request, useAsync: true, cancellationToken);
+
+#if NET5_0_OR_GREATER
+        /// <inheritdoc />
+        /// <remarks>Logs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+            => SendCoreAsync(request, useAsync: false, cancellationToken).GetAwaiter().GetResult();
+#endif
 
         // Used in tests
         internal static class Log

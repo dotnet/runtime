@@ -101,7 +101,7 @@ namespace System.Net
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration!.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {

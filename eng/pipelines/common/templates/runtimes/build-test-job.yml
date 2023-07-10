@@ -13,6 +13,7 @@ parameters:
   runtimeVariant: ''
   dependsOn: []
   dependOnEvaluatePaths: false
+  crossBuild: false
   pgoType: ''
 
 ### Build managed test components (native components are getting built as part
@@ -31,16 +32,13 @@ jobs:
     archType: ${{ parameters.archType }}
     osGroup: ${{ parameters.osGroup }}
     osSubgroup: ${{ parameters.osSubgroup }}
+    crossBuild: ${{ parameters.crossBuild }}
     container: ${{ parameters.container }}
     runtimeVariant: ${{ parameters.runtimeVariant }}
     testGroup: ${{ parameters.testGroup }}
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
-
-    ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl'))), not(eq(parameters.osGroup, 'osx'))) }}:
-      compilerArg: '-clang9'
-    ${{ if not(and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc'), not(and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl'))), not(eq(parameters.osGroup, 'osx')))) }}:
-      compilerArg: ''
+    compilerArg: ''
 
     # Test jobs should continue on error for internal builds
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -74,17 +72,6 @@ jobs:
         value: 'libs.sfx+libs.oob+clr.iltools /p:RefOnly=true -c Release -ci'
       - name: compilerArg
         value: ''
-      - ${{ if and(ne(parameters.osGroup, 'windows'), ne(parameters.compilerName, 'gcc')) }}:
-        - name: compilerArg
-          value: '-clang9'
-        # We need to use the stable version available on Alpine Linux
-      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl')) }}:
-        - name: compilerArg
-          value: ''
-      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - name: compilerArg
-          value: ''
 
       - name: runtimeFlavorArgs
         value: ''
@@ -109,7 +96,7 @@ jobs:
         displayName: Install native dependencies
 
     # Build core/libraries dependencies of test build
-    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(compilerArg)
+    - script: $(Build.SourcesDirectory)/build$(scriptExt) $(liveRuntimeBuildParams) $(crossArg) $(compilerArg)
       displayName: Build coreclr/libs components needed by test build
 
     - ${{ if in(parameters.osGroup, 'osx', 'ios', 'tvos') }}:

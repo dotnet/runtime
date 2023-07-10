@@ -321,5 +321,16 @@ namespace System
         {
             return new System.Collections.Generic.Dictionary<string, object>();
         }
+
+        [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
+        public static void RefreshMemoryLimit()
+        {
+            throw new PlatformNotSupportedException();
+        }
+
+        public static void RegisterNoGCRegionCallback(long totalSize, Action callback)
+        {
+            throw new PlatformNotSupportedException();
+        }
     }
 }

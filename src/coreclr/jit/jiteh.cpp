@@ -888,7 +888,7 @@ unsigned Compiler::ehGetCallFinallyRegionIndex(unsigned finallyIndex, bool* inTr
     assert(finallyIndex != EHblkDsc::NO_ENCLOSING_INDEX);
     assert(ehGetDsc(finallyIndex)->HasFinallyHandler());
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     return ehGetDsc(finallyIndex)->ebdGetEnclosingRegionIndex(inTryRegion);
 #else
     *inTryRegion = true;
@@ -2360,9 +2360,9 @@ bool Compiler::fgCreateFiltersForGenericExceptions()
             arg->gtFlags |= GTF_ORDER_SIDEEFF;
             unsigned tempNum         = lvaGrabTemp(false DEBUGARG("SpillCatchArg"));
             lvaTable[tempNum].lvType = TYP_REF;
-            GenTree* argAsg          = gtNewTempAssign(tempNum, arg);
+            GenTree* argStore        = gtNewTempStore(tempNum, arg);
             arg                      = gtNewLclvNode(tempNum, TYP_REF);
-            fgInsertStmtAtBeg(filterBb, gtNewStmt(argAsg, handlerBb->firstStmt()->GetDebugInfo()));
+            fgInsertStmtAtBeg(filterBb, gtNewStmt(argStore, handlerBb->firstStmt()->GetDebugInfo()));
 
             // Create "catchArg is TException" tree
             GenTree* runtimeLookup;

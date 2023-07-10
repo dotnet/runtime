@@ -150,7 +150,8 @@ public:
     //Unregister an object for finalization
     void    SetFinalizationRun (Object* obj);
 
-    //returns the generation number of an object (not valid during relocation)
+    // returns the generation number of an object (not valid during relocation) or
+    // INT32_MAX if the object belongs to a non-GC heap.
     unsigned WhichGeneration (Object* object);
     // returns TRUE is the object is ephemeral
     bool IsEphemeral (Object* object);
@@ -201,6 +202,8 @@ public:
 
     int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC);
     int EndNoGCRegion();
+    enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
+    FinalizerWorkItem* GetExtraWorkForFinalization();
 
     unsigned GetGcCount();
 
@@ -324,6 +327,8 @@ public:
     virtual void Shutdown();
 
     static void ReportGenerationBounds();
+
+    virtual int RefreshMemoryLimit();
 };
 
 #endif  // GCIMPL_H_

@@ -371,20 +371,6 @@ jobs:
                 subsetArg: $(installersSubsetArg)
                 packagingArgs: ${{ packageBuild.packagingArgs }}
 
-      - ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.isOfficialBuild, true)) }}:
-        - task: NuGetCommand@2
-          displayName: Push Visual Studio NuPkgs
-          inputs:
-            command: push
-            packagesToPush: '$(Build.SourcesDirectory)/artifacts/packages/$(_BuildConfig)/*/VS.Redist.Common.*.nupkg'
-            nuGetFeedType: external
-            publishFeedCredentials: 'DevDiv - VS package feed'
-          condition: and(
-            succeeded(),
-            eq(variables['_BuildConfig'], 'Release'),
-            ne(variables['DisableVSPublish'], 'true'),
-            ne(variables['PostBuildSign'], 'true'))
-
       - template: /eng/pipelines/installer/jobs/steps/upload-job-artifacts.yml
         parameters:
           name: ${{ coalesce(parameters.name, parameters.platform) }}

@@ -765,10 +765,10 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	// Scalars wider than 2×XLEN bits are passed by reference
 	if (aligned_size > sizeof (host_mgreg_t) * 2) {
 		if (cinfo->next_arg > RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeByRefOnStack;
 			cinfo->stack_usage += aligned_size;
 			ainfo->slot_size = aligned_size;
-			ainfo->offset = cinfo->stack_usage;
 		} else {
 			ainfo->storage = ArgVtypeByRef;
 			ainfo->reg = cinfo->next_arg;
@@ -781,18 +781,18 @@ add_valuetype (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	else if (aligned_size == sizeof (host_mgreg_t) * 2) {
 		// If no argument registers are available, the scalar is passed on the stack by value
 		if (cinfo->next_arg > RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeOnStack;
 			cinfo->stack_usage += sizeof (host_mgreg_t) * 2;
 			ainfo->slot_size = sizeof (host_mgreg_t) * 2;
-			ainfo->offset = cinfo->stack_usage;
 		}
 		// If exactly one register is available, the low-order XLEN bits are
 		// passed in the register and the high-order XLEN bits are passed on the stack
 		else if (cinfo->next_arg == RISCV_A7) {
+			ainfo->offset = cinfo->stack_usage;
 			ainfo->storage = ArgVtypeInMixed;
 			cinfo->stack_usage += sizeof (host_mgreg_t);
 			ainfo->slot_size = sizeof (host_mgreg_t);
-			ainfo->offset = cinfo->stack_usage;
 
 			ainfo->reg = cinfo->next_arg;
 			ainfo->size = sizeof (host_mgreg_t);
@@ -941,12 +941,13 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	// FIXME:
 	// The Mono will treat first parameter as this_pointer
-	// reference to `mono_vcall_trampoline()`.
-	// They are conflict a bit.
+	// reference to `mono_vcall_trampoline()`. 
+	// They are conflict a bit. 
 	if (cinfo->ret.storage == ArgVtypeByRef) {
 		g_assert (cinfo->ret.reg == RISCV_A0);
 		cinfo->next_arg = RISCV_A1;
-	} else
+	}
+	else
 		cinfo->next_arg = RISCV_A0;
 
 	cinfo->next_farg = RISCV_FA0;
@@ -1384,7 +1385,7 @@ emit_sig_cookie (MonoCompile *cfg, MonoCallInst *call, CallInfo *cinfo)
 
 /**
  * mono_arch_emit_call:
- * 	we process all Args of a function call
+ * 	move all Args to corresponding reg/stack in Caller
  *  (return, parameters)
  */
 void
@@ -1502,7 +1503,8 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		}
 		case ArgVtypeOnStack:
 		case ArgVtypeInIReg:
-		case ArgVtypeByRef: {
+		case ArgVtypeByRef:
+		case ArgVtypeOnStack: {
 			MonoInst *ins;
 			guint32 align;
 			guint32 size;
@@ -1568,7 +1570,7 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 			load->inst_basereg = src->dreg;
 			load->inst_offset = i;
 			MONO_ADD_INS (cfg->cbb, load);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_FP, -ainfo->offset + i, load->dreg);
+			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, RISCV_FP, ainfo->offset + i, load->dreg);
 		}
 		break;
 	case ArgVtypeByRef: {
@@ -2817,7 +2819,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 #endif
 		default:
-			printf ("unable to lowering following IR:");
+			printf ("unable to lower the following IR:");
 			mono_print_ins (ins);
 			NOT_IMPLEMENTED;
 			break;
@@ -2875,7 +2877,7 @@ mono_riscv_emit_imm (guint8 *code, int rd, gsize imm)
 			Lo = Lo - 0x1000;
 		}
 
-		g_assert(Hi <= 0xfffff);
+		g_assert (Hi <= 0xfffff);
 		riscv_lui (code, rd, Hi);
 		riscv_addiw (code, rd, rd, Lo);
 		return code;
@@ -3150,8 +3152,8 @@ mono_riscv_emit_store_regarray (guint8 *code, guint64 regs, int basereg, int off
 
 	for (int i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
-			if(isFloat)
-				code = mono_riscv_emit_fstore (code, i, basereg, offset + (i * sizeof(host_mgreg_t)), FALSE);
+			if (isFloat)
+				code = mono_riscv_emit_fstore (code, i, basereg, offset + (i * sizeof (host_mgreg_t)), FALSE);
 			else
 				code = mono_riscv_emit_store (code, i, basereg, offset + (i * sizeof (host_mgreg_t)), 0);
 		}
@@ -3181,10 +3183,10 @@ mono_riscv_emit_load_stack (guint8 *code, guint64 regs, int basereg, int offset,
 
 	for (int i = 0; i < 32; ++i) {
 		if (regs & (1 << i)) {
-			if(!isFloat && i == RISCV_SP)
+			if (!isFloat && i == RISCV_SP)
 				g_assert_not_reached ();
-			if(isFloat)
-				code = mono_riscv_emit_fload (code, i, basereg, (offset + (pos * sizeof(host_mgreg_t))), FALSE);
+			if (isFloat)
+				code = mono_riscv_emit_fload (code, i, basereg, (offset + (pos * sizeof (host_mgreg_t))), FALSE);
 			else
 				code = mono_riscv_emit_load (code, i, basereg, (offset + (pos * sizeof (host_mgreg_t))), 0);
 			pos++;
@@ -3284,7 +3286,7 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 		if (ins->opcode == OP_REGVAR) {
 			switch (ainfo->storage) {
 			case ArgInIReg:
-				if(ins->dreg != ainfo->reg)
+				if (ins->dreg != ainfo->reg)
 					riscv_addi (code, ins->dreg, ainfo->reg, 0);
 				if (i == 0 && sig->hasthis) {
 					mono_add_var_location (cfg, ins, TRUE, ainfo->reg, 0, 0, code - cfg->native_code);
@@ -3292,10 +3294,10 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				}
 				break;
 			case ArgOnStack:
-				code = mono_riscv_emit_load(code, ins->dreg, RISCV_FP, ainfo->offset, ainfo->slot_size);
+				code = mono_riscv_emit_load (code, ins->dreg, RISCV_FP, ainfo->offset, ainfo->slot_size);
 				break;
 			default:
-				g_print("Can't handle arg type %d\n", ainfo->storage);
+				g_print ("Can't handle arg type %d\n", ainfo->storage);
 				NOT_IMPLEMENTED;
 			}
 		} else {
@@ -3409,7 +3411,7 @@ mono_riscv_emit_call (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_typ
 static guint8 *
 mono_riscv_emit_branch_exc (MonoCompile *cfg, guint8 *code, int opcode, int sreg1, int sreg2, const char *exc_name)
 {
-	riscv_auipc(code, RISCV_T0, 0);
+	riscv_auipc (code, RISCV_T0, 0);
 	switch (opcode) {
 	case OP_RISCV_EXC_BEQ:
 		riscv_bne (code, sreg1, sreg2, 8);

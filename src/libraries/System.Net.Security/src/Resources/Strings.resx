@@ -299,9 +299,6 @@
   <data name="net_log_remote_cert_name_mismatch" xml:space="preserve">
     <value>Certificate name mismatch.</value>
   </data>
-  <data name="event_OperationReturnedSomething" xml:space="preserve">
-    <value>{0} returned {1}.</value>
-  </data>
   <data name="net_log_operation_failed_with_error" xml:space="preserve">
     <value>{0} failed with error {1}.</value>
   </data>

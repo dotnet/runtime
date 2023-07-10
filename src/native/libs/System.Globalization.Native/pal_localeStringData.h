@@ -52,9 +52,5 @@ PALEXPORT int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeNam
 
 #ifdef __APPLE__
 PALEXPORT const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName, LocaleStringData localeStringData);
-#endif                                                    
-
-PALEXPORT int32_t GlobalizationNative_GetLocaleTimeFormat(const UChar* localeName,
-                                                          int shortFormat, UChar* value,
-                                                          int32_t valueLength);
+#endif  
 

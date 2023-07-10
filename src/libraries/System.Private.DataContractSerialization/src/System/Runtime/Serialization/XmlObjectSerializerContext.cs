@@ -48,7 +48,9 @@ namespace System.Runtime.Serialization
         internal XmlObjectSerializerContext(DataContractSerializer serializer, DataContract rootTypeDataContract, DataContractResolver? dataContractResolver)
             : this(serializer,
             serializer.MaxItemsInObjectGraph,
+#pragma warning disable SYSLIB0050 // StreamingContext ctor is obsolete
             new StreamingContext(StreamingContextStates.All),
+#pragma warning restore SYSLIB0050
             serializer.IgnoreExtensionDataObject,
             dataContractResolver
             )

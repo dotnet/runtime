@@ -117,6 +117,20 @@ namespace ILCompiler.DependencyAnalysis.X64
             }
         }
 
+        public void EmitJNE(ISymbolNode symbol)
+        {
+            if (symbol.RepresentsIndirectionCell)
+            {
+                throw new NotImplementedException();
+            }
+            else
+            {
+                Builder.EmitByte(0x0f);
+                Builder.EmitByte(0x85);
+                Builder.EmitReloc(symbol, RelocType.IMAGE_REL_BASED_REL32);
+            }
+        }
+
         public void EmitINT3()
         {
             Builder.EmitByte(0xCC);

@@ -157,8 +157,8 @@ namespace System.Net
             }
 
             SslStreamCertificateContext context = authOptions.CertificateContext;
-            X509Certificate2 cert = context.Certificate;
-            Debug.Assert(context.Certificate.HasPrivateKey);
+            X509Certificate2 cert = context.TargetCertificate;
+            Debug.Assert(context.TargetCertificate.HasPrivateKey);
 
             PAL_KeyAlgorithm algorithm;
             byte[] keyBytes;
@@ -166,9 +166,9 @@ namespace System.Net
             {
                 keyBytes = key.ExportPkcs8PrivateKey();
             }
-            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Length + 1];
+            IntPtr[] ptrs = new IntPtr[context.IntermediateCertificates.Count + 1];
             ptrs[0] = cert.Handle;
-            for (int i = 0; i < context.IntermediateCertificates.Length; i++)
+            for (int i = 0; i < context.IntermediateCertificates.Count; i++)
             {
                 ptrs[i + 1] = context.IntermediateCertificates[i].Handle;
             }

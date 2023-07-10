@@ -718,6 +718,9 @@ namespace System.Numerics.Tests
                         pre = "(";
                         post = " " + nfi.CurrencySymbol + ")";
                         break;
+                    case 16:
+                        pre = nfi.CurrencySymbol + nfi.NegativeSign + " ";
+                        break;
                 }
             }
             else

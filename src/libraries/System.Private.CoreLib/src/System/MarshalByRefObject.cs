@@ -27,7 +27,7 @@ namespace System
 
         protected MarshalByRefObject MemberwiseClone(bool cloneIdentity)
         {
-            MarshalByRefObject mbr = (MarshalByRefObject)base.MemberwiseClone();
+            MarshalByRefObject mbr = (MarshalByRefObject)MemberwiseClone();
             return mbr;
         }
     }

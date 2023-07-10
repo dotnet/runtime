@@ -33,12 +33,6 @@ namespace JIT.HardwareIntrinsics.Arm
                 // Validates calling via reflection works
                 test.RunReflectionScenario();
 
-                // Validates loading to a static member works
-                test.RunClsVarScenario();
-
-                // Validates loading to the field of a local class works
-                test.RunClassLclFldScenario();
-
                 // Validates loading to the field of a local struct works
                 test.RunStructLclFldScenario();
 
@@ -131,8 +125,6 @@ namespace JIT.HardwareIntrinsics.Arm
 
         private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
 
-        private static ({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>) _clsVar;
-
         private ({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>) _fld;
 
         private DataTable _dataTable;
@@ -168,27 +160,6 @@ namespace JIT.HardwareIntrinsics.Arm
                                      });
 
             Unsafe.Write(_dataTable.outArrayPtr, (({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>))result);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            _clsVar = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
-
-            Unsafe.Write(_dataTable.outArrayPtr, _clsVar);
-            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new {TestName}();
-            test._fld = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
-
-            Unsafe.Write(_dataTable.outArrayPtr, test._fld);
             ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
         }
 

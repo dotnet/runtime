@@ -28,7 +28,13 @@ namespace ILCompiler
         public FeatureSwitchManager(ILProvider nestedILProvider, Logger logger, IEnumerable<KeyValuePair<string, bool>> switchValues)
         {
             _nestedILProvider = nestedILProvider;
-            _hashtable = new FeatureSwitchHashtable(logger, new Dictionary<string, bool>(switchValues));
+
+            // Last setting wins
+            var dictionary = new Dictionary<string, bool>();
+            foreach ((string name, bool value) in switchValues)
+                dictionary[name] = value;
+
+            _hashtable = new FeatureSwitchHashtable(logger, dictionary);
         }
 
         private BodySubstitution GetSubstitution(MethodDesc method)
@@ -289,7 +295,21 @@ namespace ILCompiler
                         if (delta >= 0 && delta < ehRegion.TryLength)
                         {
                             if (ehRegion.Kind == ILExceptionRegionKind.Filter)
+                            {
                                 offsetsToVisit.Push(ehRegion.FilterOffset);
+
+                                // Filter must end with endfilter, so ensure we don't accidentally remove it.
+                                // ECMA-335 dictates that filter block starts at FilterOffset and ends at HandlerOffset.
+                                int expectedEndfilterLocation = ehRegion.HandlerOffset - 2;
+                                bool isValidFilter = expectedEndfilterLocation >= 0
+                                    && (flags[expectedEndfilterLocation] & OpcodeFlags.InstructionStart) != 0
+                                    && methodBytes[expectedEndfilterLocation] == (byte)ILOpcode.prefix1
+                                    && methodBytes[expectedEndfilterLocation + 1] == unchecked((byte)ILOpcode.endfilter);
+                                if (isValidFilter)
+                                {
+                                    flags[expectedEndfilterLocation] |= OpcodeFlags.VisibleBasicBlockStart | OpcodeFlags.Mark;
+                                }
+                            }
 
                             offsetsToVisit.Push(ehRegion.HandlerOffset);
 

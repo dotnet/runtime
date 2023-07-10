@@ -754,7 +754,7 @@ unwinder_init (Unwinder *unwinder)
 	memset (unwinder, 0, sizeof (Unwinder));
 }
 
-#if defined(__GNUC__) && defined(TARGET_ARM64)
+#if defined(__GNUC__) && defined(TARGET_ARM64) && !defined(__clang__)
 /* gcc 4.9.2 seems to miscompile this on arm64 */
 static __attribute__((optimize("O0"))) gboolean
 #else
@@ -1839,7 +1839,7 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 
 	while (1) {
 		MonoContext new_ctx;
-		guint32 free_stack, clause_index_start = 0;
+		guint32 clause_index_start = 0;
 		gboolean unwind_res = TRUE;
 
 		StackFrameInfo frame;
@@ -1907,12 +1907,6 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 		if (method->dynamic)
 			dynamic_methods = g_slist_prepend (dynamic_methods, method);
 
-		if (stack_overflow) {
-			free_stack = (guint32)((guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)));
-		} else {
-			free_stack = 0xffffff;
-		}
-
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
 			result = MONO_FIRST_PASS_CALLBACK_TO_NATIVE;
 		}
@@ -1921,11 +1915,8 @@ handle_exception_first_pass (MonoContext *ctx, MonoObject *obj, gint32 *out_filt
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
 
-			/*
-			 * During stack overflow, wait till the unwinding frees some stack
-			 * space before running handlers/finalizers.
-			 */
-			if (free_stack <= (64 * 1024))
+			// StackOverflowException shouldn't be caught
+			if (stack_overflow)
 				continue;
 
 			if (is_address_protected (ji, ei, ip)) {
@@ -2085,7 +2076,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	MonoLMF *lmf = mono_get_lmf ();
 	MonoException *mono_ex;
 	gboolean stack_overflow = FALSE;
-	MonoContext initial_ctx;
 	MonoMethod *method;
 	// int frame_count = 0; // used for debugging
 	gint32 filter_idx, first_filter_idx = 0;
@@ -2270,13 +2260,11 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	if (out_ji)
 		*out_ji = NULL;
 	filter_idx = 0;
-	initial_ctx = *ctx;
 
 	unwinder_init (&unwinder);
 
 	while (1) {
 		MonoContext new_ctx;
-		guint32 free_stack;
 		int clause_index_start = 0;
 		gboolean unwind_res = TRUE;
 		StackFrameInfo frame;
@@ -2334,12 +2322,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		// frame_count ++;
 		// printf ("[%d] %s.\n", frame_count, mono_method_full_name (method, TRUE));
 
-		if (stack_overflow) {
-			free_stack = (guint32)((guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)));
-		} else {
-			free_stack = 0xffffff;
-		}
-
 		if (method->wrapper_type == MONO_WRAPPER_NATIVE_TO_MANAGED && ftnptr_eh_callback) {
 			MonoGCHandle handle = mono_gchandle_new_internal (obj, FALSE);
 			MONO_STACKDATA (stackptr);
@@ -2354,11 +2336,8 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			MonoJitExceptionInfo *ei = &ji->clauses [i];
 			gboolean filtered = FALSE;
 
-			/*
-			 * During stack overflow, wait till the unwinding frees some stack
-			 * space before running handlers/finalizers.
-			 */
-			if (free_stack <= (64 * 1024))
+			// StackOverflowException shouldn't be caught
+			if (stack_overflow)
 				continue;
 
 			if (is_address_protected (ji, ei, ip)) {

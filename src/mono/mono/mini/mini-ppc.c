@@ -3033,8 +3033,11 @@ emit_move_return_value (MonoCompile *cfg, MonoInst *ins, guint8 *code)
 {
 	switch (ins->opcode) {
 	case OP_FCALL:
+	case OP_RCALL:
 	case OP_FCALL_REG:
+	case OP_RCALL_REG:
 	case OP_FCALL_MEMBASE:
+	case OP_RCALL_MEMBASE:
 		if (ins->dreg != ppc_f1)
 			ppc_fmr (code, ins->dreg, ppc_f1);
 		break;
@@ -3763,6 +3766,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_mr (code, ppc_r4, saved);
 			break;
 		}
+		case OP_RMOVE:
 		case OP_FMOVE:
 			if (ins->dreg != ins->sreg1)
 				ppc_fmr (code, ins->dreg, ins->sreg1);
@@ -3894,6 +3898,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_stptr (code, ppc_r0, 0, ins->sreg1);
 			break;
 		}
+		case OP_RCALL:
 		case OP_FCALL:
 		case OP_LCALL:
 		case OP_VCALL:
@@ -3916,6 +3921,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		case OP_RCALL_REG:
 		case OP_FCALL_REG:
 		case OP_LCALL_REG:
 		case OP_VCALL_REG:
@@ -3945,6 +3951,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* FIXME: this should be handled somewhere else in the new jit */
 			code = emit_move_return_value (cfg, ins, code);
 			break;
+		case OP_RCALL_MEMBASE:
 		case OP_FCALL_MEMBASE:
 		case OP_LCALL_MEMBASE:
 		case OP_VCALL_MEMBASE:
@@ -4266,21 +4273,27 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case CEE_CONV_R4: /* FIXME: change precision */
 		case CEE_CONV_R8:
 			g_assert_not_reached ();
+		case OP_RCONV_TO_I1:
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
 			break;
+		case OP_RCONV_TO_U1:
 		case OP_FCONV_TO_U1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, FALSE);
 			break;
+		case OP_RCONV_TO_I2:
 		case OP_FCONV_TO_I2:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, TRUE);
 			break;
+		case OP_RCONV_TO_U2:
 		case OP_FCONV_TO_U2:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 2, FALSE);
 			break;
+		case OP_RCONV_TO_I4:
 		case OP_FCONV_TO_I4:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, TRUE);
 			break;
+		case OP_RCONV_TO_U4:
 		case OP_FCONV_TO_U4:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 4, FALSE);
 			break;
@@ -4339,21 +4352,35 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SQRT:
 			ppc_fsqrtd (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_RADD:
+			ppc_fadds (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_FADD:
 			ppc_fadd (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_RSUB:
+			ppc_fsubs (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FSUB:
 			ppc_fsub (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_RMUL:
+			ppc_fmuls (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
 		case OP_FMUL:
 			ppc_fmul (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+		case OP_RDIV:
+			ppc_fdivs (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
 		case OP_FDIV:
 			ppc_fdiv (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_RNEG:
 		case OP_FNEG:
 			ppc_fneg (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_RREM:
 		case OP_FREM:
 			/* emulated */
 			g_assert_not_reached ();
@@ -4391,23 +4418,29 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_cmpl (code, 0, 1, ins->sreg1, ins->sreg2);
 			ppc_iselgt (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
+		case OP_RCOMPARE:
 		case OP_FCOMPARE:
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			break;
+		case OP_RCEQ:
+		case OP_RCNEQ:
 		case OP_FCEQ:
 		case OP_FCNEQ:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, ins->opcode == OP_FCEQ ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_EQ, 2);
+			ppc_bc (code, ins->opcode == OP_FCEQ || ins->opcode == OP_RCEQ ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_EQ, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
+		case OP_RCLT:
+		case OP_RCGE:
 		case OP_FCLT:
 		case OP_FCGE:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, ins->opcode == OP_FCLT ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_LT, 2);
+			ppc_bc (code, ins->opcode == OP_FCLT || ins->opcode == OP_RCLT ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_LT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
+		case OP_RCLT_UN:
 		case OP_FCLT_UN:
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
@@ -4415,13 +4448,16 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			ppc_bc (code, PPC_BR_TRUE, PPC_BR_LT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
+		case OP_RCGT:
+		case OP_RCLE:
 		case OP_FCGT:
 		case OP_FCLE:
 			ppc_fcmpo (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
-			ppc_bc (code, ins->opcode == OP_FCGT ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_GT, 2);
+			ppc_bc (code, ins->opcode == OP_FCGT || ins->opcode == OP_RCGT ? PPC_BR_TRUE : PPC_BR_FALSE, PPC_BR_GT, 2);
 			ppc_li (code, ins->dreg, 0);
 			break;
+		case OP_RCGT_UN:
 		case OP_FCGT_UN:
 			ppc_fcmpu (code, 0, ins->sreg1, ins->sreg2);
 			ppc_li (code, ins->dreg, 1);
@@ -4492,6 +4528,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ZEXT_I4:
 			ppc_clrldi (code, ins->dreg, ins->sreg1, 32);
 			break;
+		case OP_RCONV_TO_R4:
+		case OP_RCONV_TO_R8:
+			ppc_fmr (code, ins->dreg, ins->sreg1);
+			break;
 		case OP_ICONV_TO_R4:
 		case OP_ICONV_TO_R8:
 		case OP_LCONV_TO_R4:
@@ -4509,9 +4549,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				ppc_str (code, tmp, -8, ppc_r1);
 				ppc_lfd (code, ins->dreg, -8, ppc_r1);
 			}
-			ppc_fcfid (code, ins->dreg, ins->dreg);
-			if (ins->opcode == OP_ICONV_TO_R4 || ins->opcode == OP_LCONV_TO_R4)
-				ppc_frsp (code, ins->dreg, ins->dreg);
+			if (ins->opcode == OP_ICONV_TO_R4 || ins->opcode == OP_LCONV_TO_R4) {
+				ppc_fcfids (code, ins->dreg, ins->dreg);
+			} else {
+				ppc_fcfid (code, ins->dreg, ins->dreg);
+			}
 			break;
 		}
 		case OP_LSHR:
@@ -4544,9 +4586,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LBLE_UN:
 			EMIT_COND_BRANCH (ins, ins->opcode - OP_LBEQ);
 			break;
+		case OP_RCONV_TO_I8:
 		case OP_FCONV_TO_I8:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 8, TRUE);
 			break;
+		case OP_RCONV_TO_U8:
 		case OP_FCONV_TO_U8:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 8, FALSE);
 			break;

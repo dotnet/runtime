@@ -111,13 +111,12 @@ namespace System.Reflection.Emit
             private readonly byte[]? m_binaryAttribute;
             private readonly CustomAttributeBuilder? m_customBuilder;
 
-            public CustAttr(ConstructorInfo con, byte[] binaryAttribute)
+            public CustAttr(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
             {
                 ArgumentNullException.ThrowIfNull(con);
-                ArgumentNullException.ThrowIfNull(binaryAttribute);
 
                 m_con = con;
-                m_binaryAttribute = binaryAttribute;
+                m_binaryAttribute = binaryAttribute.ToArray();
             }
 
             public CustAttr(CustomAttributeBuilder customBuilder)
@@ -173,21 +172,13 @@ namespace System.Reflection.Emit
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineCustomAttribute")]
         private static partial void DefineCustomAttribute(QCallModule module, int tkAssociate, int tkConstructor,
-            byte[]? attr, int attrLength);
+            ReadOnlySpan<byte> attr, int attrLength);
 
         internal static void DefineCustomAttribute(RuntimeModuleBuilder module, int tkAssociate, int tkConstructor,
-            byte[]? attr)
+            ReadOnlySpan<byte> attr)
         {
-            byte[]? localAttr = null;
-
-            if (attr != null)
-            {
-                localAttr = new byte[attr.Length];
-                Buffer.BlockCopy(attr, 0, localAttr, 0, attr.Length);
-            }
-
             DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
-                localAttr, (localAttr != null) ? localAttr.Length : 0);
+                attr, attr.Length);
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "TypeBuilder_DefineProperty", StringMarshalling = StringMarshalling.Utf16)]
@@ -500,14 +491,11 @@ namespace System.Reflection.Emit
             int[]? interfaceTokens = null;
             if (interfaces != null)
             {
+                interfaceTokens = new int[interfaces.Length + 1];
                 for (i = 0; i < interfaces.Length; i++)
                 {
                     // cannot contain null in the interface list
                     ArgumentNullException.ThrowIfNull(interfaces[i], nameof(interfaces));
-                }
-                interfaceTokens = new int[interfaces.Length + 1];
-                for (i = 0; i < interfaces.Length; i++)
-                {
                     interfaceTokens[i] = m_module.GetTypeTokenInternal(interfaces[i]);
                 }
             }
@@ -586,7 +574,7 @@ namespace System.Reflection.Emit
                 typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = m_module.DefineType(strValueClassName, typeAttributes, typeof(System.ValueType), PackingSize.Size1, size);
+                valueClassType = m_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
                 valueClassType.CreateType();
             }
 
@@ -670,7 +658,7 @@ namespace System.Reflection.Emit
             m_genParamAttributes = genericParameterAttributes;
         }
 
-        internal void SetGenParamCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
+        internal void SetGenParamCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             CustAttr ca = new CustAttr(con, binaryAttribute);
 
@@ -839,7 +827,7 @@ namespace System.Reflection.Emit
 
             if (m_typeInterfaces == null)
             {
-                return Type.EmptyTypes;
+                return EmptyTypes;
             }
 
             return m_typeInterfaces.ToArray();
@@ -1073,29 +1061,6 @@ namespace System.Reflection.Emit
             }
         }
 
-        public override Type MakePointerType()
-        {
-            return SymbolType.FormCompoundType("*", this, 0)!;
-        }
-
-        public override Type MakeByRefType()
-        {
-            return SymbolType.FormCompoundType("&", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType()
-        {
-            return SymbolType.FormCompoundType("[]", this, 0)!;
-        }
-
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
-        public override Type MakeArrayType(int rank)
-        {
-            string s = GetRankString(rank);
-            return SymbolType.FormCompoundType(s, this, 0)!;
-        }
-
         #endregion
 
         #region ICustomAttributeProvider Implementation
@@ -1153,27 +1118,23 @@ namespace System.Reflection.Emit
 
         protected override GenericTypeParameterBuilder[] DefineGenericParametersCore(params string[] names)
         {
-            for (int i = 0; i < names.Length; i++)
-                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
-
             if (m_inst != null)
+            {
                 throw new InvalidOperationException();
+            }
 
             m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(name, i, this));
+            }
 
             return m_inst;
         }
 
-        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
-        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
-        public override Type MakeGenericType(params Type[] typeArguments)
-        {
-            return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
-        }
-
-        public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
+        public override Type[] GetGenericArguments() => m_inst ?? EmptyTypes;
 
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.
@@ -1748,7 +1709,7 @@ namespace System.Reflection.Emit
                     if (meth.m_ilGenerator != null)
                     {
                         // we need to bake the method here.
-                        meth.CreateMethodBodyHelper(meth.GetILGenerator());
+                        meth.CreateMethodBodyHelper(((RuntimeILGenerator)meth.GetILGenerator()));
                     }
 
                     body = meth.GetBody();
@@ -1858,14 +1819,14 @@ namespace System.Reflection.Emit
             }
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        internal void SetCustomAttribute(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
+            SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
-            customBuilder.CreateCustomAttribute(m_module, m_tdType);
+            DefineCustomAttribute(m_module, m_tdType, m_module.GetMethodMetadataToken(con), binaryAttribute);
         }
 
         #endregion

@@ -100,7 +100,7 @@ If `MyClass` fails to load, for example because it's supposed to be defined in a
 
 ## Key Data Structures
 
-The most universal type designation in the CLR is the `TypeHandle`. It's an abstract entity which encapsulates a pointer to either a `MethodTable` (representing "ordinary" types like `System.Object` or `List<string>`) or a `TypeDesc` (representing byrefs, pointers, function pointers, arrays, and generic variables). It constitutes the identity of a type in that two handles are equal if and only if they represent the same type. To save space, the fact that a `TypeHandle` contains a `TypeDesc` is indicated by setting the second lowest bit of the pointer to 1 (i.e. (ptr | 2)) instead of using additional flags<sup>2</sup>. `TypeDesc` is "abstract" and has the following inheritance hierarchy.
+The most universal type designation in the CLR is the `TypeHandle`. It's an abstract entity which encapsulates a pointer to either a `MethodTable` (representing "ordinary" types like `System.Object` or `List<string>`) or a `TypeDesc` (representing byrefs, pointers, function pointers and generic variables). It constitutes the identity of a type in that two handles are equal if and only if they represent the same type. To save space, the fact that a `TypeHandle` contains a `TypeDesc` is indicated by setting the second lowest bit of the pointer to 1 (i.e. (ptr | 2)) instead of using additional flags<sup>2</sup>. `TypeDesc` is "abstract" and has the following inheritance hierarchy.
 
 ![Figure 2](images/typeloader-fig2.png)
 
@@ -121,10 +121,6 @@ Represents a function pointer, essentially a variable-length list of type handle
 **`ParamTypeDesc`**
 
 This descriptor represents a byref and pointer types. Byrefs are the results of the `ref` and `out` C# keywords applied to method parameters<sup>3</sup> whereas pointer types are unmanaged pointers to data used in unsafe C# and managed C++.
-
-**`ArrayTypeDesc`**
-
-Represents array types. It is derived from `ParamTypeDesc` because arrays are also parameterized by a single parameter (the type of their element). This is opposed to generic instantiations whose number of parameters is variable.
 
 **`MethodTable`**
 
@@ -306,14 +302,14 @@ type, they have the typical instantiation in mind. Example:
 public class A<S, T, U> {}
 ```
 
-The C# `typeof(A<,,>)` compiles to ldtoken A\'3 which makes the
+The C# `typeof(A<,,>)` compiles to ``ldtoken A`3`` which makes the
 runtime load ``A`3`` instantiated at `S` , `T` , `U`.
 
 **Canonical Instantiation**
 
 An instantiation where all generic arguments are
 `System.__Canon`. `System.__Canon` is an internal type defined
-in **mscorlib** and its task is just to be well-known and different
+in **corlib** and its task is just to be well-known and different
 from any other type which may be used as a generic
 argument. Types/methods with canonical instantiation are used as
 representatives of all instantiations and carry information shared by
@@ -343,8 +339,7 @@ of all these types is the same. The figure illustrates this for
 `List<object>` and `List<string>`. The canonical `MethodTable`
 was created automatically before the first reference type
 instantiation was loaded and contains data which is hot but not
-instantiation specific like non-virtual slots or
-`RemotableMethodInfo`. Instantiations containing only value types
+instantiation specific like non-virtual slots. Instantiations containing only value types
 are not shared and every such instantiated type gets its own unshared
 `EEClass`.
 

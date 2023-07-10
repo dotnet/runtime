@@ -88,6 +88,9 @@
     <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs">
       <Link>JitInterface\LoongArch64PassStructInRegister.cs</Link>
     </Compile>
+    <Compile Include="..\..\Common\JitInterface\RISCV64PassStructInRegister.cs">
+      <Link>JitInterface\RISCV64PassStructInRegister.cs</Link>
+    </Compile>
     <Compile Include="..\..\Common\Pgo\TypeSystemEntityOrUnknown.cs">
       <Link>Pgo\TypeSystemEntityOrUnknown.cs</Link>
     </Compile>
