@@ -3187,7 +3187,6 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 {
                     Assert.Equal((byte)32, result.GetElement(index));
                 }
-
             }
         }
 
