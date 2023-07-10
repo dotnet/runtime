@@ -18261,10 +18261,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
             *pIsExact = true;
             objClass  = exactClass;
         }
-        else
-        {
-            *pIsExact = impIsClassExact(objClass);
-        }
     }
 
     return objClass;

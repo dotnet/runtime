@@ -3076,10 +3076,6 @@ void Compiler::lvaSetClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool is
             isExact = true;
             clsHnd  = exactClass;
         }
-        else
-        {
-            isExact = impIsClassExact(clsHnd);
-        }
     }
 
     // Else we should have a type handle.
@@ -3173,37 +3169,23 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     assert(varDsc->lvSingleDef);
 
     // Now see if we should update.
-
+    //
     // New information may not always be "better" so do some
     // simple analysis to decide if the update is worthwhile.
     const bool isNewClass   = (clsHnd != varDsc->lvClassHnd);
     bool       shouldUpdate = false;
 
-    if (!isExact && JitConfig.JitEnableExactDevirtualization())
-    {
-        CORINFO_CLASS_HANDLE exactClass;
-        if (info.compCompHnd->getExactClasses(clsHnd, 1, &exactClass) == 1)
-        {
-            isExact = true;
-            clsHnd  = exactClass;
-        }
-        else
-        {
-            isExact = impIsClassExact(clsHnd);
-        }
-    }
-
-    // Are we attempting to update exactness?
-    if (isExact && !varDsc->lvClassIsExact)
-    {
-        shouldUpdate = true;
-    }
     // Are we attempting to update the class? Only check this when we have
     // an new type and the existing class is inexact... we should not be
-    // updating exact classes
-    else if (isNewClass && !varDsc->lvClassIsExact)
+    // updating exact classes.
+    if (!varDsc->lvClassIsExact && isNewClass)
     {
         shouldUpdate = !!info.compCompHnd->isMoreSpecificType(varDsc->lvClassHnd, clsHnd);
+    }
+    // Else are we attempting to update exactness?
+    else if (isExact && !varDsc->lvClassIsExact && !isNewClass)
+    {
+        shouldUpdate = true;
     }
 
 #if DEBUG
