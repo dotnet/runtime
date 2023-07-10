@@ -513,33 +513,23 @@ namespace System.Text.RegularExpressions
         {
             _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
 
-            while (true)
+            while (_pos < _pattern.Length)
             {
-                int c = _pattern.Length - _pos;
-                if (c == 0)
-                {
-                    break;
-                }
-
                 int startpos = _pos;
 
-                while (c > 0 && _pattern[_pos] != '$')
-                {
-                    _pos++;
-                    c--;
-                }
+                _pos = _pattern.IndexOf('$', _pos);
+                if (_pos == -1)
+                    _pos = _pattern.Length;
 
                 AddConcatenate(startpos, _pos - startpos, isReplacement: true);
 
-                if (c > 0)
+                if (_pos < _pattern.Length)
                 {
                     if (_pattern[_pos++] == '$')
                     {
-                        RegexNode node = ScanDollar();
-                        _unit = node;
+                        _unit = ScanDollar();
+                        AddConcatenate();
                     }
-
-                    AddConcatenate();
                 }
             }
 
