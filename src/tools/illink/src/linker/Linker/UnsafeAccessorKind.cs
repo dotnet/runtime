@@ -7,7 +7,7 @@ namespace System.Runtime.CompilerServices
 	/// <summary>
 	/// Specifies the kind of target to which an <see cref="UnsafeAccessorAttribute" /> is providing access.
 	/// </summary>
-	public enum UnsafeAccessorKind
+	internal enum UnsafeAccessorKind
 	{
 		/// <summary>
 		/// Provide access to a constructor.
