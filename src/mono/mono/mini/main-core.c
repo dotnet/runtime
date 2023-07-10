@@ -39,6 +39,7 @@ MONO_API int STDAPICALLTYPE coreclr_execute_assembly (void* hostHandle, unsigned
 	const char* managedAssemblyPath, unsigned int* exitCode);
 
 MONO_API int STDAPICALLTYPE coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, int* latchedExitCode);
+MONO_API int STDAPICALLTYPE coreclr_shutdown (void* hostHandle, unsigned int domainId);
 
 MONO_API int STDAPICALLTYPE coreclr_create_delegate (void* hostHandle, unsigned int domainId,
 	const char* entryPointAssemblyName, const char* entryPointTypeName, const char* entryPointMethodName,
@@ -104,6 +105,24 @@ int STDAPICALLTYPE coreclr_shutdown_2 (void* hostHandle, unsigned int domainId, 
 {
 	return monovm_shutdown (latchedExitCode);
 }
+
+//
+// Shutdown CoreCLR. It unloads the app domain and stops the CoreCLR host.
+//
+// Parameters:
+//  hostHandle              - Handle of the host
+//  domainId                - Id of the domain
+//  latchedExitCode         - Latched exit code after domain unloaded
+//
+// Returns:
+//  HRESULT indicating status of the operation. S_OK if the assembly was successfully executed
+//
+int STDAPICALLTYPE coreclr_shutdown (void* hostHandle, unsigned int domainId)
+{
+       int latchedExitCode = 0 ;
+       return monovm_shutdown (&latchedExitCode);
+}
+
 
 //
 // Create a native callable delegate for a managed method.
