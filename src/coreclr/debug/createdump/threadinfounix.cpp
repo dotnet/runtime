@@ -246,7 +246,7 @@ ThreadInfo::GetThreadContext(uint32_t flags, CONTEXT* context) const
         context->Fcsr = m_fpRegisters.fpscr;
     }
 #elif defined(__riscv)
-    _ASSERTE(!"TODO RISCV64 NYI");
+    assert(!"TODO RISCV64 NYI");
 #else
 #error Platform not supported
 #endif

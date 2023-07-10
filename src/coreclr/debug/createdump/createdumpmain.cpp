@@ -126,6 +126,10 @@ int createdump_main(const int argc, const char* argv[])
             {
                 options.AppModel = AppModelType::SingleFile;
             }
+            else if (strcmp(*argv, "--nativeaot") == 0)
+            {
+                options.AppModel = AppModelType::NativeAOT;
+            }
             else if (strcmp(*argv, "--code") == 0)
             {
                 options.SignalCode = atoi(*++argv);
@@ -199,9 +203,8 @@ int createdump_main(const int argc, const char* argv[])
     {
         if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
         {
-            //printf_error("GetTempPath failed %s", GetLastErrorString().c_str());
             printf_error("GetTempPath failed\n");
-            return ::GetLastError();
+            return -1;
         }
         exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
         if (exitCode != 0)

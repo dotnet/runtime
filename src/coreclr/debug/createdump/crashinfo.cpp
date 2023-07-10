@@ -280,10 +280,11 @@ GetHResultString(HRESULT hr)
 bool
 CrashInfo::InitializeDAC(DumpType dumpType)
 {
-    // Don't attempt to load the DAC if the app model doesn't support it by default. The default for single-file is a
-    // full dump, but if the dump type requested is a mini, triage or heap and the DAC is side-by-side to the single-file
-    // application the core dump will be generated.
-    if (dumpType == DumpType::Full && (m_appModel == AppModelType::SingleFile || m_appModel == AppModelType::NativeAOT))
+    // Don't attempt to load the DAC if the app model doesn't support it by default. The default for single-file is
+    // a full dump, but if the dump type requested is a mini, triage or heap and the DAC is next to the single-file
+    // application the core dump will be generated. For NativeAOT, there is currently no DAC available so never
+    // attempt to load it.
+    if ((dumpType == DumpType::Full && m_appModel == AppModelType::SingleFile) || m_appModel == AppModelType::NativeAOT)
     {
         return true;
     }
@@ -483,19 +484,24 @@ CrashInfo::EnumerateManagedModules()
 bool
 CrashInfo::UnwindAllThreads()
 {
-    TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
-    ReleaseHolder<ISOSDacInterface> pSos = nullptr;
-    if (m_pClrDataProcess != nullptr) {
-        m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
-    }
-    // For each native and managed thread
-    for (ThreadInfo* thread : m_threads)
+    // Don't unwind any threads if Native AOT since there isn't a DAC to get the remote
+    // unwinder support and they are full dumps.
+    if (m_appModel != AppModelType::NativeAOT)
     {
-        if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
-            return false;
+        TRACE("UnwindAllThreads: STARTED (%d)\n", m_dataTargetPagesAdded);
+        ReleaseHolder<ISOSDacInterface> pSos = nullptr;
+        if (m_pClrDataProcess != nullptr) {
+            m_pClrDataProcess->QueryInterface(__uuidof(ISOSDacInterface), (void**)&pSos);
         }
+        // For each native and managed thread
+        for (ThreadInfo* thread : m_threads)
+        {
+            if (!thread->UnwindThread(m_pClrDataProcess, pSos)) {
+                return false;
+            }
+        }
+        TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     }
-    TRACE("UnwindAllThreads: FINISHED (%d)\n", m_dataTargetPagesAdded);
     return true;
 }
 
@@ -959,7 +965,7 @@ FormatString(const char* format, ...)
     ArrayHolder<char> buffer = new char[MAX_LONGPATH + 1];
     va_list args;
     va_start(args, format);
-    int result = vsprintf_s(buffer, MAX_LONGPATH, format, args);
+    int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
     va_end(args);
     return result > 0 ? std::string(buffer) : std::string();
 }

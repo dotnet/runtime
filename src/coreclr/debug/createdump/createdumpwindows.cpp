@@ -24,8 +24,8 @@ CreateDump(const CreateDumpOptions& options)
     HANDLE hProcess = NULL;
     bool result = false;
 
-    _ASSERTE(options.CreateDump);
-    _ASSERTE(!options.CrashReport);
+    assert(options.CreateDump);
+    assert(!options.CrashReport);
 
     ArrayHolder<char> pszName = new char[MAX_LONGPATH + 1];
     std::string dumpPath;

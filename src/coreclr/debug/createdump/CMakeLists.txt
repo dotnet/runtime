@@ -74,9 +74,6 @@ if(CLR_CMAKE_HOST_OSX)
         dumpwritermacho.cpp
         ${CREATEDUMP_SOURCES}
     )
-    add_executable_clr(createdump
-        main.cpp
-    )
 else()
     add_library_clr(createdump_static
         STATIC
@@ -85,24 +82,20 @@ else()
         dumpwriterelf.cpp
         ${CREATEDUMP_SOURCES}
     )
+endif(CLR_CMAKE_HOST_OSX)
+
     add_executable_clr(createdump
         main.cpp
-        ${PAL_REDEFINES_FILE}
+        createdumppal.cpp
     )
-    add_dependencies(createdump pal_redefines_file)
-endif(CLR_CMAKE_HOST_OSX)
 
     target_link_libraries(createdump
         PRIVATE
         createdump_static
         corguids
         dbgutil
-        # share the PAL in the dac module
-        mscordaccore
         dl
     )
-
-    add_dependencies(createdump mscordaccore)
 
 endif(CLR_CMAKE_HOST_WIN32)
 
