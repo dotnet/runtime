@@ -8,6 +8,9 @@
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
+             TaskName="NdkToolFinderTask"
+             AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
   <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
              TaskName="AndroidAppBuilderTask"
              AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)" />
@@ -37,7 +40,6 @@
 
       <BundleDir>$(AndroidBundleDir)</BundleDir>
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
-      <_AotModuleTablePath>$(AndroidBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -94,6 +96,15 @@
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Normal</_AOTMode>
       <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
       <_AOTMode Condition="'$(ForceFullAOT)' == 'true'">Full</_AOTMode>
+      <_AotOutputType>AsmOnly</_AotOutputType>
+    </PropertyGroup>
+    <!-- Should consider renaming property to something more appropriate-->
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
+      <_AotOutputType>Library</_AotOutputType>
+      <_AotLibraryFormat>So</_AotLibraryFormat>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' != 'true'">
+      <_AotModuleTablePath>$(AndroidBundleDir)\modules.c</_AotModuleTablePath>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
@@ -124,6 +135,28 @@
     <PropertyGroup>
       <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
       <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <AndroidLibraryMinApiLevel Condition="'$(AndroidLibraryMinApiLevel)' == ''">21</AndroidLibraryMinApiLevel>
+    </PropertyGroup>
+
+    <NdkToolFinderTask
+      Condition="'$(AOTWithLibraryFiles)' == 'true'"
+      Architecture="$(TargetArchitecture)"
+      HostOS="$(_HostOS)"
+      MinApiLevel="$(AndroidLibraryMinApiLevel)">
+      <Output TaskParameter="AsPrefixPath" PropertyName="_AsPrefixPath" />
+      <Output TaskParameter="ToolPrefixPath" PropertyName="_ToolPrefixPath" />
+      <Output TaskParameter="Triple" PropertyName="_Triple" />
+      <Output TaskParameter="LdName" PropertyName="_LdName" />
+      <Output TaskParameter="LdPath" PropertyName="_LdPath" />
+      <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
+    </NdkToolFinderTask>
+
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
+      <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
+      <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -182,17 +215,20 @@
 
     <MonoAOTCompiler
         AotModulesTablePath="$(_AotModuleTablePath)"
+        AsPrefix="$(_AsPrefixPath)"
         Assemblies="@(_AotInputAssemblies)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         DirectPInvokes="@(DirectPInvokes)"
         DirectPInvokeLists="@(DirectPInvokeLists)"
         EnableUnmanagedCallersOnlyMethodsExport="$(_EnableUnmanagedCallersOnlyMethodsExport)"
         IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
+        LibraryFormat="$(_AotLibraryFormat)"
         LLVMPath="$(MonoAotCrossDir)"
         MibcProfilePath="@(ProfiledAOTProfilePaths)"
         Mode="$(_AOTMode)"
         OutputDir="$(_MobileIntermediateOutputPath)"
-        OutputType="AsmOnly"
+        OutputType="$(_AotOutputType)"
+        ToolPrefix="$(_ToolPrefixPath)"
         UseAotDataFile="$(_UseAotDataFile)"
         UseLLVM="$(MonoEnableLLVM)">
         <Output TaskParameter="CompiledAssemblies" ItemName="_AssembliesToBundleInternal" />

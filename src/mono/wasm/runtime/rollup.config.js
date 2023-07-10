@@ -10,9 +10,11 @@ import dts from "rollup-plugin-dts";
 import { createFilter } from "@rollup/pluginutils";
 import fast_glob from "fast-glob";
 import gitCommitInfo from "git-commit-info";
+import MagicString from "magic-string";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
+const isContinuousIntegrationBuild = process.env.ContinuousIntegrationBuild === "true" ? true : false;
 const productVersion = process.env.ProductVersion || "8.0.0-dev";
 const nativeBinDir = process.env.NativeBinDir ? process.env.NativeBinDir.replace(/"/g, "") : "bin";
 const monoWasmThreads = process.env.MonoWasmThreads === "true" ? true : false;
@@ -38,13 +40,15 @@ const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const inlineAssert = [
     {
-        pattern: /mono_assert\(([^,]*), *"([^"]*)"\);/gm,
         // eslint-disable-next-line quotes
-        replacement: 'if (!($1)) throw new Error("Assert failed: $2"); // inlined mono_assert'
+        pattern: 'mono_assert\\(([^,]*), *"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (!(${match[1]})) throw new Error("Assert failed: ${match[2]}"); // inlined mono_assert`
     },
     {
-        pattern: /mono_assert\(([^,]*), \(\) => *`([^`]*)`\);/gm,
-        replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined mono_assert"
+        // eslint-disable-next-line quotes
+        pattern: 'mono_assert\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined mono_assert`
     }
 ];
 const checkAssert =
@@ -78,7 +82,27 @@ const envConstants = {
     monoDiagnosticsMock,
     gitHash,
     wasmEnableLegacyJsInterop,
+    isContinuousIntegrationBuild,
 };
+
+const locationCache = {};
+function sourcemapPathTransform(relativeSourcePath, sourcemapPath) {
+    let res = locationCache[relativeSourcePath];
+    if (res === undefined) {
+        if (!isContinuousIntegrationBuild) {
+            const sourcePath = path.resolve(
+                path.dirname(sourcemapPath),
+                relativeSourcePath
+            );
+            res = `file:///${sourcePath.replace(/\\/g, "/")}`;
+        } else {
+            relativeSourcePath = relativeSourcePath.substring(12);
+            res = `https://raw.githubusercontent.com/dotnet/runtime/${gitHash}/${relativeSourcePath}`;
+        }
+        locationCache[relativeSourcePath] = res;
+    }
+    return res;
+}
 
 function consts(dict) {
     // implement rollup-plugin-const in terms of @rollup/plugin-virtual
@@ -103,7 +127,7 @@ const typescriptConfigOptions = {
 };
 
 const outputCodePlugins = [consts(envConstants), typescript(typescriptConfigOptions)];
-const externalDependencies = ["module"];
+const externalDependencies = ["module", "process"];
 
 const loaderConfig = {
     treeshake: !isDebug,
@@ -114,10 +138,29 @@ const loaderConfig = {
             file: nativeBinDir + "/dotnet.js",
             banner,
             plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
         }
     ],
     external: externalDependencies,
     plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoRuntime]), ...outputCodePlugins],
+    onwarn: onwarn
+};
+const runtimeConfig = {
+    treeshake: !isDebug,
+    input: "exports.ts",
+    output: [
+        {
+            format: "es",
+            file: nativeBinDir + "/dotnet.runtime.js",
+            banner,
+            plugins,
+            sourcemap: true,
+            sourcemapPathTransform,
+        }
+    ],
+    external: externalDependencies,
+    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
     onwarn: onwarn
 };
 const typesConfig = {
@@ -133,22 +176,7 @@ const typesConfig = {
     external: externalDependencies,
     plugins: [dts()],
 };
-const runtimeConfig = {
-    treeshake: !isDebug,
-    input: "exports.ts",
-    output: [
-        {
-            format: "es",
-            file: nativeBinDir + "/dotnet.runtime.js",
-            banner,
-            plugins,
-        }
-    ],
-    external: externalDependencies,
-    plugins: [regexReplace(inlineAssert), regexCheck([checkAssert, checkNoLoader]), ...outputCodePlugins],
-    onwarn: onwarn
-};
-const legacyConfig = {
+const legacyTypesConfig = {
     input: "./net6-legacy/export-types.ts",
     output: [
         {
@@ -174,7 +202,7 @@ if (isDebug) {
         banner: banner_dts,
         plugins: [alwaysLF(), writeOnChangePlugin()],
     });
-    legacyConfig.output.push({
+    legacyTypesConfig.output.push({
         format: "es",
         file: "./dotnet-legacy.d.ts",
         banner: banner_dts,
@@ -221,7 +249,7 @@ const allConfigs = [
     loaderConfig,
     runtimeConfig,
     typesConfig,
-    legacyConfig,
+    legacyTypesConfig,
 ].concat(workerConfigs)
     .concat(diagnosticMockTypesConfig ? [diagnosticMockTypesConfig] : []);
 export default defineConfig(allConfigs);
@@ -336,19 +364,34 @@ function regexReplace(replacements = []) {
         }
     };
 
-    function executeReplacement(_, code) {
-        // TODO use MagicString for sourcemap support
-        let fixed = code;
-        for (const rep of replacements) {
-            const { pattern, replacement } = rep;
-            fixed = fixed.replace(pattern, replacement);
-        }
-
-        if (fixed == code) {
+    function executeReplacement(_, code, id) {
+        const magicString = new MagicString(code);
+        if (!codeHasReplacements(code, id, magicString)) {
             return null;
         }
 
-        return { code: fixed };
+        const result = { code: magicString.toString() };
+        result.map = magicString.generateMap({ hires: true });
+        return result;
+    }
+
+    function codeHasReplacements(code, id, magicString) {
+        let result = false;
+        let match;
+        for (const rep of replacements) {
+            const { pattern, replacement } = rep;
+            const rx = new RegExp(pattern, "gm");
+            while ((match = rx.exec(code))) {
+                result = true;
+                const updated = replacement(match);
+                const start = match.index;
+                const end = start + match[0].length;
+                magicString.overwrite(start, end, updated);
+            }
+        }
+
+        // eslint-disable-next-line no-cond-assign
+        return result;
     }
 }
 

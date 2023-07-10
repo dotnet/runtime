@@ -87,12 +87,12 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
         GCHeapUtilities::GetGCHeap()->DiagTraceGCSegments();
     }
 
-    // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
+    // Special check for the runtime provider's ManagedHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (IsEnabled &&
         (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle) &&
         GCHeapUtilities::IsGCHeapInitialized() &&
-        ((pContext->MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
+        ((pContext->MatchAnyKeyword & CLR_MANAGEDHEAPCOLLECT_KEYWORD) != 0))
     {
         // Profilers may (optionally) specify extra data in the filter parameter
         // to log with the GCStart event.

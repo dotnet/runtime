@@ -28,8 +28,6 @@ namespace System.Net.Http
         private HttpHandlerType Handler => _underlyingHandler;
 #endif
 
-        private ClientCertificateOption _clientCertificateOptions;
-
         private volatile bool _disposed;
 
         public HttpClientHandler()
@@ -207,27 +205,21 @@ namespace System.Net.Http
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get => _clientCertificateOptions;
+            get => _underlyingHandler.ClientCertificateOptions;
             set
             {
                 switch (value)
                 {
                     case ClientCertificateOption.Manual:
-#if TARGET_BROWSER
-                        _clientCertificateOptions = value;
-#else
+#if !TARGET_BROWSER
                         ThrowForModifiedManagedSslOptionsIfStarted();
-                        _clientCertificateOptions = value;
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
 #endif
                         break;
 
                     case ClientCertificateOption.Automatic:
-#if TARGET_BROWSER
-                        _clientCertificateOptions = value;
-#else
+#if !TARGET_BROWSER
                         ThrowForModifiedManagedSslOptionsIfStarted();
-                        _clientCertificateOptions = value;
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
 #endif
                         break;
@@ -235,6 +227,7 @@ namespace System.Net.Http
                     default:
                         throw new ArgumentOutOfRangeException(nameof(value));
                 }
+                _underlyingHandler.ClientCertificateOptions = value;
             }
         }
 

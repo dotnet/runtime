@@ -14,6 +14,7 @@ Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.IcuShardingTests
 Wasm.Build.Tests.HybridGlobalizationTests
 Wasm.Build.Tests.InvariantGlobalizationTests
+Wasm.Build.Tests.InvariantTimezoneTests
 Wasm.Build.Tests.MainWithArgsTests
 Wasm.Build.Tests.NativeBuildTests
 Wasm.Build.Tests.NativeLibraryTests

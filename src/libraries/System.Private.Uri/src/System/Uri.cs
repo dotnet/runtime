@@ -1525,7 +1525,15 @@ namespace System
             else
             {
                 MoreInfo info = EnsureUriInfo().MoreInfo;
-                string remoteUrl = info.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
+
+                UriComponents components = UriComponents.HttpRequestUrl;
+
+                if (_syntax.InFact(UriSyntaxFlags.MailToLikeUri))
+                {
+                    components |= UriComponents.UserInfo;
+                }
+
+                string remoteUrl = info.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
 
                 if (IsUncOrDosPath)
                 {
@@ -1807,9 +1815,19 @@ namespace System
             MoreInfo selfInfo = _info.MoreInfo;
             MoreInfo otherInfo = obj._info.MoreInfo;
 
-            // Fragment AND UserInfo are ignored
-            string selfUrl = selfInfo.RemoteUrl ??= GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
-            string otherUrl = otherInfo.RemoteUrl ??= obj.GetParts(UriComponents.HttpRequestUrl, UriFormat.SafeUnescaped);
+            // Fragment AND UserInfo (for non-mailto URIs) are ignored
+            UriComponents components = UriComponents.HttpRequestUrl;
+
+            if (_syntax.InFact(UriSyntaxFlags.MailToLikeUri))
+            {
+                if (!obj._syntax.InFact(UriSyntaxFlags.MailToLikeUri))
+                    return false;
+
+                components |= UriComponents.UserInfo;
+            }
+
+            string selfUrl = selfInfo.RemoteUrl ??= GetParts(components, UriFormat.SafeUnescaped);
+            string otherUrl = otherInfo.RemoteUrl ??= obj.GetParts(components, UriFormat.SafeUnescaped);
 
             // if IsUncOrDosPath is true then we ignore case in the path comparison
             return string.Equals(selfUrl, otherUrl, IsUncOrDosPath ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);

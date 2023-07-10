@@ -34,6 +34,8 @@
     <PropertyGroup>
       <MonoAotTargetOS>$(MonoAotTargetRid.Substring(0,$(MonoAotTargetRid.LastIndexOf('-'))))</MonoAotTargetOS>
       <MonoAotTargetArchitecture>$(MonoAotTargetRid.Substring($([MSBuild]::Add(1, $(MonoAotTargetRid.LastIndexOf('-'))))))</MonoAotTargetArchitecture>
+      <MonoAotHostOS>$(TargetOS)</MonoAotHostOS>
+      <MonoAotHostOS Condition="'$(TargetsLinuxMusl)' == 'true'">linux-musl</MonoAotHostOS>
     </PropertyGroup>
 
     <MSBuild Targets="Build"
@@ -42,7 +44,7 @@
 
     <MSBuild Targets="BuildMono"
              Projects="$(MSBuildThisFileDirectory)mono.proj"
-             Properties="AotHostOS=$(TargetOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
+             Properties="AotHostOS=$(MonoAotHostOS);AotHostArchitecture=$(TargetArchitecture);BuildMonoAOTCrossCompilerOnly=true;SkipMonoCrossJitConfigure=$(SkipMonoCrossJitConfigure);TargetArchitecture=$(MonoAotTargetArchitecture);TargetOS=$(MonoAotTargetOS)" />
 
     <ItemGroup>
       <_MonoAOTCrossFiles Include="$(ArtifactsBinDir)mono\$(MonoAotTargetOS).$(MonoAotTargetArchitecture).$(Configuration)\cross\$(MonoAotTargetRid.ToLower())\**" />
