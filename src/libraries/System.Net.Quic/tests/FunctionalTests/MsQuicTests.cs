@@ -384,7 +384,8 @@ namespace System.Net.Quic.Tests
 
             clientOptions.ClientAuthenticationOptions.TargetHost = "foobar1";
 
-            await Assert.ThrowsAsync<ArithmeticException>(() => CreateQuicConnection(clientOptions).AsTask());
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await CreateQuicConnection(clientOptions));
+            Assert.True(exception.InnerException is ArithmeticException);
             await Assert.ThrowsAsync<AuthenticationException>(async () => await listener.AcceptConnectionAsync());
 
             // Make sure the listener is still usable and there is no lingering bad connection

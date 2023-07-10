@@ -96,8 +96,42 @@ namespace System.Net.Quic.Tests
             await using QuicListener listener = await CreateQuicListener(listenerOptions);
 
             ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
-            Exception exception = await Assert.ThrowsAsync<Exception>(async () => await listener.AcceptConnectionAsync());
-            Assert.Equal(expectedMessage, exception.Message);
+
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync());
+            Assert.NotNull(exception.InnerException);
+            Assert.Equal(expectedMessage, exception.InnerException.Message);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask());
+        }
+
+        [Fact]
+        public async Task AcceptConnectionAsync_ThrowingCallbackOde_KeepRunning()
+        {
+            bool firstRun = true;
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            // Throw an exception, which should throw the same from accept.
+            listenerOptions.ConnectionOptionsCallback = (_, _, _) =>
+            {
+                if (firstRun)
+                {
+                    firstRun = false;
+                    throw new ObjectDisposedException("failed");
+                }
+
+                return ValueTask.FromResult(CreateQuicServerOptions());
+            };
+            await using QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            ValueTask<QuicConnection> connectTask = CreateQuicConnection(listener.LocalEndPoint);
+
+            Exception exception = await AssertThrowsQuicExceptionAsync(QuicError.CallbackError, async () => await listener.AcceptConnectionAsync());
+            Assert.True(exception.InnerException is ObjectDisposedException);
+            await Assert.ThrowsAsync<AuthenticationException>(() => connectTask.AsTask());
+
+            // Throwing ODE in callback should keep Listener running
+            connectTask = CreateQuicConnection(listener.LocalEndPoint);
+            await using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await using QuicConnection clientConnection = await connectTask;
         }
 
         [Theory]

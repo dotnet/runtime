@@ -209,6 +209,7 @@ public sealed partial class QuicListener : IAsyncDisposable
     /// <param name="clientHello">The TLS ClientHello data.</param>
     private async void StartConnectionHandshake(QuicConnection connection, SslClientHelloInfo clientHello)
     {
+        bool wrapException = true;
         CancellationToken cancellationToken = default;
         try
         {
@@ -216,6 +217,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             linkedCts.CancelAfter(QuicDefaults.HandshakeTimeout);
             cancellationToken = linkedCts.Token;
             QuicServerConnectionOptions options = await _connectionOptionsCallback(connection, clientHello, cancellationToken).ConfigureAwait(false);
+            wrapException = false;
             options.Validate(nameof(options)); // Validate and fill in defaults for the options.
             await connection.FinishHandshakeAsync(options, clientHello.ServerName, cancellationToken).ConfigureAwait(false);
             if (!_acceptQueue.Writer.TryWrite(connection))
@@ -267,7 +269,10 @@ public sealed partial class QuicListener : IAsyncDisposable
             }
 
             await connection.DisposeAsync().ConfigureAwait(false);
-            if (!_acceptQueue.Writer.TryWrite(ex))
+            if (!_acceptQueue.Writer.TryWrite(
+                    wrapException ?
+                        new QuicException(QuicError.CallbackError, null, SR.net_quic_callback_error, ex) :
+                        ex))
             {
                 // Channel has been closed, connection is already disposed, do nothing.
             }
