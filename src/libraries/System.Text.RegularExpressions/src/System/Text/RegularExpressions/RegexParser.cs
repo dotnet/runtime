@@ -320,7 +320,7 @@ namespace System.Text.RegularExpressions
 
                     if (cchUnquantified > 0)
                     {
-                        AddConcatenate(startpos, cchUnquantified, false);
+                        AddToConcatenate(startpos, cchUnquantified, false);
                     }
 
                     if (isQuantifier)
@@ -512,7 +512,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Simple parsing for replacement patterns</summary>
         private RegexNode ScanReplacement()
         {
-            var concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
+            _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
 
             while (_pos < _pattern.Length)
             {
@@ -522,19 +522,20 @@ namespace System.Text.RegularExpressions
                 if (_pos == -1)
                     _pos = _pattern.Length;
 
-                AddConcatenate(startpos, _pos - startpos, isReplacement: true);
+                AddToConcatenate(startpos, _pos - startpos, isReplacement: true);
 
                 if (_pos < _pattern.Length)
                 {
                     if (_pattern[_pos++] == '$')
                     {
                         _unit = ScanDollar();
-                        AddUnitToConcatenate();
                     }
+
+                    _concatenation.AddChild(_unit!);
                 }
             }
 
-            return concatenation;
+            return _concatenation;
         }
 
         /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass</summary>
@@ -984,24 +985,16 @@ namespace System.Text.RegularExpressions
                         _pos = parenPos - 1;       // jump to the start of the parentheses
                         _ignoreNextParen = true;    // but make sure we don't try to capture the insides
 
-                        int charsRight = _pattern.Length - _pos;
-                        if (charsRight >= 3 && _pattern[_pos + 1] == '?')
+                        if (_pos + 3 < _pattern.Length && _pattern[_pos + 1] == '?')
                         {
-                            char rightchar2 = _pattern[_pos + 2];
-
                             // disallow comments in the condition
-                            if (rightchar2 == '#')
+                            if (_pattern[_pos + 2] == '#')
                             {
                                 throw MakeException(RegexParseError.AlternationHasComment, SR.AlternationHasComment);
                             }
 
                             // disallow named capture group (?<..>..) in the condition
-                            if (rightchar2 == '\'')
-                            {
-                                throw MakeException(RegexParseError.AlternationHasNamedCapture, SR.AlternationHasNamedCapture);
-                            }
-
-                            if (charsRight >= 4 && rightchar2 == '<' && _pattern[_pos + 3] != '!' && _pattern[_pos + 3] != '=')
+                            if (_pattern[_pos + 2] == '\'' || (_pos + 4 < _pattern.Length && _pattern[_pos + 2] == '<' && _pattern[_pos + 3] != '!' && _pattern[_pos + 3] != '='))
                             {
                                 throw MakeException(RegexParseError.AlternationHasNamedCapture, SR.AlternationHasNamedCapture);
                             }
@@ -2009,7 +2002,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Add a string to the last concatenate.</summary>
-        private void AddConcatenate(int pos, int cch, bool isReplacement)
+        private void AddToConcatenate(int pos, int cch, bool isReplacement)
         {
             switch (cch)
             {
