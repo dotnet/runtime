@@ -44,7 +44,10 @@ namespace System.Runtime.InteropServices.Marshalling
         /// Convert a COM interface pointer to a managed object.
         /// </summary>
         /// <param name="unmanaged">The COM interface pointer</param>
-        /// <returns>A managed object that represents the passed in COM interface pointer, or the managed object represented by the passed in pointer.</returns>
+        /// <returns>A managed object that represents the passed in COM interface pointer.</returns>
+        /// <remarks>
+        /// If the passed in COM interface pointer wraps a managed object, this method returns the underlying object.
+        /// </remarks>
         public static T? ConvertToManaged(void* unmanaged)
         {
             if (unmanaged == null)
@@ -58,7 +61,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Release a reference to the COM interface pointer.
         /// </summary>
-        /// <param name="unmanaged">A COM interafce pointer.</param>
+        /// <param name="unmanaged">A COM interface pointer.</param>
         public static void Free(void* unmanaged)
         {
             if (unmanaged != null)

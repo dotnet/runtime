@@ -4,8 +4,11 @@
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Specifies that the attributed type will be exposed to COM through source-generated COM and that the source generator should generate code for it.
+    /// Specifies that code should be generated to enable exposing the attributed class to COM.
     /// </summary>
+    /// <remarks>
+    /// This attribute is only valid on types that implement at least one <see cref="GeneratedComInterfaceAttribute"/>-attributed interface.
+    /// </remarks>
     [AttributeUsage(AttributeTargets.Class)]
     public sealed class GeneratedComClassAttribute : Attribute
     {
