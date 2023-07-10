@@ -2360,7 +2360,8 @@ namespace System.Runtime.Intrinsics
         /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
         /// <remarks>Unlike Shuffle, this method delegates to the underlying hardware intrinsic without ensuring that <paramref name="indices"/> are normalized to [0, 31].
         /// On hardware with <see cref="Avx2"/> support, indices are treated as modulo 32, and if the high bit is set, the result will be set to 0 for that element.
-        /// On hardware with <see cref="AdvSimd.Arm64"/> or <see cref="PackedSimd"/> support, this method behaves the same as Shuffle.</remarks>
+        /// On hardware with <see cref="AdvSimd.Arm64"/> support, this method behaves the same as Shuffle.</remarks>
+        /// On hardware with <see cref="PackedSimd"/> support, indices are treated as modulo 32.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         [CompExactlyDependsOn(typeof(AdvSimd))]

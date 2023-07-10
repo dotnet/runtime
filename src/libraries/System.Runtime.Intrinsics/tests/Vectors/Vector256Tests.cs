@@ -4,6 +4,7 @@
 using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Wasm;
 using Xunit;
 
 namespace System.Runtime.Intrinsics.Tests.Vectors
@@ -3178,7 +3179,15 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             result = Vector256.ShuffleUnsafe(vector, Vector256<byte>.AllBitsSet);
             for (int index = 0; index < Vector256<byte>.Count; index++)
             {
-                Assert.Equal((byte)0, result.GetElement(index));
+                if (!PackedSimd.IsSupported)
+                {
+                    Assert.Equal((byte)0, result.GetElement(index));
+                }
+                else
+                {
+                    Assert.Equal((byte)32, result.GetElement(index));
+                }
+
             }
         }
 
