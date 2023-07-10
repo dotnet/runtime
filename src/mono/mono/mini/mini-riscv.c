@@ -1501,7 +1501,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 			}
 			break;
 		}
-		case ArgVtypeOnStack:
 		case ArgVtypeInIReg:
 		case ArgVtypeByRef:
 		case ArgVtypeOnStack: {
