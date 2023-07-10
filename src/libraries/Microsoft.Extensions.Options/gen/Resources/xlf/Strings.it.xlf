@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">Non è possibile applicare attributi di convalida a un membro costante o statico {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">Non è possibile convalidare costanti, campi statici o proprietà.</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">

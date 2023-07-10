@@ -93,7 +93,11 @@ namespace Microsoft.Extensions.Options.Generators
                                 continue;
                             }
 
-                            var membersToValidate = GetMembersToValidate(modelType, true);
+                            Location lowerLocationInCompilation = _compilation.ContainsSyntaxTree(modelType.GetLocation().SourceTree)
+                                ? modelType.GetLocation()
+                                : syntax.GetLocation();
+
+                            var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation);
                             if (membersToValidate.Count == 0)
                             {
                                 // this type lacks any eligible members
@@ -239,7 +243,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate)
+        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate, Location lowerLocationInCompilation)
         {
             // make a list of the most derived members in the model type
 
@@ -263,7 +267,11 @@ namespace Microsoft.Extensions.Options.Generators
             var membersToValidate = new List<ValidatedMember>();
             foreach (var member in members)
             {
-                var memberInfo = GetMemberInfo(member, speculate);
+                Location location = _compilation.ContainsSyntaxTree(member.GetLocation().SourceTree)
+                    ? member.GetLocation()
+                    : lowerLocationInCompilation;
+
+                var memberInfo = GetMemberInfo(member, speculate, location);
                 if (memberInfo is not null)
                 {
                     if (member.DeclaredAccessibility != Accessibility.Public && member.DeclaredAccessibility != Accessibility.Internal)
@@ -279,7 +287,7 @@ namespace Microsoft.Extensions.Options.Generators
             return membersToValidate;
         }
 
-        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate)
+        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location)
         {
             ITypeSymbol memberType;
             switch (member)
@@ -362,7 +370,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (transValidatorTypeName == null)
                     {
                         transValidatorIsSynthetic = true;
-                        transValidatorTypeName = AddSynthesizedValidator(memberType, member);
+                        transValidatorTypeName = AddSynthesizedValidator(memberType, member, location);
                     }
 
                     // pop the stack
@@ -425,7 +433,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (enumerationValidatorTypeName == null)
                     {
                         enumerationValidatorIsSynthetic = true;
-                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member);
+                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member, location);
                     }
 
                     // pop the stack
@@ -455,7 +463,7 @@ namespace Microsoft.Extensions.Options.Generators
                 // generate a warning if the member is const/static and has a validation attribute applied
                 if (validationAttributeIsApplied)
                 {
-                    Diag(DiagDescriptors.CantValidateStaticOrConstMember, member.GetLocation(), member.Name);
+                    Diag(DiagDescriptors.CantValidateStaticOrConstMember, location, member.Name);
                 }
 
                 // don't validate the member in any case
@@ -467,10 +475,10 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (!HasOpenGenerics(memberType, out var genericType))
                 {
-                    var membersToValidate = GetMembersToValidate(memberType, false);
+                    var membersToValidate = GetMembersToValidate(memberType, false, location);
                     if (membersToValidate.Count > 0)
                     {
-                        Diag(DiagDescriptors.PotentiallyMissingTransitiveValidation, member.GetLocation(), memberType.Name, member.Name);
+                        Diag(DiagDescriptors.PotentiallyMissingTransitiveValidation, location, memberType.Name, member.Name);
                     }
                 }
             }
@@ -483,10 +491,10 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     if (!HasOpenGenerics(enumeratedType, out var genericType))
                     {
-                        var membersToValidate = GetMembersToValidate(enumeratedType, false);
+                        var membersToValidate = GetMembersToValidate(enumeratedType, false, location);
                         if (membersToValidate.Count > 0)
                         {
-                            Diag(DiagDescriptors.PotentiallyMissingEnumerableValidation, member.GetLocation(), enumeratedType.Name, member.Name);
+                            Diag(DiagDescriptors.PotentiallyMissingEnumerableValidation, location, enumeratedType.Name, member.Name);
                         }
                     }
                 }
@@ -511,7 +519,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member)
+        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location)
         {
             var mt = modelType.WithNullableAnnotation(NullableAnnotation.None);
             if (mt.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
@@ -525,11 +533,11 @@ namespace Microsoft.Extensions.Options.Generators
                 return "global::" + validator.Namespace + "." + validator.Name;
             }
 
-            var membersToValidate = GetMembersToValidate(mt, true);
+            var membersToValidate = GetMembersToValidate(mt, true, location);
             if (membersToValidate.Count == 0)
             {
                 // this type lacks any eligible members
-                Diag(DiagDescriptors.NoEligibleMember, member.GetLocation(), mt.ToString(), member.ToString());
+                Diag(DiagDescriptors.NoEligibleMember, location, mt.ToString(), member.ToString());
                 return null;
             }
 
@@ -665,14 +673,10 @@ namespace Microsoft.Extensions.Options.Generators
             return sb.ToString();
         }
 
-        private void Diag(DiagnosticDescriptor desc, Location? location)
-        {
+        private void Diag(DiagnosticDescriptor desc, Location? location) =>
             _reportDiagnostic(Diagnostic.Create(desc, location, Array.Empty<object?>()));
-        }
 
-        private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs)
-        {
+        private void Diag(DiagnosticDescriptor desc, Location? location, params object?[]? messageArgs) =>
             _reportDiagnostic(Diagnostic.Create(desc, location, messageArgs));
-        }
     }
 }

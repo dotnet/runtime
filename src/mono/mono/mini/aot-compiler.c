@@ -239,6 +239,7 @@ typedef struct MonoAotOptions {
 	gboolean deterministic;
 	gboolean allow_errors;
 	char *tool_prefix;
+	char *as_prefix;
 	char *ld_flags;
 	char *ld_name;
 	char *mtriple;
@@ -8825,6 +8826,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->nunbox_arbitrary_trampolines = atoi (arg + strlen ("nunbox-arbitrary-trampolines="));
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
+		} else if (str_begins_with (arg, "as-prefix=")) {
+			opts->as_prefix = g_strdup (arg + strlen ("as-prefix="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
 		} else if (str_begins_with (arg, "ld-name=")) {
@@ -13123,6 +13126,7 @@ compile_asm (MonoAotCompile *acfg)
 	char *command, *objfile;
 	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
 	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
+	const char *as_prefix = acfg->aot_opts.as_prefix ? acfg->aot_opts.as_prefix : tool_prefix;
 	char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : g_strdup("");
 
 #ifdef TARGET_WIN32_MSVC
@@ -13214,7 +13218,7 @@ compile_asm (MonoAotCompile *acfg)
 	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
 
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS,
+	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (objfile), wrap_path (acfg->tmpfname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13225,7 +13229,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	if (acfg->llvm && !acfg->llvm_owriter) {
-		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS,
+		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (acfg->llvm_ofile), wrap_path (acfg->llvm_sfile));
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -14222,6 +14226,7 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_list_free (aot_opts->direct_pinvoke_lists);
 	g_free (aot_opts->dedup_include);
 	g_free (aot_opts->tool_prefix);
+	g_free (aot_opts->as_prefix);
 	g_free (aot_opts->ld_flags);
 	g_free (aot_opts->ld_name);
 	g_free (aot_opts->mtriple);

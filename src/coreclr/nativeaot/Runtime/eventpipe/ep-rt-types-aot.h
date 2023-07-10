@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ep-rt-types.h targeting AOT runtime.
-#ifndef __EVENTPIPE_RT_TYPES_AOT_H__
-#define __EVENTPIPE_RT_TYPES_AOT_H__
+#ifndef EVENTPIPE_RT_TYPES_AOT_H
+#define EVENTPIPE_RT_TYPES_AOT_H
 
 #include <eventpipe/ep-rt-config.h>
 
@@ -102,4 +102,4 @@ typedef struct _rt_aot_thread_params_t {
 } ep_rt_thread_params_t;
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __EVENTPIPE_RT_TYPES_AOT_H__ */
+#endif /* EVENTPIPE_RT_TYPES_AOT_H */

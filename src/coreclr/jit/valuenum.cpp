@@ -1980,6 +1980,8 @@ ValueNum ValueNumStore::VNForGenericCon(var_types typ, uint8_t* cnsVal)
         default:
             unreached();
             break;
+
+#undef READ_VALUE
     }
 }
 

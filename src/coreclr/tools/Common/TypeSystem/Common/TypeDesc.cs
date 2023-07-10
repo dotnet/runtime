@@ -545,6 +545,19 @@ namespace Internal.TypeSystem
             return null;
         }
 
+        public virtual MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        {
+            foreach (var method in GetMethods())
+            {
+                if (method.Name == name)
+                {
+                    if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
+                        return method;
+                }
+            }
+            return null;
+        }
+
         /// <summary>
         /// Retrieves the class constructor method of this type.
         /// </summary>

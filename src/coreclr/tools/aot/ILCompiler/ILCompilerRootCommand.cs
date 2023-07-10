@@ -319,9 +319,6 @@ namespace ILCompiler
 
                 foreach (string arch in ValidArchitectures)
                 {
-                    Console.Write(arch);
-                    Console.Write(": ");
-
                     TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                     bool first = true;
                     foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
@@ -331,6 +328,8 @@ namespace ILCompiler
                         {
                             if (first)
                             {
+                                Console.Write(arch);
+                                Console.Write(": ");
                                 first = false;
                             }
                             else
@@ -340,6 +339,8 @@ namespace ILCompiler
                             Console.Write(instructionSet.Name);
                         }
                     }
+
+                    if (first) continue; // no instruction-set found for this architecture
 
                     Console.WriteLine();
                 }
