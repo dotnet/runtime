@@ -21,6 +21,11 @@ namespace System.Runtime.InteropServices.Marshalling
     [CustomMarshaller(typeof(CustomMarshallerAttribute.GenericPlaceholder), MarshalMode.Default, typeof(UniqueComInterfaceMarshaller<>))]
     public static unsafe class UniqueComInterfaceMarshaller<T>
     {
+        /// <summary>
+        /// Convert a managed object to a COM interface pointer for the COM interface represented by <typeparamref name="T"/>.
+        /// </summary>
+        /// <param name="managed">The managed object</param>
+        /// <returns>The COM interface pointer</returns>
         public static void* ConvertToUnmanaged(T? managed)
         {
             if (managed == null)
@@ -34,6 +39,12 @@ namespace System.Runtime.InteropServices.Marshalling
             return ComInterfaceMarshaller<T>.CastIUnknownToInterfaceType(unknown);
         }
 
+
+        /// <summary>
+        /// Convert a COM interface pointer to a managed object.
+        /// </summary>
+        /// <param name="unmanaged">The COM interface pointer</param>
+        /// <returns>A managed object that represents the passed in COM interface pointer, or the managed object represented by the passed in pointer.</returns>
         public static T? ConvertToManaged(void* unmanaged)
         {
             if (unmanaged == null)
@@ -43,6 +54,11 @@ namespace System.Runtime.InteropServices.Marshalling
             return (T)StrategyBasedComWrappers.DefaultMarshallingInstance.GetOrCreateObjectForComInstance((nint)unmanaged, CreateObjectFlags.Unwrap | CreateObjectFlags.UniqueInstance);
         }
 
+
+        /// <summary>
+        /// Release a reference to the COM interface pointer.
+        /// </summary>
+        /// <param name="unmanaged">A COM interafce pointer.</param>
         public static void Free(void* unmanaged)
         {
             if (unmanaged != null)
