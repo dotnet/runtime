@@ -1085,8 +1085,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans chars following a '\' (not counting the '\'), and returns a RegexNode for the type of atom scanned</summary>
         private RegexNode? ScanBackslash(bool scanOnly)
         {
-            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
-
             char ch;
             switch (ch = _pattern[_pos])
             {
