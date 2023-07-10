@@ -102,6 +102,9 @@ export type LoaderHelpers = {
     enableDownloadRetry: boolean;
     assertAfterExit: boolean;
 
+    exitCode: number | undefined;
+    isAborted: boolean;
+
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
     scriptDirectory: string

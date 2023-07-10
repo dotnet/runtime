@@ -5,29 +5,25 @@ import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL
 import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
 
 
-let ABORT = false;
-let EXIT = false;
-let EXIT_CODE: number | undefined = undefined;
-
 export function is_exited() {
-    return EXIT;
+    return loaderHelpers.exitCode !== undefined;
 }
 
 export function is_runtime_running() {
-    return runtimeHelpers.runtimeReady && !EXIT && !ABORT;
+    return runtimeHelpers.runtimeReady && !is_exited() && !loaderHelpers.isAborted;
 }
 
 
 export function assert_runtime_running() {
     mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
-    mono_assert(!ABORT, "startup of the mono runtime was aborted");
-    mono_assert(!loaderHelpers.assertAfterExit || typeof EXIT_CODE == "undefined", () => `mono runtime already exited with ${EXIT_CODE}`);
+    mono_assert(!loaderHelpers.isAborted, "startup of the mono runtime was aborted");
+    mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode}`);
 }
 
 export function abort_startup(reason: any, should_exit: boolean, should_throw?: boolean): void {
-    if (ABORT) return;
-    ABORT = true;
-    EXIT_CODE = 1;
+    if (loaderHelpers.isAborted) return;
+    loaderHelpers.isAborted = true;
+    loaderHelpers.exitCode = 1;
 
     mono_log_debug("abort_startup");
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
@@ -57,12 +53,14 @@ export function abort_startup(reason: any, should_exit: boolean, should_throw?: 
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
-    if (EXIT) {
+    if (is_exited()) {
         mono_log_warn("mono_exit called more than once", new Error().stack);
         return;
     }
-    EXIT = true;
-    EXIT_CODE = exit_code;
+
+    // TODO forceDisposeProxies(); here
+
+    loaderHelpers.exitCode = exit_code;
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
@@ -132,7 +130,7 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     }
 
     appendElementOnExit(exit_code);
-    if (!ABORT && !runtimeHelpers.runtimeReady) abort_startup(reason, false, false);
+    if (!loaderHelpers.isAborted && !runtimeHelpers.runtimeReady) abort_startup(reason, false, false);
     if (runtimeHelpers.mono_wasm_exit) {
         try {
             runtimeHelpers.mono_wasm_exit(exit_code);
