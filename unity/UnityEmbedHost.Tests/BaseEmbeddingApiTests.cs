@@ -617,10 +617,19 @@ public abstract class BaseEmbeddingApiTests
     }
 
 
-    [TestCase(typeof(Animal),        false)]
-    [TestCase(typeof(ValueMammal),    true)]
-    [TestCase(typeof(Classification), true)]
+    [TestCase(typeof(Animal),                              false)]
+    [TestCase(typeof(GenericAnimal<Classification, bool>), false)]
+    [TestCase(typeof(ValueMammal*),                        false)]
+    [TestCase(typeof(ValueMammal),                          true)]
+    [TestCase(typeof(Classification),                       true)]
     public void ClassIsValuetypeReturnsProperValue(Type klass, bool expectedResult)
+    {
+        bool isValueType = ClrHost.class_is_valuetype(klass);
+        Assert.That(isValueType, Is.EqualTo(expectedResult));
+    }
+
+    [TestCase(typeof(ValueMammal), true)]
+    public void ClassIsValuetypeByRefReturnsProperValue(ref Type klass, bool expectedResult)
     {
         bool isValueType = ClrHost.class_is_valuetype(klass);
         Assert.That(isValueType, Is.EqualTo(expectedResult));
