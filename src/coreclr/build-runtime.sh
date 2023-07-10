@@ -109,9 +109,6 @@ __ConfigTriplet="$__TargetOS.$__TargetArch.$__BuildType"
 if [[ "$__TargetOS" == "linux-bionic" ]]; then
     __ConfigTriplet="linux.$__TargetArch.$__BuildType"
 fi
-if [[ ! -z "$__OutputRIDOS" ]]; then
-    __ConfigTriplet="$__OutputRIDOS.$__TargetArch.$__BuildType"
-fi
 __BinDir="$__RootBinDir/bin/coreclr/$__ConfigTriplet"
 __ArtifactsObjDir="$__RepoRootDir/artifacts/obj"
 __ArtifactsIntermediatesDir="$__ArtifactsObjDir/coreclr"
@@ -176,7 +173,7 @@ fi
 
 eval "$__RepoRootDir/eng/native/version/copy_version_files.sh"
 
-build_native "$__TargetOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
+build_native "$__HostOS" "$__HostArch" "$__ProjectRoot" "$__IntermediatesDir" "$__CMakeTarget" "$__CMakeArgs" "CoreCLR component"
 
 # Build complete
 
