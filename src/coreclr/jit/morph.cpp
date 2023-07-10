@@ -10670,39 +10670,45 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
 #endif // TARGET_ARM64
         case NI_Vector128_Create:
         {
-            // The `Dot` API returns a scalar. However, many common usages require it to
-            // be then immediately broadcast back to a vector so that it can be used in
-            // a subsequent operation. One of the most common is normalizing a vector
+            // The managed `Dot` API returns a scalar. However, many common usages require
+            // it to be then immediately broadcast back to a vector so that it can be used
+            // in a subsequent operation. One of the most common is normalizing a vector
             // which is effectively `value / value.Length` where `Length` is
-            // `Sqrt(Dot(value, value))`
+            // `Sqrt(Dot(value, value))`. Because of this, and because of how a lot of
+            // hardware works, we treat `NI_Vector_Dot` as returning a SIMD type and then
+            // also wrap it in `ToScalar` where required.
             //
             // In order to ensure that developers can still utilize this efficiently, we
-            // will look for two common patterns:
+            // then look for four common patterns:
             //  * Create(Dot(..., ...))
             //  * Create(Sqrt(Dot(..., ...)))
+            //  * Create(ToScalar(Dot(..., ...)))
+            //  * Create(ToScalar(Sqrt(Dot(..., ...))))
             //
-            // When these exist, we'll avoid converting to a scalar at all and just
-            // keep everything as a vector. However, we only do this for Vector64/Vector128
-            // and only for float/double.
+            // When these exist, we'll avoid converting to a scalar and hence, avoid broadcasting
+            // the value back into a vector. Instead we'll just keep everything as a vector.
             //
-            // We don't do this for Vector256 since that is xarch only and doesn't trivially
-            // support operations which cross the upper and lower 128-bit lanes
+            // We only do this for Vector64/Vector128 today. We could expand this more in
+            // the future but it would require additional hand handling for Vector256
+            // (since a 256-bit result requires more work). We do some integer handling
+            // when the value is trivially replicated to all elements without extra work.
 
             if (node->GetOperandCount() != 1)
             {
                 break;
             }
 
-            if (!varTypeIsFloating(node->GetSimdBaseType()))
-            {
-                break;
-            }
-
-            GenTree* op1  = node->Op(1);
-            GenTree* sqrt = nullptr;
+            GenTree* op1      = node->Op(1);
+            GenTree* sqrt     = nullptr;
+            GenTree* toScalar = nullptr;
 
             if (op1->OperIs(GT_INTRINSIC))
             {
+                if (!varTypeIsFloating(node->GetSimdBaseType()))
+                {
+                    break;
+                }
+
                 if (op1->AsIntrinsic()->gtIntrinsicName != NI_System_Math_Sqrt)
                 {
                     break;
@@ -10720,6 +10726,24 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTreeHWIntrinsic* hwop1 = op1->AsHWIntrinsic();
 
 #if defined(TARGET_ARM64)
+            if ((hwop1->GetHWIntrinsicId() == NI_Vector64_ToScalar) ||
+                (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar))
+#else
+            if (hwop1->GetHWIntrinsicId() == NI_Vector128_ToScalar)
+#endif
+            {
+                op1 = hwop1->Op(1);
+
+                if (!op1->OperIs(GT_HWINTRINSIC))
+                {
+                    break;
+                }
+
+                toScalar = hwop1;
+                hwop1    = op1->AsHWIntrinsic();
+            }
+
+#if defined(TARGET_ARM64)
             if ((hwop1->GetHWIntrinsicId() != NI_Vector64_Dot) && (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot))
 #else
             if (hwop1->GetHWIntrinsicId() != NI_Vector128_Dot)
@@ -10728,13 +10752,16 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
                 break;
             }
 
-            unsigned  simdSize = node->GetSimdSize();
-            var_types simdType = getSIMDTypeForSize(simdSize);
-
-            hwop1->gtType = simdType;
+            if (toScalar != nullptr)
+            {
+                DEBUG_DESTROY_NODE(toScalar);
+            }
 
             if (sqrt != nullptr)
             {
+                unsigned  simdSize = node->GetSimdSize();
+                var_types simdType = getSIMDTypeForSize(simdSize);
+
                 node = gtNewSimdSqrtNode(simdType, hwop1, node->GetSimdBaseJitType(), simdSize)->AsHWIntrinsic();
                 DEBUG_DESTROY_NODE(sqrt);
             }
