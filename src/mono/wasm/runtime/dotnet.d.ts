@@ -197,7 +197,10 @@ interface ResourceGroups {
     readonly satelliteResources?: {
         [cultureName: string]: ResourceList;
     };
-    readonly libraryInitializers?: ResourceList;
+    readonly libraryInitializers?: {
+        readonly onRuntimeConfigLoaded: ResourceList;
+        readonly onRuntimeReady: ResourceList;
+    };
     readonly extensions?: ResourceExtensions;
     readonly vfs?: {
         [virtualPath: string]: ResourceList;
@@ -255,7 +258,7 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
+type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "js-module-library-initializer" | "symbols";
 declare const enum GlobalizationMode {
     Sharded = "sharded",
     All = "all",

@@ -132,7 +132,10 @@ export interface ResourceGroups {
     readonly pdb?: ResourceList;
     readonly runtime?: ResourceList; // nullable only temporarily
     readonly satelliteResources?: { [cultureName: string]: ResourceList };
-    readonly libraryInitializers?: ResourceList,
+    readonly libraryInitializers?: {
+        readonly onRuntimeConfigLoaded: ResourceList,
+        readonly onRuntimeReady: ResourceList,
+    },
     readonly extensions?: ResourceExtensions
     readonly vfs?: { [virtualPath: string]: ResourceList };
 }
@@ -205,6 +208,7 @@ export type AssetBehaviours =
     | "js-module-runtime" // the javascript module for threads
     | "js-module-dotnet" // the javascript module for threads
     | "js-module-native" // the javascript module for threads
+    | "js-module-library-initializer" // the javascript module that came from nuget package 
     | "symbols" // the javascript module for threads
 
 export const enum GlobalizationMode {

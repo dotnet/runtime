@@ -57,6 +57,9 @@ public class GenerateWasmBootJson : Task
     public string RuntimeOptions { get; set; }
 
     [Required]
+    public bool TargetingNET80OrLater { get; set; }
+
+    [Required]
     public string OutputPath { get; set; }
 
     public ITaskItem[] LazyLoadedAssemblies { get; set; }
@@ -216,8 +219,29 @@ public class GenerateWasmBootJson : Task
                             string.Equals(assetTraitValue, "JSLibraryModule", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a library initializer resource.", resource.ItemSpec);
-                    resourceData.libraryInitializers ??= new();
-                    resourceList = resourceData.libraryInitializers;
+
+                    if (TargetingNET80OrLater)
+                    {
+                        resourceData.libraryInitializers ??= new Dictionary<object, object>();
+                        if (File.Exists(resource.ItemSpec))
+                        {
+                            string fileContent = File.ReadAllText(resource.ItemSpec);
+                            if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart"))
+                                resourceList = EnsureLibraryInitializers(resourceData, "onRuntimeConfigLoaded");
+                            else
+                                resourceList = EnsureLibraryInitializers(resourceData, "onRuntimeReady");
+                        }
+                        else
+                        {
+                            resourceList = EnsureLibraryInitializers(resourceData, "onRuntimeConfigLoaded");
+                        }
+                    }
+                    else
+                    {
+                        resourceData.libraryInitializers ??= new ResourceHashesByNameDictionary();
+                        resourceList = (ResourceHashesByNameDictionary)resourceData.libraryInitializers;
+                    }
+
                     var targetPath = resource.GetMetadata("TargetPath");
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
                     AddResourceToList(resource, resourceList, targetPath);
@@ -320,6 +344,17 @@ public class GenerateWasmBootJson : Task
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
             }
         }
+    }
+
+    private static ResourceHashesByNameDictionary EnsureLibraryInitializers(ResourcesData resourceData, string key)
+    {
+        ResourceHashesByNameDictionary resourceList;
+        if (resourceData.libraryInitializers.TryGetValue(key, out var rl))
+            resourceList = (ResourceHashesByNameDictionary)rl;
+        else
+            resourceData.libraryInitializers[key] = resourceList = new();
+
+        return resourceList;
     }
 
     private static bool? ParseOptionalBool(string value)

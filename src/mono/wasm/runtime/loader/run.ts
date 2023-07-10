@@ -452,6 +452,7 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
+
     await invokeOnRuntimeReady(globalObjectsRoot.api);
 
     return exportedRuntimeAPI;

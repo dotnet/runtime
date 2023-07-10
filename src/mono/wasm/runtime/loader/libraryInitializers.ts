@@ -6,12 +6,19 @@ import { MonoConfig, RuntimeAPI } from "../types";
 import { appendUniqueQuery, toAbsoluteBaseUri } from "./assets";
 import { normalizeConfig } from "./config";
 
-export async function fetchInitializers(moduleConfig: MonoConfig): Promise<void> {
-    if (!moduleConfig.libraryInitializers) {
-        moduleConfig.libraryInitializers = [];
+export type LibraryInitializerTypes =
+    "onRuntimeConfigLoaded"
+    | "onRuntimeReady";
+
+async function fetchInitializers(config: MonoConfig, type: LibraryInitializerTypes): Promise<void> {
+    if (!config.libraryInitializers) {
+        config.libraryInitializers = [];
     }
 
-    const libraryInitializers = moduleConfig.resources?.libraryInitializers;
+    const libraryInitializers = type == "onRuntimeConfigLoaded"
+        ? config.resources?.libraryInitializers?.onRuntimeConfigLoaded
+        : config.resources?.libraryInitializers?.onRuntimeReady;
+
     if (!libraryInitializers) {
         return;
     }
@@ -21,10 +28,10 @@ export async function fetchInitializers(moduleConfig: MonoConfig): Promise<void>
 
     async function importInitializer(path: string): Promise<void> {
         try {
-            const adjustedPath = appendUniqueQuery(toAbsoluteBaseUri(path));
+            const adjustedPath = appendUniqueQuery(toAbsoluteBaseUri(path), "js-module-library-initializer");
             const initializer = await import(/* webpackIgnore: true */ adjustedPath);
 
-            moduleConfig.libraryInitializers!.push(initializer);
+            config.libraryInitializers!.push(initializer);
         } catch (error) {
             mono_log_warn(`Failed to import library initializer '${path}': ${error}`);
         }
@@ -32,7 +39,11 @@ export async function fetchInitializers(moduleConfig: MonoConfig): Promise<void>
 }
 
 export async function invokeOnRuntimeConfigLoaded(config: MonoConfig) {
-    mono_assert(config.libraryInitializers, "Initialization hasn't been done yet");
+    await fetchInitializers(config, "onRuntimeConfigLoaded");
+
+    if (!config.libraryInitializers) {
+        return;
+    }
 
     const promises = [];
     for (let i = 0; i < config.libraryInitializers.length; i++) {
@@ -49,7 +60,11 @@ export async function invokeOnRuntimeConfigLoaded(config: MonoConfig) {
 
 export async function invokeOnRuntimeReady(api: RuntimeAPI) {
     const config = api.getConfig();
-    mono_assert(config.libraryInitializers, "Initialization hasn't been done yet");
+    await fetchInitializers(config, "onRuntimeReady");
+
+    if (!config.libraryInitializers) {
+        return;
+    }
 
     const promises = [];
     for (let i = 0; i < config.libraryInitializers.length; i++) {

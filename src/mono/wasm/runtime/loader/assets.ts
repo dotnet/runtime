@@ -424,14 +424,6 @@ export function cleanupAsset(asset: AssetEntryInternal) {
     asset.buffer = null as any; // GC
 }
 
-export function appendUniqueQuery(attemptUrl: string): string {
-    if (loaderHelpers.assetUniqueQuery) {
-        attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
-    }
-
-    return attemptUrl;
-}
-
 export function toAbsoluteBaseUri(path: string) {
     if ("URL" in globalThis && document && document.baseURI) {
         return new URL(path, document.baseURI).toString();

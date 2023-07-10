@@ -129,9 +129,13 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
+    ///
+    /// For .NET < 8 this contains Dictionary<string, string>
+    /// For .NET >= 8 this contains Dictionary<string, Dictionary<string, string>>
+    /// - First key is "" or ""
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public ResourceHashesByNameDictionary libraryInitializers { get; set; }
+    public object libraryInitializers { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)

@@ -360,7 +360,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
-      Extensions="@(WasmBootConfigExtension)" />
+      Extensions="@(WasmBootConfigExtension)"
+      TargetingNET80OrLater="$(_TargetingNET80OrLater)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -548,7 +549,8 @@ Copyright (c) .NET Foundation. All rights reserved.
       StartupMemoryCache="$(_BlazorWebAssemblyStartupMemoryCache)"
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
-      Extensions="@(WasmBootConfigExtension)" />
+      Extensions="@(WasmBootConfigExtension)"
+      TargetingNET80OrLater="$(_TargetingNET80OrLater)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

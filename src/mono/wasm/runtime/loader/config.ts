@@ -9,7 +9,7 @@ import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
 import { mono_log_error, mono_log_debug } from "./logging";
-import { fetchInitializers, invokeOnRuntimeConfigLoaded } from "./libraryInitializers";
+import { invokeOnRuntimeConfigLoaded } from "./libraryInitializers";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -101,7 +101,6 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
 
         normalizeConfig();
 
-        await fetchInitializers(loaderHelpers.config);
         await invokeOnRuntimeConfigLoaded(loaderHelpers.config);
 
         if (module.onConfigLoaded) {
