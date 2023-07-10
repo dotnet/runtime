@@ -2510,16 +2510,16 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public async Task<bool> HasDebugInfoLoadedByRuntime(string assemblyName, CancellationToken token)
+        public async Task<bool> HasDebugInfoLoadedByRuntimeAsync(string assemblyName, CancellationToken token)
         {
             var assemblyId = await GetAssemblyId(assemblyName, token);
-            using var commandParamsWriter1 = new MonoBinaryWriter();
+            using var commandParamsWriter = new MonoBinaryWriter();
             commandParamsWriter1.Write(assemblyId);
             using var retDebuggerCmdReader1 = await SendDebuggerAgentCommand(CmdAssembly.HasDebugInfoLoaded, commandParamsWriter1, token);
             return retDebuggerCmdReader1.ReadByte() == 1;
         }
 
-        public async Task<AssemblyAndPdbData> GetDataFromAssemblyAndPdb(string assemblyName, bool ignoreJMC, CancellationToken token)
+        public async Task<AssemblyAndPdbData> GetDataFromAssemblyAndPdbAsync(string assemblyName, bool ignoreJMC, CancellationToken token)
         {
             if (!assemblyName.StartsWith("System.Private.CoreLib") && !ignoreJMC && proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntime(assemblyName, token)))
                 return null;
@@ -2550,6 +2550,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ret.PdbUncompressedSize = pdbUncompressedSize;
                 if (!ret.HasDebugInfo)
                     return ret;
+
                 ret.PdbAge = retDebuggerCmdReader.ReadInt32();
                 var pdbGuidSize = retDebuggerCmdReader.ReadInt32();
                 ret.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));

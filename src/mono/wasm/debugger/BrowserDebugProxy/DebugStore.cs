@@ -849,7 +849,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader  = new List<Tuple<MetadataReader, MetadataReader>>();
         private int debugId;
-        internal int PdbAge { get; set;  }
+        internal int PdbAge { get; set; }
         internal System.Guid PdbGuid { get; set; }
         internal bool IsPortableCodeView { get; set; }
         internal string PdbName { get; set; }
