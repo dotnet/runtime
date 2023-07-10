@@ -847,24 +847,30 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t)
 	case MONO_TYPE_U2:
 		add_arg (cinfo, ainfo, 2, FALSE);
 		break;
+#ifdef TARGET_RISCV32
 	case MONO_TYPE_I:
+#endif
 	case MONO_TYPE_I4:
 		add_arg (cinfo, ainfo, 4, TRUE);
 		break;
-	case MONO_TYPE_U:
 	case MONO_TYPE_U4:
 #ifdef TARGET_RISCV32
+	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_OBJECT:
 #endif
 		add_arg (cinfo, ainfo, 4, FALSE);
 		break;
+#ifdef TARGET_RISCV64
+	case MONO_TYPE_I:
+#endif
 	case MONO_TYPE_I8:
 		add_arg (cinfo, ainfo, 8, TRUE);
 		break;
 	case MONO_TYPE_U8:
 #ifdef TARGET_RISCV64
+	case MONO_TYPE_U:
 	case MONO_TYPE_PTR:
 	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_OBJECT:
