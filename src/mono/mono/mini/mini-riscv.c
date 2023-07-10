@@ -588,7 +588,7 @@ riscv_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation
 
 		// if the offset too large to encode as B_IMM
 		// try to use jal to branch
-		if (!RISCV_VALID_B_IMM ((gint32)(gssize)(offset))) {
+		if (!RISCV_VALID_B_IMM (offset)) {
 			// branch inst should followed by a nop inst
 			g_assert (*(gint32 *)(code + 4) == 0x13);
 			if (riscv_is_jal_disp (code, target)) {
@@ -2329,7 +2329,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 			}
 			// check if offset is valid I-type Imm
-			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_offset))) {
+			if (!RISCV_VALID_I_IMM (ins->inst_offset)) {
 				g_assert (ins->opcode != OP_STORER4_MEMBASE_REG);
 
 				/**
@@ -2366,7 +2366,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADR4_MEMBASE:
 		case OP_LOADR8_MEMBASE:
 		case OP_LOAD_MEMBASE:
-			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm))) {
+			if (!RISCV_VALID_I_IMM (ins->inst_imm)) {
 				NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
 				temp->inst_c0 = ins->inst_imm;
 				temp->dreg = mono_alloc_ireg (cfg);
@@ -2637,13 +2637,14 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_ISUB_IMM:
 		case OP_LSUB_IMM:
 			ins->inst_imm = -ins->inst_imm;
-			ins->opcode = OP_ADD_IMM;
+			// convert OP_{I|L}SUB_IMM to their corresponding ADD_IMM
+			ins->opcode -= 1;
 			goto loop_start;
 		// Inst ADDI use I-type Imm
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
 		case OP_LADD_IMM:
-			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm))) {
+			if (!RISCV_VALID_I_IMM (ins->inst_imm)) {
 				mono_decompose_op_imm (cfg, bb, ins);
 			}
 			break;
@@ -2684,7 +2685,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 		case OP_MUL_IMM:
 		case OP_IMUL_IMM: 
-		case OP_LMUL_IMM: 
+		case OP_LMUL_IMM:
 		case OP_IDIV_IMM: {
 			g_assert (riscv_stdext_m);
 			NEW_INS_BEFORE (cfg, ins, temp, OP_ICONST);
@@ -2738,8 +2739,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOR_IMM:
 		case OP_XOR_IMM:
 		case OP_IXOR_IMM:
-		case OP_LXOR_IMM:
-			if (!RISCV_VALID_I_IMM ((gint32)(gssize)(ins->inst_imm)))
+			if (!RISCV_VALID_I_IMM (ins->inst_imm))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
 		case OP_INOT:
