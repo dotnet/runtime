@@ -268,7 +268,7 @@ namespace LibraryImportGenerator.IntegrationTests
 
     public class StringTests
     {
-        public static IEnumerable<object[]> UnicodeStrings() => new []
+        public static IEnumerable<object[]> UnicodeStrings() => new[]
         {
             new object[] { "ABCdef 123$%^" },
             new object[] { "\uD83C\uDF5C !! \uD83C\uDF5C !!"},

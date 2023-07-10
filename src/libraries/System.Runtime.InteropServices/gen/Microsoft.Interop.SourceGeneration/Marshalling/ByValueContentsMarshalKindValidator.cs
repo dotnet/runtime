@@ -41,11 +41,11 @@ namespace Microsoft.Interop
                 }));
             }
 
-            var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic diagnostic);
+            var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic? diagnostic);
             return support switch
             {
                 ByValueMarshalKindSupport.Supported => generator,
-                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic)),
+                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic!)),
                 ByValueMarshalKindSupport.Unnecessary => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
                 _ => throw new UnreachableException()
             };
