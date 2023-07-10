@@ -375,7 +375,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public string PdbPath { get; set; }
         public int PdbUncompressedSize { get; set; }
         public bool IsPortableCodeView { get; init; }
-        public List<PdbChecksum> PdbChecksums { get; init; 
+        public List<PdbChecksum> PdbChecksums { get; init; }
         internal AssemblyAndPdbData(byte[] asm, byte[] pdb)
         {
             AsmBytes = asm;
@@ -909,7 +909,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (asm.asmMetadataReader is null && proxy.JustMyCode) //load on demand
                 {
-                    var assemblyAndPdbData = await GetDataFromAssemblyAndPdb(asm.Name, true, token);
+                    var assemblyAndPdbData = await GetDataFromAssemblyAndPdbAsync(asm.Name, true, token);
                     asm.LoadInfoFromBytes(proxy, sessionId, assemblyAndPdbData, token);
                 }
             }
@@ -2514,14 +2514,14 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             var assemblyId = await GetAssemblyId(assemblyName, token);
             using var commandParamsWriter = new MonoBinaryWriter();
-            commandParamsWriter1.Write(assemblyId);
-            using var retDebuggerCmdReader1 = await SendDebuggerAgentCommand(CmdAssembly.HasDebugInfoLoaded, commandParamsWriter1, token);
+            commandParamsWriter.Write(assemblyId);
+            using var retDebuggerCmdReader1 = await SendDebuggerAgentCommand(CmdAssembly.HasDebugInfoLoaded, commandParamsWriter, token);
             return retDebuggerCmdReader1.ReadByte() == 1;
         }
 
         public async Task<AssemblyAndPdbData> GetDataFromAssemblyAndPdbAsync(string assemblyName, bool ignoreJMC, CancellationToken token)
         {
-            if (!assemblyName.StartsWith("System.Private.CoreLib") && !ignoreJMC && proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntime(assemblyName, token)))
+            if (!assemblyName.StartsWith("System.Private.CoreLib") && !ignoreJMC && proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntimeAsync(assemblyName, token)))
                 return null;
             using var commandParamsWriter = new MonoBinaryWriter();
             byte[] assembly_buf = null;

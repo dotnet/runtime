@@ -1270,7 +1270,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return;
                 if (asmMetadataReader is null) //it means that the assembly was not loaded before because JMC was enabled
                 {
-                    var ret = await sdbHelper.GetDataFromAssemblyAndPdb(Name, false, token);
+                    var ret = await sdbHelper.GetDataFromAssemblyAndPdbAsync(Name, false, token);
                     LoadInfoFromBytes(proxy, id, ret, token);
                 }
                 var pdbName = Path.GetFileName(PdbName);
@@ -1658,7 +1658,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetDataFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), false, token)
+                                Data = context.SdbAgent.GetDataFromAssemblyAndPdbAsync(Path.GetFileName(unescapedFileName), false, token)
                             });
                     }
                     catch (Exception e)
