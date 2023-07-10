@@ -1158,8 +1158,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans \-style backreferences and character escapes</summary>
         private RegexNode? ScanBasicBackslash(bool scanOnly)
         {
-            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
-
             int backpos = _pos;
             char close = '\0';
             bool angled = false;
@@ -1979,8 +1977,6 @@ namespace System.Text.RegularExpressions
 
         private readonly bool IsTrueQuantifier()
         {
-            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
-
             int startpos = _pos;
             char ch = _pattern[startpos];
             if (ch != '{')
