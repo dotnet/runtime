@@ -8982,7 +8982,11 @@ MethodTable::ResolveVirtualStaticMethod(
                     // We tolerate conflicts upon verification of implemented SVMs so that they only blow up when actually called at execution time.
                     if (uniqueResolution != nullptr)
                     {
-                        *uniqueResolution = haveUniqueDefaultImplementation;
+                        // Always report a unique resolution when reporting results of a variant match
+                        if (allowVariantMatchInDefaultImplementationLookup)
+                            *uniqueResolution = TRUE;
+                        else
+                            *uniqueResolution = haveUniqueDefaultImplementation;
                     }
                     return pMDDefaultImpl;
                 }
