@@ -105,8 +105,8 @@ namespace System.Formats.Cbor
             _isConformanceModeCheckEnabled = true;
             _cachedState = CborReaderState.Undefined;
 
-            //_pooledKeyEncodingRangeAllocations?.Clear(); // We don't need to clear these previously created and reusable instances
-            //_indefiniteLengthStringRangeAllocation?.Clear(); // We don't need to clear this previously created and reused instance
+            // We don't need to clear the reusable instances in _pooledKeyEncodingRangeAllocations
+            // or _indefiniteLengthStringRangeAllocation.
         }
 
         private CborInitialByte PeekInitialByte()
