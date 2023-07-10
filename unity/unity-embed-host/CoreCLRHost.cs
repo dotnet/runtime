@@ -500,6 +500,14 @@ static unsafe partial class CoreCLRHost
         return IntPtr.Zero;
     }
 
+    [return: NativeCallbackType("gboolean")]
+    public static bool class_is_valuetype(
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Type t = klass.TypeFromHandleIntPtr();
+        return t.IsValueType;
+    }
+
     static void Log(string message)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(message);

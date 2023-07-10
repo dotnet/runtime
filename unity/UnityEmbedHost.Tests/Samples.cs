@@ -9,6 +9,13 @@ class FooParentAttribute : Attribute
 class FooAttribute : FooParentAttribute
 { }
 
+enum Classification
+{
+    Bovine,
+    Feline,
+    Avian
+}
+
 [Obsolete]
 [Foo]
 class Bacon
