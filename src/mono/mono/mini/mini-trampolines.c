@@ -555,12 +555,12 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 			MonoObject *this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
 #ifdef TARGET_RISCV
-			if(!m_class_is_inited (this_argument->vtable->klass))
+			if (!m_class_is_inited (this_argument->vtable->klass))
 				// FIXME:
 				// The Mono will treat first parameter as this_pointer,
-				// it get conflict with RISC-V ABI. 
-				// more information refer to get_call_info(). 
-				this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs+1, code);
+				// it get conflict with RISC-V ABI.
+				// more information refer to get_call_info().
+				this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs + 1, code);
 #endif
 
 			actual_vt  = this_argument->vtable;

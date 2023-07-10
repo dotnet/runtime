@@ -350,14 +350,14 @@ mono_arch_fregname (int reg)
 gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
-	MonoObject * this = (MonoObject *)regs [RISCV_A0];
+	MonoObject *this = (MonoObject *)regs [RISCV_A0];
 	// FIXME:
 	// The Mono will treat first parameter as this_pointer,
-	// it get conflict with RISC-V ABI. 
-	// more information refer to get_call_info(). 
+	// it get conflict with RISC-V ABI.
+	// more information refer to get_call_info().
 	if (!this->vtable)
 		this = (MonoObject *)regs [RISCV_A1];
-	return (gpointer) this;
+	return (gpointer)this;
 }
 
 MonoMethod *
@@ -611,8 +611,7 @@ riscv_patch_full (MonoCompile *cfg, guint8 *code, guint8 *target, int relocation
 				break;
 			} else
 				g_assert_not_reached ();
-		}
-		else{
+		} else {
 			if (relocation == MONO_R_RISCV_BEQ)
 				riscv_beq (code, rs1, rs2, offset);
 			else if (relocation == MONO_R_RISCV_BNE)
@@ -935,20 +934,19 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->next_farg = RISCV_FA0;
 	add_param (cinfo, &cinfo->ret, sig->ret);
 
-	// The ABI specify that 
+	// The ABI specify that
 	// If the reture value would have been passed by reference,
 	// the caller will allocates memory for the return value, and
 	// passes the address as an implicit first parameter.
 
 	// FIXME:
 	// The Mono will treat first parameter as this_pointer
-	// reference to `mono_vcall_trampoline()`. 
-	// They are conflict a bit. 
+	// reference to `mono_vcall_trampoline()`.
+	// They are conflict a bit.
 	if (cinfo->ret.storage == ArgVtypeByRef) {
 		g_assert (cinfo->ret.reg == RISCV_A0);
 		cinfo->next_arg = RISCV_A1;
-	}
-	else
+	} else
 		cinfo->next_arg = RISCV_A0;
 
 	cinfo->next_farg = RISCV_FA0;
@@ -957,7 +955,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	// add this pointer as first argument if hasthis == true
 	if (sig->hasthis)
-		add_arg (cinfo, cinfo->args + 0, sizeof(host_mgreg_t), FALSE);
+		add_arg (cinfo, cinfo->args + 0, sizeof (host_mgreg_t), FALSE);
 
 	// other general Arguments
 	guint32 paramStart = 0;
@@ -971,7 +969,7 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 		add_param (cinfo, ainfo, sig->params [pindex]);
 
-		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4 || ainfo->storage == ArgOnStackR8){
+		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4 || ainfo->storage == ArgOnStackR8) {
 			ainfo->offset = argStack;
 			cinfo->stack_usage += ainfo->slot_size;
 			argStack += ainfo->slot_size;
@@ -1874,7 +1872,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += sizeof (host_mgreg_t);
 			ins->inst_offset = -offset;
 			break;
-		case ArgVtypeByRef:{
+		case ArgVtypeByRef: {
 			MonoInst *vtaddr;
 
 			// if (ainfo->gsharedvt) {
@@ -2188,8 +2186,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				} 
-				else if(ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN) {
+				} else if (ins->next->opcode == OP_FBGE || ins->next->opcode == OP_FBGE_UN) {
 					// fcmp rd, rs1, rs2; fbge rd -> fcle rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_FCLE;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2200,8 +2197,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
-				}
-				else if (ins->next->opcode == OP_FBEQ) {
+				} else if (ins->next->opcode == OP_FBEQ) {
 					// fcmp rd, rs1, rs2; fbeq rd -> fceq rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_FCEQ;
 					ins->dreg = mono_alloc_ireg (cfg);
@@ -2369,8 +2365,8 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 				ins->inst_imm = 0;
 			}
-			if ((ins->next) && (ins->next->opcode >= OP_ZEXT_I1 && ins->next->opcode <= OP_ZEXT_I4)){
-				switch (ins->opcode){
+			if ((ins->next) && (ins->next->opcode >= OP_ZEXT_I1 && ins->next->opcode <= OP_ZEXT_I4)) {
+				switch (ins->opcode) {
 				case OP_LOADI1_MEMBASE:
 					ins->opcode = OP_LOADU1_MEMBASE;
 					ins->dreg = ins->next->dreg;
@@ -2396,7 +2392,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					break;
 				default:
 					g_print (mono_inst_name (ins->opcode));
-					g_assert_not_reached();
+					g_assert_not_reached ();
 				}
 			}
 			break;
@@ -2601,7 +2597,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
 				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
-						   ins->next->opcode == OP_LOADI8_MEMBASE) {
+				           ins->next->opcode == OP_LOADI8_MEMBASE) {
 					/**
 					 * there is compare without branch OP followed
 					 *
@@ -2680,7 +2676,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_MUL_IMM:
-		case OP_IMUL_IMM: 
+		case OP_IMUL_IMM:
 		case OP_LMUL_IMM:
 		case OP_IDIV_IMM: {
 			g_assert (riscv_stdext_m);
@@ -2689,8 +2685,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			temp->dreg = mono_alloc_ireg (cfg);
 			ins->sreg2 = temp->dreg;
 			ins->inst_imm = 0;
-			switch (ins->opcode)
-			{
+			switch (ins->opcode) {
 			case OP_MUL_IMM:
 #ifdef TARGET_RISCV64
 				ins->opcode = OP_LMUL;
@@ -3335,7 +3330,8 @@ emit_move_args (MonoCompile *cfg, guint8 *code)
 				// } else {
 				g_assert (ins->opcode == OP_VTARG_ADDR);
 				g_assert (ins->inst_left->opcode == OP_REGOFFSET);
-				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_left->inst_basereg, ins->inst_left->inst_offset, 0);
+				code = mono_riscv_emit_store (code, ainfo->reg, ins->inst_left->inst_basereg,
+				                              ins->inst_left->inst_offset, 0);
 				// }
 				break;
 			case ArgOnStack:
@@ -3883,7 +3879,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_fsub_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
-			else{
+			else {
 				NOT_IMPLEMENTED;
 				riscv_fsub_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			}
@@ -3892,7 +3888,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_fsgnjn_d (code, ins->dreg, ins->sreg1, ins->sreg1);
-			else{
+			else {
 				NOT_IMPLEMENTED;
 				riscv_fsgnjn_s (code, ins->dreg, ins->sreg1, ins->sreg1);
 			}
@@ -3921,19 +3917,18 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_FDIV:
 			g_assert (riscv_stdext_f || riscv_stdext_d);
-			if (riscv_stdext_d){
+			if (riscv_stdext_d) {
 				riscv_fmv_d_x (code, RISCV_FT0, RISCV_ZERO);
 				riscv_feq_d (code, RISCV_T0, ins->sreg2, RISCV_FT0);
 				code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
-												"DivideByZeroException");
+				                                   "DivideByZeroException");
 				riscv_fdiv_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
-			}
-			else{
+			} else {
 				NOT_IMPLEMENTED;
 				riscv_fmv_w_x (code, RISCV_FT0, RISCV_ZERO);
 				riscv_feq_s (code, RISCV_T0, ins->sreg2, RISCV_FT0);
 				code = mono_riscv_emit_branch_exc (cfg, code, OP_RISCV_EXC_BEQ, RISCV_T0, RISCV_ZERO,
-												"DivideByZeroException");
+				                                   "DivideByZeroException");
 				riscv_fdiv_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
 			}
 			break;
@@ -4093,7 +4088,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
 			break;
 		}
-		case OP_ATOMIC_LOAD_U1:{
+		case OP_ATOMIC_LOAD_U1: {
 			riscv_fence (code, RISCV_FENCE_MEM, RISCV_FENCE_MEM);
 			code = mono_riscv_emit_load (code, ins->dreg, ins->sreg1, ins->inst_offset, 1);
 			riscv_fence (code, RISCV_FENCE_R, RISCV_FENCE_MEM);
@@ -4264,7 +4259,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				NOT_IMPLEMENTED;
 			break;
 		}
-		case OP_FCLE:{
+		case OP_FCLE: {
 			g_assert (riscv_stdext_f || riscv_stdext_d);
 			if (riscv_stdext_d)
 				riscv_fle_d (code, ins->dreg, ins->sreg1, ins->sreg2);
