@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace System.Collections.Specialized
 {
     /// <summary>
-    /// Implements IDictionary using a singly linked list.
+    /// Implements <see cref="IDictionary"/> using a singly linked list.
     /// Recommended for collections that typically include fewer than 10 items.
     /// </summary>
     [Serializable]

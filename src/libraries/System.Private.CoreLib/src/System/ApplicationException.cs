@@ -12,8 +12,8 @@ namespace System
     /// </summary>
     /// <remarks>
     /// You should derive custom exceptions from the <see cref="Exception" /> class rather than the <see cref="ApplicationException" /> class.
-    /// You should not throw an <see cref="ApplicationException" /> exception in your code, and you should not catch an <see cref="ApplicationException" />
-    /// exception unless you intend to re-throw the original exception.
+    /// You should not throw an <see cref="ApplicationException" /> in your code, and you should not catch an <see cref="ApplicationException" />
+    /// unless you intend to re-throw the original exception.
     /// </remarks>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

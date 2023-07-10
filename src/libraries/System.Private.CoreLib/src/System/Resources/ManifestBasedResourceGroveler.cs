@@ -11,7 +11,7 @@ using System.Reflection;
 namespace System.Resources
 {
     /// <summary>
-    /// Searches for resources in Assembly manifest, used for assembly-based resource lookup.
+    /// Searches for resources in  the assembly manifest, used for assembly-based resource lookup.
     /// </summary>
     /// <remarks>
     /// Note: this type is integral to the construction of exception objects,

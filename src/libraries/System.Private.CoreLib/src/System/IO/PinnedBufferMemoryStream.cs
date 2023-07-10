@@ -7,7 +7,7 @@ using System.Diagnostics;
 namespace System.IO
 {
     /// <summary>
-    /// Pins a byte[], exposing it as an unmanaged memory stream.  Used in ResourceReader for corner cases.
+    /// Pins a <see langword="byte[]"/>, exposing it as an unmanaged memory stream.  Used in <see cref="System.Resources.ResourceReader"/> for corner cases.
     /// </summary>
     internal sealed unsafe class PinnedBufferMemoryStream : UnmanagedMemoryStream
     {

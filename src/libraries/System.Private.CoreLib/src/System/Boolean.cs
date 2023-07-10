@@ -9,7 +9,7 @@ using System.Runtime.Versioning;
 namespace System
 {
     /// <summary>
-    /// Represents a Boolean (true or false) value.
+    /// Represents a boolean (<see langword="true"/> or <see langword="false"/>) value.
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

@@ -8,7 +8,7 @@ using System.Runtime.Serialization;
 namespace System
 {
     /// <summary>
-    /// Exception thrown when a requested method or operation is not implemented.
+    /// The exception that is thrown when a requested method or operation is not implemented.
     /// </summary>
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]

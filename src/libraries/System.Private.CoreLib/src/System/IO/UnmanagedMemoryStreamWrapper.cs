@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace System.IO
 {
     /// <summary>
-    /// Creates a MemoryStream over an UnmanagedMemoryStream.
+    /// Creates a <see cref="MemoryStream"/> over an <see cref="UnmanagedMemoryStream"/>.
     /// </summary>
     internal sealed class UnmanagedMemoryStreamWrapper : MemoryStream
     {

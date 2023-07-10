@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Resources
 {
     /// <summary>
-    /// A collection of quick methods for comparing resource keys (strings)
+    /// A collection of quick methods for comparing resource keys (strings).
     /// </summary>
     internal sealed class FastResourceComparer : IComparer, IEqualityComparer, IComparer<string?>, IEqualityComparer<string?>
     {

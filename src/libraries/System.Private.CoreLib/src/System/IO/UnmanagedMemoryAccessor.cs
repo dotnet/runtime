@@ -10,11 +10,9 @@ namespace System.IO
     /// <summary>
     /// Provides random access to unmanaged blocks of memory from managed code.
     /// </summary>
-    /// <remarks>
-    /// Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
-    /// SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
-    /// this gives better throughput; benchmarks showed about 12-15% better.
-    /// </remarks>
+    // Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
+    // SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
+    // this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
     {
         private SafeBuffer _buffer = null!; // initialized in helper called by ctor, but also not initialized by protected ctor

@@ -11,7 +11,7 @@ namespace System.Collections.Generic
     /// Represents a first-in, first-out collection of objects.
     /// </summary>
     /// <remarks>
-    /// Implemented as a circular buffer, so Enqueue and Dequeue are typically O(1).
+    /// Implemented as a circular buffer, so <see cref="Enqueue(T)"/> and <see cref="Dequeue"/> are typically <c>O(1)</c>.
     /// </remarks>
     [DebuggerTypeProxy(typeof(QueueDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
