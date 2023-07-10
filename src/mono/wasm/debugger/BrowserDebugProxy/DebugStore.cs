@@ -1523,7 +1523,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                     }
                     else
+                    {
                         logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    }
                 }
             }
 
