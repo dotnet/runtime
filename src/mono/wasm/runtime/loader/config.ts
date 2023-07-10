@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig } from "../types";
-import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
@@ -45,6 +45,7 @@ export function normalizeConfig() {
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
     config.globalizationMode = config.globalizationMode || "auto";
+    loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;

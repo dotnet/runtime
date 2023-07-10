@@ -21,11 +21,7 @@ export function is_runtime_running() {
 export function assert_runtime_running() {
     mono_assert(runtimeHelpers.runtimeReady, "mono runtime didn't start yet");
     mono_assert(!ABORT, "startup of the mono runtime was aborted");
-
-    const assertAfterExit = !ENVIRONMENT_IS_WEB || // always assert on shell and node
-        (loaderHelpers.config && loaderHelpers.config.assertAfterExit); // assert on web when enabled
-
-    mono_assert(assertAfterExit || typeof EXIT_CODE == "undefined", () => `mono runtime already exited with ${EXIT_CODE}`);
+    mono_assert(!loaderHelpers.assertAfterExit || typeof EXIT_CODE == "undefined", () => `mono runtime already exited with ${EXIT_CODE}`);
 }
 
 export function abort_startup(reason: any, should_exit: boolean, should_throw?: boolean): void {

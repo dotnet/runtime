@@ -100,6 +100,7 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
+    assertAfterExit: boolean;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
