@@ -659,9 +659,16 @@ namespace System.Text
             }
             else if (sizeof(TFrom) == 1 && sizeof(TTo) == 2)
             {
-                // widening operation required
-                Vector256.StoreUnsafe(Vector256.WidenLower(vector.AsByte()), ref *(ushort*)pDest, elementOffset);
-                Vector256.StoreUnsafe(Vector256.WidenUpper(vector.AsByte()), ref *(ushort*)pDest, elementOffset + 16);
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    Vector512<ushort> wide = Vector512.WidenLower(vector.AsByte().ToVector512Unsafe());
+                    Vector512.StoreUnsafe(wide, ref *(ushort*)pDest, elementOffset);
+                }
+                else
+                {
+                    Vector256.StoreUnsafe(Vector256.WidenLower(vector.AsByte()), ref *(ushort*)pDest, elementOffset);
+                    Vector256.StoreUnsafe(Vector256.WidenUpper(vector.AsByte()), ref *(ushort*)pDest, elementOffset + 16);
+                }
             }
             else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
