@@ -865,17 +865,16 @@ namespace System.Net.Security
                                 throw new IOException(SR.net_ssl_io_renego);
                             }
                             await ReplyOnReAuthenticationAsync<TIOAdapter>(extraBuffer, cancellationToken).ConfigureAwait(false);
-                            // Loop on read.
-                            continue;
                         }
-
-                        if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
+                        else if (status.ErrorCode == SecurityStatusPalErrorCode.ContextExpired)
                         {
                             _receivedEOF = true;
                             break;
                         }
-
-                        throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
+                        else
+                        {
+                            throw new IOException(SR.net_io_decrypt, SslStreamPal.GetException(status));
+                        }
                     }
 
                     if (_buffer.DecryptedLength > 0)
