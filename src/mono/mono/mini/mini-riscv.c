@@ -965,21 +965,10 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 		add_param (cinfo, ainfo, sig->params [pindex]);
 
-		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4 || ainfo->storage == ArgOnStackR8)
+		if (ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4 || ainfo->storage == ArgOnStackR8){
+			ainfo->offset = argStack;
+			cinfo->stack_usage += ainfo->slot_size;
 			argStack += ainfo->slot_size;
-	}
-
-	// reserve the regs stored at the srack
-	if (argStack > 0) {
-		cinfo->stack_usage += argStack;
-
-		for (pindex = paramStart; pindex < sig->param_count; ++pindex) {
-			ArgInfo *ainfo = cinfo->args + sig->hasthis + pindex;
-			if (ainfo->storage == ArgOnStack || ainfo->storage == ArgOnStackR4 || ainfo->storage == ArgOnStackR8) {
-				g_assert (argStack >= ainfo->slot_size);
-				argStack -= ainfo->slot_size;
-				ainfo->offset = argStack;
-			}
 		}
 	}
 
