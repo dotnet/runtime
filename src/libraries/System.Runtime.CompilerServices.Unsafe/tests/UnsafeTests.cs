@@ -839,7 +839,7 @@ namespace System.Runtime.CompilerServices
             Assert.Equal("a", actual.Value);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            static T Write<T>(ref byte b, T value) => Unsafe.WriteUnaligned<T>(ref b, value);
+            static void Write<T>(ref byte b, T value) => Unsafe.WriteUnaligned<T>(ref b, value);
         }
 
         [Fact]
