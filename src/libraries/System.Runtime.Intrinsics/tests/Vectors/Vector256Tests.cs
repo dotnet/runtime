@@ -3185,6 +3185,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
                 }
                 else
                 {
+                    // On hardware with <see cref="PackedSimd"/> support, indices are treated as modulo 32.
                     Assert.Equal((byte)32, result.GetElement(index));
                 }
             }
