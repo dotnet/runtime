@@ -37,7 +37,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: minijit
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false
+      buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -75,7 +75,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests_Interp
       runtimeVariant: monointerpreter
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false
+      buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
@@ -108,7 +108,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:BuildMonoAOTCrossCompiler=false
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg)
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml

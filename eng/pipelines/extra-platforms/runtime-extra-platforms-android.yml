@@ -38,7 +38,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_RuntimeTests
       runtimeVariant: minijit
-      buildArgs: -s mono+libs -c $(_BuildConfig) /p:BuildMonoAOTCrossCompiler=false
+      buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 240
       # don't run tests on PRs until we can get significantly more devices
       # Turn off the testing for now, until https://github.com/dotnet/runtime/issues/60128 gets resolved
@@ -74,7 +74,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true /p:BuildMonoAOTCrossCompiler=false
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true $(_runSmokeTestsOnlyArg) /p:EnableAdditionalTimezoneChecks=true
       timeoutInMinutes: 180
       # extra steps, run tests
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
