@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <!-- Include files under StringResourcesPath by convention unless OmitResources is set. -->
-  <ItemGroup Condition="'$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'">
+  <ItemGroup Condition="'$(StringResourcesPath)' != '' and '$(OmitResources)' != 'true'"> 
     <!-- Delete the embedded resource item pointing to StringResourcesPath in case the
          EnableDefaultEmbeddedResourceItems glob didn't include it and include it again. -->
     <EmbeddedResource Remove="$(StringResourcesPath)" Condition="'$(EnableDefaultEmbeddedResourceItems)' == 'true'" />

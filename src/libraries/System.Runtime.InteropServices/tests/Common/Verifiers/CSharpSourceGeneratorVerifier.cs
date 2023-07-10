@@ -4,11 +4,14 @@
 using System;
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
+using Microsoft.CodeAnalysis.CSharp.Testing.XUnit;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Testing.Verifiers;
@@ -103,7 +106,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 SolutionTransforms.Add(CSharpVerifierHelper.GetTargetFrameworkAnalyzerOptionsProviderTransform(targetFramework));
             }
             public Test(bool referenceAncillaryInterop)
-                : this(TestTargetFramework.Net)
+                :this(TestTargetFramework.Net)
             {
                 if (referenceAncillaryInterop)
                 {
@@ -145,7 +148,7 @@ namespace Microsoft.Interop.UnitTests.Verifiers
                 return new CSharpParseOptions(LanguageVersion.Preview, DocumentationMode.Diagnose);
             }
 
-            protected override async Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
+            protected async override Task<(Compilation compilation, ImmutableArray<Diagnostic> generatorDiagnostics)> GetProjectCompilationAsync(Project project, IVerifier verifier, CancellationToken cancellationToken)
             {
                 var (compilation, diagnostics) = await base.GetProjectCompilationAsync(project, verifier, cancellationToken);
                 VerifyFinalCompilation(compilation);
