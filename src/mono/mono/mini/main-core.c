@@ -19,6 +19,7 @@
 #pragma comment(linker, "/export:coreclr_initialize=_coreclr_initialize@28")
 #pragma comment(linker, "/export:coreclr_execute_assembly=_coreclr_execute_assembly@24")
 #pragma comment(linker, "/export:coreclr_shutdown_2=_coreclr_shutdown_2@12")
+#pragma comment(linker, "/export:coreclr_shutdown=_coreclr_shutdown@8")
 #pragma comment(linker, "/export:coreclr_create_delegate=_coreclr_create_delegate@24")
 #pragma comment(linker, "/export:coreclr_set_error_writer=_coreclr_set_error_writer@4")
 #undef MONO_API
