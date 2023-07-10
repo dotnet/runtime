@@ -384,6 +384,9 @@ namespace System
         public static System.Array CreateInstance(System.Type elementType, int[] lengths, int[] lowerBounds) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static System.Array CreateInstance(System.Type elementType, params long[] lengths) { throw null; }
+        public static System.Array CreateInstanceFromArrayType(System.Type arrayType, int length) { throw null; }
+        public static System.Array CreateInstanceFromArrayType(System.Type arrayType, params int[] lengths) { throw null; }
+        public static System.Array CreateInstanceFromArrayType(System.Type arrayType, int[] lengths, int[] lowerBounds) { throw null; }
         public static T[] Empty<T>() { throw null; }
         public static bool Exists<T>(T[] array, System.Predicate<T> match) { throw null; }
         public static void Fill<T>(T[] array, T value) { }

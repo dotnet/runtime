@@ -45,6 +45,7 @@ namespace System.Tests
         private sealed class NonRuntimeType : MockType
         {
             public sealed override Type UnderlyingSystemType => this;
+            protected sealed override bool IsArrayImpl() => false;
         }
     }
 }

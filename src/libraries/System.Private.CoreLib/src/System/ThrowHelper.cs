@@ -969,6 +969,8 @@ namespace System
                     return "overlapped";
                 case ExceptionArgument.minimumBytes:
                     return "minimumBytes";
+                case ExceptionArgument.arrayType:
+                    return "arrayType";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1147,6 +1149,8 @@ namespace System
                     return SR.Format_UnclosedFormatItem;
                 case ExceptionResource.Format_ExpectedAsciiDigit:
                     return SR.Format_ExpectedAsciiDigit;
+                case ExceptionResource.Arg_MustBeArrayType:
+                    return SR.Arg_MustBeArrayType;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1258,6 +1262,7 @@ namespace System
         anyOf,
         overlapped,
         minimumBytes,
+        arrayType,
     }
 
     //
@@ -1343,5 +1348,6 @@ namespace System
         Format_UnexpectedClosingBrace,
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
+        Arg_MustBeArrayType,
     }
 }

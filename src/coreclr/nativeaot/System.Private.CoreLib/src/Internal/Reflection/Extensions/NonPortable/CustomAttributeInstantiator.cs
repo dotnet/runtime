@@ -144,8 +144,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                 IList<CustomAttributeTypedArgument>? typedElements = (IList<CustomAttributeTypedArgument>?)(typedArgument.Value);
                 if (typedElements == null)
                     return null;
-                Type? elementType = argumentType.GetElementType();
-                Array array = Array.CreateInstance(elementType, typedElements.Count);
+                Array array = Array.CreateInstanceFromArrayType(argumentType, typedElements.Count);
                 for (int i = 0; i < typedElements.Count; i++)
                 {
                     object? elementValue = typedElements[i].Convert();

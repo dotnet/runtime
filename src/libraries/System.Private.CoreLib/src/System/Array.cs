@@ -207,6 +207,74 @@ namespace System
             return CreateInstance(elementType, intLengths);
         }
 
+        public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int length)
+        {
+            ArgumentNullException.ThrowIfNull(arrayType);
+            ArgumentOutOfRangeException.ThrowIfNegative(length);
+
+            if (!arrayType.IsArray)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+
+            RuntimeType t = (arrayType.GetElementType()!.UnderlyingSystemType as RuntimeType)!;
+            Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
+
+            return InternalCreate(t, 1, &length, null);
+        }
+
+        public static unsafe Array CreateInstanceFromArrayType(Type arrayType, params int[] lengths)
+        {
+            ArgumentNullException.ThrowIfNull(arrayType);
+            ArgumentNullException.ThrowIfNull(lengths);
+            if (lengths.Length == 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
+
+            if (!arrayType.IsArray)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+
+            RuntimeType t = (arrayType.GetElementType()!.UnderlyingSystemType as RuntimeType)!;
+            Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
+
+            // Check to make sure the lengths are all non-negative. Note that we check this here to give
+            // a good exception message if they are not; however we check this again inside the execution
+            // engine's low level allocation function after having made a copy of the array to prevent a
+            // malicious caller from mutating the array after this check.
+            for (int i = 0; i < lengths.Length; i++)
+                if (lengths[i] < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            fixed (int* pLengths = &lengths[0])
+                return InternalCreate(t, lengths.Length, pLengths, null);
+        }
+
+        public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int[] lengths, int[] lowerBounds)
+        {
+            ArgumentNullException.ThrowIfNull(arrayType);
+            ArgumentNullException.ThrowIfNull(lengths);
+            ArgumentNullException.ThrowIfNull(lowerBounds);
+            if (lengths.Length != lowerBounds.Length)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
+            if (lengths.Length == 0)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
+
+            if (!arrayType.IsArray)
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+
+            RuntimeType t = (arrayType.GetElementType()!.UnderlyingSystemType as RuntimeType)!;
+            Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
+
+            // Check to make sure the lengths are all non-negative. Note that we check this here to give
+            // a good exception message if they are not; however we check this again inside the execution
+            // engine's low level allocation function after having made a copy of the array to prevent a
+            // malicious caller from mutating the array after this check.
+            for (int i = 0; i < lengths.Length; i++)
+                if (lengths[i] < 0)
+                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+
+            fixed (int* pLengths = &lengths[0])
+            fixed (int* pLowerBounds = &lowerBounds[0])
+                return InternalCreate(t, lengths.Length, pLengths, pLowerBounds);
+        }
+
         public static void Copy(Array sourceArray, Array destinationArray, long length)
         {
             int ilength = (int)length;
