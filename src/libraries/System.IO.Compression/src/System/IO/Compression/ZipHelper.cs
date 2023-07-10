@@ -210,8 +210,8 @@ namespace System.IO.Compression
                 return encoding.GetBytes(text);
             }
 
-            var byteCount = encoding.GetByteCount(text);
-            var buffer = ArrayPool<byte>.Shared.Rent(byteCount);
+            int byteCount = encoding.GetByteCount(text);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(byteCount);
             try
             {
                 encoding.GetBytes(text, 0, text.Length, buffer, 0);
