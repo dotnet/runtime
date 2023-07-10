@@ -6,7 +6,7 @@ MONO_CONFIG?=Debug
 MONO_ARCH=riscv64
 TARGET_OS=linux
 AOT?=false
-
+QEMU=qemu-riscv64-static
 #NET_TRACE_PATH=<path-to-trace-of-sample>
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
@@ -56,3 +56,15 @@ clean:
 # ./build.sh mono+libs+host -c Debug --cross --arch riscv64 --build
 
 # ROOTFS_DIR="" ./build.sh clr.hosts -c Debug
+
+TEST_PATH=/home/wuxinlong/workspace/samples/csharp/
+
+customer-relationship:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)tutorials/default-interface-members-versions/finished/customer-relationship/bin/Debug/net8.0/customer-relationship.dll
+
+exploration:
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(TEST_PATH)tutorials/exploration/csharp6-finished/bin/Debug/net8.0/csharp6-finished.dll
+
+test: customer-relationship exploration
