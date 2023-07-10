@@ -1408,7 +1408,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 var stringId = getCAttrsRetReader.ReadInt32();
                 var dispAttrStr = await GetStringValue(sessionId, stringId, token);
-                ExecutionContext context = proxy.GetContext(sessionId);
+                ExecutionContext context = proxy.Contexts.GetCurrentContext(sessionId);
                 JArray objectValues = await GetObjectValues(sessionId, objectId, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.ForDebuggerDisplayAttribute, token);
 
                 var thisObj = CreateJObject<string>(value: "", type: "object", description: "", writable: false, objectId: $"dotnet:object:{objectId}");
