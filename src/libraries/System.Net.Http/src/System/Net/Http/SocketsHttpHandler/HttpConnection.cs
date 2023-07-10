@@ -93,7 +93,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http11ConnectionEstablished();
+                HttpTelemetry.Log.Http11ConnectionEstablished(_id);
                 _disposed = Status_NotDisposedAndTrackedByTelemetry;
             }
 
@@ -116,7 +116,7 @@ namespace System.Net.Http
                 // Only decrement the connection count if we counted this connection
                 if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
                 {
-                    HttpTelemetry.Log.Http11ConnectionClosed();
+                    HttpTelemetry.Log.Http11ConnectionClosed(_id);
                 }
 
                 if (!_detachedFromPool)

@@ -15,6 +15,9 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
+        private static long s_connectionCounter = -1;
+        protected readonly long _id = Interlocked.Increment(ref s_connectionCounter);
+
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
         /// <summary>Cached string for the last Server header received on this connection.</summary>
@@ -47,7 +50,7 @@ namespace System.Net.Http
             if (stream is SslStream sslStream)
             {
                 Trace(
-                    $"{this}. " +
+                    $"{this}. Id:{_id}, " +
                     $"SslProtocol:{sslStream.SslProtocol}, NegotiatedApplicationProtocol:{sslStream.NegotiatedApplicationProtocol}, " +
                     $"NegotiatedCipherSuite:{sslStream.NegotiatedCipherSuite}, CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
                     $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
@@ -56,7 +59,7 @@ namespace System.Net.Http
             }
             else
             {
-                Trace($"{this}");
+                Trace($"{this}. Id:{_id}");
             }
         }
 

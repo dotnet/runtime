@@ -179,7 +179,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http20ConnectionEstablished();
+                HttpTelemetry.Log.Http20ConnectionEstablished(_id);
                 _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 
@@ -1898,7 +1898,7 @@ namespace System.Net.Http
             {
                 if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
                 {
-                    HttpTelemetry.Log.Http20ConnectionClosed();
+                    HttpTelemetry.Log.Http20ConnectionClosed(_id);
                 }
             }
         }

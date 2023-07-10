@@ -449,24 +449,26 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, int count = 1)
+        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, long connectionId = 0)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
-            Assert.Equal(count, connectionsEstablished.Length);
+            Assert.Equal(1, connectionsEstablished.Length);
             foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
             {
-                Assert.Equal(2, connectionEstablished.Payload.Count);
+                Assert.Equal(3, connectionEstablished.Payload.Count);
                 Assert.Equal(version.Major, (byte)connectionEstablished.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionEstablished.Payload[1]);
+                Assert.Equal(connectionId, (long)connectionEstablished.Payload[2]);
             }
 
             EventWrittenEventArgs[] connectionsClosed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
-            Assert.Equal(count, connectionsClosed.Length);
+            Assert.Equal(1, connectionsClosed.Length);
             foreach (EventWrittenEventArgs connectionClosed in connectionsClosed)
             {
-                Assert.Equal(2, connectionClosed.Payload.Count);
+                Assert.Equal(3, connectionClosed.Payload.Count);
                 Assert.Equal(version.Major, (byte)connectionClosed.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionClosed.Payload[1]);
+                Assert.Equal(connectionId, (long)connectionClosed.Payload[2]);
             }
         }
 

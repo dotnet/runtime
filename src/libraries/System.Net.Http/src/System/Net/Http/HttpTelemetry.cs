@@ -91,15 +91,15 @@ namespace System.Net.Http
         }
 
         [Event(4, Level = EventLevel.Informational)]
-        private void ConnectionEstablished(byte versionMajor, byte versionMinor)
+        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId)
         {
-            WriteEvent(eventId: 4, versionMajor, versionMinor);
+            WriteEvent(eventId: 4, versionMajor, versionMinor, connectionId);
         }
 
         [Event(5, Level = EventLevel.Informational)]
-        private void ConnectionClosed(byte versionMajor, byte versionMinor)
+        private void ConnectionClosed(byte versionMajor, byte versionMinor, long connectionId)
         {
-            WriteEvent(eventId: 5, versionMajor, versionMinor);
+            WriteEvent(eventId: 5, versionMajor, versionMinor, connectionId);
         }
 
         [Event(6, Level = EventLevel.Informational)]
@@ -163,48 +163,48 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http11ConnectionEstablished()
+        public void Http11ConnectionEstablished(long connectionId)
         {
             Interlocked.Increment(ref _openedHttp11Connections);
-            ConnectionEstablished(versionMajor: 1, versionMinor: 1);
+            ConnectionEstablished(versionMajor: 1, versionMinor: 1, connectionId);
         }
 
         [NonEvent]
-        public void Http11ConnectionClosed()
+        public void Http11ConnectionClosed(long connectionId)
         {
             long count = Interlocked.Decrement(ref _openedHttp11Connections);
             Debug.Assert(count >= 0);
-            ConnectionClosed(versionMajor: 1, versionMinor: 1);
+            ConnectionClosed(versionMajor: 1, versionMinor: 1, connectionId);
         }
 
         [NonEvent]
-        public void Http20ConnectionEstablished()
+        public void Http20ConnectionEstablished(long connectionId)
         {
             Interlocked.Increment(ref _openedHttp20Connections);
-            ConnectionEstablished(versionMajor: 2, versionMinor: 0);
+            ConnectionEstablished(versionMajor: 2, versionMinor: 0, connectionId);
         }
 
         [NonEvent]
-        public void Http20ConnectionClosed()
+        public void Http20ConnectionClosed(long connectionId)
         {
             long count = Interlocked.Decrement(ref _openedHttp20Connections);
             Debug.Assert(count >= 0);
-            ConnectionClosed(versionMajor: 2, versionMinor: 0);
+            ConnectionClosed(versionMajor: 2, versionMinor: 0, connectionId);
         }
 
         [NonEvent]
-        public void Http30ConnectionEstablished()
+        public void Http30ConnectionEstablished(long connectionId)
         {
             Interlocked.Increment(ref _openedHttp30Connections);
-            ConnectionEstablished(versionMajor: 3, versionMinor: 0);
+            ConnectionEstablished(versionMajor: 3, versionMinor: 0, connectionId);
         }
 
         [NonEvent]
-        public void Http30ConnectionClosed()
+        public void Http30ConnectionClosed(long connectionId)
         {
             long count = Interlocked.Decrement(ref _openedHttp30Connections);
             Debug.Assert(count >= 0);
-            ConnectionClosed(versionMajor: 3, versionMinor: 0);
+            ConnectionClosed(versionMajor: 3, versionMinor: 0, connectionId);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
@@ -293,9 +293,9 @@ namespace System.Net.Http
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Parameters to this method are primitive and are trimmer safe")]
         [NonEvent]
-        private unsafe void WriteEvent(int eventId, byte arg1, byte arg2)
+        private unsafe void WriteEvent(int eventId, byte arg1, byte arg2, long arg3)
         {
-            const int NumEventDatas = 2;
+            const int NumEventDatas = 3;
             EventData* descrs = stackalloc EventData[NumEventDatas];
 
             descrs[0] = new EventData
@@ -307,6 +307,11 @@ namespace System.Net.Http
             {
                 DataPointer = (IntPtr)(&arg2),
                 Size = sizeof(byte)
+            };
+            descrs[2] = new EventData
+            {
+                DataPointer = (IntPtr)(&arg3),
+                Size = sizeof(long)
             };
 
             WriteEventCore(eventId, NumEventDatas, descrs);
