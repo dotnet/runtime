@@ -16,7 +16,7 @@ PerfInfo::PerfInfo(int pid, const char* basePath)
     LIMITED_METHOD_CONTRACT;
 
     SString path;
-    path.Printf("%sperfinfo-%d.map", basePath, pid);
+    path.Printf("%s/perfinfo-%d.map", basePath, pid);
     OpenFile(path);
 }
 

@@ -33,6 +33,9 @@ private:
     // Construct a new map for the specified pid.
     PerfMap(int pid, const char* path);
 
+    // Default to /tmp or use DOTNET_PerfMapJitDumpPath if set
+    static const char* InternalConstructPath(char *tmpBuf, int lenBuf);
+
 protected:
     // Indicates whether optimization tiers should be shown for methods in perf maps
     static bool s_ShowOptimizationTiers;
