@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Immutable;
-using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
 {
@@ -43,36 +41,14 @@ namespace Microsoft.Interop
                 }));
             }
 
-            bool supported = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic diagnostic);
-            if (!supported)
+            var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic diagnostic);
+            return support switch
             {
-                if (diagnostic.IsFatal)
-                {
-                    return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic));
-                }
-                else
-                {
-                    var locations = ImmutableArray<Location>.Empty;
-                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
-                    {
-                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
-                    }
-                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
-                    {
-                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
-                    }
-
-                    return generator with
-                    {
-                        Diagnostics = generator.Diagnostics.Add(new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
-                        {
-                            UnnecessaryDataDetails = SR.InOutAttributes
-                        })
-                    };
-
-                }
-            }
-            return generator;
+                ByValueMarshalKindSupport.Supported => generator,
+                ByValueMarshalKindSupport.NotSupported => ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(diagnostic)),
+                ByValueMarshalKindSupport.Unnecessary => generator with { Diagnostics = generator.Diagnostics.Add(diagnostic!) },
+                _ => throw new UnreachableException()
+            };
         }
     }
 }

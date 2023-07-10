@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Immutable;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
@@ -47,7 +46,8 @@ namespace Microsoft.Interop
 
         public sealed record UnnecessaryData(TypePositionInfo TypePositionInfo, StubCodeContext StubCodeContext, ImmutableArray<Location> UnnecessaryDataLocations) : GeneratorDiagnostic(TypePositionInfo, StubCodeContext, isFatal: false)
         {
-            public required string UnnecessaryDataDetails { get; init; }
+            public required string UnnecessaryDataName { get; init; }
+            public string? UnnecessaryDataDetails { get; init; }
 
             public override DiagnosticInfo ToDiagnosticInfo(DiagnosticDescriptor descriptor, Location location, string elementName)
             {
@@ -57,46 +57,12 @@ namespace Microsoft.Interop
                     UnnecessaryDataLocations,
                     // Add "unnecessary locations" property so the IDE fades the right locations.
                     DiagnosticProperties.Add(WellKnownDiagnosticTags.Unnecessary, $"[{string.Join(",", Enumerable.Range(0, UnnecessaryDataLocations.Length))}]"),
-                    UnnecessaryDataDetails,
-                    elementName);
+                    UnnecessaryDataName,
+                    elementName,
+                    UnnecessaryDataDetails ?? "");
             }
         }
 
-        /// <summary>
-        /// Provides the default implementation for <see cref="IMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/>
-        /// </summary>
-        public static bool SupportsByValueMarshalKindDefault(ByValueContentsMarshalKind kind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
-        {
-            diagnostic = null;
-            switch (kind)
-            {
-                case ByValueContentsMarshalKind.Default: return true;
-                case ByValueContentsMarshalKind.In:
-                    diagnostic = new GeneratorDiagnostic.UnnecessaryData(info, context, ImmutableArray.Create(info.ByValueMarshalAttributeLocations.InLocation))
-                    { UnnecessaryDataDetails = SR.InAttributeOnlyIsDefault };
-                    return false;
-                default:
-                    diagnostic = DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport.NotSupported, info, context);
-                    return false;
-            }
-        }
-
-        public static bool ByValueParameterSupportsByValueMarshalKindByDefault(
-            ByValueContentsMarshalKind marshalKind,
-            TypePositionInfo info,
-            StubCodeContext context,
-            out GeneratorDiagnostic? diagnostic)
-        {
-            if (marshalKind.HasFlag(ByValueContentsMarshalKind.Out))
-            {
-                diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
-                {
-                    NotSupportedDetails = SR.OutAttributeNotSupportedOnByValueParameters
-                };
-                return true;
-            }
-            return GeneratorDiagnostic.SupportsByValueMarshalKindDefault(marshalKind, info, context, out diagnostic);
-        }
         /// <summary>
         /// Provides an implementation of <see cref="IMarshallingGenerator.SupportsByValueMarshalKind(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/> through <see cref="GetSupport(ByValueContentsMarshalKind, TypePositionInfo, StubCodeContext, out GeneratorDiagnostic?)"/>
         /// </summary>
@@ -156,7 +122,10 @@ namespace Microsoft.Interop
                                        info,
                                        context,
                                        ImmutableArray.Create(info.ByValueMarshalAttributeLocations.OutLocation))
-                                { UnnecessaryDataDetails = OutSupportDetails },
+                                {
+                                    UnnecessaryDataName = SR.InOutAttributes,
+                                    UnnecessaryDataDetails = OutSupportDetails
+                                },
                             ByValueMarshalKindSupport.NotSupported
                                 => new GeneratorDiagnostic.NotSupported(
                                     info,
@@ -174,7 +143,10 @@ namespace Microsoft.Interop
                                        info,
                                        context,
                                        ImmutableArray.Create(info.ByValueMarshalAttributeLocations.InLocation))
-                                { UnnecessaryDataDetails = InSupportDetails },
+                                {
+                                    UnnecessaryDataName = SR.InOutAttributes,
+                                    UnnecessaryDataDetails = InSupportDetails
+                                },
                             ByValueMarshalKindSupport.NotSupported
                                 => new GeneratorDiagnostic.NotSupported(
                                     info,
@@ -194,7 +166,10 @@ namespace Microsoft.Interop
                                        ImmutableArray.Create(
                                            info.ByValueMarshalAttributeLocations.InLocation,
                                            info.ByValueMarshalAttributeLocations.OutLocation))
-                                { UnnecessaryDataDetails = InOutSupportDetails },
+                                {
+                                    UnnecessaryDataName = SR.InOutAttributes,
+                                    UnnecessaryDataDetails = InOutSupportDetails
+                                },
                             ByValueMarshalKindSupport.NotSupported
                                 => new GeneratorDiagnostic.NotSupported(
                                     info,
@@ -206,39 +181,6 @@ namespace Microsoft.Interop
                     default:
                         throw new UnreachableException($"Unexpected {nameof(ByValueContentsMarshalKind)} variant: {marshalKind}");
                 }
-            }
-        }
-
-        /// <summary>
-        /// Gets the default warnings for supported / unsupported / unnecessary ByValueMarshalKindSupport
-        /// </summary>
-        public static GeneratorDiagnostic DefaultDiagnosticForByValueGeneratorSupport(ByValueMarshalKindSupport support, TypePositionInfo info, StubCodeContext context)
-        {
-            switch (support)
-            {
-                case ByValueMarshalKindSupport.Supported:
-                    throw new ArgumentException("Supported ByValueMarshalKind will not have a diagnostic");
-                case ByValueMarshalKindSupport.NotSupported:
-                    return new GeneratorDiagnostic.NotSupported(info, context)
-                    {
-                        NotSupportedDetails = SR.InOutAttributeMarshalerNotSupported
-                    };
-                case ByValueMarshalKindSupport.Unnecessary:
-                    var locations = ImmutableArray<Location>.Empty;
-                    if (info.ByValueMarshalAttributeLocations.InLocation is not null)
-                    {
-                        locations = locations.Add(info.ByValueMarshalAttributeLocations.InLocation);
-                    }
-                    if (info.ByValueMarshalAttributeLocations.OutLocation is not null)
-                    {
-                        locations = locations.Add(info.ByValueMarshalAttributeLocations.OutLocation);
-                    }
-                    return new GeneratorDiagnostic.UnnecessaryData(info, context, locations)
-                    {
-                        UnnecessaryDataDetails = SR.InOutAttributes
-                    };
-                default:
-                    throw new UnreachableException("Unexpected ByValueMarshalKindSupport");
             }
         }
     }

@@ -150,12 +150,12 @@ namespace Microsoft.Interop
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationDescription)));
 
-        /// <inheritdoc cref="SR.InvalidExceptionMarshallingConfigurationMessage"/>
+        /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterCom"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
-                GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationMessage)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageParameterCom)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
@@ -414,6 +414,7 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.ClassDoesNotImplementAnyGeneratedComInterfacesDescription)));
 
+        /// <inheritdoc cref="SR.UnnecessaryParameterMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =
             new DiagnosticDescriptor(
                 Ids.UnnecessaryMarshallingInfo,
@@ -428,6 +429,7 @@ namespace Microsoft.Interop
                     WellKnownDiagnosticTags.Unnecessary
                 });
 
+        /// <inheritdoc cref="SR.UnnecessaryReturnMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
             new DiagnosticDescriptor(
                 Ids.UnnecessaryMarshallingInfo,

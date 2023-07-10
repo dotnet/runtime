@@ -104,7 +104,7 @@ namespace Microsoft.Interop
             }
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
         {
             if (marshalKind is ByValueContentsMarshalKind.In)
             {
@@ -112,9 +112,9 @@ namespace Microsoft.Interop
                 {
                     NotSupportedDetails = SR.InAttributeNotSupportedWithoutOutBlittableArray
                 };
-                return false;
+                return ByValueMarshalKindSupport.NotSupported;
             }
-            return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
+            return GeneratorDiagnostic.ByValueMarshalKindSupportManager.PinnedByReferenceParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }
 }

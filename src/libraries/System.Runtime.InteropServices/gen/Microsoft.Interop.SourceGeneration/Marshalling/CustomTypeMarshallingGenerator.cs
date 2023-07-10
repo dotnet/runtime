@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -116,23 +115,14 @@ namespace Microsoft.Interop
             return _nativeTypeMarshaller.UsesNativeIdentifier(info, context);
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
         {
             if (_byValueContentsMarshallingSupport is ByValueMarshalKindSupport.Supported)
             {
                 diagnostic = null;
-                return true;
+                return ByValueMarshalKindSupport.Supported;
             }
-            if (marshalKind == ByValueContentsMarshalKind.In)
-            {
-                diagnostic = new GeneratorDiagnostic.UnnecessaryData(info, context, ImmutableArray.Create(info.ByValueMarshalAttributeLocations.InLocation))
-                {
-                    UnnecessaryDataDetails = SR.InAttributeOnlyIsDefault
-                };
-                return false;
-            }
-            diagnostic = GeneratorDiagnostic.DefaultDiagnosticForByValueGeneratorSupport(_byValueContentsMarshallingSupport, info, context);
-            return false;
+            return GeneratorDiagnostic.ByValueMarshalKindSupportManager.ReferenceTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }
 }

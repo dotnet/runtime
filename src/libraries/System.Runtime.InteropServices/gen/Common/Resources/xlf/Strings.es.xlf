@@ -893,8 +893,8 @@
         <note />
       </trans-unit>
       <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
-        <source>The `[Out]` attribute are not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</source>
-        <target state="new">The `[Out]` attribute are not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</target>
+        <source>The `[Out]` attribute is not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</source>
+        <target state="new">The `[Out]` attribute is not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">
@@ -1225,13 +1225,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
-        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'</target>
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
-        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
-        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</target>
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</source>
+        <target state="new">Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

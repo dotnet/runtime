@@ -379,23 +379,25 @@ namespace LibraryImportGenerator.UnitTests
             } };
 
             // By value non-array with [In, Out] attributes
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In"), new[] {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("{|#1:In|}"), new [] {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
-                    .WithArguments(SR.InOutAttributesNotSupportedOnByValueParameters, "p")
+                    .WithLocation(1)
+                    .WithArguments(SR.InOutAttributes, "p", SR.InAttributeOnlyIsDefault)
+                    .WithSeverity(DiagnosticSeverity.Info)
             } };
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.InOutAttributeMarshalerNotSupported, "p")
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
             } };
 
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR., "p")
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
             } };
 
             // LCIDConversion

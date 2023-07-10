@@ -196,7 +196,7 @@
     <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</value>
   </data>
   <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
-    <value>The `[Out]` attribute are not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</value>
+    <value>The `[Out]` attribute is not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</value>
   </data>
   <data name="AddGeneratedComClassAddUnsafe" xml:space="preserve">
     <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
@@ -844,10 +844,10 @@
     <value>Unnecessary marshalling info was provided and can be removed.</value>
   </data>
   <data name="UnnecessaryParameterMarshallingInfoMessage" xml:space="preserve">
-    <value>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</value>
+    <value>Unnecessary marshalling info '{0}' was provided for parameter '{1}'. {2}</value>
   </data>
   <data name="UnnecessaryReturnMarshallingInfoMessage" xml:space="preserve">
-    <value>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</value>
+    <value>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'. {2}</value>
   </data>
   <data name="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription" xml:space="preserve">
     <value>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</value>

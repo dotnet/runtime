@@ -51,15 +51,32 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
-        public string InAttributedBlittableArray => $$"""
+
+        public const string IntStructAndMarshaller = IntStructDefinition + IntStructMarshallerDefinition;
+        public const string IntStructDefinition = """
+            internal struct IntStruct
+            {
+                public int Field;
+            }
+            """;
+        public const string IntStructMarshallerDefinition = """
+            [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
+            internal static class IntStructMarshaller
+            {
+                public static nint ConvertToUnmanaged(int managed) => (nint)0;
+                public static IntStruct ConvertToManaged(nint unmanaged) => default;
+            }
+            """;
+
+        public string ByValueMarshallingOfType(string preTypeModifierOrAttribute, string parameterType, string parameterName, (StringMarshalling? StringMarshalling, string? StringMarshallingCustomType)? stringMarshalling = null) => $$"""
             using System.Runtime.InteropServices;
             using System.Runtime.InteropServices.Marshalling;
 
-            {{GeneratedComInterface()}}
+            {{GeneratedComInterface(stringMarshalling?.)}}
             partial interface INativeAPI
             {
                 {{VirtualMethodIndex(0)}}
-                void Method([InAttribute] int[] parameter);
+                void Method({{preTypeModifierOrAttribute}} {{parameterType}} {{parameterName}});
             }
             """;
 
