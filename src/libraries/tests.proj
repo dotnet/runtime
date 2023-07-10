@@ -68,6 +68,8 @@
 
   <!-- wasm EAT/AOT -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
+    <!-- https://github.com/dotnet/runtime/issues/86916 -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Formats.Cbor\tests\System.Formats.Cbor.Tests.csproj" />
   </ItemGroup>
 
   <!-- Wasm aot on all platforms -->
