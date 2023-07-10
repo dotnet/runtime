@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -101,13 +102,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(DayOfWeek.Monday, day);
 
             // Numbers-formatted json string should first consider naming policy
-            options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false, namingPolicy: new ToEnumNumberNamingPolicy<DayOfWeek>()));
+            options = CreateStringEnumOptionsForType<DayOfWeek>(useGenericVariant, new ToEnumNumberNamingPolicy<DayOfWeek>(), false);
             day = JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options);
             Assert.Equal(DayOfWeek.Monday, day);
 
-            options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false, namingPolicy: new ToLowerNamingPolicy()));
+            options = CreateStringEnumOptionsForType<DayOfWeek>(useGenericVariant, new ToLowerNamingPolicy(), false);
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<DayOfWeek>(@"""1""", options));
         }
 
@@ -722,18 +721,25 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(SampleEnumByte))]
-        [InlineData(typeof(SampleEnumSByte))]
-        [InlineData(typeof(SampleEnumInt16))]
-        [InlineData(typeof(SampleEnumUInt16))]
-        [InlineData(typeof(SampleEnumInt32))]
-        [InlineData(typeof(SampleEnumUInt32))]
-        [InlineData(typeof(SampleEnumInt64))]
-        [InlineData(typeof(SampleEnumUInt64))]
-        public static void DeserializeNumericStringWithAllowIntegerValuesAsFalse(Type enumType)
+        [InlineData(typeof(SampleEnumByte), true)]
+        [InlineData(typeof(SampleEnumByte), false)]
+        [InlineData(typeof(SampleEnumSByte), true)]
+        [InlineData(typeof(SampleEnumSByte), false)]
+        [InlineData(typeof(SampleEnumInt16), true)]
+        [InlineData(typeof(SampleEnumInt16), false)]
+        [InlineData(typeof(SampleEnumUInt16), true)]
+        [InlineData(typeof(SampleEnumUInt16), false)]
+        [InlineData(typeof(SampleEnumInt32), true)]
+        [InlineData(typeof(SampleEnumInt32), false)]
+        [InlineData(typeof(SampleEnumUInt32), true)]
+        [InlineData(typeof(SampleEnumUInt32), false)]
+        [InlineData(typeof(SampleEnumInt64), true)]
+        [InlineData(typeof(SampleEnumInt64), false)]
+        [InlineData(typeof(SampleEnumUInt64), true)]
+        [InlineData(typeof(SampleEnumUInt64), false)]
+        public static void DeserializeNumericStringWithAllowIntegerValuesAsFalse(Type enumType, bool useGenericVariant)
         {
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+            JsonSerializerOptions options = CreateStringEnumOptionsForType(enumType, useGenericVariant, allowIntegerValues: false);
 
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""1""", enumType, options));
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize(@"""+1""", enumType, options));
@@ -759,17 +765,24 @@ namespace System.Text.Json.Serialization.Tests
             public override string ConvertName(string name) => name + "0";
         }
 
-        private static JsonSerializerOptions CreateStringEnumOptionsForType<TEnum>(bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) where TEnum : struct, Enum
+        private static JsonSerializerOptions CreateStringEnumOptionsForType(Type enumType, bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true)
         {
+            Debug.Assert(enumType.IsEnum);
+
             return new JsonSerializerOptions
             {
                 Converters =
                 {
                     useGenericVariant
-                    ? new JsonStringEnumConverter<TEnum>(namingPolicy, allowIntegerValues)
-                    : new JsonStringEnumConverter(namingPolicy, allowIntegerValues)
+                        ? (JsonConverter)Activator.CreateInstance(typeof(JsonStringEnumConverter<>).MakeGenericType(enumType), namingPolicy, allowIntegerValues)
+                        : new JsonStringEnumConverter(namingPolicy, allowIntegerValues)
                 }
             };
+        }
+
+        private static JsonSerializerOptions CreateStringEnumOptionsForType<TEnum>(bool useGenericVariant, JsonNamingPolicy? namingPolicy = null, bool allowIntegerValues = true) where TEnum : struct, Enum
+        {
+            return CreateStringEnumOptionsForType(typeof(TEnum), useGenericVariant, namingPolicy, allowIntegerValues);
         }
     }
 }
