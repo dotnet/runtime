@@ -5260,7 +5260,6 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
 			add_extra_method (acfg, mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name));
 		}
-
 	}
 
 }
