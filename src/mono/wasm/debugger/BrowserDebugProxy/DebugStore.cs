@@ -1475,61 +1475,56 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, ExecutionContext context, bool useDebuggerProtocol, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, ExecutionContext context, bool tryUseDebuggerProtocol, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
             List<DebugItem> steps = new List<DebugItem>();
 
-            if (!useDebuggerProtocol)
+            var pdb_files = new List<string>();
+            foreach (string file_name in loaded_files)
             {
-                var pdb_files = new List<string>();
-                foreach (string file_name in loaded_files)
+                if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                    pdb_files.Add(file_name);
+                else
+                    asm_files.Add(file_name);
+            }
+
+            foreach (string url in asm_files)
+            {
+                try
                 {
-                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-                        pdb_files.Add(file_name);
-                    else
-                        asm_files.Add(file_name);
+                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+
+                    steps.Add(
+                        new DebugItem
+                        {
+                            Url = url,
+                            Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                        });
                 }
-
-                foreach (string url in asm_files)
+                catch (Exception e)
                 {
-                    try
+                    if (tryUseDebuggerProtocol)
                     {
-                        string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                        string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
-
-                        steps.Add(
+                        try
+                        {
+                            string unescapedFileName = Uri.UnescapeDataString(url);
+                            steps.Add(
                             new DebugItem
                             {
                                 Url = url,
-                                Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                            });
-                    }
-                    catch (Exception e)
-                    {
-                        logger.LogDebug($"Failed to read {url} ({e.Message})");
-                    }
-                }
-            }
-            else
-            {
-                foreach (string file_name in loaded_files)
-                {
-                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-                        continue;
-                    try
-                    {
-                        string unescapedFileName = Uri.UnescapeDataString(file_name);
-                        steps.Add(
-                            new DebugItem
-                            {
-                                Url = file_name,
                                 Data = context.SdbAgent.GetBytesFromAssemblyAndPdb(Path.GetFileName(unescapedFileName), token)
                             });
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogDebug($"Failed to get bytes using debugger protocol {url} ({ex.Message})");
+                        }
                     }
-                    catch (Exception e)
+                    else
                     {
-                        logger.LogDebug($"Failed to read {file_name} ({e.Message})");
+                        logger.LogDebug($"Failed to read {url} ({e.Message})");
                     }
                 }
             }
