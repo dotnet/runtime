@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Reflection;
 
 public class Test_Collect
 {
@@ -13,7 +14,7 @@ public class Test_Collect
         GC.Collect();
         sw.Stop();
         TimeSpan elapsed = sw.Elapsed;
-        TimeSpan totalPauseDuration = GC.GetTotalPauseDuration();
+        TimeSpan totalPauseDuration = (TimeSpan)typeof(GC).GetMethod("GetTotalPauseDuration", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
         GCMemoryInfo memoryInfo = GC.GetGCMemoryInfo();
         TimeSpan lastGcDuration = memoryInfo.PauseDurations[0];
 
