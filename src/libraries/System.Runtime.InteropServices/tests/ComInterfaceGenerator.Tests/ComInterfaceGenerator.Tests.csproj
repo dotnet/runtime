@@ -4,15 +4,21 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ReferencesNativeExports>true</ReferencesNativeExports>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Declare InteropCompilerGeneratedFilesOutputPath to put generated files in a single repo to easily view diffs -->
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' == ''">$(OutputPath)\Generated</CompilerGeneratedFilesOutputPath>
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' != ''">$(InteropCompilerGeneratedFilesOutputPath)\ComInterfaceGenerator.Tests</CompilerGeneratedFilesOutputPath>
     <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaces\%(FileName).cs" />
+    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj" ReferenceOutputAssembly="false" OutputItemType="Analyzer" />
     <ProjectReference Include="..\Ancillary.Interop\Ancillary.Interop.csproj" />
     <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
     <ProjectReference Include="..\TestAssets\SharedTypes\SharedTypes.csproj" />

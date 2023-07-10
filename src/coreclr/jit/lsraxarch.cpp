@@ -154,12 +154,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_VEC:
         {
             srcCount = 0;
+
             assert(dstCount == 1);
             assert(!tree->IsReuseRegVal());
-            RefPosition* def               = BuildDef(tree, BuildEvexIncompatibleMask(tree));
+
+            RefPosition* def               = BuildDef(tree);
             def->getInterval()->isConstant = true;
+            break;
         }
-        break;
 
 #if !defined(TARGET_64BIT)
 

@@ -214,6 +214,8 @@
              Link="Common\Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Alerts.cs"
              Link="Common\Interop\Windows\SChannel\Interop.Alerts.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.Session.cs"
+             Link="Common\Interop\Windows\SChannel\Interop.Session.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\Interop.SchProtocols.cs"
              Link="Common\Interop\Windows\SChannel\Interop.SchProtocols.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\SChannel\SecPkgContext_ConnectionInfo.cs"

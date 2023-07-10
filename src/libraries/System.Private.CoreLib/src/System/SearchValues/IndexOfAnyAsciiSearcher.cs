@@ -1158,7 +1158,7 @@ namespace System.Buffers
 
                 return Sse2.IsSupported
                     ? Sse2.PackUnsignedSaturate(lowerMin, upperMin)
-                    : PackedSimd.ConvertNarrowingUnsignedSaturate(lowerMin, upperMin);
+                    : PackedSimd.ConvertNarrowingSaturateUnsigned(lowerMin, upperMin);
             }
 
             // Replace with Vector256.NarrowWithSaturation once https://github.com/dotnet/runtime/issues/75724 is implemented.
@@ -1183,7 +1183,7 @@ namespace System.Buffers
                 return
                     Sse2.IsSupported ? Sse2.PackUnsignedSaturate(lower.AsInt16(), upper.AsInt16()) :
                     AdvSimd.IsSupported ? AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(lower), upper) :
-                    PackedSimd.ConvertNarrowingUnsignedSaturate(lower.AsInt16(), upper.AsInt16());
+                    PackedSimd.ConvertNarrowingSaturateUnsigned(lower.AsInt16(), upper.AsInt16());
             }
 
             [CompExactlyDependsOn(typeof(Avx2))]

@@ -58,12 +58,6 @@ namespace Internal.IL
                             return UnsafeIntrinsics.EmitIL(method);
                     }
                     break;
-                case "Volatile":
-                    {
-                        if (owningType.Namespace == "System.Threading")
-                            return VolatileIntrinsics.EmitIL(method);
-                    }
-                    break;
                 case "Debug":
                     {
                         if (owningType.Namespace == "System.Diagnostics" && method.Name == "DebugBreak")

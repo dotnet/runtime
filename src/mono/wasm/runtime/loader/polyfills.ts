@@ -7,7 +7,12 @@ let node_url: any | undefined = undefined;
 
 export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
 
-    loaderHelpers.scriptUrl = normalizeFileUrl(/* webpackIgnore: true */import.meta.url);
+    const scriptUrlQuery =/* webpackIgnore: true */import.meta.url;
+    const queryIndex = scriptUrlQuery.indexOf("?");
+    if (queryIndex > 0) {
+        loaderHelpers.modulesUniqueQuery = scriptUrlQuery.substring(queryIndex);
+    }
+    loaderHelpers.scriptUrl = normalizeFileUrl(scriptUrlQuery);
     loaderHelpers.scriptDirectory = normalizeDirectoryUrl(loaderHelpers.scriptUrl);
     loaderHelpers.locateFile = (path) => {
         if (isPathAbsolute(path)) return path;
@@ -73,7 +78,10 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             const arrayBuffer = await node_fs.promises.readFile(url);
             return <Response><any>{
                 ok: true,
-                headers: [],
+                headers: {
+                    length: 0,
+                    get: () => null
+                },
                 url,
                 arrayBuffer: () => arrayBuffer,
                 json: () => JSON.parse(arrayBuffer),
@@ -89,6 +97,10 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             return <Response><any>{
                 ok: true,
                 url,
+                headers: {
+                    length: 0,
+                    get: () => null
+                },
                 arrayBuffer: () => {
                     return new Uint8Array(read(url, "binary"));
                 },
@@ -104,6 +116,10 @@ export async function fetch_like(url: string, init?: RequestInit): Promise<Respo
             ok: false,
             url,
             status: 500,
+            headers: {
+                length: 0,
+                get: () => null
+            },
             statusText: "ERR28: " + e,
             arrayBuffer: () => { throw e; },
             json: () => { throw e; },

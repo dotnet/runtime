@@ -242,25 +242,16 @@ namespace System.Text.Json.Nodes
         /// <summary>
         /// Creates a new instance of the <see cref="JsonNode"/>. All children nodes are recursively cloned.
         /// </summary>
-        public JsonNode DeepClone()
-        {
-            return InternalDeepClone();
-        }
+        public JsonNode DeepClone() => DeepCloneCore();
 
-        internal abstract JsonNode InternalDeepClone();
+        internal abstract JsonNode DeepCloneCore();
 
         /// <summary>
         /// Returns <see cref="JsonValueKind"/> of current instance.
         /// </summary>
-        public JsonValueKind GetValueKind()
-        {
-            return this switch
-            {
-                JsonObject => JsonValueKind.Object,
-                JsonArray => JsonValueKind.Array,
-                _ => AsValue().GetInternalValueKind(),
-            };
-        }
+        public JsonValueKind GetValueKind() => GetValueKindCore();
+
+        internal abstract JsonValueKind GetValueKindCore();
 
         /// <summary>
         /// Returns property name of the current node from the parent object.
@@ -311,10 +302,10 @@ namespace System.Text.Json.Nodes
                 return node2 is null;
             }
 
-            return node1.DeepEquals(node2);
+            return node1.DeepEqualsCore(node2);
         }
 
-        internal abstract bool DeepEquals(JsonNode? node);
+        internal abstract bool DeepEqualsCore(JsonNode? node);
 
         /// <summary>
         /// Replaces this node with a new value.

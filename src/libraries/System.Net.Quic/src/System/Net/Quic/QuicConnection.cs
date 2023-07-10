@@ -38,6 +38,13 @@ namespace System.Net.Quic;
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
+#if DEBUG
+    /// <summary>
+    /// The actual secret structure wrapper passed to MsQuic.
+    /// </summary>
+    private MsQuicTlsSecret? _tlsSecret;
+#endif
+
     /// <summary>
     /// Returns <c>true</c> if QUIC is supported on the current machine and can be used; otherwise, <c>false</c>.
     /// </summary>
@@ -145,7 +152,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
-
     /// <summary>
     /// The remote endpoint used for this connection.
     /// </summary>
@@ -204,6 +210,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             context.Free();
             throw;
         }
+
+#if DEBUG
+        _tlsSecret = MsQuicTlsSecret.Create(_handle);
+#endif
     }
 
     /// <summary>
@@ -231,6 +241,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = info->RemoteAddress->ToIPEndPoint();
         _localEndPoint = info->LocalAddress->ToIPEndPoint();
+#if DEBUG
+        _tlsSecret = MsQuicTlsSecret.Create(_handle);
+#endif
     }
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
@@ -600,6 +613,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return;
         }
 
+#if DEBUG
+        _tlsSecret?.Dispose();
+#endif
         // Check if the connection has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {
