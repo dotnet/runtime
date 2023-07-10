@@ -52,6 +52,7 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88528")]
         [InlineData("ApplyUpdateReferencedAssembly")]
         [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPath\u3128")]
         public async Task DebugHotReloadMethodAddBreakpoint(string assembly_name)
@@ -220,6 +221,7 @@ namespace DebuggerTests
         }
 
         [ConditionalTheory(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88528")]
         [InlineData("ApplyUpdateReferencedAssembly")]
         [InlineData("ApplyUpdateReferencedAssemblyChineseCharInPath\u3128")]
         public async Task DebugHotReloadMethodAddBreakpointUsingSDB(string assembly_name)
@@ -416,6 +418,7 @@ namespace DebuggerTests
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88528")]
         public async Task DebugHotReloadMethod_AddingNewMethod()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
@@ -446,6 +449,7 @@ namespace DebuggerTests
         }
 
         [ConditionalFact(nameof(RunningOnChrome))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88528")]
         public async Task DebugHotReloadMethod_AddingNewStaticField()
         {
             string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
