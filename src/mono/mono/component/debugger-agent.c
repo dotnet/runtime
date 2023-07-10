@@ -6946,7 +6946,7 @@ valid_memory_address (gpointer addr, gint size)
 	return ret;
 }
 
-static MonoAssembly* 
+static MonoAssembly*
 find_assembly_by_name (char* assembly_name)
 {
 	//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
@@ -7509,7 +7509,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 #else
 		m_dbgprot_buffer_add_int (buf, 0);
 		m_dbgprot_buffer_add_int (buf, 0);
-		m_dbgprot_buffer_add_int (buf, 0);		
+		m_dbgprot_buffer_add_int (buf, 0);
 #endif
 		break;
 	}

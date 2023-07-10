@@ -366,16 +366,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class AssemblyAndPdbData
     {
-        internal bool IsAsmMetadataOnly { get; set; }
-        internal byte[] AsmBytes { get; set; }
-        internal byte[] PdbBytes { get; set; }
-        internal bool HasDebugInfo { get; set; }
-        internal int PdbAge { get; set; }
-        internal Guid PdbGuid { get; set; }
-        internal string PdbPath { get; set; }
-        internal int PdbUncompressedSize { get; set; }
-        internal bool IsPortableCodeView { get; set; }
-        internal List<PdbChecksum> PdbChecksums { get; set; }
+        public bool IsAsmMetadataOnly { get; init; }
+        public byte[] AsmBytes { get; set; }
+        public byte[] PdbBytes { get; set; }
+        public bool HasDebugInfo { get; set; }
+        public int PdbAge { get; set; }
+        public Guid PdbGuid { get; set; }
+        public string PdbPath { get; set; }
+        public int PdbUncompressedSize { get; set; }
+        public bool IsPortableCodeView { get; init; }
+        public List<PdbChecksum> PdbChecksums { get; init; 
         internal AssemblyAndPdbData(byte[] asm, byte[] pdb)
         {
             AsmBytes = asm;

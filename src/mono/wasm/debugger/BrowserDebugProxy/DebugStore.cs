@@ -936,7 +936,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(decompressedBuffer, writable: false)).GetMetadataReader();
                 }
                 else
+                {
                     this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(assemblyAndPdbData.PdbBytes)).GetMetadataReader();
+                }
             }
             this.asmMetadataReader = asmMetadataReader;
             PdbAge = assemblyAndPdbData.PdbAge;
@@ -1678,7 +1680,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         assemblyAndPdbData = new AssemblyAndPdbData(byteArray[0], byteArray[1]);
                     }
                     else
+                    {
                         assemblyAndPdbData = await step.Data.ConfigureAwait(false);
+                    }
                     if (assemblyAndPdbData == null || assemblyAndPdbData.AsmBytes == null)
                     {
                         var unescapedFileName = Uri.UnescapeDataString(step.Url);
