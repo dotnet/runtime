@@ -5336,6 +5336,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 
 static const IntrinGroup supported_wasm_intrinsics [] = {
 	{ "PackedSimd", MONO_CPU_WASM_SIMD, packedsimd_methods, sizeof (packedsimd_methods) },
+	{ "WasmBase", MONO_CPU_WASM_BASE, wasmbase_methods, sizeof (wasmbase_methods) },
 };
 
 static const IntrinGroup supported_wasm_common_intrinsics [] = {

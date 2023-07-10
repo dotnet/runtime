@@ -107,6 +107,8 @@ namespace System.Net.Http
             }
         }
 
+        internal ClientCertificateOption ClientCertificateOptions;
+
         public const bool SupportsAutomaticDecompression = false;
         public const bool SupportsProxy = false;
         public const bool SupportsRedirectConfiguration = true;

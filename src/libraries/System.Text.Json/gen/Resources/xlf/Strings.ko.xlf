@@ -62,6 +62,16 @@
         <target state="translated">초기화 전용 속성의 역직렬화는 현재 원본 생성 모드에서 지원되지 않습니다.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
+        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
+        <target state="new">The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleTitle">
+        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
+        <target state="new">Constructor annotated with JsonConstructorAttribute is inaccessible.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">'{1}' 멤버에 지정된 'JsonConverterAttribute' 형식 '{0}'이(가) 변환기 형식이 아니거나 액세스 가능한 매개 변수가 없는 생성자를 포함하지 않습니다.</target>

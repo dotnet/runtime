@@ -32,6 +32,16 @@
         <target state="translated">不能对具有开放泛型类型的字段或属性使用 "ValidateObjectMembersAttribute" 或 "ValidateEnumeratedItemsAttribute"。</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="new">Can't validate constants, static fields or properties.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">存在一个循环类型引用，其中涉及的类型 {0} 阻止将其用于静态验证。</target>

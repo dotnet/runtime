@@ -62,6 +62,16 @@
         <target state="translated">Deserializace vlastností pouze pro inicializaci se v současnosti v režimu generování zdroje nepodporuje.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
+        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
+        <target state="new">The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleTitle">
+        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
+        <target state="new">Constructor annotated with JsonConstructorAttribute is inaccessible.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">Typ JsonConverterAttribute {0} specifikovaný u členu {1} není typem konvertoru nebo neobsahuje přístupný konstruktor bez parametrů.</target>

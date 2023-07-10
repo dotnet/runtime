@@ -421,7 +421,7 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
 
-    if (!doesMethodHasTlsFieldAccess())
+    if (!methodHasTlsFieldAccess())
     {
         // TP: nothing to expand in the current method
         JITDUMP("Nothing to expand.\n")
@@ -478,36 +478,50 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
         return false;
     }
 
-#ifdef TARGET_ARM
-    // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
-    // as MRC and MCR are used to access them. We do not support them and so should never optimize the
-    // field access using TLS.
-    assert(!"Unsupported scenario of optimizing TLS access on Arm32");
+    assert(!opts.IsReadyToRun());
+
+    if (TargetOS::IsUnix)
+    {
+#if defined(TARGET_ARM) || !defined(TARGET_64BIT)
+        // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
+        // as MRC and MCR are used to access them. We do not support them and so should never optimize the
+        // field access using TLS.
+        noway_assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
 #endif
+    }
+    else
+    {
+#ifdef TARGET_ARM
+        // On Arm, Thread execution blocks are accessed using co-processor registers and instructions such
+        // as MRC and MCR are used to access them. We do not support them and so should never optimize the
+        // field access using TLS.
+        noway_assert(!"Unsupported scenario of optimizing TLS access on Windows Arm32");
+#endif
+    }
 
     JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
+
     bool isGCThreadStatic =
         eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
 
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
+    memset(&threadStaticBlocksInfo, 0, sizeof(CORINFO_THREAD_STATIC_BLOCKS_INFO));
+
     info.compCompHnd->getThreadLocalStaticBlocksInfo(&threadStaticBlocksInfo, isGCThreadStatic);
 
-    uint32_t offsetOfMaxThreadStaticBlocksVal = 0;
-    uint32_t offsetOfThreadStaticBlocksVal    = 0;
-
     JITDUMP("getThreadLocalStaticBlocksInfo (%s)\n:", isGCThreadStatic ? "GC" : "Non-GC");
-    offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
-    offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
+    JITDUMP("tlsIndex= %p\n", dspPtr(threadStaticBlocksInfo.tlsIndex.addr));
+    JITDUMP("tlsGetAddrFtnPtr= %p\n", dspPtr(threadStaticBlocksInfo.tlsGetAddrFtnPtr));
+    JITDUMP("tlsIndexObject= %p\n", dspPtr(threadStaticBlocksInfo.tlsIndexObject));
+    JITDUMP("threadVarsSection= %p\n", dspPtr(threadStaticBlocksInfo.threadVarsSection));
+    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n",
+            dspOffset(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer));
+    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks));
+    JITDUMP("offsetOfThreadStaticBlocks= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfThreadStaticBlocks));
+    JITDUMP("offsetOfGCDataPointer= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfGCDataPointer));
 
-    JITDUMP("tlsIndex= %u\n", (ssize_t)threadStaticBlocksInfo.tlsIndex.addr);
-    JITDUMP("offsetOfThreadLocalStoragePointer= %u\n", threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer);
-    JITDUMP("offsetOfMaxThreadStaticBlocks= %u\n", offsetOfMaxThreadStaticBlocksVal);
-    JITDUMP("offsetOfThreadStaticBlocks= %u\n", offsetOfThreadStaticBlocksVal);
-    JITDUMP("offsetOfGCDataPointer= %u\n", threadStaticBlocksInfo.offsetOfGCDataPointer);
-
-    assert(threadStaticBlocksInfo.tlsIndex.accessType == IAT_VALUE);
     assert((eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
            (eeGetHelperNum(call->gtCallMethHnd) == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED));
 
@@ -546,55 +560,130 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
     gtUpdateStmtSideEffects(stmt);
 
     GenTree* typeThreadStaticBlockIndexValue = call->gtArgs.GetArgByIndex(0)->GetNode();
+    GenTree* tlsValue                        = nullptr;
+    unsigned tlsLclNum                       = lvaGrabTemp(true DEBUGARG("TLS access"));
+    lvaTable[tlsLclNum].lvType               = TYP_I_IMPL;
+    GenTree* maxThreadStaticBlocksValue      = nullptr;
+    GenTree* threadStaticBlocksValue         = nullptr;
+    GenTree* tlsValueDef                     = nullptr;
 
-    void** pIdAddr = nullptr;
-
-    size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
-    GenTree* dllRef        = nullptr;
-
-    if (tlsIndexValue != 0)
+    if (TargetOS::IsWindows)
     {
-        dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
+        size_t   tlsIndexValue = (size_t)threadStaticBlocksInfo.tlsIndex.addr;
+        GenTree* dllRef        = nullptr;
+
+        if (tlsIndexValue != 0)
+        {
+            dllRef = gtNewIconHandleNode(tlsIndexValue * TARGET_POINTER_SIZE, GTF_ICON_TLS_HDL);
+        }
+
+        // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
+        tlsValue = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        if (dllRef != nullptr)
+        {
+            // Add the dllRef to produce thread local storage reference for coreclr
+            tlsValue = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsValue, dllRef);
+        }
+
+        // Base of coreclr's thread local storage
+        tlsValue = gtNewIndir(TYP_I_IMPL, tlsValue, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
     }
-
-    // Mark this ICON as a TLS_HDL, codegen will use FS:[cns] or GS:[cns]
-    GenTree* tlsRef = gtNewIconHandleNode(threadStaticBlocksInfo.offsetOfThreadLocalStoragePointer, GTF_ICON_TLS_HDL);
-
-    tlsRef = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
-
-    if (dllRef != nullptr)
+    else if (TargetOS::IsMacOS)
     {
-        // Add the dllRef to produce thread local storage reference for coreclr
-        tlsRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, tlsRef, dllRef);
-    }
+        // For OSX x64/arm64, we need to get the address of relevant __thread_vars section of
+        // the thread local variable `t_ThreadStatics`. Address of `tlv_get_address` is stored
+        // in this entry, which we dereference and invoke it, passing the __thread_vars address
+        // present in `threadVarsSection`.
+        //
+        // Code sequence to access thread local variable on osx/x64:
+        //
+        //      mov rdi, threadVarsSection
+        //      call     [rdi]
+        //
+        // Code sequence to access thread local variable on osx/arm64:
+        //
+        //      mov x0, threadVarsSection
+        //      mov x1, [x0]
+        //      blr x1
+        //
+        size_t   threadVarsSectionVal = (size_t)threadStaticBlocksInfo.threadVarsSection;
+        GenTree* tls_get_addr_val     = gtNewIconHandleNode(threadVarsSectionVal, GTF_ICON_FTN_ADDR);
 
-    // Base of coreclr's thread local storage
-    GenTree* tlsValue = gtNewIndir(TYP_I_IMPL, tlsRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+        tls_get_addr_val = gtNewIndir(TYP_I_IMPL, tls_get_addr_val, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+        tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+        GenTreeCall* tlsRefCall = tlsValue->AsCall();
+
+        // This is a call which takes an argument.
+        // Populate and set the ABI appropriately.
+        assert(opts.altJit || threadVarsSectionVal != 0);
+        GenTree* tlsArg = gtNewIconNode(threadVarsSectionVal, TYP_I_IMPL);
+        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
+
+        fgMorphArgs(tlsRefCall);
+
+        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+    }
+    else if (TargetOS::IsUnix)
+    {
+#if defined(TARGET_AMD64)
+        // Code sequence to access thread local variable on linux/x64:
+        //
+        //      mov      rdi, 0x7FE5C418CD28  ; tlsIndexObject
+        //      mov      rax, 0x7FE5C47AFDB0  ; _tls_get_addr
+        //      call     rax
+        //
+        GenTree* tls_get_addr_val =
+            gtNewIconHandleNode((size_t)threadStaticBlocksInfo.tlsGetAddrFtnPtr, GTF_ICON_FTN_ADDR);
+        tlsValue                = gtNewIndCallNode(tls_get_addr_val, TYP_I_IMPL);
+        GenTreeCall* tlsRefCall = tlsValue->AsCall();
+
+        // This is an indirect call which takes an argument.
+        // Populate and set the ABI appropriately.
+        assert(opts.altJit || threadStaticBlocksInfo.tlsIndexObject != 0);
+        GenTree* tlsArg = gtNewIconNode((size_t)threadStaticBlocksInfo.tlsIndexObject, TYP_I_IMPL);
+        tlsRefCall->gtArgs.PushBack(this, NewCallArg::Primitive(tlsArg));
+
+        fgMorphArgs(tlsRefCall);
+
+        tlsRefCall->gtFlags |= GTF_EXCEPT | (tls_get_addr_val->gtFlags & GTF_GLOB_EFFECT);
+#ifdef UNIX_X86_ABI
+        tlsRefCall->gtFlags &= ~GTF_CALL_POP_ARGS;
+#endif // UNIX_X86_ABI
+#elif defined(TARGET_ARM64)
+        // Code sequence to access thread local variable on linux/arm64:
+        //
+        //      mrs xt, tpidr_elf0
+        //      mov xd, [xt+cns]
+        tlsValue = gtNewIconHandleNode(0, GTF_ICON_TLS_HDL);
+#else
+        assert(!"Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+#endif
+    }
 
     // Cache the tls value
-    unsigned tlsLclNum         = lvaGrabTemp(true DEBUGARG("TLS access"));
-    lvaTable[tlsLclNum].lvType = TYP_I_IMPL;
-    GenTree* tlsValueDef       = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
-    GenTree* tlsLclValueUse    = gtNewLclVarNode(tlsLclNum);
+    tlsValueDef             = gtNewStoreLclVarNode(tlsLclNum, tlsValue);
+    GenTree* tlsLclValueUse = gtNewLclVarNode(tlsLclNum);
+
+    size_t offsetOfThreadStaticBlocksVal    = threadStaticBlocksInfo.offsetOfThreadStaticBlocks;
+    size_t offsetOfMaxThreadStaticBlocksVal = threadStaticBlocksInfo.offsetOfMaxThreadStaticBlocks;
 
     // Create tree for "maxThreadStaticBlocks = tls[offsetOfMaxThreadStaticBlocks]"
     GenTree* offsetOfMaxThreadStaticBlocks = gtNewIconNode(offsetOfMaxThreadStaticBlocksVal, TYP_I_IMPL);
     GenTree* maxThreadStaticBlocksRef =
         gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfMaxThreadStaticBlocks);
-    GenTree* maxThreadStaticBlocksValue =
-        gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+    maxThreadStaticBlocksValue = gtNewIndir(TYP_INT, maxThreadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
+
+    GenTree* threadStaticBlocksRef = gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse),
+                                                   gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL));
+    threadStaticBlocksValue = gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree for "if (maxThreadStaticBlocks < typeIndex)"
     GenTree* maxThreadStaticBlocksCond =
         gtNewOperNode(GT_LT, TYP_INT, maxThreadStaticBlocksValue, gtCloneExpr(typeThreadStaticBlockIndexValue));
     maxThreadStaticBlocksCond = gtNewOperNode(GT_JTRUE, TYP_VOID, maxThreadStaticBlocksCond);
-
-    // Create tree for "threadStaticBlockBase = tls[offsetOfThreadStaticBlocks]"
-    GenTree* offsetOfThreadStaticBlocks = gtNewIconNode(offsetOfThreadStaticBlocksVal, TYP_I_IMPL);
-    GenTree* threadStaticBlocksRef =
-        gtNewOperNode(GT_ADD, TYP_I_IMPL, gtCloneExpr(tlsLclValueUse), offsetOfThreadStaticBlocks);
-    GenTree* threadStaticBlocksValue =
-        gtNewIndir(TYP_I_IMPL, threadStaticBlocksRef, GTF_IND_NONFAULTING | GTF_IND_INVARIANT);
 
     // Create tree to "threadStaticBlockValue = threadStaticBlockBase[typeIndex]"
     typeThreadStaticBlockIndexValue = gtNewOperNode(GT_MUL, TYP_INT, gtCloneExpr(typeThreadStaticBlockIndexValue),
