@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System;
-
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static partial class ActivatorUtilities

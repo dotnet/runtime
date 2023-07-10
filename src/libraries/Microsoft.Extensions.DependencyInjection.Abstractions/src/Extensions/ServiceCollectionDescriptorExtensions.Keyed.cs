@@ -7,9 +7,6 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.DependencyInjection.Extensions
 {
-    /// <summary>
-    /// Extension methods for adding and removing services to an <see cref="IServiceCollection" />.
-    /// </summary>
     public static partial class ServiceCollectionDescriptorExtensions
     {
         /// <summary>
