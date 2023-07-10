@@ -86,10 +86,6 @@ export type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string,
-    /**
-     * query string to be used for asset loading
-     */
-    assetUniqueQuery?: string,
 
     /**
      * Gets the application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47

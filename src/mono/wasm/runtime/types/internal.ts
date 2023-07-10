@@ -105,7 +105,7 @@ export type LoaderHelpers = {
     loadedAssemblies: string[],
     scriptDirectory: string
     scriptUrl: string
-    assetUniqueQuery?: string
+    modulesUniqueQuery?: string
     preferredIcuAsset: string | null,
     invariantMode: boolean,
 

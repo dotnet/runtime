@@ -42,7 +42,6 @@
         NESTED_ENTRY \__PInvokeGenStubFuncName, _TEXT, NoHandler
 
         PROLOG_WITH_TRANSITION_BLOCK 0, 0, \SaveFPArgs
-        .cfi_adjust_cfa_offset __PWTB_StackAlloc
 
         // a2 = Umanaged Target\MethodDesc
         addi  a2, \HiddenArg, 0
@@ -68,7 +67,6 @@
         addi  \HiddenArg, s1, 0
 
         EPILOG_WITH_TRANSITION_BLOCK_TAILCALL
-        .cfi_adjust_cfa_offset -__PWTB_StackAlloc
 
         EPILOG_BRANCH       C_FUNC(\__PInvokeStubFuncName)
         NESTED_END \__PInvokeGenStubFuncName, _TEXT

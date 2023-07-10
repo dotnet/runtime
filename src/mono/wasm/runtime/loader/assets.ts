@@ -12,14 +12,20 @@ let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 
-// don't `fetch` javaScript files
-const skipDownloadsByAssetTypes: {
+const jsModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-native": true,
     "js-module-dotnet": true,
+};
+
+// don't `fetch` javaScript and wasm files
+const skipDownloadsByAssetTypes: {
+    [k: string]: boolean
+} = {
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
 };
 
@@ -39,10 +45,7 @@ const containedInSnapshotByAssetTypes: {
     "pdb": true,
     "heap": true,
     "icu": true,
-    "js-module-threads": true,
-    "js-module-runtime": true,
-    "js-module-native": true,
-    "js-module-dotnet": true,
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
 };
 
@@ -50,10 +53,7 @@ const containedInSnapshotByAssetTypes: {
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-threads": true,
-    "js-module-runtime": true,
-    "js-module-native": true,
-    "js-module-dotnet": true,
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
     "symbols": true,
 };
@@ -368,10 +368,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
         } else {
             attemptUrl = sourcePrefix + asset.name;
         }
-        attemptUrl = loaderHelpers.locateFile(attemptUrl);
-        if (loaderHelpers.assetUniqueQuery) {
-            attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
-        }
+        attemptUrl = appendUniqueQuery(loaderHelpers.locateFile(attemptUrl), asset.behavior);
     }
     else {
         attemptUrl = asset.resolvedUrl;
@@ -379,6 +376,17 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
     mono_assert(attemptUrl && typeof attemptUrl == "string", "attemptUrl need to be path or url string");
     return attemptUrl;
 }
+
+export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviours): string {
+    // apply unique query to js modules to make the module state independent of the other runtime instances
+    if (loaderHelpers.modulesUniqueQuery && jsModulesAssetTypes[behavior]) {
+        attemptUrl = attemptUrl + loaderHelpers.modulesUniqueQuery;
+    }
+
+    return attemptUrl;
+}
+
+
 
 function download_resource(request: ResourceRequest): LoadingResource {
     try {

@@ -1,16 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//
-// Redhawk-specific ETW helper code.
-//
-// When Redhawk does stuff substantially different from desktop CLR, the
-// Redhawk-specific implementations should go here.
-//
 #include "common.h"
 #include "gcenv.h"
-#include "rheventtrace.h"
 #include "eventtrace.h"
+#include "eventtrace_etw.h"
 #include "rhbinder.h"
 #include "slist.h"
 #include "runtimeinstance.h"
@@ -20,71 +14,124 @@
 
 #if defined(FEATURE_EVENT_TRACE)
 
+#define Win32EventWrite PalEventWrite
+
+//---------------------------------------------------------------------------------------
+// BulkTypeValue / BulkTypeEventLogger: These take care of batching up types so they can
+// be logged via ETW in bulk
+//---------------------------------------------------------------------------------------
+
+BulkTypeValue::BulkTypeValue()
+    : cTypeParameters(0)
+    , rgTypeParameters()
+    , ullSingleTypeParameter(0)
+{
+    LIMITED_METHOD_CONTRACT;
+    ZeroMemory(&fixedSizedData, sizeof(fixedSizedData));
+}
+
+//---------------------------------------------------------------------------------------
+//
+// Clears a BulkTypeValue so it can be reused after the buffer is flushed to ETW
+//
+
+void BulkTypeValue::Clear()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    ZeroMemory(&fixedSizedData, sizeof(fixedSizedData));
+    cTypeParameters = 0;
+    ullSingleTypeParameter = 0;
+    rgTypeParameters.Release();
+}
+
 //---------------------------------------------------------------------------------------
 // BulkTypeEventLogger is a helper class to batch up type information and then flush to
 // ETW once the event reaches its max # descriptors
 
-
 //---------------------------------------------------------------------------------------
 //
-// Batches up ETW information for a type and pops out to recursively call
-// ETW::TypeSystemLog::LogTypeAndParametersIfNecessary for any
-// "type parameters".  Generics info is not reliably available, so "type parameter"
-// really just refers to the type of array elements if thAsAddr is an array.
-//
-// Arguments:
-//      * thAsAddr - MethodTable to log
-//      * typeLogBehavior - Ignored in Redhawk builds
+// Fire an ETW event for all the types we batched so far, and then reset our state
+// so we can start batching new types at the beginning of the array.
 //
 
-void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior)
+void BulkTypeEventLogger::FireBulkTypeEvent()
 {
-    if (!ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_TYPE_KEYWORD))
+    LIMITED_METHOD_CONTRACT;
+
+    if (m_nBulkTypeValueCount == 0)
     {
+        // No types were batched up, so nothing to send
         return;
     }
 
-    MethodTable * pEEType = (MethodTable *) thAsAddr;
+    // Normally, we'd use the MC-generated FireEtwBulkType for all this gunk, but
+    // it's insufficient as the bulk type event is too complex (arrays of structs of
+    // varying size). So we directly log the event via EventDataDescCreate and
+    // EventWrite
 
-    // Batch up this type.  This grabs useful info about the type, including any
-    // type parameters it may have, and sticks it in m_rgBulkTypeValues
-    int iBulkTypeEventData = LogSingleType(pEEType);
-    if (iBulkTypeEventData == -1)
-    {
-        // There was a failure trying to log the type, so don't bother with its type
-        // parameters
-        return;
-    }
+    // We use one descriptor for the count + one for the ClrInstanceID + 4
+    // per batched type (to include fixed-size data + name + param count + param
+    // array).  But the system limit of 128 descriptors per event kicks in way
+    // before the 64K event size limit, and we already limit our batch size
+    // (m_nBulkTypeValueCount) to stay within the 128 descriptor limit.
+    EVENT_DATA_DESCRIPTOR EventData[128];
+    UINT16 nClrInstanceID = GetClrInstanceId();
 
-    // Look at the type info we just batched, so we can get the type parameters
-    BulkTypeValue * pVal = &m_rgBulkTypeValues[iBulkTypeEventData];
+    UINT iDesc = 0;
 
-    // We're about to recursively call ourselves for the type parameters, so make a
-    // local copy of their type handles first (else, as we log them we could flush
-    // and clear out m_rgBulkTypeValues, thus trashing pVal)
-    NewArrayHolder<ULONGLONG> rgTypeParameters;
-    DWORD cTypeParams = pVal->cTypeParameters;
-    if (cTypeParams == 1)
+    _ASSERTE(iDesc < _countof(EventData));
+    EventDataDescCreate(&EventData[iDesc++], &m_nBulkTypeValueCount, sizeof(m_nBulkTypeValueCount));
+
+    _ASSERTE(iDesc < _countof(EventData));
+    EventDataDescCreate(&EventData[iDesc++], &nClrInstanceID, sizeof(nClrInstanceID));
+
+    for (int iTypeData = 0; iTypeData < m_nBulkTypeValueCount; iTypeData++)
     {
-        ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(this, pVal->ullSingleTypeParameter, typeLogBehavior);
-    }
-    else if (cTypeParams > 1)
-    {
-        rgTypeParameters = new (nothrow) ULONGLONG[cTypeParams];
-        for (DWORD i=0; i < cTypeParams; i++)
+        // Do fixed-size data as one bulk copy
+        _ASSERTE(iDesc < _countof(EventData));
+        EventDataDescCreate(
+            &EventData[iDesc++],
+            &(m_rgBulkTypeValues[iTypeData].fixedSizedData),
+            sizeof(m_rgBulkTypeValues[iTypeData].fixedSizedData));
+
+        // Do var-sized data individually per field
+
+        // Type name (nonexistent and thus empty on nativeaot)
+        _ASSERTE(iDesc < _countof(EventData));
+        EventDataDescCreate(&EventData[iDesc++], L"", sizeof(WCHAR));
+
+        // Type parameter count
+        _ASSERTE(iDesc < _countof(EventData));
+        EventDataDescCreate(
+            &EventData[iDesc++],
+            &(m_rgBulkTypeValues[iTypeData].cTypeParameters),
+            sizeof(m_rgBulkTypeValues[iTypeData].cTypeParameters));
+
+        // Type parameter array
+        if (m_rgBulkTypeValues[iTypeData].cTypeParameters > 0)
         {
-            rgTypeParameters[i] = pVal->rgTypeParameters[i];
-        }
-
-        // Recursively log any referenced parameter types
-        for (DWORD i=0; i < cTypeParams; i++)
-        {
-            ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(this, rgTypeParameters[i], typeLogBehavior);
+            _ASSERTE(iDesc < _countof(EventData));
+            EventDataDescCreate(
+                &EventData[iDesc++],
+                ((m_rgBulkTypeValues[iTypeData].cTypeParameters == 1) ?
+                    &(m_rgBulkTypeValues[iTypeData].ullSingleTypeParameter) :
+                    (ULONGLONG*)(m_rgBulkTypeValues[iTypeData].rgTypeParameters)),
+                sizeof(ULONGLONG) * m_rgBulkTypeValues[iTypeData].cTypeParameters);
         }
     }
+
+    Win32EventWrite(Microsoft_Windows_DotNETRuntimeHandle, &BulkType, iDesc, EventData);
+
+    // Reset state
+    m_nBulkTypeValueCount = 0;
+    m_nBulkTypeValueByteCount = 0;
 }
 
 // We keep a hash of these to keep track of:
@@ -311,6 +358,68 @@ int BulkTypeEventLogger::LogSingleType(MethodTable * pEEType)
     return m_nBulkTypeValueCount - 1;       // Index of type we just added
 }
 
+//---------------------------------------------------------------------------------------
+//
+// Batches up ETW information for a type and pops out to recursively call
+// ETW::TypeSystemLog::LogTypeAndParametersIfNecessary for any
+// "type parameters".  Generics info is not reliably available, so "type parameter"
+// really just refers to the type of array elements if thAsAddr is an array.
+//
+// Arguments:
+//      * thAsAddr - MethodTable to log
+//      * typeLogBehavior - Ignored in Redhawk builds
+//
+
+void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr)
+{
+    // BulkTypeEventLogger currently fires ETW events only
+    if (!ETW_TRACING_CATEGORY_ENABLED(
+        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
+        TRACE_LEVEL_INFORMATION,
+        CLR_TYPE_KEYWORD))
+    {
+        return;
+    }
+
+    MethodTable * pEEType = (MethodTable *) thAsAddr;
+
+    // Batch up this type.  This grabs useful info about the type, including any
+    // type parameters it may have, and sticks it in m_rgBulkTypeValues
+    int iBulkTypeEventData = LogSingleType(pEEType);
+    if (iBulkTypeEventData == -1)
+    {
+        // There was a failure trying to log the type, so don't bother with its type
+        // parameters
+        return;
+    }
+
+    // Look at the type info we just batched, so we can get the type parameters
+    BulkTypeValue * pVal = &m_rgBulkTypeValues[iBulkTypeEventData];
+
+    // We're about to recursively call ourselves for the type parameters, so make a
+    // local copy of their type handles first (else, as we log them we could flush
+    // and clear out m_rgBulkTypeValues, thus trashing pVal)
+    NewArrayHolder<ULONGLONG> rgTypeParameters;
+    DWORD cTypeParams = pVal->cTypeParameters;
+    if (cTypeParams == 1)
+    {
+        LogTypeAndParameters(pVal->ullSingleTypeParameter);
+    }
+    else if (cTypeParams > 1)
+    {
+        rgTypeParameters = new (nothrow) ULONGLONG[cTypeParams];
+        for (DWORD i=0; i < cTypeParams; i++)
+        {
+            rgTypeParameters[i] = pVal->rgTypeParameters[i];
+        }
+
+        // Recursively log any referenced parameter types
+        for (DWORD i=0; i < cTypeParams; i++)
+        {
+            LogTypeAndParameters(rgTypeParameters[i]);
+        }
+    }
+}
 
 void BulkTypeEventLogger::Cleanup()
 {
@@ -322,36 +431,3 @@ void BulkTypeEventLogger::Cleanup()
 }
 
 #endif // defined(FEATURE_EVENT_TRACE)
-
-
-//---------------------------------------------------------------------------------------
-//
-// Outermost level of ETW-type-logging.  Clients outside (rh)eventtrace.cpp call this to log
-// an EETypes and (recursively) its type parameters when present.  This guy then calls
-// into the appropriate BulkTypeEventLogger to do the batching and logging
-//
-// Arguments:
-//      * pBulkTypeEventLogger - If our caller is keeping track of batched types, it
-//          passes this to us so we can use it to batch the current type (GC heap walk
-//          does this).  In Redhawk builds this should not be NULL.
-//      * thAsAddr - MethodTable to batch
-//      * typeLogBehavior - Unused in Redhawk builds
-//
-
-void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pLogger, uint64_t thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior)
-{
-#if defined(FEATURE_EVENT_TRACE)
-
-    if (!ETW_TRACING_CATEGORY_ENABLED(
-        MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context,
-        TRACE_LEVEL_INFORMATION,
-        CLR_TYPE_KEYWORD))
-    {
-        return;
-    }
-
-    _ASSERTE(pLogger != NULL);
-    pLogger->LogTypeAndParameters(thAsAddr, typeLogBehavior);
-
-#endif // defined(FEATURE_EVENT_TRACE)
-}
