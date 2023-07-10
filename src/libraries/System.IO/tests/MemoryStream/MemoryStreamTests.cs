@@ -100,7 +100,7 @@ namespace System.IO.Tests
                 }
             select new object[] {mode, bufferContext.bufferSize, bufferContext.origin};
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))]
         [MemberData(nameof(MemoryStream_PositionOverflow_Throws_MemberData))]
         public void MemoryStream_SeekOverflow_Throws(SeekMode mode, int bufferSize, int origin)
         {
