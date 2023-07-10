@@ -1074,6 +1074,7 @@ namespace System.Text.RegularExpressions
                     _pos = _pattern.IndexOf(')', _pos);
                     if (_pos == -1)
                     {
+                        _pos = _pattern.Length;
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                     }
 
