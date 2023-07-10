@@ -2359,12 +2359,12 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
 		// TODO
-		mono_mb_emit_byte (mb, CEE_RET);
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
 		// TODO
-		mono_mb_emit_byte (mb, CEE_RET);
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
 		return;
 	default:
 		g_assert_not_reached(); // some unknown wrapper kind

@@ -2076,6 +2076,9 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 		}
 	}
 
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
+
 	if (!attr)
 		return FALSE;
 
@@ -2083,6 +2086,7 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 	
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
+		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
 		return FALSE;
 	}
 

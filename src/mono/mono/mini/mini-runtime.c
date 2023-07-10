@@ -2654,7 +2654,6 @@ compile_special (MonoMethod *method, MonoError *error)
 		char *member_name = NULL;
 		int accessor_kind = -1;
 		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
-			g_warning ("Method %s is an unsafe accessor with kind %d and target %s", method->name, accessor_kind, member_name);
 			MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
 			gpointer compiled_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
 			return_val_if_nok (error, NULL);
