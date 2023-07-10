@@ -1794,6 +1794,8 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgOnStackR8:
 		case ArgVtypeOnStack:
 			return ccontext->stack + ainfo->offset;
+		case ArgVtypeByRefOnStack:
+			return *(gpointer*)(ccontext->stack + ainfo->offset);
 		case ArgVtypeByRef:
 			return (gpointer) ccontext->gregs [ainfo->reg];
                 default:
@@ -1855,6 +1857,10 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 
 		if (ainfo->storage == ArgVtypeByRef) {
 			ccontext->gregs [ainfo->reg] = (host_mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
+			continue;
+		} else if (ainfo->storage == ArgVtypeByRefOnStack) {
+			storage = ccontext->stack + ainfo->offset;
+			*(gpointer*)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
 			continue;
 		}
 
