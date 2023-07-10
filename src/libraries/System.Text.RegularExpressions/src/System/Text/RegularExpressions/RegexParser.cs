@@ -422,7 +422,8 @@ namespace System.Text.RegularExpressions
 
                 if (_pos == _pattern.Length || !(isQuantifier = IsTrueQuantifier()))
                 {
-                    AddUnitToConcatenate();
+                    _concatenation!.AddChild(_unit!);
+                    _unit = null;
                     goto ContinueOuterScan;
                 }
 
@@ -462,7 +463,8 @@ namespace System.Text.RegularExpressions
 
                             if (startpos == _pos || _pos == _pattern.Length || _pattern[_pos++] != '}')
                             {
-                                AddUnitToConcatenate();
+                                _concatenation!.AddChild(_unit!);
+                                _unit = null;
                                 _pos = startpos - 1;
                                 goto ContinueOuterScan;
                             }
@@ -488,8 +490,8 @@ namespace System.Text.RegularExpressions
                         throw MakeException(RegexParseError.ReversedQuantifierRange, SR.ReversedQuantifierRange);
                     }
 
-                    _unit = _unit!.MakeQuantifier(lazy, min, max);
-                    AddUnitToConcatenate();
+                    _concatenation!.AddChild(_unit!.MakeQuantifier(lazy, min, max));
+                    _unit = null;
                 }
 
             ContinueOuterScan:
@@ -2079,15 +2081,6 @@ namespace System.Text.RegularExpressions
             }
 
             _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
-        }
-
-        /// <summary>Finish the current quantifiable (when a quantifier is not found or is not possible)</summary>
-        private void AddUnitToConcatenate()
-        {
-            // The first (| inside a Testgroup group goes directly to the group
-
-            _concatenation!.AddChild(_unit!);
-            _unit = null;
         }
 
         /// <summary>Finish the current group (in response to a ')' or end)</summary>
