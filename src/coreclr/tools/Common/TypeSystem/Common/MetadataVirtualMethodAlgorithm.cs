@@ -1003,13 +1003,6 @@ namespace Internal.TypeSystem
                 if (methodImpl.Decl == interfaceMethodDefinition)
                 {
                     MethodDesc resolvedMethodImpl = methodImpl.Body;
-                    if (resolvedMethodImpl.OwningType != constrainedType.GetTypeDefinition())
-                    {
-                        ThrowHelper.ThrowTypeLoadException(
-                            ExceptionStringID.ExplicitMethodOverrideOnUnrelatedType,
-                            constrainedType,
-                            resolvedMethodImpl.ToString());
-                    }
                     if (interfaceMethod != interfaceMethodDefinition)
                     {
                         resolvedMethodImpl = resolvedMethodImpl.MakeInstantiatedMethod(interfaceMethod.Instantiation);

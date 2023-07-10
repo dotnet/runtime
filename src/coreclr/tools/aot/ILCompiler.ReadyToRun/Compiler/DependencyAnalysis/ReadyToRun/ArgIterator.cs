@@ -437,7 +437,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         private readonly TransitionBlock _transitionBlock;
 
         private bool _hasThis;
-        private bool _hasParamType;
+        private bool _hasTypeInstParameter;
+        private bool _hasMethodInstParameter;
         private bool _extraFunctionPointerArg;
         private ArgIteratorData _argData;
         private bool[] _forcedByRefParams;
@@ -449,7 +450,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public bool HasThis => _hasThis;
         public bool IsVarArg => _argData.IsVarArg();
-        public bool HasParamType => _hasParamType;
+        public bool HasParamType => _hasTypeInstParameter || _hasMethodInstParameter;
         public int NumFixedArgs => _argData.NumFixedArgs() + (_extraFunctionPointerArg ? 1 : 0) + (_extraObjectFirstArg ? 1 : 0);
 
         // Argument iteration.
@@ -506,7 +507,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             TypeSystemContext context,
             ArgIteratorData argData, 
             CallingConventions callConv, 
-            bool hasParamType, 
+            bool hasTypeInstParameter,
+            bool hasMethodInstParameter,
             bool extraFunctionPointerArg, 
             bool[] forcedByRefParams, 
             bool skipFirstArg, 
@@ -516,7 +518,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _context = context;
             _argData = argData;
             _hasThis = callConv == CallingConventions.ManagedInstance;
-            _hasParamType = hasParamType;
+            _hasTypeInstParameter = hasTypeInstParameter;
+            _hasMethodInstParameter = hasMethodInstParameter;
             _extraFunctionPointerArg = extraFunctionPointerArg;
             _forcedByRefParams = forcedByRefParams;
             _skipFirstArg = skipFirstArg;

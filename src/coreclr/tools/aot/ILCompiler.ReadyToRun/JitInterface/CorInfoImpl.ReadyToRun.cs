@@ -1914,10 +1914,19 @@ namespace Internal.JitInterface
                 MethodDesc directMethod;
                 if (isStaticVirtual)
                 {
+                    string typeName = constrainedType.ToString();
+                    string methodName = originalMethod.ToString();
+                    if (methodName.Contains("IFaceNonGeneric") && methodName.Contains("NormalMethod") && typeName.Contains("GenericStruct`1"))
+                    {
+                        Console.WriteLine("Method: {0}", methodName);
+                    }
                     directMethod = constrainedType.ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(originalMethod);
                     if (directMethod != null && !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(directMethod))
                     {
                         directMethod = null;
+                    }
+                    if (directMethod != null)
+                    {
                     }
                 }
                 else

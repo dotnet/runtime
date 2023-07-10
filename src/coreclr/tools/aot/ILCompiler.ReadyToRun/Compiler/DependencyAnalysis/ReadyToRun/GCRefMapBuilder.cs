@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             _transitionBlock = TransitionBlock.FromTarget(target);
         }
 
-        public void GetCallRefMap(MethodDesc method, bool isUnboxingStub)
+        public void GetCallRefMap(MethodDesc method, bool isStub, bool needsTypeInstArg)
         {
             TransitionBlock transitionBlock = TransitionBlock.FromTarget(method.Context.Target);
 
@@ -87,7 +87,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 parameterTypes[parameterIndex] = new TypeHandle(signature[parameterIndex]);
             }
             CallingConventions callingConventions = (hasThis ? CallingConventions.ManagedInstance : CallingConventions.ManagedStatic);
-            bool hasParamType = method.RequiresInstArg() && !isUnboxingStub;
+            bool hasParamType = needsTypeInstArg || (method.RequiresInstArg() && !isStub);
 
             // On X86 the Array address method doesn't use IL stubs, and instead has a custom calling convention
             if ((method.Context.Target.Architecture == TargetArchitecture.X86) &&
@@ -106,7 +106,8 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 method.Context,
                 argIteratorData,
                 callingConventions,
-                hasParamType,
+                hasTypeInstParameter: hasParamType,
+                hasMethodInstParameter: method.RequiresInstArg(),
                 extraFunctionPointerArg,
                 forcedByRefParams,
                 skipFirstArg,
@@ -118,7 +119,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             CORCOMPILE_GCREFMAP_TOKENS[] fakeStack = new CORCOMPILE_GCREFMAP_TOKENS[transitionBlock.SizeOfTransitionBlock + nStackBytes];
 
             // Fill it in
-            FakeGcScanRoots(method, argit, fakeStack, isUnboxingStub);
+            FakeGcScanRoots(method, argit, fakeStack, isStub: isStub, hasTypeInstParameter: needsTypeInstArg);
 
             // Encode the ref map
             uint nStackSlots;
@@ -151,25 +152,18 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         /// <summary>
         /// Fill in the GC-relevant stack frame locations.
         /// </summary>
-        private void FakeGcScanRoots(MethodDesc method, ArgIterator argit, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool isUnboxingStub)
+        private void FakeGcScanRoots(MethodDesc method, ArgIterator argit, CORCOMPILE_GCREFMAP_TOKENS[] frame, bool isStub, bool hasTypeInstParameter)
         {
             // Encode generic instantiation arg
             if (argit.HasParamType)
             {
-                if (method.RequiresInstMethodDescArg())
-                {
-                    frame[argit.GetParamTypeArgOffset()] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_METHOD_PARAM;
-                }
-                else if (method.RequiresInstMethodTableArg())
-                {
-                    frame[argit.GetParamTypeArgOffset()] = CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_TYPE_PARAM;
-                }
+                frame[argit.GetParamTypeArgOffset()] = (hasTypeInstParameter || !method.RequiresInstMethodDescArg() ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_TYPE_PARAM : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_METHOD_PARAM);
             }
 
             // If the function has a this pointer, add it to the mask
             if (argit.HasThis)
             {
-                bool interior = method.OwningType.IsValueType && !isUnboxingStub;
+                bool interior = method.OwningType.IsValueType && !isStub;
 
                 frame[_transitionBlock.ThisOffset] = (interior ? CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_INTERIOR : CORCOMPILE_GCREFMAP_TOKENS.GCREFMAP_REF);
             }
