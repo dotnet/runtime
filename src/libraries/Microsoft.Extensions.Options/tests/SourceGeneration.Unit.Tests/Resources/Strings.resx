@@ -198,4 +198,10 @@
   <data name="PotentiallyMissingTransitiveValidationTitle" xml:space="preserve">
     <value>Member potentially missing transitive validation.</value>
   </data>
+  <data name="CantValidateStaticOrConstMemberMessage" xml:space="preserve">
+    <value>Can't apply validation attributes to constant or static member {0}.</value>
+  </data>
+  <data name="CantValidateStaticOrConstMemberTitle" xml:space="preserve">
+    <value>Can't validate constants, static fields or properties.</value>
+  </data>
 </root>

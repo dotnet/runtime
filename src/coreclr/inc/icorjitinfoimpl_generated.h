@@ -38,7 +38,8 @@ void getMethodSig(
 
 bool getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info) override;
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context) override;
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,

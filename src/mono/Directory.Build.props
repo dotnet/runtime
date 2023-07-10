@@ -50,8 +50,8 @@
     <MonoAOTEnableLLVM Condition="'$(TargetsBrowser)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsAndroid)' == 'true'">true</MonoAOTEnableLLVM>
     <MonoAOTEnableLLVM Condition="'$(TargetsWasi)' == 'true'">true</MonoAOTEnableLLVM>
-    <_MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and ('$(MonoEnableLLVM)' == 'true' or $(MonoAOTEnableLLVM) == 'true')">true</_MonoUseLLVMPackage>
-    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' or '$(_MonoUseLLVMPackage)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
+    <MonoUseLLVMPackage Condition="'$(MonoLLVMDir)' == '' and ('$(MonoEnableLLVM)' == 'true' or $(MonoAOTEnableLLVM) == 'true')">true</MonoUseLLVMPackage>
+    <MonoLLVMDir Condition="'$(MonoLLVMDir)' == '' or '$(MonoUseLLVMPackage)' == 'true'">$([MSBuild]::NormalizeDirectory('$(MonoObjDir)', 'llvm'))</MonoLLVMDir>
   </PropertyGroup>
 
   <PropertyGroup>
