@@ -59,7 +59,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         Microsoft.Extensions.DependencyInjection.IServiceScope CreateScope();
     }
-    public partial interface IKeyedServiceProvider : IServiceProvider
+    public partial interface IKeyedServiceProvider : System.IServiceProvider
     {
         object? GetKeyedService(System.Type serviceType, object? serviceKey);
         object GetRequiredKeyedService(System.Type serviceType, object? serviceKey);
