@@ -628,10 +628,10 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(isValueType, Is.EqualTo(expectedResult));
     }
 
-    [TestCase(typeof(ValueMammal), true)]
-    public void ClassIsValuetypeByRefReturnsProperValue(ref Type klass, bool expectedResult)
+    [TestCase(typeof(ValueMammal), false)]
+    public void ClassIsValuetypeByRefReturnsProperValue(Type klass, bool expectedResult)
     {
-        bool isValueType = ClrHost.class_is_valuetype(klass);
+        bool isValueType = ClrHost.class_is_valuetype(klass.MakeByRefType());
         Assert.That(isValueType, Is.EqualTo(expectedResult));
     }
 
