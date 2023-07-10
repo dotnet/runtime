@@ -28,6 +28,16 @@ inline static bool isMaskReg(regNumber reg)
     return (reg >= REG_MASK_FIRST && reg <= REG_MASK_LAST);
 }
 
+inline static bool isHighSimdReg(regNumber reg)
+{
+#ifdef TARGET_AMD64
+    return ((reg >= REG_XMM16) && (reg <= REG_XMM31));
+#else
+    // X86 JIT operates in 32-bit mode and hence extended regs are not available.
+    return false;
+#endif
+}
+
 /************************************************************************/
 /*         Routines that compute the size of / encode instructions      */
 /************************************************************************/
@@ -890,7 +900,6 @@ inline bool HasEmbeddedBroadcast(const instrDesc* id) const
 }
 
 inline bool HasHighSIMDReg(const instrDesc* id) const;
-inline bool IsHighSIMDReg(regNumber) const;
 
 inline bool HasMaskReg(const instrDesc* id) const;
 

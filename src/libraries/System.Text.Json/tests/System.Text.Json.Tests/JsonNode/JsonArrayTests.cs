@@ -509,7 +509,7 @@ namespace System.Text.Json.Nodes.Tests
 
             JsonArray clonedArray = array.DeepClone().AsArray();
 
-            Assert.True(JsonNode.DeepEquals(array, clonedArray));
+            JsonNodeTests.AssertDeepEqual(array, clonedArray);
             Assert.Equal(array.Count, clonedArray.Count);
             Assert.Equal(10, array[0].GetValue<int>());
             Assert.Equal("abcd", array[1].GetValue<string>());
@@ -541,7 +541,7 @@ namespace System.Text.Json.Nodes.Tests
             JsonArray jArray = JsonArray.Create(document.RootElement);
             var clone = jArray.DeepClone().AsArray();
 
-            Assert.True(JsonNode.DeepEquals(jArray, clone));
+            JsonNodeTests.AssertDeepEqual(jArray, clone);
             Assert.Equal(10, clone[1].GetValue<int>());
             Assert.Equal("abc", clone[0].GetValue<string>());
         }
@@ -552,19 +552,14 @@ namespace System.Text.Json.Nodes.Tests
             var array = new JsonArray() { null, 10, "str" };
             var sameArray = new JsonArray() { null, 10, "str" };
 
-            Assert.True(JsonNode.DeepEquals(array, array));
-            Assert.True(JsonNode.DeepEquals(array, sameArray));
-            Assert.True(JsonNode.DeepEquals(sameArray, array));
-
-            Assert.False(JsonNode.DeepEquals(array, null));
+            JsonNodeTests.AssertDeepEqual(array, sameArray);
+            JsonNodeTests.AssertNotDeepEqual(array, null);
 
             var diffArray = new JsonArray() { null, 10, "s" };
-            Assert.False(JsonNode.DeepEquals(array, diffArray));
-            Assert.False(JsonNode.DeepEquals(diffArray, array));
+            JsonNodeTests.AssertNotDeepEqual(array, diffArray);
 
             diffArray = new JsonArray() { null, 10 };
-            Assert.False(JsonNode.DeepEquals(array, diffArray));
-            Assert.False(JsonNode.DeepEquals(diffArray, array));
+            JsonNodeTests.AssertNotDeepEqual(array, diffArray);
         }
 
         [Fact]
@@ -576,7 +571,7 @@ namespace System.Text.Json.Nodes.Tests
             array.Add(JsonValue.Create(4));
             var value = JsonValue.Create(new long[] { 2, 3, 4 });
 
-            Assert.True(JsonNode.DeepEquals(array, value));
+            JsonNodeTests.AssertDeepEqual(array, value);
         }
 
         [Fact]
@@ -587,11 +582,11 @@ namespace System.Text.Json.Nodes.Tests
 
             using JsonDocument document2 = JsonDocument.Parse("[1, 2,    4]");
             JsonArray array2 = JsonArray.Create(document2.RootElement);
-            Assert.True(JsonNode.DeepEquals(array, array2));
+            JsonNodeTests.AssertDeepEqual(array, array2);
 
             using JsonDocument document3 = JsonDocument.Parse("[2, 1, 4]");
             JsonArray array3 = JsonArray.Create(document3.RootElement);
-            Assert.False(JsonNode.DeepEquals(array, array3));
+            JsonNodeTests.AssertNotDeepEqual(array, array3);
         }
 
         [Fact]

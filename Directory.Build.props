@@ -149,6 +149,7 @@
 
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
+    <MobileBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MobileBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MobileBuildTasksDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
     <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</WorkloadBuildTasksDir>
@@ -162,6 +163,7 @@
     <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
+    <MobileBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MobileBuildTasksDir)', 'MobileBuildTasks.dll'))</MobileBuildTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppHost', 'wasm', '$(Configuration)'))</WasmAppHostDir>

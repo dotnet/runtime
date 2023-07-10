@@ -176,6 +176,8 @@
 
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libmono-component-*" TargetDir=""  />
       <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/*.dll" TargetDir="" />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++.so.1')" />
+      <RuntimeDependencyCopyLocal Include="$(MonoArtifactsPath)/libc++abi.so.1" TargetDir="" Condition="Exists('$(MonoArtifactsPath)/libc++abi.so.1')" />
     </ItemGroup>
 
     <Copy
