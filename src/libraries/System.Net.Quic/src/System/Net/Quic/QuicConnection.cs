@@ -31,7 +31,7 @@ namespace System.Net.Quic;
 /// </summary>
 /// <remarks>
 /// <see cref="QuicConnection" /> can either be accepted from <see cref="QuicListener.AcceptConnectionAsync(CancellationToken)" /> (inbound connection),
-/// or create with a static method <see cref="ConnectAsync(QuicClientConnectionOptions, CancellationToken)" /> (outbound connection).
+/// or create with a static method <see cref="QuicConnection.ConnectAsync(System.Net.Quic.QuicClientConnectionOptions, CancellationToken)" /> (outbound connection).
 ///
 /// Each connection can then open outbound stream: <see cref="OpenOutboundStreamAsync(QuicStreamType, CancellationToken)" />,
 /// or accept an inbound stream: <see cref="AcceptInboundStreamAsync(CancellationToken)" />.
