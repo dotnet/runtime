@@ -135,19 +135,25 @@ add_library(mscordbi SHARED "${mscorbi_sources};${PROJECT_SOURCE_DIR}/../../mono
 
 set_source_files_properties(${PROJECT_SOURCE_DIR}/../../mono/component/debugger-protocol.c PROPERTIES LANGUAGE CXX)
 
+set(START_WHOLE_ARCHIVE -Wl,--whole-archive)
+set(END_WHOLE_ARCHIVE -Wl,--no-whole-archive)
+# IMPORTANT! Please do not rearrange the order of the libraries. The linker on Linux is
+# order dependent and changing the order can result in undefined symbols in the shared
+# library.
 set(COREDBI_LIBRARIES
+    mdruntimerw-dbi
     utilcodestaticnohost
     mdruntime-dbi
     mdcompiler-dbi
-    mdruntimerw-dbi
     socket-dbi
     ${OS_LIBS}
 )
-
 if(CLR_CMAKE_HOST_UNIX)
     list(APPEND COREDBI_LIBRARIES
-        coreclrpal
+        ${START_WHOLE_ARCHIVE}
         palrt
+        coreclrpal
+        ${END_WHOLE_ARCHIVE}
         nativeresourcestring
     )
 endif()
