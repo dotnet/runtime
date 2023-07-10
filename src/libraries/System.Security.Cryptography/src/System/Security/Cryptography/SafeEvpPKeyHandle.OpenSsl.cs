@@ -86,5 +86,100 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
         public static long OpenSslVersion { get; } = Interop.OpenSsl.OpenSslVersionNumber();
+
+        /// <summary>
+        ///   Open a named private key using a named OpenSSL <code>ENGINE</code>.
+        /// </summary>
+        /// <param name="engineName">
+        ///   The name of the <code>ENGINE</code> to process the private key open request.
+        /// </param>
+        /// <param name="keyName">
+        ///   The name of the key to open.
+        /// </param>
+        /// <returns>
+        ///   The opened key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="engineName"/> or <paramref name="keyName"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="engineName"/> or <paramref name="keyName"/> is the empty string.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   the key could not be opened via the specified ENGINE.
+        /// </exception>
+        /// <remarks>
+        ///   <p>
+        ///     This operation will fail if OpenSSL cannot successfully load the named <code>ENGINE</code>,
+        ///     or if the named <code>ENGINE</code> cannot load the named key.
+        ///   </p>
+        ///   <p>
+        ///     Not all <code>ENGINE</code>s support loading private keys.
+        ///   </p>
+        ///   <p>
+        ///     The syntax for <paramref name="keyName"/> is determined by each individual
+        ///     <code>ENGINE</code>.
+        ///   </p>
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyName)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(engineName);
+            ArgumentException.ThrowIfNullOrEmpty(keyName);
+
+            return Interop.Crypto.LoadPrivateKeyFromEngine(engineName, keyName);
+        }
+
+        /// <summary>
+        ///   Open a named public key using a named OpenSSL <code>ENGINE</code>.
+        /// </summary>
+        /// <param name="engineName">
+        ///   The name of the <code>ENGINE</code> to process the public key open request.
+        /// </param>
+        /// <param name="keyName">
+        ///   The name of the key to open.
+        /// </param>
+        /// <returns>
+        ///   The opened key.
+        /// </returns>
+        /// <exception cref="ArgumentNullException">
+        ///   <paramref name="engineName"/> or <paramref name="keyName"/> is <see langword="null" />.
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///   <paramref name="engineName"/> or <paramref name="keyName"/> is the empty string.
+        /// </exception>
+        /// <exception cref="CryptographicException">
+        ///   the key could not be opened via the specified ENGINE.
+        /// </exception>
+        /// <remarks>
+        ///   <p>
+        ///     This operation will fail if OpenSSL cannot successfully load the named <code>ENGINE</code>,
+        ///     or if the named <code>ENGINE</code> cannot load the named key.
+        ///   </p>
+        ///   <p>
+        ///     Not all <code>ENGINE</code>s support loading public keys, even ones that support
+        ///     loading private keys.
+        ///   </p>
+        ///   <p>
+        ///     The syntax for <paramref name="keyName"/> is determined by each individual
+        ///     <code>ENGINE</code>.
+        ///   </p>
+        /// </remarks>
+        [UnsupportedOSPlatform("android")]
+        [UnsupportedOSPlatform("browser")]
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("windows")]
+        public static SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyName)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(engineName);
+            ArgumentException.ThrowIfNullOrEmpty(keyName);
+
+            return Interop.Crypto.LoadPublicKeyFromEngine(engineName, keyName);
+        }
     }
 }
