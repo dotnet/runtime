@@ -209,44 +209,46 @@ namespace System.IO.Compression
             {
                 return encoding.GetBytes(text);
             }
-
-            int byteCount = encoding.GetByteCount(text);
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(byteCount);
+            
+            int textByteCount = encoding.GetByteCount(text);
+            byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(textByteCount);
             try
             {
-                encoding.GetBytes(text, 0, text.Length, buffer, 0);
+                encoding.GetBytes(text, 0, text.Length, sharedBuffer, 0);
+                var result = GetBytesFromBuffer(text, isUTF8, textByteCount, maxBytes, sharedBuffer);
+                return result;
             }
-            catch (Exception)
+            finally
             {
-                // Make sure that the buffer will definitely be recycled
-                ArrayPool<byte>.Shared.Return(buffer);
-                throw;
+                ArrayPool<byte>.Shared.Return(sharedBuffer);
             }
 
-            byte[] bytes;
-            if (isUTF8)
+            static byte[] GetBytesFromBuffer(string text, bool isUTF8, int textByteCount, int maxBytes, byte[] buffer)
             {
-                int totalCodePoints = 0;
-                foreach (Rune rune in text.EnumerateRunes())
+                int end;
+                if (isUTF8)
                 {
-                    if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                    int totalCodePoints = 0;
+                    foreach (Rune rune in text.EnumerateRunes())
                     {
-                        break;
+                        if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
+                        {
+                            break;
+                        }
+                        totalCodePoints += rune.Utf8SequenceLength;
                     }
-                    totalCodePoints += rune.Utf8SequenceLength;
+
+                    Debug.Assert(totalCodePoints > 0);
+                    Debug.Assert(totalCodePoints <= textByteCount);
+
+                    end = totalCodePoints;
                 }
-
-                Debug.Assert(totalCodePoints > 0);
-                Debug.Assert(totalCodePoints <= byteCount);
-
-                bytes = buffer[0..totalCodePoints];
-                ArrayPool<byte>.Shared.Return(buffer);
-                return bytes;
+                else
+                {
+                    end = maxBytes <= textByteCount ? maxBytes : textByteCount;
+                }
+                return buffer[0..end];
             }
-
-            bytes = maxBytes <= byteCount ? buffer[0..maxBytes] : buffer[0..byteCount];
-            ArrayPool<byte>.Shared.Return(buffer);
-            return bytes;
         }
     }
 }
