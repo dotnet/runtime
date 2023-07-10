@@ -11354,12 +11354,8 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 	int accessor_kind = -1;
 	char *member_name = NULL;
 	if (!header && mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
-		g_warning ("Method %s is an unsafe accessor with kind %d and target %s", method->name, accessor_kind, member_name);
-		// get the wrapper instead
 		method = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
 		g_assert (method);
-		// TODO: remove this assert_not_reached when the accessor generation is done
-		g_assert_not_reached();
 	}
 
 	if (!header) {
