@@ -1017,7 +1017,7 @@ protected:
                 return iiaJmpOffset;
             }
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
-
+            bool isSecRel;
         } _idAddrUnion;
 
         /* Trivial wrappers to return properly typed enums */

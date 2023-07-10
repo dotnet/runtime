@@ -3779,11 +3779,8 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
 
         case CORINFO_FIELD_STATIC_TLS_MANAGED:
 
-#ifdef FEATURE_READYTORUN
-            if (opts.IsReadyToRun())
-            {
-            }
-            else
+#ifdef FEATURE_READYTORUN           
+            if (!opts.IsReadyToRun())
 #endif // FEATURE_READYTORUN
             {
                 if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
@@ -3812,17 +3809,6 @@ GenTree* Compiler::impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolved
                     callFlags |= GTF_CALL_HOISTABLE;
                 }
 
-                //if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
-                ////if (pFieldInfo->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED)
-                //{
-                //    // for now. We will eventually need a new helper that doesn't take argument
-                //    op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF, gtNewIconNode(0));
-                //    op1->AsCall()->SetExpTLSFieldAccess();
-                //}
-                //else
-                //{
-                //    op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
-                //}
                 op1 = gtNewHelperCallNode(pFieldInfo->helper, TYP_BYREF);
                 if (pFieldInfo->fieldAccessor == CORINFO_FIELD_STATIC_TLS_MANAGED)
                 {

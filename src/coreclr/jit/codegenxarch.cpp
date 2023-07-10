@@ -610,6 +610,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
                 attr = EA_SET_FLG(attr, EA_BYREF_FLG);
             }
 
+            if (con->IsIconHandle(GTF_ICON_SECREL_OFFSET))
+            {
+                attr = EA_SET_FLG(attr, EA_CNS_SEC_RELOC);
+            }
+
             instGen_Set_Reg_To_Imm(attr, targetReg, cnsVal,
                                    INS_FLAGS_DONT_CARE DEBUGARG(con->gtTargetHandle) DEBUGARG(con->gtFlags));
             regSet.verifyRegUsed(targetReg);

@@ -5818,6 +5818,11 @@ void emitter::emitIns_R_I(instruction ins,
     id->idDebugOnlyInfo()->idMemCookie = targetHandle;
 #endif
 
+    if (emitComp->opts.IsReadyToRun() && EA_IS_CNS_SEC_RELOC(attr))
+    {
+        id->idAddr()->isSecRel = true;
+    }
+
     if (isSimdInsAndValInByte)
     {
         bool includeRexPrefixSize = true;
@@ -15147,7 +15152,12 @@ BYTE* emitter::emitOutputRI(BYTE* dst, instrDesc* id)
 
         if (id->idIsCnsReloc())
         {
-            emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, IMAGE_REL_BASED_MOFFSET);
+            uint16_t relocationType = IMAGE_REL_BASED_MOFFSET;
+            if (emitComp->opts.IsReadyToRun() && id->idAddr()->isSecRel)
+            {
+                relocationType = IMAGE_REL_SECREL;
+            }
+            emitRecordRelocation((void*)(dst - (unsigned)EA_SIZE(size)), (void*)(size_t)val, relocationType);
         }
 
         goto DONE;

@@ -350,12 +350,12 @@ namespace Internal.JitInterface
                         pLookup = CreateConstLookupToSymbol(helper);
                     }
                     break;
-                case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_INLINED_THREADSTATIC_BASE_SLOW:
-                    {
-                        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, helperId, helperArg);
-                        pLookup = CreateConstLookupToSymbol(helper);
-                    }
-                    break;
+                //case CorInfoHelpFunc.CORINFO_HELP_READYTORUN_INLINED_THREADSTATIC_BASE_SLOW:
+                //    {
+                //        ISymbolNode helper = GetGenericLookupHelper(pGenericLookupKind.runtimeLookupKind, ReadyToRunHelperId.slo, helperArg);
+                //        pLookup = CreateConstLookupToSymbol(helper);
+                //    }
+                //    break;
                 default:
                     throw new NotImplementedException("ReadyToRun: " + id.ToString());
             }
@@ -2143,22 +2143,13 @@ namespace Internal.JitInterface
                     }
                     else if (field.IsThreadStatic)
                     {
-                        bool isNew = false;
                         if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
                         {
                             //  TODO: Do it only for windows?
                             fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
                         }
-                        if (isNew)
-                        {
-                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
-                        }
-                        else
-                        {
-                            pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
-                            helperId = ReadyToRunHelperId.GetThreadStaticBase;
-                        }
+                        pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
+                        helperId = ReadyToRunHelperId.GetThreadStaticBase;
                     }
                     else if (!_compilation.HasLazyStaticConstructor(field.OwningType))
                     {

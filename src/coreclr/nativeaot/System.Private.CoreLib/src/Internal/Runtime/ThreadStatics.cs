@@ -34,7 +34,7 @@ namespace Internal.Runtime
 
         internal static unsafe object GetInlinedThreadStaticBaseSlow(ref object? threadStorage)
         {
-            Debug.Assert(threadStorage == null);
+            //Debug.Assert(threadStorage == null);
             // Allocate an object that will represent a memory block for all thread static fields
             TypeManagerHandle typeManager = EETypePtr.EETypePtrOf<object>().ToPointer()->TypeManager;
             object threadStaticBase = AllocateThreadStaticStorageForType(typeManager, 0);

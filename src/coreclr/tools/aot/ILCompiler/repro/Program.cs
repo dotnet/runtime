@@ -15,29 +15,41 @@ class Program
 {
     [ThreadStatic]
     static long x;
+    //[ThreadStatic]
+    //static string y;
     [ThreadStatic]
-    static string y;
-    [ThreadStatic]
-    static List<int> list;
+     int z;
+    ////[ThreadStatic]
+    //static List<int> list;
 
 
     static void Main()
     {
-        Program.x = 5;
-        //Program.y = 5;
-        P1.z = 5;
-        new Program().Test();
-        Console.WriteLine(Program.x);
-        Console.WriteLine(Program.y);
+        //Program.x = 5;
+        ////Program.y = "a";
+        //Program.list = new List<int>();
+        //P1.z = 5;
+        Program obj = new Program();
+        obj.Test(5);
+        //Console.WriteLine("Hello");
+        Console.WriteLine(Program.x + obj.z);
+        //Console.WriteLine(Program.y);
+        //Console.WriteLine(Program.z);
+        Console.WriteLine(P1.z);
+        return;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    long Test()
+    long Test(int n)
     {
-        Program.x = 5;
-        Program.y = "a";
-        Program.list = new List<int>();
-        P1.z = 5;
+        for (int i = 0; i < n; i++)
+        {
+            Program.x = 20;
+            new Program().z = 23;
+            //Program.y = "a";
+            //Program.list = new List<int>();
+            P1.z = 5;
+        }
         return 0;
     }
 }

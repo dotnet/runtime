@@ -3328,6 +3328,7 @@ public:
 // It would be nicer to use existing IMAGE_REL_XXX constants instead of defining our own here...
 #define IMAGE_REL_BASED_REL32           0x10
 #define IMAGE_REL_BASED_THUMB_BRANCH24  0x13
+#define IMAGE_REL_SECREL                0x104
 
 // The identifier for ARM32-specific PC-relative address
 // computation corresponds to the following instruction
