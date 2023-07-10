@@ -14,7 +14,7 @@ namespace System.Resources
     /// Searches for resources in  the assembly manifest, used for assembly-based resource lookup.
     /// </summary>
     // Note: this type is integral to the construction of exception objects,
-    // and sometimes this has to be done in low memory situtations (OOM) or
+    // and sometimes this has to be done in low memory situations (OOM) or
     // to create TypeInitializationExceptions due to failure of a static class
     // constructor. This type needs to be extremely careful and assume that
     // any type it references may have previously failed to construct, so statics

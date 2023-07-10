@@ -12,6 +12,11 @@ namespace System
     /// <summary>
     /// Delimits a section of a one-dimensional array.
     /// </summary>
+    // Note: users should make sure they copy the fields out of an ArraySegment onto their stack
+    // then validate that the fields describe valid bounds within the array.  This must be done
+    // because assignments to value types are not atomic, and also because one thread reading
+    // three fields from an ArraySegment may not see the same ArraySegment from one call to another
+    // (ie, users could assign a new value to the old location).
     [Serializable]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
 #pragma warning disable CA1066 // adding IEquatable<T> implementation could change semantics of code like that in xunit that queries for IEquatable vs enumerating contents
