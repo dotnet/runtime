@@ -16,9 +16,6 @@
   #define ROUND_FLOAT              0       // Do not round intermed float expression results
   #define CPU_HAS_BYTE_REGS        0
 
-  #define CPBLK_UNROLL_LIMIT       64      // Upper bound to let the code generator to loop unroll CpBlk.
-  #define INITBLK_UNROLL_LIMIT     64      // Upper bound to let the code generator to loop unroll InitBlk.
-
 #ifdef FEATURE_SIMD
 #pragma error("SIMD Unimplemented yet LOONGARCH")
   #define ALIGN_SIMD_TYPES         1       // whether SIMD type locals are to be aligned
@@ -124,10 +121,6 @@
 
   // This is a float scratch register that does not conflict with the argument registers
   #define REG_SCRATCH_FLT          REG_F11
-
-  // This is a general register that can be optionally reserved for other purposes during codegen
-  #define REG_OPT_RSVD             REG_T1
-  #define RBM_OPT_RSVD             RBM_T1
 
   // Where is the exception object on entry to the handler block?
   #define REG_EXCEPTION_OBJECT     REG_A0

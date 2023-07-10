@@ -69,12 +69,12 @@
       </trans-unit>
       <trans-unit id="MalformedFormatStringsMessage">
         <source>Logging method '{0}' contains malformed format strings</source>
-        <target state="new">Logging method '{0}' contains malformed format strings</target>
+        <target state="translated">로깅 메서드 '{0}'에 잘못된 형식의 문자열이 포함되어 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MalformedFormatStringsTitle">
         <source>Logging method contains malformed format strings</source>
-        <target state="new">Logging method contains malformed format strings</target>
+        <target state="translated">로깅 메서드에 잘못된 형식의 문자열이 포함되어 있습니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="MissingLogLevelMessage">

@@ -103,6 +103,7 @@ if [ ! -z ${RunCrossGen2+x} ]%3B then
         echo -o:$__OutputFile>>$__ResponseFile
         echo -r:$CORE_ROOT/System.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/Microsoft.*.dll>>$__ResponseFile
+        echo -r:$CORE_ROOT/xunit.*.dll>>$__ResponseFile
         echo -r:$CORE_ROOT/mscorlib.dll>>$__ResponseFile
         echo --verify-type-and-field-layout>>$__ResponseFile
         echo --method-layout:random>>$__ResponseFile
@@ -259,6 +260,7 @@ if defined RunCrossGen2 (
     )
     echo -r:!CORE_ROOT!\System.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\Microsoft.*.dll>>!__ResponseFile!
+    echo -r:!CORE_ROOT!\xunit.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
     echo -O>>!__ResponseFile!

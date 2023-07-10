@@ -133,10 +133,7 @@ namespace System.Net.Http
             get => _settings._maxAutomaticRedirections;
             set
             {
-                if (value <= 0)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxAutomaticRedirections = value;
@@ -148,10 +145,7 @@ namespace System.Net.Http
             get => _settings._maxConnectionsPerServer;
             set
             {
-                if (value < 1)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(SR.net_http_value_must_be_greater_than, 0));
-                }
+                ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
 
                 CheckDisposedOrStarted();
                 _settings._maxConnectionsPerServer = value;
@@ -456,6 +450,15 @@ namespace System.Net.Http
             }
         }
 
+        internal ClientCertificateOption ClientCertificateOptions
+        {
+            get => _settings._clientCertificateOptions;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._clientCertificateOptions = value;
+            }
+        }
         protected override void Dispose(bool disposing)
         {
             if (disposing && !_disposed)

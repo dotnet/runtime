@@ -10,6 +10,7 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
@@ -20,7 +21,7 @@ namespace System
     // the contract of the method.  Ideally it should give a meaningful error
     // message describing what was wrong and which parameter is incorrect.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class ArgumentException : SystemException
     {
         private readonly string? _paramName;
@@ -62,12 +63,16 @@ namespace System
             HResult = HResults.COR_E_ARGUMENT;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected ArgumentException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             _paramName = info.GetString("ParamName");
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
@@ -92,7 +97,7 @@ namespace System
 
         private void SetMessageField()
         {
-            if (_message == null && HResult == System.HResults.COR_E_ARGUMENT)
+            if (_message == null && HResult == HResults.COR_E_ARGUMENT)
             {
                 _message = SR.Arg_ArgumentException;
             }
@@ -105,11 +110,24 @@ namespace System
         /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
         /// <exception cref="ArgumentNullException"><paramref name="argument"/> is null.</exception>
         /// <exception cref="ArgumentException"><paramref name="argument"/> is empty.</exception>
-        public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression("argument")] string? paramName = null)
+        public static void ThrowIfNullOrEmpty([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
             if (string.IsNullOrEmpty(argument))
             {
                 ThrowNullOrEmptyException(argument, paramName);
+            }
+        }
+
+        /// <summary>Throws an exception if <paramref name="argument"/> is null, empty, or consists only of white-space characters.</summary>
+        /// <param name="argument">The string argument to validate.</param>
+        /// <param name="paramName">The name of the parameter with which <paramref name="argument"/> corresponds.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="argument"/> is null.</exception>
+        /// <exception cref="ArgumentException"><paramref name="argument"/> is empty or consists only of white-space characters.</exception>
+        public static void ThrowIfNullOrWhiteSpace([NotNull] string? argument, [CallerArgumentExpression(nameof(argument))] string? paramName = null)
+        {
+            if (string.IsNullOrWhiteSpace(argument))
+            {
+                ThrowNullOrWhiteSpaceException(argument, paramName);
             }
         }
 
@@ -118,6 +136,13 @@ namespace System
         {
             ArgumentNullException.ThrowIfNull(argument, paramName);
             throw new ArgumentException(SR.Argument_EmptyString, paramName);
+        }
+
+        [DoesNotReturn]
+        private static void ThrowNullOrWhiteSpaceException(string? argument, string? paramName)
+        {
+            ArgumentNullException.ThrowIfNull(argument, paramName);
+            throw new ArgumentException(SR.Argument_EmptyOrWhiteSpaceString, paramName);
         }
     }
 }

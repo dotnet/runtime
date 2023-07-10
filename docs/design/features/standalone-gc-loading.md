@@ -89,11 +89,11 @@ can specify a specific environment variable to indicate that they are interested
 loading a standalone GC.
 
 There is one environment variable that governs the behavior of the standalone GC loader:
-`COMPlus_GCName`. It should be set to be a path to a dynamic shared library containing
+`DOTNET_GCName`. It should be set to be a path to a dynamic shared library containing
 the GC that the EE intends to load. Its presence informs the EE that, first, a standalone GC
 is to be loaded and, second, precisely where the EE should load it from.
 
-The EE will call `LoadLibrary` using the path given by `COMPlus_GCName`.
+The EE will call `LoadLibrary` using the path given by `DOTNET_GCName`.
 If this succeeds, the EE will move to the next step in the loading process.
 
 ### Verifying the version of a candidate GC

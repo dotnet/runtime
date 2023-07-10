@@ -36,7 +36,7 @@ if [[ -n "$PREPEND_PATH" ]]; then
 fi
 
 if [[ -n "$XUNIT_RANDOM_ORDER_SEED" ]]; then
-    WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --setenv=XUNIT_RANDOM_ORDER_SEED=${XUNIT_RANDOM_ORDER_SEED}"
+    WasmXHarnessMonoArgs="${WasmXHarnessMonoArgs} --env=XUNIT_RANDOM_ORDER_SEED=${XUNIT_RANDOM_ORDER_SEED}"
 fi
 
 echo EXECUTION_DIR=$EXECUTION_DIR

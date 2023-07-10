@@ -48,6 +48,7 @@
 #include "mini-gc.h"
 #include "mini-runtime.h"
 #include "aot-runtime.h"
+#include "llvm-intrinsics-types.h"
 
 MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 
@@ -67,6 +68,7 @@ static gpointer bp_trampoline;
 /* Offset between fp and the first argument in the callee */
 #define ARGS_OFFSET 16
 #define GP_SCRATCH_REG AMD64_R11
+#define SIMD_TEMP_REG MONO_ARCH_FP_SCRATCH_REG
 
 /* Max number of bblocks before we bail from using more advanced branch placement code */
 #define MAX_BBLOCKS_FOR_BRANCH_OPTS 800
@@ -2174,7 +2176,7 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			 */
 			if ((t->type == MONO_TYPE_GENERICINST) && !cfg->full_aot && !sig->pinvoke) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
-				if (MONO_CLASS_IS_SIMD (cfg, klass)) {
+				if (mini_class_is_simd (cfg, klass)) {
 					linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
 					break;
 				}
@@ -4015,7 +4017,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->opcode = ins->inst_c1 == MONO_TYPE_R8 ? OP_MAXPD : OP_MAXPS;
 				break;
 			default:
-				g_assert_not_reached();
+				// Handled in mono_arch_output_basic_block ()
 				break;
 			}
 			break;
@@ -5350,12 +5352,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_mov_reg_reg (code, ins->dreg, ins->sreg1, sizeof (target_mgreg_t));
 			break;
 		case OP_AMD64_SET_XMMREG_R4: {
-			if (cfg->r4fp) {
-				if (ins->dreg != ins->sreg1)
-					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
-			} else {
-				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
-			}
+			if (ins->dreg != ins->sreg1)
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		}
 		case OP_AMD64_SET_XMMREG_R8: {
@@ -5862,10 +5860,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			float f = *(float *)ins->inst_p0;
 
 			if ((f == 0.0) && (mono_signbit (f) == 0)) {
-				if (cfg->r4fp)
-					amd64_sse_xorps_reg_reg (code, ins->dreg, ins->dreg);
-				else
-					amd64_sse_xorpd_reg_reg (code, ins->dreg, ins->dreg);
+				amd64_sse_xorps_reg_reg (code, ins->dreg, ins->dreg);
 			} else {
 				if (cfg->compile_aot && cfg->code_exec_only) {
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, ins->inst_p0);
@@ -5875,8 +5870,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 					mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, ins->inst_p0);
 					amd64_sse_movss_reg_membase (code, ins->dreg, AMD64_RIP, 0);
 				}
-				if (!cfg->r4fp)
-					amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			}
 			break;
 		}
@@ -5887,51 +5880,25 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_movsd_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_STORER4_MEMBASE_REG:
-			if (cfg->r4fp) {
-				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
-			} else {
-				/* This requires a double->single conversion */
-				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, MONO_ARCH_FP_SCRATCH_REG);
-			}
+			amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
 			break;
 		case OP_LOADR4_MEMBASE:
-			if (cfg->r4fp) {
-				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-			} else {
-				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		case OP_ICONV_TO_R4:
-			if (cfg->r4fp) {
-				amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
-			} else {
-				amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
-				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			amd64_sse_cvtsi2ss_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_ICONV_TO_R8:
 			amd64_sse_cvtsi2sd_reg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_LCONV_TO_R4:
-			if (cfg->r4fp) {
-				amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
-			} else {
-				amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
-				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			amd64_sse_cvtsi2ss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_LCONV_TO_R8:
 			amd64_sse_cvtsi2sd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_R4:
-			if (cfg->r4fp) {
-				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
-			} else {
-				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
-				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_FCONV_TO_I1:
 			code = emit_float_to_int (cfg, code, ins->dreg, ins->sreg1, 1, TRUE);
@@ -6037,17 +6004,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_MOVE_F_TO_I4:
-			if (cfg->r4fp) {
-				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
-			} else {
-				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				amd64_movd_reg_xreg_size (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG, 8);
-			}
+			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
 			break;
 		case OP_MOVE_I4_TO_F:
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 8);
-			if (!cfg->r4fp)
-				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 		case OP_MOVE_F_TO_I8:
 			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
@@ -6075,8 +6035,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, &r8_0);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
-				amd64_sse_movsd_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
-				amd64_sse_xorpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_sse_movsd_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
+				amd64_sse_xorpd_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &r8_0);
 				amd64_sse_xorpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
@@ -6091,8 +6051,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8_GOT, &d);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
-				amd64_sse_movsd_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
-				amd64_sse_andpd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_sse_movsd_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
+				amd64_sse_andpd_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R8, &d);
 				amd64_sse_andpd_reg_membase (code, ins->dreg, AMD64_RIP, 0);
@@ -6123,13 +6083,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (cfg->compile_aot && cfg->code_exec_only) {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4_GOT, &r4_0);
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof (target_mgreg_t));
-				amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_R11, 0);
+				amd64_sse_movss_reg_membase (code, SIMD_TEMP_REG, AMD64_R11, 0);
 			} else {
 				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_R4, &r4_0);
-				amd64_sse_movss_reg_membase (code, MONO_ARCH_FP_SCRATCH_REG, AMD64_RIP, 0);
+				amd64_sse_movss_reg_membase (code, SIMD_TEMP_REG, AMD64_RIP, 0);
 			}
 
-			amd64_sse_xorps_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+			amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			break;
 		}
 
@@ -6579,12 +6539,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_LOAD_R4: {
-			if (cfg->r4fp) {
-				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-			} else {
-				amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
-				amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			amd64_sse_movss_reg_membase (code, ins->dreg, ins->inst_basereg, ins->inst_offset);
 			break;
 		}
 		case OP_ATOMIC_LOAD_R8: {
@@ -6630,13 +6585,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		}
 		case OP_ATOMIC_STORE_R4: {
-			if (cfg->r4fp) {
-				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
-			} else {
-				amd64_sse_cvtsd2ss_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, MONO_ARCH_FP_SCRATCH_REG);
-			}
-
+			amd64_sse_movss_membase_reg (code, ins->inst_destbasereg, ins->inst_offset, ins->sreg1);
 			if (ins->backend.memory_barrier_kind == MONO_MEMORY_BARRIER_SEQ)
 				x86_mfence (code);
 			break;
@@ -6727,6 +6676,136 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		}
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 		/* TODO: Some of these IR opcodes are marked as no clobber when they indeed do. */
+		case OP_XBINOP: {
+			switch (ins->inst_c0) {
+			case OP_IMUL:
+				switch (ins->inst_c1) {
+				case MONO_TYPE_I8:
+				case MONO_TYPE_U8:
+					amd64_sse_pmuludq_reg_reg (code, ins->sreg1, ins->sreg2);
+					break;
+				default:
+					g_assert_not_reached ();
+					break;
+				}
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XBINOP_FORCEINT: {
+			switch (ins->inst_c0) {
+			case XBINOP_FORCEINT_AND:
+				amd64_sse_andpd_reg_reg (code, ins->sreg1, ins->sreg2);
+				break;
+			case XBINOP_FORCEINT_OR:
+				amd64_sse_orpd_reg_reg (code, ins->sreg1, ins->sreg2);
+				break;
+			case XBINOP_FORCEINT_XOR:
+				amd64_sse_xorpd_reg_reg (code, ins->sreg1, ins->sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XOP_X_X_X: {
+			switch (ins->inst_c0) {
+			case INTRINS_SSE_PHADDW:
+				amd64_sse_phaddw_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case INTRINS_SSE_PHADDD:
+				amd64_sse_phaddd_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case INTRINS_SSE_HADDPS:
+				amd64_sse_haddps_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			case INTRINS_SSE_HADDPD:
+				amd64_sse_haddpd_reg_reg (code, ins->dreg, ins->sreg2);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_XOP_X_X: {
+			switch (ins->inst_c0) {
+			case INTRINS_SIMD_SQRT_R4:
+				amd64_sse_sqrtps_reg_reg (code, ins->dreg, ins->sreg1);
+				break;
+			case INTRINS_SIMD_SQRT_R8:
+				amd64_sse_sqrtpd_reg_reg (code, ins->dreg, ins->sreg1);
+				break;
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
+		case OP_SSE41_DPPS_IMM:
+			amd64_sse_dpps_reg_reg (code, ins->dreg, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_SSE41_DPPD_IMM:
+			amd64_sse_dppd_reg_reg (code, ins->dreg, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_ONES_COMPLEMENT:
+			amd64_sse_pcmpeqd_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+			amd64_sse_pxor_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			break;
+		case OP_NEGATION: {
+			switch (ins->inst_c1) {
+			case MONO_TYPE_I1:
+			case MONO_TYPE_U1:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubb_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_I2:
+			case MONO_TYPE_U2:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubw_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_I4:
+			case MONO_TYPE_U4:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubd_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_I8:
+			case MONO_TYPE_I:
+			case MONO_TYPE_U8:
+			case MONO_TYPE_U:
+				amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psubq_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			case MONO_TYPE_R4: {
+				/* -0.0 */
+				amd64_sse_pcmpeqw_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_pslld_reg_imm (code, SIMD_TEMP_REG, 31);
+				g_assert (ins->sreg1 == ins->dreg);
+				amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			}
+			case MONO_TYPE_R8: {
+				/* -0.0 */
+				amd64_sse_pcmpeqw_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+				amd64_sse_psllq_reg_imm (code, SIMD_TEMP_REG, 63);
+				g_assert (ins->sreg1 == ins->dreg);
+				amd64_sse_xorps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+				break;
+			}
+			default:
+				g_assert_not_reached ();
+				break;
+			}
+			break;
+		}
 		case OP_ADDPS:
 			amd64_sse_addps_reg_reg (code, ins->sreg1, ins->sreg2);
 			break;
@@ -6872,6 +6951,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_PXOR:
 			amd64_sse_pxor_reg_reg (code, ins->sreg1, ins->sreg2);
+			break;
+		case OP_VECTOR_ANDN:
+			g_assert (ins->dreg == ins->sreg1);
+			amd64_sse_pandn_reg_reg (code, ins->dreg, ins->sreg2);
 			break;
 
 		case OP_PADDB:
@@ -7163,20 +7246,22 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
 			break;
 		case OP_EXTRACT_I4:
-			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			if (ins->inst_c0) {
+				amd64_sse_pextrd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
+			} else {
+				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
+			}
 			break;
 		case OP_EXTRACT_I8:
 			if (ins->inst_c0) {
-				amd64_movhlps_reg_reg (code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg1);
-				amd64_movd_reg_xreg_size (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG, 8);
+				amd64_movhlps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_movd_reg_xreg_size (code, ins->dreg, SIMD_TEMP_REG, 8);
 			} else {
 				amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 8);
 			}
 			break;
 		case OP_EXTRACT_I1:
-			amd64_movd_reg_xreg_size (code, ins->dreg, ins->sreg1, 4);
-			if (ins->inst_c0)
-				amd64_shift_reg_imm (code, X86_SHR, ins->dreg, ins->inst_c0 * 8);
+			amd64_sse_pextrb_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			amd64_widen_reg (code, ins->dreg, ins->dreg, ins->inst_c1 == MONO_TYPE_I1, FALSE);
 			break;
 		case OP_EXTRACT_I2:
@@ -7192,9 +7277,44 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			else
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
+		case OP_EXTRACT_R4: {
+			if (ins->inst_c0 == 0) {
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg1);
+			} else {
+				int imm = ins->inst_c0;
+				amd64_sse_movaps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+				amd64_sse_shufps_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, imm);
+				amd64_sse_pxor_reg_reg (code, ins->dreg, ins->dreg);
+				amd64_sse_movss_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			}
+			break;
+		}
+		case OP_INSERT_I1:
+			amd64_sse_pinsrb_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
 		case OP_INSERT_I2:
 			amd64_sse_pinsrw_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
 			break;
+		case OP_INSERT_I4:
+			amd64_sse_pinsrd_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_INSERT_I8:
+			amd64_sse_pinsrq_reg_reg_imm (code, ins->sreg1, ins->sreg2, ins->inst_c0);
+			break;
+		case OP_INSERT_R4: {
+			guint8 imm = (0 << 6) | (ins->inst_c0 << 4);
+			amd64_sse_insertps_reg_reg (code, ins->sreg1, ins->sreg2, imm);
+			break;
+		}
+		case OP_INSERT_R8: {
+			if (ins->inst_c0 == 0) {
+				amd64_sse_blendpd_reg_reg (code, ins->dreg, ins->sreg2, 0b1);
+			} else {
+				g_assert (ins->inst_c0 == 1);
+				amd64_movlhps_reg_reg (code, ins->dreg, ins->sreg2);
+			}
+			break;
+		}
 		case OP_EXTRACTX_U2:
 			amd64_sse_pextrw_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
@@ -7218,43 +7338,31 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pinsrw_reg_reg_imm (code, ins->dreg, ins->sreg2, ins->inst_c0 * 2 + 1);
 			break;
 		case OP_INSERTX_I8_SLOW:
-			amd64_movd_xreg_reg_size(code, MONO_ARCH_FP_SCRATCH_REG, ins->sreg2, 8);
+			amd64_movd_xreg_reg_size(code, SIMD_TEMP_REG, ins->sreg2, 8);
 			if (ins->inst_c0)
-				amd64_movlhps_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_movlhps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			else
-				amd64_sse_movsd_reg_reg (code, ins->dreg, MONO_ARCH_FP_SCRATCH_REG);
+				amd64_sse_movsd_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
 			break;
 
 		case OP_INSERTX_R4_SLOW:
 			switch (ins->inst_c0) {
 			case 0:
-				if (cfg->r4fp)
-					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				break;
 			case 1:
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
-				if (cfg->r4fp)
-					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(1, 0, 2, 3));
 				break;
 			case 2:
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
-				if (cfg->r4fp)
-					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(2, 1, 0, 3));
 				break;
 			case 3:
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
-				if (cfg->r4fp)
-					amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
-				else
-					amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->sreg2);
+				amd64_sse_movss_reg_reg (code, ins->dreg, ins->sreg2);
 				amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, mono_simd_shuffle_mask(3, 1, 2, 0));
 				break;
 			}
@@ -7264,6 +7372,41 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 				amd64_movlhps_reg_reg (code, ins->dreg, ins->sreg2);
 			else
 				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg2);
+			break;
+		case OP_XEXTRACT: {
+			/* Elements are either 0 or 0xff */
+			g_assert (ins->inst_c1 == 16);
+			amd64_sse_pmovmskb_reg_reg (code, ins->dreg, ins->sreg1);
+			if (ins->inst_c0 == SIMD_EXTR_ARE_ALL_SET) {
+				/* dreg = (mask == 0xffff) */
+				amd64_alu_reg_imm_size (code, X86_CMP, ins->dreg, 0xffff, 4);
+				amd64_set_reg (code, X86_CC_EQ, ins->dreg, FALSE);
+				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			} else if (ins->inst_c0 == SIMD_EXTR_IS_ANY_SET) {
+				/* dreg = (mask != 0) */
+				amd64_alu_reg_imm_size (code, X86_CMP, ins->dreg, 0, 4);
+				amd64_set_reg (code, X86_CC_NE, ins->dreg, FALSE);
+				amd64_widen_reg (code, ins->dreg, ins->dreg, FALSE, FALSE);
+			} else {
+				g_assert_not_reached ();
+			}
+			break;
+		}
+		case OP_XLOWER:
+			amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+			amd64_sse_pblendw_reg_reg_imm (code, SIMD_TEMP_REG, ins->sreg1, 0b1111);
+			amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			break;
+		case OP_XUPPER:
+			amd64_sse_pxor_reg_reg (code, SIMD_TEMP_REG, SIMD_TEMP_REG);
+			amd64_movhlps_reg_reg (code, SIMD_TEMP_REG, ins->sreg1);
+			amd64_sse_movaps_reg_reg (code, ins->dreg, SIMD_TEMP_REG);
+			break;
+		case OP_CVT_FP_SI:
+			amd64_sse_cvttps2dq_reg_reg (code, ins->dreg, ins->sreg1);
+			break;
+		case OP_CVT_SI_FP:
+			amd64_sse_cvtdq2ps_reg_reg (code, ins->dreg, ins->sreg1);
 			break;
 		case OP_STOREX_MEMBASE_REG:
 		case OP_STOREX_MEMBASE:
@@ -7296,10 +7439,19 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_XONES:
 			amd64_sse_pcmpeqb_reg_reg (code, ins->dreg, ins->dreg);
 			break;
+		case OP_XCONST: {
+			if (cfg->compile_aot && cfg->code_exec_only) {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128_GOT, ins->inst_p0);
+				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, sizeof(gpointer));
+				amd64_sse_movups_reg_membase (code, ins->dreg, AMD64_R11, 0);
+			} else {
+				mono_add_patch_info (cfg, offset, MONO_PATCH_INFO_X128, ins->inst_p0);
+				amd64_sse_movups_reg_membase (code, ins->dreg, AMD64_RIP, 0);
+			}
+			break;
+		}
 		case OP_ICONV_TO_R4_RAW:
 			amd64_movd_xreg_reg_size (code, ins->dreg, ins->sreg1, 4);
-			if (!cfg->r4fp)
-			  amd64_sse_cvtss2sd_reg_reg (code, ins->dreg, ins->dreg);
 			break;
 
 		case OP_FCONV_TO_R8_X:
@@ -7338,12 +7490,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0x44);
 			break;
 		case OP_EXPAND_R4:
-			if (cfg->r4fp) {
-				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
-			} else {
-				amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
-				amd64_sse_cvtsd2ss_reg_reg (code, ins->dreg, ins->dreg);
-			}
+			amd64_sse_movsd_reg_reg (code, ins->dreg, ins->sreg1);
 			amd64_sse_pshufd_reg_reg_imm (code, ins->dreg, ins->dreg, 0);
 			break;
 		case OP_EXPAND_R8:
@@ -7354,7 +7501,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->inst_c1 == MONO_TYPE_R8)
 				amd64_sse_roundpd_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			else
-				g_assert_not_reached (); // roundps, but it's not used anywhere for non-llvm back-end yet.
+				amd64_sse_roundps_reg_reg_imm (code, ins->dreg, ins->sreg1, ins->inst_c0);
 			break;
 		}
 #endif
@@ -8140,11 +8287,13 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 	for (patch_info = cfg->patch_info; patch_info; patch_info = patch_info->next) {
 		if (patch_info->type == MONO_PATCH_INFO_EXC)
 			code_size += 40;
-		if (patch_info->type == MONO_PATCH_INFO_R8)
+		else if (patch_info->type == MONO_PATCH_INFO_X128)
+			code_size += 16 + 15; /* sizeof (Vector128<T>) + alignment */
+		else if (patch_info->type == MONO_PATCH_INFO_R8)
 			code_size += 8 + 15; /* sizeof (double) + alignment */
-		if (patch_info->type == MONO_PATCH_INFO_R4)
+		else if (patch_info->type == MONO_PATCH_INFO_R4)
 			code_size += 4 + 15; /* sizeof (float) + alignment */
-		if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR)
+		else if (patch_info->type == MONO_PATCH_INFO_GC_CARD_TABLE_ADDR)
 			code_size += 8 + 7; /*sizeof (void*) + alignment */
 	}
 
@@ -8218,6 +8367,10 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 			guint8 *pos, *patch_pos;
 			guint32 target_pos;
 
+			// FIXME: R8 and R4 only need 8 and 4 byte alignment, respectively
+			// They should be handled separately with anything needing 16 byte
+			// alignment using X128
+
 			/* The SSE opcodes require a 16 byte alignment */
 			code = (guint8*)ALIGN_TO (code, 16);
 
@@ -8238,6 +8391,31 @@ mono_arch_emit_exceptions (MonoCompile *cfg)
 				*(float*)code = *(float*)patch_info->data.target;
 				code += sizeof (float);
 			}
+
+			*(guint32*)(patch_pos) = target_pos;
+
+			remove = TRUE;
+			break;
+		}
+		case MONO_PATCH_INFO_X128: {
+			guint8 *pos, *patch_pos;
+			guint32 target_pos;
+
+			/* The SSE opcodes require a 16 byte alignment */
+			code = (guint8*)ALIGN_TO (code, 16);
+
+			pos = cfg->native_code + patch_info->ip.i;
+			if (IS_REX (pos [0])) {
+				patch_pos = pos + 4;
+				target_pos = GPTRDIFF_TO_UINT32 (code - pos - 8);
+			}
+			else {
+				patch_pos = pos + 3;
+				target_pos = GPTRDIFF_TO_UINT32 (code - pos - 7);
+			}
+
+			memcpy (code, patch_info->data.target, 16);
+			code += 16;
 
 			*(guint32*)(patch_pos) = target_pos;
 

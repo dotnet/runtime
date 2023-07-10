@@ -239,7 +239,7 @@ namespace System.Xml
             Debug.Assert(prefix != null);
 
             _bufBytes[_bufPos++] = (byte)'<';
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 RawText(prefix);
                 _bufBytes[_bufPos++] = (byte)':';
@@ -274,7 +274,7 @@ namespace System.Xml
                 _bufBytes[_bufPos++] = (byte)'<';
                 _bufBytes[_bufPos++] = (byte)'/';
 
-                if (prefix != null && prefix.Length != 0)
+                if (!string.IsNullOrEmpty(prefix))
                 {
                     RawText(prefix);
                     _bufBytes[_bufPos++] = (byte)':';
@@ -301,7 +301,7 @@ namespace System.Xml
             _bufBytes[_bufPos++] = (byte)'<';
             _bufBytes[_bufPos++] = (byte)'/';
 
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 RawText(prefix);
                 _bufBytes[_bufPos++] = (byte)':';
@@ -363,13 +363,18 @@ namespace System.Xml
         {
             Debug.Assert(prefix != null);
 
+            if (_attrEndPos == _bufPos)
+            {
+                _bufBytes[_bufPos++] = (byte)' ';
+            }
+
             if (prefix.Length == 0)
             {
-                RawText(" xmlns=\"");
+                RawText("xmlns=\"");
             }
             else
             {
-                RawText(" xmlns:");
+                RawText("xmlns:");
                 RawText(prefix);
                 _bufBytes[_bufPos++] = (byte)'=';
                 _bufBytes[_bufPos++] = (byte)'"';
@@ -1812,7 +1817,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)
@@ -1892,6 +1897,18 @@ namespace System.Xml
             }
 
             base.WriteStartAttribute(prefix, localName, ns);
+        }
+
+        // Same as base class, plus possible indentation.
+        internal override void WriteStartNamespaceDeclaration(string prefix)
+        {
+            // Add indentation
+            if (_newLineOnAttributes)
+            {
+                WriteIndent();
+            }
+
+            base.WriteStartNamespaceDeclaration(prefix);
         }
 
         public override void WriteCData(string? text)

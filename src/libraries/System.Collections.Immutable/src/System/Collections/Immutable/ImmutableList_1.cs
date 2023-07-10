@@ -236,6 +236,31 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
+        internal ImmutableList<T> AddRange(ReadOnlySpan<T> items)
+        {
+            if (this.IsEmpty)
+            {
+                if (items.IsEmpty)
+                {
+                    return Empty;
+                }
+
+                return new ImmutableList<T>(Node.NodeTreeFromList(items));
+            }
+            else
+            {
+                if (items.IsEmpty)
+                {
+                    return this;
+                }
+
+                return this.Wrap(_root.AddRange(items));
+            }
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableList{T}"/> interface.
+        /// </summary>
         public ImmutableList<T> Insert(int index, T item)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));
@@ -1123,7 +1148,7 @@ namespace System.Collections.Immutable
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            return ((value is T) || (value == null && default(T) == null));
+            return (value is T) || (default(T) == null && value == null);
         }
 
         /// <summary>

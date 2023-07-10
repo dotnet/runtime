@@ -52,7 +52,7 @@ namespace System.Reflection
             ContentType = 32
         }
 
-        private ReadOnlySpan<char> _input;
+        private readonly ReadOnlySpan<char> _input;
         private int _index;
 
         private AssemblyNameParser(ReadOnlySpan<char> input)
@@ -90,7 +90,7 @@ namespace System.Reflection
             if (token != Token.String)
                 ThrowInvalidAssemblyName();
 
-            if (string.IsNullOrEmpty(name) || name.AsSpan().IndexOfAny('/', '\\', ':') != -1)
+            if (string.IsNullOrEmpty(name) || name.AsSpan().ContainsAny('/', '\\', ':'))
                 ThrowInvalidAssemblyName();
 
             Version? version = null;

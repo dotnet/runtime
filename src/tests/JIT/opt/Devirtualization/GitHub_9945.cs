@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Base
 {
@@ -42,11 +44,12 @@ public class D2 : Base
 
 public class Test
 {
-    public static int Main(string[] args)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int TestEntry(bool arg)
     {
         Base b;
 
-        if (args.Length > 0)
+        if (arg)
         {
             D1 d1 = new D1();
             b = d1;
@@ -63,5 +66,11 @@ public class Test
 
         b.B0();
         return b.value;
+    }
+
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        return TestEntry(false);
     }
 }

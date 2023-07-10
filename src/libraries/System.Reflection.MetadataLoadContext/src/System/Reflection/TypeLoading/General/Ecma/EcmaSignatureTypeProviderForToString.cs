@@ -41,7 +41,10 @@ namespace System.Reflection.TypeLoading.Ecma
             for (int i = 0; i < typeArguments.Length; i++)
             {
                 if (i != 0)
+                {
                     sb.Append(',');
+                }
+
                 sb.Append(typeArguments[i]);
             }
             sb.Append(']');
@@ -51,7 +54,23 @@ namespace System.Reflection.TypeLoading.Ecma
         public string GetGenericTypeParameter(TypeContext genericContext, int index) => genericContext.GetGenericTypeArgumentOrNull(index)?.ToString() ?? ("!" + index);
         public string GetGenericMethodParameter(TypeContext genericContext, int index) => genericContext.GetGenericMethodArgumentOrNull(index)?.ToString() ?? ("!!" + index);
 
-        public string GetFunctionPointerType(MethodSignature<string> signature) => "?";
+        public string GetFunctionPointerType(MethodSignature<string> signature)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(signature.ReturnType);
+            sb.Append('(');
+            for (int i = 0; i < signature.ParameterTypes.Length; i++)
+            {
+                if (i != 0)
+                {
+                    sb.Append(", ");
+                }
+
+                sb.Append(signature.ParameterTypes[i]);
+            }
+            sb.Append(')');
+            return sb.ToString();
+        }
         public string GetModifiedType(string modifier, string unmodifiedType, bool isRequired) => unmodifiedType;
         public string GetPinnedType(string elementType) => elementType;
 

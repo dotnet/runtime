@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Serialization
 {
+    [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
     public class ObjectIDGenerator
     {
         private const int NumBins = 4;
@@ -19,7 +20,7 @@ namespace System.Runtime.Serialization
         public ObjectIDGenerator()
         {
             _currentCount = 1;
-            _currentSize = 3; // HashHelpers.s_primes[0]
+            _currentSize = 3; // HashHelpers.Primes[0]
             _ids = new long[_currentSize * NumBins];
             _objs = new object[_currentSize * NumBins];
         }

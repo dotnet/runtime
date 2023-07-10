@@ -9,9 +9,9 @@ namespace System.Diagnostics
         protected static readonly ConfigurationProperty s_propTypeName = new("type", typeof(string), string.Empty, ConfigurationPropertyOptions.IsRequired | ConfigurationPropertyOptions.IsTypeStringTransformationRequired);
         protected static readonly ConfigurationProperty s_propInitData = new("initializeData", typeof(string), string.Empty, ConfigurationPropertyOptions.None);
 
-        protected ConfigurationPropertyCollection _properties;
+        protected readonly ConfigurationPropertyCollection _properties;
         protected object _runtimeObject;
-        private Type _baseType;
+        private readonly Type _baseType;
 
         public TypedElement(Type baseType) : base()
         {

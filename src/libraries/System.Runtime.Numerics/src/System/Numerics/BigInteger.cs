@@ -965,8 +965,7 @@ namespace System.Numerics
 
         public static BigInteger ModPow(BigInteger value, BigInteger exponent, BigInteger modulus)
         {
-            if (exponent.Sign < 0)
-                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
+            ArgumentOutOfRangeException.ThrowIfNegative(exponent.Sign, nameof(exponent));
 
             value.AssertValid();
             exponent.AssertValid();
@@ -1026,8 +1025,7 @@ namespace System.Numerics
 
         public static BigInteger Pow(BigInteger value, int exponent)
         {
-            if (exponent < 0)
-                throw new ArgumentOutOfRangeException(nameof(exponent), SR.ArgumentOutOfRange_MustBeNonNeg);
+            ArgumentOutOfRangeException.ThrowIfNegative(exponent);
 
             value.AssertValid();
 
@@ -1654,10 +1652,7 @@ namespace System.Numerics
             bool trivialLeft = leftBits.IsEmpty;
             bool trivialRight = rightBits.IsEmpty;
 
-            if (trivialLeft && trivialRight)
-            {
-                return (long)leftSign + rightSign;
-            }
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -1722,6 +1717,9 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
+            if (left._bits == null && right._bits == null)
+                return (long)left._sign - right._sign;
+
             if (left._sign < 0 != right._sign < 0)
                 return Add(left._bits, left._sign, right._bits, -1 * right._sign);
             return Subtract(left._bits, left._sign, right._bits, right._sign);
@@ -1732,10 +1730,7 @@ namespace System.Numerics
             bool trivialLeft = leftBits.IsEmpty;
             bool trivialRight = rightBits.IsEmpty;
 
-            if (trivialLeft && trivialRight)
-            {
-                return (long)leftSign - rightSign;
-            }
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -2686,6 +2681,9 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
+            if (left._bits == null && right._bits == null)
+                return (long)left._sign + right._sign;
+
             if (left._sign < 0 != right._sign < 0)
                 return Subtract(left._bits, left._sign, right._bits, -1 * right._sign);
             return Add(left._bits, left._sign, right._bits, right._sign);
@@ -2696,6 +2694,9 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
+            if (left._bits == null && right._bits == null)
+                return (long)left._sign * right._sign;
+
             return Multiply(left._bits, left._sign, right._bits, right._sign);
         }
 
@@ -2704,10 +2705,7 @@ namespace System.Numerics
             bool trivialLeft = left.IsEmpty;
             bool trivialRight = right.IsEmpty;
 
-            if (trivialLeft && trivialRight)
-            {
-                return (long)leftSign * rightSign;
-            }
+            Debug.Assert(!(trivialLeft && trivialRight), "Trivial cases should be handled on the caller operator");
 
             BigInteger result;
             uint[]? bitsFromPool = null;
@@ -3152,8 +3150,8 @@ namespace System.Numerics
                 Debug.Assert(_bits.Length > 0);
                 // Wasted space: _bits[0] could have been packed into _sign
                 Debug.Assert(_bits.Length > 1 || _bits[0] >= kuMaskHighBit);
-                // Wasted space: leading zeros could have been truncated
-                Debug.Assert(_bits[_bits.Length - 1] != 0);
+                //// Wasted space: leading zeros could have been truncated // TODO: https://github.com/dotnet/runtime/issues/84991
+                //Debug.Assert(_bits[_bits.Length - 1] != 0);
                 // Arrays larger than this can't fit into a Span<byte>
                 Debug.Assert(_bits.Length <= MaxLength);
             }
@@ -4978,7 +4976,7 @@ namespace System.Numerics
 
                     if (value._bits.Length >= 3)
                     {
-                        upperBits = value._bits[2];
+                        upperBits |= value._bits[2];
                     }
 
                     if (value._bits.Length >= 2)

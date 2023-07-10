@@ -17,6 +17,10 @@ namespace System.DirectoryServices
 
         public DirectoryServicesCOMException(string? message, Exception? inner) : base(message, inner) { }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         protected DirectoryServicesCOMException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -31,6 +35,10 @@ namespace System.DirectoryServices
 
         public string? ExtendedErrorMessage { get; }
 
+#if NET8_0_OR_GREATER
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+#endif
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             base.GetObjectData(serializationInfo, streamingContext);

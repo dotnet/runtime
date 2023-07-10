@@ -111,8 +111,6 @@ if (WIN32)
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
-    eventtrace.cpp
-    rheventtrace.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
@@ -148,12 +146,13 @@ else()
   list(APPEND COMMON_RUNTIME_SOURCES
     unix/PalRedhawkUnix.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp
+    ${GC_DIR}/unix/numasupport.cpp
     ${GC_DIR}/unix/events.cpp
     ${GC_DIR}/unix/cgroup.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES
-    unix/cgroup.cpp
+    unix/cgroupcpu.cpp
     unix/HardwareExceptions.cpp
     unix/UnixContext.cpp
     unix/UnixSignals.cpp
@@ -169,14 +168,14 @@ else()
   set(ASM_SUFFIX S)
 endif()
 
-if (CLR_CMAKE_TARGET_OSX)
+if (CLR_CMAKE_TARGET_APPLE)
   list(APPEND COMMON_RUNTIME_SOURCES
     interoplibinterface_objc.cpp
   )
-endif (CLR_CMAKE_TARGET_OSX)
+endif (CLR_CMAKE_TARGET_APPLE)
 
 if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
-  list(APPEND COMMON_RUNTIME_SOURCES
+  set(VXSORT_SOURCES
     ${GC_DIR}/vxsort/isa_detection.cpp
     ${GC_DIR}/vxsort/do_vxsort_avx2.cpp
     ${GC_DIR}/vxsort/do_vxsort_avx512.cpp
@@ -186,12 +185,15 @@ if (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
     ${GC_DIR}/vxsort/smallsort/bitonic_sort.AVX512.int64_t.generated.cpp
     ${GC_DIR}/vxsort/smallsort/bitonic_sort.AVX512.int32_t.generated.cpp
     ${GC_DIR}/vxsort/smallsort/avx2_load_mask_tables.cpp
-)
+  )
+
+  set(DUMMY_VXSORT_SOURCES
+    ${GC_DIR}/vxsort/dummy.cpp
+  )
 endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
@@ -206,6 +208,31 @@ list(APPEND RUNTIME_SOURCES_ARCH_ASM
 # Add architecture specific folder for looking up headers.
 convert_to_absolute_path(ARCH_SOURCES_DIR ${ARCH_SOURCES_DIR})
 include_directories(${ARCH_SOURCES_DIR})
+
+if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
+  set(FEATURE_PERFTRACING 1)
+  set(FEATURE_EVENT_TRACE 1)
+endif()
+
+if(FEATURE_PERFTRACING)
+  add_definitions(-DFEATURE_PERFTRACING)
+endif()
+
+if(FEATURE_EVENT_TRACE)
+  add_definitions(-DFEATURE_EVENT_TRACE)
+  list(APPEND COMMON_RUNTIME_SOURCES
+    eventtrace.cpp
+  )
+  # These are carry-overs from .NET Native and only included on Windows currently
+  #   bulktype : directly emits via ETW with EventWrite
+  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
+  if (WIN32)
+    list(APPEND COMMON_RUNTIME_SOURCES
+      eventtrace_bulktype.cpp
+      eventtrace_gcheap.cpp
+    )
+  endif()
+endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)
 add_definitions(-DFEATURE_CONSERVATIVE_GC)
@@ -226,11 +253,12 @@ add_definitions(-D_LIB)
 
 if(WIN32)
   add_definitions(-DFEATURE_ETW)
-  add_definitions(-DFEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
 else()
-  add_definitions(-DFEATURE_READONLY_GS_COOKIE)
+  if(NOT CLR_CMAKE_TARGET_MACCATALYST AND NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DFEATURE_READONLY_GS_COOKIE)
+  endif()
   add_definitions(-DNO_UI_ASSERT)
   include(unix/configure.cmake)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -256,6 +284,8 @@ convert_to_absolute_path(COMMON_RUNTIME_SOURCES ${COMMON_RUNTIME_SOURCES})
 convert_to_absolute_path(FULL_RUNTIME_SOURCES ${FULL_RUNTIME_SOURCES})
 convert_to_absolute_path(SERVER_GC_SOURCES ${SERVER_GC_SOURCES})
 convert_to_absolute_path(RUNTIME_SOURCES_ARCH_ASM ${RUNTIME_SOURCES_ARCH_ASM})
+convert_to_absolute_path(VXSORT_SOURCES ${VXSORT_SOURCES})
+convert_to_absolute_path(DUMMY_VXSORT_SOURCES ${DUMMY_VXSORT_SOURCES})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   add_subdirectory(Full)
@@ -263,10 +293,6 @@ else()
   add_subdirectory(Portable)
 endif()
 
-if (CLR_CMAKE_TARGET_UNIX)
-  add_library(numasupportdynamic STATIC ${GC_DIR}/unix/numasupport.dynamic.cpp)
-  install_static_library(numasupportdynamic aotsdk nativeaot)
-
-  add_library(numasupportstatic STATIC ${GC_DIR}/unix/numasupport.static.cpp)
-  install_static_library(numasupportstatic aotsdk nativeaot)
-endif(CLR_CMAKE_TARGET_UNIX)
+if(FEATURE_PERFTRACING)
+  add_subdirectory(eventpipe)
+endif()

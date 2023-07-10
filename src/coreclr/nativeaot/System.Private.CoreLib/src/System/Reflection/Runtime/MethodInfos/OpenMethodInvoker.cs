@@ -19,6 +19,11 @@ namespace System.Reflection.Runtime.MethodInfos
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);
         }
 
+        protected sealed override object CreateInstance(object?[]? arguments, BinderBundle binderBundle, bool wrapInTargetInvocationException)
+        {
+            throw new InvalidOperationException(SR.Arg_UnboundGenParam);
+        }
+
         public sealed override Delegate CreateDelegate(RuntimeTypeHandle delegateType, object target, bool isStatic, bool isVirtual, bool isOpen)
         {
             throw new InvalidOperationException(SR.Arg_UnboundGenParam);

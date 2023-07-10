@@ -935,7 +935,7 @@ namespace System.Threading
                 // us to return the thread to the pool or not.
                 //
                 int currentTickCount = Environment.TickCount;
-                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTickCount))
+                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject!, currentTickCount))
                 {
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
@@ -1362,19 +1362,20 @@ namespace System.Threading
         /// <summary>Shim used to invoke <see cref="IAsyncStateMachineBox.MoveNext"/> of the supplied <see cref="IAsyncStateMachineBox"/>.</summary>
         internal static readonly Action<object?> s_invokeAsyncStateMachineBox = static state =>
         {
-            if (!(state is IAsyncStateMachineBox box))
+            if (state is IAsyncStateMachineBox box)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
-                return;
+                box.MoveNext();
             }
-
-            box.MoveNext();
+            else
+            {
+                ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
+            }
         };
 
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
@@ -1391,7 +1392,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
@@ -1408,7 +1409,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1423,7 +1424,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1438,7 +1439,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
@@ -1454,7 +1455,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
@@ -1470,7 +1471,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
@@ -1489,7 +1490,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,
@@ -1559,12 +1560,12 @@ namespace System.Threading
             //
             // This occurs when user code queues its provided continuation to the ThreadPool;
             // internally we call UnsafeQueueUserWorkItemInternal directly for Tasks.
-            if (ReferenceEquals(callBack, ThreadPool.s_invokeAsyncStateMachineBox))
+            if (ReferenceEquals(callBack, s_invokeAsyncStateMachineBox))
             {
                 if (!(state is IAsyncStateMachineBox))
                 {
                     // The provided state must be the internal IAsyncStateMachineBox (Task) type
-                    ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.state);
+                    ThrowHelper.ThrowUnexpectedStateForKnownCallback(state);
                 }
 
                 UnsafeQueueUserWorkItemInternal((object)state!, preferLocal);

@@ -27,6 +27,7 @@
     <Compile Include="XamlLoadPermissionTests.cs"/>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\src\System.Security.Permissions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.DirectoryServices\src\System.DirectoryServices.csproj" />
   </ItemGroup>
 </Project>

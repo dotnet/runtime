@@ -42,7 +42,7 @@ namespace Mono.Linker.Steps
 
 	public class OutputStep : BaseStep
 	{
-		private Dictionary<UInt16, TargetArchitecture>? architectureMap;
+		private Dictionary<ushort, TargetArchitecture>? architectureMap;
 
 		private enum NativeOSOverride
 		{
@@ -63,7 +63,7 @@ namespace Mono.Linker.Steps
 		TargetArchitecture CalculateArchitecture (TargetArchitecture readyToRunArch)
 		{
 			if (architectureMap == null) {
-				architectureMap = new Dictionary<UInt16, TargetArchitecture> ();
+				architectureMap = new Dictionary<ushort, TargetArchitecture> ();
 				foreach (var os in Enum.GetValues (typeof (NativeOSOverride))) {
 					ushort osVal = (ushort) (NativeOSOverride) os;
 					foreach (var arch in Enum.GetValues (typeof (TargetArchitecture))) {
@@ -95,7 +95,7 @@ namespace Mono.Linker.Steps
 		{
 			if (Context.AssemblyListFile != null) {
 				using (var w = File.CreateText (Context.AssemblyListFile)) {
-					w.WriteLine ("[" + String.Join (", ", assembliesWritten.Select (a => "\"" + a + "\"").ToArray ()) + "]");
+					w.WriteLine ("[" + string.Join (", ", assembliesWritten.Select (a => "\"" + a + "\"").ToArray ()) + "]");
 				}
 			}
 		}

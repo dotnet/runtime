@@ -18,7 +18,7 @@ namespace System.Runtime.Caching
         private int _state;
         // expiration
         private DateTime _utcAbsExp;
-        private TimeSpan _slidingExp;
+        private readonly TimeSpan _slidingExp;
         private ExpiresEntryRef _expiresEntryRef;
         private byte _expiresBucket; // index of the expiration list (bucket)
         // usage

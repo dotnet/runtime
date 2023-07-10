@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.MDBenchI
 {
@@ -112,7 +113,8 @@ public static class MDMulMatrix
         return result;
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         bool result = TestBase();
         return (result ? 100 : -1);
     }

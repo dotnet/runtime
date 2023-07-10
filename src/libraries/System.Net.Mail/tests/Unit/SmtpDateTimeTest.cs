@@ -142,24 +142,6 @@ namespace System.Net.Mime.Tests
         }
 
         [Fact]
-        public void SmtpDate_TimeSpanToOffset_ShouldConvertCorrectly()
-        {
-            TimeSpan timeZone = TimeZoneInfo.Utc.GetUtcOffset(DateTime.Now);
-            string timeZoneToString = timeZone.ToString();
-            string result = SmtpDateTime.TimeSpanToOffset(timeZone);
-            Assert.Equal("+0000", result);
-        }
-
-        [Fact]
-        public void SmtpDate_TimeSpanToOffset_WithNonGmtOffset_ShouldConvertCorrectly()
-        {
-            Assert.Equal("-0800", SmtpDateTime.TimeSpanToOffset(new TimeSpan(-8, 0, 0)));
-            Assert.Equal("-1000", SmtpDateTime.TimeSpanToOffset(new TimeSpan(-10, 0, 0)));
-            Assert.Equal("+1000", SmtpDateTime.TimeSpanToOffset(new TimeSpan(10, 0, 0)));
-            Assert.Equal("+0400", SmtpDateTime.TimeSpanToOffset(new TimeSpan(4, 0, 0)));
-        }
-
-        [Fact]
         public void SmtpDate_TryParseTimeZoneString_WithValidShortHand_ShouldReturnCorrectOffset()
         {
             TimeSpan span;

@@ -780,7 +780,7 @@ namespace Microsoft.Extensions.DependencyModel
                             .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
                             .ToArray();
 
-                        if (groupRuntimeAssemblies.Any())
+                        if (groupRuntimeAssemblies.Length != 0)
                         {
                             runtimeAssemblyGroups.Add(new RuntimeAssetGroup(
                                 ridGroup.Key,
@@ -792,7 +792,7 @@ namespace Microsoft.Extensions.DependencyModel
                             .Select(e => new RuntimeFile(e.Path, e.AssemblyVersion, e.FileVersion))
                             .ToArray();
 
-                        if (groupNativeLibraries.Any())
+                        if (groupNativeLibraries.Length != 0)
                         {
                             nativeLibraryGroups.Add(new RuntimeAssetGroup(
                                 ridGroup.Key,

@@ -122,7 +122,15 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(2, set.Count);
             Assert.Same(EqualityComparer<string>.Default, set.KeyComparer);
 
+            set = ImmutableHashSet.Create((ReadOnlySpan<string>)new[] { "a", "b" });
+            Assert.Equal(2, set.Count);
+            Assert.Same(EqualityComparer<string>.Default, set.KeyComparer);
+
             set = ImmutableHashSet.Create(comparer, "a", "b");
+            Assert.Equal(2, set.Count);
+            Assert.Same(comparer, set.KeyComparer);
+
+            set = ImmutableHashSet.Create(comparer, (ReadOnlySpan<string>)new[] { "a", "b" });
             Assert.Equal(2, set.Count);
             Assert.Same(comparer, set.KeyComparer);
 
@@ -182,7 +190,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(set, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableHashSet.Create<string>());

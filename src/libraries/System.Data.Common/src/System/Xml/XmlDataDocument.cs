@@ -3008,13 +3008,17 @@ namespace System.Xml
         protected override XPathNavigator? CreateNavigator(XmlNode node)
         {
             Debug.Assert(node.OwnerDocument == this || node == this);
-            if (XPathNodePointer.s_xmlNodeType_To_XpathNodeType_Map[(int)(node.NodeType)] == -1)
+
+            if (XPathNodePointer.XmlNodeTypeToXpathNodeTypeMap[(int)(node.NodeType)] == -1)
                 return null;
+
             if (IsTextNode(node.NodeType))
             {
                 XmlNode? parent = node.ParentNode;
                 if (parent != null && parent.NodeType == XmlNodeType.Attribute)
+                {
                     return null;
+                }
                 else
                 {
 #if DEBUG

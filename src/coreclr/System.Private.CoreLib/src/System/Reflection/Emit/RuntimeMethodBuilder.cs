@@ -26,7 +26,7 @@ namespace System.Reflection.Emit
         private int[]? m_mdMethodFixups;              // The location of all of the token fixups. Null means no fixups.
         private byte[]? m_localSignature;             // Local signature if set explicitly via DefineBody. Null otherwise.
         internal LocalSymInfo? m_localSymInfo;        // keep track debugging local information
-        internal ILGenerator? m_ilGenerator;          // Null if not used.
+        internal RuntimeILGenerator? m_ilGenerator;   // Null if not used.
         private byte[]? m_ubBody;                     // The IL for the method
         private ExceptionHandler[]? m_exceptions; // Exception handlers or null if there are none.
         private const int DefaultMaxStack = 16;
@@ -130,7 +130,7 @@ namespace System.Reflection.Emit
 
         #region Internal Members
 
-        internal void CreateMethodBodyHelper(ILGenerator il)
+        internal void CreateMethodBodyHelper(RuntimeILGenerator il)
         {
             ArgumentNullException.ThrowIfNull(il);
 
@@ -519,17 +519,18 @@ namespace System.Reflection.Emit
             if (m_inst != null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
-            for (int i = 0; i < names.Length; i++)
-                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
-
             if (m_token != 0)
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
 
-            m_bIsGenMethDef = true;
             m_inst = new RuntimeGenericTypeParameterBuilder[names.Length];
             for (int i = 0; i < names.Length; i++)
-                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(names[i], i, this));
+            {
+                string name = names[i];
+                ArgumentNullException.ThrowIfNull(name, nameof(names));
+                m_inst[i] = new RuntimeGenericTypeParameterBuilder(new RuntimeTypeBuilder(name, i, this));
+            }
 
+            m_bIsGenMethDef = true;
             return m_inst;
         }
 
@@ -646,7 +647,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
             attributes &= ~ParameterAttributes.ReservedMask;
-            return new ParameterBuilder(this, position, attributes, strParamName);
+            return new RuntimeParameterBuilder(this, position, attributes, strParamName);
         }
 
         protected override void SetImplementationFlagsCore(MethodImplAttributes attributes)
@@ -667,7 +668,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
             ThrowIfShouldNotHaveBody();
 
-            return m_ilGenerator ??= new ILGenerator(this, size);
+            return m_ilGenerator ??= new RuntimeILGenerator(this, size);
         }
 
         private void ThrowIfShouldNotHaveBody()
@@ -695,7 +696,7 @@ namespace System.Reflection.Emit
             return GetModuleBuilder();
         }
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             ThrowIfGeneric();
             RuntimeTypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
@@ -704,15 +705,6 @@ namespace System.Reflection.Emit
 
             if (IsKnownCA(con))
                 ParseCA(con);
-        }
-
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            ThrowIfGeneric();
-            customBuilder.CreateCustomAttribute(m_module, MetadataToken);
-
-            if (IsKnownCA(customBuilder.m_con))
-                ParseCA(customBuilder.m_con);
         }
 
         // this method should return true for any and every ca that requires more work
@@ -726,7 +718,7 @@ namespace System.Reflection.Emit
         private void ParseCA(ConstructorInfo con)
         {
             Type? caType = con.DeclaringType;
-            if (caType == typeof(System.Runtime.CompilerServices.MethodImplAttribute))
+            if (caType == typeof(MethodImplAttribute))
             {
                 // dig through the blob looking for the MethodImplAttributes flag
                 // that must be in the MethodCodeType field

@@ -4,7 +4,7 @@
 namespace System.Text.RegularExpressions
 {
     /// <summary>Specifies the kind of a <see cref="RegexNode"/>.</summary>
-    internal enum RegexNodeKind
+    internal enum RegexNodeKind : byte
     {
         /// <summary>Unknown node type.</summary>
         /// <remarks>This should never occur on an actual node, and instead is used as a sentinel.</remarks>

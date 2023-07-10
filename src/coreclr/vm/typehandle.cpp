@@ -325,12 +325,15 @@ BOOL TypeHandle::IsSharedByGenericInstantiations() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    if (IsArray())
+    if (IsTypeDesc())
     {
-        return GetArrayElementTypeHandle().IsCanonicalSubtype();
+        return AsTypeDesc()->IsSharedByGenericInstantiations();
     }
-    else if (!IsTypeDesc())
+    else
     {
+        if (IsArray())
+            return GetArrayElementTypeHandle().IsCanonicalSubtype();
+
         return AsMethodTable()->IsSharedByGenericInstantiations();
     }
 
@@ -349,8 +352,7 @@ bool TypeHandle::IsManagedClassObjectPinned() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    // Function pointers are always mapped to typeof(IntPtr)
-    return !GetLoaderAllocator()->CanUnload() || IsFnPtrType();
+    return !GetLoaderAllocator()->CanUnload();
 }
 
 void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
@@ -365,7 +367,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
         // Take a lock here since we don't want to allocate redundant objects which won't be collected
         CrstHolder exposedClassLock(AppDomain::GetMethodTableExposedClassObjectLock());
 
-        if (*pDest == NULL)
+        if (VolatileLoad(pDest) == NULL)
         {
             FrozenObjectHeapManager* foh = SystemDomain::GetFrozenObjectHeapManager();
             Object* obj = foh->TryAllocateObject(g_pRuntimeTypeClass, g_pRuntimeTypeClass->GetBaseSize());
@@ -377,7 +379,7 @@ void TypeHandle::AllocateManagedClassObject(RUNTIMETYPEHANDLE* pDest)
             RUNTIMETYPEHANDLE handle = (RUNTIMETYPEHANDLE)obj;
             // Set the bit to 1 (we'll have to reset it before use)
             handle |= 1;
-            *pDest = handle;
+            VolatileStore(pDest, handle);
         }
     }
     else
@@ -1156,8 +1158,7 @@ OBJECTREF TypeHandle::GetManagedClassObject() const
                 return ((TypeVarTypeDesc*)AsTypeDesc())->GetManagedClassObject();
 
             case ELEMENT_TYPE_FNPTR:
-                // A function pointer is mapped into typeof(IntPtr). It results in a loss of information.
-                return CoreLibBinder::GetElementType(ELEMENT_TYPE_I)->GetManagedClassObject();
+                return ((FnPtrTypeDesc*)AsTypeDesc())->GetManagedClassObject();
 
             default:
                 _ASSERTE(!"Bad Element Type");

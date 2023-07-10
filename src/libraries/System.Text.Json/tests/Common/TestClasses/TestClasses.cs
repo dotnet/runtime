@@ -461,7 +461,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -510,7 +514,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -561,7 +569,11 @@ namespace System.Text.Json.Serialization.Tests
             {
                 if (data is JsonElement element)
                 {
-                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element.GetRawText());
+#if BUILDING_SOURCE_GENERATOR_TESTS
+                    SimpleTestClass obj = JsonSerializer.Deserialize(element, System.Text.Json.SourceGeneration.Tests.CollectionTests_Default.CollectionTestsContext_Default.Default.SimpleTestClass);
+#else
+                    SimpleTestClass obj = JsonSerializer.Deserialize<SimpleTestClass>(element);
+#endif
                     obj.Verify();
                 }
                 else
@@ -1882,6 +1894,15 @@ namespace System.Text.Json.Serialization.Tests
         {
             throw new NotImplementedException("Converter was called");
         }
+
+        // In source-gen, internal converters are not used as fallbacks when custom converters don't provide an implementation.
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        public override int ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            => int.Parse(reader.GetString());
+
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, int value, JsonSerializerOptions options)
+            => writer.WritePropertyName(value.ToString());
+#endif
     }
 
     public class SimpleSnakeCasePolicy : JsonNamingPolicy
@@ -2264,5 +2285,12 @@ namespace System.Text.Json.Serialization.Tests
         {
             Document.Dispose();
         }
+    }
+
+    public class ClassWithRecursiveCollectionTypes
+    {
+        public ClassWithRecursiveCollectionTypes? Nested { get; set; }
+        public List<ClassWithRecursiveCollectionTypes> List { get; set; }
+        public IReadOnlyDictionary<string, ClassWithRecursiveCollectionTypes>? Dictionary { get; set; }
     }
 }

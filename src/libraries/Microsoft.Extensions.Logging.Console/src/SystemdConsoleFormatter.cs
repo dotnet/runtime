@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Console
 {
     internal sealed class SystemdConsoleFormatter : ConsoleFormatter, IDisposable
     {
-        private IDisposable? _optionsReloadToken;
+        private readonly IDisposable? _optionsReloadToken;
 
         public SystemdConsoleFormatter(IOptionsMonitor<ConsoleFormatterOptions> options)
             : base(ConsoleFormatterNames.Systemd)

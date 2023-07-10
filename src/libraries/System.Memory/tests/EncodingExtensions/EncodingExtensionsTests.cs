@@ -149,6 +149,41 @@ namespace System.Text.Tests
         }
 
         [Fact]
+        public static void Convert_Decoder_ReadOnlySequence_Single_Sliced()
+        {
+            Decoder decoder = Encoding.UTF8.GetDecoder();
+            ArrayBufferWriter<char> writer = new ArrayBufferWriter<char>();
+
+            // First, input with no flushing and no leftover data.
+             
+            ReadOnlySequence<byte> inputData = SequenceFactory.Create(
+                new byte[] { 0x00, 0x20, 0x61, 0xC2, 0x80, 0xED, 0x9F, 0xBF }).Slice(1);
+            EncodingExtensions.Convert(decoder, inputData, writer, flush: false, out long charsUsed, out bool completed);
+            Assert.Equal(4, charsUsed);
+            Assert.True(completed);
+
+            // Then, input with no flushing and leftover data.
+
+            inputData = SequenceFactory.Create(
+                new byte[] { 0x00, 0xF4, 0x80 }).Slice(1);
+            EncodingExtensions.Convert(decoder, inputData, writer, flush: false, out charsUsed, out completed);
+            Assert.Equal(0, charsUsed);
+            Assert.True(completed);
+
+            // Then, input with flushing and leftover data (should be replaced).
+
+            inputData = SequenceFactory.Create(
+                new byte[] { 0x00, 0x80, 0x80, 0xC2 }).Slice(1);
+            EncodingExtensions.Convert(decoder, inputData, writer, flush: true, out charsUsed, out completed);
+            Assert.Equal(3, charsUsed);
+            Assert.True(completed);
+
+            // Now make sure all of the data was decoded properly.
+
+            Assert.Equal("\u0020\u0061\u0080\ud7ff\U00100000\ufffd", writer.WrittenSpan.ToString());
+        }
+
+        [Fact]
         public static void Convert_Encoder_ReadOnlySpan_IBufferWriter_ParamChecks()
         {
             Encoder encoder = Encoding.UTF8.GetEncoder();
@@ -230,6 +265,41 @@ namespace System.Text.Tests
             inputData = SequenceFactory.Create(
                 new char[] { '\udc00' }, // (cont.)
                 new char[] { '\ud800' }); // leftover data (should be replaced)
+            EncodingExtensions.Convert(encoder, inputData, writer, flush: true, out bytesUsed, out completed);
+            Assert.Equal(7, bytesUsed);
+            Assert.True(completed);
+
+            // Now make sure all of the data was decoded properly.
+
+            Assert.Equal("\u0020\ud7ff\U00100000\ufffd"u8.ToArray(), writer.WrittenSpan.ToArray());
+        }
+
+        [Fact]
+        public static void Convert_Encoder_ReadOnlySequence_Single_Sliced()
+        {
+            Encoder encoder = Encoding.UTF8.GetEncoder();
+            ArrayBufferWriter<byte> writer = new ArrayBufferWriter<byte>();
+
+            // First, input with no flushing and no leftover data.
+
+            ReadOnlySequence<char> inputData = SequenceFactory.Create(
+                new char[] { ' ', '\u0020', '\ud7ff' }).Slice(1);
+            EncodingExtensions.Convert(encoder, inputData, writer, flush: false, out long bytesUsed, out bool completed);
+            Assert.Equal(4, bytesUsed);
+            Assert.True(completed);
+
+            // Then, input with no flushing and leftover data.
+
+            inputData = SequenceFactory.Create(
+                new char[] { ' ', '\udbc0' }).Slice(1);
+            EncodingExtensions.Convert(encoder, inputData, writer, flush: false, out bytesUsed, out completed);
+            Assert.Equal(0, bytesUsed);
+            Assert.True(completed);
+
+            // Then, input with flushing and leftover data (should be replaced).
+
+            inputData = SequenceFactory.Create(
+                new char[] { ' ', '\udc00', '\ud800' }).Slice(1);
             EncodingExtensions.Convert(encoder, inputData, writer, flush: true, out bytesUsed, out completed);
             Assert.Equal(7, bytesUsed);
             Assert.True(completed);

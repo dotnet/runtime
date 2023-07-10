@@ -12,6 +12,9 @@ namespace System.Collections.Tests
     public abstract partial class List_Generic_Tests<T> : IList_Generic_Tests<T>
     {
         #region IList<T> Helper Methods
+        protected override bool Enumerator_Empty_UsesSingletonInstance => true;
+        protected override bool Enumerator_Empty_Current_UndefinedOperation_Throws => true;
+        protected override bool Enumerator_Empty_ModifiedDuringEnumeration_ThrowsInvalidOperationException => false;
 
         protected override IList<T> GenericIListFactory()
         {

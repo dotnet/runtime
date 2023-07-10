@@ -22,14 +22,11 @@ namespace System.Net.Http
     {
         private readonly HttpHandlerType _underlyingHandler;
 
-        private HttpMessageHandler Handler
 #if TARGET_BROWSER
-            { get; }
+        private HttpMessageHandler Handler { get; }
 #else
-            => _underlyingHandler;
+        private HttpHandlerType Handler => _underlyingHandler;
 #endif
-
-        private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
 
@@ -208,27 +205,21 @@ namespace System.Net.Http
 
         public ClientCertificateOption ClientCertificateOptions
         {
-            get => _clientCertificateOptions;
+            get => _underlyingHandler.ClientCertificateOptions;
             set
             {
                 switch (value)
                 {
                     case ClientCertificateOption.Manual:
-#if TARGET_BROWSER
-                        _clientCertificateOptions = value;
-#else
+#if !TARGET_BROWSER
                         ThrowForModifiedManagedSslOptionsIfStarted();
-                        _clientCertificateOptions = value;
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate(_underlyingHandler.SslOptions.ClientCertificates)!;
 #endif
                         break;
 
                     case ClientCertificateOption.Automatic:
-#if TARGET_BROWSER
-                        _clientCertificateOptions = value;
-#else
+#if !TARGET_BROWSER
                         ThrowForModifiedManagedSslOptionsIfStarted();
-                        _clientCertificateOptions = value;
                         _underlyingHandler.SslOptions.LocalCertificateSelectionCallback = (sender, targetHost, localCertificates, remoteCertificate, acceptableIssuers) => CertificateHelper.GetEligibleClientCertificate()!;
 #endif
                         break;
@@ -236,6 +227,7 @@ namespace System.Net.Http
                     default:
                         throw new ArgumentOutOfRangeException(nameof(value));
                 }
+                _underlyingHandler.ClientCertificateOptions = value;
             }
         }
 

@@ -257,7 +257,7 @@ namespace System.Threading
                     // The NtStatus code for the operation is in the InternalLow field
                     uint ntStatus = (uint)(nint)e.nativeOverlapped->InternalLow;
                     uint errorCode = Interop.Errors.ERROR_SUCCESS;
-                    if (ntStatus != Interop.StatusOptions.STATUS_SUCCESS)
+                    if (!Interop.StatusOptions.NT_SUCCESS(ntStatus))
                     {
                         errorCode = Interop.NtDll.RtlNtStatusToDosError((int)ntStatus);
                     }

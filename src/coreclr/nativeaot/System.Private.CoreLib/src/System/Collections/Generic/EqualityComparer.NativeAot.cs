@@ -12,8 +12,6 @@ namespace System.Collections.Generic
 {
     public abstract partial class EqualityComparer<T> : IEqualityComparer, IEqualityComparer<T>
     {
-        private static EqualityComparer<T> s_default;
-
         // The AOT compiler can flip this to false under certain circumstances.
         private static bool SupportsGenericIEquatableInterfaces => true;
 
@@ -25,23 +23,14 @@ namespace System.Collections.Generic
             // This body serves as a fallback when instantiation-specific implementation is unavailable.
             // If that happens, the compiler ensures we generate data structures to make the fallback work
             // when this method is compiled.
-            Interlocked.CompareExchange(ref s_default,
-                SupportsGenericIEquatableInterfaces
-                ? Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle))
-                : new ObjectEqualityComparer<T>(),
-                null);
-            return s_default;
+            if (SupportsGenericIEquatableInterfaces)
+            {
+                return Unsafe.As<EqualityComparer<T>>(EqualityComparerHelpers.GetComparer(typeof(T).TypeHandle));
+            }
+            return new ObjectEqualityComparer<T>();
         }
 
-        public static EqualityComparer<T> Default
-        {
-            [Intrinsic]
-            get
-            {
-                // Lazy initialization produces smaller code for AOT compilation than initialization in constructor
-                return s_default ?? Create();
-            }
-        }
+        public static EqualityComparer<T> Default { [Intrinsic] get; } = Create();
     }
 
     public sealed partial class EnumEqualityComparer<T> : EqualityComparer<T> where T : struct, Enum

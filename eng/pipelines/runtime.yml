@@ -10,7 +10,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -37,7 +36,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -76,6 +74,7 @@ extends:
           - linux_x64
           - linux_arm
           - linux_arm64
+          - linux_riscv64
           - linux_musl_arm
           - linux_musl_arm64
           - linux_musl_x64
@@ -83,7 +82,6 @@ extends:
           - tizen_armel
           - windows_x86
           - windows_x64
-          - windows_arm
           - windows_arm64
           jobParameters:
             testGroup: innerloop
@@ -99,14 +97,17 @@ extends:
       #
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
-          - linux_x64
-          container: debian-11-gcc12-amd64-20220511124845-b7a6185
+          - gcc_linux_x64
           jobParameters:
             testGroup: innerloop
-            compilerName: gcc
+            nameSuffix: Native_GCC
+            buildArgs: -s clr.native+libs.native+mono+host.native -c $(_BuildConfig) -gcc
+            extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
+            extraStepsParameters:
+              testBuildArgs: skipmanaged skipgeneratelayout skiprestorepackages -gcc
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -154,7 +155,6 @@ extends:
           - linux_musl_arm64
           - windows_x64
           - windows_x86
-          - windows_arm
           - windows_arm64
           - freebsd_x64
           jobParameters:
@@ -195,16 +195,30 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: debug
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Debug
           platforms:
           - linux_x64
           - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
-            testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: nativeaot tree nativeaot
+              liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -218,15 +232,29 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: checked
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Checked
           platforms:
           - windows_x64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
-            testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: 'nativeaot tree ";nativeaot;Loader;Interop;tracing/eventpipe/config;tracing/eventpipe/diagnosticport;tracing/eventpipe/reverse;tracing/eventpipe/processenvironment;tracing/eventpipe/simpleruntimeeventvalidation;" test tracing/eventcounter/runtimecounters.csproj /p:BuildNativeAotFrameworkObjects=true'
+              liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -240,17 +268,35 @@ extends:
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
-          buildConfig: release
+          helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+          buildConfig: Release
           platforms:
           - linux_x64
           - windows_x64
           - osx_x64
+          - linux_arm64
+          - windows_arm64
+          - osx_arm64
+          variables:
+          - name: timeoutPerTestInMinutes
+            value: 60
+          - name: timeoutPerTestCollectionInMinutes
+            value: 180
           jobParameters:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
             buildArgs: -s clr.aot+host.native+libs -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
+            extraStepsParameters:
+              creator: dotnet-bot
+              testBuildArgs: 'nativeaot tree ";nativeaot;tracing/eventpipe/providervalidation;"'
+              liveLibrariesBuildConfig: Release
+            testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
+                parameters:
+                  testGroup: innerloop
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -273,7 +319,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             isSingleFile: true
-            nameSuffix: NativeAOT
+            nameSuffix: NativeAOT_Libraries
             buildArgs: -s clr.aot+host.native+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:RunSmokeTestsOnly=true /p:ArchiveTests=true
             timeoutInMinutes: 240 # Doesn't actually take long, but we've seen the ARM64 Helix queue often get backlogged for 2+ hours
             # extra steps, run tests
@@ -290,13 +336,16 @@ extends:
       # Build and test clr tools
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
-          jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: checked
           platforms:
           - linux_x64
           jobParameters:
-            testGroup: clrTools
             timeoutInMinutes: 120
+            nameSuffix: CLR_Tools_Tests
+            buildArgs: -s clr.aot+clr.iltools+libs+clr.toolstests -c $(_BuildConfig) -test
+            enablePublishTestResults: true
+            testResultsFormat: 'xunit'
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
@@ -334,7 +383,6 @@ extends:
           runtimeFlavor: mono
           platforms:
           - tvossimulator_x64
-          - iossimulator_x86
           - linux_arm
           jobParameters:
             testGroup: innerloop
@@ -353,8 +401,8 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-          - ios_arm
           - linux_musl_x64
+          - linux_riscv64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono
@@ -374,6 +422,7 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - normal
             - WasmTestOnBrowser
@@ -383,6 +432,7 @@ extends:
           platforms:
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
           scenarios:
             - WasmTestOnBrowser
 
@@ -395,6 +445,7 @@ extends:
           runAOT: false
           shouldRunSmokeOnly: false
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # AOT Library tests
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
@@ -405,6 +456,7 @@ extends:
           runAOT: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       - template: /eng/pipelines/common/templates/wasm-library-aot-tests.yml
         parameters:
@@ -422,6 +474,7 @@ extends:
             - browser_wasm
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm Debugger tests
       - template: /eng/pipelines/common/templates/wasm-debugger-tests.yml
@@ -430,6 +483,7 @@ extends:
             - browser_wasm
             - browser_wasm_win
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm runtime tests
       - template: /eng/pipelines/common/templates/wasm-runtime-tests.yml
@@ -437,23 +491,19 @@ extends:
           platforms:
             - browser_wasm
           alwaysRun: ${{ variables.isRollingBuild }}
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
 
-      # BUILD ONLY - Wasm Threading Legs
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
+      # Build and Smoke Tests only - Wasm Threading Legs
+      - template: /eng/pipelines/common/templates/wasm-library-tests.yml
         parameters:
           platforms:
             - browser_wasm
-          nameSuffix: _Threading
-          extraBuildArgs: /p:MonoWasmBuildVariant=multithread
+          nameSuffix: _Threading_Smoke
+          extraBuildArgs: /p:MonoWasmBuildVariant=multithread /p:_WasmPThreadPoolSize=8 /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
-
-      - template: /eng/pipelines/common/templates/wasm-build-only.yml
-        parameters:
-          platforms:
-            - browser_wasm
-          nameSuffix: _Threading_PerfTracing
-          extraBuildArgs: /p:MonoWasmBuildVariant=perftrace
-          alwaysRun: ${{ variables.isRollingBuild }}
+          scenarios:
+            - WasmTestOnBrowser
 
       # WASI/WASM
 
@@ -463,11 +513,20 @@ extends:
             - wasi_wasm
             - wasi_wasm_win
           nameSuffix: '_Smoke'
-          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true
+          extraBuildArgs: /p:EnableAggressiveTrimming=true /p:RunWasmSamples=true /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          shouldContinueOnError: true
           shouldRunSmokeOnly: true
           alwaysRun: ${{ variables.isRollingBuild }}
           scenarios:
             - normal
+
+      - template: /eng/pipelines/common/templates/wasm-build-tests.yml
+        parameters:
+          platforms:
+            - wasi_wasm
+            - wasi_wasm_win
+          extraBuildArgs: /p:AotHostArchitecture=x64 /p:AotHostOS=$(_hostedOS)
+          alwaysRun: ${{ variables.isRollingBuild }}
 
       #
       # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
@@ -654,7 +713,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             condition: >-
@@ -673,11 +731,11 @@ extends:
           buildConfig: release
           platforms:
           - linux_x64
+          - linux_musl_x64
           # - linux_arm64
           # - linux_musl_arm64
           - windows_x64
           # - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             runtimeVariant: crossaot
@@ -719,7 +777,7 @@ extends:
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
-                
+
       - template: /eng/pipelines/common/platform-matrix.yml
         parameters:
           jobTemplate: /eng/pipelines/mono/templates/build-job.yml
@@ -727,6 +785,7 @@ extends:
           buildConfig: release
           platforms:
           - linux_arm64
+          - linux_musl_arm64
           - osx_arm64
           jobParameters:
             runtimeVariant: crossaot
@@ -754,7 +813,6 @@ extends:
           # - linux_musl_arm64
           - windows_x64
           - windows_x86
-          # - windows_arm
           # - windows_arm64
           jobParameters:
             condition: >-
@@ -817,7 +875,6 @@ extends:
           - linux_arm
           - linux_musl_arm
           - linux_musl_arm64
-          - windows_arm
           - windows_arm64
           - windows_x86
           jobParameters:
@@ -914,6 +971,7 @@ extends:
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       #
@@ -929,7 +987,6 @@ extends:
             - linux_musl_arm
             - linux_musl_arm64
             - windows_x86
-            - windows_arm
             - windows_arm64
             - linux_arm
           jobParameters:
@@ -1088,6 +1145,7 @@ extends:
           runtimeFlavor: mono
           platforms:
             - osx_x64
+            - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
               value: 60
@@ -1109,6 +1167,8 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
       #
       # Mono CoreCLR runtime Test executions using live libraries in interpreter mode
@@ -1142,6 +1202,8 @@ extends:
             extraStepsParameters:
               creator: dotnet-bot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
       #
       # Mono CoreCLR runtime Test executions using live libraries and LLVM AOT
       # Only when Mono is changed
@@ -1165,7 +1227,7 @@ extends:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_LLVMAot_RuntimeTests
             runtimeVariant: llvmaot
-            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true 
+            buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
             timeoutInMinutes: 180
 
             condition: >-
@@ -1176,7 +1238,10 @@ extends:
             extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
             extraStepsParameters:
               creator: dotnet-bot
+              llvmAotStepContainer: linux_x64_llvmaot
             testRunNamePrefixSuffix: Mono_Release
+            extraVariablesTemplates:
+              - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
 
       #
       # Libraries Release Test Execution against a release mono runtime.
@@ -1353,11 +1418,11 @@ extends:
       #
       # Sourcebuild legs
       # We have 3 important legs for source-build:
-      # - Centos.7 (ensures that RH keeps working)
+      # - Centos.8 (ensures that known non-portable RID is working)
       # - Linux-x64 portable (used for dependency flow and downstream PR verification)
       # - Banana.24 - Non-existent RID to ensure we don't break RIDs we don't know about.
       #
-      # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.7 in rolling CI,
+      # Running all of these everywhere is wasteful. Run Banana.24 and CentOS.8 in rolling CI,
       # Run Linux-x64 in PR.
 
       - template: /eng/pipelines/common/platform-matrix.yml
@@ -1366,9 +1431,9 @@ extends:
           buildConfig: Release
           helixQueueGroup: pr
           platforms:
-          - SourceBuild_centos7_x64
+          - SourceBuild_centos8_x64
           jobParameters:
-            nameSuffix: centos7SourceBuild
+            nameSuffix: centos8SourceBuild
             extraStepsParameters:
               name: SourceBuildPackages
             timeoutInMinutes: 95

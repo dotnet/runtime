@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'ldelem_get'
+.assembly ASSEMBLY_NAME
 {
 
 

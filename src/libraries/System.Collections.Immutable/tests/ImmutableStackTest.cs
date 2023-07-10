@@ -245,6 +245,10 @@ namespace System.Collections.Immutable.Tests
             Assert.False(stack.IsEmpty);
             Assert.Equal(new[] { 2, 1 }, stack);
 
+            stack = ImmutableStack.Create((ReadOnlySpan<int>)new[] { 1, 2 });
+            Assert.False(stack.IsEmpty);
+            Assert.Equal(new[] { 2, 1 }, stack);
+
             stack = ImmutableStack.CreateRange((IEnumerable<int>)new[] { 1, 2 });
             Assert.False(stack.IsEmpty);
             Assert.Equal(new[] { 2, 1 }, stack);
@@ -264,7 +268,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(stack, items);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsDebuggerTypeProxyAttributeSupported))]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableStack.Create<string>("1", "2", "3"));

@@ -89,7 +89,7 @@ namespace System.Text
             for (; left <= right; left++)
             {
                 Debug.Assert(left < EncodingNameIndices.Length - 1);
-                if (string.CompareOrdinal(invariantName, EncodingNames.AsSpan(EncodingNameIndices[left], EncodingNameIndices[left + 1] - EncodingNameIndices[left])) == 0)
+                if (invariantName.SequenceEqual(EncodingNames.AsSpan(EncodingNameIndices[left], EncodingNameIndices[left + 1] - EncodingNameIndices[left])))
                 {
                     return CodePagesByName[left];
                 }

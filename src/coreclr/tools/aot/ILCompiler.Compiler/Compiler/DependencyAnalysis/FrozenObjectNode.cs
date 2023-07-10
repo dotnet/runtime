@@ -83,6 +83,8 @@ namespace ILCompiler.DependencyAnalysis
                 }
             }
 
+            _data.GetNonRelocationDependencies(ref dependencies, factory);
+
             return dependencies;
         }
 

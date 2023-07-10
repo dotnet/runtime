@@ -16,17 +16,17 @@ namespace System.Reflection
     internal sealed partial class RuntimeMethodInfo : MethodInfo, IRuntimeMethodInfo
     {
         #region Private Data Members
-        private IntPtr m_handle;
-        private RuntimeTypeCache m_reflectedTypeCache;
+        private readonly IntPtr m_handle;
+        private readonly RuntimeTypeCache m_reflectedTypeCache;
         private string? m_name;
         private string? m_toString;
         private ParameterInfo[]? m_parameters;
         private ParameterInfo? m_returnParameter;
-        private BindingFlags m_bindingFlags;
-        private MethodAttributes m_methodAttributes;
+        private readonly BindingFlags m_bindingFlags;
+        private readonly MethodAttributes m_methodAttributes;
         private Signature? m_signature;
-        private RuntimeType m_declaringType;
-        private object? m_keepalive;
+        private readonly RuntimeType m_declaringType;
+        private readonly object? m_keepalive;
         private MethodInvoker? m_invoker;
 
         internal InvocationFlags InvocationFlags
@@ -311,9 +311,9 @@ namespace System.Reflection
             unsafe
             {
                 StackAllocedArguments argStorage = default;
-                Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
+                Span<object?> copyOfParameters = argStorage._args.AsSpan(1);
                 ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(1);
 
                 StackAllocatedByRefs byrefStorage = default;
 #pragma warning disable 8500
@@ -454,7 +454,7 @@ namespace System.Reflection
                     for (int iCopy = 0; iCopy < methodInstantiation.Length; iCopy++)
                         methodInstantiationCopy[iCopy] = methodInstantiation[iCopy];
                     methodInstantiation = methodInstantiationCopy;
-                    return System.Reflection.Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
+                    return Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
                 }
 
                 methodInstantionRuntimeType[i] = rtMethodInstantiationElem;

@@ -205,7 +205,10 @@ ICALL_EXPORT
 void
 ves_icall_mono_delegate_ctor_interp (MonoObject *this_obj, MonoObject *target, gpointer addr);
 
-ICALL_EXPORT MonoObject* mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass, guint8 *deref_args, gpointer *args);
+ICALL_EXPORT gpointer mono_gsharedvt_constrained_call_fast (gpointer mp, MonoGsharedvtConstrainedCallInfo *info, gpointer *out_receiver);
+
+ICALL_EXPORT MonoObject* mono_gsharedvt_constrained_call (gpointer mp, MonoMethod *cmethod, MonoClass *klass,
+														  MonoGsharedvtConstrainedCallInfo *info, guint8 *deref_args, gpointer *args);
 
 ICALL_EXPORT void mono_gsharedvt_value_copy (gpointer dest, gpointer src, MonoClass *klass);
 
@@ -234,6 +237,8 @@ ICALL_EXPORT void mono_throw_invalid_program (const char *msg);
 ICALL_EXPORT void mono_dummy_jit_icall (void);
 
 ICALL_EXPORT void mono_dummy_jit_icall_val (gpointer ptr);
+
+ICALL_EXPORT void mono_dummy_runtime_init_callback (void);
 
 ICALL_EXPORT void mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMethodInfo *info);
 

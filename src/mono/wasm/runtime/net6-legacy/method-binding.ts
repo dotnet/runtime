@@ -1,19 +1,23 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import cwraps from "../cwraps";
-import { Module } from "../imports";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
+import { legacy_c_functions as cwraps } from "../cwraps";
+import { ENVIRONMENT_IS_PTHREAD, Module } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root, conv_string_root } from "../strings";
-import { MonoMethod, MonoObject, MonoType, MonoClass, mono_assert, VoidPtrNull, MarshalType, MonoString, MonoObjectNull, WasmRootBuffer, WasmRoot } from "../types";
+import { stringToMonoStringRoot, stringToInternedMonoStringRoot, monoStringToString } from "../strings";
+import { MonoMethod, MonoObject, VoidPtrNull, MarshalType, MonoString, MonoObjectNull, WasmRootBuffer, WasmRoot } from "../types/internal";
 import { VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
 import { get_js_owned_object_by_gc_handle_ref, _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
-import { BINDING, legacyHelpers } from "./imports";
+import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
+import { mono_log_warn } from "../logging";
+import { assert_bindings } from "../invoke-js";
 
 
 const escapeRE = /[^A-Za-z0-9_$]/g;
@@ -21,26 +25,7 @@ const primitiveConverters = new Map<string, Converter>();
 const _signature_converters = new Map<string, Converter>();
 const boundMethodsByMethod: Map<string, Function> = new Map();
 
-export function _get_type_name(typePtr: MonoType): string {
-    if (!typePtr)
-        return "<null>";
-    return cwraps.mono_wasm_get_type_name(typePtr);
-}
-
-export function _get_type_aqn(typePtr: MonoType): string {
-    if (!typePtr)
-        return "<null>";
-    return cwraps.mono_wasm_get_type_aqn(typePtr);
-}
-
-export function _get_class_name(classPtr: MonoClass): string {
-    if (!classPtr)
-        return "<null>";
-    return cwraps.mono_wasm_get_type_name(cwraps.mono_wasm_class_get_type(classPtr));
-}
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function _create_named_function(name: string, argumentNames: string[], body: string, closure: any): Function {
+function _create_named_function(name: string, argumentNames: string[], body: string, closure: any): Function {
     let result = null;
     let closureArgumentList: any[] | null = null;
     let closureArgumentNames = null;
@@ -59,7 +44,7 @@ export function _create_named_function(name: string, argumentNames: string[], bo
     return result;
 }
 
-export function _create_rebindable_named_function(name: string, argumentNames: string[], body: string, closureArgNames: string[] | null): Function {
+function _create_rebindable_named_function(name: string, argumentNames: string[], body: string, closureArgNames: string[] | null): Function {
     const strictPrefix = "\"use strict\";\r\n";
     let uriPrefix = "", escapedFunctionIdentifier = "";
 
@@ -98,18 +83,18 @@ export function _create_rebindable_named_function(name: string, argumentNames: s
 export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
-    result.set("s", { steps: [{ convert_root: js_string_to_mono_string_root.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert_root: js_string_to_mono_string_interned_root.bind(BINDING) }], size: 0, needs_root: true });
+    result.set("s", { steps: [{ convert_root: stringToMonoStringRoot.bind(Module) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert_root: stringToInternedMonoStringRoot.bind(Module) }], size: 0, needs_root: true });
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
-    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING) }], size: 0, needs_root: true });
-    result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(BINDING, false) }], size: 0, needs_root: true });
+    result.set("o", { steps: [{ convert_root: js_to_mono_obj_root.bind(Module) }], size: 0, needs_root: true });
+    result.set("u", { steps: [{ convert_root: _js_to_mono_uri_root.bind(Module, false) }], size: 0, needs_root: true });
     // ref object aka T&&
-    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(BINDING), byref: true }], size: 0, needs_root: true });
+    result.set("R", { steps: [{ convert_root: js_to_mono_obj_root.bind(Module), byref: true }], size: 0, needs_root: true });
 
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
-    result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
+    result.set("j", { steps: [{ convert: js_to_mono_enum.bind(Module), indirect: "i32" }], size: 8 });
 
     result.set("b", { steps: [{ indirect: "bool" }], size: 8 });
     result.set("i", { steps: [{ indirect: "i32" }], size: 8 });
@@ -175,7 +160,7 @@ function _get_converter_for_marshal_string(args_marshal: string/*ArgsMarshalStri
     return converter;
 }
 
-export function _compile_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
+function _compile_converter_for_marshal_string(args_marshal: string/*ArgsMarshalString*/): Converter {
     const converter = _get_converter_for_marshal_string(args_marshal);
     if (typeof (converter.args_marshal) !== "string")
         throw new Error("Corrupt converter for '" + args_marshal + "'");
@@ -308,7 +293,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_function = <ConverterFunction>compiledFunction;
     } catch (exc) {
         converter.compiled_function = null;
-        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
+        mono_log_warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -341,7 +326,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         converter.compiled_variadic_function = <VariadicConverterFunction>compiledVariadicFunction;
     } catch (exc) {
         converter.compiled_variadic_function = null;
-        console.warn("MONO_WASM: compiling converter failed for", bodyJs, "with error", exc);
+        mono_log_warn("compiling converter failed for", bodyJs, "with error", exc);
         throw exc;
     }
 
@@ -355,7 +340,7 @@ function _maybe_produce_signature_warning(converter: Converter) {
     if (converter.has_warned_about_signature)
         return;
 
-    console.warn("MONO_WASM: Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
+    mono_log_warn("Deprecated raw return value signature: '" + converter.args_marshal + "'. End the signature with '!' instead of 'm'.");
     converter.has_warned_about_signature = true;
 }
 
@@ -382,6 +367,7 @@ export function _decide_if_result_is_marshaled(converter: Converter, argc: numbe
 
 
 export function mono_bind_method(method: MonoMethod, args_marshal: string/*ArgsMarshalString*/, has_this_arg: boolean, friendly_name?: string): Function {
+    assert_legacy_interop();
     if (typeof (args_marshal) !== "string")
         throw new Error("args_marshal argument invalid, expected string");
 
@@ -661,7 +647,7 @@ function _convert_exception_for_method_call(result: WasmRoot<MonoString>, except
     if (exception.value === MonoObjectNull)
         return null;
 
-    const msg = conv_string_root(result);
+    const msg = monoStringToString(result);
     const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
     // console.warn (`error ${msg} at location ${err.stack});
     return err;
@@ -686,4 +672,11 @@ export function mono_method_resolve(fqn: string): MonoMethod {
 
 export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
     return legacyManagedExports._get_call_sig_ref(method, mono_obj ? mono_obj.address : legacyHelpers._null_root.address);
+}
+
+export function assert_legacy_interop(): void {
+    if (MonoWasmThreads) {
+        mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
+    }
+    assert_bindings();
 }

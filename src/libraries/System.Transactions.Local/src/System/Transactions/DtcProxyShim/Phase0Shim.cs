@@ -8,7 +8,7 @@ namespace System.Transactions.DtcProxyShim;
 
 internal sealed class Phase0EnlistmentShim
 {
-    private Phase0NotifyShim _phase0NotifyShim;
+    private readonly Phase0NotifyShim _phase0NotifyShim;
 
     internal ITransactionPhase0EnlistmentAsync? Phase0EnlistmentAsync { get; set; }
 

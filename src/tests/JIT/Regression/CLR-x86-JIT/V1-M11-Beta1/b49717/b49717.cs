@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace Test
 {
     using System;
@@ -9,7 +10,8 @@ namespace Test
     public class AA
     {
         static void DoAnything() { throw new Exception(); }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             bool FALSE = true;
             try

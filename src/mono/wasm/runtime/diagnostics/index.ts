@@ -1,19 +1,22 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import monoWasmThreads from "consts:monoWasmThreads";
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import type {
     DiagnosticOptions,
 } from "./shared/types";
-import { is_nullish } from "../types";
+import { is_nullish } from "../types/internal";
 import type { VoidPtr } from "../types/emscripten";
 import { getController, startDiagnosticServer } from "./browser/controller";
 import * as memory from "../memory";
+import { mono_log_warn } from "../logging";
+import { runtimeHelpers } from "../globals";
 
 
 // called from C on the main thread
 export function mono_wasm_event_pipe_early_startup_callback(): void {
-    if (monoWasmThreads) {
+    if (MonoWasmThreads) {
         return;
     }
 }
@@ -36,26 +39,25 @@ let diagnosticsInitialized = false;
 export async function mono_wasm_init_diagnostics(): Promise<void> {
     if (diagnosticsInitialized)
         return;
-    if (!monoWasmThreads) {
-        console.warn("MONO_WASM: ignoring diagnostics options because this runtime does not support diagnostics");
+    if (!MonoWasmThreads) {
+        mono_log_warn("ignoring diagnostics options because this runtime does not support diagnostics");
         return;
-    } else {
-        const options = diagnostic_options_from_environment();
-        if (!options)
-            return;
-        diagnosticsInitialized = true;
-        if (!is_nullish(options?.server)) {
-            if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
-                throw new Error("server.connectUrl must be a string");
-            }
-            const url = options.server.connectUrl;
-            const suspend = boolsyOption(options.server.suspend);
-            const controller = await startDiagnosticServer(url);
-            if (controller) {
-                diagnosticsServerEnabled = true;
-                if (suspend) {
-                    suspendOnStartup = true;
-                }
+    }
+    const options = diagnostic_options_from_environment();
+    if (!options)
+        return;
+    diagnosticsInitialized = true;
+    if (!is_nullish(options?.server)) {
+        if (options.server.connectUrl === undefined || typeof (options.server.connectUrl) !== "string") {
+            throw new Error("server.connectUrl must be a string");
+        }
+        const url = options.server.connectUrl;
+        const suspend = boolsyOption(options.server.suspend);
+        const controller = await startDiagnosticServer(url);
+        if (controller) {
+            diagnosticsServerEnabled = true;
+            if (suspend) {
+                suspendOnStartup = true;
             }
         }
     }
@@ -79,7 +81,7 @@ function boolsyOption(x: string | boolean): boolean {
 ///  * DOTNET_DiagnosticPorts
 ///
 function diagnostic_options_from_environment(): DiagnosticOptions | null {
-    const val = memory.getEnv("DOTNET_DiagnosticPorts");
+    const val = runtimeHelpers.config.environmentVariables ? runtimeHelpers.config.environmentVariables["DOTNET_DiagnosticPorts"] : undefined;
     if (is_nullish(val))
         return null;
     // TODO: consider also parsing the DOTNET_EnableEventPipe and DOTNET_EventPipeOutputPath, DOTNET_EvnetPipeConfig variables
@@ -96,12 +98,12 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
     if (ports.length === 0)
         return null;
     if (ports.length !== 1) {
-        console.warn("MONO_WASM: multiple diagnostic ports specified, only the last one will be used");
+        mono_log_warn("multiple diagnostic ports specified, only the last one will be used");
     }
     const portSpec = ports[ports.length - 1];
     const components = portSpec.split(",");
     if (components.length < 1 || components.length > 3) {
-        console.warn("MONO_WASM: invalid diagnostic port specification, should be of the form <port>[,<connect>],[<nosuspend|suspend>]");
+        mono_log_warn("invalid diagnostic port specification, should be of the form <port>[,<connect>],[<nosuspend|suspend>]");
         return null;
     }
     const uri: string = components[0];
@@ -124,12 +126,12 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
                 connect = true;
                 break;
             default:
-                console.warn(`MONO_WASM: invalid diagnostic port specification component: ${component}`);
+                mono_log_warn(`invalid diagnostic port specification component: ${component}`);
                 break;
         }
     }
     if (!connect) {
-        console.warn("MONO_WASM: this runtime does not support listening on a diagnostic port; no diagnostic server started");
+        mono_log_warn("this runtime does not support listening on a diagnostic port; no diagnostic server started");
         return null;
     }
     return {
@@ -142,6 +144,7 @@ function diagnostic_options_from_ports_spec(val: string): DiagnosticOptions | nu
 }
 
 export function mono_wasm_diagnostic_server_on_runtime_server_init(out_options: VoidPtr): void {
+    mono_assert(MonoWasmThreads, "The diagnostic server requires threads to be enabled during build time.");
     if (diagnosticsServerEnabled) {
         /* called on the main thread when the runtime is sufficiently initialized */
         const controller = getController();

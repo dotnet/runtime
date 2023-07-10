@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis;
 
 namespace ILLink.Shared.TypeSystemProxy
 {
-	partial struct ParameterProxy
+	internal partial struct ParameterProxy
 	{
 		public ParameterProxy (IParameterSymbol parameter)
 		{

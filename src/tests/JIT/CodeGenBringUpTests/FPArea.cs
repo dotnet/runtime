@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPArea
 {
     const int Pass = 100;
@@ -25,7 +26,8 @@ public class BringUpTest_FPArea
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float y = FPArea(3f, 4f, 5f);
         Console.WriteLine(y);

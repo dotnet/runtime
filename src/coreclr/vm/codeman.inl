@@ -6,10 +6,10 @@
 inline BOOL ExecutionManager::IsCollectibleMethod(const METHODTOKEN& MethodToken)
 {
     WRAPPER_NO_CONTRACT;
-    return MethodToken.m_pRangeSection->flags & RangeSection::RANGE_SECTION_COLLECTIBLE;
+    return MethodToken.m_pRangeSection->_flags & RangeSection::RANGE_SECTION_COLLECTIBLE;
 }
 
 inline TADDR IJitManager::JitTokenToModuleBase(const METHODTOKEN& MethodToken)
 {
-    return MethodToken.m_pRangeSection->LowAddress;
+    return MethodToken.m_pRangeSection->_range.RangeStart();
 }

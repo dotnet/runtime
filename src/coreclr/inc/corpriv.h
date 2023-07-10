@@ -403,9 +403,6 @@ DECLARE_INTERFACE_(ICeeGenInternal, IUnknown)
         ULONG RVA,                          // [IN] RVA for method to return
         UCHAR * *lpBuffer) PURE;             // [OUT] Returned buffer
 
-    STDMETHOD(GetIMapTokenIface) (
-        IUnknown * *pIMapToken) PURE;
-
     STDMETHOD(GenerateCeeFile) () PURE;
 
     STDMETHOD(GetIlSection) (

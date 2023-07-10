@@ -26,7 +26,7 @@ namespace System.Runtime.Loader
         {
             if (isCollectible)
                 KeepLoaderAllocator();
-            using (SafeStringMarshal handle = RuntimeMarshal.MarshalString(Name))
+            using (SafeStringMarshal handle = new SafeStringMarshal(Name))
             {
                 return InternalInitializeNativeALC(thisHandlePtr, handle.Value, representsTPALoadContext, isCollectible);
             }

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 // sigparser.h
-//
-
-//
 
 #ifndef _H_SIGPARSER
 #define _H_SIGPARSER
@@ -716,7 +713,7 @@ class SigParser
         // the arguments.
         //------------------------------------------------------------------------
         __checkReturn
-        HRESULT SkipMethodHeaderSignature(uint32_t *pcArgs);
+        HRESULT SkipMethodHeaderSignature(uint32_t *pcArgs, bool skipReturnType = true);
 
         //------------------------------------------------------------------------
         // Skip a sub signature (as immediately follows an ELEMENT_TYPE_FNPTR).

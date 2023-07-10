@@ -4,13 +4,15 @@
 
 using System;
 using System.Globalization;
+using Xunit;
 
 
 namespace DefaultNamespace
 {
     public class cinfo
     {
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Console.Out.WriteLine("Char Class tests");
 

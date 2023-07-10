@@ -116,7 +116,8 @@ namespace System
         public static bool FileCreateCaseSensitive => IsCaseSensitiveOS;
 #endif
 
-        public static bool IsThreadingSupported => !IsBrowser && !IsWasi;
+        public static bool IsThreadingSupported => (!IsWasi && !IsBrowser) || IsWasmThreadingSupported;
+        public static bool IsWasmThreadingSupported => IsBrowser && IsEnvironmentVariableTrue("IsBrowserThreadingSupported");
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
 
         public static bool IsStartingProcessesSupported => !IsiOS && !IstvOS;
@@ -154,6 +155,7 @@ namespace System
         public static bool IsLineNumbersSupported => !IsNativeAot;
 
         public static bool IsInContainer => GetIsInContainer();
+        public static bool IsNotInContainer => !IsInContainer;
         public static bool SupportsComInterop => IsWindows && IsNotMonoRuntime && !IsNativeAot; // matches definitions in clr.featuredefines.props
 
 #if NETCOREAPP
@@ -201,6 +203,7 @@ namespace System
         public static bool IsDebuggerTypeProxyAttributeSupported => !IsNativeAot;
         public static bool HasAssemblyFiles => !string.IsNullOrEmpty(typeof(PlatformDetection).Assembly.Location);
         public static bool HasHostExecutable => HasAssemblyFiles; // single-file don't have a host
+        public static bool IsSingleFile => !HasAssemblyFiles;
 
         private static volatile Tuple<bool> s_lazyNonZeroLowerBoundArraySupported;
         public static bool IsNonZeroLowerBoundArraySupported
@@ -301,6 +304,7 @@ namespace System
         private static readonly Lazy<bool> s_supportsTls12 = new Lazy<bool>(GetTls12Support);
         private static readonly Lazy<bool> s_supportsTls13 = new Lazy<bool>(GetTls13Support);
         private static readonly Lazy<bool> s_sendsCAListByDefault = new Lazy<bool>(GetSendsCAListByDefault);
+        private static readonly Lazy<bool> s_supportsSha3 = new Lazy<bool>(GetSupportsSha3);
 
         public static bool SupportsTls10 => s_supportsTls10.Value;
         public static bool SupportsTls11 => s_supportsTls11.Value;
@@ -308,6 +312,8 @@ namespace System
         public static bool SupportsTls13 => s_supportsTls13.Value;
         public static bool SendsCAListByDefault => s_sendsCAListByDefault.Value;
         public static bool SupportsSendingCustomCANamesInTls => UsesAppleCrypto || IsOpenSslSupported || (PlatformDetection.IsWindows8xOrLater && SendsCAListByDefault);
+        public static bool SupportsSha3 => s_supportsSha3.Value;
+        public static bool DoesNotSupportSha3 => !s_supportsSha3.Value;
 
         private static readonly Lazy<bool> s_largeArrayIsNotSupported = new Lazy<bool>(IsLargeArrayNotSupported);
 
@@ -346,10 +352,16 @@ namespace System
         private static readonly Lazy<bool> m_isInvariant = new Lazy<bool>(()
             => (bool?)Type.GetType("System.Globalization.GlobalizationMode")?.GetProperty("Invariant", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
 
+        private static readonly Lazy<bool> m_isHybrid = new Lazy<bool>(()
+            => (bool?)Type.GetType("System.Globalization.GlobalizationMode")?.GetProperty("Hybrid", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) == true);
+
         private static readonly Lazy<Version> m_icuVersion = new Lazy<Version>(GetICUVersion);
         public static Version ICUVersion => m_icuVersion.Value;
 
         public static bool IsInvariantGlobalization => m_isInvariant.Value;
+        public static bool IsHybridGlobalizationOnBrowser => m_isHybrid.Value && IsBrowser;
+        public static bool IsHybridGlobalizationOnOSX => m_isHybrid.Value && (IsOSX || IsMacCatalyst || IsiOS || IstvOS);
+        public static bool IsNotHybridGlobalizationOnBrowser => !IsHybridGlobalizationOnBrowser;
         public static bool IsNotInvariantGlobalization => !IsInvariantGlobalization;
         public static bool IsIcuGlobalization => ICUVersion > new Version(0, 0, 0, 0);
         public static bool IsNlsGlobalization => IsNotInvariantGlobalization && !IsIcuGlobalization;
@@ -422,8 +434,10 @@ namespace System
 #pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
                 SslProtocols.Ssl3 => "SSL 3.0",
 #pragma warning restore CS0618
+#pragma warning disable SYSLIB0039 // TLS versions 1.0 and 1.1 have known vulnerabilities
                 SslProtocols.Tls => "TLS 1.0",
                 SslProtocols.Tls11 => "TLS 1.1",
+#pragma warning restore SYSLIB0039
                 SslProtocols.Tls12 => "TLS 1.2",
 #if !NETFRAMEWORK
                 SslProtocols.Tls13 => "TLS 1.3",
@@ -493,6 +507,7 @@ namespace System
             return (protocol & s_androidSupportedSslProtocols.Value) == protocol;
         }
 
+#pragma warning disable SYSLIB0039 // TLS versions 1.0 and 1.1 have known vulnerabilities
         private static bool GetTls10Support()
         {
             // on macOS and Android TLS 1.0 is supported.
@@ -531,6 +546,7 @@ namespace System
 
             return OpenSslGetTlsSupport(SslProtocols.Tls11);
         }
+#pragma warning restore SYSLIB0039
 
         private static bool GetTls12Support()
         {
@@ -638,6 +654,26 @@ namespace System
 
             return assemblyConfigurationAttribute != null &&
                 string.Equals(assemblyConfigurationAttribute.Configuration, configuration, StringComparison.InvariantCulture);
+        }
+
+        private static bool GetSupportsSha3()
+        {
+            if (IsOpenSslSupported)
+            {
+                if (OpenSslVersion.Major >= 3)
+                {
+                    return true;
+                }
+
+                return OpenSslVersion.Major == 1 && OpenSslVersion.Minor >= 1 && OpenSslVersion.Build >= 1;
+            }
+
+            if (IsWindowsVersionOrLater(10, 0, 25324))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

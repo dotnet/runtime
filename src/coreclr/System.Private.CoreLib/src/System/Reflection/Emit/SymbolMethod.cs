@@ -8,13 +8,13 @@ namespace System.Reflection.Emit
     internal sealed class SymbolMethod : MethodInfo
     {
         #region Private Data Members
-        private ModuleBuilder m_module;
-        private Type m_containingType;
-        private string m_name;
-        private CallingConventions m_callingConvention;
-        private Type m_returnType;
-        private int m_token;
-        private Type[] m_parameterTypes;
+        private readonly ModuleBuilder m_module;
+        private readonly Type m_containingType;
+        private readonly string m_name;
+        private readonly CallingConventions m_callingConvention;
+        private readonly Type m_returnType;
+        private readonly int m_token;
+        private readonly Type[] m_parameterTypes;
         #endregion
 
         #region Constructor

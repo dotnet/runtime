@@ -19,7 +19,7 @@ namespace System.Net.Http
         {
         }
 #endif
-        private static Lazy<bool> s_trailersSupported = new Lazy<bool>(GetTrailersSupported);
+        private static readonly Lazy<bool> s_trailersSupported = new Lazy<bool>(GetTrailersSupported);
         public static bool OsSupportsTrailers => s_trailersSupported.Value;
 
         public static HttpHeaders GetResponseTrailers(HttpResponseMessage response)

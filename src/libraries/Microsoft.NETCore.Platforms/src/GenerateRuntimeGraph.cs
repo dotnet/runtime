@@ -130,7 +130,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
 
         public override bool Execute()
         {
-            if (RuntimeGroups != null && RuntimeGroups.Any() && RuntimeJson == null)
+            if (RuntimeGroups != null && RuntimeGroups.Length != 0 && RuntimeJson == null)
             {
                 Log.LogError($"{nameof(RuntimeJson)} argument must be specified when {nameof(RuntimeGroups)} is specified.");
                 return false;
@@ -395,7 +395,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             return true;
         }
 
-        private static XNamespace s_dgmlns = @"http://schemas.microsoft.com/vs/2009/dgml";
+        private static readonly XNamespace s_dgmlns = @"http://schemas.microsoft.com/vs/2009/dgml";
         private static void WriteRuntimeGraph(RuntimeGraph graph, string dependencyGraphFilePath)
         {
 

@@ -319,7 +319,7 @@ namespace System.ComponentModel.Composition.Registration
                 }
             }
 
-            if (_interfaceExports.Any())
+            if (_interfaceExports.Count != 0)
             {
                 if (_typeExportBuilders != null)
                 {
@@ -443,7 +443,7 @@ namespace System.ComponentModel.Composition.Registration
 
         internal void BuildPropertyAttributes(Type type, ref List<Tuple<object, List<Attribute>>> configuredMembers)
         {
-            if (_propertyImports.Any() || _propertyExports.Any())
+            if (_propertyImports.Count != 0 || _propertyExports.Count != 0)
             {
                 foreach (PropertyInfo pi in type.GetProperties())
                 {

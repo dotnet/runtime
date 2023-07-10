@@ -1,5 +1,6 @@
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/eglib/glib.h>
 
 #if defined (HOST_WASM)
 

@@ -3,18 +3,20 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class Program
+public class Program
 {
     private static int s_result = 100;
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test(1L << 32);
         return s_result;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void Test(long i)
+    internal static void Test(long i)
     {
         if (i == 0)
             return;

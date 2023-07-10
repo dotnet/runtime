@@ -860,167 +860,6 @@ mono_gc_scan_for_specific_ref (GCObject *key, gboolean precise)
 		find_pinning_ref_from_thread ((char*)key, sizeof (GCObject));
 }
 
-#ifndef SGEN_WITHOUT_MONO
-
-static MonoDomain *check_domain = NULL;
-
-static void
-check_obj_not_in_domain (MonoObject **o)
-{
-	g_assert (((*o))->vtable->domain != check_domain);
-}
-
-
-static void
-check_obj_not_in_domain_callback (GCObject **o, void *gc_data)
-{
-	g_assert ((*o)->vtable->domain != check_domain);
-}
-
-void
-sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
-{
-	void **start_root;
-	RootRecord *root;
-	check_domain = domain;
-	SGEN_HASH_TABLE_FOREACH (&sgen_roots_hash [root_type], void **, start_root, RootRecord *, root) {
-		SgenDescriptor desc = root->root_desc;
-
-		/* The MonoDomain struct is allowed to hold
-		   references to objects in its own domain. */
-		if (start_root == (void**)domain)
-			continue;
-
-		switch (desc & ROOT_DESC_TYPE_MASK) {
-		case ROOT_DESC_BITMAP:
-			desc >>= ROOT_DESC_TYPE_SHIFT;
-			while (desc) {
-				if ((desc & 1) && *start_root)
-					check_obj_not_in_domain ((MonoObject **)*start_root);
-				desc >>= 1;
-				start_root++;
-			}
-			break;
-		case ROOT_DESC_COMPLEX: {
-			gsize *bitmap_data = (gsize *)sgen_get_complex_descriptor_bitmap (desc);
-			int bwords = (int)((*bitmap_data) - 1);
-			void **start_run = start_root;
-			bitmap_data++;
-			while (bwords-- > 0) {
-				gsize bmap = *bitmap_data++;
-				void **objptr = start_run;
-				while (bmap) {
-					if ((bmap & 1) && *objptr)
-						check_obj_not_in_domain ((MonoObject **)*objptr);
-					bmap >>= 1;
-					++objptr;
-				}
-				start_run += GC_BITS_PER_WORD;
-			}
-			break;
-		}
-		case ROOT_DESC_VECTOR: {
-			void **p;
-
-			for (p = start_root; p < (void**)root->end_root; p++) {
-				if (*p)
-					check_obj_not_in_domain ((MonoObject **)*p);
-			}
-			break;
-		}
-		case ROOT_DESC_USER: {
-			SgenUserRootMarkFunc marker = sgen_get_user_descriptor_func (desc);
-			marker (start_root, check_obj_not_in_domain_callback, NULL);
-			break;
-		}
-		case ROOT_DESC_RUN_LEN:
-			g_assert_not_reached ();
-		default:
-			g_assert_not_reached ();
-		}
-	} SGEN_HASH_TABLE_FOREACH_END;
-
-	check_domain = NULL;
-}
-
-static gboolean
-is_xdomain_ref_allowed (GCObject **ptr, GCObject *obj, MonoDomain *domain)
-{
-	return FALSE;
-}
-
-static void
-check_reference_for_xdomain (GCObject **ptr, GCObject *obj, MonoDomain *domain)
-{
-	MonoObject *ref = *ptr;
-	size_t offset = (char*)(ptr) - (char*)obj;
-	MonoClass *klass;
-	MonoClassField *field;
-	char *str;
-
-	if (!ref || ref->vtable->domain == domain)
-		return;
-	if (is_xdomain_ref_allowed (ptr, obj, domain))
-		return;
-
-	field = NULL;
-	for (klass = obj->vtable->klass; klass; klass = m_class_get_parent (klass)) {
-		gpointer iter = NULL;
-		MonoClassField *cur;
-		while ((cur = mono_class_get_fields_internal (klass, &iter))) {
-			/* metadata-update: there are no domains in .NET */
-			g_assert (!m_field_is_from_update (cur));
-			if (m_field_get_offset (cur) == offset) {
-				field = cur;
-				break;
-			}
-		}
-		if (field)
-			break;
-	}
-
-	if (ref->vtable->klass == mono_defaults.string_class) {
-		ERROR_DECL (error);
-		str = mono_string_to_utf8_checked_internal ((MonoString*)ref, error);
-		mono_error_cleanup (error);
-	} else
-		str = NULL;
-	g_print ("xdomain reference in %p (%s.%s) at offset %zu (%s) to %p (%s.%s) (%s)  -  pointed to by:\n",
-			obj, m_class_get_name_space (obj->vtable->klass), m_class_get_name (obj->vtable->klass),
-			offset, field ? field->name : "",
-			ref, m_class_get_name_space (ref->vtable->klass), m_class_get_name (ref->vtable->klass), str ? str : "");
-	mono_gc_scan_for_specific_ref (obj, TRUE);
-	if (str)
-		g_free (str);
-}
-
-#undef HANDLE_PTR
-#define HANDLE_PTR(ptr,obj)	check_reference_for_xdomain ((ptr), (obj), domain)
-
-static void
-scan_object_for_xdomain_refs (GCObject *obj, mword size, void *data)
-{
-	char *start = (char*)obj;
-	MonoVTable *vtable = SGEN_LOAD_VTABLE (obj);
-	MonoDomain *domain = vtable->domain;
-	SgenDescriptor desc = sgen_vtable_get_descriptor (vtable);
-
-	#include "sgen-scan-object.h"
-}
-
-void
-sgen_check_for_xdomain_refs (void)
-{
-	sgen_scan_area_with_callback (sgen_nursery_section->data, sgen_nursery_section->end_data,
-			(IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL, FALSE, TRUE);
-
-	sgen_major_collector.iterate_objects (ITERATE_OBJECTS_SWEEP_ALL, (IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
-
-	sgen_los_iterate_objects ((IterateObjectCallbackFunc)scan_object_for_xdomain_refs, NULL);
-}
-
-#endif
-
 /* If not null, dump the heap after each collection into this file */
 static FILE *heap_dump_file = NULL;
 
@@ -1210,11 +1049,6 @@ sgen_find_object_for_ptr (char *ptr)
 #else
 
 void
-sgen_check_for_xdomain_refs (void)
-{
-}
-
-void
 sgen_check_heap_marked (gboolean nursery_must_be_pinned)
 {
 }
@@ -1266,11 +1100,6 @@ sgen_debug_verify_nursery (gboolean do_dump_nursery_content)
 
 void
 sgen_dump_occupied (char *start, char *end, char *section_start)
-{
-}
-
-void
-sgen_scan_for_registered_roots_in_domain (MonoDomain *domain, int root_type)
 {
 }
 

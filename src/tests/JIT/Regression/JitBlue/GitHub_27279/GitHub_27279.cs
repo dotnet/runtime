@@ -3,9 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class GitHub_27279
 {
-    public unsafe static int Main()
+    [Fact]
+    public unsafe static int TestEntryPoint()
     {
         bool res = Unsafe.IsAddressLessThan(ref Unsafe.AsRef<byte>((void*)(-1)), ref Unsafe.AsRef<byte>((void*)(1)));
         Console.WriteLine(res.ToString());

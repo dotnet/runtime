@@ -97,8 +97,7 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client decides to form the custom attribute blob themselves
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             m_containingType.ThrowIfCreated();
             RuntimeTypeBuilder.DefineCustomAttribute(
@@ -106,13 +105,6 @@ namespace System.Reflection.Emit
                 m_tkProperty,
                 m_moduleBuilder.GetMethodMetadataToken(con),
                 binaryAttribute);
-        }
-
-        // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_containingType.ThrowIfCreated();
-            customBuilder.CreateCustomAttribute(m_moduleBuilder, m_tkProperty);
         }
 
         // Not supported functions in dynamic module.
@@ -202,13 +194,13 @@ namespace System.Reflection.Emit
         public override Type? ReflectedType => m_containingType;
 
         // These are package private so that TypeBuilder can access them.
-        private string m_name; // The name of the property
-        private int m_tkProperty; // The token of this property
-        private RuntimeModuleBuilder m_moduleBuilder;
-        private PropertyAttributes m_attributes; // property's attribute flags
-        private Type m_returnType; // property's return type
+        private readonly string m_name; // The name of the property
+        private readonly int m_tkProperty; // The token of this property
+        private readonly RuntimeModuleBuilder m_moduleBuilder;
+        private readonly PropertyAttributes m_attributes; // property's attribute flags
+        private readonly Type m_returnType; // property's return type
         private MethodInfo? m_getMethod;
         private MethodInfo? m_setMethod;
-        private RuntimeTypeBuilder m_containingType;
+        private readonly RuntimeTypeBuilder m_containingType;
     }
 }

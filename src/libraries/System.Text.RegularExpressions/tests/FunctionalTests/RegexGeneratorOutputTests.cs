@@ -70,7 +70,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
                     /// ○ "proto" capture group.<br/>
@@ -354,6 +356,17 @@ namespace System.Text.RegularExpressions.Tests
                         [MethodImpl(MethodImplOptions.AggressiveInlining)]
                         internal static bool IsWordChar(char ch)
                         {
+                            // Mask of Unicode categories that combine to form [\w]
+                            const int WordCategoriesMask =
+                                1 << (int)UnicodeCategory.UppercaseLetter |
+                                1 << (int)UnicodeCategory.LowercaseLetter |
+                                1 << (int)UnicodeCategory.TitlecaseLetter |
+                                1 << (int)UnicodeCategory.ModifierLetter |
+                                1 << (int)UnicodeCategory.OtherLetter |
+                                1 << (int)UnicodeCategory.NonSpacingMark |
+                                1 << (int)UnicodeCategory.DecimalDigitNumber |
+                                1 << (int)UnicodeCategory.ConnectorPunctuation;
+
                             // Bitmap for whether each character 0 through 127 is in [\w]
                             ReadOnlySpan<byte> ascii = new byte[]
                             {
@@ -365,18 +378,7 @@ namespace System.Text.RegularExpressions.Tests
                             int chDiv8 = ch >> 3;
                             return (uint)chDiv8 < (uint)ascii.Length ?
                                 (ascii[chDiv8] & (1 << (ch & 0x7))) != 0 :
-                                CharUnicodeInfo.GetUnicodeCategory(ch) switch
-                                {
-                                    UnicodeCategory.UppercaseLetter or
-                                    UnicodeCategory.LowercaseLetter or
-                                    UnicodeCategory.TitlecaseLetter or
-                                    UnicodeCategory.ModifierLetter or
-                                    UnicodeCategory.OtherLetter or
-                                    UnicodeCategory.NonSpacingMark or
-                                    UnicodeCategory.DecimalDigitNumber or
-                                    UnicodeCategory.ConnectorPunctuation => true,
-                                    _ => false,
-                                };
+                                (WordCategoriesMask & (1 << (int)CharUnicodeInfo.GetUnicodeCategory(ch))) != 0;
                         }
 
                         /// <summary>Pushes 2 values onto the backtracking stack.</summary>
@@ -431,7 +433,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
                     /// ○ Match a whitespace character atomically any number of times.<br/>
@@ -727,7 +731,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>[A-Za-z]+</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
                     /// </code>
@@ -864,8 +870,8 @@ namespace System.Text.RegularExpressions.Tests
                         /// <summary>Whether <see cref="s_defaultTimeout"/> is non-infinite.</summary>
                         internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
 
-                        /// <summary>Cached data to efficiently search for a character in the set "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".</summary>
-                        internal static readonly IndexOfAnyValues<char> s_asciiLetters = IndexOfAnyValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+                        /// <summary>Supports searching for characters in or not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".</summary>
+                        internal static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
                     }
                 }
                 """

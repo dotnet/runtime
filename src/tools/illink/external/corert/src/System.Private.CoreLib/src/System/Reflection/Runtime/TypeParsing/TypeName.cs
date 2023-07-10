@@ -7,7 +7,7 @@ using System.Collections.Generic;
 namespace System.Reflection.Runtime.TypeParsing
 {
 	//
-	// The TypeName class is the base class for a family of types that represent the nodes in a parse tree for 
+	// The TypeName class is the base class for a family of types that represent the nodes in a parse tree for
 	// assembly-qualified type names.
 	//
 	public abstract class TypeName
@@ -206,7 +206,7 @@ namespace System.Reflection.Runtime.TypeParsing
 			{
 				s += sep;
 				sep = ",";
-				AssemblyQualifiedTypeName assemblyQualifiedTypeArgument = genericTypeArgument as AssemblyQualifiedTypeName;
+				AssemblyQualifiedTypeName? assemblyQualifiedTypeArgument = genericTypeArgument as AssemblyQualifiedTypeName;
 				if (assemblyQualifiedTypeArgument == null || assemblyQualifiedTypeArgument.AssemblyName == null)
 					s += genericTypeArgument.ToString();
 				else

@@ -78,7 +78,7 @@ namespace System.Text.Json.Serialization.Metadata
             return converters;
 
             void Add(JsonConverter converter) =>
-                converters.Add(converter.TypeToConvert, converter);
+                converters.Add(converter.Type!, converter);
         }
 
         private static JsonConverter GetBuiltInConverter(Type typeToConvert)
@@ -121,7 +121,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal static JsonConverter? GetCustomConverterForMember(Type typeToConvert, MemberInfo memberInfo, JsonSerializerOptions options)
+        private static JsonConverter? GetCustomConverterForMember(Type typeToConvert, MemberInfo memberInfo, JsonSerializerOptions options)
         {
             Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
             Debug.Assert(typeToConvert != null);
@@ -154,9 +154,9 @@ namespace System.Text.Json.Serialization.Metadata
 
             // Expand if factory converter & validate.
             converter = options.ExpandConverterFactory(converter, typeToConvert);
-            if (!converter.TypeToConvert.IsInSubtypeRelationshipWith(typeToConvert))
+            if (!converter.Type!.IsInSubtypeRelationshipWith(typeToConvert))
             {
-                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), converter.TypeToConvert);
+                ThrowHelper.ThrowInvalidOperationException_SerializationConverterNotCompatible(converter.GetType(), typeToConvert);
             }
 
             JsonSerializerOptions.CheckConverterNullabilityIsSameAsPropertyType(converter, typeToConvert);

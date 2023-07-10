@@ -37,7 +37,7 @@ namespace System.Net
 {
     internal sealed class HttpEndPointManager
     {
-        private static Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>> s_ipEndPoints = new Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>>();
+        private static readonly Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>> s_ipEndPoints = new Dictionary<IPAddress, Dictionary<int, HttpEndPointListener>>();
 
         private HttpEndPointManager()
         {
@@ -83,10 +83,10 @@ namespace System.Net
             {
                 // root can't be -1 here, since we've already checked for ending '/' in ListenerPrefix.
                 int root = p.IndexOf('/', colon, p.Length - colon);
-                string portString = p.Substring(colon + 1, root - colon - 1);
+                ReadOnlySpan<char> portString = p.AsSpan(colon + 1, root - colon - 1);
 
                 int port;
-                if (!int.TryParse(portString, out port) || port <= 0 || port >= 65536)
+                if (!int.TryParse(portString, out port) || port is <= 0 or >= 65536)
                 {
                     throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.net_invalid_port);
                 }
@@ -135,9 +135,9 @@ namespace System.Net
             }
 
             Dictionary<int, HttpEndPointListener>? p;
-            if (s_ipEndPoints.ContainsKey(addr))
+            if (s_ipEndPoints.TryGetValue(addr, out Dictionary<int, HttpEndPointListener>? value))
             {
-                p = s_ipEndPoints[addr];
+                p = value;
             }
             else
             {
@@ -146,9 +146,9 @@ namespace System.Net
             }
 
             HttpEndPointListener? epl;
-            if (p.ContainsKey(port))
+            if (p.TryGetValue(port, out HttpEndPointListener? epListener))
             {
-                epl = p[port];
+                epl = epListener;
             }
             else
             {

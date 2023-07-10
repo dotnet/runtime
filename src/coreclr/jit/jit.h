@@ -45,6 +45,9 @@
 #if defined(HOST_LOONGARCH64)
 #error Cannot define both HOST_X86 and HOST_LOONGARCH64
 #endif
+#if defined(HOST_RISCV64)
+#error Cannot define both HOST_X86 and HOST_RISCV64
+#endif
 #elif defined(HOST_AMD64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_AMD64 and HOST_X86
@@ -57,6 +60,9 @@
 #endif
 #if defined(HOST_LOONGARCH64)
 #error Cannot define both HOST_AMD64 and HOST_LOONGARCH64
+#endif
+#if defined(HOST_RISCV64)
+#error Cannot define both HOST_AMD64 and HOST_RISCV64
 #endif
 #elif defined(HOST_ARM)
 #if defined(HOST_X86)
@@ -71,6 +77,9 @@
 #if defined(HOST_LOONGARCH64)
 #error Cannot define both HOST_ARM and HOST_LOONGARCH64
 #endif
+#if defined(HOST_RISCV64)
+#error Cannot define both HOST_ARM and HOST_RISCV64
+#endif
 #elif defined(HOST_ARM64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_ARM64 and HOST_X86
@@ -84,6 +93,9 @@
 #if defined(HOST_LOONGARCH64)
 #error Cannot define both HOST_ARM64 and HOST_LOONGARCH64
 #endif
+#if defined(HOST_RISCV64)
+#error Cannot define both HOST_ARM64 and HOST_RISCV64
+#endif
 #elif defined(HOST_LOONGARCH64)
 #if defined(HOST_X86)
 #error Cannot define both HOST_LOONGARCH64 and HOST_X86
@@ -96,6 +108,25 @@
 #endif
 #if defined(HOST_ARM64)
 #error Cannot define both HOST_LOONGARCH64 and HOST_ARM64
+#endif
+#if defined(HOST_RISCV64)
+#error Cannot define both HOST_LOONGARCH64 and HOST_RISCV64
+#endif
+#elif defined(HOST_RISCV64)
+#if defined(HOST_X86)
+#error Cannot define both HOST_RISCV64 and HOST_X86
+#endif
+#if defined(HOST_AMD64)
+#error Cannot define both HOST_RISCV64 and HOST_AMD64
+#endif
+#if defined(HOST_ARM)
+#error Cannot define both HOST_RISCV64 and HOST_ARM
+#endif
+#if defined(HOST_ARM64)
+#error Cannot define both HOST_RISCV64 and HOST_ARM64
+#endif
+#if defined(HOST_LOONGARCH64)
+#error Cannot define both HOST_RISCV64 and HOST_LOONGARCH64
 #endif
 #else
 #error Unsupported or unset host architecture
@@ -114,6 +145,9 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_X86 and TARGET_LOONGARCH64
 #endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_X86 and TARGET_RISCV64
+#endif
 #elif defined(TARGET_AMD64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_AMD64 and TARGET_X86
@@ -126,6 +160,9 @@
 #endif
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_AMD64 and TARGET_LOONGARCH64
+#endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_AMD64 and TARGET_RISCV64
 #endif
 #elif defined(TARGET_ARM)
 #if defined(TARGET_X86)
@@ -140,6 +177,9 @@
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_ARM and TARGET_LOONGARCH64
 #endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_ARM and TARGET_RISCV64
+#endif
 #elif defined(TARGET_ARM64)
 #if defined(TARGET_X86)
 #error Cannot define both TARGET_ARM64 and TARGET_X86
@@ -152,6 +192,9 @@
 #endif
 #if defined(TARGET_LOONGARCH64)
 #error Cannot define both TARGET_ARM64 and TARGET_LOONGARCH64
+#endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_ARM64 and TARGET_RISCV64
 #endif
 #elif defined(TARGET_LOONGARCH64)
 #if defined(TARGET_X86)
@@ -166,6 +209,26 @@
 #if defined(TARGET_ARM64)
 #error Cannot define both TARGET_LOONGARCH64 and TARGET_ARM64
 #endif
+#if defined(TARGET_RISCV64)
+#error Cannot define both TARGET_LOONGARCH64 and TARGET_RISCV64
+#endif
+#elif defined(TARGET_RISCV64)
+#if defined(TARGET_X86)
+#error Cannot define both TARGET_RISCV64 and TARGET_X86
+#endif
+#if defined(TARGET_AMD64)
+#error Cannot define both TARGET_RISCV64 and TARGET_AMD64
+#endif
+#if defined(TARGET_ARM)
+#error Cannot define both TARGET_RISCV64 and TARGET_ARM
+#endif
+#if defined(TARGET_ARM64)
+#error Cannot define both TARGET_RISCV64 and TARGET_ARM64
+#endif
+#if defined(TARGET_LOONGARCH64)
+#error Cannot define both TARGET_RISCV64 and TARGET_LOONGARCH64
+#endif
+
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -215,6 +278,8 @@
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_ARM64 // 0xAA64
 #elif defined(TARGET_LOONGARCH64)
 #define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_LOONGARCH64 // 0x6264
+#elif defined(TARGET_RISCV64)
+#define IMAGE_FILE_MACHINE_TARGET IMAGE_FILE_MACHINE_RISCV64 // 0x5641
 #else
 #error Unsupported or unset target architecture
 #endif
@@ -269,7 +334,8 @@ typedef ptrdiff_t ssize_t;
 #define UNIX_LOONGARCH64_ONLY(x)
 #endif // TARGET_LOONGARCH64
 
-#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || !defined(TARGET_64BIT) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) ||       \
+    defined(TARGET_RISCV64)
 #define FEATURE_PUT_STRUCT_ARG_STK 1
 #endif
 
@@ -281,7 +347,7 @@ typedef ptrdiff_t ssize_t;
 #define UNIX_AMD64_ABI_ONLY(x)
 #endif // defined(UNIX_AMD64_ABI)
 
-#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(UNIX_AMD64_ABI) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define MULTIREG_HAS_SECOND_GC_RET 1
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY_ARG(x) , x
 #define MULTIREG_HAS_SECOND_GC_RET_ONLY(x) x
@@ -295,7 +361,7 @@ typedef ptrdiff_t ssize_t;
 // the official Arm64 ABI.
 // Case: splitting 16 byte struct between x7 and stack
 // LoongArch64's ABI supports FEATURE_ARG_SPLIT which splitting 16 byte struct between a7 and stack.
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 #define FEATURE_ARG_SPLIT 1
 #else
 #define FEATURE_ARG_SPLIT 0
@@ -360,6 +426,7 @@ typedef double weight_t;
 // See eeFindJitDataOffs and eeGetJitDataOffs in Compiler.hpp
 #define FLD_GLOBAL_DS ((CORINFO_FIELD_HANDLE)-4)
 #define FLD_GLOBAL_FS ((CORINFO_FIELD_HANDLE)-8)
+#define FLD_GLOBAL_GS ((CORINFO_FIELD_HANDLE)-12)
 
 class GlobalJitOptions
 {
@@ -426,17 +493,14 @@ public:
                               // case of single block methods.
 #define COUNT_LOOPS 0         // Collect stats about loops, such as the total number of natural loops, a histogram of
                               // the number of loop exits, etc.
-#define DATAFLOW_ITER 0       // Count iterations in lexical CSE and constant folding dataflow.
 #define DISPLAY_SIZES 0       // Display generated code, data, and GC information sizes.
-#define MEASURE_BLOCK_SIZE 0  // Collect stats about basic block and flowList node sizes and memory allocations.
+#define MEASURE_BLOCK_SIZE 0  // Collect stats about basic block and FlowEdge node sizes and memory allocations.
 #define MEASURE_FATAL 0       // Count the number of calls to fatal(), including NYIs and noway_asserts.
 #define MEASURE_NODE_SIZE 0   // Collect stats about GenTree node allocations.
 #define MEASURE_PTRTAB_SIZE 0 // Collect stats about GC pointer table allocations.
 #define EMITTER_STATS 0       // Collect stats on the emitter.
 #define NODEBASH_STATS 0      // Collect stats on changed gtOper values in GenTree's.
 #define COUNT_AST_OPERS 0     // Display use counts for GenTree operators.
-
-#define VERBOSE_SIZES 0 // Always display GC info sizes. If set, DISPLAY_SIZES must also be set.
 
 #ifdef DEBUG
 #define MEASURE_MEM_ALLOC 1 // Collect memory allocation stats.
@@ -447,6 +511,7 @@ public:
 #define MEASURE_MEM_ALLOC 0 // You can set this to 1 to get memory stats in retail, as well
 #define LOOP_HOIST_STATS 0  // You can set this to 1 to get loop hoist stats in retail, as well
 #define TRACK_LSRA_STATS 0  // You can set this to 1 to get LSRA stats in retail, as well
+#define TRACK_ENREG_STATS 0
 #endif
 
 // Timing calls to clr.dll is only available under certain conditions.
@@ -696,12 +761,11 @@ private:
 #define CLFLG_CSE 0x00004
 #define CLFLG_REGVAR 0x00008
 #define CLFLG_RNGCHKOPT 0x00010
-#define CLFLG_DEADASGN 0x00020
+#define CLFLG_DEADSTORE 0x00020
 #define CLFLG_CODEMOTION 0x00040
 #define CLFLG_QMARK 0x00080
 #define CLFLG_TREETRANS 0x00100
 #define CLFLG_INLINING 0x00200
-#define CLFLG_CONSTANTFOLD 0x00800
 
 #if FEATURE_STRUCTPROMOTE
 #define CLFLG_STRUCTPROMOTE 0x00400
@@ -716,8 +780,8 @@ private:
 #endif
 
 #define CLFLG_MAXOPT                                                                                                   \
-    (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADASGN | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS |  \
-     CLFLG_INLINING | CLFLG_STRUCTPROMOTE | CLFLG_CONSTANTFOLD)
+    (CLFLG_CSE | CLFLG_REGVAR | CLFLG_RNGCHKOPT | CLFLG_DEADSTORE | CLFLG_CODEMOTION | CLFLG_QMARK | CLFLG_TREETRANS | \
+     CLFLG_INLINING | CLFLG_STRUCTPROMOTE)
 
 #define CLFLG_MINOPT (CLFLG_TREETRANS)
 

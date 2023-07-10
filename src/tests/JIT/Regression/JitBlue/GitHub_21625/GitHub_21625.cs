@@ -5,6 +5,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace GitHub_21625
 {
@@ -27,7 +28,8 @@ namespace GitHub_21625
             }
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             ushort value = TestLibrary.Generator.GetUInt16();
             Vector128<ushort> result = CreateScalar(value);

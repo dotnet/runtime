@@ -1,13 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { PromiseController, createPromiseController } from "./promise-controller";
-import { mono_assert } from "./types";
-import { Module } from "./imports";
-import { setI32 } from "./memory";
+import { createPromiseController } from "./globals";
+import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
+import { PromiseController } from "./types/internal";
+import { mono_log_warn } from "./logging";
+import { viewOrCopy, utf8ToStringRelaxed, stringToUTF8 } from "./strings";
 
 const wasm_ws_pending_send_buffer = Symbol.for("wasm ws_pending_send_buffer");
 const wasm_ws_pending_send_buffer_offset = Symbol.for("wasm ws_pending_send_buffer_offset");
@@ -20,8 +23,6 @@ const wasm_ws_pending_send_promises = Symbol.for("wasm ws_pending_send_promises"
 const wasm_ws_is_aborted = Symbol.for("wasm ws_is_aborted");
 const wasm_ws_receive_status_ptr = Symbol.for("wasm ws_receive_status_ptr");
 let mono_wasm_web_socket_close_warning = false;
-let _text_decoder_utf8: TextDecoder | undefined = undefined;
-let _text_encoder_utf8: TextEncoder | undefined = undefined;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
@@ -89,7 +90,7 @@ export function ws_wasm_open(ws: WebSocketExtension): Promise<WebSocketExtension
 export function ws_wasm_send(ws: WebSocketExtension, buffer_ptr: VoidPtr, buffer_length: number, message_type: number, end_of_message: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR17: expected ws instance");
 
-    const buffer_view = new Uint8Array(Module.HEAPU8.buffer, <any>buffer_ptr, buffer_length);
+    const buffer_view = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
     const whole_buffer = _mono_wasm_web_socket_send_buffering(ws, buffer_view, message_type, end_of_message);
 
     if (!end_of_message || !whole_buffer) {
@@ -107,7 +108,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 
     const readyState = ws.readyState;
     if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
-        throw new Error("InvalidState: The WebSocket is not connected.");
+        throw new Error(`InvalidState: ${readyState} The WebSocket is not connected.`);
     }
 
     if (receive_event_queue.getLength()) {
@@ -130,7 +131,6 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: string | null, wait_for_close_received: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR19: expected ws instance");
 
-
     if (ws.readyState == WebSocket.CLOSED) {
         return null;
     }
@@ -149,7 +149,7 @@ export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: stri
     else {
         if (!mono_wasm_web_socket_close_warning) {
             mono_wasm_web_socket_close_warning = true;
-            console.warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
+            mono_log_warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
         }
         if (typeof reason === "string") {
             ws.close(code, reason);
@@ -206,16 +206,19 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
         if (ws.bufferedAmount === 0) {
             promise_control.resolve();
         }
-        else if (ws.readyState != WebSocket.OPEN) {
-            // only reject if the data were not sent
-            // bufferedAmount does not reset to zero once the connection closes
-            promise_control.reject("InvalidState: The WebSocket is not connected.");
-        }
-        else if (!promise_control.isDone) {
-            globalThis.setTimeout(polling_check, nextDelay);
-            // exponentially longer delays, up to 1000ms
-            nextDelay = Math.min(nextDelay * 1.5, 1000);
-            return;
+        else {
+            const readyState = ws.readyState;
+            if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
+                // only reject if the data were not sent
+                // bufferedAmount does not reset to zero once the connection closes
+                promise_control.reject(`InvalidState: ${readyState} The WebSocket is not connected.`);
+            }
+            else if (!promise_control.isDone) {
+                globalThis.setTimeout(polling_check, nextDelay);
+                // exponentially longer delays, up to 1000ms
+                nextDelay = Math.min(nextDelay * 1.5, 1000);
+                return;
+            }
         }
         // remove from pending
         const index = pending.indexOf(promise_control);
@@ -234,15 +237,12 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
     const promise_queue = ws[wasm_ws_pending_receive_promise_queue];
 
     if (typeof event.data === "string") {
-        if (_text_encoder_utf8 === undefined) {
-            _text_encoder_utf8 = new TextEncoder();
-        }
         event_queue.enqueue({
-            type: 0,// WebSocketMessageType.Text
+            type: 0, // WebSocketMessageType.Text
             // according to the spec https://encoding.spec.whatwg.org/
             // - Unpaired surrogates will get replaced with 0xFFFD
             // - utf8 encode specifically is defined to never throw
-            data: _text_encoder_utf8.encode(event.data),
+            data: stringToUTF8(event.data),
             offset: 0
         });
     }
@@ -251,7 +251,7 @@ function _mono_wasm_web_socket_on_message(ws: WebSocketExtension, event: Message
             throw new Error("ERR19: WebSocket receive expected ArrayBuffer");
         }
         event_queue.enqueue({
-            type: 1,// WebSocketMessageType.Binary
+            type: 1, // WebSocketMessageType.Binary
             data: new Uint8Array(event.data),
             offset: 0
         });
@@ -274,7 +274,7 @@ function _mono_wasm_web_socket_receive_buffering(ws: WebSocketExtension, event_q
     const count = Math.min(buffer_length, event.data.length - event.offset);
     if (count > 0) {
         const sourceView = event.data.subarray(event.offset, event.offset + count);
-        const bufferView = new Uint8Array(Module.HEAPU8.buffer, <any>buffer_ptr, buffer_length);
+        const bufferView = new Uint8Array(localHeapViewU8().buffer, <any>buffer_ptr, buffer_length);
         bufferView.set(sourceView, 0);
         event.offset += count;
     }
@@ -325,7 +325,11 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
     else {
         if (length !== 0) {
             // we could use the un-pinned view, because it will be immediately used in ws.send()
-            buffer = buffer_view;
+            if (MonoWasmThreads) {
+                buffer = buffer_view.slice(); // copy, because the provided ArrayBufferView value must not be shared.
+            } else {
+                buffer = buffer_view;
+            }
             offset = length;
         }
     }
@@ -336,16 +340,10 @@ function _mono_wasm_web_socket_send_buffering(ws: WebSocketExtension, buffer_vie
         }
         if (message_type === 0) {
             // text, convert from UTF-8 bytes to string, because of bad browser API
-            if (_text_decoder_utf8 === undefined) {
-                // we do not validate outgoing data https://github.com/dotnet/runtime/issues/59214
-                _text_decoder_utf8 = new TextDecoder("utf-8", { fatal: false });
-            }
 
-            // See https://github.com/whatwg/encoding/issues/172
-            const bytes = typeof SharedArrayBuffer !== "undefined" && buffer instanceof SharedArrayBuffer
-                ? (<any>buffer).slice(0, offset)
-                : buffer.subarray(0, offset);
-            return _text_decoder_utf8.decode(bytes);
+            const bytes = viewOrCopy(buffer, 0 as any, offset as any);
+            // we do not validate outgoing data https://github.com/dotnet/runtime/issues/59214
+            return utf8ToStringRelaxed(bytes);
         } else {
             // binary, view to used part of the buffer
             return buffer.subarray(0, offset);
@@ -373,7 +371,7 @@ type ReceivePromiseControl = PromiseController<void> & {
 }
 
 type Message = {
-    type: number,// WebSocketMessageType
+    type: number, // WebSocketMessageType
     data: Uint8Array,
     offset: number
 }

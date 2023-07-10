@@ -25,6 +25,8 @@ namespace ILCompiler.Logging
         public int? SourceColumn { get; }
         public int? ILOffset { get; }
 
+        private const int HiddenLineNumber = 0xfeefee;
+
         public MessageOrigin(string fileName, int? sourceLine = null, int? sourceColumn = null)
         {
             FileName = fileName;
@@ -56,9 +58,7 @@ namespace ILCompiler.Logging
 
         public MessageOrigin(MethodIL methodBody, int ilOffset)
         {
-            string? document = null;
-            int? lineNumber = null;
-
+            ILSequencePoint? correspondingSequencePoint = null;
             IEnumerable<ILSequencePoint>? sequencePoints = methodBody.GetDebugInfo()?.GetSequencePoints();
             if (sequencePoints != null)
             {
@@ -66,14 +66,30 @@ namespace ILCompiler.Logging
                 {
                     if (sequencePoint.Offset <= ilOffset)
                     {
-                        document = sequencePoint.Document;
-                        lineNumber = sequencePoint.LineNumber;
+                        correspondingSequencePoint = sequencePoint;
                     }
                 }
+
+                // If the warning comes from hidden line (compiler generated code typically)
+                // search for any sequence point with non-hidden line number and report that as a best effort.
+                if (correspondingSequencePoint?.LineNumber == HiddenLineNumber)
+                {
+                    // Reset the information as we don't want to use any of the info in the hidden sequence point
+                    correspondingSequencePoint = null;
+                    foreach (var sequencePoint in sequencePoints)
+                    {
+                        if (sequencePoint.LineNumber != HiddenLineNumber)
+                        {
+                            correspondingSequencePoint = sequencePoint;
+                            break;
+                        }
+                    }
+                }
+
             }
-            FileName = document;
+            FileName = correspondingSequencePoint?.Document;
             MemberDefinition = methodBody.OwningMethod;
-            SourceLine = lineNumber;
+            SourceLine = correspondingSequencePoint?.LineNumber;
             SourceColumn = null;
             ILOffset = ilOffset;
         }

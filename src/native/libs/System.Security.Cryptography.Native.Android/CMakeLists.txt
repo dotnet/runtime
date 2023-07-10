@@ -44,6 +44,7 @@ add_library(System.Security.Cryptography.Native.Android-Static
 set_target_properties(System.Security.Cryptography.Native.Android-Static PROPERTIES OUTPUT_NAME System.Security.Cryptography.Native.Android CLEAN_DIRECT_OUTPUT 1)
 
 target_link_libraries(System.Security.Cryptography.Native.Android
+    PRIVATE
     -llog
 )
 

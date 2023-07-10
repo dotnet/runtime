@@ -23,6 +23,7 @@ namespace System.Xml.Schema
         private uint _nanoseconds;       // High bit is used to indicate whether duration is negative
 
         private const uint NegativeBit = 0x80000000;
+        private const int CharStackBufferSize = 32;
 
         private enum Parts
         {
@@ -341,7 +342,16 @@ namespace System.Xml.Schema
         /// </summary>
         internal string ToString(DurationType durationType)
         {
-            var vsb = new ValueStringBuilder(stackalloc char[20]);
+            Span<char> destination = stackalloc char[CharStackBufferSize];
+            bool success = TryFormat(destination, out int charsWritten, durationType);
+            Debug.Assert(success);
+
+            return destination.Slice(0, charsWritten).ToString();
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten, DurationType durationType = DurationType.Duration)
+        {
+            var vsb = new ValueStringBuilder(destination);
             int nanoseconds, digit, zeroIdx, len;
 
             if (IsNegative)
@@ -411,7 +421,9 @@ namespace System.Xml.Schema
                             }
 
                             vsb.EnsureCapacity(zeroIdx + 1);
-                            vsb.Append(tmpSpan.Slice(0, zeroIdx - len + 1));
+                            int nanoSpanLength = zeroIdx - len + 1;
+                            bool successCopy = tmpSpan[..nanoSpanLength].TryCopyTo(vsb.AppendSpan(nanoSpanLength));
+                            Debug.Assert(successCopy);
                         }
                         vsb.Append('S');
                     }
@@ -428,7 +440,8 @@ namespace System.Xml.Schema
                     vsb.Append("0M");
             }
 
-            return vsb.ToString();
+            charsWritten = vsb.Length;
+            return destination.Length >= vsb.Length;
         }
 
         internal static Exception? TryParse(string s, out XsdDuration result)

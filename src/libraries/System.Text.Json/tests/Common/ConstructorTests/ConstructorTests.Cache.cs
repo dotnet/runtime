@@ -62,7 +62,7 @@ namespace System.Text.Json.Serialization.Tests
             async Task RunTestAsync(Type type)
             {
                 // Use local options to avoid obtaining already cached metadata from the default options.
-                var options = new JsonSerializerOptions();
+                JsonSerializerOptions options = Serializer.CreateOptions();
 
                 const int ThreadCount = 8;
                 const int ConcurrentTestsCount = 4;
@@ -91,7 +91,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PropertyCacheWithMinInputsFirst()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
-            var options = new JsonSerializerOptions();
+            JsonSerializerOptions options = Serializer.CreateOptions();
 
             string json = "{}";
             await Serializer.DeserializeWrapper<ObjWCtorMixedParams>(json, options);
@@ -108,7 +108,7 @@ namespace System.Text.Json.Serialization.Tests
         public async Task PropertyCacheWithMinInputsLast()
         {
             // Use local options to avoid obtaining already cached metadata from the default options.
-            var options = new JsonSerializerOptions();
+            JsonSerializerOptions options = Serializer.CreateOptions();
 
             ObjWCtorMixedParams testObj = ObjWCtorMixedParams.GetInstance();
             testObj.Verify();

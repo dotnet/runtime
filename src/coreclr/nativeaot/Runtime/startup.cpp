@@ -26,6 +26,10 @@
 #include "RestrictedCallouts.h"
 #include "yieldprocessornormalized.h"
 
+#ifdef FEATURE_PERFTRACING
+#include "EventPipeInterface.h"
+#endif
+
 #ifndef DACCESS_COMPILE
 
 #ifdef PROFILE_STARTUP
@@ -47,7 +51,6 @@ extern RhConfig * g_pRhConfig;
 EXTERN_C bool g_fHasFastFxsave;
 bool g_fHasFastFxsave = false;
 
-CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
@@ -97,6 +100,14 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
+#ifdef FEATURE_PERFTRACING
+    // Initialize EventPipe
+    EventPipeAdapter_Initialize();
+    // Initialize DS
+    DiagnosticServerAdapter_Initialize();
+    DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
+#endif
+
     //
     // Initialize support for registering GC and HandleTable callouts.
     //
@@ -121,8 +132,8 @@ static bool InitDLL(HANDLE hPalInstance)
     InitializeYieldProcessorNormalizedCrst();
 
 #ifdef STRESS_LOG
-    uint32_t dwTotalStressLogSize = g_pRhConfig->GetTotalStressLogSize();
-    uint32_t dwStressLogLevel = g_pRhConfig->GetStressLogLevel();
+    uint32_t dwTotalStressLogSize = (uint32_t)g_pRhConfig->GetTotalStressLogSize();
+    uint32_t dwStressLogLevel = (uint32_t)g_pRhConfig->GetStressLogLevel();
 
     unsigned facility = (unsigned)LF_ALL;
     unsigned dwPerThreadChunks = (dwTotalStressLogSize / 24) / STRESSLOG_CHUNK_SIZE;
@@ -141,6 +152,13 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);
 
+#ifdef FEATURE_PERFTRACING
+    // Finish setting up rest of EventPipe - specifically enable SampleProfiler if it was requested at startup.
+    // SampleProfiler needs to cooperate with the GC which hasn't fully finished setting up in the first part of the
+    // EventPipe initialization, so this is done after the GC has been fully initialized.
+    EventPipeAdapter_FinishInitialize();
+#endif
+
 #ifndef USE_PORTABLE_HELPERS
     if (!DetectCPUFeatures())
         return false;
@@ -151,10 +169,7 @@ static bool InitDLL(HANDLE hPalInstance)
         return false;
 #endif
 
-    if (!g_CastCacheLock.InitNoThrow(CrstType::CrstCastCache))
-        return false;
-
-    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstCastCache))
+    if (!g_ThunkPoolLock.InitNoThrow(CrstType::CrstThunkPool))
         return false;
 
     return true;
@@ -170,63 +185,71 @@ bool DetectCPUFeatures()
 
     int cpuidInfo[4];
 
-    const int EAX = 0;
-    const int EBX = 1;
-    const int ECX = 2;
-    const int EDX = 3;
+    const int CPUID_EAX = 0;
+    const int CPUID_EBX = 1;
+    const int CPUID_ECX = 2;
+    const int CPUID_EDX = 3;
 
     __cpuid(cpuidInfo, 0x00000000);
-    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[EAX]);
+    uint32_t maxCpuId = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
 
     if (maxCpuId >= 1)
     {
         __cpuid(cpuidInfo, 0x00000001);
 
-        if (((cpuidInfo[EDX] & (1 << 25)) != 0) && ((cpuidInfo[EDX] & (1 << 26)) != 0))                     // SSE & SSE2
+        const int requiredBaselineEdxFlags = (1 << 25)                                                                  // SSE
+                                           | (1 << 26);                                                                 // SSE2
+
+        if ((cpuidInfo[CPUID_EDX] & requiredBaselineEdxFlags) == requiredBaselineEdxFlags)
         {
-            if ((cpuidInfo[ECX] & (1 << 25)) != 0)                                                          // AESNI
+            g_cpuFeatures |= XArchIntrinsicConstants_VectorT128;
+
+            if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                                // AESNI
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Aes;
             }
 
-            if ((cpuidInfo[ECX] & (1 << 1)) != 0)                                                           // PCLMULQDQ
+            if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                                                                 // PCLMULQDQ
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Pclmulqdq;
             }
 
-            if ((cpuidInfo[ECX] & (1 << 0)) != 0)                                                           // SSE3
+            if ((cpuidInfo[CPUID_ECX] & (1 << 0)) != 0)                                                                 // SSE3
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Sse3;
 
-                if ((cpuidInfo[ECX] & (1 << 9)) != 0)                                                       // SSSE3
+                if ((cpuidInfo[CPUID_ECX] & (1 << 9)) != 0)                                                             // SSSE3
                 {
                     g_cpuFeatures |= XArchIntrinsicConstants_Ssse3;
 
-                    if ((cpuidInfo[ECX] & (1 << 19)) != 0)                                                  // SSE4.1
+                    if ((cpuidInfo[CPUID_ECX] & (1 << 19)) != 0)                                                        // SSE4.1
                     {
                         g_cpuFeatures |= XArchIntrinsicConstants_Sse41;
 
-                        if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
+                        if ((cpuidInfo[CPUID_ECX] & (1 << 20)) != 0)                                                    // SSE4.2
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
 
-                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            if ((cpuidInfo[CPUID_ECX] & (1 << 22)) != 0)                                                // MOVBE
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
                             }
 
-                            if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
+                            if ((cpuidInfo[CPUID_ECX] & (1 << 23)) != 0)                                                // POPCNT
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
                             }
 
-                            if (((cpuidInfo[ECX] & (1 << 27)) != 0) && ((cpuidInfo[ECX] & (1 << 28)) != 0)) // OSXSAVE & AVX
+                            const int requiredAvxEcxFlags = (1 << 27)                                                   // OSXSAVE
+                                                          | (1 << 28);                                                  // AVX
+
+                            if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
                             {
-                                if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))
+                                if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
                                 {
                                     g_cpuFeatures |= XArchIntrinsicConstants_Avx;
 
-                                    if ((cpuidInfo[ECX] & (1 << 12)) != 0)                                  // FMA
+                                    if ((cpuidInfo[CPUID_ECX] & (1 << 12)) != 0)                                        // FMA
                                     {
                                         g_cpuFeatures |= XArchIntrinsicConstants_Fma;
                                     }
@@ -235,56 +258,68 @@ bool DetectCPUFeatures()
                                     {
                                         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-                                        if ((cpuidInfo[EBX] & (1 << 5)) != 0)                               // AVX2
+                                        if ((cpuidInfo[CPUID_EBX] & (1 << 5)) != 0)                                     // AVX2
                                         {
                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx2;
+                                            g_cpuFeatures |= XArchIntrinsicConstants_VectorT256;
 
-                                            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
-                                            if ((cpuidInfo[EAX] & (1 << 4)) != 0)                           // AVX-VNNI
+                                            if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
                                             {
-                                                g_cpuFeatures |= XArchIntrinsicConstants_AvxVnni;
-                                            }
-
-                                            if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))       // XGETBV XRC0[7:5] == 111
-                                            {
-                                                if ((cpuidInfo[EBX] & (1 << 16)) != 0)                     // AVX512F
+                                                if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
                                                 {
                                                     g_cpuFeatures |= XArchIntrinsicConstants_Avx512f;
+                                                    g_cpuFeatures |= XArchIntrinsicConstants_VectorT512;
 
                                                     bool isAVX512_VLSupported = false;
-                                                    if ((cpuidInfo[EBX] & (1 << 31)) != 0)                 // AVX512VL
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                        // AVX512VL
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512f_vl;
                                                         isAVX512_VLSupported = true;
                                                     }
 
-                                                    if ((cpuidInfo[EBX] & (1 << 30)) != 0)                 // AVX512BW
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 30)) != 0)                        // AVX512BW
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw;
-                                                        if (isAVX512_VLSupported)
+                                                        if (isAVX512_VLSupported)                                       // AVX512BW_VL
                                                         {
                                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx512bw_vl;
                                                         }
                                                     }
 
-                                                    if ((cpuidInfo[EBX] & (1 << 28)) != 0)                 // AVX512CD
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 28)) != 0)                        // AVX512CD
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd;
-                                                        if (isAVX512_VLSupported)
+                                                        if (isAVX512_VLSupported)                                       // AVX512CD_VL
                                                         {
                                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx512cd_vl;
                                                         }
                                                     }
 
-                                                    if ((cpuidInfo[EBX] & (1 << 17)) != 0)                 // AVX512DQ
+                                                    if ((cpuidInfo[CPUID_EBX] & (1 << 17)) != 0)                        // AVX512DQ
                                                     {
                                                         g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq;
-                                                        if (isAVX512_VLSupported)
+                                                        if (isAVX512_VLSupported)                                       // AVX512DQ_VL
                                                         {
                                                             g_cpuFeatures |= XArchIntrinsicConstants_Avx512dq_vl;
                                                         }
                                                     }
+
+                                                    if ((cpuidInfo[CPUID_ECX] & (1 << 1)) != 0)                         // AVX512VBMI
+                                                    {
+                                                        g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi;
+                                                        if (isAVX512_VLSupported)                                       // AVX512VBMI_VL
+                                                        {
+                                                            g_cpuFeatures |= XArchIntrinsicConstants_Avx512Vbmi_vl;
+                                                        }
+                                                    }
                                                 }
+                                            }
+
+                                            __cpuidex(cpuidInfo, 0x00000007, 0x00000001);
+
+                                            if ((cpuidInfo[CPUID_EAX] & (1 << 4)) != 0)                                 // AVX-VNNI
+                                            {
+                                                g_cpuFeatures |= XArchIntrinsicConstants_AvxVnni;
                                             }
                                         }
                                     }
@@ -300,26 +335,31 @@ bool DetectCPUFeatures()
         {
             __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
 
-            if ((cpuidInfo[EBX] & (1 << 3)) != 0)                                                           // BMI1
+            if ((cpuidInfo[CPUID_EBX] & (1 << 3)) != 0)                                                           // BMI1
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Bmi1;
             }
 
-            if ((cpuidInfo[EBX] & (1 << 8)) != 0)                                                           // BMI2
+            if ((cpuidInfo[CPUID_EBX] & (1 << 8)) != 0)                                                           // BMI2
             {
                 g_cpuFeatures |= XArchIntrinsicConstants_Bmi2;
+            }
+
+            if ((cpuidInfo[CPUID_EDX] & (1 << 14)) != 0)
+            {
+                g_cpuFeatures |= XArchIntrinsicConstants_Serialize;                                               // SERIALIZE
             }
         }
     }
 
     __cpuid(cpuidInfo, 0x80000000);
-    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[EAX]);
+    uint32_t maxCpuIdEx = static_cast<uint32_t>(cpuidInfo[CPUID_EAX]);
 
     if (maxCpuIdEx >= 0x80000001)
     {
         __cpuid(cpuidInfo, 0x80000001);
 
-        if ((cpuidInfo[ECX] & (1 << 5)) != 0)                                                               // LZCNT
+        if ((cpuidInfo[CPUID_ECX] & (1 << 5)) != 0)                                                               // LZCNT
         {
             g_cpuFeatures |= XArchIntrinsicConstants_Lzcnt;
         }
@@ -327,8 +367,8 @@ bool DetectCPUFeatures()
 #ifdef HOST_AMD64
         // AMD has a "fast" mode for fxsave/fxrstor, which omits the saving of xmm registers.  The OS will enable this mode
         // if it is supported.  So if we continue to use fxsave/fxrstor, we must manually save/restore the xmm registers.
-        // fxsr_opt is bit 25 of EDX
-        if ((cpuidInfo[EDX] & (1 << 25)) != 0)
+        // fxsr_opt is bit 25 of CPUID_EDX
+        if ((cpuidInfo[CPUID_EDX] & (1 << 25)) != 0)
             g_fHasFastFxsave = true;
 #endif
     }
@@ -358,7 +398,7 @@ bool InitGSCookie()
     volatile GSCookie * pGSCookiePtr = GetProcessGSCookiePtr();
 
 #ifdef FEATURE_READONLY_GS_COOKIE
-    // The GS cookie is stored in a read only data segment    
+    // The GS cookie is stored in a read only data segment
     if (!PalVirtualProtect((void*)pGSCookiePtr, sizeof(GSCookie), PAGE_READWRITE))
     {
         return false;
@@ -445,22 +485,29 @@ static void UninitDLL()
 #ifdef _WIN32
 // This is set to the thread that initiates and performs the shutdown and may run
 // after other threads are rudely terminated. So far this is a Windows-specific concern.
-// 
+//
 // On POSIX OSes a process typically lives as long as any of its threads are alive or until
 // the process is terminated via `exit()` or a signal. Thus there is no such distinction
 // between threads.
 Thread* g_threadPerformingShutdown = NULL;
+#endif
 
 static void __cdecl OnProcessExit()
 {
+#ifdef _WIN32
     // The process is exiting and the current thread is performing the shutdown.
     // When this thread exits some threads may be already rudely terminated.
     // It would not be a good idea for this thread to wait on any locks
     // or run managed code at shutdown, so we will not try detaching it.
     Thread* currentThread = ThreadStore::RawGetCurrentThread();
     g_threadPerformingShutdown = currentThread;
-}
 #endif
+
+#ifdef FEATURE_PERFTRACING
+    EventPipeAdapter_Shutdown();
+    DiagnosticServerAdapter_Shutdown();
+#endif
+}
 
 void RuntimeThreadShutdown(void* thread)
 {
@@ -497,7 +544,7 @@ extern "C" bool RhInitialize()
     if (!PalInit())
         return false;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(FEATURE_PERFTRACING)
     atexit(&OnProcessExit);
 #endif
 

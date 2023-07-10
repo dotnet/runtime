@@ -5,5 +5,6 @@
             "esnext",
             "dom"
         ],
+        "sourceMap": true,
     }
 }

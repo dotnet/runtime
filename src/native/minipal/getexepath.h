@@ -92,7 +92,7 @@ static inline char* minipal_getexepath(void)
     // fallback to AT_EXECFN, which does not work properly in rare cases
     // when .NET process is set as interpreter (shebang).
     const char* exePath = (const char *)(getauxval(AT_EXECFN));
-    if (exePath && !errno)
+    if (exePath)
     {
         return realpath(exePath, NULL);
     }

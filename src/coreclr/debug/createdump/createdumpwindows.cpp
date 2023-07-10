@@ -18,14 +18,14 @@ typedef struct _PROCESS_BASIC_INFORMATION_ {
 // The Windows create dump code
 //
 bool
-CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool createDump, bool crashReport, int crashThread, int signal)
+CreateDump(const CreateDumpOptions& options)
 {
     HANDLE hFile = INVALID_HANDLE_VALUE;
     HANDLE hProcess = NULL;
     bool result = false;
 
-    _ASSERTE(createDump);
-    _ASSERTE(!crashReport);
+    _ASSERTE(options.CreateDump);
+    _ASSERTE(!options.CrashReport);
 
     ArrayHolder<char> pszName = new char[MAX_LONGPATH + 1];
     std::string dumpPath;
@@ -38,7 +38,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         printf_error("Failed to get parent process id status %d\n", status);
         goto exit;
     }
-    pid = (int)processInformation.InheritedFromUniqueProcessId;
+    int pid = (int)processInformation.InheritedFromUniqueProcessId;
 
     hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
     if (hProcess == NULL)
@@ -51,11 +51,11 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         printf_error("Get process name FAILED - %s\n", GetLastErrorString().c_str());
         goto exit;
     }
-    if (!FormatDumpName(dumpPath, dumpPathTemplate, pszName, pid))
+    if (!FormatDumpName(dumpPath, options.DumpPathTemplate, pszName, pid))
     {
         goto exit;
     }
-    printf_status("Writing %s for process %d to file %s\n", dumpType, pid, dumpPath.c_str());
+    printf_status("Writing %s for process %d to file %s\n", GetDumpTypeString(options.DumpType), pid, dumpPath.c_str());
 
     hFile = CreateFileA(dumpPath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
@@ -63,11 +63,12 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         printf_error("Invalid dump path '%s' - %s\n", dumpPath.c_str(), GetLastErrorString().c_str());
         goto exit;
     }
-
+    
+    int retryCount = 10;
     // Retry the write dump on ERROR_PARTIAL_COPY
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i <= retryCount; i++)
     {
-        if (MiniDumpWriteDump(hProcess, pid, hFile, minidumpType, NULL, NULL, NULL))
+        if (MiniDumpWriteDump(hProcess, pid, hFile, GetMiniDumpType(options.DumpType), NULL, NULL, NULL))
         {
             result = true;
             break;
@@ -75,10 +76,14 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         else
         {
             int err = GetLastError();
-            if (err != ERROR_PARTIAL_COPY)
+            if (err != ERROR_PARTIAL_COPY || i == retryCount)
             {
                 printf_error("MiniDumpWriteDump - %s\n", GetLastErrorString().c_str());
                 break;
+            }
+            else
+            {
+                 printf_error("Retry %d of MiniDumpWriteDump due to - %s\n", i, GetLastErrorString().c_str());
             }
         }
     }
@@ -96,3 +101,37 @@ exit:
 
     return result;
 }
+
+std::string
+GetLastErrorString()
+{
+    DWORD error = GetLastError();
+    std::string result;
+    LPSTR messageBuffer;
+    DWORD length = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&messageBuffer,
+        0,
+        NULL);
+    if (length > 0)
+    {
+        result.append(messageBuffer, length);
+        LocalFree(messageBuffer);
+
+        // Remove the \r\n at the end of the system message. Assumes that the \r is first.
+        size_t found = result.find_last_of('\r');
+        if (found != std::string::npos)
+        {
+            result.erase(found);
+        }
+        result.append(" ");
+    }
+    char buffer[64];
+    _snprintf_s(buffer, sizeof(buffer), sizeof(buffer), "(%d)", error);
+    result.append(buffer);
+    return result;
+}
+

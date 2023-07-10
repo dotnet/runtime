@@ -1,0 +1,25 @@
+<Project>
+  <!-- This depends on the root Directory.Build.targets imported this file -->
+  <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
+  <UsingTask TaskName="NetTraceToMibcConverter" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+  <UsingTask TaskName="RuntimeConfigParserTask" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
+
+  <Import Project="..\..\common\LibraryBuilder.targets" />
+  <Import Project="$(MSBuildThisFileDirectory)AndroidBuild.targets" />
+
+  <!-- TODO: this breaks runtime tests on Helix due to the file not being there for some reason. Once this is fixed we can remove the UpdateRuntimePack target here -->
+  <!--<Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" Condition="'$(TargetingpacksTargetsImported)' != 'true'"/>-->
+
+  <!-- Use local runtime pack -->
+  <Target Name="UpdateRuntimePack" AfterTargets="ResolveFrameworkReferences">
+    <PropertyGroup>
+      <_LocalMicrosoftNetCoreAppRuntimePackDir>$(MicrosoftNetCoreAppRuntimePackDir)</_LocalMicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <ResolvedRuntimePack PackageDirectory="$(_LocalMicrosoftNetCoreAppRuntimePackDir)"
+                           Condition="'$(_LocalMicrosoftNetCoreAppRuntimePackDir)' != '' and
+                                      '%(ResolvedRuntimePack.FrameworkName)' == 'Microsoft.NETCore.App'" />
+    </ItemGroup>
+    <Message Text="Used runtime pack: %(ResolvedRuntimePack.PackageDirectory)" Importance="high" />
+  </Target>
+</Project>

@@ -264,6 +264,8 @@ internal static partial class Interop
                 out identityHandle,
                 out osStatus);
 
+            SafeTemporaryKeychainHandle.TrackItem(identityHandle);
+
             if (result == 1)
             {
                 Debug.Assert(!identityHandle.IsInvalid);
@@ -288,13 +290,25 @@ internal static partial class Interop
         {
             SafeSecIdentityHandle identityHandle;
             int osStatus;
+            int result;
 
-            int result = AppleCryptoNative_X509MoveToKeychain(
-                cert,
-                targetKeychain,
-                privateKey ?? SafeSecKeyRefHandle.InvalidHandle,
-                out identityHandle,
-                out osStatus);
+            // Ensure the keychain is not disposed, if there is any associated one
+            using (SafeKeychainHandle keychain = Interop.AppleCrypto.SecKeychainItemCopyKeychain(cert))
+            {
+                // AppleCryptoNative_X509MoveToKeychain can change the keychain of the input
+                // certificate, so we need to reflect that change.
+                SafeTemporaryKeychainHandle.UntrackItem(cert.DangerousGetHandle());
+
+                result = AppleCryptoNative_X509MoveToKeychain(
+                    cert,
+                    targetKeychain,
+                    privateKey ?? SafeSecKeyRefHandle.InvalidHandle,
+                    out identityHandle,
+                    out osStatus);
+
+                SafeTemporaryKeychainHandle.TrackItem(cert);
+                SafeTemporaryKeychainHandle.TrackItem(identityHandle);
+            }
 
             if (result == 0)
             {

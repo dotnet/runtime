@@ -689,7 +689,7 @@ public:
         _ASSERTE(m_pDCB != NULL);
         // In case this turns into a continuation event
         GetRCThreadSendBuffer()->next = NULL;
-        LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event 0x%x\n", GetRCThreadSendBuffer()));
+        LOG((LF_CORDB,LL_EVERYTHING, "GIPCESBuffer: got event %p\n", GetRCThreadSendBuffer()));
 
         return GetRCThreadSendBuffer();
     }
@@ -1250,7 +1250,7 @@ public:
                                             MethodDesc           * md = NULL,
                                             PTR_CORDB_ADDRESS_TYPE addr = PTR_NULL);
 
-    // Fills in the CodeRegoinInfo fields from the start address.
+    // Fills in the CodeRegionInfo fields from the start address.
     void InitializeFromStartAddress(PCODE addr)
     {
         CONTRACTL
@@ -1436,6 +1436,27 @@ protected:
 #endif
 
 public:
+    void LogInstance()
+    {
+#ifdef LOGGING
+        const char* encState = "not enabled";
+#ifdef EnC_SUPPORTED
+        encState = m_encBreakpointsApplied ? "true" : "false";
+#endif //EnC_SUPPORTED
+        LOG((LF_CORDB, LL_INFO10000, "  DJI: %p\n"
+            "                m_jitComplete: %s\n"
+            "      m_encBreakpointsApplied: %s\n"
+            "                 m_methodInfo: %p\n"
+            "                 m_addrOfCode: %p\n"
+            "                 m_sizeOfCode: 0x%zx\n"
+            "                     m_lastIL: 0x%x\n"
+            "           m_sequenceMapCount: %u\n"
+            "           m_callsiteMapCount: %u\n",
+            this, (m_jitComplete ? "true" : "false"), encState,
+            m_methodInfo, m_addrOfCode, m_sizeOfCode, m_lastIL, m_sequenceMapCount, m_callsiteMapCount));
+#endif //LOGGING
+    }
+
     unsigned int GetSequenceMapCount()
     {
         SUPPORTS_DAC;

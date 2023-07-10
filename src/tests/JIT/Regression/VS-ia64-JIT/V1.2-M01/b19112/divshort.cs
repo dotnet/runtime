@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 public class foo
 {
 
     public static short a, b, c;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         a = 19;
@@ -18,7 +20,7 @@ public class foo
         return 100;
     }
 
-    public static void div()
+    internal static void div()
     {
 
         c = (short)(a / b);

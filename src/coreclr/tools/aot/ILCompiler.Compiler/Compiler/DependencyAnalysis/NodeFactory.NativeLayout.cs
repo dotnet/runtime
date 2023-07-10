@@ -176,11 +176,27 @@ namespace ILCompiler.DependencyAnalysis
                     {
                         yield return _factory.NativeLayout.TemplateTypeLayout(arrayCanonicalType);
                     }
+
+                    yield return _factory.MaximallyConstructableType(arrayCanonicalType);
                 }
 
                 while (type.IsParameterizedType)
                 {
                     type = ((ParameterizedType)type).ParameterType;
+                }
+
+                if (type.IsFunctionPointer)
+                {
+                    MethodSignature sig = ((FunctionPointerType)type).Signature;
+                    foreach (var dependency in TemplateConstructableTypes(sig.ReturnType))
+                        yield return dependency;
+
+                    foreach (var param in sig)
+                        foreach (var dependency in TemplateConstructableTypes(param))
+                            yield return dependency;
+
+                    // Nothing else to do for function pointers
+                    yield break;
                 }
 
                 TypeDesc canonicalType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
@@ -234,12 +250,6 @@ namespace ILCompiler.DependencyAnalysis
                 {
                     GenericParameterDesc genericParameter = ((RuntimeDeterminedType)type).RuntimeDeterminedDetailsType;
                     type = _factory.TypeSystemContext.GetSignatureVariable(genericParameter.Index, method: (genericParameter.Kind == GenericParameterKind.Method));
-                }
-
-                if (type.Category == TypeFlags.FunctionPointer)
-                {
-                    // Pretend for now it's an IntPtr, may need to be revisited depending on https://github.com/dotnet/runtime/issues/11354
-                    type = _factory.TypeSystemContext.GetWellKnownType(WellKnownType.IntPtr);
                 }
 
                 return _typeSignatures.GetOrAdd(type);

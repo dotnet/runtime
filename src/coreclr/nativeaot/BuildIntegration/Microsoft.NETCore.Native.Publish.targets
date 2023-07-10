@@ -5,6 +5,8 @@
           DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
     <ItemGroup>
       <IlcReference Include="@(_ManagedResolvedAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(_SatelliteAssembliesToPublish)" />
+      <IlcSatelliteAssembly Include="@(IntermediateSatelliteAssembliesWithTargetPath)" />
     </ItemGroup>
   </Target>
 
@@ -41,7 +43,6 @@
   <Target Name="_ComputeAssembliesToCompileToNative" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <Warning Condition="Exists($(UserRuntimeConfig))" Text="The published project has a runtimeconfig.template.json that is not supported by PublishAot. Move the configuration to the project file using RuntimeHostConfigurationOption." />
-    
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))" Text=".NET SDK 6+ is required for native compilation." />
     <Error Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))" Text="For native compilation, the project needs to target .NET 6 or higher." />
@@ -55,24 +56,24 @@
     <Error Condition="'$(PublishAot)' == 'true' and '$(PublishSingleFile)' == 'true'" Text="PublishAot and PublishSingleFile cannot be specified at the same time." />
 
     <!-- Fail with descriptive error message for common unsupported cases. -->
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and !$(RuntimeIdentifier.StartsWith('win'))"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' == 'Windows_NT' and '$(_targetOS)' != 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and $(RuntimeIdentifier.StartsWith('win'))"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(OS)' != 'Windows_NT' and '$(_targetOS)' == 'win'"
       Text="Cross-OS native compilation is not supported." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !($(RuntimeIdentifier.EndsWith('x64')) or $(RuntimeIdentifier.EndsWith('arm64')))"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and '$(_targetArchitecture)' != 'x64' and '$(_targetArchitecture)' != 'arm64'"
       Text="Native compilation does not support targeting $(RuntimeIdentifier) yet." />
 
-    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(IlcHostArch)' == 'x64' or '$(IlcHostArch)' == 'arm64')"
+    <Error Condition="'$(DisableUnsupportedError)' != 'true' and !('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
       Text="Native compilation can run on x64 and arm64 hosts only." />
 
-    <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(IlcHostArch)' == 'x64' or '$(IlcHostArch)' == 'arm64')"
-      Text="Add a PackageReference for '$(IlcHostPackageName)' to allow cross-compilation for $(TargetArchitecture)" />
+    <Error Condition="'$(IlcHostPackagePath)' == '' and '$(RuntimePackagePath)' != '' and ('$(_hostArchitecture)' == 'x64' or '$(_hostArchitecture)' == 'arm64')"
+      Text="Add a PackageReference for '$(_hostPackageName)' to allow cross-compilation for $(_targetArchitecture)" />
 
     <!-- NativeAOT runtime pack assemblies need to be defined to avoid the default CoreCLR implementations being set as compiler inputs -->
-    <Error Condition="'@(PrivateSdkAssemblies)' == ''" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
-    <Error Condition="'@(FrameworkAssemblies)' == ''" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(PrivateSdkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The PrivateSdkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
+    <Error Condition="'@(FrameworkAssemblies)' == '' and '$(PublishAotUsingRuntimePack)' != 'true'" Text="The FrameworkAssemblies ItemGroup is required for _ComputeAssembliesToCompileToNative" />
 
     <ComputeManagedAssembliesToCompileToNative
       Assemblies="@(_ResolvedCopyLocalPublishAssets)"
@@ -83,6 +84,7 @@
       FrameworkAssemblies="@(FrameworkAssemblies)">
 
       <Output TaskParameter="ManagedAssemblies" ItemName="_ManagedResolvedAssembliesToPublish" />
+      <Output TaskParameter="SatelliteAssemblies" ItemName="_SatelliteAssembliesToPublish" />
       <Output TaskParameter="AssembliesToSkipPublish" ItemName="_AssembliesToSkipPublish" />
     </ComputeManagedAssembliesToCompileToNative>
 

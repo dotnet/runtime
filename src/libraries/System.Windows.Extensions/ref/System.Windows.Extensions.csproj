@@ -9,6 +9,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\ref\System.Drawing.Common.csproj" />
+    <!-- Avoid a PackageReference to System.Drawing.Common this reference is only needed for TypeForwards -->
+    <PackageReference Include="System.Drawing.Common" Version="$(SystemDrawingCommonVersion)" PrivateAssets="All" />
   </ItemGroup>
 </Project>

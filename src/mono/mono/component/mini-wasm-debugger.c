@@ -5,6 +5,7 @@
 #include <mono/metadata/mono-debug.h>
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/assembly-internals.h>
+#include <mono/metadata/bundled-resources-internals.h>
 #include <mono/metadata/metadata.h>
 #include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-endian.h>
@@ -89,10 +90,10 @@ try_process_suspend (void *tls, MonoContext *ctx, gboolean from_breakpoint)
 	return FALSE;
 }
 
-static gboolean
+static bool
 begin_breakpoint_processing (void *tls, MonoContext *ctx, MonoJitInfo *ji, gboolean from_signal)
 {
-	return TRUE;
+	return mono_begin_breakpoint_processing(tls, ctx, ji, from_signal);
 }
 
 static void
@@ -198,7 +199,14 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 		return;
 	}
 
-	if (mono_wasm_assembly_already_added(assembly->aname.name))
+	gboolean already_loaded = mono_bundled_resources_get_assembly_resource_values (assembly->aname.name, NULL, NULL);
+	if (!already_loaded && !g_str_has_suffix (assembly->aname.name, ".dll")) {
+		char *assembly_name_with_extension = g_strdup_printf ("%s.dll", assembly->aname.name);
+		already_loaded = mono_bundled_resources_get_assembly_resource_values (assembly_name_with_extension, NULL, NULL);
+		g_free (assembly_name_with_extension);
+	}
+
+	if (already_loaded)
 		return;
 
 	if (mono_has_pdb_checksum ((char *) assembly_image->raw_data, assembly_image->raw_data_len)) { //if it's a release assembly we don't need to send to DebuggerProxy
@@ -218,6 +226,8 @@ assembly_loaded (MonoProfiler *prof, MonoAssembly *assembly)
 static void
 mono_wasm_single_step_hit (void)
 {
+	if (mono_wasm_is_breakpoint_and_stepping_disabled ())
+		return;
 	mono_de_process_single_step (mono_wasm_get_tls (), FALSE);
 }
 
@@ -419,6 +429,7 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		InvokeData invoke_data;
 		memset (&invoke_data, 0, sizeof (InvokeData));
 		invoke_data.endp = data + size;
+		invoke_data.flags = INVOKE_FLAG_DISABLE_BREAKPOINTS_AND_STEPPING;
 		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
 	else if (command_set == MDBGPROT_CMD_SET_VM && (command ==  MDBGPROT_CMD_GET_ASSEMBLY_BYTES))
@@ -432,10 +443,12 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		}
 		else
 		{
+			const unsigned char* assembly_bytes = NULL;
 			unsigned int assembly_size = 0;
-			int symfile_size = 0;
-			const unsigned char* assembly_bytes = mono_wasm_get_assembly_bytes (assembly_name, &assembly_size);
-			const unsigned char* pdb_bytes = mono_get_symfile_bytes_from_bundle (assembly_name, &symfile_size);
+			mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
+			const unsigned char* pdb_bytes = NULL;
+			unsigned int symfile_size = 0;
+			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
 			m_dbgprot_buffer_init (&buf, assembly_size + symfile_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
 			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);

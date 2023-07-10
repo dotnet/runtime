@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct Pad
 {
@@ -86,15 +87,16 @@ struct S
     }
 }
 
-class Test_structret2_1
+public class Test_structret2_1
 {
-    public static S c(S s1, S s2)
+    private static S c(S s1, S s2)
     {
         s1.str = (s1.str + s2.str);
         return s1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S sM = new S("test");
         S sM2 = new S("test2");

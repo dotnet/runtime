@@ -4,7 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-
+using System.Linq;
+using System.Xml.Linq;
 using Internal.TypeSystem;
 
 // The GCRef map is used to encode GC type of arguments for callsites. Logically, it is sequence <pos, token> where pos is
@@ -278,14 +279,32 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 }
             }
 
-            Debug.Assert(type is DefType);
-            DefType defType = (DefType)type;
-            foreach (FieldDesc field in defType.GetFields())
+            Debug.Assert(type is MetadataType);
+            MetadataType structType = (MetadataType)type;
+            bool isInlineArray = structType.IsInlineArray;
+            foreach (FieldDesc field in structType.GetFields())
             {
                 if (field.IsStatic)
                     continue;
 
-                GcScanRoots(field.FieldType, in argDest, delta + field.Offset.AsInt, frame, topLevel: false);
+                if (isInlineArray)
+                {
+                    var elementSize = field.FieldType.GetElementSize().AsInt;
+                    var totalSize = structType.InstanceFieldSize.AsInt;
+
+                    for (int offset = 0; offset < totalSize; offset += elementSize)
+                    {
+                        GcScanRoots(field.FieldType, in argDest, delta + offset, frame, topLevel: false);
+                    }
+
+                    // there is only one formal instance field in an inline array
+                    Debug.Assert(field.Offset.AsInt == 0);
+                    break;
+                }
+                else
+                {
+                    GcScanRoots(field.FieldType, in argDest, delta + field.Offset.AsInt, frame, topLevel: false);
+                }
             }
         }
 

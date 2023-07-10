@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
 long g_pageSize = 0;
 #endif
 
@@ -11,29 +11,35 @@ long g_pageSize = 0;
 // The Linux/MacOS create dump code
 //
 bool
-CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP_TYPE minidumpType, bool createDump, bool crashReport, int crashThread, int signal)
+CreateDump(const CreateDumpOptions& options)
 {
-    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(pid, crashReport, crashThread, signal);
+    ReleaseHolder<CrashInfo> crashInfo = new CrashInfo(options);
     DumpWriter dumpWriter(*crashInfo);
     std::string dumpPath;
     bool result = false;
 
     // Initialize PAGE_SIZE
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
     g_pageSize = sysconf(_SC_PAGESIZE);
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
+
+    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel == AppModelType::NativeAOT))
+    {
+        printf_error("The app model does not support crash report generation\n");
+        goto exit;
+    }
 
     // Initialize the crash info 
     if (!crashInfo->Initialize())
     {
         goto exit;
     }
-    printf_status("Gathering state for process %d %s\n", pid, crashInfo->Name().c_str());
+    printf_status("Gathering state for process %d %s\n", options.Pid, crashInfo->Name().c_str());
 
-    if (signal != 0 || crashThread != 0)
+    if (options.Signal != 0 || options.CrashThread != 0)
     {
-        printf_status("Crashing thread %08x signal %08x\n", crashThread, signal);
+        printf_status("Crashing thread %04x signal %d (%04x)\n", options.CrashThread, options.Signal, options.Signal);
     }
 
     // Suspend all the threads in the target process and build the list of threads
@@ -42,32 +48,32 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
         goto exit;
     }
     // Gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!crashInfo->GatherCrashInfo(minidumpType))
+    if (!crashInfo->GatherCrashInfo(options.DumpType))
     {
         goto exit;
     }
     // Format the dump pattern template now that the process name on MacOS has been obtained
-    if (!FormatDumpName(dumpPath, dumpPathTemplate, crashInfo->Name().c_str(), pid))
+    if (!FormatDumpName(dumpPath, options.DumpPathTemplate, crashInfo->Name().c_str(), options.Pid))
     {
         goto exit;
     }
     // Write the crash report json file if enabled
-    if (crashReport)
+    if (options.CrashReport)
     {
         CrashReportWriter crashReportWriter(*crashInfo);
         crashReportWriter.WriteCrashReport(dumpPath);
     }
-    if (createDump)
+    if (options.CreateDump)
     {
         // Gather all the useful memory regions from the DAC
-        if (!crashInfo->EnumerateMemoryRegionsWithDAC(minidumpType))
+        if (!crashInfo->EnumerateMemoryRegionsWithDAC(options.DumpType))
         {
             goto exit;
         }
         // Join all adjacent memory regions
         crashInfo->CombineMemoryRegions();
     
-        printf_status("Writing %s to file %s\n", dumpType, dumpPath.c_str());
+        printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath.c_str());
 
         // Write the actual dump file
         if (!dumpWriter.OpenDump(dumpPath.c_str()))
@@ -85,7 +91,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     }
     result = true;
 exit:
-    if (kill(pid, 0) == 0)
+    if (kill(options.Pid, 0) == 0)
     {
         printf_status("Target process is alive\n");
     }
@@ -98,7 +104,7 @@ exit:
         }
         else
         {
-            printf_error("kill(%d, 0) FAILED %s (%d)\n", pid, strerror(err), err);
+            printf_error("kill(%d, 0) FAILED %s (%d)\n", options.Pid, strerror(err), err);
         }
     }
     crashInfo->CleanupAndResumeProcess();

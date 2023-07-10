@@ -749,7 +749,8 @@ void InlineResult::Report()
     if (IsFailure() && (m_Call != nullptr))
     {
         // compiler should have revoked candidacy on the call by now
-        assert((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0);
+        // Unless it's a call has both failed and successful candidates (GDV candidates)
+        assert(((m_Call->gtFlags & GTF_CALL_INLINE_CANDIDATE) == 0) || m_Call->IsGuardedDevirtualizationCandidate());
 
         if (m_Call->gtInlineObservation == InlineObservation::CALLEE_UNUSED_INITIAL)
         {
@@ -1281,7 +1282,7 @@ InlineContext* InlineStrategy::NewContext(InlineContext* parentContext, Statemen
 
     if (call->IsInlineCandidate())
     {
-        InlineCandidateInfo* info   = call->gtInlineCandidateInfo;
+        InlineCandidateInfo* info   = call->GetSingleInlineCandidateInfo();
         context->m_Code             = info->methInfo.ILCode;
         context->m_ILSize           = info->methInfo.ILCodeSize;
         context->m_ActualCallOffset = info->ilOffset;
@@ -1715,7 +1716,7 @@ CLRRandom* InlineStrategy::GetRandom(int optionalSeed)
         if (m_Compiler->compRandomInlineStress())
         {
             externalSeed = getJitStressLevel();
-            // We can set COMPlus_JitStressModeNames without setting COMPlus_JitStress,
+            // We can set DOTNET_JitStressModeNames without setting DOTNET_JitStress,
             // but we need external seed to be non-zero.
             if (externalSeed == 0)
             {

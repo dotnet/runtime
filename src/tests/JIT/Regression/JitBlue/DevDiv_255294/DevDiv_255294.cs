@@ -3,12 +3,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_DevDiv_255294
 {
     static bool f;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         f = true;
         Test_DevDiv_255294 test = new Test_DevDiv_255294();

@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 
 struct Pad
@@ -94,7 +95,8 @@ public class Test_structret1_1
         return (s1);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S sM = new S("test");
 

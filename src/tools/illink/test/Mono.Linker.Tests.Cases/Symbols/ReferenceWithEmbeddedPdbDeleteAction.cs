@@ -4,7 +4,7 @@ using Mono.Linker.Tests.Cases.Symbols.Dependencies;
 
 namespace Mono.Linker.Tests.Cases.Symbols
 {
-	[SetupCompileBefore ("LibraryWithEmbeddedPdbSymbols.dll", new[] { "Dependencies/LibraryWithEmbeddedPdbSymbols.cs" }, additionalArguments: "/debug:embedded", compilerToUse: "csc")]
+	[SetupCompileBefore ("LibraryWithEmbeddedPdbSymbols.dll", new[] { "Dependencies/LibraryWithEmbeddedPdbSymbols.cs" }, additionalArguments: new[] { "/debug:embedded" }, compilerToUse: "csc")]
 	[SetupLinkerLinkSymbols ("false")]
 
 	[RemovedAssembly ("LibraryWithEmbeddedPdbSymbols.dll")]
@@ -16,7 +16,7 @@ namespace Mono.Linker.Tests.Cases.Symbols
 		}
 
 		/// <summary>
-		/// By not using this method we will cause the linker to delete the reference
+		/// By not using this method we will cause the trimmer to delete the reference
 		/// </summary>
 		static void UnusedCodePath ()
 		{

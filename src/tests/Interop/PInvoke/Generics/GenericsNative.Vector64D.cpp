@@ -10,7 +10,7 @@
     #include <mmintrin.h>
 
     typedef __m64 Vector64D;
-#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
     #if defined(_MSC_VER)
         #if defined(TARGET_ARM64)
             #include <arm64_neon.h>

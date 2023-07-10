@@ -86,7 +86,7 @@ namespace Microsoft.CSharp
 
         private static string NullToken => "null";
 
-        private TextWriter Output => _output;
+        private ExposedTabStringIndentedTextWriter Output => _output;
 
         private string QuoteSnippetStringCStyle(string value)
         {

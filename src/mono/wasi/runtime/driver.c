@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,8 +9,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <sys/stat.h>
-
-#define INVARIANT_GLOBALIZATION 1
 
 #include <mono/metadata/appdomain.h>
 #include <mono/metadata/assembly.h>
@@ -64,9 +63,24 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
-extern const char* dotnet_wasi_getbundledfile(const char* name, int* out_length);
-extern void dotnet_wasi_registerbundledassemblies();
+#ifndef INVARIANT_TIMEZONE
+extern void mono_register_timezones_bundle (void);
+#endif /* INVARIANT_TIMEZONE */
+#ifdef WASM_SINGLE_FILE
+extern void mono_register_assemblies_bundle (void);
+#ifndef INVARIANT_GLOBALIZATION
+extern bool mono_bundled_resources_get_data_resource_values (const char *id, const uint8_t **data_out, uint32_t *size_out);
+extern void mono_register_icu_bundle (void);
+#endif /* INVARIANT_GLOBALIZATION */
+#endif /* WASM_SINGLE_FILE */
+
+extern void mono_bundled_resources_add_assembly_resource (const char *id, const char *name, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
+extern void mono_bundled_resources_add_assembly_symbol_resource (const char *id, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
+extern void mono_bundled_resources_add_satellite_assembly_resource (const char *id, const char *name, const char *culture, const uint8_t *data, uint32_t size, void (*free_func)(void *, void *), void *free_data);
+
 extern const char* dotnet_wasi_getentrypointassemblyname();
+int32_t mono_wasi_load_icu_data(const void* pData);
+void load_icu_data (void);
 
 int mono_wasm_enable_gc = 1;
 
@@ -101,15 +115,15 @@ typedef uint32_t target_mword;
 typedef target_mword SgenDescriptor;
 typedef SgenDescriptor MonoGCDescriptor;
 
-typedef struct WasmAssembly_ WasmAssembly;
+#ifdef DRIVER_GEN
+#include "driver-gen.c"
+#endif
 
-struct WasmAssembly_ {
-	MonoBundledAssembly assembly;
-	WasmAssembly *next;
-};
-
-static WasmAssembly *assemblies;
-static int assembly_count;
+static void
+bundled_resources_free_func (void *resource, void *free_data)
+{
+	free (free_data);
+}
 
 int
 mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned int size)
@@ -120,28 +134,14 @@ mono_wasm_add_assembly (const char *name, const unsigned char *data, unsigned in
 		char *new_name = strdup (name);
 		//FIXME handle debugging assemblies with .exe extension
 		strcpy (&new_name [len - 3], "dll");
-		mono_register_symfile_for_assembly (new_name, data, size);
+		mono_bundled_resources_add_assembly_symbol_resource (new_name, data, size, bundled_resources_free_func, new_name);
 		return 1;
 	}
-	WasmAssembly *entry = g_new0 (WasmAssembly, 1);
-	entry->assembly.name = strdup (name);
-	entry->assembly.data = data;
-	entry->assembly.size = size;
-	entry->next = assemblies;
-	assemblies = entry;
-	++assembly_count;
+	char *assembly_name = strdup (name);
+	assert (assembly_name);
+	mono_bundled_resources_add_assembly_resource (assembly_name, assembly_name, data, size, bundled_resources_free_func, assembly_name);
 	return mono_has_pdb_checksum ((char*)data, size);
 }
-
-typedef struct WasmSatelliteAssembly_ WasmSatelliteAssembly;
-
-struct WasmSatelliteAssembly_ {
-	MonoBundledSatelliteAssembly *assembly;
-	WasmSatelliteAssembly *next;
-};
-
-static WasmSatelliteAssembly *satellite_assemblies;
-static int satellite_assembly_count;
 
 char* gai_strerror(int code) {
 	char* result = malloc(256);
@@ -149,14 +149,40 @@ char* gai_strerror(int code) {
 	return result;
 }
 
+static void
+bundled_resources_free_slots_func (void *resource, void *free_data)
+{
+	if (free_data) {
+		void **slots = (void **)free_data;
+		for (int i = 0; slots [i]; i++)
+			free (slots [i]);
+	}
+}
+
 void
 mono_wasm_add_satellite_assembly (const char *name, const char *culture, const unsigned char *data, unsigned int size)
 {
-	WasmSatelliteAssembly *entry = g_new0 (WasmSatelliteAssembly, 1);
-	entry->assembly = mono_create_new_bundled_satellite_assembly (name, culture, data, size);
-	entry->next = satellite_assemblies;
-	satellite_assemblies = entry;
-	++satellite_assembly_count;
+	int id_len = strlen (culture) + 1 + strlen (name); // +1 is for the "/"
+	char *id = (char *)malloc (sizeof (char) * (id_len + 1)); // +1 is for the terminating null character
+	assert (id);
+
+	int num_char = snprintf (id, (id_len + 1), "%s/%s", culture, name);
+	assert (num_char > 0 && num_char == id_len);
+
+	char *satellite_assembly_name = strdup (name);
+	assert (satellite_assembly_name);
+
+	char *satellite_assembly_culture = strdup (culture);
+	assert (satellite_assembly_culture);
+
+	void **slots = malloc (sizeof (void *) * 4);
+	assert (slots);
+	slots [0] = id;
+	slots [1] = satellite_assembly_name;
+	slots [2] = satellite_assembly_culture;
+	slots [3] = NULL;
+
+	mono_bundled_resources_add_satellite_assembly_resource (id, satellite_assembly_name, satellite_assembly_culture, data, size, bundled_resources_free_slots_func, slots);
 }
 
 static void *sysglobal_native_handle;
@@ -312,24 +338,46 @@ get_native_to_interp (MonoMethod *method, void *extra_arg)
 	return addr;
 }
 
-void
-mono_wasm_register_bundled_satellite_assemblies (void)
+#ifndef INVARIANT_GLOBALIZATION
+void load_icu_data (void)
 {
-	/* In legacy satellite_assembly_count is always false */
-	if (satellite_assembly_count) {
-		MonoBundledSatelliteAssembly **satellite_bundle_array =  g_new0 (MonoBundledSatelliteAssembly *, satellite_assembly_count + 1);
-		WasmSatelliteAssembly *cur = satellite_assemblies;
-		int i = 0;
-		while (cur) {
-			satellite_bundle_array [i] = cur->assembly;
-			cur = cur->next;
-			++i;
-		}
-		mono_register_bundled_satellite_assemblies ((const MonoBundledSatelliteAssembly **)satellite_bundle_array);
-	}
-}
+#ifdef WASM_SINGLE_FILE
+	mono_register_icu_bundle ();
 
-void mono_wasm_link_icu_shim (void);
+	const uint8_t *buffer = NULL;
+	uint32_t data_len = 0;
+	if (!mono_bundled_resources_get_data_resource_values ("icudt.dat", &buffer, &data_len)) {
+		printf("Could not load icudt.dat from the bundle");
+		assert(buffer);
+	}
+#else /* WASM_SINGLE_FILE */
+	FILE *fileptr;
+	unsigned char *buffer;
+	long filelen;
+	char filename[256];
+	sprintf(filename, "./icudt.dat");
+
+	fileptr = fopen(filename, "rb");
+	if (fileptr == 0) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+
+	fseek(fileptr, 0, SEEK_END);
+	filelen = ftell(fileptr);
+	rewind(fileptr);
+
+	buffer = (unsigned char *)malloc(filelen * sizeof(char));
+	if(!fread(buffer, filelen, 1, fileptr)) {
+		printf("Failed to load %s\n", filename);
+		fflush(stdout);
+	}
+	fclose(fileptr);
+#endif /* WASM_SINGLE_FILE */
+
+	assert(mono_wasi_load_icu_data(buffer));
+}
+#endif /* INVARIANT_GLOBALIZATION */
 
 void
 cleanup_runtime_config (MonovmRuntimeConfigArguments *args, void *user_data)
@@ -344,19 +392,11 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	const char *interp_opts = "";
 
 #ifndef INVARIANT_GLOBALIZATION
-	mono_wasm_link_icu_shim ();
-#else
-	monoeg_g_setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "true", 1);
-#endif
+	char* invariant_globalization = monoeg_g_getenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT");
+	if (strcmp(invariant_globalization, "true") != 0 && strcmp(invariant_globalization, "1") != 0)
+		load_icu_data();
+#endif /* INVARIANT_GLOBALIZATION */
 
-#ifdef DEBUG
-	monoeg_g_setenv ("MONO_LOG_LEVEL", "debug", 0);
-	monoeg_g_setenv ("MONO_LOG_MASK", "all", 0);
-	// Setting this env var allows Diagnostic.Debug to write to stderr.  In a browser environment this
-	// output will be sent to the console.  Right now this is the only way to emit debug logging from
-	// corlib assemblies.
-	// monoeg_g_setenv ("COMPlus_DebugWriteToStdErr", "1", 0);
-#endif
 
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
@@ -401,6 +441,12 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+#ifndef INVARIANT_TIMEZONE
+	mono_register_timezones_bundle ();
+#endif /* INVARIANT_TIMEZONE */
+#ifdef WASM_SINGLE_FILE
+	mono_register_assemblies_bundle ();
+#endif
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 
@@ -455,19 +501,6 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
 
-	if (assembly_count) {
-		MonoBundledAssembly **bundle_array = g_new0 (MonoBundledAssembly*, assembly_count + 1);
-		WasmAssembly *cur = assemblies;
-		int i = 0;
-		while (cur) {
-			bundle_array [i] = &cur->assembly;
-			cur = cur->next;
-			++i;
-		}
-		mono_register_bundled_assemblies ((const MonoBundledAssembly **)bundle_array);
-	}
-
-	mono_wasm_register_bundled_satellite_assemblies ();
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasi_trace_logger, NULL);
 
@@ -674,38 +707,3 @@ mono_wasm_string_array_new (int size)
 {
 	return mono_array_new (root_domain, mono_get_string_class (), size);
 }
-
-#ifdef _WASI_DEFAULT_MAIN
-int main(int argc, char * argv[]) {
-	printf("TODOWASI: default main for non-relinked, non-aot apps, TODO\n");
-	if (argc < 2) {
-		printf("Error: First argument must be the name of the main assembly\n");
-		return 1;
-	}
-	// Assume the runtime pack has been copied into the output directory as 'runtime'
-	// Otherwise we have to mount an unrelated part of the filesystem within the WASM environment
-	// AJ: not needed right now as we are bundling all the assemblies in the .wasm
-	mono_set_assemblies_path(".:./runtime/native:./runtime/lib/net7.0");
-	mono_wasm_load_runtime("", 0);
-
-	MonoAssembly* assembly = mono_wasm_assembly_load (argv[1]);
-	if (!assembly) {
-		printf("wasi: mono_wasm_assembly_load returned NULL!\n");
-		return 1;
-	}
-	MonoMethod* entry_method = mono_wasi_assembly_get_entry_point (assembly);
-	if (!entry_method) {
-		fprintf(stderr, "Could not find entrypoint in the assembly.\n");
-		exit(1);
-	}
-
-	MonoObject* out_exc;
-	MonoObject* out_res;
-	int ret = mono_runtime_run_main(entry_method, argc, argv, &out_exc);
-	if (out_exc) {
-		mono_print_unhandled_exception(out_exc);
-		exit(1);
-	}
-	return ret;
-}
-#endif

@@ -12,6 +12,7 @@ namespace System.IO.IsolatedStorage
             = typeof(IsolatedStorageFile).GetMethod("ContainsUnknownFiles", BindingFlags.NonPublic | BindingFlags.Instance);
 
         [Theory, MemberData(nameof(ValidStores))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87485", TestPlatforms.MacCatalyst)]
         public void ContainsUnknownFiles_CleanStore(PresetScopes scope)
         {
             TestHelper.WipeStores();
@@ -23,6 +24,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory, MemberData(nameof(ValidStores))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87485", TestPlatforms.MacCatalyst)]
         public void ContainsUnknownFiles_OkFiles(PresetScopes scope)
         {
             TestHelper.WipeStores();
@@ -42,6 +44,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory, MemberData(nameof(ValidStores))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87485", TestPlatforms.MacCatalyst)]
         public void ContainsUnknownFiles_NotOkFiles(PresetScopes scope)
         {
             TestHelper.WipeStores();
@@ -64,6 +67,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory, MemberData(nameof(ValidStores))]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "For mobile platforms root ends with /.isolated-storage/")]
         public void ContainsUnknownFiles_NotOkDirectory(PresetScopes scope)
         {
             TestHelper.WipeStores();

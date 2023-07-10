@@ -4,13 +4,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using Xunit;
 
 namespace StructInClass
 {
     internal class StructInClass
     {
     }
-    internal class TestClass
+    public class TestClass
     {
         public struct TheStruct
         {
@@ -22,7 +23,8 @@ namespace StructInClass
             Struct.fieldinStruct = "xyz";
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

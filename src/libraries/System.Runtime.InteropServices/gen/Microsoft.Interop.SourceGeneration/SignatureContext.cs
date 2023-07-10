@@ -12,7 +12,6 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Diagnostics;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
@@ -30,6 +29,8 @@ namespace Microsoft.Interop
 
         public ImmutableArray<TypePositionInfo> ElementTypeInformation { get; init; }
 
+        public IEnumerable<TypePositionInfo> ManagedParameters => ElementTypeInformation.Where(tpi => !TypePositionInfo.IsSpecialIndex(tpi.ManagedIndex));
+
         public TypeSyntax StubReturnType { get; init; }
 
         public IEnumerable<ParameterSyntax> StubParameters
@@ -41,9 +42,24 @@ namespace Microsoft.Interop
                     if (typeInfo.ManagedIndex != TypePositionInfo.UnsetIndex
                         && typeInfo.ManagedIndex != TypePositionInfo.ReturnIndex)
                     {
+                        SyntaxTokenList tokens = TokenList();
+
+                        // "out" parameters are implicitly scoped, so we can't put the "scoped" keyword on them.
+                        // All other cases of explicit parameters are only scoped when the "scoped" keyword is present.
+                        // When the "scoped" keyword is present, it must be present on all declarations.
+                        if (typeInfo.ScopedKind != ScopedKind.None && typeInfo.RefKind != RefKind.Out)
+                        {
+                            tokens = tokens.Add(Token(SyntaxKind.ScopedKeyword));
+                        }
+
+                        if (typeInfo.IsByRef)
+                        {
+                            tokens = tokens.Add(Token(typeInfo.RefKindSyntax));
+                        }
+
                         yield return Parameter(Identifier(typeInfo.InstanceIdentifier))
                             .WithType(typeInfo.ManagedType.Syntax)
-                            .WithModifiers(TokenList(Token(typeInfo.RefKindSyntax)));
+                            .WithModifiers(tokens);
                     }
                 }
             }
@@ -69,7 +85,8 @@ namespace Microsoft.Interop
                 additionalAttrs.Add(
                     AttributeList(
                         SingletonSeparatedList(
-                            Attribute(ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute),
+                            Attribute(
+                                ParseName(TypeNames.System_CodeDom_Compiler_GeneratedCodeAttribute_WithGlobal),
                                 AttributeArgumentList(
                                     SeparatedList(
                                         new[]
@@ -87,7 +104,7 @@ namespace Microsoft.Interop
                             // Adding the skip locals init indiscriminately since the source generator is
                             // targeted at non-blittable method signatures which typically will contain locals
                             // in the generated code.
-                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute)))));
+                            Attribute(ParseName(TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_WithGlobal)))));
             }
 
             return new SignatureContext()
@@ -123,7 +140,7 @@ namespace Microsoft.Interop
             retTypeInfo = retTypeInfo with
             {
                 ManagedIndex = TypePositionInfo.ReturnIndex,
-                NativeIndex = TypePositionInfo.ReturnIndex
+                NativeIndex = TypePositionInfo.ReturnIndex,
             };
 
             typeInfos.Add(retTypeInfo);
@@ -170,7 +187,7 @@ namespace Microsoft.Interop
             return false;
 
             static bool IsSkipLocalsInitAttribute(AttributeData a)
-                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute;
+                => a.AttributeClass?.ToDisplayString() == TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata;
         }
     }
 }

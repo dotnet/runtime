@@ -80,7 +80,7 @@ namespace System.Reflection.Emit
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             m_type.ThrowIfCreated();
 
@@ -91,18 +91,10 @@ namespace System.Reflection.Emit
                 binaryAttribute);
         }
 
-        // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
-        {
-            m_type.ThrowIfCreated();
-            customBuilder.CreateCustomAttribute(m_module, m_evToken);
-        }
-
-        // These are package private so that TypeBuilder can access them.
-        private string m_name;         // The name of the event
-        private int m_evToken;      // The token of this event
-        private RuntimeModuleBuilder m_module;
-        private EventAttributes m_attributes;
-        private RuntimeTypeBuilder m_type;
+        private readonly string m_name;         // The name of the event
+        private readonly int m_evToken;      // The token of this event
+        private readonly RuntimeModuleBuilder m_module;
+        private readonly EventAttributes m_attributes;
+        private readonly RuntimeTypeBuilder m_type;
     }
 }

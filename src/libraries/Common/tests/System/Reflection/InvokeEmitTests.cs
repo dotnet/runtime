@@ -34,8 +34,8 @@ namespace System.Reflection.Tests
 
         private static bool IsEmitInvokeSupported()
         {
-            // Emit is only used for Invoke when RuntimeFeature.IsDynamicCodeCompiled is true.
-            return RuntimeFeature.IsDynamicCodeCompiled;
+            // Emit is only used for Invoke when RuntimeFeature.IsDynamicCodeSupported is true.
+            return RuntimeFeature.IsDynamicCodeSupported;
         }
 
         private static string InterpretedMethodName => PlatformDetection.IsMonoRuntime ?

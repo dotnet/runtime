@@ -38,7 +38,7 @@ internal sealed class DexBuilder
     {
         string[] classFiles = Directory.GetFiles(inputDir, "*.class", SearchOption.AllDirectories);
 
-        if (!classFiles.Any())
+        if (classFiles.Length == 0)
             throw new InvalidOperationException("Didn't find any .class files");
 
         Utils.RunProcess(_logger, _androidSdk.D8Path, $"--no-desugaring {string.Join(" ", classFiles)}", workingDir: _workingDir);

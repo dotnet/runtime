@@ -3064,6 +3064,7 @@ namespace System.Reflection.Metadata.Ecma335
         public void String() { }
         public System.Reflection.Metadata.Ecma335.SignatureTypeEncoder SZArray() { throw null; }
         public void Type(System.Reflection.Metadata.EntityHandle type, bool isValueType) { }
+        public void TypedReference() { }
         public void UInt16() { }
         public void UInt32() { }
         public void UInt64() { }

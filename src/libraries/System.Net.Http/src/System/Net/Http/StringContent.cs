@@ -45,7 +45,7 @@ namespace System.Net.Http
         /// <param name="encoding">The encoding to use for the content.</param>
         /// <param name="mediaType">The media type to use for the content.</param>
         public StringContent(string content, Encoding? encoding, string mediaType)
-            : this(content, encoding, new MediaTypeHeaderValue(mediaType, (encoding ?? DefaultStringEncoding).WebName))
+            : this(content, encoding, new MediaTypeHeaderValue(mediaType ?? DefaultMediaType, (encoding ?? DefaultStringEncoding).WebName))
         {
         }
 

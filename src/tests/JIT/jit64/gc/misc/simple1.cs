@@ -3,15 +3,17 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
     public Object O;
 }
 
-class test
+public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S s = new S();
 
@@ -28,7 +30,7 @@ class test
 
     }
 
-    public static S foo(S s)
+    private static S foo(S s)
     {
         Console.WriteLine(s.O);
 

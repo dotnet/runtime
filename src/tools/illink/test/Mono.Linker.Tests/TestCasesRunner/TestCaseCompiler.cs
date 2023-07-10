@@ -60,7 +60,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var testAssembly = CompileAssembly (options);
 
 
-			// The compile after step is used by tests to mess around with the input to the linker.  Generally speaking, it doesn't seem like we would ever want to mess with the
+			// The compile after step is used by tests to mess around with the input to ILLink.  Generally speaking, it doesn't seem like we would ever want to mess with the
 			// expectations assemblies because this would undermine our ability to inspect them for expected results during ResultChecking.  The UnityLinker UnresolvedHandling tests depend on this
 			// behavior of skipping the after test compile
 			if (outputDirectory != _sandbox.ExpectationsDirectory) {
@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			var allDefines = defines.Concat (setupCompileInfo.Defines ?? Array.Empty<string> ()).ToArray ();
 			var allReferences = references.Concat (setupCompileInfo.References?.Select (p => MakeSupportingAssemblyReferencePathAbsolute (outputDirectory, p)) ?? Array.Empty<NPath> ()).ToArray ();
-			string[] additionalArguments = string.IsNullOrEmpty (setupCompileInfo.AdditionalArguments) ? null : new[] { setupCompileInfo.AdditionalArguments };
+			string[] additionalArguments = setupCompileInfo.AdditionalArguments;
 			return new CompilerOptions {
 				OutputPath = outputDirectory.Combine (setupCompileInfo.OutputName),
 				SourceFiles = sourceFiles,

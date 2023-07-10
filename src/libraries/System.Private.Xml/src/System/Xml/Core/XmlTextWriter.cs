@@ -350,8 +350,7 @@ namespace System.Xml
             get { return _indentation; }
             set
             {
-                if (value < 0)
-                    throw new ArgumentException(SR.Xml_InvalidIndentation);
+                ArgumentOutOfRangeException.ThrowIfNegative(value);
                 _indentation = value;
             }
         }
@@ -496,7 +495,7 @@ namespace System.Xml
                     if (ns == null)
                     {
                         // use defined prefix
-                        if (prefix != null && prefix.Length != 0 && (LookupNamespace(prefix) == -1))
+                        if (!string.IsNullOrEmpty(prefix) && (LookupNamespace(prefix) == -1))
                         {
                             throw new ArgumentException(SR.Xml_UndefPrefix);
                         }
@@ -531,7 +530,7 @@ namespace System.Xml
                         }
                     }
                     _stack[_top].prefix = null;
-                    if (prefix != null && prefix.Length != 0)
+                    if (!string.IsNullOrEmpty(prefix))
                     {
                         _stack[_top].prefix = prefix;
                         _textWriter.Write(prefix);
@@ -540,7 +539,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if ((ns != null && ns.Length != 0) || (prefix != null && prefix.Length != 0))
+                    if (!string.IsNullOrEmpty(ns) || !string.IsNullOrEmpty(prefix))
                     {
                         throw new ArgumentException(SR.Xml_NoNamespaces);
                     }
@@ -611,7 +610,7 @@ namespace System.Xml
                             throw new ArgumentException(SR.Xml_XmlnsBelongsToReservedNs);
                         }
 
-                        if (localName == null || localName.Length == 0)
+                        if (string.IsNullOrEmpty(localName))
                         {
                             localName = prefix;
                             prefix = null;
@@ -672,7 +671,7 @@ namespace System.Xml
                         }
                     }
 
-                    if (prefix != null && prefix.Length != 0)
+                    if (!string.IsNullOrEmpty(prefix))
                     {
                         _textWriter.Write(prefix);
                         _textWriter.Write(':');
@@ -680,7 +679,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if ((ns != null && ns.Length != 0) || (prefix != null && prefix.Length != 0))
+                    if (!string.IsNullOrEmpty(ns) || !string.IsNullOrEmpty(prefix))
                     {
                         throw new ArgumentException(SR.Xml_NoNamespaces);
                     }
@@ -1059,7 +1058,7 @@ namespace System.Xml
                 AutoComplete(Token.Content);
                 if (_namespaces)
                 {
-                    if (ns != null && ns.Length != 0 && ns != _stack[_top].defaultNs)
+                    if (!string.IsNullOrEmpty(ns) && ns != _stack[_top].defaultNs)
                     {
                         string? prefix = FindPrefix(ns);
                         if (prefix == null)
@@ -1080,7 +1079,7 @@ namespace System.Xml
                         }
                     }
                 }
-                else if (ns != null && ns.Length != 0)
+                else if (!string.IsNullOrEmpty(ns))
                 {
                     throw new ArgumentException(SR.Xml_NoNamespaces);
                 }
@@ -1097,10 +1096,7 @@ namespace System.Xml
         // Returns the closest prefix defined in the current namespace scope for the specified namespace URI.
         public override string? LookupPrefix(string ns)
         {
-            if (ns == null || ns.Length == 0)
-            {
-                throw new ArgumentException(SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(ns);
 
             string? s = FindPrefix(ns);
             if (s == null && ns == _stack[_top].defaultNs)
@@ -1151,10 +1147,7 @@ namespace System.Xml
             {
                 AutoComplete(Token.Content);
 
-                if (name == null || name.Length == 0)
-                {
-                    throw new ArgumentException(SR.Xml_EmptyName);
-                }
+                ArgumentException.ThrowIfNullOrEmpty(name);
                 if (!ValidateNames.IsNmtokenNoNamespaces(name))
                 {
                     throw new ArgumentException(SR.Format(SR.Xml_InvalidNameChars, name));
@@ -1693,10 +1686,7 @@ namespace System.Xml
         // all valid name characters at that position. This can't be changed because of backwards compatibility.
         private void ValidateName(string name, bool isNCName)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException(SR.Xml_EmptyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             int nameLength = name.Length;
 

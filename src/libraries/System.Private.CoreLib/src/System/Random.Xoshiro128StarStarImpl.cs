@@ -90,46 +90,16 @@ namespace System
 
             public override int Next(int maxValue)
             {
-                if (maxValue > 1)
-                {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling((uint)maxValue);
-                    while (true)
-                    {
-                        uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
-                        if (result < (uint)maxValue)
-                        {
-                            return (int)result;
-                        }
-                    }
-                }
+                Debug.Assert(maxValue >= 0);
 
-                Debug.Assert(maxValue == 0 || maxValue == 1);
-                return 0;
+                return (int)NextUInt32((uint)maxValue, this);
             }
 
             public override int Next(int minValue, int maxValue)
             {
-                uint exclusiveRange = (uint)(maxValue - minValue);
+                Debug.Assert(minValue <= maxValue);
 
-                if (exclusiveRange > 1)
-                {
-                    // Narrow down to the smallest range [0, 2^bits] that contains maxValue.
-                    // Then repeatedly generate a value in that outer range until we get one within the inner range.
-                    int bits = BitOperations.Log2Ceiling(exclusiveRange);
-                    while (true)
-                    {
-                        uint result = NextUInt32() >> (sizeof(uint) * 8 - bits);
-                        if (result < exclusiveRange)
-                        {
-                            return (int)result + minValue;
-                        }
-                    }
-                }
-
-                Debug.Assert(minValue == maxValue || minValue + 1 == maxValue);
-                return minValue;
+                return (int)NextUInt32((uint)(maxValue - minValue), this) + minValue;
             }
 
             public override long NextInt64()
@@ -146,6 +116,9 @@ namespace System
                     }
                 }
             }
+
+            // NextInt64 in Xoshiro128 has not been implemented with the fastrange algorithm like the related methods.
+            // Benchmarking showed that on 32-bit changing implementation could cause regression.
 
             public override long NextInt64(long maxValue)
             {

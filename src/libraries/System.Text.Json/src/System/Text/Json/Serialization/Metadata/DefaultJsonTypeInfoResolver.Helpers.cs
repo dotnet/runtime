@@ -5,18 +5,42 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
     public partial class DefaultJsonTypeInfoResolver
     {
+        internal static MemberAccessor MemberAccessor
+        {
+            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+            get
+            {
+                return s_memberAccessor ??=
+#if NETCOREAPP
+                // if dynamic code isn't supported, fallback to reflection
+                RuntimeFeature.IsDynamicCodeSupported ?
+                    new ReflectionEmitCachingMemberAccessor() :
+                    new ReflectionMemberAccessor();
+#elif NETFRAMEWORK
+                    new ReflectionEmitCachingMemberAccessor();
+#else
+                    new ReflectionMemberAccessor();
+#endif
+            }
+        }
+
+        private static MemberAccessor? s_memberAccessor;
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonTypeInfo CreateTypeInfoCore(Type type, JsonConverter converter, JsonSerializerOptions options)
         {
             JsonTypeInfo typeInfo = JsonTypeInfo.CreateJsonTypeInfo(type, converter, options);
             typeInfo.NumberHandling = GetNumberHandlingForType(typeInfo.Type);
+            typeInfo.PreferredPropertyObjectCreationHandling = GetObjectCreationHandlingForType(typeInfo.Type);
+
             if (typeInfo.Kind == JsonTypeInfoKind.Object)
             {
                 typeInfo.UnmappedMemberHandling = GetUnmappedMemberHandling(typeInfo.Type);
@@ -25,7 +49,7 @@ namespace System.Text.Json.Serialization.Metadata
             typeInfo.PopulatePolymorphismMetadata();
             typeInfo.MapInterfaceTypesToCallbacks();
 
-            Func<object>? createObject = JsonSerializerOptions.MemberAccessorStrategy.CreateConstructor(typeInfo.Type);
+            Func<object>? createObject = MemberAccessor.CreateConstructor(typeInfo.Type);
             typeInfo.SetCreateObjectIfCompatible(createObject);
             typeInfo.CreateObjectForExtensionDataProperty = createObject;
 
@@ -78,7 +102,7 @@ namespace System.Text.Json.Serialization.Metadata
 
             if (state.IsPropertyOrderSpecified)
             {
-                typeInfo.SortProperties();
+                typeInfo.PropertyList.SortProperties();
             }
         }
 
@@ -99,72 +123,44 @@ namespace System.Text.Json.Serialization.Metadata
                 BindingFlags.NonPublic |
                 BindingFlags.DeclaredOnly;
 
-            PropertyInfo[] properties = currentType.GetProperties(BindingFlags);
-
-            foreach (PropertyInfo propertyInfo in properties)
+            foreach (PropertyInfo propertyInfo in currentType.GetProperties(BindingFlags))
             {
-                string propertyName = propertyInfo.Name;
-
                 // Ignore indexers and virtual properties that have overrides that were [JsonIgnore]d.
                 if (propertyInfo.GetIndexParameters().Length > 0 ||
-                    PropertyIsOverriddenAndIgnored(propertyName, propertyInfo.PropertyType, propertyInfo.IsVirtual(), state.IgnoredProperties))
+                    PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredProperties))
                 {
                     continue;
                 }
 
-                // For now we only support public properties (i.e. setter and/or getter is public).
+                bool hasJsonIncludeAttribute = propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+
+                // Only include properties that either have a public getter or a public setter or have the JsonIncludeAttribute set.
                 if (propertyInfo.GetMethod?.IsPublic == true ||
-                    propertyInfo.SetMethod?.IsPublic == true)
+                    propertyInfo.SetMethod?.IsPublic == true ||
+                    hasJsonIncludeAttribute)
                 {
                     AddMember(
                         typeInfo,
                         typeToConvert: propertyInfo.PropertyType,
                         memberInfo: propertyInfo,
                         shouldCheckMembersForRequiredMemberAttribute,
+                        hasJsonIncludeAttribute,
                         ref state);
-                }
-                else
-                {
-                    if (propertyInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(propertyName, currentType);
-                    }
-
-                    // Non-public properties should not be included for (de)serialization.
                 }
             }
 
             foreach (FieldInfo fieldInfo in currentType.GetFields(BindingFlags))
             {
-                string fieldName = fieldInfo.Name;
-
-                if (PropertyIsOverriddenAndIgnored(fieldName, fieldInfo.FieldType, currentMemberIsVirtual: false, state.IgnoredProperties))
+                bool hasJsonIncludeAtribute = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
+                if (hasJsonIncludeAtribute || (fieldInfo.IsPublic && typeInfo.Options.IncludeFields))
                 {
-                    continue;
-                }
-
-                bool hasJsonInclude = fieldInfo.GetCustomAttribute<JsonIncludeAttribute>(inherit: false) != null;
-
-                if (fieldInfo.IsPublic)
-                {
-                    if (hasJsonInclude || typeInfo.Options.IncludeFields)
-                    {
-                        AddMember(
-                            typeInfo,
-                            typeToConvert: fieldInfo.FieldType,
-                            memberInfo: fieldInfo,
-                            shouldCheckMembersForRequiredMemberAttribute,
-                            ref state);
-                    }
-                }
-                else
-                {
-                    if (hasJsonInclude)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(fieldName, currentType);
-                    }
-
-                    // Non-public fields should not be included for (de)serialization.
+                    AddMember(
+                        typeInfo,
+                        typeToConvert: fieldInfo.FieldType,
+                        memberInfo: fieldInfo,
+                        shouldCheckMembersForRequiredMemberAttribute,
+                        hasJsonIncludeAtribute,
+                        ref state);
                 }
             }
         }
@@ -176,9 +172,10 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             bool shouldCheckForRequiredKeyword,
+            bool hasJsonIncludeAttribute,
             ref JsonTypeInfo.PropertyHierarchyResolutionState state)
         {
-            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeInfo.Options, shouldCheckForRequiredKeyword);
+            JsonPropertyInfo? jsonPropertyInfo = CreatePropertyInfo(typeInfo, typeToConvert, memberInfo, typeInfo.Options, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
             if (jsonPropertyInfo == null)
             {
                 // ignored invalid property
@@ -186,7 +183,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             Debug.Assert(jsonPropertyInfo.Name != null);
-            typeInfo.AddProperty(jsonPropertyInfo, ref state);
+            typeInfo.PropertyList.AddPropertyWithConflictResolution(jsonPropertyInfo, ref state);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -196,7 +193,8 @@ namespace System.Text.Json.Serialization.Metadata
             Type typeToConvert,
             MemberInfo memberInfo,
             JsonSerializerOptions options,
-            bool shouldCheckForRequiredKeyword)
+            bool shouldCheckForRequiredKeyword,
+            bool hasJsonIncludeAttribute)
         {
             JsonIgnoreCondition? ignoreCondition = memberInfo.GetCustomAttribute<JsonIgnoreAttribute>(inherit: false)?.Condition;
 
@@ -212,7 +210,7 @@ namespace System.Text.Json.Serialization.Metadata
             JsonConverter? customConverter;
             try
             {
-                customConverter = DefaultJsonTypeInfoResolver.GetCustomConverterForMember(typeToConvert, memberInfo, options);
+                customConverter = GetCustomConverterForMember(typeToConvert, memberInfo, options);
             }
             catch (InvalidOperationException) when (ignoreCondition == JsonIgnoreCondition.Always)
             {
@@ -221,7 +219,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert);
-            jsonPropertyInfo.InitializeUsingMemberReflection(memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword);
+            PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
             return jsonPropertyInfo;
         }
 
@@ -231,26 +229,24 @@ namespace System.Text.Json.Serialization.Metadata
             return numberHandlingAttribute?.Handling;
         }
 
+        private static JsonObjectCreationHandling? GetObjectCreationHandlingForType(Type type)
+        {
+            JsonObjectCreationHandlingAttribute? creationHandlingAttribute = type.GetUniqueCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            return creationHandlingAttribute?.Handling;
+        }
+
         private static JsonUnmappedMemberHandling? GetUnmappedMemberHandling(Type type)
         {
             JsonUnmappedMemberHandlingAttribute? numberHandlingAttribute = type.GetUniqueCustomAttribute<JsonUnmappedMemberHandlingAttribute>(inherit: false);
             return numberHandlingAttribute?.UnmappedMemberHandling;
         }
 
-        private static bool PropertyIsOverriddenAndIgnored(
-            string currentMemberName,
-            Type currentMemberType,
-            bool currentMemberIsVirtual,
-            Dictionary<string, JsonPropertyInfo>? ignoredMembers)
+        private static bool PropertyIsOverriddenAndIgnored(PropertyInfo propertyInfo, Dictionary<string, JsonPropertyInfo>? ignoredMembers)
         {
-            if (ignoredMembers == null || !ignoredMembers.TryGetValue(currentMemberName, out JsonPropertyInfo? ignoredMember))
-            {
-                return false;
-            }
-
-            return currentMemberType == ignoredMember.PropertyType &&
-                currentMemberIsVirtual &&
-                ignoredMember.IsVirtual;
+            return propertyInfo.IsVirtual() &&
+                ignoredMembers?.TryGetValue(propertyInfo.Name, out JsonPropertyInfo? ignoredMember) == true &&
+                ignoredMember.IsVirtual &&
+                propertyInfo.PropertyType == ignoredMember.PropertyType;
         }
 
         private static void PopulateParameterInfoValues(JsonTypeInfo typeInfo)
@@ -284,6 +280,133 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             typeInfo.ParameterInfoValues = jsonParameters;
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private static void PopulatePropertyInfo(
+            JsonPropertyInfo jsonPropertyInfo,
+            MemberInfo memberInfo,
+            JsonConverter? customConverter,
+            JsonIgnoreCondition? ignoreCondition,
+            bool shouldCheckForRequiredKeyword,
+            bool hasJsonIncludeAttribute)
+        {
+            Debug.Assert(jsonPropertyInfo.AttributeProvider == null);
+
+            switch (jsonPropertyInfo.AttributeProvider = memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                    jsonPropertyInfo.MemberName = propertyInfo.Name;
+                    jsonPropertyInfo.IsVirtual = propertyInfo.IsVirtual();
+                    jsonPropertyInfo.MemberType = MemberTypes.Property;
+                    break;
+                case FieldInfo fieldInfo:
+                    jsonPropertyInfo.MemberName = fieldInfo.Name;
+                    jsonPropertyInfo.MemberType = MemberTypes.Field;
+                    break;
+                default:
+                    Debug.Fail("Only FieldInfo and PropertyInfo members are supported.");
+                    break;
+            }
+
+            jsonPropertyInfo.CustomConverter = customConverter;
+            DeterminePropertyPolicies(jsonPropertyInfo, memberInfo);
+            DeterminePropertyName(jsonPropertyInfo, memberInfo);
+            DeterminePropertyIsRequired(jsonPropertyInfo, memberInfo, shouldCheckForRequiredKeyword);
+
+            if (ignoreCondition != JsonIgnoreCondition.Always)
+            {
+                jsonPropertyInfo.DetermineReflectionPropertyAccessors(memberInfo, useNonPublicAccessors: hasJsonIncludeAttribute);
+            }
+
+            jsonPropertyInfo.IgnoreCondition = ignoreCondition;
+            jsonPropertyInfo.IsExtensionData = memberInfo.GetCustomAttribute<JsonExtensionDataAttribute>(inherit: false) != null;
+        }
+
+        private static void DeterminePropertyPolicies(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        {
+            JsonPropertyOrderAttribute? orderAttr = memberInfo.GetCustomAttribute<JsonPropertyOrderAttribute>(inherit: false);
+            propertyInfo.Order = orderAttr?.Order ?? 0;
+
+            JsonNumberHandlingAttribute? numberHandlingAttr = memberInfo.GetCustomAttribute<JsonNumberHandlingAttribute>(inherit: false);
+            propertyInfo.NumberHandling = numberHandlingAttr?.Handling;
+
+            JsonObjectCreationHandlingAttribute? objectCreationHandlingAttr = memberInfo.GetCustomAttribute<JsonObjectCreationHandlingAttribute>(inherit: false);
+            propertyInfo.ObjectCreationHandling = objectCreationHandlingAttr?.Handling;
+        }
+
+        private static void DeterminePropertyName(JsonPropertyInfo propertyInfo, MemberInfo memberInfo)
+        {
+            JsonPropertyNameAttribute? nameAttribute = memberInfo.GetCustomAttribute<JsonPropertyNameAttribute>(inherit: false);
+            string? name;
+            if (nameAttribute != null)
+            {
+                name = nameAttribute.Name;
+            }
+            else if (propertyInfo.Options.PropertyNamingPolicy != null)
+            {
+                name = propertyInfo.Options.PropertyNamingPolicy.ConvertName(memberInfo.Name);
+            }
+            else
+            {
+                name = memberInfo.Name;
+            }
+
+            if (name == null)
+            {
+                ThrowHelper.ThrowInvalidOperationException_SerializerPropertyNameNull(propertyInfo);
+            }
+
+            propertyInfo.Name = name;
+        }
+
+        private static void DeterminePropertyIsRequired(JsonPropertyInfo propertyInfo, MemberInfo memberInfo, bool shouldCheckForRequiredKeyword)
+        {
+            propertyInfo.IsRequired =
+                memberInfo.GetCustomAttribute<JsonRequiredAttribute>(inherit: false) != null
+                || (shouldCheckForRequiredKeyword && memberInfo.HasRequiredMemberAttribute());
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal static void DeterminePropertyAccessors<T>(JsonPropertyInfo<T> jsonPropertyInfo, MemberInfo memberInfo, bool useNonPublicAccessors)
+        {
+            Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
+
+            switch (memberInfo)
+            {
+                case PropertyInfo propertyInfo:
+                    MethodInfo? getMethod = propertyInfo.GetMethod;
+                    if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                    {
+                        jsonPropertyInfo.Get = MemberAccessor.CreatePropertyGetter<T>(propertyInfo);
+                    }
+
+                    MethodInfo? setMethod = propertyInfo.SetMethod;
+                    if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                    {
+                        jsonPropertyInfo.Set = MemberAccessor.CreatePropertySetter<T>(propertyInfo);
+                    }
+
+                    break;
+
+                case FieldInfo fieldInfo:
+                    Debug.Assert(fieldInfo.IsPublic || useNonPublicAccessors);
+
+                    jsonPropertyInfo.Get = MemberAccessor.CreateFieldGetter<T>(fieldInfo);
+
+                    if (!fieldInfo.IsInitOnly)
+                    {
+                        jsonPropertyInfo.Set = MemberAccessor.CreateFieldSetter<T>(fieldInfo);
+                    }
+
+                    break;
+
+                default:
+                    Debug.Fail($"Invalid MemberInfo type: {memberInfo.MemberType}");
+                    break;
+            }
         }
     }
 }

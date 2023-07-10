@@ -32,7 +32,8 @@ namespace System
           ISerializable,
           IBinaryInteger<nint>,
           IMinMaxValue<nint>,
-          ISignedNumber<nint>
+          ISignedNumber<nint>,
+          IUtf8SpanFormattable
     {
         private readonly nint _value;
 
@@ -210,6 +211,10 @@ namespace System
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            ((nint_t)_value).TryFormat(utf8Destination, out bytesWritten, format, provider);
+
         public static nint Parse(string s) => (nint)nint_t.Parse(s);
         public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);
         public static nint Parse(string s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
@@ -329,7 +334,7 @@ namespace System
 
                 if (source.Length > sizeof(nint_t))
                 {
-                    if (source[..^sizeof(nint_t)].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[..^sizeof(nint_t)].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range
@@ -411,7 +416,7 @@ namespace System
 
                 if (source.Length > sizeof(nint_t))
                 {
-                    if (source[sizeof(nint_t)..].IndexOfAnyExcept((byte)sign) >= 0)
+                    if (source[sizeof(nint_t)..].ContainsAnyExcept((byte)sign))
                     {
                         // When we are unsigned and have any non-zero leading data or signed with any non-set leading
                         // data, we are a large positive/negative, respectively, and therefore definitely out of range

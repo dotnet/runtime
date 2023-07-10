@@ -165,6 +165,16 @@ namespace System.Security.Cryptography
                     DeriveSecretAgreement);
             }
 
+            public override byte[] DeriveRawSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey)
+            {
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ThrowIfDisposed();
+
+                byte[]? secretAgreement = DeriveSecretAgreement(otherPartyPublicKey, hasher: null);
+                Debug.Assert(secretAgreement is not null);
+                return secretAgreement;
+            }
+
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
                 if (!(otherPartyPublicKey is ECDiffieHellmanSecurityTransformsPublicKey secTransPubKey))
@@ -238,7 +248,7 @@ namespace System.Security.Cryptography
 
             private sealed class ECDiffieHellmanSecurityTransformsPublicKey : ECDiffieHellmanPublicKey
             {
-                private EccSecurityTransforms _ecc;
+                private readonly EccSecurityTransforms _ecc;
 
                 public ECDiffieHellmanSecurityTransformsPublicKey(ECParameters ecParameters)
                 {

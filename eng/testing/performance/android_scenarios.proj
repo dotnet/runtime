@@ -35,6 +35,18 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Android Benchmarks.Droid APK Size">
+        <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+        <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_CORRELATION_PAYLOAD%\MonoBenchmarksDroid.apk .;$(Python) pre.py --apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="SOD - Android Benchmarks.Droid Extracted Size">
+        <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+        <PreCommands>cd $(ScenarioDirectory)bdnandroid;copy %HELIX_CORRELATION_PAYLOAD%\MonoBenchmarksDroid.apk .;$(Python) pre.py --unzip --apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
     <HelixWorkItem Include="Device Startup - Android Mono HelloWorld">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroid.apk .;$(Python) pre.py --apk-name HelloAndroid.apk</PreCommands>
@@ -46,6 +58,13 @@
       <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)helloandroid;copy %HELIX_CORRELATION_PAYLOAD%\HelloAndroid.apk .;$(Python) pre.py --apk-name HelloAndroid.apk</PreCommands>
       <Command>$(Python) test.py devicestartup --device-type android --package-path pub\HelloAndroid.apk --package-name net.dot.HelloAndroid --scenario-name &quot;%(Identity)&quot; --disable-animations</Command>
       <PostCommands>$(Python) post.py</PostCommands>
+    </HelixWorkItem>
+    <HelixWorkItem Include="Mobile Benchmark - Android Benchmarks.Droid Benchmark Run">
+        <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
+        <PreCommands>echo on;set XHARNESSPATH=$(XharnessPath);cd $(ScenarioDirectory)bdnandroid;copy %HELIX_CORRELATION_PAYLOAD%\MonoBenchmarksDroid.apk .;$(Python) pre.py --apk-name MonoBenchmarksDroid.apk</PreCommands>
+        <Command>$(Python) test.py androidinstrumentation --package-path .\pub\MonoBenchmarksDroid.apk --package-name com.microsoft.maui.benchmarks --instrumentation-name com.microsoft.maui.MainInstrumentation --scenario-name &quot;%(Identity)&quot;</Command>
+        <PostCommands>$(Python) post.py</PostCommands>
+        <Timeout>00:30:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>
 </Project>

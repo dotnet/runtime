@@ -29,30 +29,30 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     {
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: RA: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->RA, pSrc->RA, DT_CONTEXT_CONTROL));
-        pDst->RA = pSrc->RA;
+             pDst->Ra, pSrc->Ra, DT_CONTEXT_CONTROL));
+        pDst->Ra = pSrc->Ra;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: SP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->SP, pSrc->SP, DT_CONTEXT_CONTROL));
-        pDst->SP = pSrc->SP;
+             pDst->Sp, pSrc->Sp, DT_CONTEXT_CONTROL));
+        pDst->Sp = pSrc->Sp;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: FP: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->FP, pSrc->FP, DT_CONTEXT_CONTROL));
-        pDst->FP = pSrc->FP;
+             pDst->Fp, pSrc->Fp, DT_CONTEXT_CONTROL));
+        pDst->Fp = pSrc->Fp;
 
         LOG((LF_CORDB, LL_INFO1000000,
              "CP::CTC: PC: pDst=0x%lx, pSrc=0x%lx, Flags=0x%x\n",
-             pDst->PC, pSrc->PC, DT_CONTEXT_CONTROL));
-        pDst->PC = pSrc->PC;
+             pDst->Pc, pSrc->Pc, DT_CONTEXT_CONTROL));
+        pDst->Pc = pSrc->Pc;
     }
 
     if ((dstFlags & srcFlags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
     {
-        CopyContextChunk(&pDst->A0, &pSrc->A0, &pDst->FP,
+        CopyContextChunk(&pDst->A0, &pSrc->A0, &pDst->Fp,
                          DT_CONTEXT_INTEGER);
-        CopyContextChunk(&pDst->S0, &pSrc->S0, &pDst->PC,
+        CopyContextChunk(&pDst->S0, &pSrc->S0, &pDst->Pc,
                          DT_CONTEXT_INTEGER);
     }
 
@@ -60,6 +60,7 @@ void CORDbgCopyThreadContext(DT_CONTEXT* pDst, const DT_CONTEXT* pSrc)
     {
         CopyContextChunk(&pDst->F[0], &pSrc->F[0], &pDst->F[32],
                          DT_CONTEXT_FLOATING_POINT);
+        pDst->Fcsr = pSrc->Fcsr;
     }
 }
 
@@ -76,13 +77,13 @@ void SetDebuggerREGDISPLAYFromREGDISPLAY(DebuggerREGDISPLAY* pDRD, REGDISPLAY* p
     if ((flags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
     {
         pDRD->FP = (SIZE_T)CORDbgGetFP(pContext);
-        pDRD->PC = (SIZE_T)pContext->PC;
-        pDRD->RA = (SIZE_T)pContext->RA;
+        pDRD->PC = (SIZE_T)pContext->Pc;
+        pDRD->RA = (SIZE_T)pContext->Ra;
     }
 
     if ((flags & DT_CONTEXT_INTEGER) == DT_CONTEXT_INTEGER)
     {
-        pDRD->TP = pContext->TP;
+        pDRD->TP = pContext->Tp;
         memcpy(&pDRD->A0, &pContext->A0, sizeof(pDRD->A0)*(21 - 4 + 1));
         memcpy(&pDRD->S0, &pContext->S0, sizeof(pDRD->S0)* 9);
     }

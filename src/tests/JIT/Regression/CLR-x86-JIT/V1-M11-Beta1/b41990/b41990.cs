@@ -3,6 +3,7 @@
 
 
 using System;
+using Xunit;
 
 
 namespace Test
@@ -25,7 +26,8 @@ namespace Test
             }
             catch (NullReferenceException) { }
         }
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

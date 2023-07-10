@@ -246,7 +246,7 @@ namespace Mono.Linker
 
 		public void SetFeatureValue (string feature, bool value)
 		{
-			Debug.Assert (!String.IsNullOrEmpty (feature));
+			Debug.Assert (!string.IsNullOrEmpty (feature));
 			FeatureSettings[feature] = value;
 		}
 
@@ -558,7 +558,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
@@ -575,7 +575,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Filename or member where the warning is coming from</param>
@@ -591,7 +591,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
@@ -607,7 +607,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Type or member where the warning is coming from</param>
@@ -622,7 +622,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Type or member where the warning is coming from</param>
@@ -637,7 +637,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="text">Humanly readable message describing the warning</param>
@@ -653,7 +653,7 @@ namespace Mono.Linker
 
 		/// <summary>
 		/// Display a warning message to the end user.
-		/// This API is used for warnings defined in the linker, not by custom steps. Warning
+		/// This API is used for warnings defined in ILLink, not by custom steps. Warning
 		/// versions are inferred from the code, and every warning that we define is versioned.
 		/// </summary>
 		/// <param name="origin">Filename where the warning is coming from</param>
@@ -944,7 +944,7 @@ namespace Mono.Linker
 		readonly HashSet<MethodDefinition> _processed_bodies_for_method = new HashSet<MethodDefinition> (2048);
 
 		/// <summary>
-		/// Linker applies some optimization on method bodies. For example it can remove dead branches of code
+		/// ILLink applies some optimization on method bodies. For example it can remove dead branches of code
 		/// based on constant propagation. To avoid overmarking, all code which processes the method's IL
 		/// should only view the IL after it's been optimized.
 		/// As such typically MethodDefinition.MethodBody should not be accessed directly on the Cecil object model

@@ -6,6 +6,7 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 
 // Metadata version: v2.0.50131
 .assembly extern mscorlib
@@ -51,6 +52,9 @@ catch_end:
 .class public auto ansi Test_b450688 extends [mscorlib] System.Object {
 .method public static int32 Main() cil managed
 {
+	.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+	    01 00 00 00
+	)
 	.entrypoint
 
 	call object Test()

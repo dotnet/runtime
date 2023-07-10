@@ -1,9 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk.IL">
-  <PropertyGroup>
-    <DebugType>Full</DebugType>
-    <Optimize>false</Optimize>
-  </PropertyGroup>
-  <ItemGroup>
-    <Compile Include="initializearray.il" />
-  </ItemGroup>
-</Project>

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>X86_AvxVnni_Vector128_MultiplyWideningAndAdd_r</AssemblyName>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- It takes a long time to complete (on a non-AVX machine) -->
+    <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
+    <!-- https://github.com/dotnet/runtime/issues/12392 -->
+    <GCStressIncompatible>true</GCStressIncompatible>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>Embedded</DebugType>
+    <Optimize />
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultiplyWideningAndAdd.Byte.cs" />
+    <Compile Include="MultiplyWideningAndAdd.Int16.cs" />
+    <Compile Include="MultiplyWideningAndAddSaturate.Byte.cs" />
+    <Compile Include="MultiplyWideningAndAddSaturate.Int16.cs" />
+  </ItemGroup>
+</Project>

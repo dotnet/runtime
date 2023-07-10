@@ -10,12 +10,14 @@
 **
 =============================================================================*/
 
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class AccessViolationException : SystemException
     {
         public AccessViolationException()
@@ -36,14 +38,16 @@ namespace System
             HResult = HResults.E_POINTER;
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
 
-#pragma warning disable CA1823, 169 // Field is not used from managed.
-        private IntPtr _ip;             // Address of faulting instruction.
-        private IntPtr _target;         // Address that could not be accessed.
-        private int _accessType;        // 0:read, 1:write
-#pragma warning restore CA1823, 169
+#pragma warning disable CA1823, 169, IDE0044 // Fields are not used from managed
+        private IntPtr _ip;      // Address of faulting instruction.
+        private IntPtr _target;  // Address that could not be accessed.
+        private int _accessType; // 0:read, 1:write
+#pragma warning restore CA1823, 169, IDE0044
     }
 }

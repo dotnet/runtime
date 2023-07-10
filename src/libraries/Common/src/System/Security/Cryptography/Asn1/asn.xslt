@@ -276,8 +276,10 @@ namespace <xsl:value-of select="@namespace" />
       <xsl:when test="@defaultDerInit and not(@explicitTag)" xml:space="preserve">
 
             // DEFAULT value handler for <xsl:value-of select="@name" />.
-            {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);<xsl:apply-templates select="." mode="EncodeValue">
+            {<xsl:apply-templates select="." mode="AsnWriterDefaultDer">
+                      <xsl:with-param name="writerName" select="'tmp'" />
+                      <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                    </xsl:apply-templates><xsl:apply-templates select="." mode="EncodeValue">
                       <xsl:with-param name="writerName" select="'tmp'" />
                       <xsl:with-param name="indent" select="concat('    ', $indent)" />
                     </xsl:apply-templates>
@@ -294,6 +296,21 @@ namespace <xsl:value-of select="@namespace" />
       <xsl:otherwise>
         <xsl:apply-templates select="." mode="EncodeValue" />
       </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="*" mode="AsnWriterDefaultDer" xml:space="default">
+    <xsl:param name="writerName" />
+    <xsl:param name="indent" />
+    <xsl:choose>
+      <xsl:when test="self::asn:Boolean" xml:space="preserve">
+            <xsl:value-of select="$indent"/>const int AsnBoolDerEncodeSize = 3;
+            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnBoolDerEncodeSize);</xsl:when>
+      <xsl:when test="self::asn:Integer[@backingType = 'int']" xml:space="preserve">
+            <xsl:value-of select="$indent"/>const int AsnManagedIntegerDerMaxEncodeSize = 6;
+            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER, initialCapacity: AsnManagedIntegerDerMaxEncodeSize);</xsl:when>
+      <xsl:otherwise xml:space="preserve">
+            <xsl:value-of select="$indent"/>AsnWriter <xsl:value-of select="$writerName"/> = new AsnWriter(AsnEncodingRules.DER);</xsl:otherwise>
     </xsl:choose>
   </xsl:template>
 
@@ -342,8 +359,10 @@ namespace <xsl:value-of select="@namespace" />
       <xsl:when test="@defaultDerInit and @explicitTag" xml:space="preserve">
 
             // DEFAULT value handler for <xsl:value-of select="@name" />.
-            {
-                AsnWriter tmp = new AsnWriter(AsnEncodingRules.DER);<xsl:apply-templates select="." mode="EncodeSimpleValue">
+            {<xsl:apply-templates select="." mode="AsnWriterDefaultDer">
+                      <xsl:with-param name="writerName" select="'tmp'" />
+                      <xsl:with-param name="indent" select="concat('    ', $indent)" />
+                </xsl:apply-templates><xsl:apply-templates select="." mode="EncodeSimpleValue">
                   <xsl:with-param name="writerName" select="'tmp'" />
                   <xsl:with-param name="indent" select="concat('    ', $indent)" />
                 </xsl:apply-templates>
