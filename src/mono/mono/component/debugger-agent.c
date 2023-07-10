@@ -6961,14 +6961,15 @@ find_assembly_by_name (char* assembly_name)
 	//resolve the assembly
 	MonoImageOpenStatus status;
 	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
+	g_free (lookup_name);	
 	if (!aname) {
 		PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
 		return NULL;
 	}
+
 	MonoAssemblyByNameRequest byname_req;
 	mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
 	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
-	g_free (lookup_name);
 	if (!assembly) {
 		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		for (guint i = 0; i < assemblies->len; ++i) {
@@ -6981,10 +6982,10 @@ find_assembly_by_name (char* assembly_name)
 		g_ptr_array_free (assemblies, TRUE);
 		if (!assembly) {
 			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-			mono_assembly_name_free_internal (aname);
-			return NULL;
+			goto exit;
 		}
 	}
+exit:
 	mono_assembly_name_free_internal (aname);
 	return assembly;
 }

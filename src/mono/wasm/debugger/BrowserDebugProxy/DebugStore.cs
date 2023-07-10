@@ -849,11 +849,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader  = new List<Tuple<MetadataReader, MetadataReader>>();
         private int debugId;
-        internal int PdbAge { get; set; }
-        internal System.Guid PdbGuid { get; set; }
+        internal int PdbAge { get; private set; }
+        internal System.Guid PdbGuid { get; private set; }
         internal bool IsPortableCodeView { get; set; }
         internal string PdbName { get; set; }
-        internal bool CodeViewInformationAvailable { get; set; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
 
         private readonly Dictionary<int, SourceFile> _documentIdToSourceFileTable = new Dictionary<int, SourceFile>();
@@ -862,13 +861,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public void LoadInfoFromBytes(MonoProxy monoProxy, SessionId sessionId, AssemblyAndPdbData assemblyAndPdbData, CancellationToken token)
         {
             using var asmStream = new MemoryStream(assemblyAndPdbData.AsmBytes);
-            try
+            if (assemblyAndPdbData.IsAsmMetadataOnly)
             {
-                if (assemblyAndPdbData.IsAsmMetadataOnly)
-                {
-                    FromAssemblyAndPdbData(asmStream, assemblyAndPdbData);
-                }
-                else
+                FromAssemblyAndPdbData(asmStream, assemblyAndPdbData);
+            }
+            else
+            {
+                try
                 {
                     // First try to read it as a PE file, otherwise try it as a WebCIL file
                     var peReader = new PEReader(asmStream);
@@ -876,13 +875,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new BadImageFormatException();
                     FromPEReader(monoProxy, sessionId, peReader, assemblyAndPdbData.PdbBytes, logger, token);
                 }
-            }
-            catch (BadImageFormatException)
-            {
-                // This is a WebAssembly file
-                asmStream.Seek(0, SeekOrigin.Begin);
-                var webcilReader = new WebcilReader(asmStream);
-                FromWebcilReader(monoProxy, sessionId, webcilReader, assemblyAndPdbData.PdbBytes, logger, token);
+                catch (BadImageFormatException)
+                {
+                    // This is a WebAssembly file
+                    asmStream.Seek(0, SeekOrigin.Begin);
+                    var webcilReader = new WebcilReader(asmStream);
+                    FromWebcilReader(monoProxy, sessionId, webcilReader, assemblyAndPdbData.PdbBytes, logger, token);
+                }
             }
         }
 
@@ -923,11 +922,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     using (var compressedStream = new MemoryStream(assemblyAndPdbData.PdbBytes, writable: false))
                     using (var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true))
                     {
-#if NETCOREAPP1_1_OR_GREATER
                         decompressedBuffer = GC.AllocateUninitializedArray<byte>(assemblyAndPdbData.PdbUncompressedSize);
-#else
-                        decompressedBuffer = new byte[assemblyAndPdbData.PdbUncompressedSize];
-#endif
                         using (var decompressedStream = new MemoryStream(decompressedBuffer, writable: true))
                         {
                             deflateStream.CopyTo(decompressedStream);
@@ -937,14 +932,13 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else
                 {
-                    this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(assemblyAndPdbData.PdbBytes)).GetMetadataReader();
+                    this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(assemblyAndPdbData.PdbBytes, writable: false)).GetMetadataReader();
                 }
             }
             this.asmMetadataReader = asmMetadataReader;
             PdbAge = assemblyAndPdbData.PdbAge;
             PdbGuid = assemblyAndPdbData.PdbGuid;
             PdbName = assemblyAndPdbData.PdbPath;
-            CodeViewInformationAvailable = true;
             IsPortableCodeView = assemblyAndPdbData.IsPortableCodeView;
             PdbChecksums = assemblyAndPdbData.PdbChecksums.ToArray();
             Populate();
@@ -986,7 +980,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 PdbAge = codeViewData.Value.Age;
                 PdbGuid = codeViewData.Value.Guid;
                 PdbName = codeViewData.Value.Path;
-                CodeViewInformationAvailable = true;
             }
             IsPortableCodeView = summary.IsPortableCodeView;
             PdbChecksums = summary.PdbChecksums;

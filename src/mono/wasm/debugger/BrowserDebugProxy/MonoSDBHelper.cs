@@ -1944,7 +1944,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (var methodId in methodIds)
                     {
                         var methodInfoFromRuntime = await GetMethodInfo(methodId, token);
-                        if (methodInfoFromRuntime != null && methodInfoFromRuntime.Info.GetParametersInfo().Length > 0)
+                        if (methodInfoFromRuntime?.Info?.GetParametersInfo()?.Length > 0)
                             continue;
                         var retMethod = await InvokeMethod(objectId, methodId, isValueType, token);
                         return retMethod["value"]?["value"].Value<string>();
@@ -2534,34 +2534,33 @@ namespace Microsoft.WebAssembly.Diagnostics
             int assembly_size = retDebuggerCmdReader.ReadInt32();
             if (assembly_size > 0)
                 assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
-            if (MajorVersion == 2 && MinorVersion >= 64)
+            if (MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2)
                 pdbUncompressedSize = retDebuggerCmdReader.ReadInt32();
             int pdb_size = retDebuggerCmdReader.ReadInt32();
             if (pdb_size > 0)
                 pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
             AssemblyAndPdbData ret = new(assembly_buf, pdb_buf);
 
-            if (MajorVersion == 2 && MinorVersion >= 64)
-            {
-                ret = new();
-                ret.AsmBytes = assembly_buf;
-                ret.PdbBytes = pdb_buf;
-                ret.HasDebugInfo = retDebuggerCmdReader.ReadBoolean();
-                ret.PdbUncompressedSize = pdbUncompressedSize;
-                if (!ret.HasDebugInfo)
-                    return ret;
+            if (!(MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2))
+                return ret;
+            ret = new();
+            ret.AsmBytes = assembly_buf;
+            ret.PdbBytes = pdb_buf;
+            ret.HasDebugInfo = retDebuggerCmdReader.ReadBoolean();
+            ret.PdbUncompressedSize = pdbUncompressedSize;
+            if (!ret.HasDebugInfo)
+                return ret;
 
-                ret.PdbAge = retDebuggerCmdReader.ReadInt32();
-                var pdbGuidSize = retDebuggerCmdReader.ReadInt32();
-                ret.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));
-                ret.PdbPath = retDebuggerCmdReader.ReadString();
-                var pdbChecksumCount = retDebuggerCmdReader.ReadInt32();
-                for (int i = 0; i < pdbChecksumCount; i++)
-                {
-                    var algorithmName = retDebuggerCmdReader.ReadString();
-                    var pdbChecksumSize = retDebuggerCmdReader.ReadInt32();
-                    ret.PdbChecksums.Add(new PdbChecksum(algorithmName, retDebuggerCmdReader.ReadBytes(pdbChecksumSize)));
-                }
+            ret.PdbAge = retDebuggerCmdReader.ReadInt32();
+            var pdbGuidSize = retDebuggerCmdReader.ReadInt32();
+            ret.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));
+            ret.PdbPath = retDebuggerCmdReader.ReadString();
+            var pdbChecksumCount = retDebuggerCmdReader.ReadInt32();
+            for (int i = 0; i < pdbChecksumCount; i++)
+            {
+                var algorithmName = retDebuggerCmdReader.ReadString();
+                var pdbChecksumSize = retDebuggerCmdReader.ReadInt32();
+                ret.PdbChecksums.Add(new PdbChecksum(algorithmName, retDebuggerCmdReader.ReadBytes(pdbChecksumSize)));
             }
             return ret;
         }
