@@ -160,5 +160,7 @@ namespace Microsoft.Interop
         public const string System_Runtime_InteropServices_CLong = "System.Runtime.InteropServices.CLong";
 
         public const string System_Runtime_InteropServices_CULong = "System.Runtime.InteropServices.CULong";
+
+        public const string System_Runtime_InteropServices_NFloat = "System.Runtime.InteropServices.NFloat";
     }
 }

@@ -134,9 +134,9 @@ namespace ILCompiler
         public CliOption<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation" };
+            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation", HelpName = "arg" };
         public CliOption<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation" };
+            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation", HelpName = "arg" };
         public CliOption<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public CliOption<string> SingleMethodTypeName { get; } =
@@ -263,8 +263,8 @@ namespace ILCompiler
 
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
-                            inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
-                            outputOptions : new[] { "o", "out", "exportsfile" });
+                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
+                            outputOptions : new[] { "-o", "--out", "--exportsfile" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
@@ -319,9 +319,6 @@ namespace ILCompiler
 
                 foreach (string arch in ValidArchitectures)
                 {
-                    Console.Write(arch);
-                    Console.Write(": ");
-
                     TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                     bool first = true;
                     foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
@@ -331,6 +328,8 @@ namespace ILCompiler
                         {
                             if (first)
                             {
+                                Console.Write(arch);
+                                Console.Write(": ");
                                 first = false;
                             }
                             else
@@ -340,6 +339,8 @@ namespace ILCompiler
                             Console.Write(instructionSet.Name);
                         }
                     }
+
+                    if (first) continue; // no instruction-set found for this architecture
 
                     Console.WriteLine();
                 }

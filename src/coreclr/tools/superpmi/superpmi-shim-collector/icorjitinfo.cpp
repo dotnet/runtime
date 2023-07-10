@@ -68,8 +68,9 @@ void interceptor_ICJI::getMethodSig(CORINFO_METHOD_HANDLE ftn,         /* IN  */
 // return information about a method private to the implementation
 //      returns false if method is not IL, or is otherwise unavailable.
 //      This method is used to fetch data needed to inline functions
-bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
-                                     CORINFO_METHOD_INFO*  info /* OUT */
+bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE  ftn,    /* IN  */
+                                     CORINFO_METHOD_INFO*   info,   /* OUT */
+                                     CORINFO_CONTEXT_HANDLE context /* IN  */
                                      )
 {
     bool temp  = false;
@@ -78,11 +79,11 @@ bool interceptor_ICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
     [&]()
     {
         mc->cr->AddCall("getMethodInfo");
-        temp = original_ICorJitInfo->getMethodInfo(ftn, info);
+        temp = original_ICorJitInfo->getMethodInfo(ftn, info, context);
     },
     [&](DWORD exceptionCode)
     {
-        this->mc->recGetMethodInfo(ftn, info, temp, exceptionCode);
+        this->mc->recGetMethodInfo(ftn, info, context, temp, exceptionCode);
     });
 
     return temp;

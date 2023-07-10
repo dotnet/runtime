@@ -40,7 +40,7 @@ namespace ILCompiler
         public CliOption<bool> OptimizeTime { get; } =
             new("--optimize-time", "--Ot") { Description = SR.OptimizeSpeedOption };
         public CliOption<TypeValidationRule> TypeValidation { get; } =
-            new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation };
+            new("--type-validation") { DefaultValueFactory = _ => TypeValidationRule.Automatic, Description = SR.TypeValidation, HelpName = "arg" };
         public CliOption<bool> InputBubble { get; } =
             new("--inputbubble") { Description = SR.InputBubbleOption };
         public CliOption<Dictionary<string, string>> InputBubbleReferenceFilePaths { get; } =
@@ -80,7 +80,7 @@ namespace ILCompiler
         public CliOption<string> ImageBase { get; } =
             new("--imagebase") { Description = SR.ImageBase };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore };
+            new("--targetarch") { CustomParser = MakeTargetArchitecture, DefaultValueFactory = MakeTargetArchitecture, Description = SR.TargetArchOption, Arity = ArgumentArity.OneOrMore, HelpName = "arg" };
         public CliOption<bool> EnableGenericCycleDetection { get; } =
             new("--enable-generic-cycle-detection") { Description = SR.EnableGenericCycleDetection };
         public CliOption<int> GenericCycleDepthCutoff { get; } =
@@ -88,7 +88,7 @@ namespace ILCompiler
         public CliOption<int> GenericCycleBreadthCutoff { get; } =
             new("--maxgenericcyclebreadth") { DefaultValueFactory = _ => ReadyToRunCompilerContext.DefaultGenericCycleBreadthCutoff, Description = SR.GenericCycleBreadthCutoff };
         public CliOption<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption };
+            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = SR.TargetOSOption, HelpName = "arg" };
         public CliOption<string> JitPath { get; } =
             new("--jitpath") { Description = SR.JitPathOption };
         public CliOption<bool> PrintReproInstructions { get; } =
@@ -126,9 +126,9 @@ namespace ILCompiler
         public CliOption<string> NonLocalGenericsModule { get; } =
             new("--non-local-generics-module") { DefaultValueFactory = _ => string.Empty, Description = SR.NonLocalGenericsModule };
         public CliOption<ReadyToRunMethodLayoutAlgorithm> MethodLayout { get; } =
-            new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = SR.MethodLayoutOption };
+            new("--method-layout") { CustomParser = MakeReadyToRunMethodLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunMethodLayoutAlgorithm, Description = SR.MethodLayoutOption, HelpName = "arg" };
         public CliOption<ReadyToRunFileLayoutAlgorithm> FileLayout { get; } =
-            new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = SR.FileLayoutOption };
+            new("--file-layout") { CustomParser = MakeReadyToRunFileLayoutAlgorithm, DefaultValueFactory = MakeReadyToRunFileLayoutAlgorithm, Description = SR.FileLayoutOption, HelpName = "arg" };
         public CliOption<bool> VerifyTypeAndFieldLayout { get; } =
             new("--verify-type-and-field-layout") { Description = SR.VerifyTypeAndFieldLayoutOption };
         public CliOption<string> CallChainProfileFile { get; } =
@@ -255,7 +255,7 @@ namespace ILCompiler
                         // + a rsp file that should work to directly run out of the zip file
 
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args,
-                            result, new[] { "r", "reference", "u", "unrooted-input-file-paths", "m", "mibc", "inputbubbleref" });
+                            result, new[] { "-r", "--reference", "-u", "--unrooted-input-file-paths", "-m", "--mibc", "--inputbubbleref" });
                     }
 
                     return new Program(this).Run();
@@ -301,13 +301,19 @@ namespace ILCompiler
                 Console.WriteLine();
                 Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--targetarch", String.Join("', '", ValidArchitectures), Helpers.GetTargetArchitecture(null).ToString().ToLowerInvariant()));
                 Console.WriteLine();
+                Console.WriteLine(String.Format(SR.SwitchWithDefaultHelp, "--type-validation", String.Join("', '", Enum.GetNames<TypeValidationRule>()), nameof(TypeValidationRule.Automatic)));
+                Console.WriteLine();
+
+                Console.WriteLine(SR.CrossModuleInliningExtraHelp);
+                Console.WriteLine();
+                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--method-layout", String.Join("', '", Enum.GetNames<ReadyToRunMethodLayoutAlgorithm>())));
+                Console.WriteLine();
+                Console.WriteLine(String.Format(SR.LayoutOptionExtraHelp, "--file-layout", String.Join("', '", Enum.GetNames<ReadyToRunFileLayoutAlgorithm>())));
+                Console.WriteLine();
 
                 Console.WriteLine(SR.InstructionSetHelp);
                 foreach (string arch in ValidArchitectures)
                 {
-                    Console.Write(arch);
-                    Console.Write(": ");
-
                     TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                     bool first = true;
                     foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
@@ -317,6 +323,8 @@ namespace ILCompiler
                         {
                             if (first)
                             {
+                                Console.Write(arch);
+                                Console.Write(": ");
                                 first = false;
                             }
                             else
@@ -326,6 +334,8 @@ namespace ILCompiler
                             Console.Write(instructionSet.Name);
                         }
                     }
+
+                    if (first) continue; // no instruction-set found for this architecture
 
                     Console.WriteLine();
                 }

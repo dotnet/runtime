@@ -211,36 +211,50 @@ namespace XarchHardwareIntrinsicTest._CpuId
             }
 
             bool isAvx512HierarchyDisabled = isHierarchyDisabled;
-            if (isGenuineIntel && !isAvx512HierarchyDisabled)
+
+            int preferredVectorBitWidth = (GetDotnetEnvVar("PreferredVectorBitWidth", defaultValue: 0) / 128) * 128;
+            int preferredVectorByteLength = preferredVectorBitWidth / 8;
+
+            if (preferredVectorByteLength == 0)
             {
-                int steppingId = xarchCpuInfo & (int)0b1111;
-                int model = (xarchCpuInfo >> 4) & (int)0b1111;
-                int familyID = (xarchCpuInfo >> 8) & (int)0b1111;
-                int extendedModelID = (xarchCpuInfo >> 16) & (int)0b1111;
-                if (familyID == 0x06)
+                bool isVector512Throttling = false;
+
+                if (isGenuineIntel)
                 {
-                    if (extendedModelID == 0x05)
-                    {
-                        if (model == 0x05)
-                        {
-                            // * Skylake (Server)
-                            // * Cascade Lake
-                            // * Cooper Lake
+                    int steppingId = xarchCpuInfo & 0b1111;
+                    int model = (xarchCpuInfo >> 4) & 0b1111;
+                    int familyID = (xarchCpuInfo >> 8) & 0b1111;
+                    int extendedModelID = (xarchCpuInfo >> 16) & 0b1111;
 
-                            isAvx512HierarchyDisabled = true;
+                    if (familyID == 0x06)
+                    {
+                        if (extendedModelID == 0x05)
+                        {
+                            if (model == 0x05)
+                            {
+                                // * Skylake (Server)
+                                // * Cascade Lake
+                                // * Cooper Lake
+
+                                isVector512Throttling = true;
+                            }
                         }
-                    }
-                    else if (extendedModelID == 0x06)
-                    {
-                        if (model == 0x06)
+                        else if (extendedModelID == 0x06)
                         {
-                            // * Cannon Lake
+                            if (model == 0x06)
+                            {
+                                // * Cannon Lake
 
-                            isAvx512HierarchyDisabled = true;
+                                isVector512Throttling = true;
+                            }
                         }
                     }
                 }
 
+                if (isVector512Throttling)
+                {
+                    preferredVectorByteLength = 256 / 8;
+                }
             }
 
             if (IsBitIncorrect(ecx, 1, typeof(Avx512Vbmi), Avx512Vbmi.IsSupported, "AVX512VBMI", ref isHierarchyDisabled))
@@ -299,12 +313,12 @@ namespace XarchHardwareIntrinsicTest._CpuId
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector256), Vector256.IsHardwareAccelerated, isAvx2HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector256), Vector256.IsHardwareAccelerated, isAvx2HierarchyDisabled || (preferredVectorByteLength < 32)))
             {
                 testResult = Fail;
             }
 
-            if (IsIncorrect(typeof(Vector512), Vector512.IsHardwareAccelerated, isAvx512HierarchyDisabled))
+            if (IsIncorrect(typeof(Vector512), Vector512.IsHardwareAccelerated, isAvx512HierarchyDisabled || (preferredVectorByteLength < 64)))
             {
                 testResult = Fail;
             }
@@ -414,15 +428,20 @@ namespace XarchHardwareIntrinsicTest._CpuId
 
         static bool GetDotnetEnable(string name)
         {
-            string? stringValue = Environment.GetEnvironmentVariable($"DOTNET_Enable{name}");
+            // Hardware Intrinsic configuration knobs default to true
+            return GetDotnetEnvVar($"Enable{name}", defaultValue: 1) != 0;
+        }
+
+        static int GetDotnetEnvVar(string name, int defaultValue)
+        {
+            string? stringValue = Environment.GetEnvironmentVariable($"DOTNET_{name}");
 
             if ((stringValue is null) || !int.TryParse(stringValue, out int value))
             {
-                // Hardware Intrinsic configuration knobs default to true
-                return true;
+                return defaultValue;
             }
 
-            return value != 0;
+            return value;
         }
     }
 }
