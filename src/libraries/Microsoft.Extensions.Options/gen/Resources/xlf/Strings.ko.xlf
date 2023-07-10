@@ -62,7 +62,7 @@
         <target state="translated">'OptionsValidatorAttribute'로 주석이 추가된 형식은 필요한 인터페이스를 구현하지 않습니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleValidationAttribute">
+      <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
         <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
         <note />

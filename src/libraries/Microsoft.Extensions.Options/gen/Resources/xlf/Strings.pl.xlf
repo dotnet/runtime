@@ -62,7 +62,7 @@
         <target state="translated">Typ z adnotacją „OptionsValidatorAttribute” nie implementuje wymaganego interfejsu.</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleValidationAttribute">
+      <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
         <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
         <note />

@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.Options.Generators
         public static DiagnosticDescriptor InaccessibleValidationAttribute { get; } = Make(
             id: "SYSLIB1215",
             title: SR.InaccessibleValidationAttributeTitle,
-            messageFormat: SR.InaccessibleValidationAttribute,
+            messageFormat: SR.InaccessibleValidationAttributeMessage,
             category: Category,
             defaultSeverity: DiagnosticSeverity.Info);
     }

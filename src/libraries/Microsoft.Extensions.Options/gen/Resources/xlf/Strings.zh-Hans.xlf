@@ -62,7 +62,7 @@
         <target state="translated">用 "OptionsValidatorAttribute" 批注的类型未实现必要的接口。</target>
         <note />
       </trans-unit>
-      <trans-unit id="InaccessibleValidationAttribute">
+      <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
         <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
         <note />
