@@ -4,31 +4,9 @@
 
 // This test checks implicit floating point and small type casts in IL
 
-.assembly extern System.Runtime
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 8:0:0:0
-}
-.assembly extern System.Console
-{
-  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
-  .ver 8:0:0:0
-}
-.assembly Bitcast
-{
-  .permissionset reqmin
-             = {[System.Runtime]System.Security.Permissions.SecurityPermissionAttribute = {property bool 'SkipVerification' = bool(true)}}
-  .hash algorithm 0x00008004
-  .ver 1:0:0:0
-}
-.module Bitcast.dll
-.custom instance void [System.Runtime]System.Security.UnverifiableCodeAttribute::.ctor() = ( 01 00 00 00 )
-.custom instance void [System.Runtime]System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(int32) = ( 01 00 0B 00 00 00 00 00 )
-.imagebase 0x0000000180000000
-.file alignment 0x00001000
-.stackreserve 0x0000000000400000
-.subsystem 0x0003       // WINDOWS_CUI
-.corflags 0x00000004    //  IL_LIBRARY
+.assembly extern System.Runtime {}
+.assembly extern System.Console {}
+.assembly Bitcast {}
 
 .class public abstract auto ansi sealed beforefieldinit Program
        extends [System.Runtime]System.Object
