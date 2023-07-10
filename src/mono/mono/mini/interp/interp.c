@@ -27,7 +27,7 @@
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/mono-threads.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 
 #ifdef HAVE_ALLOCA_H
 #   include <alloca.h>
@@ -869,15 +869,11 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 	/* printf ("TODAT0 %p\n", data); */
 	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)data;
 		*p = GINT32_TO_UINT8 (val->data.i);
-		return MINT_STACK_SLOT_SIZE;
-	}
-	case MONO_TYPE_BOOLEAN: {
-		guint8 *p = (guint8*)data;
-		*p = (val->data.i != 0);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I2:
@@ -2214,91 +2210,91 @@ interp_entry (InterpEntryData *data)
 }
 
 static void
-do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
+do_icall (MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error)
 {
 	if (save_last_error)
 		mono_marshal_clear_last_error ();
 
 	switch (op) {
-	case MINT_ICALL_V_V: {
+	case MINT_ICALLSIG_V_V: {
 		typedef void (*T)(void);
 		T func = (T)ptr;
         	func ();
 		break;
 	}
-	case MINT_ICALL_V_P: {
+	case MINT_ICALLSIG_V_P: {
 		typedef gpointer (*T)(void);
 		T func = (T)ptr;
 		ret_sp->data.p = func ();
 		break;
 	}
-	case MINT_ICALL_P_V: {
+	case MINT_ICALLSIG_P_V: {
 		typedef void (*T)(gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p);
 		break;
 	}
-	case MINT_ICALL_P_P: {
+	case MINT_ICALLSIG_P_P: {
 		typedef gpointer (*T)(gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p);
 		break;
 	}
-	case MINT_ICALL_PP_V: {
+	case MINT_ICALLSIG_PP_V: {
 		typedef void (*T)(gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p);
 		break;
 	}
-	case MINT_ICALL_PP_P: {
+	case MINT_ICALLSIG_PP_P: {
 		typedef gpointer (*T)(gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p);
 		break;
 	}
-	case MINT_ICALL_PPP_V: {
+	case MINT_ICALLSIG_PPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
 		break;
 	}
-	case MINT_ICALL_PPP_P: {
+	case MINT_ICALLSIG_PPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p);
 		break;
 	}
-	case MINT_ICALL_PPPP_V: {
+	case MINT_ICALLSIG_PPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
 		break;
 	}
-	case MINT_ICALL_PPPP_P: {
+	case MINT_ICALLSIG_PPPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p);
 		break;
 	}
-	case MINT_ICALL_PPPPP_V: {
+	case MINT_ICALLSIG_PPPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
 		break;
 	}
-	case MINT_ICALL_PPPPP_P: {
+	case MINT_ICALLSIG_PPPPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p);
 		break;
 	}
-	case MINT_ICALL_PPPPPP_V: {
+	case MINT_ICALLSIG_PPPPPP_V: {
 		typedef void (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
 		break;
 	}
-	case MINT_ICALL_PPPPPP_P: {
+	case MINT_ICALLSIG_PPPPPP_P: {
 		typedef gpointer (*T)(gpointer,gpointer,gpointer,gpointer,gpointer,gpointer);
 		T func = (T)ptr;
 		ret_sp->data.p = func (sp [0].data.p, sp [1].data.p, sp [2].data.p, sp [3].data.p, sp [4].data.p, sp [5].data.p);
@@ -2322,7 +2318,7 @@ do_icall (MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpoi
 #endif
 // Do not inline in case order of frame addresses matters, and maybe other reasons.
 static MONO_NO_OPTIMIZATION MONO_NEVER_INLINE gpointer
-do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, int op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
+do_icall_wrapper (InterpFrame *frame, MonoMethodSignature *sig, MintICallSig op, stackval *ret_sp, stackval *sp, gpointer ptr, gboolean save_last_error, gboolean *gc_transitions)
 {
 	MonoLMFExt ext;
 	INTERP_PUSH_LMF_WITH_CTX (frame, ext, exit_icall);
@@ -3545,7 +3541,7 @@ mono_interp_leave (InterpFrame* parent_frame)
 	 * to check the abort threshold. For this to work we use frame as a
 	 * dummy frame that is stored in the lmf and serves as the transition frame
 	 */
-	do_icall_wrapper (&frame, NULL, MINT_ICALL_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
+	do_icall_wrapper (&frame, NULL, MINT_ICALLSIG_V_P, &tmp_sp, &tmp_sp, (gpointer)mono_thread_get_undeniable_exception, FALSE, &gc_transitions);
 
 	return (MonoException*)tmp_sp.data.p;
 }
@@ -3558,6 +3554,26 @@ mono_interp_enum_hasflag (stackval *sp1, stackval *sp2, MonoClass* klass)
 	stackval_to_data (m_class_get_byval_arg (klass), sp1, &a_val, FALSE);
 	stackval_to_data (m_class_get_byval_arg (klass), sp2, &b_val, FALSE);
 	return (a_val & b_val) == b_val;
+}
+
+static void
+interp_simd_create (gpointer dest, gpointer args, int el_size)
+{
+	const int num_elements = SIZEOF_V128 / el_size;
+	gint8 res_buffer [SIZEOF_V128];
+	for (int i = 0; i < num_elements; i++) {
+		switch (el_size) {
+			case 1: res_buffer [i] = *(gint8*)args; break;
+			case 2: ((gint16*)res_buffer) [i] = *(gint16*)args; break;
+			case 4: ((gint32*)res_buffer) [i] = *(gint32*)args; break;
+			case 8: ((gint64*)res_buffer) [i] = *(gint64*)args; break;
+			default:
+				g_assert_not_reached ();
+		}
+		args = (gpointer) ((char*)args + MINT_STACK_SLOT_SIZE);
+	}
+
+	memcpy (dest, res_buffer, SIZEOF_V128);
 }
 
 // varargs in wasm consumes extra linear stack per call-site.
@@ -3606,6 +3622,8 @@ method_entry (ThreadContext *context, InterpFrame *frame,
 			frame->stack = (stackval*)context->stack_pointer;
 			return slow;
 		}
+	} else {
+		mono_memory_read_barrier ();
 	}
 
 	return slow;
@@ -4051,8 +4069,8 @@ main_loop:
 			goto call;
 		}
 		MINT_IN_CASE(MINT_CALLI_NAT_FAST) {
-			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [4]];
-			int icall_opcode  = ip [5];
+			MintICallSig icall_sig = (MintICallSig)ip [4];
+			MonoMethodSignature *csignature = (MonoMethodSignature*)frame->imethod->data_items [ip [5]];
 			gboolean save_last_error = ip [6];
 
 			stackval *ret = (stackval*)(locals + ip [1]);
@@ -4061,7 +4079,7 @@ main_loop:
 			/* for calls, have ip pointing at the start of next instruction */
 			frame->state.ip = ip + 7;
 
-			do_icall_wrapper (frame, csignature, icall_opcode , ret, args, target_ip, save_last_error, &gc_transitions);
+			do_icall_wrapper (frame, csignature, icall_sig, ret, args, target_ip, save_last_error, &gc_transitions);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
 			ip += 7;
@@ -5746,50 +5764,22 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint8);
-			gint8 res_buffer [num_elements];
-			gint8 *args = (gint8*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 1);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint16);
-			gint16 res_buffer [num_elements];
-			gint16 *args = (gint16*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 2);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint32);
-			gint32 res_buffer [num_elements];
-			gint32 *args = (gint32*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 4);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint64);
-			gint64 res_buffer [num_elements];
-			gint64 *args = (gint64*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 8);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6515,6 +6505,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += 6;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_STELEM_VT_NOREF) {
+			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
+			NULL_CHECK (o);
+			guint32 aindex = LOCAL_VAR (ip [2], guint32);
+			if (aindex >= mono_array_length_internal (o))
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
+
+			guint16 size = ip [5];
+			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
+			memcpy (dst_addr, locals + ip [3], size);
+			ip += 6;
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CONV_OVF_I4_U4) {
 			gint32 val = LOCAL_VAR (ip [2], gint32);
 			if (val < 0)
@@ -6955,32 +6958,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			ip += short_offset ? (gint16)*(ip + 1) : (gint32)READ32 (ip + 1);
 			MINT_IN_BREAK;
 		}
-		MINT_IN_CASE(MINT_ICALL_V_V)
-		MINT_IN_CASE(MINT_ICALL_P_V)
-		MINT_IN_CASE(MINT_ICALL_PP_V)
-		MINT_IN_CASE(MINT_ICALL_PPP_V)
-		MINT_IN_CASE(MINT_ICALL_PPPP_V)
-		MINT_IN_CASE(MINT_ICALL_PPPPP_V)
-		MINT_IN_CASE(MINT_ICALL_PPPPPP_V)
-			frame->state.ip = ip + 3;
-			do_icall_wrapper (frame, NULL, *ip, NULL, (stackval*)(locals + ip [1]), frame->imethod->data_items [ip [2]], FALSE, &gc_transitions);
+		MINT_IN_CASE(MINT_ICALL) {
+			stackval *ret = (stackval*)(locals + ip [1]);
+			stackval *args = (stackval*)(locals + ip [2]);
+			MintICallSig icall_sig = (MintICallSig)ip [3];
+			gpointer target_ip = frame->imethod->data_items [ip [4]];
+
+			frame->state.ip = ip + 5;
+			do_icall_wrapper (frame, NULL, icall_sig, ret, args, target_ip, FALSE, &gc_transitions);
 			EXCEPTION_CHECKPOINT;
 			CHECK_RESUME_STATE (context);
-			ip += 3;
+			ip += 5;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_ICALL_V_P)
-		MINT_IN_CASE(MINT_ICALL_P_P)
-		MINT_IN_CASE(MINT_ICALL_PP_P)
-		MINT_IN_CASE(MINT_ICALL_PPP_P)
-		MINT_IN_CASE(MINT_ICALL_PPPP_P)
-		MINT_IN_CASE(MINT_ICALL_PPPPP_P)
-		MINT_IN_CASE(MINT_ICALL_PPPPPP_P)
-			frame->state.ip = ip + 4;
-			do_icall_wrapper (frame, NULL, *ip, (stackval*)(locals + ip [1]), (stackval*)(locals + ip [2]), frame->imethod->data_items [ip [3]], FALSE, &gc_transitions);
-			EXCEPTION_CHECKPOINT;
-			CHECK_RESUME_STATE (context);
-			ip += 4;
-			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_LDPTR)
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
@@ -7659,7 +7649,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				 *  JS workers in order to register them at the appropriate slots in the function pointer
 				 *  table. when growing the function pointer table we will also need to synchronize that.
 				 */
-				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
+				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, ip);
 				ptrdiff_t offset;
 				switch ((guint32)(void*)prepare_result) {
 					case JITERPRETER_TRAINING:

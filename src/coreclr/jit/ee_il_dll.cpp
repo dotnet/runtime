@@ -295,9 +295,12 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED
 bool TargetOS::OSSettingConfigured = false;
-bool TargetOS::IsWindows           = false;
-bool TargetOS::IsUnix              = false;
-bool TargetOS::IsMacOS             = false;
+#ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
+                                         // runtimedetermined
+bool TargetOS::IsWindows = false;
+bool TargetOS::IsUnix    = false;
+#endif
+bool TargetOS::IsMacOS = false;
 #endif
 
 /*****************************************************************************
@@ -307,9 +310,12 @@ bool TargetOS::IsMacOS             = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS             = os == CORINFO_MACOS;
-    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
-    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::IsMacOS = os == CORINFO_MACOS;
+#ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
+                                         // runtimedetermined
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows = os == CORINFO_WINNT;
+#endif
     TargetOS::OSSettingConfigured = true;
 #endif
 }
@@ -1360,11 +1366,6 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 }
 
 #endif // UNIX_AMD64_ABI
-
-bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    return info.compCompHnd->tryResolveToken(resolvedToken);
-}
 
 bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
 {

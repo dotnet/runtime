@@ -63,6 +63,8 @@ namespace System.Net.Http
         // Http2 flow control settings:
         internal int _initialHttp2StreamWindowSize = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
 
+        internal ClientCertificateOption _clientCertificateOptions;
+
         public HttpConnectionSettings()
         {
             bool allowHttp2 = GlobalHttpSettings.SocketsHttpHandler.AllowHttp2;
@@ -71,6 +73,8 @@ namespace System.Net.Http
                 allowHttp3 && allowHttp2 ? HttpVersion.Version30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
+
+            _clientCertificateOptions = ClientCertificateOption.Automatic;
         }
 
         /// <summary>Creates a copy of the settings but with some values normalized to suit the implementation.</summary>
@@ -117,6 +121,7 @@ namespace System.Net.Http
                 _activityHeadersPropagator = _activityHeadersPropagator,
                 _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials),
                 _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials,
+                _clientCertificateOptions = _clientCertificateOptions,
             };
 
             return settings;

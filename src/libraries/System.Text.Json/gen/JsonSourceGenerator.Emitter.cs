@@ -29,7 +29,7 @@ namespace System.Text.Json.SourceGeneration
             private const string PreferredPropertyObjectCreationHandlingPropName = "PreferredPropertyObjectCreationHandling";
             private const string ObjectCreatorPropName = "ObjectCreator";
             private const string OptionsInstanceVariableName = "Options";
-            private const string JsonTypeInfoReturnValueLocalVariableName = "jsonTypeInfo";
+            private const string JsonTypeInfoLocalVariableName = "jsonTypeInfo";
             private const string PropInitMethodNameSuffix = "PropInit";
             private const string TryGetTypeInfoForRuntimeCustomConverterMethodName = "TryGetTypeInfoForRuntimeCustomConverter";
             private const string ExpandConverterMethodName = "ExpandConverter";
@@ -141,7 +141,7 @@ namespace System.Text.Json.SourceGeneration
 
                     """);
 
-                if (contextSpec.Namespace != JsonConstants.GlobalNamespaceValue)
+                if (contextSpec.Namespace != null)
                 {
                     writer.WriteLine($"namespace {contextSpec.Namespace}");
                     writer.WriteLine('{');
@@ -228,7 +228,7 @@ namespace System.Text.Json.SourceGeneration
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
                 writer.WriteLine($"""
-                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.{typeInfoPropertyName}Converter);
+                    {JsonTypeInfoLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.{typeInfoPropertyName}Converter);
                     """);
 
                 GenerateTypeInfoFactoryFooter(writer);
@@ -249,7 +249,7 @@ namespace System.Text.Json.SourceGeneration
 
                 writer.WriteLine($"""
                     {JsonConverterTypeRef} converter = {ExpandConverterMethodName}(typeof({typeFQN}), new {converterFQN}(), {OptionsLocalVariableName});
-                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)} ({OptionsLocalVariableName}, converter);
+                    {JsonTypeInfoLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)} ({OptionsLocalVariableName}, converter);
                     """);
 
                 GenerateTypeInfoFactoryFooter(writer);
@@ -270,7 +270,7 @@ namespace System.Text.Json.SourceGeneration
 
                 writer.WriteLine($$"""
                     {{JsonConverterTypeRef}} converter = {{JsonMetadataServicesTypeRef}}.GetNullableConverter<{{underlyingTypeFQN}}>({{OptionsLocalVariableName}});
-                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}}({{OptionsLocalVariableName}}, converter);
+                    {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{GetCreateValueInfoMethodRef(typeFQN)}}({{OptionsLocalVariableName}}, converter);
                     """);
 
                 GenerateTypeInfoFactoryFooter(writer);
@@ -286,7 +286,7 @@ namespace System.Text.Json.SourceGeneration
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
                 writer.WriteLine($"""
-                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());
+                    {JsonTypeInfoLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetUnsupportedTypeConverter<{typeFQN}>());
                     """);
 
                 GenerateTypeInfoFactoryFooter(writer);
@@ -302,7 +302,7 @@ namespace System.Text.Json.SourceGeneration
 
                 GenerateTypeInfoFactoryHeader(writer, typeMetadata);
                 writer.WriteLine($"""
-                    {JsonTypeInfoReturnValueLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetEnumConverter<{typeFQN}>({OptionsLocalVariableName}));
+                    {JsonTypeInfoLocalVariableName} = {JsonMetadataServicesTypeRef}.{GetCreateValueInfoMethodRef(typeFQN)}({OptionsLocalVariableName}, {JsonMetadataServicesTypeRef}.GetEnumConverter<{typeFQN}>({OptionsLocalVariableName}));
                     """);
 
                 GenerateTypeInfoFactoryFooter(writer);
@@ -374,11 +374,11 @@ namespace System.Text.Json.SourceGeneration
                     var {{InfoVarName}} = new {{JsonCollectionInfoValuesTypeRef}}<{{typeFQN}}>
                     {
                         {{ObjectCreatorPropName}} = {{FormatDefaultConstructorExpr(typeGenerationSpec)}},
-                        {{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeGenerationSpec.NumberHandling)}},
                         {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
                     };
 
-                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{createCollectionMethodExpr}};
+                    {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.{{createCollectionMethodExpr}};
+                    {{JsonTypeInfoLocalVariableName}}.{{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeGenerationSpec.NumberHandling)}};
                     """);
 
                 GenerateTypeInfoFactoryFooter(writer);
@@ -521,11 +521,11 @@ namespace System.Text.Json.SourceGeneration
                         ObjectWithParameterizedConstructorCreator = {{parameterizedCreatorInvocation}},
                         PropertyMetadataInitializer = {{propInitAdapterFunc ?? "null"}},
                         ConstructorParameterMetadataInitializer = {{ctorParamMetadataInitMethodName ?? "null"}},
-                        {{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeMetadata.NumberHandling)}},
                         {{SerializeHandlerPropName}} = {{serializeMethodName ?? "null"}}
                     };
 
-                    {{JsonTypeInfoReturnValueLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
+                    {{JsonTypeInfoLocalVariableName}} = {{JsonMetadataServicesTypeRef}}.CreateObjectInfo<{{typeMetadata.TypeRef.FullyQualifiedName}}>({{OptionsLocalVariableName}}, {{ObjectInfoVarName}});
+                    {{JsonTypeInfoLocalVariableName}}.{{NumberHandlingPropName}} = {{GetNumberHandlingAsStr(typeMetadata.NumberHandling)}};
                     """);
 
                 if (typeMetadata is { UnmappedMemberHandling: not null } or { PreferredPropertyObjectCreationHandling: not null })
@@ -534,12 +534,12 @@ namespace System.Text.Json.SourceGeneration
 
                     if (typeMetadata.UnmappedMemberHandling != null)
                     {
-                        writer.WriteLine($"{JsonTypeInfoReturnValueLocalVariableName}.{UnmappedMemberHandlingPropName} = {GetUnmappedMemberHandlingAsStr(typeMetadata.UnmappedMemberHandling.Value)};");
+                        writer.WriteLine($"{JsonTypeInfoLocalVariableName}.{UnmappedMemberHandlingPropName} = {GetUnmappedMemberHandlingAsStr(typeMetadata.UnmappedMemberHandling.Value)};");
                     }
 
                     if (typeMetadata.PreferredPropertyObjectCreationHandling != null)
                     {
-                        writer.WriteLine($"{JsonTypeInfoReturnValueLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};");
+                        writer.WriteLine($"{JsonTypeInfoLocalVariableName}.{PreferredPropertyObjectCreationHandlingPropName} = {GetObjectCreationHandlingAsStr(typeMetadata.PreferredPropertyObjectCreationHandling.Value)};");
                     }
                 }
 
@@ -776,7 +776,18 @@ namespace System.Text.Json.SourceGeneration
                         ? $"(({propertyGenSpec.DeclaringType.FullyQualifiedName}){ValueVarName})"
                         : ValueVarName;
 
-                    string propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
+                    string propValueExpr;
+                    if (defaultCheckType != DefaultCheckType.None)
+                    {
+                        // Use temporary variable to evaluate property value only once
+                        string localVariableName =  $"__value_{propertyGenSpec.NameSpecifiedInSourceCode}";
+                        writer.WriteLine($"{propertyGenSpec.PropertyType.FullyQualifiedName} {localVariableName} = {objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode};");
+                        propValueExpr = localVariableName;
+                    }
+                    else
+                    {
+                        propValueExpr = $"{objectExpr}.{propertyGenSpec.NameSpecifiedInSourceCode}";
+                    }
 
                     switch (defaultCheckType)
                     {
@@ -987,7 +998,7 @@ namespace System.Text.Json.SourceGeneration
 
                     private {{typeInfoFQN}} {{CreateTypeInfoMethodName(typeMetadata)}}({{JsonSerializerOptionsTypeRef}} {{OptionsLocalVariableName}})
                     {
-                        if (!{{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{typeFQN}}>({{OptionsLocalVariableName}}, out {{typeInfoFQN}} {{JsonTypeInfoReturnValueLocalVariableName}}))
+                        if (!{{TryGetTypeInfoForRuntimeCustomConverterMethodName}}<{{typeFQN}}>({{OptionsLocalVariableName}}, out {{typeInfoFQN}} {{JsonTypeInfoLocalVariableName}}))
                         {
                     """);
 
@@ -1002,8 +1013,8 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine($$"""
                         }
 
-                        {{JsonTypeInfoReturnValueLocalVariableName}}.{{OriginatingResolverPropertyName}} = this;
-                        return {{JsonTypeInfoReturnValueLocalVariableName}};
+                        {{JsonTypeInfoLocalVariableName}}.{{OriginatingResolverPropertyName}} = this;
+                        return {{JsonTypeInfoLocalVariableName}};
                     }
                     """);
             }
@@ -1211,23 +1222,16 @@ namespace System.Text.Json.SourceGeneration
                 return CompleteSourceFileAndReturnText(writer);
             }
 
-            private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling) =>
-                numberHandling switch
-                {
-                    null => "default",
-                    >= 0 => $"({JsonNumberHandlingTypeRef}){(int)numberHandling.Value}",
-                    < 0 => $"({JsonNumberHandlingTypeRef})({(int)numberHandling.Value})"
-                };
+            private static string GetNumberHandlingAsStr(JsonNumberHandling? numberHandling)
+                => numberHandling.HasValue
+                ? SourceGeneratorHelpers.FormatEnumLiteral(JsonNumberHandlingTypeRef, numberHandling.Value)
+                : "null";
 
-            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling) =>
-                creationHandling >= 0
-                ? $"({JsonObjectCreationHandlingTypeRef}){(int)creationHandling}"
-                : $"({JsonObjectCreationHandlingTypeRef})({(int)creationHandling})";
+            private static string GetObjectCreationHandlingAsStr(JsonObjectCreationHandling creationHandling)
+                => SourceGeneratorHelpers.FormatEnumLiteral(JsonObjectCreationHandlingTypeRef, creationHandling);
 
-            private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling) =>
-                unmappedMemberHandling >= 0
-                ? $"({JsonUnmappedMemberHandlingTypeRef}){(int)unmappedMemberHandling}"
-                : $"({JsonUnmappedMemberHandlingTypeRef})({(int)unmappedMemberHandling})";
+            private static string GetUnmappedMemberHandlingAsStr(JsonUnmappedMemberHandling unmappedMemberHandling)
+                => SourceGeneratorHelpers.FormatEnumLiteral(JsonUnmappedMemberHandlingTypeRef, unmappedMemberHandling);
 
             private static string GetCreateValueInfoMethodRef(string typeCompilableName) => $"{CreateValueInfoMethodName}<{typeCompilableName}>";
 

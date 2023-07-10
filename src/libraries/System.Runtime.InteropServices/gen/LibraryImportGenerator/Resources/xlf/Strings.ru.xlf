@@ -219,7 +219,7 @@
       </trans-unit>
       <trans-unit id="InvalidMarshalModeTitle">
         <source>Invalid 'MarshalMode' value.</source>
-        <target state="new">Invalid 'MarshalMode' value.</target>
+        <target state="translated">Недопустимое значение "MarshalMode".</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidMarshallerTypeTitle">
@@ -317,9 +317,19 @@
         <target state="translated">Управляемый тип для типа маршалера точки входа "{0}" должен отличаться от "NULL"</target>
         <note />
       </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageParameter">
+        <source>The specified 'MarshalAsAttribute' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">Указанная конфигурация "MarshalAsAttribute" для параметра "{1}" не поддерживается сгенерированными источником P/Invokes. Если требуется указанная конфигурация, используйте вместо нее обычный "DllImport".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshalAsConfigurationNotSupportedMessageReturn">
+        <source>The specified 'MarshalAsAttribute' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular 'DllImport' instead.</source>
+        <target state="translated">Указанная конфигурация "MarshalAsAttribute" для возвращаемого значения метода "{1}" не поддерживается сгенерированными источником P/Invokes. Если указанная конфигурация обязательна, используйте обычный метод "DllImport".</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MarshalModeMustBeValidEnumValue">
         <source>The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</source>
-        <target state="new">The 'marshalMode' argument of 'CustomMarshallerAttribute' must be a valid enum value of 'MarshalMode'.</target>
+        <target state="translated">Аргумент "marshalMode" атрибута "CustomMarshallerAttribute" должен быть допустимым перечисляемым значением "MarshalMode".</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallerTypeMustBeClosedOrMatchArityDescription">
@@ -617,6 +627,26 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Specified type is not supported by source-generated P/Invokes</source>
         <target state="translated">Указанный тип не поддерживается в P/Invoke с созданием источника.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoDescription">
+        <source>Unnecesssary marshalling info was provided. This marshalling information can be removed without any change in behavior to the application.</source>
+        <target state="translated">Указаны ненужные сведения маршалирования. Эти сведения маршалирования можно удалить без каких-либо изменений в работе приложения.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryMarshallingInfoTitle">
+        <source>Unnecessary marshalling info was provided and can be removed.</source>
+        <target state="translated">Указаны ненужные сведения маршалирования, которые можно удалить.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryParameterMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for parameter '{1}'</source>
+        <target state="translated">Указаны ненужные сведения маршалирования "{0}" для параметра "{1}"</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnnecessaryReturnMarshallingInfoMessage">
+        <source>Unnecessary marshalling info '{0}' was provided for the return type of method '{1}'</source>
+        <target state="translated">Указаны ненужные сведения маршалирования "{0}" для типа возвращаемого значения метода "{1}"</target>
         <note />
       </trans-unit>
       <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">

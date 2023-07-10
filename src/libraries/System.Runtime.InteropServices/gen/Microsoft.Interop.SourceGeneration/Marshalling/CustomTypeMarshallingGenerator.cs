@@ -15,12 +15,12 @@ namespace Microsoft.Interop
     internal sealed class CustomTypeMarshallingGenerator : IMarshallingGenerator
     {
         private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
-        private readonly bool _enableByValueContentsMarshalling;
+        private readonly ByValueMarshalKindSupport _byValueContentsMarshallingSupport;
 
-        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, bool enableByValueContentsMarshalling)
+        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, ByValueMarshalKindSupport byValueContentsMarshallingSupport)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
-            _enableByValueContentsMarshalling = enableByValueContentsMarshalling;
+            _byValueContentsMarshallingSupport = byValueContentsMarshallingSupport;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
@@ -108,12 +108,12 @@ namespace Microsoft.Interop
 
         private bool ShouldGenerateByValueOutMarshalling(TypePositionInfo info)
         {
-            return _enableByValueContentsMarshalling && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out);
+            return _byValueContentsMarshallingSupport == ByValueMarshalKindSupport.Supported && !info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out);
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
-            return _enableByValueContentsMarshalling;
+            return _byValueContentsMarshallingSupport;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)

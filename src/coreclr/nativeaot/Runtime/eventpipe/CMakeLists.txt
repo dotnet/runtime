@@ -95,6 +95,7 @@ list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${RUNTIME_DIR}/eventpipeadapter.h
    ${RUNTIME_DIR}/diagnosticserveradapter.h
    ${RUNTIME_DIR}/EnabledEventPipeInterface.cpp
+   ${RUNTIME_DIR}/runtimeeventinternal.cpp
 )
 
 list(APPEND EVENTPIPE_SOURCES
@@ -110,6 +111,7 @@ list(APPEND EVENTPIPE_SOURCES
 list(APPEND AOT_EVENTPIPE_DISABLED_SOURCES
   ${RUNTIME_DIR}/DisabledEventPipeInterface.cpp
   ${RUNTIME_DIR}/disabledeventpipeinternal.cpp
+  ${RUNTIME_DIR}/disabledruntimeeventinternal.cpp
   ${AOT_EVENTPIPE_SHIM_DIR}/disableddotnetruntime.cpp
 )
 

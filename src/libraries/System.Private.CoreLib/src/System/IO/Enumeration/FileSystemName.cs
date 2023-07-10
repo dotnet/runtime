@@ -152,9 +152,9 @@ namespace System.IO.Enumeration
 
                 // [MS - FSA] 2.1.4.4 Algorithm for Determining if a FileName Is in an Expression
                 // https://msdn.microsoft.com/en-us/library/ff469270.aspx
-                bool hasWildcards = (useExtendedWildcards ?
-                    expressionEnd.IndexOfAny("\"<>*?") :
-                    expressionEnd.IndexOfAny('*', '?')) >= 0;
+                bool hasWildcards = useExtendedWildcards ?
+                    expressionEnd.ContainsAny("\"<>*?") :
+                    expressionEnd.ContainsAny('*', '?');
                 if (!hasWildcards)
                 {
                     // Handle the special case of a single starting *, which essentially means "ends with"

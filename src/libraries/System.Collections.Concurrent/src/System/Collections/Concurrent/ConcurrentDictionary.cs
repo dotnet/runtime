@@ -1923,7 +1923,7 @@ namespace System.Collections.Concurrent
         #endregion
 
         private bool AreAllBucketsEmpty() =>
-            _tables._countPerLock.AsSpan().IndexOfAnyExcept(0) < 0;
+            !_tables._countPerLock.AsSpan().ContainsAnyExcept(0);
 
         /// <summary>
         /// Replaces the bucket table with a larger one. To prevent multiple threads from resizing the

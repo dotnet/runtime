@@ -191,6 +191,7 @@ namespace System.Diagnostics.Tracing
         protected void WriteEvent(int eventId, long arg1, long arg2) { }
         protected void WriteEvent(int eventId, long arg1, long arg2, long arg3) { }
         protected void WriteEvent(int eventId, long arg1, string? arg2) { }
+        protected void WriteEvent(int eventId, params EventSourcePrimitive[] args) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         protected void WriteEvent(int eventId, params object?[] args) { }
         protected void WriteEvent(int eventId, string? arg1) { }
@@ -215,6 +216,41 @@ namespace System.Diagnostics.Tracing
         public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string? eventName, ref System.Diagnostics.Tracing.EventSourceOptions options, ref T data) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("EventSource will serialize the whole object graph. Trimmer will not safely handle this case because properties may be trimmed. This can be suppressed if the object is a primitive type")]
         public void Write<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicProperties)] T>(string? eventName, T data) { }
+        [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+        public readonly struct EventSourcePrimitive
+        {
+            public static implicit operator EventSourcePrimitive(bool value) => throw null;
+            public static implicit operator EventSourcePrimitive(byte value) => throw null;
+            public static implicit operator EventSourcePrimitive(short value) => throw null;
+            public static implicit operator EventSourcePrimitive(int value) => throw null;
+            public static implicit operator EventSourcePrimitive(long value) => throw null;
+
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(sbyte value) => throw null;
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ushort value) => throw null;
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(uint value) => throw null;
+            [CLSCompliant(false)]
+            public static implicit operator EventSourcePrimitive(ulong value) => throw null;
+            [CLSCompliant(false)]
+            // Added to prevent going through the nuint -> ulong conversion
+            public static implicit operator EventSourcePrimitive(nuint value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(float value) => throw null;
+            public static implicit operator EventSourcePrimitive(double value) => throw null;
+            public static implicit operator EventSourcePrimitive(decimal value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(string? value) => throw null;
+            public static implicit operator EventSourcePrimitive(byte[]? value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(Guid value) => throw null;
+            public static implicit operator EventSourcePrimitive(DateTime value) => throw null;
+            public static implicit operator EventSourcePrimitive(nint value) => throw null;
+            public static implicit operator EventSourcePrimitive(char value) => throw null;
+
+            public static implicit operator EventSourcePrimitive(Enum value) => throw null;
+        }
         [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
         protected internal partial struct EventData
         {

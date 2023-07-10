@@ -150,12 +150,12 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1031`__ | JsonSourceGenerator encountered a duplicate JsonTypeInfo property name |
 |  __`SYSLIB1032`__ | JsonSourceGenerator encountered a context class that is not partial |
 |  __`SYSLIB1033`__ | JsonSourceGenerator encountered a type that has multiple [JsonConstructor] annotations|
-|  __`SYSLIB1034`__ | _`SYSLIB1034` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1034`__ | JsonSourceGenerator encountered a [JsonStringEnumConverter] annotation |
 |  __`SYSLIB1035`__ | JsonSourceGenerator encountered a type that has multiple [JsonExtensionData] annotations |
 |  __`SYSLIB1036`__ | JsonSourceGenerator encountered an invalid [JsonExtensionData] annotation |
 |  __`SYSLIB1037`__ | JsonSourceGenerator encountered a type with init-only properties for which deserialization is not supported |
 |  __`SYSLIB1038`__ | JsonSourceGenerator encountered a property annotated with [JsonInclude] that has inaccessible accessors |
-|  __`SYSLIB1039`__ | _`SYSLIB1039` reserved for System.Text.Json.SourceGeneration._ |
+|  __`SYSLIB1039`__ | JsonSourceGenerator encountered a [JsonDerivedTypeAttribute] annotation with [JsonSourceGenerationMode.Serialization] enabled |
 |  __`SYSLIB1040`__ | Invalid GeneratedRegex attribute |
 |  __`SYSLIB1041`__ | Multiple GeneratedRegex attribute |
 |  __`SYSLIB1042`__ | Invalid GeneratedRegex arguments |
@@ -235,7 +235,35 @@ The diagnostic id values reserved for .NET Libraries analyzer warnings are `SYSL
 |  __`SYSLIB1116`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1117`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
 |  __`SYSLIB1118`__ | *_`SYSLIB1100`-`SYSLIB1118` reserved for Microsoft.Extensions.Configuration.Binder.SourceGeneration.* |
-
+|  __`SYSLIB1201`__ | Options validation generator: Can't use 'ValidateObjectMembersAttribute' or `ValidateEnumeratedItemsAttribute` on fields or properties with open generic types. |
+|  __`SYSLIB1202`__ | Options validation generator: A member type has no fields or properties to validate. |
+|  __`SYSLIB1203`__ | Options validation generator: A type has no fields or properties to validate. |
+|  __`SYSLIB1204`__ | Options validation generator: A type annotated with `OptionsValidatorAttribute` doesn't implement the necessary interface. |
+|  __`SYSLIB1205`__ | Options validation generator: A type already includes an implementation of the 'Validate' method. |
+|  __`SYSLIB1206`__ | Options validation generator: Can't validate private fields or properties. |
+|  __`SYSLIB1207`__ | Options validation generator: Member type is not enumerable. |
+|  __`SYSLIB1208`__ | Options validation generator: Validators used for transitive or enumerable validation must have a constructor with no parameters. |
+|  __`SYSLIB1209`__ | Options validation generator: `OptionsValidatorAttribute` can't be applied to a static class. |
+|  __`SYSLIB1210`__ | Options validation generator: Null validator type specified for the `ValidateObjectMembersAttribute` or 'ValidateEnumeratedItemsAttribute' attributes. |
+|  __`SYSLIB1211`__ | Options validation generator: Unsupported circular references in model types. |
+|  __`SYSLIB1212`__ | Options validation generator: Member potentially missing transitive validation. |
+|  __`SYSLIB1213`__ | Options validation generator: Member potentially missing enumerable validation. |
+|  __`SYSLIB1214`__ | Options validation generator: Can't validate constants, static fields or properties. |
+|  __`SYSLIB1215`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1216`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1217`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1218`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1219`__ | *_`SYSLIB1214`-`SYSLIB1219` reserved for Microsoft.Extensions.Options.SourceGeneration.* |
+|  __`SYSLIB1220`__ | JsonSourceGenerator encountered a [JsonConverterAttribute] with an invalid type argument. |
+|  __`SYSLIB1221`__ | JsonSourceGenerator does not support this C# language version. |
+|  __`SYSLIB1222`__ | Constructor annotated with JsonConstructorAttribute is inaccessible. |
+|  __`SYSLIB1223`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1224`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1225`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1226`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1227`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1228`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
+|  __`SYSLIB1229`__ | *`SYSLIB1220`-`SYSLIB229` reserved for System.Text.Json.SourceGeneration.* |
 
 ### Diagnostic Suppressions (`SYSLIBSUPPRESS****`)
 

@@ -37,6 +37,15 @@
 #pragma warning(disable:4800) // type' : forcing value to bool 'true' or 'false' (performance warning)
 #endif
 
+// ArrayRef API is deprecated on C++17
+#if defined(__clang__) && (_LIBCPP_STD_VER > 17 || defined(__APPLE__))
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+#ifdef _MSC_VER
+#pragma warning(disable:4996)
+#endif
+
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/IRBuilder.h>
