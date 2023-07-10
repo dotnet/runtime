@@ -1519,7 +1519,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         catch (Exception ex)
                         {
-                            logger.LogDebug($"Failed to read {url} ({ex.Message})");
+                            logger.LogDebug($"Failed to get bytes using debugger protocol {url} ({ex.Message})");
                         }
                     }
                     else
