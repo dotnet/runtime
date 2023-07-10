@@ -6,7 +6,8 @@
 # Current progress:
  
 ## Runable:
- - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/tutorials/default-interface-members-versions)
+ - [default-interface-members-versions](https://github.com/dotnet/samples/tree/main/csharp/tutorials/default-interface-members-versions)
+ - [exploration](https://github.com/dotnet/samples/tree/main/csharp/tutorials/exploration)
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
