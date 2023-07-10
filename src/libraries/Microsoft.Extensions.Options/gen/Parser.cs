@@ -439,7 +439,8 @@ namespace Microsoft.Extensions.Options.Generators
                     // pop the stack
                     _ = _visitedModelTypes.Remove(enumeratedType.WithNullableAnnotation(NullableAnnotation.None));
                 }
-                else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol))
+                else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol) &&
+                        _compilation.IsSymbolAccessibleWithin(attributeType, _compilation.Assembly))
                 {
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
