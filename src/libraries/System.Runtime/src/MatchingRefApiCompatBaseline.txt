@@ -24,4 +24,5 @@ CannotMakeMemberAbstract : Member 'public System.Boolean System.IO.FileSystemInf
 CannotMakeMemberAbstract : Member 'public System.String System.IO.FileSystemInfo.Name.get()' is abstract in the reference but is not abstract in the implementation.
 # C# generates backing fields for fixed buffers as public.
 TypesMustExist : Type 'System.IO.Enumeration.FileSystemEntry.<_fileNameBuffer>e__FixedBuffer' does not exist in the reference but it does exist in the implementation.
-
+# This API only exists on servicing builds after the commit that introduce it
+MembersMustExist : Member 'public System.TimeSpan System.GC.GetTotalPauseDuration() does not exist in the reference but it does exist in the implementation.
