@@ -759,7 +759,7 @@ namespace System.Text.RegularExpressions
             // 1. "(" followed by nothing
             // 2. "(x" where x != ?
             // 3. "(?)"
-            if (_pos == _pattern.Length || _pattern[_pos] != '?' || (_pattern[_pos] == '?' && _pos + 1 < _pattern.Length && _pattern[_pos + 1] == ')'))
+            if (_pos == _pattern.Length || _pattern[_pos] != '?' || (_pos + 1 < _pattern.Length && _pattern[_pos + 1] == ')'))
             {
                 if ((_options & RegexOptions.ExplicitCapture) != 0 || _ignoreNextParen)
                 {
