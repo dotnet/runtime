@@ -996,7 +996,7 @@ namespace System.Text.RegularExpressions
                         _pos = parenPos - 1;       // jump to the start of the parentheses
                         _ignoreNextParen = true;    // but make sure we don't try to capture the insides
 
-                        if (_pos + 3 < _pattern.Length && _pattern[_pos + 1] == '?')
+                        if (_pos + 2 < _pattern.Length && _pattern[_pos + 1] == '?')
                         {
                             // disallow comments in the condition
                             if (_pattern[_pos + 2] == '#')
@@ -1005,7 +1005,7 @@ namespace System.Text.RegularExpressions
                             }
 
                             // disallow named capture group (?<..>..) in the condition
-                            if (_pattern[_pos + 2] == '\'' || (_pos + 4 < _pattern.Length && _pattern[_pos + 2] == '<' && _pattern[_pos + 3] != '!' && _pattern[_pos + 3] != '='))
+                            if (_pattern[_pos + 2] == '\'' || (_pos + 3 < _pattern.Length && _pattern[_pos + 2] == '<' && _pattern[_pos + 3] != '!' && _pattern[_pos + 3] != '='))
                             {
                                 throw MakeException(RegexParseError.AlternationHasNamedCapture, SR.AlternationHasNamedCapture);
                             }
