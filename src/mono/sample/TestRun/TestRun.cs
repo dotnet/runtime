@@ -3,14 +3,14 @@ namespace HelloWorld
 {
   class Program
   {
-    static int test(int c){
-      return 1 / c;
+    static string test(ReadOnlySpan<char> first, ReadOnlySpan<char> second, ReadOnlySpan<char> third){
+      return string.Concat(first,"-",second,"+",third);
     }
+
     static int Main()
     {
-      Console.WriteLine($"IsMono: {Type.GetType("Mono.RuntimeStructs") != null}");
-      Console.WriteLine("Hello RISC-V");
-      // test(0);
+      string str = test("Hello", "RISCV", "Mono");
+      Console.WriteLine($"Data about {str}");
       return 0;
     }
   }

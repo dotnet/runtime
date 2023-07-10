@@ -7,6 +7,9 @@ MONO_ARCH=riscv64
 TARGET_OS=linux
 AOT?=false
 QEMU=qemu-riscv64-static
+SAMPLE_PATH=/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient
+ANY_PATH= /home/wuxinlong/workspace/samples/csharp/tutorials/default-interface-members-versions/finished/customer-relationship/bin/Debug/net8.0/customer-relationship.dll
+
 #NET_TRACE_PATH=<path-to-trace-of-sample>
 #PGO_BINARY_PATH=<path-to-dotnet-pgo-executable>
 #MIBC_PROFILE_PATH=<path-to-mibc-for-sample>
@@ -15,35 +18,79 @@ MONO_ENV_DEBUG_OPTIONS = "-v --trace=all"
 MONO_ENV_RUN_OPTIONS = ""
 
 build: TestRun.cs
-	@csc TestRun.cs
+	@mcs TestRun.cs
 
 run-baseline: build
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet TestRun.exe
 
-run-webapiclient:
-	@COMPlus_DebugWriteToStdErr=1 \
+run-any-baseline:
+	COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
-	qemu-riscv64 -L $(TOP)/.tools/rootfs/riscv64/ \
-	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
-	/home/wuxinlong/workspace/samples/csharp/getting-started/console-webapiclient/bin/Debug/net8.0/webapiclient.dll
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet \
+	$(ANY_PATH)
 
 run: build
 	@COMPlus_DebugWriteToStdErr=1 \
 	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
-	qemu-riscv64 -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet TestRun.exe
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet TestRun.exe
+	
+run-any: 
+	COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ $(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(ANY_PATH)
+
+run-webapiclient-baseline:
+	COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-x64/dotnet \
+	$(SAMPLE_PATH)/bin/Debug/net8.0/webapiclient.dll
+
+run-webapiclient:
+	COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS=$(MONO_ENV_RUN_OPTIONS) \
+	$(QEMU) -L $(TOP).tools/rootfs/riscv64/ \
+	$(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/dotnet \
+	$(SAMPLE_PATH)/bin/Debug/net8.0/webapiclient.dll
 
 debug: build
 	COMPlus_DebugWriteToStdErr=1 \
 	MONO_LOG_LEVEL=debug MONO_LOG_MASK=all \
 	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
-	qemu-riscv64 -L $(TOP)/.tools/rootfs/riscv64/ \
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ \
 	-g 12345 \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet TestRun.exe &\
-	riscv64-unknown-linux-gnu-gdb -ex 'target remote localhost:12345'  \
+	gdb-multiarch -ex 'target remote localhost:12345'  \
 	-ex "set sysroot $(TOP).tools/rootfs/riscv64" -ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
-	-ex "b handle_exception_first_pass" \
+	-ex "b mini.c:2156" \
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
+
+debug-webapiclient:
+	COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ \
+	-g 12345 \
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(SAMPLE_PATH)/bin/Debug/net8.0/webapiclient.dll &\
+	gdb-multiarch -ex 'target remote localhost:12345'  \
+	-ex "set sysroot $(TOP).tools/rootfs/riscv64" \
+	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
+	-ex "b mini.c:2156" \
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
+
+debug-any:
+	COMPlus_DebugWriteToStdErr=1 \
+	MONO_ENV_OPTIONS=$(MONO_ENV_DEBUG_OPTIONS) \
+	$(QEMU) -L $(TOP)/.tools/rootfs/riscv64/ \
+	-g 12345 \
+	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet \
+	$(ANY_PATH) &\
+	gdb-multiarch -ex 'target remote localhost:12345'  \
+	-ex "set sysroot $(TOP).tools/rootfs/riscv64" \
+	-ex "set solib-search-path $(TOP)artifacts/bin/testhost/net8.0-linux-Debug-riscv64/shared/Microsoft.NETCore.App/8.0.0" \
+	-ex "b mini.c:2156" \
 	$(TOP)artifacts/bin/testhost/net8.0-$(TARGET_OS)-Debug-$(MONO_ARCH)/dotnet
 
 clean:
