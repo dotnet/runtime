@@ -1070,19 +1070,14 @@ namespace System.Text.RegularExpressions
 
                 if ((_options & RegexOptions.IgnorePatternWhitespace) != 0 && _pos < _pattern.Length && _pattern[_pos] == '#')
                 {
-                    while (_pos < _pattern.Length && _pattern[_pos] != '\n')
-                    {
-                        _pos++;
-                    }
+                    _pos = _pattern.IndexOf('\n', _pos);
+                    if (_pos == -1)
+                        _pos = _pattern.Length;
                 }
                 else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
                 {
-                    while (_pos < _pattern.Length && _pattern[_pos] != ')')
-                    {
-                        _pos++;
-                    }
-
-                    if (_pos == _pattern.Length)
+                    _pos = _pattern.IndexOf(')', _pos);
+                    if (_pos == -1)
                     {
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
                     }
