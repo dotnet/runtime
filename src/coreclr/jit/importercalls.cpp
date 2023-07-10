@@ -3564,23 +3564,11 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Load handle directly for known types
                 if (retNode == nullptr)
                 {
-                    bool                 isExact = false;
-                    bool                 notNull = false;
-                    CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(op1, &isExact, &notNull);
-                    if ((typeHnd != NO_CLASS_HANDLE) && isExact &&
-                        ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_SHAREDINST) == 0))
+                    CORINFO_CLASS_HANDLE typeHnd = impImportHandleFromTree(op1, false);
+                    if (typeHnd != NO_CLASS_HANDLE)
                     {
-                        assert((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0);
                         JITDUMP("Optimizing object.GetType() with known type to typeof\n");
-                        op1 = impPopStack().val;
-                        if (!notNull && fgAddrCouldBeNull(op1))
-                        {
-                            impAppendTree(gtNewNullCheck(op1, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
-                        }
-                        else if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
-                        {
-                            impAppendTree(gtUnusedValNode(op1), CHECK_SPILL_ALL, impCurStmtDI);
-                        }
+                        impPopStack();
                         GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
                         retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
                     }

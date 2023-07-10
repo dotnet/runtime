@@ -2040,6 +2040,44 @@ GenTree* Compiler::impCloneExpr(GenTree*    tree,
 }
 
 //------------------------------------------------------------------------
+// impImportHandleFromTree: Imports a tree that's only used for obtaining a type handle
+// to its value
+//
+// Arguments:
+//    tree        - imported tree
+//    allowShared - whether shared types are considered as valid handles
+//
+// Return Value:
+//    The extracted handle, or NO_CLASS_HANDLE if no handle could be extracted
+//
+CORINFO_CLASS_HANDLE Compiler::impImportHandleFromTree(GenTree* tree, bool allowShared)
+{
+    bool                 isExact = false;
+    bool                 notNull = false;
+    CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(tree, &isExact, &notNull);
+    if ((typeHnd != NO_CLASS_HANDLE) && isExact)
+    {
+        assert((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_GENERIC_TYPE_VARIABLE) == 0);
+        if (!allowShared && ((info.compCompHnd->getClassAttribs(typeHnd) & CORINFO_FLG_SHAREDINST) != 0))
+        {
+            return NO_CLASS_HANDLE;
+        }
+
+        JITDUMP("Retuning a constant handle from imported tree\n");
+        if (!notNull && fgAddrCouldBeNull(tree))
+        {
+            impAppendTree(gtNewNullCheck(tree, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);
+        }
+        else if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
+        {
+            impAppendTree(gtUnusedValNode(tree), CHECK_SPILL_ALL, impCurStmtDI);
+        }
+        return typeHnd;
+    }
+    return NO_CLASS_HANDLE;
+}
+
+//------------------------------------------------------------------------
 // impCreateDIWithCurrentStackInfo: Create a DebugInfo instance with the
 // specified IL offset and 'is call' bit, using the current stack to determine
 // whether to set the 'stack empty' bit.
