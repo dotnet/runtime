@@ -76,7 +76,7 @@ namespace System.Text.Json.Serialization.Metadata
 
                 string propertyName = polymorphismOptions.TypeDiscriminatorPropertyName;
 
-                JsonEncodedText jsonEncodedName = propertyName == JsonSerializer.TypePropertyName
+                JsonEncodedText jsonEncodedName = string.Equals(propertyName, JsonSerializer.TypePropertyName, options.PropertyNameCaseInsensitive ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal)
                     ? JsonSerializer.s_metadataType
                     : JsonEncodedText.Encode(propertyName, options.Encoder);
 
