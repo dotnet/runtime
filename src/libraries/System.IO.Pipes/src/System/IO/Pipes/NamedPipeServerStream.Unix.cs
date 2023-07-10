@@ -167,13 +167,13 @@ namespace System.IO.Pipes
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
 
-            string name = Interop.Sys.GetPeerUserName(handle);
-            if (name != null)
+            uint peerID;
+            if (Interop.Sys.GetPeerID(handle, out peerID) == -1)
             {
-                return name;
+                throw CreateExceptionForLastError(_instance?.PipeName);
             }
 
-            throw CreateExceptionForLastError(_instance?.PipeName);
+            return Interop.Sys.GetUserNameFromPasswd(peerID);
         }
 
         public override int InBufferSize

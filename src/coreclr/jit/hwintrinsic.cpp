@@ -511,10 +511,18 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector256") == 0)
         {
+            if (comp->getPreferredVectorByteLength() < 32)
+            {
+                return NI_IsSupported_False;
+            }
             isa = InstructionSet_AVX2;
         }
         else if (strcmp(className, "Vector512") == 0)
         {
+            if (comp->getPreferredVectorByteLength() < 64)
+            {
+                return NI_IsSupported_False;
+            }
             isa = InstructionSet_AVX512F;
         }
     }

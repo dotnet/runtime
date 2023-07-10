@@ -93,7 +93,7 @@ filter_misc () {
 	ignore _gp
     fi
 
-    if [ ${os} == "solaris2.11" ]; then
+    if [ ${os} = "solaris2.11" ]; then
         ignore _PROCEDURE_LINKAGE_TABLE_
         ignore _etext
     fi
@@ -109,6 +109,7 @@ check_local_unw_abi () {
     match _UL${plat}_get_proc_info_by_ip
     match _UL${plat}_get_proc_info_in_range
     match _UL${plat}_get_proc_name
+    match _UL${plat}_get_proc_name_by_ip
     match _UL${plat}_get_reg
     match _UL${plat}_get_save_loc
     match _UL${plat}_init_local
@@ -125,7 +126,8 @@ check_local_unw_abi () {
 
     match _U${plat}_flush_cache
     match _U${plat}_get_accessors
-    match _U${plat}_getcontext
+    match _U${plat}_get_elf_image
+    match _U${plat}_get_exe_image_path
     match _U${plat}_regname
     match _U${plat}_strerror
 
@@ -135,79 +137,70 @@ check_local_unw_abi () {
 
     match unw_backtrace
     @CONFIG_WEAK_BACKTRACE_TRUE@match backtrace
+    match unw_backtrace2
 
     case ${plat} in
 	arm)
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_getcontext
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_search_unwind_table
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
 	    ;;
 	hppa)
+	    match _U${plat}_getcontext
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
 	    match _U${plat}_setcontext
 	    ;;
 	ia64)
+	    match _U${plat}_getcontext
 	    match _UL${plat}_search_unwind_table
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
 	    ;;
 	x86)
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_getcontext
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
 	    ;;
 	x86_64)
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_getcontext
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
 	    match _U${plat}_setcontext
 	    ;;
 	ppc*)
+	    match _U${plat}_getcontext
 	    match _U${plat}_get_func_addr
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
 	    ;;
-        tilegx)
-            match _U${plat}_is_fpreg
+	tilegx)
+	    match _U${plat}_getcontext
+	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
-            match _UL${plat}_local_addr_space_init
-            match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
-            match ${plat}_lock
-            ;;
+	    match _UL${plat}_local_addr_space_init
+	    match ${plat}_lock
+	    ;;
 	s390x)
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_getcontext
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
 	    match _U${plat}_setcontext
 	    ;;
 	riscv)
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_getcontext
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
 	    match _U${plat}_setcontext
 	    ;;
 	loongarch64)
-	    match _U${plat}_get_elf_image
-	    match _U${plat}_get_exe_image_path
+	    match _U${plat}_getcontext
 	    match _U${plat}_is_fpreg
 	    match _UL${plat}_dwarf_search_unwind_table
 	    match _UL${plat}_dwarf_find_unwind_table
@@ -237,6 +230,7 @@ check_generic_unw_abi () {
     match _U${plat}_get_proc_info_by_ip
     match _U${plat}_get_proc_info_in_range
     match _U${plat}_get_proc_name
+    match _U${plat}_get_proc_name_by_ip
     match _U${plat}_get_reg
     match _U${plat}_get_save_loc
     match _U${plat}_init_local
@@ -303,15 +297,15 @@ check_generic_unw_abi () {
 	    match _U${plat}_dwarf_search_unwind_table
 	    match _U${plat}_dwarf_find_unwind_table
 	    ;;
-        tilegx)
-            match _U${plat}_dwarf_search_unwind_table
+	tilegx)
+	    match _U${plat}_dwarf_search_unwind_table
 	    match _U${plat}_dwarf_find_unwind_table
-            match _U${plat}_get_elf_image
+	    match _U${plat}_get_elf_image
 	    match _U${plat}_get_exe_image_path
-            match _U${plat}_is_fpreg
-            match _U${plat}_local_addr_space_init
-            match ${plat}_lock
-            ;;
+	    match _U${plat}_is_fpreg
+	    match _U${plat}_local_addr_space_init
+	    match ${plat}_lock
+	    ;;
 	s390x)
 	    match _U${plat}_is_fpreg
 	    match _U${plat}_get_elf_image
@@ -337,6 +331,8 @@ check_generic_unw_abi () {
 	    match _U${plat}_is_fpreg
 	    match _U${plat}_dwarf_search_unwind_table
 	    match _U${plat}_dwarf_find_unwind_table
+	    match _U${plat}_get_elf_image
+	    match _U${plat}_get_exe_image_path
 	    ;;
     esac
 

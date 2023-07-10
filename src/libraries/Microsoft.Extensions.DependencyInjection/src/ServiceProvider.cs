@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// The default IServiceProvider.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ServiceProviderDebugView))]
     public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
         private readonly CallSiteValidator? _callSiteValidator;
@@ -120,9 +123,9 @@ namespace Microsoft.Extensions.DependencyInjection
             _callSiteValidator?.ValidateCallSite(callSite);
         }
 
-        private void OnResolve(Type serviceType, IServiceScope scope)
+        private void OnResolve(ServiceCallSite callSite, IServiceScope scope)
         {
-            _callSiteValidator?.ValidateResolution(serviceType, scope, Root);
+            _callSiteValidator?.ValidateResolution(callSite, scope, Root);
         }
 
         internal object? GetService(Type serviceType, ServiceProviderEngineScope serviceProviderEngineScope)
@@ -133,8 +136,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             Func<ServiceProviderEngineScope, object?> realizedService = _realizedServices.GetOrAdd(serviceType, _createServiceAccessor);
-            OnResolve(serviceType, serviceProviderEngineScope);
-            DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
             var result = realizedService.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceType));
             return result;
@@ -173,10 +174,20 @@ namespace Microsoft.Extensions.DependencyInjection
                 if (callSite.Cache.Location == CallSiteResultCacheLocation.Root)
                 {
                     object? value = CallSiteRuntimeResolver.Instance.Resolve(callSite, Root);
-                    return scope => value;
+                    return scope =>
+                    {
+                        DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                        return value;
+                    };
                 }
 
-                return _engine.RealizeService(callSite);
+                Func<ServiceProviderEngineScope, object?> realizedService = _engine.RealizeService(callSite);
+                return scope =>
+                {
+                    OnResolve(callSite, scope);
+                    DependencyInjectionEventSource.Log.ServiceResolved(this, serviceType);
+                    return realizedService(scope);
+                };
             }
 
             return _ => null;
@@ -219,6 +230,23 @@ namespace Microsoft.Extensions.DependencyInjection
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
                 Justification = "CreateDynamicEngine won't be called when using NativeAOT.")] // see also https://github.com/dotnet/linker/issues/2715
             ServiceProviderEngine CreateDynamicEngine() => new DynamicServiceProviderEngine(this);
+        }
+
+        private string DebuggerToString() => Root.DebuggerToString();
+
+        internal sealed class ServiceProviderDebugView
+        {
+            private readonly ServiceProvider _serviceProvider;
+
+            public ServiceProviderDebugView(ServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
+            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public bool Disposed => _serviceProvider.Root.Disposed;
+            public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }
     }
 }
