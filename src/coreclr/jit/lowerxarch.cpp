@@ -4428,9 +4428,7 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
     assert(simdSize != 0);
-
-    // We support the return type being a SIMD for floating-point as a special optimization
-    assert(varTypeIsArithmetic(node) || (varTypeIsSIMD(node) && varTypeIsFloating(simdBaseType)));
+    assert(varTypeIsSIMD(node));
 
     GenTree* op1 = node->Op(1);
     GenTree* op2 = node->Op(2);
@@ -4479,15 +4477,12 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
                 //   tmp2 = *  HWINTRINSIC   simd16 T GetUpper
                 //          /--*  tmp1 simd16
                 //          +--*  tmp2 simd16
-                //   tmp3 = *  HWINTRINSIC   simd16 T Add
-                //          /--*  tmp3 simd16
-                //   node = *  HWINTRINSIC   simd16 T ToScalar
+                //   node = *  HWINTRINSIC   simd16 T Add
 
                 // This is roughly the following managed code:
                 //   var tmp1 = Avx.DotProduct(op1, op2, 0xFF);
                 //   var tmp2 = tmp1.GetUpper();
-                //   var tmp3 = Sse.Add(tmp1, tmp2);
-                //   return tmp3.ToScalar();
+                //   return Sse.Add(tmp1, tmp2);
 
                 idx = comp->gtNewIconNode(0xF1, TYP_INT);
                 BlockRange().InsertBefore(node, idx);
@@ -4515,13 +4510,17 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
                 tmp2 = comp->gtNewSimdBinOpNode(GT_ADD, TYP_SIMD16, tmp3, tmp1, simdBaseJitType, 16);
                 BlockRange().InsertAfter(tmp1, tmp2);
-                LowerNode(tmp2);
 
-                node->SetSimdSize(16);
+                // We're producing a vector result, so just return the result directly
+                LIR::Use use;
 
-                node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp2);
+                if (BlockRange().TryGetUse(node, &use))
+                {
+                    use.ReplaceWith(tmp2);
+                }
 
-                return LowerNode(node);
+                BlockRange().Remove(node);
+                return LowerNode(tmp2);
             }
 
             case TYP_DOUBLE:
@@ -5043,34 +5042,16 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
         tmp1 = tmp2;
     }
 
-    if (varTypeIsSIMD(node->gtType))
+    // We're producing a vector result, so just return the result directly
+    LIR::Use use;
+
+    if (BlockRange().TryGetUse(node, &use))
     {
-        // We're producing a vector result, so just return the result directly
-
-        LIR::Use use;
-
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            use.ReplaceWith(tmp1);
-        }
-
-        BlockRange().Remove(node);
-        return tmp1->gtNext;
+        use.ReplaceWith(tmp1);
     }
-    else
-    {
-        // We will be constructing the following parts:
-        //   ...
-        //          /--*  tmp1 simd16
-        //   node = *  HWINTRINSIC   simd16 T ToScalar
 
-        // This is roughly the following managed code:
-        //   ...
-        //   return tmp1.ToScalar();
-
-        node->ResetHWIntrinsicId(NI_Vector128_ToScalar, tmp1);
-        return LowerNode(node);
-    }
+    BlockRange().Remove(node);
+    return tmp1->gtNext;
 }
 
 //----------------------------------------------------------------------------------------------

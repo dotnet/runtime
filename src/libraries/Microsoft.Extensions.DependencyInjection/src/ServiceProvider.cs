@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// The default IServiceProvider.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(ServiceProviderDebugView))]
     public sealed class ServiceProvider : IServiceProvider, IDisposable, IAsyncDisposable
     {
         private readonly CallSiteValidator? _callSiteValidator;
@@ -227,6 +230,23 @@ namespace Microsoft.Extensions.DependencyInjection
             [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
                 Justification = "CreateDynamicEngine won't be called when using NativeAOT.")] // see also https://github.com/dotnet/linker/issues/2715
             ServiceProviderEngine CreateDynamicEngine() => new DynamicServiceProviderEngine(this);
+        }
+
+        private string DebuggerToString() => Root.DebuggerToString();
+
+        internal sealed class ServiceProviderDebugView
+        {
+            private readonly ServiceProvider _serviceProvider;
+
+            public ServiceProviderDebugView(ServiceProvider serviceProvider)
+            {
+                _serviceProvider = serviceProvider;
+            }
+
+            public List<ServiceDescriptor> ServiceDescriptors => new List<ServiceDescriptor>(_serviceProvider.Root.RootProvider.CallSiteFactory.Descriptors);
+            public List<object> Disposables => new List<object>(_serviceProvider.Root.Disposables);
+            public bool Disposed => _serviceProvider.Root.Disposed;
+            public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }
     }
 }

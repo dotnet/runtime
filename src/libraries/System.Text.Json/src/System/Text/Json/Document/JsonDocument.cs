@@ -200,7 +200,7 @@ namespace System.Text.Json
 
         internal ReadOnlyMemory<byte> GetRootRawValue()
         {
-            return GetRawValue(0, includeQuotes : true);
+            return GetRawValue(0, includeQuotes: true);
         }
 
         internal ReadOnlyMemory<byte> GetRawValue(int index, bool includeQuotes)

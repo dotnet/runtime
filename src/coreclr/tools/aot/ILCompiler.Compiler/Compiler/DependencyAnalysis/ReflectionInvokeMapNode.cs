@@ -106,9 +106,9 @@ namespace ILCompiler.DependencyAnalysis
 
             TypeDesc canonType = type.ConvertToCanonForm(CanonicalFormKind.Specific);
             if (canonType.IsCanonicalSubtype(CanonicalFormKind.Any))
-                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, type.ConvertToCanonForm(CanonicalFormKind.Specific));
+                GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, canonType);
             else
-                dependencies.Add(factory.MaximallyConstructableType(canonType), reason);
+                dependencies.Add(factory.MaximallyConstructableType(type), reason);
         }
 
         public override ObjectData GetData(NodeFactory factory, bool relocsOnly = false)
