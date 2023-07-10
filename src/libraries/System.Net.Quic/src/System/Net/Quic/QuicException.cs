@@ -17,7 +17,7 @@ public sealed class QuicException : IOException
     /// <param name="applicationErrorCode">The application protocol error code associated with the error.</param>
     /// <param name="message">The message for the exception.</param>
     public QuicException(QuicError error, long? applicationErrorCode, string message)
-        : this(error, applicationErrorCode, message, null)
+        : this(error, applicationErrorCode, null, message, null)
     { }
 
     /// <summary>
@@ -39,11 +39,8 @@ public sealed class QuicException : IOException
     /// <param name="message">The message for the exception.</param>
     /// <param name="innerException">The exception that is the cause of the current exception, or a null reference if no inner exception is specified.</param>
     internal QuicException(QuicError error, long? applicationErrorCode, string message, Exception? innerException)
-        : base(message, innerException)
-    {
-        QuicError = error;
-        ApplicationErrorCode = applicationErrorCode;
-    }
+        : this(error, applicationErrorCode, null, message, innerException)
+    { }
 
     /// <summary>
     /// Initializes a new instance of the <see cref='QuicException'/> class.
