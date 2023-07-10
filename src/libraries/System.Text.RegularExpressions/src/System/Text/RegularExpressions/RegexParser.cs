@@ -422,7 +422,7 @@ namespace System.Text.RegularExpressions
 
                 if (_pos == _pattern.Length || !(isQuantifier = IsTrueQuantifier()))
                 {
-                    AddConcatenate();
+                    AddUnitToConcatenate();
                     goto ContinueOuterScan;
                 }
 
@@ -462,7 +462,7 @@ namespace System.Text.RegularExpressions
 
                             if (startpos == _pos || _pos == _pattern.Length || _pattern[_pos++] != '}')
                             {
-                                AddConcatenate();
+                                AddUnitToConcatenate();
                                 _pos = startpos - 1;
                                 goto ContinueOuterScan;
                             }
@@ -488,7 +488,8 @@ namespace System.Text.RegularExpressions
                         throw MakeException(RegexParseError.ReversedQuantifierRange, SR.ReversedQuantifierRange);
                     }
 
-                    AddConcatenate(lazy, min, max);
+                    _unit = _unit!.MakeQuantifier(lazy, min, max);
+                    AddUnitToConcatenate();
                 }
 
             ContinueOuterScan:
@@ -511,7 +512,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Simple parsing for replacement patterns</summary>
         private RegexNode ScanReplacement()
         {
-            _concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
+            var concatenation = new RegexNode(RegexNodeKind.Concatenate, _options);
 
             while (_pos < _pattern.Length)
             {
@@ -528,12 +529,12 @@ namespace System.Text.RegularExpressions
                     if (_pattern[_pos++] == '$')
                     {
                         _unit = ScanDollar();
-                        AddConcatenate();
+                        AddUnitToConcatenate();
                     }
                 }
             }
 
-            return _concatenation;
+            return concatenation;
         }
 
         /// <summary>Scans contents of [] (not including []'s), and converts to a RegexCharClass</summary>
@@ -2108,18 +2109,11 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Finish the current quantifiable (when a quantifier is not found or is not possible)</summary>
-        private void AddConcatenate()
+        private void AddUnitToConcatenate()
         {
             // The first (| inside a Testgroup group goes directly to the group
 
             _concatenation!.AddChild(_unit!);
-            _unit = null;
-        }
-
-        /// <summary>Finish the current quantifiable (when a quantifier is found)</summary>
-        private void AddConcatenate(bool lazy, int min, int max)
-        {
-            _concatenation!.AddChild(_unit!.MakeQuantifier(lazy, min, max));
             _unit = null;
         }
 
