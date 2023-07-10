@@ -36,11 +36,14 @@ namespace System.Buffers
                     // If there are a lot of starting characters such that we often find one early,
                     // the ASCII fast scan may end up performing worse than checking one character at a time.
                     // Avoid using this optimization if the combined frequency of starting chars is too high.
-
-                    // Combined frequency of characters based on CharacterFrequencyHelper.AsciiFrequency:
+                    //
+                    // For reference, the combined frequency of characters based on CharacterFrequencyHelper.AsciiFrequency:
                     // - All digits is ~ 5 %
                     // - All lowercase letters is ~ 57.2 %
                     // - All uppercase letters is ~ 7.4 %
+                    //
+                    // This limit is based on experimentation with different texts and sets of values.
+                    // Above ~50 %, the cost of calling into the vectorized helper is higher than checking char by char on average.
                     const float MaxCombinedFrequency = 50f;
 
                     float frequency = 0;
@@ -53,7 +56,7 @@ namespace System.Buffers
                         }
                     }
 
-                    return frequency < MaxCombinedFrequency;
+                    return frequency <= MaxCombinedFrequency;
                 }
 
                 return false;
