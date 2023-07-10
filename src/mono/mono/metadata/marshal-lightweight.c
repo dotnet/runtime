@@ -2330,14 +2330,14 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	MonoType *target_type = sig->params[0]; // params[0] is the accessor wrapper's parent
 	MonoType *ret_type = sig->ret;
 	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID)
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedArgCheck");
 
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 	gboolean target_byref = m_type_is_byref (target_type);
 	gboolean target_valuetype = m_class_is_valuetype (target_class);
 	gboolean ret_byref = m_type_is_byref (ret_type);
 	if (!ret_byref || (kind == MONO_UNSAFE_ACCESSOR_FIELD && target_valuetype && !target_byref))
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedRefCheck");
 
 	mono_mb_emit_ldarg (mb, 0);
 	

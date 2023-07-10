@@ -5141,8 +5141,8 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	WrapperInfo *info;
 	MonoClass *accessor_klass = accessor_method->klass;
 
-	g_assert (!accessor_method->is_generic); // we don't support generic accessors to generic definitions right now
-	g_assert (!m_class_is_ginst (accessor_klass) && ! m_class_is_gtd (accessor_klass)); // TODO: don't assert - generate an accessor that throws BadImageFormatException when called.
+	if (accessor_method->is_generic)
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
 
 	if (member_name == NULL)
 		member_name = accessor_method->name;

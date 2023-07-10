@@ -2104,42 +2104,41 @@ gboolean
 mono_method_metadata_has_header (MonoMethod *method)
 {
 	int idx;
-    guint32 rva;
-    MonoImage* img;
-    gpointer loc = NULL;
-    MonoGenericContainer *container;
+	guint32 rva;
+	MonoImage* img;
+	gpointer loc = NULL;
+	MonoGenericContainer *container;
 
-    img = m_class_get_image (method->klass);
+	img = m_class_get_image (method->klass);
 
-    if (mono_method_has_no_body (method)) {
-        return FALSE;
-    }
+	if (mono_method_has_no_body (method)) {
+		return FALSE;
+	}
 
-    if (method->is_inflated) {
-        MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-        MonoMethodHeader *header, *iheader;
+	if (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		MonoMethodHeader *header, *iheader;
 
-        return mono_method_metadata_has_header (imethod->declaring);
-    }
+		return mono_method_metadata_has_header (imethod->declaring);
+	}
 
-    if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
-        MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
-        return mw->header != NULL;
-    }
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
+		return mw->header != NULL;
+	}
 
-    g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
-    idx = mono_metadata_token_index (method->token);
+	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
+	idx = mono_metadata_token_index (method->token);
 
-    if (G_UNLIKELY (img->has_updates))
-        loc = mono_metadata_update_get_updated_method_rva (img, idx);
+	if (G_UNLIKELY (img->has_updates))
+		loc = mono_metadata_update_get_updated_method_rva (img, idx);
 
-    if (!loc) {
-        rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+	if (!loc) {
+		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+		loc = mono_image_rva_map (img, rva);
+	}
 
-        loc = mono_image_rva_map (img, rva);
-    }
-
-    return loc != NULL;
+	return loc != NULL;
 }
 
 MonoMethodHeader*
