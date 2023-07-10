@@ -743,12 +743,12 @@ namespace System.Runtime.CompilerServices
         [Fact]
         public static unsafe void ReadUnaligned_ByRef_StructManaged()
         {
-            Int32Generic<string> s = new() { Int32 = 1, Value = null };
+            Int32Generic<string> s = new() { Int32 = 5, Value = "a" };
 
             Int32Generic<string> actual = Read<Int32Generic<string>>(ref Unsafe.As<Int32Generic<string>, byte>(ref s));
 
-            Assert.Equal(1, actual.Int32);
-            Assert.Equal(null, actual.Value);
+            Assert.Equal(5, actual.Int32);
+            Assert.Equal("a", actual.Value);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static T Read<T>(ref byte b) => Unsafe.ReadUnaligned<T>(ref b);
@@ -829,14 +829,14 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
-        public static unsafe void ReadUnaligned_ByRef_StructManaged()
+        public static unsafe void WriteUnaligned_ByRef_StructManaged()
         {
             Int32Generic<string> actual = default;
 
-            Write(ref Unsafe.As<Int32Generic<string>, byte>(ref actual), new Int32Generic<string>() { Int32 = 1, Value = null });
+            Write(ref Unsafe.As<Int32Generic<string>, byte>(ref actual), new Int32Generic<string>() { Int32 = 5, Value = "a" });
 
-            Assert.Equal(1, actual.Int32);
-            Assert.Equal(null, actual.Value);
+            Assert.Equal(5, actual.Int32);
+            Assert.Equal("a", actual.Value);
 
             [MethodImpl(MethodImplOptions.NoInlining)]
             static T Write<T>(ref byte b, T value) => Unsafe.WriteUnaligned<T>(ref b, value);
