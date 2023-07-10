@@ -89,7 +89,6 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
         // - here we resolve the promise returned by createDotnetRuntime export
         // - any code after createDotnetRuntime is executed now
         runtimeHelpers.dotnetReady.promise_control.resolve(exportedRuntimeAPI);
-        runtimeHelpers.runtimeReady = true;
     }).catch(err => {
         runtimeHelpers.dotnetReady.promise_control.reject(err);
     });
@@ -263,6 +262,8 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
         }
 
         bindings_init();
+        runtimeHelpers.runtimeReady = true;
+
         if (MonoWasmThreads) {
             runtimeHelpers.javaScriptExports.install_synchronization_context();
             runtimeHelpers.jsSynchronizationContextInstalled = true;
