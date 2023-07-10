@@ -439,9 +439,14 @@ namespace Microsoft.Extensions.Options.Generators
                     // pop the stack
                     _ = _visitedModelTypes.Remove(enumeratedType.WithNullableAnnotation(NullableAnnotation.None));
                 }
-                else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol) &&
-                        _compilation.IsSymbolAccessibleWithin(attributeType, validatorType))
+                else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol))
                 {
+                    if (!_compilation.IsSymbolAccessibleWithin(attributeType, validatorType))
+                    {
+                        Diag(DiagDescriptors.InaccessibleValidationAttribute, location, attributeType.Name, member.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), validatorType.Name);
+                        continue;
+                    }
+
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
 

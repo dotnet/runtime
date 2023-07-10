@@ -1267,7 +1267,7 @@ namespace __OptionValidationStaticInstances
     }
 
     [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
-    public void IgnoreNotAccessibleValidationAttributesTest()
+    public void InaccessibleValidationAttributesTest()
     {
         string source = """
             using System;
@@ -1357,7 +1357,8 @@ namespace __OptionValidationStaticInstances
                 .ConfigureAwait(false);
 
             _ = Assert.Single(generatedSources);
-            Assert.Empty(diagnostics);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagDescriptors.InaccessibleValidationAttribute.Id, diagnostics[0].Id);
             string generatedSource = generatedSources[0].SourceText.ToString();
             Assert.Contains("global::System.ComponentModel.DataAnnotations.RangeAttribute", generatedSource);
             Assert.Contains("global::System.ComponentModel.DataAnnotations.RequiredAttribute", generatedSource);
