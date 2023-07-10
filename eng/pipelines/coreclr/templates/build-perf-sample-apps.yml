@@ -124,7 +124,7 @@ steps:
         archiveType: zip
 
   - ${{ if and(eq(parameters.osGroup, 'ios'), eq(parameters.nameSuffix, 'iOSNativeAOT')) }}:
-    - script: make world TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
+    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
@@ -146,7 +146,7 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT
       displayName: Clean bindir
-    - script: make world TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
+    - script: make hello-app TARGET_OS=ios TARGET_ARCH=arm64 BUILD_CONFIG=Release DEPLOY_AND_RUN=false STRIP_DEBUG_SYMBOLS=true
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS-NativeAOT

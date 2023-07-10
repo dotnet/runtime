@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Nodes;
@@ -350,7 +351,7 @@ namespace System.Text.Json
         internal static bool TryHandleReferenceFromJsonNode(
             ref Utf8JsonReader reader,
             scoped ref ReadStack state,
-            JsonNode jsonNode,
+            JsonNode? jsonNode,
             [NotNullWhen(true)] out object? referenceValue)
         {
             bool refMetadataFound = false;
@@ -359,7 +360,7 @@ namespace System.Text.Json
             if (jsonNode is JsonObject jsonObject)
             {
                 int propertyCount = 0;
-                foreach (var property in jsonObject)
+                foreach (KeyValuePair<string, JsonNode?> property in jsonObject)
                 {
                     propertyCount++;
                     if (refMetadataFound)

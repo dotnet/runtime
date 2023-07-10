@@ -466,7 +466,7 @@ namespace System
             // We continue to support these but expect them to be incredibly rare.  As such, we
             // optimize for correctly formed strings where all the digits are valid hex, and only
             // fall back to supporting these other forms if parsing fails.
-            if (guidString.IndexOfAny('X', 'x', '+') >= 0 && TryCompatParsing(guidString, ref result))
+            if (guidString.ContainsAny('X', 'x', '+') && TryCompatParsing(guidString, ref result))
             {
                 return true;
             }
@@ -727,27 +727,17 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte DecodeByte(nuint ch1, nuint ch2, ref int invalidIfNegative)
+        private static byte DecodeByte(char ch1, char ch2, ref int invalidIfNegative)
         {
-            // TODO https://github.com/dotnet/runtime/issues/13464:
-            // Replace the Unsafe.Add with HexConverter.FromChar once the bounds checks are eliminated.
-
             ReadOnlySpan<byte> lookup = HexConverter.CharToHexLookup;
+            Debug.Assert(lookup.Length == 256);
 
-            int h1 = -1;
-            if (ch1 < (nuint)lookup.Length)
-            {
-                h1 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch1);
-            }
-            h1 <<= 4;
+            int upper = (sbyte)lookup[(byte)ch1];
+            int lower = (sbyte)lookup[(byte)ch2];
+            int result = (upper << 4) | lower;
 
-            int h2 = -1;
-            if (ch2 < (nuint)lookup.Length)
-            {
-                h2 = (sbyte)Unsafe.Add(ref MemoryMarshal.GetReference(lookup), (nint)ch2);
-            }
-
-            int result = h1 | h2;
+            // Result will be negative if ch1 or/and ch2 are greater than 0xFF
+            result = (ch1 | ch2) >> 8 == 0 ? result : -1;
             invalidIfNegative |= result;
             return (byte)result;
         }
@@ -1430,7 +1420,6 @@ namespace System
                     // Now we can create a "z" vector by selecting 12 values starting from the 9th element (index 0x08) and
                     // leaving gaps for dashes. Thus, the wider look-up table allows combining two shuffles, as used in the
                     // generic else-case, into a single instruction on Arm64.
-                    // TODO: Check if the JIT can merge the consecutive table look-ups and avoid the Arm64 specific if-case.
                     Vector128<byte> mid = AdvSimd.Arm64.VectorTableLookup((hexLow, hexHigh),
                         Vector128.Create(0x0D0CFF0B0A0908FF, 0xFF13121110FF0F0E).AsByte());
                     vecZ = (mid | dashesMask);

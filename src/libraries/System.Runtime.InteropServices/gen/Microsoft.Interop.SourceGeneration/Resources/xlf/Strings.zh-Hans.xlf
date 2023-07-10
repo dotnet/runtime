@@ -22,6 +22,11 @@
         <target state="translated">对于给定的 “ElementIndirectionDepth”，在 “MarshalUsingAttribute” 中只能使用 “ConstantElementCount” 或 “ElementCountInfo” 中的一个</target>
         <note />
       </trans-unit>
+      <trans-unit id="ContainingTypeAccessibilityDetails">
+        <source>Containing type '{0}' has accessibility '{1}'.</source>
+        <target state="translated">包含类型“{0}”具有可访问性“{1}”。</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CyclicalCountInfo">
         <source>This element cannot depend on '{0}' for collection size information without creating a dependency cycle</source>
         <target state="translated">在不创建依赖关系循环的情况下，此元素无法依赖于集合大小信息的“{0}”</target>
@@ -60,6 +65,11 @@
       <trans-unit id="InOutAttributeMarshalerNotSupported">
         <source>The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.</source>
         <target state="translated">此参数上提供的 “[In]” 和 “[Out]” 属性在此参数上不受支持。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InOutAttributes">
+        <source>[In] and [Out] attributes</source>
+        <target state="translated">[In] 和 [Out] 属性</target>
         <note />
       </trans-unit>
       <trans-unit id="ManagedToUnmanagedMissingRequiredMarshaller">
@@ -110,6 +120,11 @@
       <trans-unit id="SafeHandleByRefMustBeConcrete">
         <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
         <target state="translated">无法通过引用封送派生自 “SafeHandle” 的抽象类型。提供的类型必须是具体的。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeAccessibilityDetails">
+        <source>'{0}' has accessibility '{1}'.</source>
+        <target state="translated">“{0}”具有可访问性“{1}”。</target>
         <note />
       </trans-unit>
       <trans-unit id="UnmanagedToManagedMissingRequiredMarshaller">

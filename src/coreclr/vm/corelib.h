@@ -615,29 +615,6 @@ END_ILLINK_FEATURE_SWITCH()
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
 
-DEFINE_CLASS(VOLATILE, Threading, Volatile)
-
-#define DEFINE_VOLATILE_METHODS(methodType, paramType) \
-    DEFINE_METHOD(VOLATILE, READ_##paramType, Read, methodType##_Ref##paramType##_Ret##paramType) \
-    DEFINE_METHOD(VOLATILE, WRITE_##paramType, Write, methodType##_Ref##paramType##_##paramType)
-
-DEFINE_VOLATILE_METHODS(SM,Bool)
-DEFINE_VOLATILE_METHODS(SM,SByt)
-DEFINE_VOLATILE_METHODS(SM,Byte)
-DEFINE_VOLATILE_METHODS(SM,Shrt)
-DEFINE_VOLATILE_METHODS(SM,UShrt)
-DEFINE_VOLATILE_METHODS(SM,Int)
-DEFINE_VOLATILE_METHODS(SM,UInt)
-DEFINE_VOLATILE_METHODS(SM,Long)
-DEFINE_VOLATILE_METHODS(SM,ULong)
-DEFINE_VOLATILE_METHODS(SM,IntPtr)
-DEFINE_VOLATILE_METHODS(SM,UIntPtr)
-DEFINE_VOLATILE_METHODS(SM,Flt)
-DEFINE_VOLATILE_METHODS(SM,Dbl)
-DEFINE_VOLATILE_METHODS(GM,T)
-
-#undef DEFINE_VOLATILE_METHODS
-
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
 DEFINE_CLASS(PARAMETER_MODIFIER,    Reflection,             ParameterModifier)
@@ -813,6 +790,7 @@ DEFINE_FIELD_U(iFrameCount,                StackFrameHelper,   iFrameCount)
 
 DEFINE_CLASS(STARTUP_HOOK_PROVIDER,  System,                StartupHookProvider)
 DEFINE_METHOD(STARTUP_HOOK_PROVIDER, MANAGED_STARTUP, ManagedStartup, SM_PtrChar_RetVoid)
+DEFINE_METHOD(STARTUP_HOOK_PROVIDER, CALL_STARTUP_HOOK, CallStartupHook, SM_PtrChar_RetVoid)
 
 DEFINE_CLASS(STREAM,                IO,                     Stream)
 DEFINE_METHOD(STREAM,               BEGIN_READ,             BeginRead,  IM_ArrByte_Int_Int_AsyncCallback_Object_RetIAsyncResult)
@@ -1177,7 +1155,6 @@ DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 
-DEFINE_CLASS(BYTE_EQUALITYCOMPARER, CollectionsGeneric, ByteEqualityComparer)
 DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
 DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)

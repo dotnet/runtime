@@ -3,7 +3,7 @@
 
 import * as memory from "../../memory";
 import { VoidPtr } from "../../types/emscripten";
-import cwraps from "../../cwraps";
+import { diagnostics_c_functions as cwraps } from "../../cwraps";
 import type { EventPipeSessionIDImpl } from "./types";
 
 const sizeOfInt32 = 4;

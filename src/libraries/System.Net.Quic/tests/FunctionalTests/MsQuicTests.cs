@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
+using TestUtilities;
 
 namespace System.Net.Quic.Tests
 {
@@ -55,6 +56,125 @@ namespace System.Net.Quic.Tests
         public MsQuicTests(ITestOutputHelper output, CertificateSetup setup) : base(output)
         {
             _certificates = setup;
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public async Task QuicRootedObjectGetReleased()
+        {
+            async Task<(WeakReference<QuicListener>, WeakReference<QuicConnection>, WeakReference<QuicConnection>, WeakReference<QuicStream>, WeakReference<QuicStream>)> GetWeakReferencesAsync()
+            {
+                // Set up all objects, keep their weak reference.
+                QuicListener listener = await CreateQuicListener();
+                WeakReference<QuicListener> wrListener = new WeakReference<QuicListener>(listener);
+
+                var (clientConnection, serverConnection) = await CreateConnectedQuicConnection(listener);
+                WeakReference<QuicConnection> wrClientConnection = new WeakReference<QuicConnection>(clientConnection);
+                WeakReference<QuicConnection> wrServerConnection = new WeakReference<QuicConnection>(serverConnection);
+
+                QuicStream clientStream = await clientConnection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                await clientStream.WriteAsync(new byte[5], completeWrites: true);
+
+                QuicStream serverStream = await serverConnection.AcceptInboundStreamAsync();
+                await serverStream.WriteAsync(new byte[10], completeWrites: true);
+
+                WeakReference<QuicStream> wrClientStream = new WeakReference<QuicStream>(clientStream);
+                WeakReference<QuicStream> wrServerStream = new WeakReference<QuicStream>(serverStream);
+
+                while (!clientStream.ReadsClosed.IsCompleted)
+                {
+                    int bytes = await clientStream.ReadAsync(new byte[10]);
+                    if (bytes == 0)
+                    {
+                        break;
+                    }
+                }
+                while (!serverStream.ReadsClosed.IsCompleted)
+                {
+                    int bytes = await serverStream.ReadAsync(new byte[10]);
+                    if (bytes == 0)
+                    {
+                        break;
+                    }
+                }
+
+                // Dispose everything and check if all weak references are dead.
+                await clientStream.DisposeAsync();
+                await serverStream.DisposeAsync();
+                await clientConnection.DisposeAsync();
+                await serverConnection.DisposeAsync();
+                await listener.DisposeAsync();
+
+                return (wrListener, wrClientConnection, wrServerConnection, wrClientStream, wrServerStream);
+            }
+
+            var (wrListener, wrClientConnection, wrServerConnection, wrClientStream, wrServerStream) = await GetWeakReferencesAsync();
+
+            for (int i = 0; i < 20; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                await Task.Delay(100 * i);
+
+                if (TestWeakReferences())
+                {
+                    continue;
+                }
+                break;
+
+                bool TestWeakReferences()
+                    => wrListener.TryGetTarget(out _) ||
+                       wrClientConnection.TryGetTarget(out _) ||
+                       wrServerConnection.TryGetTarget(out _) ||
+                       wrClientStream.TryGetTarget(out _) ||
+                       wrServerStream.TryGetTarget(out _);
+            }
+
+            Assert.False(wrListener.TryGetTarget(out _));
+            Assert.False(wrClientConnection.TryGetTarget(out _));
+            Assert.False(wrServerConnection.TryGetTarget(out _));
+            Assert.False(wrClientStream.TryGetTarget(out _));
+            Assert.False(wrServerStream.TryGetTarget(out _));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoRuntime))]
+        public async Task QuicRootedConnectionGetsReleased_ConnectFails()
+        {
+            WeakReference<QuicConnection> wrServerConnection = default;
+            // Set up all objects, keep their weak reference.
+            var listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.ConnectionOptionsCallback = (connection, _, _) =>
+            {
+                wrServerConnection = new WeakReference<QuicConnection>(connection);
+                var serverConnectionOptions = CreateQuicServerOptions();
+                serverConnectionOptions.ServerAuthenticationOptions = new SslServerAuthenticationOptions();
+                return ValueTask.FromResult(serverConnectionOptions);
+            };
+            QuicListener listener = await CreateQuicListener(listenerOptions);
+
+            await Assert.ThrowsAsync<AuthenticationException>(async () => await CreateConnectedQuicConnection(listener));
+
+            // Dispose everything and check if all weak references are dead.
+            await listener.DisposeAsync();
+
+            for (int i = 0; i < 20; ++i)
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                await Task.Delay(100 * i);
+
+                if (TestWeakReferences())
+                {
+                    continue;
+                }
+                bool TestWeakReferences()
+                    => wrServerConnection.TryGetTarget(out _);
+
+                break;
+            }
+
+            Assert.False(wrServerConnection.TryGetTarget(out _));
         }
 
         [Fact]

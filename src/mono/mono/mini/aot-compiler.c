@@ -239,6 +239,7 @@ typedef struct MonoAotOptions {
 	gboolean deterministic;
 	gboolean allow_errors;
 	char *tool_prefix;
+	char *as_prefix;
 	char *ld_flags;
 	char *ld_name;
 	char *mtriple;
@@ -8825,6 +8826,8 @@ mono_aot_parse_options (const char *aot_options, MonoAotOptions *opts)
 			opts->nunbox_arbitrary_trampolines = atoi (arg + strlen ("nunbox-arbitrary-trampolines="));
 		} else if (str_begins_with (arg, "tool-prefix=")) {
 			opts->tool_prefix = g_strdup (arg + strlen ("tool-prefix="));
+		} else if (str_begins_with (arg, "as-prefix=")) {
+			opts->as_prefix = g_strdup (arg + strlen ("as-prefix="));
 		} else if (str_begins_with (arg, "ld-flags=")) {
 			opts->ld_flags = g_strdup (arg + strlen ("ld-flags="));
 		} else if (str_begins_with (arg, "ld-name=")) {
@@ -9390,6 +9393,7 @@ add_referenced_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, int depth)
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE:
 				tmp.type = patch_type;
 				tmp.data.target = data;
 				break;
@@ -9828,8 +9832,9 @@ compile_method (MonoAotCompile *acfg, MonoMethod *method)
 	mono_atomic_inc_i32 (&acfg->stats.ccount);
 
 	if (acfg->aot_opts.compiled_methods_outfile && acfg->compiled_methods_outfile != NULL) {
-		if (!mono_method_is_generic_impl (method) && method->token != 0)
+		if (!mono_method_is_generic_impl (method) && method->token != 0) {
 			fprintf (acfg->compiled_methods_outfile, "%x\n", method->token);
+		}
 	}
 }
 
@@ -10724,7 +10729,14 @@ emit_llvm_file (MonoAotCompile *acfg)
 		// FIXME: This doesn't work yet
 		opts = g_strdup ("");
 	} else {
-#if LLVM_API_VERSION >= 1300
+#if LLVM_API_VERSION >= 1600
+		/* The safepoints pass requires new pass manager syntax*/
+		opts = g_strdup ("-disable-tail-calls -passes='");
+		if (!acfg->aot_opts.llvm_only) {
+			opts = g_strdup_printf ("%sdefault<O2>,", opts);
+		}
+		opts = g_strdup_printf ("%splace-safepoints' -spp-all-backedges", opts);
+#elif LLVM_API_VERSION >= 1300
 		/* The safepoints pass requires the old pass manager */
 		opts = g_strdup ("-disable-tail-calls -place-safepoints -spp-all-backedges -enable-new-pm=0");
 #else
@@ -10734,8 +10746,10 @@ emit_llvm_file (MonoAotCompile *acfg)
 
 	if (acfg->aot_opts.llvm_opts) {
 		opts = g_strdup_printf ("%s %s", acfg->aot_opts.llvm_opts, opts);
+#if LLVM_API_VERSION < 1600
 	} else if (!acfg->aot_opts.llvm_only) {
 		opts = g_strdup_printf ("-O2 %s", opts);
+#endif
 	}
 
 	if (acfg->aot_opts.use_current_cpu) {
@@ -13112,6 +13126,7 @@ compile_asm (MonoAotCompile *acfg)
 	char *command, *objfile;
 	char *outfile_name, *tmp_outfile_name, *llvm_ofile;
 	const char *tool_prefix = acfg->aot_opts.tool_prefix ? acfg->aot_opts.tool_prefix : "";
+	const char *as_prefix = acfg->aot_opts.as_prefix ? acfg->aot_opts.as_prefix : tool_prefix;
 	char *ld_flags = acfg->aot_opts.ld_flags ? acfg->aot_opts.ld_flags : g_strdup("");
 
 #ifdef TARGET_WIN32_MSVC
@@ -13203,7 +13218,7 @@ compile_asm (MonoAotCompile *acfg)
 	g_string_append (acfg->as_args, "-c -x assembler ");
 #endif
 
-	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS,
+	command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (objfile), wrap_path (acfg->tmpfname));
 	aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -13214,7 +13229,7 @@ compile_asm (MonoAotCompile *acfg)
 	}
 
 	if (acfg->llvm && !acfg->llvm_owriter) {
-		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", tool_prefix, AS_NAME, AS_OPTIONS,
+		command = g_strdup_printf ("\"%s%s\" %s %s -o %s %s", as_prefix, AS_NAME, AS_OPTIONS,
 			acfg->as_args ? acfg->as_args->str : "",
 			wrap_path (acfg->llvm_ofile), wrap_path (acfg->llvm_sfile));
 		aot_printf (acfg, "Executing the native assembler: %s\n", command);
@@ -14211,6 +14226,7 @@ aot_opts_free (MonoAotOptions *aot_opts)
 	g_list_free (aot_opts->direct_pinvoke_lists);
 	g_free (aot_opts->dedup_include);
 	g_free (aot_opts->tool_prefix);
+	g_free (aot_opts->as_prefix);
 	g_free (aot_opts->ld_flags);
 	g_free (aot_opts->ld_name);
 	g_free (aot_opts->mtriple);
@@ -14434,6 +14450,8 @@ static void aot_dump (MonoAotCompile *acfg)
 static const MonoJitICallId preinited_jit_icalls [] = {
 	MONO_JIT_ICALL_mini_llvm_init_method,
 	MONO_JIT_ICALL_mini_llvmonly_throw_nullref_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_index_out_of_range_exception,
+	MONO_JIT_ICALL_mini_llvmonly_throw_invalid_cast_exception,
 	MONO_JIT_ICALL_mini_llvmonly_throw_corlib_exception,
 	MONO_JIT_ICALL_mono_threads_state_poll,
 	MONO_JIT_ICALL_mini_llvmonly_init_vtable_slot,
@@ -14832,6 +14850,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		acfg->compiled_methods_outfile = fopen (acfg->aot_opts.compiled_methods_outfile, "w+");
 		if (!acfg->compiled_methods_outfile)
 			aot_printerrf (acfg, "Unable to open compiled-methods-outfile specified file %s\n", acfg->aot_opts.compiled_methods_outfile);
+		else {
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->filename);
+			fprintf(acfg->compiled_methods_outfile, "%s\n", ass->image->guid);
+		}
 	}
 
 	if (acfg->aot_opts.data_outfile) {

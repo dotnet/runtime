@@ -89,6 +89,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/eventsourceerror/eventsourceerror/*">
             <Issue>https://github.com/dotnet/runtime/issues/80666</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>CoreCLR doesn't support type equivalence on Unix</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Arm32 All OS -->
@@ -727,6 +733,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>https://github.com/dotnet/runtimelab/issues/155: Type equivalence</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/GC/API/WeakReference/Finalize2/*">
             <Issue>Expectations about finalization order</Issue>
         </ExcludeList>
@@ -1073,6 +1085,9 @@
             <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
+            <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/processinfo3/**">
             <Issue>https://github.com/dotnet/runtime/issues/83051</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/providervalidation/**">
@@ -1922,6 +1937,12 @@
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/*">
             <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
+            <Issue>Mono doesn't support type equivalence on types implemented in different assemblies</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ArrayMarshalling/SafeArray/SafeArrayTest/*">
             <Issue>Requires COM support, disabled on all Mono platforms.</Issue>
         </ExcludeList>
@@ -2005,6 +2026,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/opt/OSR/pinnedlocal/**">
             <Issue>https://github.com/dotnet/runtime/issues/70820</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88499</Issue>
         </ExcludeList>
     </ItemGroup>
 
@@ -2905,16 +2929,16 @@
         <ExcludeList Include="$(XunitTestBinBase)/Exceptions/ForeignThread/ForeignThreadExceptions/**">
             <Issue>https://github.com/dotnet/runtime/issues/82859</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_r_Target_64Bit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/VectorConvert_ro_Target_64Bit/**">
-            <Issue>https://github.com/dotnet/runtime/issues/85316</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition=" '$(RuntimeFlavor)' == 'mono' and '$(TargetArchitecture)' == 'arm64' and '$(TargetsWindows)' != 'true' " >
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/simple/Simple/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/signatures/nopiatestil/nopiatestil/**">
+            <Issue>Doesn't compile with LLVM AOT.</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/baseservices/typeequivalence/istypeequivalent/istypeequivalent/*">
             <Issue>Doesn't compile with LLVM AOT.</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/generics/Variance/IL/Unbox002/**">
@@ -3448,6 +3472,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo2/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/processinfo3/**">
+            <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient and system.diagnostics.process not supported</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/diagnosticport/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
         </ExcludeList>
@@ -3476,6 +3503,9 @@
             <Issue>WASM doesn't support diagnostics tracing</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleprovidervalidation/**">
+            <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
+        </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/tracing/eventpipe/simpleruntimeeventvalidation/**">
             <Issue>System.Diagnostics.Process is not supported on wasm</Issue>
         </ExcludeList>
     </ItemGroup>

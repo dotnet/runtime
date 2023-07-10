@@ -511,11 +511,19 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         }
         else if (strcmp(className, "Vector256") == 0)
         {
+            if (comp->getPreferredVectorByteLength() < 32)
+            {
+                return NI_IsSupported_False;
+            }
             isa = InstructionSet_AVX2;
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            isa = InstructionSet_Vector512;
+            if (comp->getPreferredVectorByteLength() < 64)
+            {
+                return NI_IsSupported_False;
+            }
+            isa = InstructionSet_AVX512F;
         }
     }
 #endif
@@ -600,10 +608,7 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
     }
     else if (isa == InstructionSet_Vector512)
     {
-        // We support Vector512 intrinsics when AVX512F, AVX512BW, AVX512DQ are available.
-        if (!comp->compOpportunisticallyDependsOn(InstructionSet_AVX512F) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512BW) &&
-            !comp->compOpportunisticallyDependsOn(InstructionSet_AVX512DQ))
+        if (!comp->IsBaselineVector512IsaSupportedOpportunistically())
         {
             return NI_Illegal;
         }
@@ -916,8 +921,7 @@ bool Compiler::compSupportsHWIntrinsic(CORINFO_InstructionSet isa)
 //
 static bool impIsTableDrivenHWIntrinsic(NamedIntrinsic intrinsicId, HWIntrinsicCategory category)
 {
-    return (category != HW_Category_Special) && HWIntrinsicInfo::RequiresCodegen(intrinsicId) &&
-           !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
+    return (category != HW_Category_Special) && !HWIntrinsicInfo::HasSpecialImport(intrinsicId);
 }
 
 //------------------------------------------------------------------------

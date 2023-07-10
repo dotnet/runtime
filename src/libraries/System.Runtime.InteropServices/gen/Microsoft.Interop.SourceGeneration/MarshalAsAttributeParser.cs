@@ -27,10 +27,10 @@ namespace Microsoft.Interop
     public sealed class MarshalAsAttributeParser : IMarshallingInfoAttributeParser, IUseSiteAttributeParser
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly DefaultMarshallingInfo _defaultInfo;
 
-        public MarshalAsAttributeParser(Compilation compilation, IGeneratorDiagnostics diagnostics, DefaultMarshallingInfo defaultInfo)
+        public MarshalAsAttributeParser(Compilation compilation, GeneratorDiagnosticsBag diagnostics, DefaultMarshallingInfo defaultInfo)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;
@@ -120,9 +120,18 @@ namespace Microsoft.Interop
                 MarshallingInfo elementMarshallingInfo = NoMarshallingInfo.Instance;
                 if (elementUnmanagedType != (UnmanagedType)SizeAndParamIndexInfo.UnspecifiedConstSize)
                 {
-                    elementMarshallingInfo = elementType.SpecialType == SpecialType.System_String
-                        ? CreateStringMarshallingInfo(elementType, elementUnmanagedType)
-                        : new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
+                    if (elementType.SpecialType == SpecialType.System_String)
+                    {
+                        elementMarshallingInfo = CreateStringMarshallingInfo(elementType, elementUnmanagedType);
+                    }
+                    else if (elementUnmanagedType == UnmanagedType.Interface && elementType is not INamedTypeSymbol { IsComImport: true })
+                    {
+                        elementMarshallingInfo = ComInterfaceMarshallingInfoProvider.CreateComInterfaceMarshallingInfo(_compilation, elementType);
+                    }
+                    else
+                    {
+                        elementMarshallingInfo = new MarshalAsInfo(elementUnmanagedType, _defaultInfo.CharEncoding);
+                    }
                 }
                 else
                 {
@@ -161,7 +170,9 @@ namespace Microsoft.Interop
             };
 
             if (marshallerName is null)
+            {
                 return new MarshalAsInfo(unmanagedType, _defaultInfo.CharEncoding);
+            }
 
             return StringMarshallingInfoProvider.CreateStringMarshallingInfo(_compilation, type, marshallerName);
         }
