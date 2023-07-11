@@ -307,7 +307,7 @@ namespace System.Numerics
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
 
-            if (sourceStatus != OperationStatus.Done)
+            if (utf8TextStatus != OperationStatus.Done)
             {
                 return ThrowHelper.ThrowFormatInvalidString();
             }
@@ -435,7 +435,7 @@ namespace System.Numerics
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
 
-            if (sourceStatus != OperationStatus.Done)
+            if (utf8TextStatus != OperationStatus.Done)
             {
                 return false;
             }
@@ -476,7 +476,7 @@ namespace System.Numerics
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
 
-            if (sourceStatus != OperationStatus.Done)
+            if (utf8TextStatus != OperationStatus.Done)
             {
                 return ThrowHelper.ThrowFormatInvalidString();
             }
@@ -517,7 +517,7 @@ namespace System.Numerics
 
             OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
 
-            if (sourceStatus != OperationStatus.Done)
+            if (utf8TextStatus != OperationStatus.Done)
             {
                 return false;
             }
