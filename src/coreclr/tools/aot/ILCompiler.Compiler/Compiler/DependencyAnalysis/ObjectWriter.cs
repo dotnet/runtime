@@ -49,6 +49,8 @@ namespace ILCompiler.DependencyAnalysis
         private HashSet<int> _offsetToCfiStart = new HashSet<int>();
         // Code offsets that ends a frame
         private HashSet<int> _offsetToCfiEnd = new HashSet<int>();
+        // Code offsets to compact unwind encoding
+        private Dictionary<int, uint> _offsetToCfiCompactEncoding = new Dictionary<int, uint>();
         // Used to assert whether frames are not overlapped.
         private bool _frameOpened;
 
@@ -246,6 +248,14 @@ namespace ILCompiler.DependencyAnalysis
         {
             Debug.Assert(_frameOpened);
             EmitCFICode(_nativeObjectWriter, nativeOffset, blob);
+        }
+
+        [DllImport(NativeObjectWriterFileName)]
+        private static extern void EmitCFICompactUnwindEncoding(IntPtr objWriter, uint encoding);
+        public void EmitCFICompactUnwindEncoding(uint encoding)
+        {
+            Debug.Assert(_frameOpened);
+            EmitCFICompactUnwindEncoding(_nativeObjectWriter, encoding);
         }
 
         [DllImport(NativeObjectWriterFileName)]
@@ -574,12 +584,36 @@ namespace ILCompiler.DependencyAnalysis
             }
         }
 
+        private static ReadOnlySpan<byte> DwarfArm64EmptyFrame => new byte[]
+        {
+            0x04, 0x00, 0xFF, 0xFF, 0x10, 0x00, 0x00, 0x00,
+            0x04, 0x02, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x04, 0x02, 0x1E, 0x00, 0x08, 0x00, 0x00, 0x00,
+            0x08, 0x01, 0x1D, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+
+        private bool TryGetCompactUnwindEncoding(byte[] blob, out uint encoding)
+        {
+            if (_targetPlatform.Architecture == TargetArchitecture.ARM64)
+            {
+                if (blob.AsSpan().SequenceEqual(DwarfArm64EmptyFrame))
+                {
+                    // Frame-based encoding, no saved registers
+                    encoding = 0x04000000;
+                    return true;
+                }
+            }
+            encoding = 0;
+            return false;
+        }
+
         public void BuildCFIMap(NodeFactory factory, ObjectNode node)
         {
             _offsetToCfis.Clear();
             _offsetToCfiStart.Clear();
             _offsetToCfiEnd.Clear();
             _offsetToCfiLsdaBlobName.Clear();
+            _offsetToCfiCompactEncoding.Clear();
             _frameOpened = false;
 
             INodeWithCodeInfo nodeWithCodeInfo = node as INodeWithCodeInfo;
@@ -662,21 +696,30 @@ namespace ILCompiler.DependencyAnalysis
                 _byteInterruptionOffsets[start] = true;
                 _byteInterruptionOffsets[end] = true;
                 _offsetToCfiLsdaBlobName.Add(start, blobSymbolName);
-                for (int j = 0; j < len; j += CfiCodeSize)
+
+                if (_targetPlatform.IsOSXLike &&
+                    TryGetCompactUnwindEncoding(blob, out uint compactEncoding))
                 {
-                    // The first byte of CFI_CODE is offset from the range the frame covers.
-                    // Compute code offset from the root method.
-                    int codeOffset = blob[j] + start;
-                    List<byte[]> cfis;
-                    if (!_offsetToCfis.TryGetValue(codeOffset, out cfis))
+                    _offsetToCfiCompactEncoding[start] = compactEncoding;
+                }
+                else
+                {
+                    for (int j = 0; j < len; j += CfiCodeSize)
                     {
-                        cfis = new List<byte[]>();
-                        _offsetToCfis.Add(codeOffset, cfis);
-                        _byteInterruptionOffsets[codeOffset] = true;
+                        // The first byte of CFI_CODE is offset from the range the frame covers.
+                        // Compute code offset from the root method.
+                        int codeOffset = blob[j] + start;
+                        List<byte[]> cfis;
+                        if (!_offsetToCfis.TryGetValue(codeOffset, out cfis))
+                        {
+                            cfis = new List<byte[]>();
+                            _offsetToCfis.Add(codeOffset, cfis);
+                            _byteInterruptionOffsets[codeOffset] = true;
+                        }
+                        byte[] cfi = new byte[CfiCodeSize];
+                        Array.Copy(blob, j, cfi, 0, CfiCodeSize);
+                        cfis.Add(cfi);
                     }
-                    byte[] cfi = new byte[CfiCodeSize];
-                    Array.Copy(blob, j, cfi, 0, CfiCodeSize);
-                    cfis.Add(cfi);
                 }
             }
 
@@ -726,6 +769,11 @@ namespace ILCompiler.DependencyAnalysis
                     // prefix to `_fram`.
                     "_fram"u8.CopyTo(blobSymbolName);
                     EmitSymbolDef(blobSymbolName);
+
+                    if (_offsetToCfiCompactEncoding.TryGetValue(offset, out uint compactEncoding))
+                    {
+                        EmitCFICompactUnwindEncoding(compactEncoding);
+                    }
                 }
             }
 
