@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Http.Logging
 
             serviceCollection.AddHttpClient("NoLoggers")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => b.RemoveAllLoggers());
+                .RemoveAllLoggers();
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
@@ -60,14 +60,14 @@ namespace Microsoft.Extensions.Http.Logging
 
             serviceCollection.AddHttpClient("NoLoggers")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => b.RemoveAllLoggers());
+                .RemoveAllLoggers();
 
             serviceCollection.AddHttpClient("DefaultLogger")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>();
 
             serviceCollection.AddHttpClient("NoLoggersV2")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => b.RemoveAllLoggers());
+                .RemoveAllLoggers();
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
@@ -104,7 +104,7 @@ namespace Microsoft.Extensions.Http.Logging
             var testLogger = new TestCountingLogger(forceAsyncLogging);
             serviceCollection.AddHttpClient("TestCountingLogger")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => b.AddLogger(_ => testLogger));
+                .AddLogger(_ => testLogger);
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Http.Logging
             var testLogger = new TestCountingLogger();
             serviceCollection.AddHttpClient("TestCountingLogger")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => b.AddLogger(_ => testLogger));
+                .AddLogger(_ => testLogger);
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
@@ -202,7 +202,7 @@ namespace Microsoft.Extensions.Http.Logging
             var testLogger = new TestContextCountingLogger();
             serviceCollection.AddHttpClient("TestContextCountingLogger")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => b.AddLogger(_ => testLogger));
+                .AddLogger(_ => testLogger);
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
@@ -248,25 +248,21 @@ namespace Microsoft.Extensions.Http.Logging
             serviceCollection.AddTransient<TestMessageHandler>();
             serviceCollection.AddSingleton<TestILoggerCustomLogger>();
 
-            serviceCollection.AddHttpClient("TestILoggerCustomLogger")
-                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => {
-                    if (removeDefaultLoggers)
-                    {
-                        b.RemoveAllLoggers();
-                    }
-                    b.AddLogger<TestILoggerCustomLogger>();
-                });
+            var builder = serviceCollection.AddHttpClient("TestILoggerCustomLogger");
+            ConfigureHttpClient(builder);
 
-            serviceCollection.AddHttpClient("TestILoggerCustomLoggerV2")
-                .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
-                .ConfigureLogging(b => {
-                    if (removeDefaultLoggers)
-                    {
-                        b.RemoveAllLoggers();
-                    }
-                    b.AddLogger<TestILoggerCustomLogger>();
-                });
+            var builderV2 = serviceCollection.AddHttpClient("TestILoggerCustomLoggerV2");
+            ConfigureHttpClient(builderV2);
+
+            void ConfigureHttpClient(IHttpClientBuilder b)
+            {
+                b.ConfigurePrimaryHttpMessageHandler<TestMessageHandler>();
+                if (removeDefaultLoggers)
+                {
+                    b.RemoveAllLoggers();
+                }
+                b.AddLogger<TestILoggerCustomLogger>();
+            }
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();
@@ -308,9 +304,8 @@ namespace Microsoft.Extensions.Http.Logging
             serviceCollection.AddHttpClient("WrapHandlerPipeline")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
                 .AddHttpMessageHandler<TestRetryingHandler>()
-                .ConfigureLogging(b => b
-                    .AddLogger(_ => innerLogger, wrapHandlersPipeline: false)
-                    .AddLogger(_ => outerLogger, wrapHandlersPipeline: true));
+                .AddLogger(_ => innerLogger, wrapHandlersPipeline: false)
+                .AddLogger(_ => outerLogger, wrapHandlersPipeline: true);
 
             var services = serviceCollection.BuildServiceProvider();
             var factory = services.GetRequiredService<IHttpClientFactory>();

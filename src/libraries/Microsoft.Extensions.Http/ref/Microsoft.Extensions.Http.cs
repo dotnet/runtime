@@ -5,9 +5,12 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static partial class HttpClientBuilderExtensions
     {
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddDefaultLogger(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.IServiceProvider, System.Net.Http.DelegatingHandler> configureHandler) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.Net.Http.DelegatingHandler> configureHandler) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) where THandler : System.Net.Http.DelegatingHandler { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddLogger(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.IServiceProvider, Microsoft.Extensions.Http.Logging.IHttpClientLogger> httpClientLoggerFactory, bool wrapHandlersPipeline = false) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddLogger<TLogger>(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, bool wrapHandlersPipeline = false) where TLogger : Microsoft.Extensions.Http.Logging.IHttpClientLogger { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddTypedClient<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] TClient>(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) where TClient : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddTypedClient<TClient>(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.Net.Http.HttpClient, System.IServiceProvider, TClient> factory) where TClient : class { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddTypedClient<TClient>(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<System.Net.Http.HttpClient, TClient> factory) where TClient : class { throw null; }
@@ -20,8 +23,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder ConfigurePrimaryHttpMessageHandler<THandler>(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) where THandler : System.Net.Http.HttpMessageHandler { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Collections.Generic.IEnumerable<string> redactedLoggedHeaderNames) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<string, bool> shouldRedactHeaderValue) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RemoveAllLoggers(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder SetHandlerLifetime(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.TimeSpan handlerLifetime) { throw null; }
-        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder ConfigureLogging(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Action<Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder> configure) { throw null; }
     }
     public static partial class HttpClientFactoryServiceCollectionExtensions
     {
@@ -47,25 +50,10 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
     }
 
-    public static partial class HttpClientLoggingBuilderExtensions
-    {
-        public static Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder AddDefaultLogger(this Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder builder) { throw null; }
-
-        public static Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder AddLogger<TLogger>(this Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder builder, bool wrapHandlersPipeline = false) where TLogger : Microsoft.Extensions.Http.Logging.IHttpClientLogger { throw null; }
-    }
-
     public partial interface IHttpClientBuilder
     {
         string Name { get; }
         Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
-    }
-
-    public partial interface IHttpClientLoggingBuilder
-    {
-        string Name { get; }
-        Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get; }
-        Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder AddLogger(System.Func<System.IServiceProvider, Microsoft.Extensions.Http.Logging.IHttpClientLogger> httpClientLoggerFactory, bool wrapHandlersPipeline = false);
-        Microsoft.Extensions.DependencyInjection.IHttpClientLoggingBuilder RemoveAllLoggers();
     }
 }
 namespace Microsoft.Extensions.Http

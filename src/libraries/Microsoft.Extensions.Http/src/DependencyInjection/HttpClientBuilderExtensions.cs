@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for configuring an <see cref="IHttpClientBuilder"/>
     /// </summary>
-    public static class HttpClientBuilderExtensions
+    public static partial class HttpClientBuilderExtensions
     {
         /// <summary>
         /// Adds a delegate that will be used to configure a named <see cref="HttpClient"/>.
@@ -528,16 +528,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options => options.HandlerLifetime = handlerLifetime);
-            return builder;
-        }
-
-        public static IHttpClientBuilder ConfigureLogging(this IHttpClientBuilder builder, Action<IHttpClientLoggingBuilder> configure)
-        {
-            ThrowHelper.ThrowIfNull(builder);
-            ThrowHelper.ThrowIfNull(configure);
-
-            configure(new DefaultHttpClientLoggingBuilder(builder.Services, builder.Name));
-
             return builder;
         }
 
