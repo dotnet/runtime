@@ -132,7 +132,6 @@ public class ResourcesData
     ///
     /// For .NET < 8 it's <see cref="ResourceHashesByNameDictionary"/>
     /// For .NET >= 8 it's <see cref="TypedLibraryInitializers"/>
-    /// - First key is "" or ""
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public object libraryInitializers { get; set; }

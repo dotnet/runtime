@@ -95,11 +95,6 @@ export type MonoConfig = {
     /**
      * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
      * from a custom source, such as an external CDN.
-     * @param type The type of the resource to be loaded.
-     * @param name The name of the resource to be loaded.
-     * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
-     * @param integrity The integrity string representing the expected content in the response.
-     * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
      */
     loadBootResource?: LoadBootResourceCallback;
 
@@ -197,26 +192,80 @@ export interface AssetEntry extends ResourceRequest {
 }
 
 export type AssetBehaviours =
-    "resource" // load asset as a managed resource assembly
-    | "assembly" // load asset as a managed assembly
-    | "pdb" // load asset as a managed debugging information
-    | "heap" // store asset into the native heap
-    | "icu" // load asset as an ICU data archive
-    | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
-    | "dotnetwasm" // the binary of the dotnet runtime
-    | "js-module-threads" // the javascript module for threads
-    | "js-module-runtime" // the javascript module for threads
-    | "js-module-dotnet" // the javascript module for threads
-    | "js-module-native" // the javascript module for threads
-    | "js-module-library-initializer" // the javascript module that came from nuget package 
-    | "symbols" // the javascript module for threads
+    /**
+     * Load asset as a managed resource assembly.
+     */
+    "resource"
+    /**
+     * Load asset as a managed assembly.
+     */
+    | "assembly"
+    /**
+     * Load asset as a managed debugging information.
+     */
+    | "pdb"
+    /**
+     * Store asset into the native heap.
+     */
+    | "heap"
+    /**
+     * Load asset as an ICU data archive.
+     */
+    | "icu"
+    /**
+     * Load asset into the virtual filesystem (for fopen, File.Open, etc).
+     */
+    | "vfs"
+    /**
+     * The binary of the dotnet runtime.
+     */
+    | "dotnetwasm"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-threads"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-runtime"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-dotnet"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-native"
+    /**
+     * The javascript module that came from nuget package .
+     */
+    | "js-module-library-initializer"
+    /**
+     * The javascript module for threads.
+     */
+    | "symbols" // 
 
 export const enum GlobalizationMode {
-    Sharded = "sharded", // load sharded ICU data
-    All = "all", // load all ICU data
-    Invariant = "invariant", //  operate in invariant globalization mode.
-    Custom = "custom", // use user defined icu file
-    Hybrid = "hybrid" // operate in hybrid globalization mode with small ICU files, using native platform functions
+    /**
+     * Load sharded ICU data.
+     */
+    Sharded = "sharded", // 
+    /**
+     * Load all ICU data.
+     */
+    All = "all",
+    /**
+     * Operate in invariant globalization mode.
+     */
+    Invariant = "invariant",
+    /**
+     * Use user defined icu file.
+     */
+    Custom = "custom",
+    /**
+     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
+     */
+    Hybrid = "hybrid"
 }
 
 export type DotnetModuleConfig = {
