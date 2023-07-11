@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Unicode;
 
 namespace System.Numerics
 {
@@ -304,7 +305,12 @@ namespace System.Numerics
                 utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
             }
 
-            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (sourceStatus != OperationStatus.Done)
+            {
+                return ThrowHelper.ThrowFormatInvalidString();
+            }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
 
             // Actual operation
@@ -427,7 +433,12 @@ namespace System.Numerics
                 utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
             }
 
-            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (sourceStatus != OperationStatus.Done)
+            {
+                return false;
+            }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
 
             // Actual operation
@@ -455,7 +466,7 @@ namespace System.Numerics
             if (textMaxCharCount < 256)
             {
                 utf16TextArray = null;
-                utf16Text = stackalloc char[512];
+                utf16Text = stackalloc char[256];
             }
             else
             {
@@ -463,7 +474,12 @@ namespace System.Numerics
                 utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
             }
 
-            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (sourceStatus != OperationStatus.Done)
+            {
+                return ThrowHelper.ThrowFormatInvalidString();
+            }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
 
             // Actual operation
@@ -491,7 +507,7 @@ namespace System.Numerics
             if (textMaxCharCount < 256)
             {
                 utf16TextArray = null;
-                utf16Text = stackalloc char[512];
+                utf16Text = stackalloc char[256];
             }
             else
             {
@@ -499,7 +515,12 @@ namespace System.Numerics
                 utf16Text = utf16TextArray.AsSpan(0, textMaxCharCount);
             }
 
-            int utf16TextLength = Encoding.UTF8.GetChars(utf8Text, utf16Text);
+            OperationStatus utf8TextStatus = Utf8.ToUtf16(utf8Text, utf16Text, out _, out int utf16TextLength, replaceInvalidSequences: false);
+
+            if (sourceStatus != OperationStatus.Done)
+            {
+                return false;
+            }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
 
             // Actual operation

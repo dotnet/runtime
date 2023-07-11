@@ -85,7 +85,7 @@ namespace System.Globalization
             if (sourceMaxCharCount <= 256)
             {
                 sourceUtf16Array = null;
-                sourceUtf16 = stackalloc char[512];
+                sourceUtf16 = stackalloc char[256];
             }
             else
             {
@@ -93,7 +93,7 @@ namespace System.Globalization
                 sourceUtf16 = sourceUtf16Array.AsSpan(0, sourceMaxCharCount);
             }
 
-            OperationStatus sourceStatus = Utf8.ToUtf16(source, sourceUtf16, out _, out int sourceUtf16Length, replaceInvalidSequences: false);
+            OperationStatus sourceStatus = Utf8.ToUtf16PreservingReplacement(source, sourceUtf16, out _, out int sourceUtf16Length, replaceInvalidSequences: true);
 
             if (sourceStatus != OperationStatus.Done)
             {
@@ -110,7 +110,7 @@ namespace System.Globalization
             if (prefixMaxCharCount < 256)
             {
                 prefixUtf16Array = null;
-                prefixUtf16 = stackalloc char[512];
+                prefixUtf16 = stackalloc char[256];
             }
             else
             {
@@ -118,7 +118,7 @@ namespace System.Globalization
                 prefixUtf16 = prefixUtf16Array.AsSpan(0, prefixMaxCharCount);
             }
 
-            OperationStatus prefixStatus = Utf8.ToUtf16(prefix, prefixUtf16, out _, out int prefixUtf16Length, replaceInvalidSequences: false);
+            OperationStatus prefixStatus = Utf8.ToUtf16PreservingReplacement(prefix, prefixUtf16, out _, out int prefixUtf16Length, replaceInvalidSequences: true);
 
             if (prefixStatus != OperationStatus.Done)
             {
