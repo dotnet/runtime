@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using Xunit;
 
@@ -400,5 +401,92 @@ namespace System.IO.Tests
             using var stream = new FileStream(file1, FileMode.Open, FileAccess.Read, FileShare.None);
             Assert.Throws<IOException>(() => File.Copy(file2, file1, overwrite: true));
         }
+
+        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks)),
+            InlineData("", ""),
+            /*InlineData(":a", ""),*/
+            InlineData("", ":a")/*,
+            InlineData(":a", ":a")*/]
+        //todo: is copying from an ADS meant to fail?
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void WindowsAlternateDataStreamSymlinkTest(string stream1, string stream2)
+        {
+            // This test checks copying all combinations of alternate data streams with all combinations of symlinks referencing them.
+            // This test exists to check we don't cause a BSOD when using ReFS block copy operation on alternative data streams (pending? rolled out fix from Windows team), and that it has the correct behaviour.
+
+            string sourceFile = GetTestFilePath();
+            string destFile = GetTestFilePath();
+
+            void Test(string src, string dst)
+            {
+                try
+                {
+                    File.WriteAllText(sourceFile, "abc");
+                    File.WriteAllText(destFile, "def");
+                    File.WriteAllText(sourceFile + stream1, "ghi");
+                    File.WriteAllText(destFile + stream2, "jkl");
+
+                    File.Copy(src, dst, true);
+
+                    if (stream1 != "") Assert.Equal("abc", File.ReadAllText(sourceFile));
+                    if (stream2 != "") Assert.Equal("def", File.ReadAllText(destFile));
+                    Assert.Equal("ghi", File.ReadAllText(sourceFile + stream1));
+                    Assert.Equal("ghi", File.ReadAllText(destFile + stream2));
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Failed with src={src}, dst={dst}.", ex);
+                }
+            }
+
+            File.CreateSymbolicLink(sourceFile + ".link", sourceFile + stream1);
+            File.CreateSymbolicLink(destFile + ".link", destFile + stream2);
+
+            Test(sourceFile + stream1, destFile + stream2);
+            Test(sourceFile + stream1, destFile + ".link");
+            Test(sourceFile + ".link", destFile + stream2);
+            Test(sourceFile + ".link", destFile + ".link");
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public unsafe void WindowsCheckSparseness()
+        {
+            string sourceFile = GetTestFilePath();
+            string destFile = GetTestFilePath();
+
+            File.WriteAllText(sourceFile, "abc");
+            File.WriteAllText(destFile, "def");
+
+            Assert.True((File.GetAttributes(sourceFile) & FileAttributes.SparseFile) == 0);
+            File.Copy(sourceFile, destFile, true);
+            Assert.True((File.GetAttributes(destFile) & FileAttributes.SparseFile) == 0);
+            Assert.Equal("abc", File.ReadAllText(sourceFile));
+
+            using (FileStream file = File.Open(sourceFile, FileMode.Open))
+            {
+                DeviceIoControl(file.SafeFileHandle.DangerousGetHandle(), /*FSCTL_SET_SPARSE*/ 0x000900c4, null, 0, null, 0, out _, 0);
+            }
+            File.WriteAllText(destFile, "def");
+
+            Assert.True((File.GetAttributes(sourceFile) & FileAttributes.SparseFile) != 0);
+            File.Copy(sourceFile, destFile, true);
+            Assert.True((File.GetAttributes(destFile) & FileAttributes.SparseFile) != 0);
+            Assert.Equal("abc", File.ReadAllText(sourceFile));
+
+            [DllImport("kernel32.dll", EntryPoint = "DeviceIoControl", SetLastError = true)]
+            [return: MarshalAs(UnmanagedType.Bool)]
+            static unsafe extern bool DeviceIoControl(
+                IntPtr hDevice,
+                uint dwIoControlCode,
+                void* lpInBuffer,
+                uint nInBufferSize,
+                void* lpOutBuffer,
+                uint nOutBufferSize,
+                out uint lpBytesReturned,
+                IntPtr lpOverlapped);
+        }
+
+        // Todo: add a way to run all these on ReFS, and a test to check we actually cloned the reference, not just the data on ReFS.
     }
 }

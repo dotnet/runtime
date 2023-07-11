@@ -21,5 +21,6 @@ internal static partial class Interop
             int fileSystemNameBufLen);
 
         internal const uint FILE_SUPPORTS_ENCRYPTION = 0x00020000;
+        internal const uint FILE_SUPPORTS_BLOCK_REFCOUNTING = 0x08000000;
     }
 }

@@ -10,6 +10,7 @@ internal static partial class Interop
             internal const int FILE_ATTRIBUTE_NORMAL = 0x00000080;
             internal const int FILE_ATTRIBUTE_READONLY = 0x00000001;
             internal const int FILE_ATTRIBUTE_DIRECTORY = 0x00000010;
+            internal const int FILE_ATTRIBUTE_SPARSE_FILE = 0x00000200;
             internal const int FILE_ATTRIBUTE_REPARSE_POINT = 0x00000400;
         }
     }

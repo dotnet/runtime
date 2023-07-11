@@ -56,8 +56,417 @@ namespace System.IO
             throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
         }
 
+        private static SafeFileHandle? TryOpenTargetNoAlternativeDataStream(
+            string lpFileName,
+            int dwDesiredAccess,
+            FileShare dwShareMode,
+            FileMode dwCreationDisposition,
+            int dwFlagsAndAttributes,
+            ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA fileInformation,
+            out string openedFileName)
+        {
+            // Default value for openedFileName.
+            openedFileName = lpFileName;
+
+            // Check the file isn't an alternative data stream
+            if (Path.GetFileName(lpFileName.AsSpan()).Contains(':'))
+            {
+                return null;
+            }
+
+            // Try to open it in a way where we can detect symlinks.
+            SafeFileHandle result = Interop.Kernel32.CreateFile(
+                lpFileName,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT
+                );
+
+            // Check we successfully opened it.
+            if (result.IsInvalid)
+            {
+                return null;
+            }
+
+            // Read the file attributes.
+            if (!Interop.Kernel32.GetFileAttributesEx(lpFileName, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref fileInformation))
+            {
+                result.Dispose();
+                return null;
+            }
+
+            // Deal with the case of a reparse point.
+            if ((fileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+            {
+                // Get the path of the target.
+                result.Dispose();
+                //try
+                //{
+                /*    */string? target = GetFinalLinkTarget(lpFileName, false);
+                //}
+                //catch
+                //{
+                //    return false;
+                //}
+
+                // Deal with no target
+                if (target == null)
+                {
+                    return null;
+                }
+
+                // Check the target's file name for alternative data streams.
+                if (Path.GetFileName(target.AsSpan()).Contains(':'))
+                {
+                    return null;
+                }
+
+                // Open the target.
+                result = Interop.Kernel32.CreateFile(
+                    target,
+                    dwDesiredAccess,
+                    dwShareMode,
+                    dwCreationDisposition,
+                    dwFlagsAndAttributes | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT
+                    );
+                openedFileName = target;
+
+                // Read the file attributes.
+                if (!Interop.Kernel32.GetFileAttributesEx(lpFileName, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref fileInformation))
+                {
+                    result.Dispose();
+                    return null;
+                }
+
+                // Check we haven't somehow ended up with another symlink due to things changing very quickly.
+                if ((fileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
+                {
+                    result.Dispose();
+                    return null;
+                }
+            }
+
+            // Return our result.
+            return result;
+        }
+
+        private static unsafe bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
+        {
+            // Check the destination file isn't an alternative data stream (unsupported, and crashes on up to some versions of Windows 11).
+            // Todo: make some of these conditional based on Windows version.
+            if (Path.GetFileName(destFullPath.AsSpan()).Contains(':'))
+            {
+                return false;
+            }
+
+            // Open the source file.
+            // We use FILE_FLAGS_NO_BUFFERING since we're not using unaligned writes during cloning and can skip buffering overhead.
+            const int FILE_FLAG_NO_BUFFERING = 0x20000000;
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA sourceFileInformation = default;
+            SafeFileHandle? _sourceHandle = TryOpenTargetNoAlternativeDataStream(
+                sourceFullPath,
+                Interop.Kernel32.GenericOperations.GENERIC_READ,
+                FileShare.Read,
+                FileMode.Open,
+                FILE_FLAG_NO_BUFFERING,
+                ref sourceFileInformation,
+                out string openedSourceFullPath);
+            if (_sourceHandle == null)
+            {
+                return false;
+            }
+            using (SafeFileHandle sourceHandle = _sourceHandle)
+            {
+                // Return false if we failed to open the source file.
+                if (sourceHandle.IsInvalid)
+                {
+                    return false;
+                }
+
+                // Read the source's volume's info.
+                // todo: do we want GetVolumePathName + GetVolumeInformationByHandle instead?
+                int sourceSerialNumber;
+                if (Interop.Kernel32.GetVolumeInformationByHandle(sourceHandle, out _, false, &sourceSerialNumber, null, out int sourceVolumeFlags, null, 0) != 0)
+                {
+                    throw new Exception("C");
+                    //return false;
+                }
+
+                // Check if it supports the block copy operation.
+                if ((sourceVolumeFlags & Interop.Kernel32.FILE_SUPPORTS_BLOCK_REFCOUNTING) == 0)
+                {
+                    throw new Exception("D");
+                    //return false;
+                }
+
+                // Get file size.
+                long sourceSize = (long)(((ulong)sourceFileInformation.nFileSizeHigh << 32) | sourceFileInformation.nFileSizeLow);
+
+                // Helper variables.
+                SafeFileHandle? destinationHandle = null;
+                bool madeNew = false;
+
+                try
+                {
+                    // Open the destination, keeping track of whether we made a file.
+                    Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA destFileInformation = default;
+                    if (overwrite)
+                    {
+                        // Try to open the existing file.
+                        destinationHandle = TryOpenTargetNoAlternativeDataStream(
+                            destFullPath,
+                            Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
+                            FileShare.None,
+                            FileMode.Open,
+                            0,
+                            ref destFileInformation,
+                            out _);
+                        if (destinationHandle == null)
+                        {
+                            // Alternative data stream.
+                            return false;
+                        }
+                        if (destinationHandle.IsInvalid)
+                        {
+                            // Try opening as a new file.
+                            destinationHandle = null;
+                        }
+                    }
+
+                    // If we still haven't opened the file.
+                    if (destinationHandle == null)
+                    {
+                        // Try to create the destination file.
+                        destinationHandle = TryOpenTargetNoAlternativeDataStream(
+                            destFullPath,
+                            Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
+                            FileShare.None,
+                            FileMode.CreateNew,
+                            0,
+                            ref destFileInformation,
+                            out _);
+                        if (destinationHandle == null)
+                        {
+                            // Alternative data stream.
+                            return false;
+                        }
+                        if (destinationHandle.IsInvalid)
+                        {
+                            // Failure to open.
+                            return false;
+                        }
+                        madeNew = true;
+                    }
+
+                    // Read the destination file's volume's serial number.
+                    int destSerialNumber;
+                    if (Interop.Kernel32.GetVolumeInformationByHandle(sourceHandle, out _, false, &destSerialNumber, null, out int destVolumeFlags, null, 0) != 0)
+                    {
+                        throw new Exception("G");
+                        //return false;
+                    }
+
+                    // Check the destination file is on the same volume.
+                    // Note: this doesn't guarantee they're on the same volume for sure, so we have to take that into consideration later: https://devblogs.microsoft.com/oldnewthing/20170707-00/?p=96555.
+                    if (sourceSerialNumber != destSerialNumber)
+                    {
+                        throw new Exception("H");
+                        //return false;
+                    }
+
+                    // Quick sanity check to see if the destination supports the block copy operation, since it's basically free to check anyway.
+                    if ((destVolumeFlags & Interop.Kernel32.FILE_SUPPORTS_BLOCK_REFCOUNTING) == 0)
+                    {
+                        throw new Exception("I");
+                        //return false;
+                    }
+
+                    // Get the source volume path. Note: we need the real path here for symlinks also, hence openedSourceFullPath.
+                    if (Interop.Kernel32.GetVolumePathName(openedSourceFullPath, out var volumePath) != 0)
+                    {
+                        throw new Exception("K1");
+                        //return false;
+                    }
+
+                    // Read the source volume's cluster size.
+                    if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, out int sectorsPerCluster, out int bytesPerCluster, out _, out _))
+                    {
+                        throw new Exception("K");
+                        //return false;
+                    }
+                    long clusterSize = sectorsPerCluster * (long)bytesPerCluster;
+
+                    // Set file length to 0.
+                    if (!madeNew)
+                    {
+                        if (!Interop.Kernel32.SetEndOfFile(destinationHandle))
+                        {
+                            throw new Exception("O");
+                            //return false;
+                        }
+                    }
+
+                    // Ensure the destination file is not readonly.
+                    // Todo: are there other flags we need to exclude here?
+                    FileAttributes newAttributes = (FileAttributes)destFileInformation.dwFileAttributes & ~(FileAttributes.ReadOnly | FileAttributes.Normal);
+                    if (newAttributes == 0) newAttributes = FileAttributes.Normal;
+                    Interop.Kernel32.FILE_BASIC_INFO basicInfo = new()
+                    {
+                        FileAttributes = (uint)newAttributes,
+                    };
+                    if (!Interop.Kernel32.SetFileInformationByHandle(
+                            destinationHandle,
+                            Interop.Kernel32.FileBasicInfo,
+                            &basicInfo,
+                            (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
+                    {
+                        throw Win32Marshal.GetExceptionForLastWin32Error(destinationHandle.Path);
+                    }
+
+                    // Make the destination sparse.
+                    if (!Interop.Kernel32.DeviceIoControl(destinationHandle, Interop.Kernel32.FSCTL_SET_SPARSE, null, 0, null, 0, out _, 0))
+                    {
+                        throw new Exception("Q3");
+                    }
+
+                    // Clone file integrity settings from source to destination. Must be done while file is zero size.
+                    Interop.Kernel32.FSCTL_GET_INTEGRITY_INFORMATION_BUFFER getIntegrityInfo = default;
+                    if (!Interop.Kernel32.DeviceIoControl(
+                        sourceHandle,
+                        Interop.Kernel32.FSCTL_GET_INTEGRITY_INFORMATION,
+                        null,
+                        0,
+                        &getIntegrityInfo,
+                        (uint)sizeof(Interop.Kernel32.FSCTL_GET_INTEGRITY_INFORMATION_BUFFER),
+                        out _,
+                        IntPtr.Zero))
+                    {
+                        throw new Exception("Q");
+                        //return false;
+                    }
+                    if (!madeNew || getIntegrityInfo.ChecksumAlgorithm != 0 || getIntegrityInfo.Flags != 0)
+                    {
+                        Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER setIntegrityInfo = default;
+                        setIntegrityInfo.ChecksumAlgorithm = getIntegrityInfo.ChecksumAlgorithm;
+                        setIntegrityInfo.Flags = getIntegrityInfo.Flags;
+                        setIntegrityInfo.Reserved = getIntegrityInfo.Reserved;
+                        if (!Interop.Kernel32.DeviceIoControl(
+                                destinationHandle,
+                                Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION,
+                                &setIntegrityInfo,
+                                (uint)sizeof(Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER),
+                                null,
+                                0,
+                                out _,
+                                IntPtr.Zero))
+                        {
+                            throw new Exception("R");
+                            //return false;
+                        }
+                    }
+
+                    // Set length of destination to same as source.
+                    Interop.Kernel32.FILE_END_OF_FILE_INFO eofInfo = default;
+                    eofInfo.EndOfFile = sourceSize;
+                    if (!Interop.Kernel32.SetFileInformationByHandle(destinationHandle, Interop.Kernel32.FileEndOfFileInfo, &eofInfo, (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
+                    {
+                        throw new Exception("S");
+                        //return false;
+                    }
+
+                    // Copy all of the blocks.
+                    Interop.Kernel32.DUPLICATE_EXTENTS_DATA duplicateExtentsData = default;
+                    duplicateExtentsData.FileHandle = sourceHandle.DangerousGetHandle();
+                    // ReFS requires that cloned regions reside on a disk cluster boundary.
+                    long clusterSizeMask = clusterSize - 1;
+                    long fileSizeRoundedUpToClusterBoundary = (sourceSize + clusterSizeMask) & ~clusterSizeMask;
+                    long sourceOffset = 0;
+                    while (sourceOffset < sourceSize)
+                    {
+                        duplicateExtentsData.SourceFileOffset = sourceOffset;
+                        duplicateExtentsData.TargetFileOffset = sourceOffset;
+                        const long MaxChunkSize = 1L << 31; // Each cloned region must be < 4GiB in length. Use a smaller default (2GiB).
+                        long thisChunkSize = Math.Min(fileSizeRoundedUpToClusterBoundary - sourceOffset, MaxChunkSize);
+                        duplicateExtentsData.ByteCount = thisChunkSize;
+
+                        if (!Interop.Kernel32.DeviceIoControl(
+                            destinationHandle,
+                            Interop.Kernel32.FSCTL_DUPLICATE_EXTENTS_TO_FILE,
+                            &duplicateExtentsData,
+                            (uint)sizeof(Interop.Kernel32.DUPLICATE_EXTENTS_DATA),
+                            null,
+                            0,
+                            out _,
+                            IntPtr.Zero))
+                        {
+                            throw new Exception("U1");
+                            //return false;
+                        }
+
+                        sourceOffset += thisChunkSize;
+                    }
+
+                    // Match source sparseness.
+                    if ((sourceFileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_SPARSE_FILE) == 0)
+                    {
+                        Interop.Kernel32.FILE_SET_SPARSE_BUFFER sparseBuffer;
+                        sparseBuffer.SetSparse = 0;
+                        Interop.Kernel32.DeviceIoControl(destinationHandle, Interop.Kernel32.FSCTL_SET_SPARSE, &sparseBuffer, (uint)sizeof(Interop.Kernel32.FILE_SET_SPARSE_BUFFER), null, 0, out _, 0);
+                    }
+
+                    // Update the attributes and times.
+                    basicInfo = new Interop.Kernel32.FILE_BASIC_INFO
+                    {
+                        CreationTime = sourceFileInformation.ftCreationTime.ToTicks(),
+                        LastAccessTime = sourceFileInformation.ftLastAccessTime.ToTicks(),
+                        LastWriteTime = sourceFileInformation.ftLastWriteTime.ToTicks(),
+                        FileAttributes = (uint)sourceFileInformation.dwFileAttributes,
+                    };
+                    if (!Interop.Kernel32.SetFileInformationByHandle(
+                            destinationHandle,
+                            Interop.Kernel32.FileBasicInfo,
+                            &basicInfo,
+                            (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
+                    {
+                        throw Win32Marshal.GetExceptionForLastWin32Error(destinationHandle.Path);
+                    }
+
+                    // We have now succeeded, and don't want to delete the destination.
+                    madeNew = false;
+                    return true;
+                }
+                finally
+                {
+                    if (madeNew)
+                    {
+                        // Mark the file for deletion.
+                        Interop.Kernel32.FILE_DISPOSITION_INFO dispositionInfo = new Interop.Kernel32.FILE_DISPOSITION_INFO()
+                        {
+                            DeleteFile = 1,
+                        };
+                        if (!Interop.Kernel32.SetFileInformationByHandle(
+                                destinationHandle!,
+                                Interop.Kernel32.FileDispositionInfo,
+                                &dispositionInfo,
+                                (uint)sizeof(Interop.Kernel32.FILE_DISPOSITION_INFO)))
+                        {
+                            throw Win32Marshal.GetExceptionForLastWin32Error(destinationHandle!.Path);
+                        }
+                    }
+
+                    destinationHandle?.Dispose();
+                }
+            }
+        }
+
         public static void CopyFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
+            if (TryCloneFile(sourceFullPath, destFullPath, overwrite))
+            {
+                return;
+            }
+
             int errorCode = Interop.Kernel32.CopyFile(sourceFullPath, destFullPath, !overwrite);
 
             if (errorCode != Interop.Errors.ERROR_SUCCESS)
