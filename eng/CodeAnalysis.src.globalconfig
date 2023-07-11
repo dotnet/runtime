@@ -658,6 +658,9 @@ dotnet_diagnostic.CA2259.severity = warning
 # CA2260: Use correct type parameter
 dotnet_diagnostic.CA2260.severity = warning
 
+# CA2261: Do not use ConfigureAwaitOptions.SuppressThrowing with Task<TResult>
+dotnet_diagnostic.CA2261.severity = warning
+
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none
 

@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: This is the value class representing a Unicode character
-** Char methods until we create this functionality.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +13,9 @@ using System.Text;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a character as a UTF-16 code unit.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
