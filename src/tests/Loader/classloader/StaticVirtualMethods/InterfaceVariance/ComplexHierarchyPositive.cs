@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime;
+using Xunit;
 
 // This regression test tracks the issue where variant static interface dispatch crashes the runtime, and behaves incorrectly
 
@@ -12,118 +13,61 @@ namespace VariantStaticInterfaceDispatchRegressionTest
     {
         static int Main()
         {
-            Console.WriteLine("Instance test cases");
+            Console.WriteLine("Test cases");
 
             Console.WriteLine("---FooBar");
-            Console.WriteLine(GetTheFooStringInstance<FooBar, Base>());
-            Console.WriteLine(GetTheFooStringInstance<FooBar, Mid>());
-            Console.WriteLine(GetTheFooStringInstance<FooBar, Derived>());
+            TestTheFooString<FooBar, Base>("IFoo<Base>");
+            TestTheFooString<FooBar, Mid>("IFoo<Base>");
+            TestTheFooString<FooBar, Derived>("IFoo<Base>");
 
-            Console.WriteLine(GetTheBarStringInstance<FooBar, Base>());
-            Console.WriteLine(GetTheBarStringInstance<FooBar, Mid>());
-            Console.WriteLine(GetTheBarStringInstance<FooBar, Derived>());
-
-            Console.WriteLine("---FooBar2");
-            Console.WriteLine(GetTheFooStringInstance<FooBar2, Base>());
-            Console.WriteLine(GetTheFooStringInstance<FooBar2, Mid>());
-            Console.WriteLine(GetTheFooStringInstance<FooBar2, Derived>());
-
-            Console.WriteLine(GetTheBarStringInstance<FooBar2, Base>());
-            Console.WriteLine(GetTheBarStringInstance<FooBar2, Mid>());
-            Console.WriteLine(GetTheBarStringInstance<FooBar2, Derived>());
-
-            Console.WriteLine("---FooBarBaz");
-            Console.WriteLine(GetTheFooStringInstance<FooBarBaz, Base>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBaz, Mid>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBaz, Derived>());
-
-            Console.WriteLine(GetTheBarStringInstance<FooBarBaz, Base>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBaz, Mid>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBaz, Derived>());
-
-            Console.WriteLine("---FooBarBazBoz");
-            Console.WriteLine(GetTheFooStringInstance<FooBarBazBoz, Base>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBazBoz, Mid>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBazBoz, Derived>());
-
-            Console.WriteLine(GetTheBarStringInstance<FooBarBazBoz, Base>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBazBoz, Mid>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBazBoz, Derived>());
-
-            Console.WriteLine("---FooBarBaz2");
-            Console.WriteLine(GetTheFooStringInstance<FooBarBaz2, Base>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBaz2, Mid>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBaz2, Derived>());
-
-            Console.WriteLine(GetTheBarStringInstance<FooBarBaz2, Base>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBaz2, Mid>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBaz2, Derived>());
-
-            Console.WriteLine("---FooBarBazBoz2");
-            Console.WriteLine(GetTheFooStringInstance<FooBarBazBoz2, Base>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBazBoz2, Mid>());
-            Console.WriteLine(GetTheFooStringInstance<FooBarBazBoz2, Derived>());
-
-            Console.WriteLine(GetTheBarStringInstance<FooBarBazBoz2, Base>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBazBoz2, Mid>());
-            Console.WriteLine(GetTheBarStringInstance<FooBarBazBoz2, Derived>());
-
-            Console.WriteLine("Static test cases");
-
-            Console.WriteLine("---FooBar");
-            Console.WriteLine(GetTheFooString<FooBar, Base>());
-            Console.WriteLine(GetTheFooString<FooBar, Mid>());
-            Console.WriteLine(GetTheFooString<FooBar, Derived>());
-
-            Console.WriteLine(GetTheBarString<FooBar, Base>());
-            Console.WriteLine(GetTheBarString<FooBar, Mid>());
-            Console.WriteLine(GetTheBarString<FooBar, Derived>());
+            TestTheBarString<FooBar, Base>("IBar<Derived>");
+            TestTheBarString<FooBar, Mid>("IBar<Derived>");
+            TestTheBarString<FooBar, Derived>("IBar<Derived>");
 
             Console.WriteLine("---FooBar2");
-            Console.WriteLine(GetTheFooString<FooBar2, Base>());
-            Console.WriteLine(GetTheFooString<FooBar2, Mid>());
-            Console.WriteLine(GetTheFooString<FooBar2, Derived>());
+            TestTheFooString<FooBar2, Base>("IFoo<Base>");
+            TestTheFooString<FooBar2, Mid>("IFoo<Mid>");
+            TestTheFooString<FooBar2, Derived>("IFoo<Base>");
 
-            Console.WriteLine(GetTheBarString<FooBar2, Base>());
-            Console.WriteLine(GetTheBarString<FooBar2, Mid>());
-            Console.WriteLine(GetTheBarString<FooBar2, Derived>());
+            TestTheBarString<FooBar2, Base>("IBar<Derived>");
+            TestTheBarString<FooBar2, Mid>("IBar<Mid>");
+            TestTheBarString<FooBar2, Derived>("IBar<Derived>");
 
             Console.WriteLine("---FooBarBaz");
-            Console.WriteLine(GetTheFooString<FooBarBaz, Base>());
-            Console.WriteLine(GetTheFooString<FooBarBaz, Mid>());
-            Console.WriteLine(GetTheFooString<FooBarBaz, Derived>());
+            TestTheFooString<FooBarBaz, Base>("IFoo<Base>");
+            TestTheFooString<FooBarBaz, Mid>("IBaz");
+            TestTheFooString<FooBarBaz, Derived>("IBaz");
 
-            Console.WriteLine(GetTheBarString<FooBarBaz, Base>());
-            Console.WriteLine(GetTheBarString<FooBarBaz, Mid>());
-            Console.WriteLine(GetTheBarString<FooBarBaz, Derived>());
+            TestTheBarString<FooBarBaz, Base>("IBaz");
+            TestTheBarString<FooBarBaz, Mid>("IBaz");
+            TestTheBarString<FooBarBaz, Derived>("IBar<Derived>");
 
             Console.WriteLine("---FooBarBazBoz");
-            Console.WriteLine(GetTheFooString<FooBarBazBoz, Base>());
-            Console.WriteLine(GetTheFooString<FooBarBazBoz, Mid>());
-            Console.WriteLine(GetTheFooString<FooBarBazBoz, Derived>());
+            TestTheFooString<FooBarBazBoz, Base>("IBoz");
+            TestTheFooString<FooBarBazBoz, Mid>("IBaz");
+            TestTheFooString<FooBarBazBoz, Derived>("IBoz");
 
-            Console.WriteLine(GetTheBarString<FooBarBazBoz, Base>());
-            Console.WriteLine(GetTheBarString<FooBarBazBoz, Mid>());
-            Console.WriteLine(GetTheBarString<FooBarBazBoz, Derived>());
+            TestTheBarString<FooBarBazBoz, Base>("IBoz");
+            TestTheBarString<FooBarBazBoz, Mid>("IBaz");
+            TestTheBarString<FooBarBazBoz, Derived>("IBoz");
 
             Console.WriteLine("---FooBarBaz2");
-            Console.WriteLine(GetTheFooString<FooBarBaz2, Base>());
-            Console.WriteLine(GetTheFooString<FooBarBaz2, Mid>());
-            Console.WriteLine(GetTheFooString<FooBarBaz2, Derived>());
+            TestTheFooString<FooBarBaz2, Base>("IFoo<Base>");
+            TestTheFooString<FooBarBaz2, Mid>("IBaz");
+            TestTheFooString<FooBarBaz2, Derived>("IFoo<Base>");
 
-            Console.WriteLine(GetTheBarString<FooBarBaz2, Base>());
-            Console.WriteLine(GetTheBarString<FooBarBaz2, Mid>());
-            Console.WriteLine(GetTheBarString<FooBarBaz2, Derived>());
+            TestTheBarString<FooBarBaz2, Base>("IBar<Derived>");
+            TestTheBarString<FooBarBaz2, Mid>("IBaz");
+            TestTheBarString<FooBarBaz2, Derived>("IBar<Derived>");
 
             Console.WriteLine("---FooBarBazBoz2");
-            Console.WriteLine(GetTheFooString<FooBarBazBoz2, Base>());
-            Console.WriteLine(GetTheFooString<FooBarBazBoz2, Mid>());
-            Console.WriteLine(GetTheFooString<FooBarBazBoz2, Derived>());
+            TestTheFooString<FooBarBazBoz2, Base>("IBoz");
+            TestTheFooString<FooBarBazBoz2, Mid>("IBaz");
+            TestTheFooString<FooBarBazBoz2, Derived>("IBoz");
 
-            Console.WriteLine(GetTheBarString<FooBarBazBoz2, Base>());
-            Console.WriteLine(GetTheBarString<FooBarBazBoz2, Mid>());
-            Console.WriteLine(GetTheBarString<FooBarBazBoz2, Derived>());
-
+            TestTheBarString<FooBarBazBoz2, Base>("IBoz");
+            TestTheBarString<FooBarBazBoz2, Mid>("IBaz");
+            TestTheBarString<FooBarBazBoz2, Derived>("IBoz");
             return 100;
         }
 
@@ -131,6 +75,20 @@ namespace VariantStaticInterfaceDispatchRegressionTest
         static string GetTheBarString<T, U>() where T : IBar<U> { try { return T.GetString(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
         static string GetTheFooStringInstance<T, U>() where T : IFoo<U>, new() { try { return (new T()).GetStringInstance(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
         static string GetTheBarStringInstance<T, U>() where T : IBar<U>, new() { try { return (new T()).GetStringInstance(); } catch (AmbiguousImplementationException) { return "AmbiguousImplementationException"; } }
+
+        static void TestTheFooString<T, U>(string expected) where T : IFoo<U>, new()
+        {
+            Console.WriteLine($"TestTheFooString {typeof(T).Name} {typeof(T).Name} {expected}");
+            Assert.Equal(expected, GetTheFooString<T, U>());
+            Assert.Equal(expected, GetTheFooStringInstance<T, U>());
+        }
+
+        static void TestTheBarString<T, U>(string expected) where T : IBar<U>, new()
+        {
+            Console.WriteLine($"TestTheBarString {typeof(T).Name} {typeof(T).Name} {expected}");
+            Assert.Equal(expected, GetTheBarString<T, U>());
+            Assert.Equal(expected, GetTheBarStringInstance<T, U>());
+        }
 
         interface IFoo<in T>
         {
