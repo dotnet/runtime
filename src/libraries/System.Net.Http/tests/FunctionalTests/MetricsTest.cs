@@ -726,7 +726,7 @@ namespace System.Net.Http.Functional.Tests
                 HttpResponseMessage response = await client.SendAsync(request);
                 response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
-                Assert.Collection(recorder.GetMeasurements(),
+                Assert.Collection(FilterMeasurments(recorder.GetMeasurements(), uri),
                     m => VerifyCurrentRequest(m, 1, uri),
                     m => VerifyCurrentRequest(m, -1, uri));
             }, async server =>
@@ -748,7 +748,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using HttpResponseMessage response = await client.SendAsync(request);
 
-                Measurement<double> m = recorder.GetMeasurements().Single();
+                Measurement<double> m = FilterMeasurments(recorder.GetMeasurements(), uri).Single();
                 VerifyRequestDuration(m, uri, "HTTP/1.1", (int)statusCode, method);
 
             }, async server =>
@@ -756,6 +756,10 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionSendResponseAndCloseAsync(statusCode);
             });
         }
+
+        // Make sure we don't record metrics from another test by filtering by the port used by the current test.
+        private static IEnumerable<Measurement<T>> FilterMeasurments<T>(IEnumerable<Measurement<T>> measurments, Uri uri) where T : struct =>
+            measurments.Where(m => m.Tags.ToArray().Any(t => t.Key == "port" && t.Value.Equals(uri.Port)));
     }
 
     public class HttpMetricsTest_General
