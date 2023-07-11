@@ -1,4 +1,4 @@
-// Whenever we add field here, we need to bare in mind that we have a scenario for a new clrgc
+// Whenever we add field here, we need to bear in mind that we have a scenario for a new clrgc
 // is used in an old runtime. In that case, the old runtime's DAC will have to interpret the
 // fields the way it was. So fields should only be added at the end of the struct.
 
