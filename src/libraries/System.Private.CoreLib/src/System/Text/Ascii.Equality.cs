@@ -500,7 +500,7 @@ namespace System.Text
         {
             public static nuint Count128 => sizeof(long);
             public static nuint Count256 => (uint)Vector128<byte>.Count;
-            public static nuint Count512 => (uint)Vector512<byte>.Count;
+            public static nuint Count512 => (uint)Vector256<byte>.Count;
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector128<ushort> Load128(ref byte ptr)
