@@ -309,7 +309,7 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
-                return ThrowHelper.ThrowFormatInvalidString();
+                ThrowHelper.ThrowFormatInvalidString();
             }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
 
@@ -437,6 +437,7 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
+                result = default;
                 return false;
             }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
@@ -478,7 +479,7 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
-                return ThrowHelper.ThrowFormatInvalidString();
+                ThrowHelper.ThrowFormatInvalidString();
             }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
 
@@ -519,6 +520,7 @@ namespace System.Numerics
 
             if (utf8TextStatus != OperationStatus.Done)
             {
+                result = default;
                 return false;
             }
             utf16Text = utf16Text.Slice(0, utf16TextLength);
