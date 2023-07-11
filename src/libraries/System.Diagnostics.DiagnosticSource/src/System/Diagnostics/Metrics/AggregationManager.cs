@@ -130,13 +130,12 @@ namespace System.Diagnostics.Metrics
             {
                 _beginInstrumentMeasurements(instrument);
 
-                if (!_instruments.ContainsKey(instrument))
+                if (_instruments.TryAdd(instrument, true))
                 {
                     // This has side effects that prompt MeasurementsCompleted
                     // to be called if this is called multiple times on an
                     // instrument in a shared MetricsEventSource.
                     _listener.EnableMeasurementEvents(instrument, state);
-                    _instruments.Add(instrument, true);
                 }
             }
         }
