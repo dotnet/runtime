@@ -146,7 +146,7 @@ namespace Microsoft.Interop
                 };
                 return ByValueMarshalKindSupport.NotSupported;
             }
-            return ByValueMarshalKindSupportDescriptor.ValueTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
+            return ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
         }
 
     }

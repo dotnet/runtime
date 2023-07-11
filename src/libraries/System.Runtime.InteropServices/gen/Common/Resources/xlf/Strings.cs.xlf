@@ -892,14 +892,9 @@
         <target state="new">Either 'ComInterfaceOptions.ManagedObjectWrapper' or 'ComInterfaceOptions.ComObjectWrapper' must be specified.</target>
         <note />
       </trans-unit>
-      <trans-unit id="OutAttributeNotSupportedOnByValueReferenceTypeParameters">
-        <source>The `[Out]` attribute is not supported on reference-type parameters. Consider using the 'out' or 'ref' keyword.</source>
-        <target state="new">The `[Out]` attribute is not supported on reference-type parameters. Consider using the 'out' or 'ref' keyword.</target>
-        <note />
-      </trans-unit>
-      <trans-unit id="OutAttributeNotSupportedOnByValueValueTypeParameters">
-        <source>The `[Out]` attribute is not allowed on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</source>
-        <target state="new">The `[Out]` attribute is not allowed on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</target>
+      <trans-unit id="OutAttributeNotSupportedOnByValueParameters">
+        <source>The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</source>
+        <target state="new">The `[Out]` attribute is only supported on array parameters and parameters marshalled by pinning. Consider using 'out' or 'ref' keywords to make the parameter mutable.</target>
         <note />
       </trans-unit>
       <trans-unit id="OutRequiresToManagedDescription">

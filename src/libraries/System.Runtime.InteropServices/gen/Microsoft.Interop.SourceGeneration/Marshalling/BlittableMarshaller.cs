@@ -102,6 +102,6 @@ namespace Microsoft.Interop
         }
 
         public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
-            => ByValueMarshalKindSupportDescriptor.ValueTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
+            => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
     }
 }

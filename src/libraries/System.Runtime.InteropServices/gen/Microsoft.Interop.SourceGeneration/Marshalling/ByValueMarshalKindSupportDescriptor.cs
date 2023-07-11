@@ -17,23 +17,15 @@ namespace Microsoft.Interop
         /// <summary>
         /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value parameters. [In] is allowed, but unnecessary. Out is not allowed.
         /// </summary>
-        public static readonly ByValueMarshalKindSupportDescriptor ValueTypeParameterDefault = new ByValueMarshalKindSupportDescriptor(
+        public static readonly ByValueMarshalKindSupportDescriptor Default = new ByValueMarshalKindSupportDescriptor(
             InSupport: ByValueMarshalKindSupport.Unnecessary, InSupportDetails: SR.InAttributeOnlyIsDefault,
-            OutSupport: ByValueMarshalKindSupport.NotSupported, OutSupportDetails: SR.OutAttributeNotSupportedOnByValueValueTypeParameters,
-            InOutSupport: ByValueMarshalKindSupport.NotSupported, InOutSupportDetails: SR.OutAttributeNotSupportedOnByValueValueTypeParameters);
-
-        /// <summary>
-        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value parameters. [In] is allowed, but unnecessary. Out is not allowed.
-        /// </summary>
-        public static readonly ByValueMarshalKindSupportDescriptor ReferenceTypeParameterDefault = new ByValueMarshalKindSupportDescriptor(
-            InSupport: ByValueMarshalKindSupport.Unnecessary, InSupportDetails: SR.InAttributeOnlyIsDefault,
-            OutSupport: ByValueMarshalKindSupport.NotSupported, OutSupportDetails: SR.OutAttributeNotSupportedOnByValueReferenceTypeParameters,
-            InOutSupport: ByValueMarshalKindSupport.NotSupported, InOutSupportDetails: SR.OutAttributeNotSupportedOnByValueReferenceTypeParameters);
+            OutSupport: ByValueMarshalKindSupport.NotSupported, OutSupportDetails: SR.OutAttributeNotSupportedOnByValueParameters,
+            InOutSupport: ByValueMarshalKindSupport.NotSupported, InOutSupportDetails: SR.OutAttributeNotSupportedOnByValueParameters);
 
         /// <summary>
         /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value array parameters. [In] is allowed, but unnecessary. Out is allowed.
         /// </summary>
-        public static readonly ByValueMarshalKindSupportDescriptor ArrayParameterDefault = new ByValueMarshalKindSupportDescriptor(
+        public static readonly ByValueMarshalKindSupportDescriptor ArrayParameter = new ByValueMarshalKindSupportDescriptor(
             InSupport: ByValueMarshalKindSupport.Unnecessary, InSupportDetails: SR.InAttributeOnlyIsDefault,
             OutSupport: ByValueMarshalKindSupport.Supported, OutSupportDetails: null,
             InOutSupport: ByValueMarshalKindSupport.Supported, InOutSupportDetails: null);
@@ -41,7 +33,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for pinned by value parameters. [In] is not allowed. [In, Out] is the default and unnecessary. [Out] is allowed.
         /// </summary>
-        public static readonly ByValueMarshalKindSupportDescriptor PinnedArrayParameterDefault = new ByValueMarshalKindSupportDescriptor(
+        public static readonly ByValueMarshalKindSupportDescriptor PinnedParameter = new ByValueMarshalKindSupportDescriptor(
             InSupport: ByValueMarshalKindSupport.NotSupported, InSupportDetails: SR.InAttributeOnlyNotSupportedOnPinnedParameters,
             OutSupport: ByValueMarshalKindSupport.Supported, OutSupportDetails: null,
             InOutSupport: ByValueMarshalKindSupport.Unnecessary, InOutSupportDetails: SR.PinnedMarshallingIsInOutByDefault);

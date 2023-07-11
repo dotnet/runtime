@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.ReferenceTypeParameterDefault, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.Default, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -429,19 +429,19 @@ namespace Microsoft.Interop
             ByValueMarshalKindSupportDescriptor byValueMarshalKindSupport;
             if (info.ManagedType is not SzArrayType)
             {
-                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.ReferenceTypeParameterDefault;
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.Default;
             }
             else if (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo))
             {
                 // If the type is not blittable or is sometimes not blittable, we will generate different code when the attributes are provided.
-                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.ArrayParameterDefault;
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.ArrayParameter;
             }
             else
             {
                 // If the type is always blittable, we'll generate the same code regardless of the attributes,
                 // but we'll allow them to make it easier to transition to source-generated code and allow users to be clear about expectations
                 // for values in pre-allocated buffers.
-                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.PinnedByReferenceParameterDefault;
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.PinnedParameter;
             }
 
             // Elements in the collection must be blittable to use the pinnable marshaller.

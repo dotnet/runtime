@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -114,7 +113,7 @@ namespace Microsoft.Interop
                 };
                 return ByValueMarshalKindSupport.NotSupported;
             }
-            return ByValueMarshalKindSupportDescriptor.PinnedByReferenceParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
+            return ByValueMarshalKindSupportDescriptor.PinnedParameter.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }
 }

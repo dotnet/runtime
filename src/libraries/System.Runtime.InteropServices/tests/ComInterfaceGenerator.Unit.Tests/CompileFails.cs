@@ -580,7 +580,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             // [Out] is not allowed on value types passed by value - there is no indirection for the callee to make visible modifications.
             var outAttributeNotSupportedOnValueParameters = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.OutAttributeNotSupportedOnByValueValueTypeParameters, paramName);
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, paramName);
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
                 outAttributeNotSupportedOnValueParameters,
                 //https://github.com/dotnet/runtime/issues/88540
@@ -701,7 +701,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             var outNotAllowedOnRefTypes = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                         .WithLocation(0)
-                        .WithArguments(SR.OutAttributeNotSupportedOnByValueReferenceTypeParameters, paramName);
+                        .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, paramName);
 
             // [Out] is not allowed on strings
             // https://github.com/dotnet/runtime/issues/88438
@@ -836,31 +836,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
             //    new DiagnosticResult[] { }
             //};
-        }
-        public static IEnumerable<object[]> TempDelete()
-        {
-            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
-            //const string inAttribute = "[{|#1:InAttribute|}]";
-            const string outAttribute = "[{|#2:OutAttribute|}]";
-            const string paramName = "p";
-            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
-            const string constElementCount = @"[MarshalUsing(ConstantElementCount = 10)]";
-            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(1)
-                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
-            // Pinned arrays cannot be [In]
-            var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
-            var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
-            yield return new object[] {
-                ID(),
-                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { }
-            };
         }
 
         [Theory]
