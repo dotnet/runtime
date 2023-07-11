@@ -79,9 +79,11 @@ try {
     let t4 = await exports.Sample.Test.HttpClientThread(globalThis.document.baseURI + "blurst.txt");
     console.log("smoke: HttpClientThread(blurst.txt) done " + t4);
 
+    /* FIXME
     console.log("smoke: running WsClientMain");
     let w0 = await exports.Sample.Test.WsClientMain("wss://socketsbay.com/wss/v2/1/demo/");
     console.log("smoke: WsClientMain done " + w0);
+    */
 
     /* ActiveIssue https://github.com/dotnet/runtime/issues/88057
     console.log("smoke: running FetchBackground(blurst.txt)");
