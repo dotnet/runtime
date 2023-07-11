@@ -398,7 +398,7 @@ private:
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
-    BOOL m_debuggerDeoptimized;
+    Volatile<BOOL> m_debuggerDeoptimized;
 };
 
 class ILCodeVersionCollection
