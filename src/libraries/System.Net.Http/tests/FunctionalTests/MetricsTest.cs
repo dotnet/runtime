@@ -757,7 +757,7 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        // Make sure we don't record some idle traffic from some other test by filtering by the port used by the current test.
+        // Make sure we don't record metrics from another test by filtering by the port used by the current test.
         private static IEnumerable<Measurement<T>> FilterMeasurments<T>(IEnumerable<Measurement<T>> measurments, Uri uri) where T : struct =>
             measurments.Where(m => m.Tags.ToArray().Any(t => t.Key == "port" && t.Value.Equals(uri.Port)));
     }
