@@ -314,6 +314,7 @@
     </ItemGroup>
     <PropertyGroup>
       <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
+      <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
     </PropertyGroup>
     <ItemGroup>
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
