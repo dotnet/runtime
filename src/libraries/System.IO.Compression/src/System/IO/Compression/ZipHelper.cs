@@ -212,43 +212,34 @@ namespace System.IO.Compression
             
             int textByteCount = encoding.GetByteCount(text);
             byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(textByteCount);
-            try
-            {
-                encoding.GetBytes(text, 0, text.Length, sharedBuffer, 0);
-                var result = GetBytesFromBuffer(text, isUTF8, textByteCount, maxBytes, sharedBuffer);
-                return result;
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(sharedBuffer);
-            }
+            encoding.GetBytes(text, 0, text.Length, sharedBuffer, 0);
 
-            static byte[] GetBytesFromBuffer(string text, bool isUTF8, int textByteCount, int maxBytes, byte[] buffer)
+            int end;
+            if (isUTF8)
             {
-                int end;
-                if (isUTF8)
+                int totalCodePoints = 0;
+                foreach (Rune rune in text.EnumerateRunes())
                 {
-                    int totalCodePoints = 0;
-                    foreach (Rune rune in text.EnumerateRunes())
+                    if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
                     {
-                        if (totalCodePoints + rune.Utf8SequenceLength > maxBytes)
-                        {
-                            break;
-                        }
-                        totalCodePoints += rune.Utf8SequenceLength;
+                        break;
                     }
-
-                    Debug.Assert(totalCodePoints > 0);
-                    Debug.Assert(totalCodePoints <= textByteCount);
-
-                    end = totalCodePoints;
+                    totalCodePoints += rune.Utf8SequenceLength;
                 }
-                else
-                {
-                    end = maxBytes <= textByteCount ? maxBytes : textByteCount;
-                }
-                return buffer[0..end];
+
+                Debug.Assert(totalCodePoints > 0);
+                Debug.Assert(totalCodePoints <= textByteCount);
+
+                end = totalCodePoints;
             }
+            else
+            {
+                end = maxBytes <= textByteCount ? maxBytes : textByteCount;
+            }
+            byte[] bytes = sharedBuffer[0..end];
+
+            ArrayPool<byte>.Shared.Return(sharedBuffer);
+            return bytes;
         }
     }
 }
