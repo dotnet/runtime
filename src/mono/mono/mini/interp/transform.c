@@ -11386,6 +11386,7 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		memcpy ((char*)imethod + start_offset, (char*)&tmp_imethod + start_offset, sizeof (InterpMethod) - start_offset);
 		mono_memory_barrier ();
 		imethod->transformed = TRUE;
+		imethod->method = method;
 		mono_interp_stats.methods_transformed++;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
 
