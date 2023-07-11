@@ -38,6 +38,9 @@
     <IlcFrameworkNativePath>{IlcFrameworkNativePath}</IlcFrameworkNativePath>
     <SysRoot Condition="('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)') and '$(ROOTFS_DIR)' != ''">$(ROOTFS_DIR)</SysRoot>
     <CoreCLRBuildIntegrationDir>{CoreCLRBuildIntegrationDir}</CoreCLRBuildIntegrationDir>
+
+    <!-- Tests rely on reflection for JSON serialization -->
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
