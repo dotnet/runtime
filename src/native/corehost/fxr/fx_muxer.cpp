@@ -226,6 +226,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
 {
     pal::string_t probe_path = path;
 
+    // Use fullpath since we don't care about symlinks
     if (pal::fullpath(&probe_path, true))
     {
         realpaths->push_back(probe_path);
@@ -249,6 +250,7 @@ void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>
             segment.append(tfm);
             probe_path.replace(pos_placeholder, placeholder.length(), segment);
 
+            // Use fullpath since we don't care about symlinks
             if (pal::fullpath(&probe_path, true))
             {
                 realpaths->push_back(probe_path);
@@ -274,6 +276,7 @@ namespace
         const runtime_config_t::settings_t& override_settings)
     {
         // Check for the runtimeconfig.json file specified at the command line
+        // Use fullpath since we don't care about symlinks
         if (!runtime_config.empty() && !pal::fullpath(&runtime_config))
         {
             trace::error(_X("The specified runtimeconfig.json [%s] does not exist"), runtime_config.c_str());

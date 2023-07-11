@@ -104,7 +104,8 @@ int exe_start(const int argc, const pal::char_t* argv[])
     pal::initialize_createdump();
 
     pal::string_t host_path;
-    if (!pal::get_own_executable_path(&host_path) || !pal::fullpath(&host_path))
+    // Use realpath to find the host path through symlinks
+    if (!pal::get_own_executable_path(&host_path) || !pal::realpath(&host_path))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path.c_str());
         return StatusCode::CoreHostCurHostFindFailure;
@@ -139,7 +140,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
     {
         trace::info(_X("Detected Single-File app bundle"));
     }
-    else if (!pal::fullpath(&app_path))
+    else if (!pal::realpath(&app_path)) // Use realpath to find the app path through symlinks
     {
         trace::error(_X("The application to execute does not exist: '%s'."), app_path.c_str());
         return StatusCode::LibHostAppRootFindFailure;

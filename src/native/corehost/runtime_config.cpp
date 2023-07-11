@@ -334,6 +334,7 @@ bool runtime_config_t::ensure_dev_config_parsed()
     trace::verbose(_X("Attempting to read dev runtime config: %s"), m_dev_path.c_str());
 
     pal::string_t retval;
+    // Use fullpath since we don't care if the path is a symlink
     if (!pal::fullpath(&m_dev_path, true))
     {
         // It is valid for the runtimeconfig.dev.json to not exist.
@@ -402,6 +403,7 @@ bool runtime_config_t::ensure_parsed()
     }
 
     trace::verbose(_X("Attempting to read runtime config: %s"), m_path.c_str());
+    // Use fullpath since we don't care if the path is a symlink
     if (!bundle::info_t::config_t::probe(m_path) && !pal::fullpath(&m_path, true))
     {
         // Not existing is not an error.

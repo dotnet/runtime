@@ -766,7 +766,8 @@ bool deps_resolver_t::resolve_probe_dirs(
     std::unordered_set<pal::string_t> items;
 
     pal::string_t core_servicing = m_core_servicing;
-    pal::fullpath(&core_servicing, true);
+    // Use realpath to find the final core servicing path through symlinks
+    pal::realpath(&core_servicing, true);
 
     // Filter out non-serviced assets so the paths can be added after servicing paths.
     pal::string_t non_serviced;

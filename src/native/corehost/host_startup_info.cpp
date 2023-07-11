@@ -23,6 +23,7 @@ bool get_path_from_argv(pal::string_t *path)
     // the wrong location when filename ends up being found in %PATH% and not the current directory.
     if (path->find(DIR_SEPARATOR) != pal::string_t::npos)
     {
+        // Use fullpath since we don't care if the final path is a symlink
         return pal::fullpath(path);
     }
 
@@ -86,7 +87,8 @@ const pal::string_t host_startup_info_t::get_app_name() const
     }
 
     // If argv[0] did not work, get the executable name
-    if (host_path->empty() && (!pal::get_own_executable_path(host_path) || !pal::fullpath(host_path)))
+    // Use realpath to get the host path through symlinks
+    if (host_path->empty() && (!pal::get_own_executable_path(host_path) || !pal::realpath(host_path)))
     {
         trace::error(_X("Failed to resolve full path of the current executable [%s]"), host_path->c_str());
         return StatusCode::LibHostCurExeFindFailure;
