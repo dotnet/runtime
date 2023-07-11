@@ -108,7 +108,6 @@ namespace Microsoft.Interop
 
         private bool ShouldGenerateByValueOutMarshalling(TypePositionInfo info, StubCodeContext context)
         {
-            _ = (info, context, this);
             return
             info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
                 && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) == ByValueMarshalKindSupport.Supported
