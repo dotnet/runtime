@@ -1789,6 +1789,8 @@ function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: Wasm
     if (simdOpcode !== undefined) {
         // This looks wrong but I assure you it's correct.
         builder.appendULeb(simdOpcode);
+    } else if (opcodeOrPrefix === WasmOpcode.PREFIX_simd) {
+        throw new Error("PREFIX_simd ldloc without a simdOpcode");
     }
     const alignment = computeMemoryAlignment(offset, opcodeOrPrefix, simdOpcode);
     builder.appendMemarg(offset, alignment);
