@@ -51922,7 +51922,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_ARRAY_FIELD(field_name, field_type, array_length) offsetof(CLASS_NAME, field_name),
 #define DEFINE_MISSING_FIELD(field_name) -1,
-#define DEFINE_OFFSET_ONLY_FIELD(field_name) offsetof(CLASS_NAME, field_name),
 
 #ifdef MULTIPLE_HEAPS
     static int gc_heap_field_offsets[] = {
@@ -51937,7 +51936,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #include "dac_generation_fields.h"
 #undef CLASS_NAME
 
-#undef DEFINE_OFFSET_ONLY_FIELD
 #undef DEFINE_MISSING_FIELD
 #undef DEFINE_ARRAY_FIELD
 #undef DEFINE_DPTR_FIELD

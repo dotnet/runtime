@@ -2,11 +2,6 @@
 // is used in an old runtime. In that case, the old runtime's DAC will have to interpret the
 // fields the way it was. So fields should only be added at the end of the struct.
 
-#ifndef DEFINE_OFFSET_ONLY_FIELD
-#define DEFINE_OFFSET_ONLY_FIELD_IGNORED
-#define DEFINE_OFFSET_ONLY_FIELD(name)
-#endif
-
 DEFINE_FIELD       (alloc_allocated,                    uint8_t*)
 DEFINE_DPTR_FIELD  (ephemeral_heap_segment,             dac_heap_segment)
 DEFINE_DPTR_FIELD  (finalize_queue,                     dac_finalize_queue)
@@ -41,11 +36,10 @@ DEFINE_MISSING_FIELD(saved_sweep_ephemeral_seg)
 DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
 #endif // defined(ALL_FIELDS) || defined(BACKGROUND_GC)
 
-// generation_table is a special field, it is not included in dac_gcheap
-// but its offset need to be right at this spot in order to match the 
-// layout we had in .NET 6+
-DEFINE_OFFSET_ONLY_FIELD(generation_table)
+// This field is unused
+DEFINE_FIELD(generation_table, void*)
 
+// Here is where v0.2 fields starts
 #if defined(ALL_FIELDS) || defined(BACKGROUND_GC)
 DEFINE_DPTR_FIELD  (freeable_soh_segment,               dac_heap_segment)
 DEFINE_DPTR_FIELD  (freeable_uoh_segment,               dac_heap_segment)
@@ -59,8 +53,3 @@ DEFINE_ARRAY_FIELD (free_regions,                        dac_region_free_list, F
 #else
 DEFINE_MISSING_FIELD(free_regions)
 #endif // ALL_FIELDS
-
-#ifdef DEFINE_OFFSET_ONLY_FIELD_IGNORED
-#undef DEFINE_OFFSET_ONLY_FIELD_IGNORED
-#undef DEFINE_OFFSET_ONLY_FIELD
-#endif
