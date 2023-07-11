@@ -355,8 +355,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                // Our fallback mechanism for invalid code for unmanaged->managed stubs sometimes generates invalid code.
-                CompilerDiagnostics = CompilerDiagnostics.None,
             };
             test.ExpectedDiagnostics.AddRange(expectedDiagnostics);
             await test.RunAsync();
