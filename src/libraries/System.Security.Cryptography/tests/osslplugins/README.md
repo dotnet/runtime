@@ -13,7 +13,7 @@ If TPM environmental variable similar to following is defined:
 ```bash
 # 0x81000007 is just an example, read further how to get it
 export DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_TPM_ECDSA_KEY_HANDLE=0x81000007
-``` 
+```
 
 then tests using TPM will be run as well and they will use `0x81000007` handle.
 
