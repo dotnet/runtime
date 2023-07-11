@@ -1009,11 +1009,12 @@ ds_ipc_pal_init (void)
 }
 
 bool
-ds_ipc_pal_shutdown (void)
+ds_ipc_pal_shutdown (ds_ipc_error_callback_func callback)
 {
 #ifdef HOST_WIN32
 	if (_ipc_pal_socket_init)
-		WSACleanup ();
+		if (WSACleanup() == SOCKET_ERROR && callback)
+			callback ("Failed to cleanup Winsock", WSAGetLastError());
 #endif
 	_ipc_pal_socket_init = false;
 	return true;
