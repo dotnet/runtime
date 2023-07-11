@@ -1991,8 +1991,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 }, new int[1]));
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstanceFromArrayType(typeof(int[]), -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), -1, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), -1, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[,]), -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[,,]), -1, 0, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { -1 }));
             //AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), new long[] { -1 }));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstanceFromArrayType(typeof(int[]), new int[] { -1 }, new int[1]));
@@ -2004,8 +2004,8 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1, 0));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[1]", () => Array.CreateInstanceFromArrayType(typeof(int[]), 0, -1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[1]", () => Array.CreateInstanceFromArrayType(typeof(int[]), 0, -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[1]", () => Array.CreateInstanceFromArrayType(typeof(int[,]), 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[1]", () => Array.CreateInstanceFromArrayType(typeof(int[,,]), 0, -1, 0));
         }
 
         [Fact]
@@ -2013,7 +2013,7 @@ namespace System.Tests
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length3", () => Array.CreateInstance(typeof(int), 0, 0, -1));
 
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[2]", () => Array.CreateInstanceFromArrayType(typeof(int[]), 0, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[2]", () => Array.CreateInstanceFromArrayType(typeof(int[,,]), 0, 0, -1));
         }
 
         [Fact]
@@ -2081,7 +2081,7 @@ namespace System.Tests
             var lowerBounds = new int[length];
             Assert.Throws<TypeLoadException>(() => Array.CreateInstance(typeof(int), lengths, lowerBounds));
 
-            Assert.Throws<TypeLoadException>(() => Array.CreateInstanceFromArrayType(typeof(int[]), lengths, lowerBounds));
+            Assert.Throws<ArgumentException>(() => Array.CreateInstanceFromArrayType(typeof(int[]), lengths, lowerBounds));
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]

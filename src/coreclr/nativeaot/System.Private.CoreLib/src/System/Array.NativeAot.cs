@@ -85,6 +85,32 @@ namespace System
             }
         }
 
+        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            if (pLowerBounds != null)
+            {
+                for (int i = 0; i < rank; i++)
+                {
+                    if (pLowerBounds[i] != 0)
+                        throw new PlatformNotSupportedException(SR.PlatformNotSupported_NonZeroLowerBound);
+                }
+            }
+
+            if (rank == 1)
+            {
+                return RuntimeImports.RhNewArray(arrayType.TypeHandle.ToEETypePtr(), pLengths[0]);
+            }
+            else
+            {
+                // Create a local copy of the lengths that cannot be motified by the caller
+                int* pImmutableLengths = stackalloc int[rank];
+                for (int i = 0; i < rank; i++)
+                    pImmutableLengths[i] = pLengths[i];
+
+                return NewMultiDimArray(arrayType.TypeHandle.ToEETypePtr(), pImmutableLengths, rank);
+            }
+        }
+
 #pragma warning disable CA1859 // https://github.com/dotnet/roslyn-analyzers/issues/6451
         private static void ValidateElementType(Type elementType)
         {

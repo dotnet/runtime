@@ -207,7 +207,6 @@ namespace System
             return CreateInstance(elementType, intLengths);
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int length)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -215,14 +214,12 @@ namespace System
 
             if (!arrayType.IsArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+            if (arrayType.GetArrayRank() != 1)
+                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
 
-            RuntimeType t = (arrayType.GetElementType() as RuntimeType)!;
-            Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
-
-            return InternalCreate(t, 1, &length, null);
+            return InternalCreateFromArrayType(arrayType, 1, &length, null);
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, params int[] lengths)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -232,9 +229,8 @@ namespace System
 
             if (!arrayType.IsArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
-
-            RuntimeType t = (arrayType.GetElementType() as RuntimeType)!;
-            Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
+            if (arrayType.GetArrayRank() != lengths.Length)
+                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
             // a good exception message if they are not; however we check this again inside the execution
@@ -245,10 +241,9 @@ namespace System
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             fixed (int* pLengths = &lengths[0])
-                return InternalCreate(t, lengths.Length, pLengths, null);
+                return InternalCreateFromArrayType(arrayType, lengths.Length, pLengths, null);
         }
 
-        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int[] lengths, int[] lowerBounds)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -261,9 +256,8 @@ namespace System
 
             if (!arrayType.IsArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
-
-            RuntimeType t = (arrayType.GetElementType() as RuntimeType)!;
-            Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
+            if (arrayType.GetArrayRank() != lengths.Length)
+                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
             // a good exception message if they are not; however we check this again inside the execution
@@ -275,7 +269,7 @@ namespace System
 
             fixed (int* pLengths = &lengths[0])
             fixed (int* pLowerBounds = &lowerBounds[0])
-                return InternalCreate(t, lengths.Length, pLengths, pLowerBounds);
+                return InternalCreateFromArrayType(arrayType, lengths.Length, pLengths, pLowerBounds);
         }
 
         public static void Copy(Array sourceArray, Array destinationArray, long length)

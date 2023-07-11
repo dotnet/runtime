@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static System.GC;
 
 namespace System
 {
@@ -18,6 +19,28 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern unsafe Array InternalCreate(RuntimeType elementType, int rank, int* pLengths, int* pLowerBounds);
 
+        private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
+        {
+            if (rank == 1 && !ContainsLowerBounds(rank, pLowerBounds))
+            {
+                return AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
+            }
+
+            return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
+
+            static bool ContainsLowerBounds(int rank, int* pLowerBounds)
+            {
+                if (pLowerBounds != null)
+                {
+                    for (int i = 0; i < rank; i++)
+                    {
+                        if (pLowerBounds[i] != 0)
+                            return true;
+                    }
+                }
+                return false;
+            }
+        }
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
