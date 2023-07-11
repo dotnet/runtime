@@ -21,7 +21,7 @@ namespace System
         {
             if (rank == 1 && !ContainsLowerBounds(rank, pLowerBounds))
             {
-                return GC.AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
+                return GC.AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC.GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
             }
 
             return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
