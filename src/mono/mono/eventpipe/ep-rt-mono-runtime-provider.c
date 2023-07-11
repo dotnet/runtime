@@ -2969,13 +2969,6 @@ jit_code_buffer_callback (
 	write_event_method_jit_memory_allocated_for_code ((const uint8_t *)buffer, size, type, data);
 }
 
-
-//TODOs:
-// Add bulknode/bulkedge events.
-// Add bulk type event support.
-// Add root edge support (might need more knowledge about roots).
-// Add static root descriptions (like type, static field name etc).
-
 static
 void
 gc_heap_dump_requests_inc (void)
@@ -3479,7 +3472,7 @@ fire_gc_event_bulk_node (
 	GCHeapDumpContext *context,
 	uintptr_t address,
 	uint64_t size,
-	uint64_t type_id,
+	uintptr_t type,
 	uint64_t edge_count)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
@@ -3502,11 +3495,12 @@ fire_gc_event_bulk_node (
 		edge_count = GUINT64_FROM_LE (previous_edge_count) + edge_count;
 		ep_write_buffer_uint64_t (&context->bulk_node.data_current, edge_count);
 	} else {
-		MonoVTable *vtable = (MonoVTable *)type_id;
+		uint64_t type_id = type;
+		MonoVTable *vtable = (MonoVTable *)type;
 		if (vtable && vtable->klass) {
-			MonoType *type = m_class_get_byval_arg (vtable->klass);
-			bulk_type_log_type_and_parameters_if_necessary (context->bulk_type_logger, type, TYPE_LOG_BEHAVIOR_IF_FIRST_TIME);
-			type_id = get_typeid_for_type (type);
+			MonoType *klass_type = m_class_get_byval_arg (vtable->klass);
+			bulk_type_log_type_and_parameters_if_necessary (context->bulk_type_logger, klass_type, TYPE_LOG_BEHAVIOR_IF_FIRST_TIME);
+			type_id = get_typeid_for_type (klass_type);
 		}
 
 		// NOTE, must match manifest GCBulkNode values type.
@@ -3696,15 +3690,39 @@ fire_gc_event_bulk_root_static_var (
 	GCHeapDumpContext *context,
 	GCRootData *root_data,
 	uintptr_t address,
-	uintptr_t object,
-	uintptr_t object_type)
+	uintptr_t object)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 	EP_ASSERT (root_data);
 	EP_ASSERT (root_data->source == MONO_ROOT_SOURCE_STATIC);
 
-	// TODO: Fix lookup of static variable name.
-	const ep_char8_t *static_var_name = "";
+	MonoVTable *vtable = root_data->key;
+	uint32_t static_var_flags = 0;
+	uint64_t type_id = (uint64_t)vtable;
+	const ep_char8_t *static_var_name = "?";
+
+	if (vtable && vtable->klass) {
+		ERROR_DECL (error);
+		gpointer iter = NULL;
+		MonoClassField *field;
+		uint32_t offset = GPTRDIFF_TO_UINT32 (address - root_data->start);
+		while ((field = mono_class_get_fields_internal (vtable->klass, &iter))) {
+			if (mono_field_get_flags (field) & FIELD_ATTRIBUTE_LITERAL)
+				continue;
+			if (!(mono_field_get_flags (field) & FIELD_ATTRIBUTE_STATIC))
+				continue;
+			if (mono_field_is_deleted (field) || m_field_is_from_update (field))
+				continue;
+
+			if (mono_field_get_offset (field) == offset) {
+				static_var_name = mono_field_get_name (field);
+				break;
+			}
+		}
+		if (!is_ok (error))
+			mono_error_cleanup (&error);
+		error_init_reuse (error);
+	}
 
 	size_t name_len = static_var_name && static_var_name [0] != '\0'
 		? strlen (static_var_name)
@@ -3718,19 +3736,17 @@ fire_gc_event_bulk_root_static_var (
 	if (context->bulk_root_static_var.data_end <=  context->bulk_root_static_var.data_current + event_size)
 		return;
 
-	uint64_t type_id = (uint64_t)object_type;
-	MonoVTable *vtable = (MonoVTable *)object_type;
 	if (vtable && vtable->klass) {
-		MonoType *type = m_class_get_byval_arg (vtable->klass);
-		bulk_type_log_type_and_parameters_if_necessary (context->bulk_type_logger, type, TYPE_LOG_BEHAVIOR_IF_FIRST_TIME);
-		type_id = get_typeid_for_type (type);
+		MonoType *klass_type = m_class_get_byval_arg (vtable->klass);
+		bulk_type_log_type_and_parameters_if_necessary (context->bulk_type_logger, klass_type, TYPE_LOG_BEHAVIOR_IF_FIRST_TIME);
+		type_id = get_typeid_for_type (klass_type);
 	}
 
 	// NOTE, needs to match manifest GCBulkRootStaticVar values type.
 	ep_write_buffer_uint64_t (&context->bulk_root_static_var.data_current, (uint64_t)address);
 	ep_write_buffer_uint64_t (&context->bulk_root_static_var.data_current, (uint64_t)object);
 	ep_write_buffer_uint64_t (&context->bulk_root_static_var.data_current, type_id);
-	ep_write_buffer_uint32_t (&context->bulk_root_static_var.data_current, 0);
+	ep_write_buffer_uint32_t (&context->bulk_root_static_var.data_current, static_var_flags);
 	ep_write_buffer_string_utf8_to_utf16_t (&context->bulk_root_static_var.data_current, static_var_name, GSIZE_TO_UINT32 (name_len));
 
 	context->bulk_root_static_var.count++;
@@ -3760,8 +3776,7 @@ void
 fire_gc_event_bulk_root_edge (
 	GCHeapDumpContext *context,
 	uintptr_t address,
-	uintptr_t object,
-	uintptr_t object_type)
+	uintptr_t object)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
@@ -3779,8 +3794,7 @@ fire_gc_event_bulk_root_edge (
 				context,
 				gc_root,
 				address,
-				object,
-				object_type);
+				object);
 			return;
 		}
 
@@ -3789,7 +3803,10 @@ fire_gc_event_bulk_root_edge (
 			root_kind = GC_ROOT_KIND_STACK;
 			root_id = address;
 			break;
-		case MONO_ROOT_SOURCE_HANDLE :
+		case MONO_ROOT_SOURCE_FINALIZER_QUEUE :
+			root_kind = GC_ROOT_KIND_FINALIZER;
+			break;
+		case MONO_ROOT_SOURCE_THREAD_STATIC :
 			root_kind = GC_ROOT_KIND_HANDLE;
 			root_id = address;
 			break;
@@ -3798,8 +3815,9 @@ fire_gc_event_bulk_root_edge (
 			root_flags = GPOINTER_TO_INT (gc_root->key) != 0 ? GC_ROOT_FLAGS_PINNING : GC_ROOT_FLAGS_NONE;
 			root_id = address;
 			break;
-		case MONO_ROOT_SOURCE_FINALIZER_QUEUE :
-			root_kind = GC_ROOT_KIND_FINALIZER;
+		case MONO_ROOT_SOURCE_HANDLE :
+			root_kind = GC_ROOT_KIND_HANDLE;
+			root_id = address;
 			break;
 		default :
 			break;
@@ -3827,13 +3845,12 @@ fire_gc_event_roots (
 	uint64_t count;
 	uintptr_t address;
 	uintptr_t object;
-	uintptr_t object_type;
 
 	EP_ASSERT (data + sizeof (count) <= data + payload_size);
 	memcpy (&count, data, sizeof (count));
 	data += sizeof (count);
 
-	EP_ASSERT (data + (count * (sizeof (address) + sizeof (object) + sizeof (object_type))) <= data + payload_size);
+	EP_ASSERT (data + (count * (sizeof (address) + sizeof (object))) <= data + payload_size);
 	for (uint32_t i = 0; i < count; i++) {
 		memcpy (&address, data, sizeof (address));
 		data += sizeof (address);
@@ -3841,14 +3858,10 @@ fire_gc_event_roots (
 		memcpy (&object, data, sizeof (object));
 		data += sizeof (object);
 
-		memcpy (&object_type, data, sizeof (object_type));
-		data += sizeof (object_type);
-
 		fire_gc_event_bulk_root_edge (
 			context,
 			address,
-			object,
-			object_type);
+			object);
 	}
 }
 
@@ -3886,16 +3899,12 @@ buffer_gc_event_roots_callback (
 		for (uint64_t i = 0; i < count; i++) {
 			uintptr_t address = (uintptr_t)addresses [i];
 			uintptr_t object = (uintptr_t)SGEN_POINTER_UNTAG_ALL (objects [i]);
-			uintptr_t object_type = (uintptr_t)SGEN_POINTER_UNTAG_ALL (mono_object_get_vtable_internal (objects [i]));
 
 			memcpy (buffer, &address, sizeof (address));
 			buffer += sizeof (address);
 
 			memcpy (buffer, &object, sizeof (object));
 			buffer += sizeof (object);
-
-			memcpy (buffer, &object_type, sizeof (object_type));
-			buffer += sizeof (object_type);
 		}
 	}
 }
@@ -3911,7 +3920,7 @@ flush_gc_events (GCHeapDumpContext *context)
 	flush_gc_event_bulk_root_edge (context);
 	flush_gc_event_bulk_root_static_var (context);
 
-	if (context->bulk_type_logger && is_keyword_and_level_enabled (&RUNTIME_PROVIDER_CONTEXT, EP_EVENT_LEVEL_INFORMATIONAL, TYPE_KEYWORD))
+	if (context->bulk_type_logger && is_keyword_and_level_enabled (&context->trace_context, EP_EVENT_LEVEL_INFORMATIONAL, TYPE_KEYWORD))
 		bulk_type_fire_bulk_type_event (context->bulk_type_logger);
 }
 
@@ -3973,11 +3982,10 @@ calculate_live_keywords (
 	EP_ASSERT (G_N_ELEMENTS (keywords) == G_N_ELEMENTS (count));
 	*live_keywords = ep_rt_mono_session_calculate_and_count_all_keywords (keywords, count, G_N_ELEMENTS (count));
 
-	*trigger_heap_dump = false;
-
-	if (count [0] > _gc_heap_dump_trigger_count) {
-		*trigger_heap_dump = true;
-	}
+	*trigger_heap_dump = ep_rt_mono_is_runtime_initialized ();
+	*trigger_heap_dump &= is_keword_enabled (*live_keywords, GC_KEYWORD);
+	*trigger_heap_dump &= is_keword_enabled (*live_keywords, GC_HEAP_COLLECT_KEYWORD);
+	*trigger_heap_dump &= count [0] > _gc_heap_dump_trigger_count;
 
 	_gc_heap_dump_trigger_count = count [0];
 
@@ -4006,7 +4014,15 @@ gc_event_callback (
 		if (is_gc_heap_dump_enabled (heap_dump_context)) {
 			mono_gc_walk_heap (0, buffer_gc_event_object_reference_callback, heap_dump_context);
 			mono_profiler_set_gc_roots_callback (_runtime_profiler_provider, NULL);
+		}
+		break;
+	}
+	case MONO_GC_EVENT_POST_START_WORLD:
+	{
+		GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
+		if (is_gc_heap_dump_enabled (heap_dump_context)) {
 			gc_heap_dump_context_build_roots (heap_dump_context);
+			fire_buffered_gc_events (heap_dump_context);
 		}
 		break;
 	}
@@ -4026,9 +4042,11 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 	if (gc_heap_dump_requested ()) {
 		EP_LOCK_ENTER (section1)
 			if (gc_heap_dump_requested () && ep_rt_mono_sesion_has_all_started ()) {
-				EP_ASSERT (!dn_vector_empty (&_gc_heap_dump_requests_data));
-				EVENTPIPE_TRACE_CONTEXT context = *dn_vector_back_t (&_gc_heap_dump_requests_data, EVENTPIPE_TRACE_CONTEXT);
-				dn_vector_pop_back (&_gc_heap_dump_requests_data);
+				EVENTPIPE_TRACE_CONTEXT context = RUNTIME_PROVIDER_CONTEXT;
+				if (!dn_vector_empty (&_gc_heap_dump_requests_data)) {
+					context = *dn_vector_back_t (&_gc_heap_dump_requests_data, EVENTPIPE_TRACE_CONTEXT);
+					dn_vector_pop_back (&_gc_heap_dump_requests_data);
+				}
 				gc_heap_dump_requests_dec ();
 
 				uint32_t gc_count = ep_rt_atomic_inc_uint32_t (&_gc_heap_dump_count);
@@ -4070,9 +4088,6 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 		mono_gc_collect (mono_gc_max_generation ());
 
 		mono_profiler_set_gc_event_callback (_runtime_profiler_provider, NULL);
-
-		if (is_gc_heap_dump_enabled (heap_dump_context))
-			fire_buffered_gc_events (heap_dump_context);
 
 		// TODO: Look into a more deterministic solution.
 		// Tooling waits on FireEtwGCEnd_V1 to be delivered.
@@ -4182,7 +4197,7 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_monitor_failed_callback (_runtime_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(live_keywords, GC_HEAP_COLLECT_KEYWORD))
+		if (is_keword_enabled(live_keywords, GC_KEYWORD) && is_keword_enabled(live_keywords, GC_HEAP_COLLECT_KEYWORD))
 			mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, gc_heap_dump_trigger_callback);
 		else
 			mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, NULL);
@@ -4192,6 +4207,7 @@ EventPipeEtwCallbackDotNETRuntime (
 		RUNTIME_PROVIDER_CONTEXT.IsEnabled = (live_keywords != 0 ? true : false);
 
 		if (trigger_heap_dump) {
+			EP_ASSERT (ep_rt_mono_is_runtime_initialized ());
 			dn_vector_push_back (&_gc_heap_dump_requests_data, RUNTIME_PROVIDER_CONTEXT);
 			gc_heap_dump_requests_inc ();
 			mono_gc_finalize_notify ();
