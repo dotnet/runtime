@@ -2040,7 +2040,7 @@ GenTree* Compiler::impCloneExpr(GenTree*    tree,
 }
 
 //------------------------------------------------------------------------
-// impImportHandleFromTree: Imports the tree on the top of the stack
+// impImportHandleFromStack: Imports the tree on the top of the stack
 //    and extracts the handle from it
 //
 // Arguments:
