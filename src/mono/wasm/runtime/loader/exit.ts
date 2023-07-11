@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
+import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix } from "./logging";
 
 
 export function is_exited() {
@@ -60,12 +60,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
         : new Error("Exit with code " + exit_code);
     reason.status = exit_code;
 
-    if (is_exited()) {
-        if (reason.silent !== true) {
-            mono_log_warn("mono_exit called more than once \n" + reason.stack);
-        }
-        reason.silent = true;
-    } else {
+    if (!is_exited()) {
         try {
             reason.stack;// force stack to be generated before we shut down managed code
             logErrorOnExit(exit_code, reason);
@@ -73,7 +68,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
             if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
         }
         catch {
-            // ignore
+            // ignore any failures
         }
 
         // TODO forceDisposeProxies(); here
@@ -81,6 +76,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
         loaderHelpers.exitCode = exit_code;
         if (!loaderHelpers.isAborted && !runtimeHelpers.runtimeReady) abort_startup(reason, false, false);
     }
+    reason.silent = true;
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
