@@ -5163,6 +5163,9 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	if (accessor_method->is_generic)
 		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
 
+	if (!m_method_is_static (accessor_method))
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_NonStatic");
+
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
 	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
