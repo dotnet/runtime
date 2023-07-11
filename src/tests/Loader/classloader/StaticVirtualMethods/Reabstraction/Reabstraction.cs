@@ -18,11 +18,22 @@ class VirtualStaticMethodReabstraction
         Assert.Throws<EntryPointNotFoundException>(() => { Call<BarStruct, BarStruct>(); });
         Assert.Throws<EntryPointNotFoundException>(() => { Call<BarClass, BarClass>(); });
         Assert.Throws<EntryPointNotFoundException>(() => { Call<BarClass, BarStruct>(); });
+
+        Assert.Throws<EntryPointNotFoundException>(() => { GetAction<BarStruct>()(); });
+        Assert.Throws<EntryPointNotFoundException>(() => { GetAction<BarClass>()(); });
+        Assert.Throws<EntryPointNotFoundException>(() => { GetAction<BarStruct, BarClass>()(); });
+        Assert.Throws<EntryPointNotFoundException>(() => { GetAction<BarStruct, BarStruct>()(); });
+        Assert.Throws<EntryPointNotFoundException>(() => { GetAction<BarClass, BarClass>()(); });
+        Assert.Throws<EntryPointNotFoundException>(() => { GetAction<BarClass, BarStruct>()(); });
+
         return 100;
     }
 
     static void Call<T>() where T : IFoo => T.Frob();
     static void Call<T, U>() where T : IFoo => T.Frob<U>();
+
+    static Action GetAction<T>() where T : IFoo => T.Frob;
+    static Action GetAction<T, U>() where T : IFoo => T.Frob<U>;
 
     interface IFoo
     {
