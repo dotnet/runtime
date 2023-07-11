@@ -580,7 +580,7 @@ namespace Microsoft.Interop
 
             var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(
                 interfaceMethods.Methods
-                    .Where(context => context.GenerationContext.Diagnostics.Length == 0 && context.UnmanagedToManagedStub.Diagnostics.Length == 0)
+                    .Where(context => context.UnmanagedToManagedStub.Diagnostics.Length == 0)
                     .Select(context => context.GenerationContext),
                 vtableLocalName);
 
