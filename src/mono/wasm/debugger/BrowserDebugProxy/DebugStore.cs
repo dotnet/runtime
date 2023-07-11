@@ -938,7 +938,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.pdbMetadataReader = summary.PdbMetadataReader;
             Populate();
         }
-        //public MemberReference
         public bool TryGetCustomAttributeName(CustomAttributeHandle customAttribute, MetadataReader metadataReader, out string name)
         {
             name = "";
