@@ -4,11 +4,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using static System.GC;
 
 namespace System
 {
@@ -23,7 +21,7 @@ namespace System
         {
             if (rank == 1 && !ContainsLowerBounds(rank, pLowerBounds))
             {
-                return AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
+                return GC.AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
             }
 
             return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
