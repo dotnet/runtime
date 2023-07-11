@@ -95,49 +95,53 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
     // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
     static const ep_char8_t * entrypoint_assembly_name = nullptr;
     if (entrypoint_assembly_name == nullptr) {
-        const ep_char8_t * entrypoint_assembly_name_local;
+        ep_char8_t * entrypoint_assembly_name_local;
 #ifdef HOST_WINDOWS
         const TCHAR * wszModuleFileName = NULL;
-        if(PalGetModuleFileName(&wszModuleFileName, nullptr) == 0)
-            entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
-        else {
+        if(PalGetModuleFileName(&wszModuleFileName, nullptr) == 0) {
+            // Allocating since we delete this empty string later
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
+        } else {
             const wchar_t* process_name = wcsrchr(wszModuleFileName, '\\');
             if (process_name != NULL) {
-                const wchar_t* extension = wcschr(process_name + 1, '.');
+                // We don't want to include the first '\'
+                process_name++;
+                const wchar_t* extension = wcschr(process_name, '.');
                 if (extension != NULL) {
-                    // We don't want to include the first '\'
-                    size_t len = extension - (process_name + 1);
-                    wchar_t* process_name_wo_ext = reinterpret_cast<wchar_t *>(malloc(len + 1));
-                    wcsncpy(process_name_wo_ext, process_name + 1, len);
-                    process_name_wo_ext[len] = L'\0';
-                    const ep_char16_t* process_name_wo_ext_l = reinterpret_cast<const ep_char16_t *>(process_name_wo_ext);
-                    entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_wo_ext_l, -1);
+                    size_t len = extension - process_name;
+                    const ep_char16_t* process_name_wo_ext_l = reinterpret_cast<const ep_char16_t *>(process_name);
+                    entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_wo_ext_l, len);
                 } else {
-                    const ep_char16_t* process_name_l = reinterpret_cast<const ep_char16_t *>(process_name + 1);
+                    const ep_char16_t* process_name_l = reinterpret_cast<const ep_char16_t *>(process_name);
                     entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_l, -1);
                 }
+            } else{
+                // Allocating since we delete this empty string later
+                entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
+                entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
             }
-            else
-                entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
         }
-#else
-#if defined (__linux__)
+#elif defined (__linux__)
         size_t program_len = strlen(__progname);
         ep_char8_t *process_name =  reinterpret_cast<ep_char8_t *>(malloc(program_len + 1));
-        if (process_name == NULL)
-            entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
-        else {
-            memcpy (process_name, __progname, program_len);
-            process_name[program_len] = '\0';
+        if (process_name == NULL) {
+            // Allocating since we delete this empty string later
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
+        } else {
             char *dot = strrchr(process_name, '.');
             if (dot != NULL) {
-                *dot = '\0';
+                program_len = program_len - strlen(dot);
+            }
+            memcpy (process_name, __progname, program_len);
+            process_name[program_len] = '\0';
         }
-        entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>(process_name);
-    }
+        entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t*>(process_name);
 #else
-        entrypoint_assembly_name_local = reinterpret_cast<const ep_char8_t*>("");
-#endif // __linux__
+        // Allocating since we delete this empty string later
+        entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
+        entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
 #endif // HOST_WINDOWS
 
         if (PalInterlockedCompareExchangePointer((void**)(&entrypoint_assembly_name), (void*)(entrypoint_assembly_name_local), nullptr) != nullptr)
