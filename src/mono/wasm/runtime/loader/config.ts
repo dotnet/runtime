@@ -78,7 +78,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     mono_log_debug("mono_wasm_load_config");
     try {
-        if (loaderHelpers.config.loadBootResource) {
+        if (loaderHelpers.loadBootResource) {
             // If we have custom loadBootResource
             await loadBootConfig(loaderHelpers.config, module);
         } else {
@@ -89,7 +89,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
                 normalizeConfig();
-                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.loadBootResource);
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.loadBootResource);
             } else {
                 // Otherwise we found mono config schema
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;

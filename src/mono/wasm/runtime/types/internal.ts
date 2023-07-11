@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
 import type { BootJsonData } from "./blazor";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
@@ -135,6 +135,9 @@ export type LoaderHelpers = {
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
     hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
+
+    loadBootResource?: LoadBootResourceCallback;
+    libraryInitializers?: any[];
 
     isChromium: boolean,
     isFirefox: boolean

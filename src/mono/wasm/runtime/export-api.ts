@@ -9,6 +9,7 @@ import { getB32, getF32, getF64, getI16, getI32, getI52, getI64Big, getI8, getU1
 import { mono_run_main, mono_run_main_and_exit } from "./run";
 import { mono_wasm_setenv } from "./startup";
 import { runtimeHelpers } from "./globals";
+import { getLibraryInitializerExports } from "./libraryInitializers";
 
 export function export_api(): any {
     const api: APIType = {
@@ -20,6 +21,7 @@ export function export_api(): any {
         getConfig: (): MonoConfig => {
             return runtimeHelpers.config;
         },
+        getLibraryInitializerExports: getLibraryInitializerExports,
         setHeapB32: setB32,
         setHeapU8: setU8,
         setHeapU16: setU16,

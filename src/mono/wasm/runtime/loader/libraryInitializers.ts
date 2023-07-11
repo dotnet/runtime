@@ -5,14 +5,15 @@ import { mono_log_warn } from "./logging";
 import { MonoConfig, RuntimeAPI } from "../types";
 import { appendUniqueQuery, toAbsoluteBaseUri } from "./assets";
 import { normalizeConfig } from "./config";
+import { loaderHelpers } from "./globals";
 
 export type LibraryInitializerTypes =
     "onRuntimeConfigLoaded"
     | "onRuntimeReady";
 
-async function fetchInitializers(config: MonoConfig, type: LibraryInitializerTypes): Promise<void> {
-    if (!config.libraryInitializers) {
-        config.libraryInitializers = [];
+async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitializerTypes): Promise<void> {
+    if (!loaderHelpers.libraryInitializers) {
+        loaderHelpers.libraryInitializers = [];
     }
 
     const libraryInitializers = type == "onRuntimeConfigLoaded"
@@ -31,7 +32,7 @@ async function fetchInitializers(config: MonoConfig, type: LibraryInitializerTyp
             const adjustedPath = appendUniqueQuery(toAbsoluteBaseUri(path), "js-module-library-initializer");
             const initializer = await import(/* webpackIgnore: true */ adjustedPath);
 
-            config.libraryInitializers!.push(initializer);
+            loaderHelpers.libraryInitializers!.push(initializer);
         } catch (error) {
             mono_log_warn(`Failed to import library initializer '${path}': ${error}`);
         }
@@ -39,15 +40,15 @@ async function fetchInitializers(config: MonoConfig, type: LibraryInitializerTyp
 }
 
 export async function invokeOnRuntimeConfigLoaded(config: MonoConfig) {
-    await fetchInitializers(config, "onRuntimeConfigLoaded");
+    await fetchLibraryInitializers(config, "onRuntimeConfigLoaded");
 
-    if (!config.libraryInitializers) {
+    if (!loaderHelpers.libraryInitializers) {
         return;
     }
 
     const promises = [];
-    for (let i = 0; i < config.libraryInitializers.length; i++) {
-        const initializer = config.libraryInitializers[i] as { onRuntimeConfigLoaded: (config: MonoConfig) => Promise<void> };
+    for (let i = 0; i < loaderHelpers.libraryInitializers.length; i++) {
+        const initializer = loaderHelpers.libraryInitializers[i] as { onRuntimeConfigLoaded: (config: MonoConfig) => Promise<void> };
         if (initializer.onRuntimeConfigLoaded) {
             promises.push(logAndSwallowError("onRuntimeConfigLoaded", () => initializer.onRuntimeConfigLoaded(config)));
         }
@@ -60,15 +61,15 @@ export async function invokeOnRuntimeConfigLoaded(config: MonoConfig) {
 
 export async function invokeOnRuntimeReady(api: RuntimeAPI) {
     const config = api.getConfig();
-    await fetchInitializers(config, "onRuntimeReady");
+    await fetchLibraryInitializers(config, "onRuntimeReady");
 
-    if (!config.libraryInitializers) {
+    if (!loaderHelpers.libraryInitializers) {
         return;
     }
 
     const promises = [];
-    for (let i = 0; i < config.libraryInitializers.length; i++) {
-        const initializer = config.libraryInitializers[i] as { onRuntimeReady: (api: RuntimeAPI) => Promise<void> };
+    for (let i = 0; i < loaderHelpers.libraryInitializers.length; i++) {
+        const initializer = loaderHelpers.libraryInitializers[i] as { onRuntimeReady: (api: RuntimeAPI) => Promise<void> };
         if (initializer.onRuntimeReady) {
             promises.push(logAndSwallowError("onRuntimeReady", () => initializer.onRuntimeReady(api)));
         }
@@ -83,4 +84,8 @@ async function logAndSwallowError(methodName: string, callback: () => Promise<vo
     } catch (error) {
         mono_log_warn(`Failed to invoke '${methodName}' on library initializer: ${error}`);
     }
+}
+
+export function getLibraryInitializerExports(): any[] {
+    return loaderHelpers.libraryInitializers ?? [];
 }

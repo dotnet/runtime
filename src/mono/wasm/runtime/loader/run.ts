@@ -309,9 +309,7 @@ export class HostBuilder implements DotnetHostBuilder {
 
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
         try {
-            deep_merge_config(monoConfig, {
-                loadBootResource
-            });
+            loaderHelpers.loadBootResource = loadBootResource;
             return this;
         } catch (err) {
             mono_exit(1, err);

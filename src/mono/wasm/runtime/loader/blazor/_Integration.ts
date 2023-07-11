@@ -15,9 +15,9 @@ import { appendUniqueQuery, toAbsoluteBaseUri } from "../assets";
 let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
-    const bootConfigPromise = BootConfigResult.initAsync(config.loadBootResource, config.applicationEnvironment);
+    const bootConfigPromise = BootConfigResult.initAsync(loaderHelpers.loadBootResource, config.applicationEnvironment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    await initializeBootConfig(bootConfigResult, module, config.loadBootResource);
+    await initializeBootConfig(bootConfigResult, module, loaderHelpers.loadBootResource);
 }
 
 export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {

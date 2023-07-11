@@ -16,6 +16,11 @@ export interface DotnetHostBuilder {
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
     withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder;
     withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
+
+    /**
+     * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+     * from a custom source, such as an external CDN.
+     */
     withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
@@ -91,21 +96,6 @@ export type MonoConfig = {
      * Gets the application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47
      */
     applicationCulture?: string,
-
-    /**
-     * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
-     * from a custom source, such as an external CDN.
-     */
-    loadBootResource?: LoadBootResourceCallback;
-
-    /**
-     * exports from library es6 modules
-     * 
-     * nuget packages can contain wwwroot/*.lib.module.js which are treated as es6 modules
-     * runtime calls 'onRuntimeConfigLoaded(config: MonoConfig)' and 'onRuntimeReady(api: RuntimeAPI)'
-     * blazor calls 'beforeStart' and 'afterStarted'
-     */
-    libraryInitializers?: any[];
 
     /**
      * definition of assets to load along with the runtime.
@@ -290,6 +280,7 @@ export type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
+    getLibraryInitializerExports(): any[],
 
     // memory management
     setHeapB32: (offset: NativePointer, value: number | boolean) => void,
