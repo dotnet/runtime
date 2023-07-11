@@ -22,7 +22,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private IList<string> urlSymbolServerList;
         private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
-        private Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
+        internal ConcurrentExecutionContextDictionary Contexts = new ConcurrentExecutionContextDictionary();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
 
@@ -30,21 +30,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             SdbHelper = new MonoSDBHelper(this, logger);
-        }
-
-        internal ExecutionContext GetContext(SessionId sessionId)
-        {
-            if (contexts.TryGetValue(sessionId, out ExecutionContext context))
-                return context;
-
-            throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
-        }
-
-        private bool UpdateContext(SessionId sessionId, ExecutionContext executionContext, out ExecutionContext previousExecutionContext)
-        {
-            bool previous = contexts.TryGetValue(sessionId, out previousExecutionContext);
-            contexts[sessionId] = executionContext;
-            return previous;
         }
 
         internal Task<Result> SendMonoCommand(SessionId id, MonoCommands cmd, CancellationToken token) => SendCommand(id, "Runtime.evaluate", JObject.FromObject(cmd), token);
@@ -56,7 +41,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Runtime.consoleAPICalled":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                             return false;
                         string type = args["type"]?.ToString();
                         if (type == "debug")
@@ -129,7 +114,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 case "Runtime.exceptionThrown":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                             return false;
 
                         if (!context.IsRuntimeReady)
@@ -141,10 +126,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                         break;
                     }
 
+                case "Runtime.executionContextDestroyed":
+                    {
+                        Contexts.DestroyContext(sessionId, args["executionContextId"].Value<int>());
+                        return false;
+                    }
+
+                case "Runtime.executionContextsCleared":
+                    {
+                        Contexts.ClearContexts(sessionId);
+                        return false;
+                    }
+
                 case "Debugger.paused":
                     {
                         // Don't process events from sessions we aren't tracking
-                        if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                        if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                             return false;
 
                         if (args?["callFrames"]?.Value<JArray>()?.Count == 0)
@@ -238,7 +235,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> IsRuntimeAlreadyReadyAlready(SessionId sessionId, CancellationToken token)
         {
-            if (contexts.TryGetValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
+            if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) && context.IsRuntimeReady)
                 return true;
 
             Result res = await SendMonoCommand(sessionId, MonoCommands.IsRuntimeReady(), token);
@@ -252,7 +249,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (id == SessionId.Null)
                 await AttachToTarget(id, token);
 
-            if (!contexts.TryGetValue(id, out ExecutionContext context))
+            if (!Contexts.TryGetCurrentExecutionContextValue(id, out ExecutionContext context))
             {
                 // for Dotnetdebugger.* messages, treat them as handled, thus not passing them on to the browser
                 return method.StartsWith("DotnetDebugger.", StringComparison.OrdinalIgnoreCase);
@@ -607,7 +604,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<bool> OnSetVariableValue(MessageId id, int scopeId, string varName, JToken varValue, CancellationToken token)
         {
-            ExecutionContext ctx = GetContext(id);
+            ExecutionContext ctx = Contexts.GetCurrentContext(id);
             Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
             if (scope == null)
                 return false;
@@ -844,7 +841,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (res.IsErr)
                 return false;
 
-            ExecutionContext context = GetContext(sessionId);
+            ExecutionContext context = Contexts.GetCurrentContext(sessionId);
             byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
             var retDebuggerCmd = new MemoryStream(newBytes);
             var retDebuggerCmdReader = new MonoBinaryReader(retDebuggerCmd);
@@ -910,7 +907,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         internal async Task<MethodInfo> LoadSymbolsOnDemand(AssemblyInfo asm, int method_token, SessionId sessionId, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
+            ExecutionContext context = Contexts.GetCurrentContext(sessionId);
             if (urlSymbolServerList.Count == 0)
                 return null;
             if (asm.TriedToLoadSymbolsOnDemand)
@@ -961,14 +958,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private async Task OnDefaultContext(SessionId sessionId, ExecutionContext context, CancellationToken token)
         {
             Log("verbose", "Default context created, clearing state and sending events");
-            if (UpdateContext(sessionId, context, out ExecutionContext previousContext))
-            {
-                foreach (KeyValuePair<string, BreakpointRequest> kvp in previousContext.BreakpointRequests)
-                {
-                    context.BreakpointRequests[kvp.Key] = kvp.Value.Clone();
-                }
-                context.PauseOnExceptions = previousContext.PauseOnExceptions;
-            }
+            Contexts.OnDefaultContextUpdate(sessionId, context);
 
             if (await IsRuntimeAlreadyReadyAlready(sessionId, token))
                 await RuntimeReady(sessionId, token);
@@ -976,7 +966,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task OnResume(MessageId msg_id, CancellationToken token)
         {
-            ExecutionContext ctx = GetContext(msg_id);
+            ExecutionContext ctx = Contexts.GetCurrentContext(msg_id);
             if (ctx.CallStack != null)
             {
                 // Stopped on managed code
@@ -985,12 +975,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             //discard managed frames
             SdbHelper.ClearCache();
-            GetContext(msg_id).ClearState();
+            Contexts.GetCurrentContext(msg_id).ClearState();
         }
 
         private async Task<bool> Step(MessageId msg_id, StepKind kind, CancellationToken token)
         {
-            ExecutionContext context = GetContext(msg_id);
+            ExecutionContext context = Contexts.GetCurrentContext(msg_id);
             if (context.CallStack == null)
                 return false;
 
@@ -1061,7 +1051,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var assembly_data = Convert.FromBase64String(assembly_b64);
                 var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
-                var context = GetContext(sessionId);
+                var context = Contexts.GetCurrentContext(sessionId);
                 foreach (var source in store.Add(sessionId, assembly_data, pdb_data))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
@@ -1080,7 +1070,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try
             {
-                ExecutionContext context = GetContext(msg_id);
+                ExecutionContext context = Contexts.GetCurrentContext(msg_id);
                 if (context.CallStack == null)
                     return false;
 
@@ -1121,7 +1111,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             try
             {
-                ExecutionContext ctx = GetContext(msg_id);
+                ExecutionContext ctx = Contexts.GetCurrentContext(msg_id);
                 Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == scopeId);
                 if (scope == null)
                     return Result.Err(JObject.FromObject(new { message = $"Could not find scope with id #{scopeId}" }));
@@ -1180,14 +1170,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (req.TryResolve(source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                    try
+                    {
+                        await SetBreakpoint(sessionId, context.store, req, true, token);
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Unexpected error on OnSourceFileAdded {e}");
+                    }
                 }
             }
         }
 
         internal async Task<DebugStore> LoadStore(SessionId sessionId, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
+            ExecutionContext context = Contexts.GetCurrentContext(sessionId);
 
             if (Interlocked.CompareExchange(ref context.store, new DebugStore(logger), null) != null)
                 return await context.Source.Task;
@@ -1239,7 +1236,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task<DebugStore> RuntimeReady(SessionId sessionId, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
+            ExecutionContext context = Contexts.GetCurrentContext(sessionId);
             if (Interlocked.CompareExchange(ref context.ready, new TaskCompletionSource<DebugStore>(), null) != null)
                 return await context.ready.Task;
 
@@ -1263,7 +1260,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task ResetBreakpoint(SessionId msg_id, MethodInfo method, CancellationToken token)
         {
-            ExecutionContext context = GetContext(msg_id);
+            ExecutionContext context = Contexts.GetCurrentContext(msg_id);
             foreach (var req in context.BreakpointRequests.Values)
             {
                 if (req.Method != null)
@@ -1279,7 +1276,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             string bpid = args?["breakpointId"]?.Value<string>();
 
-            ExecutionContext context = GetContext(msg_id);
+            ExecutionContext context = Contexts.GetCurrentContext(msg_id);
             if (!context.BreakpointRequests.TryGetValue(bpid, out BreakpointRequest breakpointRequest))
                 return;
 
@@ -1303,7 +1300,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
         {
-            ExecutionContext context = GetContext(sessionId);
+            ExecutionContext context = Contexts.GetCurrentContext(sessionId);
             if (req.Locations.Any())
             {
                 Log("debug", $"locations already loaded for {req.Id}");
@@ -1319,7 +1316,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 .OrderBy(l => l.Column)
                 .GroupBy(l => l.Id);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, GetContext(sessionId).IsRuntimeReady);
+            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, Contexts.GetCurrentContext(sessionId).IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 
@@ -1415,7 +1412,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 //we only need this check if it's a non-vs debugging
                 if (sessionId == SessionId.Null)
                 {
-                    if (!contexts.TryGetValue(sessionId, out ExecutionContext context) || context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
+                    if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context) || context.PauseOnExceptions == PauseOnExceptionsKind.Unset)
                     {
                         checkUncaughtExceptions = $"throw \"{sPauseOnUncaught}\";";
                         checkCaughtExceptions = $"try {{throw \"{sPauseOnCaught}\";}} catch {{}}";
