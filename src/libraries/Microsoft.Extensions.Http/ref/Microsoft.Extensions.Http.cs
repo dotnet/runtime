@@ -104,11 +104,18 @@ namespace Microsoft.Extensions.Http.Logging
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
 
-    public partial interface IHttpClientLogger
+    public partial interface IHttpClientAsyncLogger : Microsoft.Extensions.Http.Logging.IHttpClientLogger
     {
         System.Threading.Tasks.ValueTask<object?> LogRequestStartAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.ValueTask LogRequestStopAsync(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage response, System.TimeSpan elapsed, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.ValueTask LogRequestFailedAsync(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage? response, System.Exception exception, System.TimeSpan elapsed, System.Threading.CancellationToken cancellationToken = default);
+    }
+
+    public partial interface IHttpClientLogger
+    {
+        object? LogRequestStart(System.Net.Http.HttpRequestMessage request);
+        void LogRequestStop(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage response, System.TimeSpan elapsed);
+        void LogRequestFailed(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage? response, System.Exception exception, System.TimeSpan elapsed);
     }
 }
 namespace System.Net.Http

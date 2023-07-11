@@ -12,12 +12,14 @@ namespace Microsoft.Extensions.Http.Logging
     internal sealed class HttpClientLoggerHandler : DelegatingHandler
     {
         private readonly IHttpClientLogger _httpClientLogger;
+        private readonly IHttpClientAsyncLogger? _httpClientAsyncLogger;
 
         public HttpClientLoggerHandler(IHttpClientLogger httpClientLogger)
         {
             ThrowHelper.ThrowIfNull(httpClientLogger);
 
             _httpClientLogger = httpClientLogger;
+            _httpClientAsyncLogger = httpClientLogger as IHttpClientAsyncLogger;
         }
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -27,18 +29,34 @@ namespace Microsoft.Extensions.Http.Logging
             var stopwatch = ValueStopwatch.StartNew();
             HttpResponseMessage? response = null;
 
-            object? state = await _httpClientLogger.LogRequestStartAsync(request, cancellationToken).ConfigureAwait(false);
+            object? state = _httpClientAsyncLogger is not null
+                ? await _httpClientAsyncLogger.LogRequestStartAsync(request, cancellationToken).ConfigureAwait(false)
+                : _httpClientLogger.LogRequestStart(request);
 
             try
             {
                 response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
-                await _httpClientLogger.LogRequestStopAsync(state, request, response, stopwatch.GetElapsedTime(), cancellationToken).ConfigureAwait(false);
+                if (_httpClientAsyncLogger is not null)
+                {
+                    await _httpClientAsyncLogger.LogRequestStopAsync(state, request, response, stopwatch.GetElapsedTime(), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _httpClientLogger.LogRequestStop(state, request, response, stopwatch.GetElapsedTime());
+                }
                 return response;
             }
             catch (Exception exception)
             {
-                await _httpClientLogger.LogRequestFailedAsync(state, request, response, exception, stopwatch.GetElapsedTime(), cancellationToken).ConfigureAwait(false);
+                if (_httpClientAsyncLogger is not null)
+                {
+                    await _httpClientAsyncLogger.LogRequestFailedAsync(state, request, response, exception, stopwatch.GetElapsedTime(), cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    _httpClientLogger.LogRequestFailed(state, request, response, exception, stopwatch.GetElapsedTime());
+                }
                 throw;
             }
         }
@@ -51,31 +69,19 @@ namespace Microsoft.Extensions.Http.Logging
             var stopwatch = ValueStopwatch.StartNew();
             HttpResponseMessage? response = null;
 
-            ValueTask<object?> logStartTask = _httpClientLogger.LogRequestStartAsync(request, cancellationToken);
-            object? state = logStartTask.IsCompletedSuccessfully
-                ? logStartTask.Result
-                : logStartTask.AsTask().GetAwaiter().GetResult();
+            object? state = _httpClientLogger.LogRequestStart(request);
 
             try
             {
                 response = base.Send(request, cancellationToken);
 
-                ValueTask logStopTask = _httpClientLogger.LogRequestStopAsync(state, request, response, stopwatch.GetElapsedTime(), cancellationToken);
-                if (!logStopTask.IsCompletedSuccessfully)
-                {
-                    logStopTask.AsTask().GetAwaiter().GetResult();
-                }
+                _httpClientLogger.LogRequestStop(state, request, response, stopwatch.GetElapsedTime());
 
                 return response;
             }
             catch (Exception exception)
             {
-                ValueTask logFailedTask = _httpClientLogger.LogRequestFailedAsync(state, request, response, exception, stopwatch.GetElapsedTime(), cancellationToken);
-                if (!logFailedTask.IsCompletedSuccessfully)
-                {
-                    logFailedTask.AsTask().GetAwaiter().GetResult();
-                }
-
+                _httpClientLogger.LogRequestFailed(state, request, response, exception, stopwatch.GetElapsedTime());
                 throw;
             }
         }

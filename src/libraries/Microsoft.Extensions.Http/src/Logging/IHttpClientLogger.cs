@@ -3,17 +3,15 @@
 
 using System;
 using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Microsoft.Extensions.Http.Logging
 {
     public interface IHttpClientLogger
     {
-        ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default);
+        object? LogRequestStart(HttpRequestMessage request);
 
-        ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed, CancellationToken cancellationToken = default);
+        void LogRequestStop(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed);
 
-        ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception, TimeSpan elapsed, CancellationToken cancellationToken = default);
+        void LogRequestFailed(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception, TimeSpan elapsed);
     }
 }

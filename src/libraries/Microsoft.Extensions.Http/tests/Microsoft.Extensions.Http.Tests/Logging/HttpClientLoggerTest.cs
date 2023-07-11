@@ -88,12 +88,12 @@ namespace Microsoft.Extensions.Http.Logging
             Assert.Equal(0, sink.Writes.Count - previousMessagesCount);
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
-        public async Task CustomLogger_LogsCorrectEvents(bool requestSuccessful, bool forceAsyncLogging)
+        public async Task CustomLogger_LogsCorrectEvents(bool requestSuccessful, bool async)
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient(_ =>
@@ -101,7 +101,8 @@ namespace Microsoft.Extensions.Http.Logging
                     ? new HttpResponseMessage()
                     : throw new HttpRequestException("expected")));
 
-            var testLogger = new TestCountingLogger(forceAsyncLogging);
+            TestCountingLogger testLogger = async ? new TestCountingAsyncLogger() : new TestCountingLogger();
+
             serviceCollection.AddHttpClient("TestCountingLogger")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
                 .AddLogger(_ => testLogger);
@@ -120,9 +121,7 @@ namespace Microsoft.Extensions.Http.Logging
                 _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
             }
 
-            Assert.Equal(1, testLogger.RequestStartLogCount);
-            Assert.Equal(requestSuccessful ? 1 : 0, testLogger.RequestStopLogCount);
-            Assert.Equal(requestSuccessful ? 0 : 1, testLogger.RequestFailedLogCount);
+            AssertCounters(testLogger, requestCount: 1, requestSuccessful, async);
 
             if (requestSuccessful)
             {
@@ -133,16 +132,37 @@ namespace Microsoft.Extensions.Http.Logging
                 _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(Url));
             }
 
-            Assert.Equal(2, testLogger.RequestStartLogCount);
-            Assert.Equal(requestSuccessful ? 2 : 0, testLogger.RequestStopLogCount);
-            Assert.Equal(requestSuccessful ? 0 : 2, testLogger.RequestFailedLogCount);
+            AssertCounters(testLogger, requestCount: 2, requestSuccessful, async);
+        }
+
+        private void AssertCounters(TestCountingLogger testLogger, int requestCount, bool requestSuccessful, bool async)
+        {
+            if (async)
+            {
+                var asyncTestLogger = (TestCountingAsyncLogger)testLogger;
+                Assert.Equal(requestCount, asyncTestLogger.AsyncRequestStartLogCount);
+                Assert.Equal(requestSuccessful ? requestCount : 0, asyncTestLogger.AsyncRequestStopLogCount);
+                Assert.Equal(requestSuccessful ? 0 : requestCount, asyncTestLogger.AsyncRequestFailedLogCount);
+
+                Assert.Equal(0, testLogger.RequestStartLogCount);
+                Assert.Equal(0, testLogger.RequestStopLogCount);
+                Assert.Equal(0, testLogger.RequestFailedLogCount);
+            }
+            else
+            {
+                Assert.Equal(requestCount, testLogger.RequestStartLogCount);
+                Assert.Equal(requestSuccessful ? requestCount : 0, testLogger.RequestStopLogCount);
+                Assert.Equal(requestSuccessful ? 0 : requestCount, testLogger.RequestFailedLogCount);
+            }
         }
 
 #if NET5_0_OR_GREATER
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNetCore))]
-        [InlineData(false)]
-        [InlineData(true)]
-        public void CustomLogger_LogsCorrectEvents_Sync(bool requestSuccessful)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async void CustomLogger_LogsCorrectEvents_Sync(bool requestSuccessful, bool asyncSecondCall)
         {
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient(_ =>
@@ -150,7 +170,7 @@ namespace Microsoft.Extensions.Http.Logging
                     ? new HttpResponseMessage()
                     : throw new HttpRequestException("expected")));
 
-            var testLogger = new TestCountingLogger();
+            var testLogger = new TestCountingAsyncLogger();
             serviceCollection.AddHttpClient("TestCountingLogger")
                 .ConfigurePrimaryHttpMessageHandler<TestMessageHandler>()
                 .AddLogger(_ => testLogger);
@@ -169,22 +189,40 @@ namespace Microsoft.Extensions.Http.Logging
                 _ = Assert.Throws<HttpRequestException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, Url)));
             }
 
-            Assert.Equal(1, testLogger.RequestStartLogCount);
-            Assert.Equal(requestSuccessful ? 1 : 0, testLogger.RequestStopLogCount);
-            Assert.Equal(requestSuccessful ? 0 : 1, testLogger.RequestFailedLogCount);
+            AssertCounters(testLogger, requestCount: 1, requestSuccessful, async: false);
 
-            if (requestSuccessful)
+            if (asyncSecondCall)
             {
-                _ = client.Send(new HttpRequestMessage(HttpMethod.Get, Url));
+                if (requestSuccessful)
+                {
+                    _ = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Url));
+                }
+                else
+                {
+                    _ = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(new HttpRequestMessage(HttpMethod.Get, Url)));
+                }
+
+                Assert.Equal(1, testLogger.AsyncRequestStartLogCount);
+                Assert.Equal(requestSuccessful ? 1 : 0, testLogger.AsyncRequestStopLogCount);
+                Assert.Equal(requestSuccessful ? 0 : 1, testLogger.AsyncRequestFailedLogCount);
+
+                Assert.Equal(1, testLogger.RequestStartLogCount);
+                Assert.Equal(requestSuccessful ? 1 : 0, testLogger.RequestStopLogCount);
+                Assert.Equal(requestSuccessful ? 0 : 1, testLogger.RequestFailedLogCount);
             }
             else
             {
-                _ = Assert.Throws<HttpRequestException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, Url)));
-            }
+                if (requestSuccessful)
+                {
+                    _ = client.Send(new HttpRequestMessage(HttpMethod.Get, Url));
+                }
+                else
+                {
+                    _ = Assert.Throws<HttpRequestException>(() => client.Send(new HttpRequestMessage(HttpMethod.Get, Url)));
+                }
 
-            Assert.Equal(2, testLogger.RequestStartLogCount);
-            Assert.Equal(requestSuccessful ? 2 : 0, testLogger.RequestStopLogCount);
-            Assert.Equal(requestSuccessful ? 0 : 2, testLogger.RequestFailedLogCount);
+                AssertCounters(testLogger, requestCount: 2, requestSuccessful, async: false);
+            }
         }
 #endif
 
@@ -333,60 +371,53 @@ namespace Microsoft.Extensions.Http.Logging
             Assert.Equal(4, innerLogger.RequestFailedLogCount);
         }
 
-        private static ValueTask<object?> GetSuccessfulTaskWithResult(bool async = false, object? result = null)
-        {
-            if (async)
-            {
-                return DelayWithResult(result);
-            }
-            return new ValueTask<object?>(result);
-        }
-
-        private static async ValueTask<object?> DelayWithResult(object? result)
-        {
-            await Task.Delay(1).ConfigureAwait(false);
-            return result;
-        }
-
-        private static ValueTask GetSuccessfulTask(bool async = false)
-        {
-            if (async)
-            {
-                return new ValueTask(Task.Delay(1));
-            }
-            return new ValueTask();
-        }
-
         private class TestCountingLogger : IHttpClientLogger
         {
-            private bool _async;
             public int RequestStartLogCount { get; private set; }
             public int RequestStopLogCount { get; private set; }
             public int RequestFailedLogCount { get; private set; }
 
-            public TestCountingLogger(bool async = false)
+            public object? LogRequestStart(HttpRequestMessage request)
             {
-                _async = async;
+                RequestStartLogCount++;
+                return null;
             }
+
+            public void LogRequestStop(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed)
+            {
+                RequestStopLogCount++;
+            }
+
+            public void LogRequestFailed(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception, TimeSpan elapsed)
+            {
+                RequestFailedLogCount++;
+            }
+        }
+
+        private class TestCountingAsyncLogger : TestCountingLogger, IHttpClientAsyncLogger
+        {
+            public int AsyncRequestStartLogCount { get; private set; }
+            public int AsyncRequestStopLogCount { get; private set; }
+            public int AsyncRequestFailedLogCount { get; private set; }
 
             public ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
             {
-                RequestStartLogCount++;
-                return GetSuccessfulTaskWithResult(_async);
+                AsyncRequestStartLogCount++;
+                return new ValueTask<object?>((object?)null);
             }
 
             public ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed,
                 CancellationToken cancellationToken = default)
             {
-                RequestStopLogCount++;
-                return GetSuccessfulTask(_async);
+                AsyncRequestStopLogCount++;
+                return new ValueTask();
             }
 
             public ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,
                 TimeSpan elapsed, CancellationToken cancellationToken = default)
             {
-                RequestFailedLogCount++;
-                return GetSuccessfulTask(_async);
+                AsyncRequestFailedLogCount++;
+                return new ValueTask();
             }
         }
 
@@ -398,7 +429,7 @@ namespace Microsoft.Extensions.Http.Logging
             public HashSet<object> RequestFailedLogged { get; } = new HashSet<object>();
             private Dictionary<int, Context> _idToContext = new Dictionary<int, Context>();
 
-            public ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
+            public object? LogRequestStart(HttpRequestMessage request)
             {
                 var context = new Context(){ Id = Interlocked.Increment(ref s_nextId) };
                 _idToContext[context.Id] = context;
@@ -406,11 +437,10 @@ namespace Microsoft.Extensions.Http.Logging
                 Assert.False(RequestStartLogged.Contains(context));
                 RequestStartLogged.Add(context);
 
-                return GetSuccessfulTaskWithResult(result: context);
+                return context;
             }
 
-            public ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed,
-                CancellationToken cancellationToken = default)
+            public void LogRequestStop(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed)
             {
                 Assert.NotNull(context);
                 var c = Assert.IsType<Context>(context);
@@ -419,12 +449,9 @@ namespace Microsoft.Extensions.Http.Logging
 
                 Assert.False(RequestStopLogged.Contains(context));
                 RequestStopLogged.Add(context);
-
-                return GetSuccessfulTask();
             }
 
-            public ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,
-                TimeSpan elapsed, CancellationToken cancellationToken = default)
+            public void LogRequestFailed(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception, TimeSpan elapsed)
             {
                 Assert.NotNull(context);
                 var c = Assert.IsType<Context>(context);
@@ -433,8 +460,6 @@ namespace Microsoft.Extensions.Http.Logging
 
                 Assert.False(RequestFailedLogged.Contains(context));
                 RequestFailedLogged.Add(context);
-
-                return GetSuccessfulTask();
             }
 
             private class Context
@@ -451,30 +476,17 @@ namespace Microsoft.Extensions.Http.Logging
                 _logger = loggerFactory.CreateLogger<TestILoggerCustomLogger>();
             }
 
-            public TestILoggerCustomLogger(ILoggerFactory loggerFactory, string loggerName)
+            public object? LogRequestStart(HttpRequestMessage request)
             {
-                _logger = loggerFactory.CreateLogger(loggerName);
+                _logger.LogInformation("LogRequestStart");
+                return null;
             }
 
-            public ValueTask<object?> LogRequestStartAsync(HttpRequestMessage request, CancellationToken cancellationToken = default)
-            {
-                _logger.LogInformation("LogRequestStartAsync");
-                return GetSuccessfulTaskWithResult();
-            }
+            public void LogRequestStop(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed)
+                => _logger.LogInformation("LogRequestStop");
 
-            public ValueTask LogRequestStopAsync(object? context, HttpRequestMessage request, HttpResponseMessage response, TimeSpan elapsed,
-                CancellationToken cancellationToken = default)
-            {
-                _logger.LogInformation("LogRequestStopAsync");
-                return GetSuccessfulTask();
-            }
-
-            public ValueTask LogRequestFailedAsync(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,
-                TimeSpan elapsed, CancellationToken cancellationToken = default)
-            {
-                _logger.LogInformation("LogRequestFailedAsync");
-                return GetSuccessfulTask();
-            }
+            public void LogRequestFailed(object? context, HttpRequestMessage request, HttpResponseMessage? response, Exception exception,TimeSpan elapsed)
+                => _logger.LogInformation("LogRequestFailed");
         }
 
         private class TestRetryingHandler : DelegatingHandler
