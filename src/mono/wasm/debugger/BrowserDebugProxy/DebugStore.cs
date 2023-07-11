@@ -845,11 +845,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
 
-        internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader  = new List<Tuple<MetadataReader, MetadataReader>>();
+        internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader = new List<Tuple<MetadataReader, MetadataReader>>();
         private int debugId;
         internal int PdbAge { get; }
         internal System.Guid PdbGuid { get; }
-        internal bool IsPortableCodeView { get;  }
+        internal bool IsPortableCodeView { get; }
         internal string PdbName { get; }
         internal bool CodeViewInformationAvailable { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
@@ -938,7 +938,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.pdbMetadataReader = summary.PdbMetadataReader;
             Populate();
         }
-
+        //public MemberReference
         public bool TryGetCustomAttributeName(CustomAttributeHandle customAttribute, MetadataReader metadataReader, out string name)
         {
             name = "";
@@ -949,16 +949,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return false;
                 EntityHandle? container = ctorHandle.Kind switch
                 {
-                    HandleKind.MethodDefinition => metadataReader.GetMethodDefinition((MethodDefinitionHandle)ctorHandle).GetDeclaringType(),
-                    HandleKind.MemberReference => metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent,
+                    HandleKind.MethodDefinition => EnCGetMethodDefinition((MethodDefinitionHandle)ctorHandle).GetDeclaringType(),
+                    HandleKind.MemberReference => EnCGetMemberReference((MemberReferenceHandle)ctorHandle).Parent,
                     _ => null,
                 };
                 if (container == null)
                     return false;
                 StringHandle? attributeTypeNameHandle = container.Value.Kind switch
                 {
-                    HandleKind.TypeDefinition => metadataReader.GetTypeDefinition((TypeDefinitionHandle)container.Value).Name,
-                    HandleKind.TypeReference => metadataReader.GetTypeReference((TypeReferenceHandle)container.Value).Name,
+                    HandleKind.TypeDefinition => EnCGetTypeDefinition((TypeDefinitionHandle)container.Value).Name,
+                    HandleKind.TypeReference => EnCGetTypeReference((TypeReferenceHandle)container.Value).Name,
                     HandleKind.TypeSpecification => null, // custom generic attributes, TypeSpecification does not keep the attribute name for them
                     _ => null,
                 };
@@ -994,7 +994,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             MetadataReader asmMetadataReader = MetadataReaderProvider.FromMetadataStream(asmStream).GetMetadataReader();
             var pdbStream = new MemoryStream(pdb);
             MetadataReader pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(pdbStream).GetMetadataReader();
-            enCMetadataReader.Add(new (asmMetadataReader, pdbMetadataReader));
+            enCMetadataReader.Add(new(asmMetadataReader, pdbMetadataReader));
             PopulateEnC(sdbAgent, asmMetadataReader, pdbMetadataReader);
             return true;
         }
@@ -1026,6 +1026,61 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
             return -1;
+        }
+
+        public TypeReference EnCGetTypeReference(TypeReferenceHandle methodDefHandle)
+        {
+            var asmMetadataReaderLocal = asmMetadataReader;
+            var typeIdx = methodDefHandle.GetHashCode();
+            int i = 0;
+            while (typeIdx > asmMetadataReaderLocal.TypeReferences.Count)
+            {
+                typeIdx -= asmMetadataReaderLocal.TypeReferences.Count;
+                asmMetadataReaderLocal = enCMetadataReader[i].Item1;
+                i += 1;
+            }
+            return asmMetadataReaderLocal.GetTypeReference(MetadataTokens.TypeReferenceHandle(typeIdx));
+        }
+
+        public TypeDefinition EnCGetTypeDefinition(TypeDefinitionHandle methodDefHandle)
+        {
+            var asmMetadataReaderLocal = asmMetadataReader;
+            var typeIdx = methodDefHandle.GetHashCode();
+            int i = 0;
+            while (typeIdx > asmMetadataReaderLocal.TypeDefinitions.Count)
+            {
+                typeIdx -= asmMetadataReaderLocal.TypeDefinitions.Count;
+                asmMetadataReaderLocal = enCMetadataReader[i].Item1;
+                i += 1;
+            }
+            return asmMetadataReaderLocal.GetTypeDefinition(MetadataTokens.TypeDefinitionHandle(typeIdx));
+        }
+        public MethodDefinition EnCGetMethodDefinition(MethodDefinitionHandle methodDefHandle)
+        {
+            var asmMetadataReaderLocal = asmMetadataReader;
+            var methodIdx = methodDefHandle.GetHashCode();
+            int i = 0;
+            while (methodIdx > asmMetadataReaderLocal.MethodDefinitions.Count)
+            {
+                methodIdx -= asmMetadataReaderLocal.MethodDefinitions.Count;
+                asmMetadataReaderLocal = enCMetadataReader[i].Item1;
+                i += 1;
+            }
+            return asmMetadataReaderLocal.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdx));
+        }
+
+        public MemberReference EnCGetMemberReference(MemberReferenceHandle memberHandle)
+        {
+            var asmMetadataReaderLocal = asmMetadataReader;
+            var memberIdx = memberHandle.GetHashCode();
+            int i = 0;
+            while (memberIdx > asmMetadataReaderLocal.MemberReferences.Count)
+            {
+                memberIdx -= asmMetadataReaderLocal.MemberReferences.Count;
+                asmMetadataReaderLocal = enCMetadataReader[i].Item1;
+                i += 1;
+            }
+            return asmMetadataReaderLocal.GetMemberReference(MetadataTokens.MemberReferenceHandle(memberIdx));
         }
 
         public string EnCGetString(StringHandle strHandle)
