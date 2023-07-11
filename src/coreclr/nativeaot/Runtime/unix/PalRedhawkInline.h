@@ -113,3 +113,12 @@ FORCEINLINE void PalSetLastError(int32_t error)
 {
     errno = error;
 }
+
+FORCEINLINE int32_t PalOsPageSize()
+{
+#ifdef HOST_APPLE
+    return 0x4000
+#else
+    return 0x1000
+#endif
+}

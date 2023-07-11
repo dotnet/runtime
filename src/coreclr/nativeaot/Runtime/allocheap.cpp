@@ -276,7 +276,7 @@ bool AllocHeap::_UpdateMemPtrs(uint8_t* pNextFree)
 //-------------------------------------------------------------------------------------------------
 bool AllocHeap::_AllocNewBlock(uintptr_t cbMem)
 {
-    cbMem = ALIGN_UP(max(cbMem, s_minBlockSize), OS_PAGE_SIZE);;
+    cbMem = ALIGN_UP(cbMem, OS_PAGE_SIZE);
 
     uint8_t * pbMem = reinterpret_cast<uint8_t*>
         (PalVirtualAlloc(NULL, cbMem, MEM_COMMIT, m_roProtectType));
