@@ -839,6 +839,8 @@ bool StructDeaths::IsRemainderDying() const
 //
 bool StructDeaths::IsReplacementDying(unsigned index) const
 {
+    assert(index < m_aggregate->Replacements.size());
+
     BitVecTraits traits(1 + (unsigned)m_aggregate->Replacements.size(), nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
 }
