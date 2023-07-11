@@ -2012,7 +2012,7 @@ ep_rt_mono_is_runtime_initialized (void)
 }
 
 extern EventPipeMonoThreadData * ep_rt_mono_thread_data_get_or_create (void);
-extern uint64_t ep_rt_mono_session_calculate_and_count_all_keywords (uint64_t keywords[], uint64_t count[], size_t len);
+extern uint64_t ep_rt_mono_session_calculate_and_count_all_keywords (const ep_char8_t *provider, uint64_t keywords[], uint64_t count[], size_t len);
 extern bool ep_rt_mono_sesion_has_all_started (void);
 
 extern void ep_rt_mono_runtime_provider_component_init (void);

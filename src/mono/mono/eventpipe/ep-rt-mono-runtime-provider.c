@@ -3696,7 +3696,7 @@ fire_gc_event_bulk_root_static_var (
 	EP_ASSERT (root_data);
 	EP_ASSERT (root_data->source == MONO_ROOT_SOURCE_STATIC);
 
-	MonoVTable *vtable = root_data->key;
+	MonoVTable *vtable = (MonoVTable *)(root_data->key);
 	uint32_t static_var_flags = 0;
 	uint64_t type_id = (uint64_t)vtable;
 	const ep_char8_t *static_var_name = "?";
@@ -3720,7 +3720,7 @@ fire_gc_event_bulk_root_static_var (
 			}
 		}
 		if (!is_ok (error))
-			mono_error_cleanup (&error);
+			mono_error_cleanup (error);
 		error_init_reuse (error);
 	}
 
@@ -3980,7 +3980,11 @@ calculate_live_keywords (
 	ep_requires_lock_held ();
 
 	EP_ASSERT (G_N_ELEMENTS (keywords) == G_N_ELEMENTS (count));
-	*live_keywords = ep_rt_mono_session_calculate_and_count_all_keywords (keywords, count, G_N_ELEMENTS (count));
+	*live_keywords = ep_rt_mono_session_calculate_and_count_all_keywords (
+		ep_config_get_public_provider_name_utf8 (),
+		keywords,
+		count,
+		G_N_ELEMENTS (count));
 
 	*trigger_heap_dump = ep_rt_mono_is_runtime_initialized ();
 	*trigger_heap_dump &= is_keword_enabled (*live_keywords, GC_KEYWORD);
@@ -4030,6 +4034,8 @@ gc_event_callback (
 		break;
 	}
 }
+
+// TODO: Bailout in case nothing triggers but dump requested is still set.
 
 static
 void

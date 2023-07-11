@@ -659,6 +659,7 @@ is_keword_enabled (uint64_t enabled_keywords, uint64_t keyword)
 
 uint64_t
 ep_rt_mono_session_calculate_and_count_all_keywords (
+	const ep_char8_t *provider,
 	uint64_t keywords[],
 	uint64_t count[],
 	size_t len)
@@ -673,7 +674,7 @@ ep_rt_mono_session_calculate_and_count_all_keywords (
 			EventPipeSessionProviderList *providers = ep_session_get_providers (session);
 			EP_ASSERT (providers != NULL);
 
-			EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (providers), ep_config_get_public_provider_name_utf8 ());
+			EventPipeSessionProvider *session_provider = ep_session_provider_list_find_by_name (ep_session_provider_list_get_providers (providers), provider);
 			if (session_provider) {
 				uint64_t session_keywords = ep_session_provider_get_keywords (session_provider);
 				for (uint64_t j = 0; j < len; j++) {
@@ -749,9 +750,6 @@ ep_rt_mono_component_init (void)
 
 	_default_profiler_provider = mono_profiler_create (NULL);
 
-	ep_rt_mono_runtime_provider_component_init ();
-	ep_rt_mono_profiler_provider_component_init ();
-
 	char *diag_env = g_getenv("MONO_DIAGNOSTICS");
 	if (diag_env) {
 		int diag_argc = 1;
@@ -786,6 +784,9 @@ ep_rt_mono_component_init (void)
 		}
 	}
 	g_free (diag_env);
+
+	ep_rt_mono_runtime_provider_component_init ();
+	ep_rt_mono_profiler_provider_component_init ();
 }
 
 void

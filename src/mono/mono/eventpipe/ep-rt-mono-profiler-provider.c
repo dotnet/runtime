@@ -16,9 +16,14 @@
 extern EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Context;
 #define RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Context
 
+// Enable/Disable mono profiler provider.
+static bool _mono_profiler_provider_enabled = false;
+
 // Mono profilers.
-static MonoProfilerHandle _mono_heap_dump_profiler_provider = NULL;
 static MonoProfilerHandle _mono_profiler_provider = NULL;
+static MonoProfilerHandle _mono_heap_dump_profiler_provider = NULL;
+
+// Profiler callspec.
 static MonoCallSpec _mono_profiler_provider_callspec = {0};
 
 // Buffered GC event types.
@@ -56,6 +61,7 @@ static volatile GCHeapDumpMemBlock *_gc_heap_dump_mem_blocks = NULL;
 static volatile GCHeapDumpMemBlock *_gc_heap_dump_current_mem_block = NULL;
 static volatile uint32_t _gc_heap_dump_requests = 0;
 static volatile uint32_t _gc_heap_dump_in_progress = 0;
+static volatile uint64_t _gc_heap_dump_trigger_count = 0;
 
 static GSList *_mono_profiler_provider_params = NULL;
 static GQueue *_gc_heap_dump_request_params = NULL;
@@ -75,7 +81,7 @@ typedef uint16_t gc_state_count_t;
 #define GC_STATE_IN_PROGRESS_STOP(x) ((gc_state_t)((gc_state_t)GC_STATE_GET_FIRE_EVENT_COUNT(x)))
 
 static volatile gc_state_t _gc_state = 0;
-static ep_rt_spin_lock_handle_t _gc_state_lock = {0};
+static ep_rt_spin_lock_handle_t _gc_lock = {0};
 
 static
 void
@@ -134,7 +140,7 @@ gc_in_progress_start (void)
 	gc_state_t new_state = 0;
 
 	// Make sure fire event calls will block and wait for GC completion.
-	ep_rt_spin_lock_acquire (&_gc_state_lock);
+	ep_rt_spin_lock_acquire (&_gc_lock);
 
 	// Set gc in progress state, preventing new fire event requests.
 	do {
@@ -176,7 +182,7 @@ gc_in_progress_stop (void)
 	} while (gc_state_atomic_cas (&_gc_state, old_state, new_state) != old_state);
 
 	// Make sure fire events can continune to execute.
-	ep_rt_spin_lock_release (&_gc_state_lock);
+	ep_rt_spin_lock_release (&_gc_lock);
 }
 
 static
@@ -198,8 +204,8 @@ fire_event_enter (void)
 		old_state = gc_state_volatile_load (&_gc_state);
 		if (GC_STATE_IS_IN_PROGRESS (old_state)) {
 			// GC in progress and thread tries to fire event (this should be an unlikely scenario). Wait until GC is done.
-			ep_rt_spin_lock_acquire (&_gc_state_lock);
-			ep_rt_spin_lock_release (&_gc_state_lock);
+			ep_rt_spin_lock_acquire (&_gc_lock);
+			ep_rt_spin_lock_release (&_gc_lock);
 			old_state = gc_state_volatile_load (&_gc_state);
 		}
 		// Increase number of fire event calls.
@@ -224,7 +230,7 @@ static
 const EventFilterDescriptor *
 provider_params_add (const EventFilterDescriptor *key)
 {
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 
 	EventFilterDescriptor *param = NULL;
 	if (key && key->ptr && key->size) {
@@ -246,7 +252,7 @@ static
 bool
 provider_params_remove (const EventFilterDescriptor *key)
 {
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 
 	bool removed = false;
 	if (_mono_profiler_provider_params && key && key->ptr && key->size) {
@@ -339,14 +345,14 @@ static
 const ep_char8_t *
 provider_params_get_heap_collect_ondemand_value (void)
 {
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 
 	const ep_char8_t *value = NULL;
 	if (_gc_heap_dump_request_params && !g_queue_is_empty (_gc_heap_dump_request_params)) {
 		EventFilterDescriptor *param = (EventFilterDescriptor *)g_queue_pop_head (_gc_heap_dump_request_params);
 		if (param)
 			provider_params_get_value (param, "heapcollect", &value);
-		g_queue_push_head (_gc_heap_dump_request_params , (gpointer)value);
+		g_queue_push_head (_gc_heap_dump_request_params , (gpointer)param);
 	}
 	return value ? value : "";
 }
@@ -355,7 +361,7 @@ static
 void
 gc_heap_dump_request_params_push_value (const EventFilterDescriptor *param)
 {
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 
 	if (!_gc_heap_dump_request_params)
 		_gc_heap_dump_request_params = g_queue_new ();
@@ -374,7 +380,7 @@ static
 void
 gc_heap_dump_request_params_pop_value (void)
 {
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 
 	if (_gc_heap_dump_request_params && !g_queue_is_empty (_gc_heap_dump_request_params)) {
 		EventFilterDescriptor *param = (EventFilterDescriptor *)g_queue_pop_head (_gc_heap_dump_request_params);
@@ -427,7 +433,7 @@ static
 bool
 gc_heap_dump_in_progress (void)
 {
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 	return ep_rt_volatile_load_uint32_t_without_barrier (&_gc_heap_dump_in_progress) != 0 ? true : false;
 }
 
@@ -437,7 +443,7 @@ gc_heap_dump_in_progress_start (void)
 {
 	EP_ASSERT (ep_rt_mono_is_runtime_initialized ());
 
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 	ep_rt_volatile_store_uint32_t_without_barrier (&_gc_heap_dump_in_progress, 1);
 }
 
@@ -447,7 +453,7 @@ gc_heap_dump_in_progress_stop (void)
 {
 	EP_ASSERT (ep_rt_mono_is_runtime_initialized ());
 
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
 	ep_rt_volatile_store_uint32_t_without_barrier (&_gc_heap_dump_in_progress, 0);
 }
 
@@ -456,17 +462,17 @@ void
 gc_heap_dump_trigger_callback (MonoProfiler *prof)
 {
 	if (gc_heap_dump_requested ()) {
-		ep_rt_spin_lock_acquire (&_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_gc_lock);
 			gc_heap_dump_requests_dec ();
 			gc_heap_dump_in_progress_start ();
-		ep_rt_spin_lock_release (&_gc_state_lock);
+		ep_rt_spin_lock_release (&_gc_lock);
 
 		mono_gc_collect (mono_gc_max_generation ());
 
-		ep_rt_spin_lock_acquire (&_gc_state_lock);
+		ep_rt_spin_lock_acquire (&_gc_lock);
 			gc_heap_dump_request_params_pop_value  ();
 			gc_heap_dump_in_progress_stop ();
-		ep_rt_spin_lock_release (&_gc_state_lock);
+		ep_rt_spin_lock_release (&_gc_lock);
 	}
 }
 
@@ -2709,6 +2715,34 @@ thread_name_callback (
 
 static
 void
+calculate_live_keywords (
+	uint64_t *live_keywords,
+	bool *trigger_heap_dump)
+{
+	uint64_t keywords[] = { GC_HEAP_COLLECT_KEYWORD };
+	uint64_t count[] = { 0 };
+
+	ep_requires_lock_held ();
+
+	EP_ASSERT (G_N_ELEMENTS (keywords) == G_N_ELEMENTS (count));
+	*live_keywords = ep_rt_mono_session_calculate_and_count_all_keywords (
+		"Microsoft-DotNETRuntimeMonoProfiler",
+		keywords,
+		count,
+		G_N_ELEMENTS (count));
+
+	*trigger_heap_dump = ep_rt_mono_is_runtime_initialized ();
+	*trigger_heap_dump &= is_keword_enabled (*live_keywords, GC_KEYWORD);
+	*trigger_heap_dump &= is_keword_enabled (*live_keywords, GC_HEAP_COLLECT_KEYWORD);
+	*trigger_heap_dump &= count [0] > _gc_heap_dump_trigger_count;
+
+	_gc_heap_dump_trigger_count = count [0];
+
+	ep_requires_lock_held ();
+}
+
+static
+void
 eventpipe_provider_callback (
 	const uint8_t *source_id,
 	unsigned long is_enabled,
@@ -2718,276 +2752,209 @@ eventpipe_provider_callback (
 	EventFilterDescriptor *filter_data,
 	void *callback_data)
 {
-	ep_rt_config_requires_lock_not_held ();
-	ep_rt_spin_lock_requires_lock_held (&_gc_state_lock);
+	EP_ASSERT (_mono_profiler_provider_enabled);
 
-	EP_ASSERT(is_enabled == 0 || is_enabled == 1) ;
+	ep_rt_config_requires_lock_not_held ();
+	ep_rt_spin_lock_requires_lock_held (&_gc_lock);
+
 	EP_ASSERT (_mono_profiler_provider != NULL);
 	EP_ASSERT (_mono_heap_dump_profiler_provider != NULL);
 
-	match_any_keywords = (is_enabled == 1) ? match_any_keywords : 0;
-
 	EP_LOCK_ENTER (section1)
-		uint64_t enabled_keywords = RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT.EnabledKeywordsBitmask;
+		uint64_t live_keywords = 0;
+		bool trigger_heap_dump = false;
+		calculate_live_keywords (&live_keywords, &trigger_heap_dump);
 
-		if (is_keword_enabled(match_any_keywords, LOADER_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, LOADER_KEYWORD)) {
-				mono_profiler_set_domain_loading_callback (_mono_profiler_provider, app_domain_loading_callback);
-				mono_profiler_set_domain_loaded_callback (_mono_profiler_provider, app_domain_loaded_callback);
-				mono_profiler_set_domain_unloading_callback (_mono_profiler_provider, app_domain_unloading_callback);
-				mono_profiler_set_domain_unloaded_callback (_mono_profiler_provider, app_domain_unloaded_callback);
-				mono_profiler_set_domain_name_callback (_mono_profiler_provider, app_domain_name_callback);
-				mono_profiler_set_image_loading_callback (_mono_profiler_provider, module_loading_callback);
-				mono_profiler_set_image_failed_callback (_mono_profiler_provider, module_failed_callback);
-				mono_profiler_set_image_loaded_callback (_mono_profiler_provider, module_loaded_callback);
-				mono_profiler_set_image_unloading_callback (_mono_profiler_provider, module_unloading_callback);
-				mono_profiler_set_image_unloaded_callback (_mono_profiler_provider, module_unloaded_callback);
-				mono_profiler_set_assembly_loading_callback (_mono_profiler_provider, assembly_loading_callback);
-				mono_profiler_set_assembly_loaded_callback (_mono_profiler_provider, assembly_loaded_callback);
-				mono_profiler_set_assembly_unloading_callback (_mono_profiler_provider, assembly_unloading_callback);
-				mono_profiler_set_assembly_unloaded_callback (_mono_profiler_provider, assembly_unloaded_callback);
-			}
+		if (is_keword_enabled(live_keywords, LOADER_KEYWORD)) {
+			mono_profiler_set_domain_loading_callback (_mono_profiler_provider, app_domain_loading_callback);
+			mono_profiler_set_domain_loaded_callback (_mono_profiler_provider, app_domain_loaded_callback);
+			mono_profiler_set_domain_unloading_callback (_mono_profiler_provider, app_domain_unloading_callback);
+			mono_profiler_set_domain_unloaded_callback (_mono_profiler_provider, app_domain_unloaded_callback);
+			mono_profiler_set_domain_name_callback (_mono_profiler_provider, app_domain_name_callback);
+			mono_profiler_set_image_loading_callback (_mono_profiler_provider, module_loading_callback);
+			mono_profiler_set_image_failed_callback (_mono_profiler_provider, module_failed_callback);
+			mono_profiler_set_image_loaded_callback (_mono_profiler_provider, module_loaded_callback);
+			mono_profiler_set_image_unloading_callback (_mono_profiler_provider, module_unloading_callback);
+			mono_profiler_set_image_unloaded_callback (_mono_profiler_provider, module_unloaded_callback);
+			mono_profiler_set_assembly_loading_callback (_mono_profiler_provider, assembly_loading_callback);
+			mono_profiler_set_assembly_loaded_callback (_mono_profiler_provider, assembly_loaded_callback);
+			mono_profiler_set_assembly_unloading_callback (_mono_profiler_provider, assembly_unloading_callback);
+			mono_profiler_set_assembly_unloaded_callback (_mono_profiler_provider, assembly_unloaded_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, LOADER_KEYWORD)) {
-				mono_profiler_set_domain_loading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_domain_loaded_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_domain_unloading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_domain_unloaded_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_domain_name_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_image_loading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_image_failed_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_image_loaded_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_image_unloading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_image_unloaded_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_assembly_loading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_assembly_loaded_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_assembly_unloading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_assembly_unloaded_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_domain_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_unloading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_unloaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_name_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_unloading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_unloaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_unloading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_unloaded_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, JIT_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, JIT_KEYWORD)) {
-				mono_profiler_set_jit_begin_callback (_mono_profiler_provider, jit_begin_callback);
-				mono_profiler_set_jit_failed_callback (_mono_profiler_provider, jit_failed_callback);
-				mono_profiler_set_jit_done_callback (_mono_profiler_provider, jit_done_callback);
-				mono_profiler_set_jit_chunk_created_callback (_mono_profiler_provider, jit_chunk_created_callback);
-				mono_profiler_set_jit_chunk_destroyed_callback (_mono_profiler_provider, jit_chunk_destroyed_callback);
-				mono_profiler_set_jit_code_buffer_callback (_mono_profiler_provider, jit_code_buffer_callback);
-			}
+		if (is_keword_enabled(live_keywords, JIT_KEYWORD)) {
+			mono_profiler_set_jit_begin_callback (_mono_profiler_provider, jit_begin_callback);
+			mono_profiler_set_jit_failed_callback (_mono_profiler_provider, jit_failed_callback);
+			mono_profiler_set_jit_done_callback (_mono_profiler_provider, jit_done_callback);
+			mono_profiler_set_jit_chunk_created_callback (_mono_profiler_provider, jit_chunk_created_callback);
+			mono_profiler_set_jit_chunk_destroyed_callback (_mono_profiler_provider, jit_chunk_destroyed_callback);
+			mono_profiler_set_jit_code_buffer_callback (_mono_profiler_provider, jit_code_buffer_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, JIT_KEYWORD)) {
-				mono_profiler_set_jit_begin_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_jit_failed_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_jit_done_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_jit_chunk_created_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_jit_chunk_destroyed_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_jit_code_buffer_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_jit_begin_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_done_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_chunk_created_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_chunk_destroyed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_code_buffer_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, TYPE_LOADING_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, TYPE_LOADING_KEYWORD)) {
-				mono_profiler_set_class_loading_callback (_mono_profiler_provider, class_loading_callback);
-				mono_profiler_set_class_failed_callback (_mono_profiler_provider, class_failed_callback);
-				mono_profiler_set_class_loaded_callback (_mono_profiler_provider, class_loaded_callback);
-				mono_profiler_set_vtable_loading_callback (_mono_profiler_provider, vtable_loading_callback);
-				mono_profiler_set_vtable_failed_callback (_mono_profiler_provider, vtable_failed_callback);
-				mono_profiler_set_vtable_loaded_callback (_mono_profiler_provider, vtable_loaded_callback);
-			}
+		if (is_keword_enabled(live_keywords, TYPE_LOADING_KEYWORD)) {
+			mono_profiler_set_class_loading_callback (_mono_profiler_provider, class_loading_callback);
+			mono_profiler_set_class_failed_callback (_mono_profiler_provider, class_failed_callback);
+			mono_profiler_set_class_loaded_callback (_mono_profiler_provider, class_loaded_callback);
+			mono_profiler_set_vtable_loading_callback (_mono_profiler_provider, vtable_loading_callback);
+			mono_profiler_set_vtable_failed_callback (_mono_profiler_provider, vtable_failed_callback);
+			mono_profiler_set_vtable_loaded_callback (_mono_profiler_provider, vtable_loaded_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, TYPE_LOADING_KEYWORD)) {
-				mono_profiler_set_class_loading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_class_failed_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_class_loaded_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_vtable_loading_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_vtable_failed_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_vtable_loaded_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_class_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_class_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_class_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_vtable_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_vtable_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_vtable_loaded_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, METHOD_TRACING_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, METHOD_TRACING_KEYWORD)) {
-				mono_profiler_set_method_enter_callback (_mono_profiler_provider, method_enter_callback);
-				mono_profiler_set_method_leave_callback (_mono_profiler_provider, method_leave_callback);
-				mono_profiler_set_method_tail_call_callback (_mono_profiler_provider, method_tail_call_callback);
-				mono_profiler_set_method_exception_leave_callback (_mono_profiler_provider, method_exception_leave_callback);
-				mono_profiler_set_method_free_callback (_mono_profiler_provider, method_free_callback);
-				mono_profiler_set_method_begin_invoke_callback (_mono_profiler_provider, method_begin_invoke_callback);
-				mono_profiler_set_method_end_invoke_callback (_mono_profiler_provider, method_end_invoke_callback);
-			}
+		if (is_keword_enabled(live_keywords, METHOD_TRACING_KEYWORD)) {
+			mono_profiler_set_method_enter_callback (_mono_profiler_provider, method_enter_callback);
+			mono_profiler_set_method_leave_callback (_mono_profiler_provider, method_leave_callback);
+			mono_profiler_set_method_tail_call_callback (_mono_profiler_provider, method_tail_call_callback);
+			mono_profiler_set_method_exception_leave_callback (_mono_profiler_provider, method_exception_leave_callback);
+			mono_profiler_set_method_free_callback (_mono_profiler_provider, method_free_callback);
+			mono_profiler_set_method_begin_invoke_callback (_mono_profiler_provider, method_begin_invoke_callback);
+			mono_profiler_set_method_end_invoke_callback (_mono_profiler_provider, method_end_invoke_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, METHOD_TRACING_KEYWORD)) {
-				mono_profiler_set_method_enter_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_method_leave_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_method_tail_call_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_method_exception_leave_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_method_free_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_method_begin_invoke_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_method_end_invoke_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_method_enter_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_leave_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_tail_call_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_exception_leave_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_free_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_begin_invoke_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_end_invoke_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, EXCEPTION_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
-				mono_profiler_set_exception_throw_callback (_mono_profiler_provider, exception_throw_callback);
-				mono_profiler_set_exception_clause_callback (_mono_profiler_provider, exception_clause_callback);
-			}
+		if (is_keword_enabled(live_keywords, EXCEPTION_KEYWORD)) {
+			mono_profiler_set_exception_throw_callback (_mono_profiler_provider, exception_throw_callback);
+			mono_profiler_set_exception_clause_callback (_mono_profiler_provider, exception_clause_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, EXCEPTION_KEYWORD)) {
-				mono_profiler_set_exception_throw_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_exception_clause_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_exception_throw_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_exception_clause_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, GC_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, GC_KEYWORD)) {
-				mono_profiler_set_gc_event_callback (_mono_profiler_provider, gc_event_callback);
-			}
+		if (is_keword_enabled(live_keywords, GC_KEYWORD)) {
+			mono_profiler_set_gc_event_callback (_mono_profiler_provider, gc_event_callback);
 		} else {
 			// NOTE, disabled in mono_profiler_gc_event, MONO_GC_EVENT_POST_START_WORLD to make sure all
 			// callbacks during GC fires.
 		}
 
-		if (is_keword_enabled(match_any_keywords, GC_ALLOCATION_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, GC_ALLOCATION_KEYWORD)) {
-				mono_profiler_set_gc_allocation_callback (_mono_profiler_provider, gc_allocation_callback);
-			}
+		if (is_keword_enabled(live_keywords, GC_ALLOCATION_KEYWORD)) {
+			mono_profiler_set_gc_allocation_callback (_mono_profiler_provider, gc_allocation_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, GC_ALLOCATION_KEYWORD)) {
-				mono_profiler_set_gc_allocation_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_gc_allocation_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, GC_HANDLE_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, GC_HANDLE_KEYWORD)) {
-				mono_profiler_set_gc_handle_created_callback (_mono_profiler_provider, gc_handle_created_callback);
-				mono_profiler_set_gc_handle_deleted_callback (_mono_profiler_provider, gc_handle_deleted_callback);
-			}
+		if (is_keword_enabled(live_keywords, GC_HANDLE_KEYWORD)) {
+			mono_profiler_set_gc_handle_created_callback (_mono_profiler_provider, gc_handle_created_callback);
+			mono_profiler_set_gc_handle_deleted_callback (_mono_profiler_provider, gc_handle_deleted_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, GC_HANDLE_KEYWORD)) {
-				mono_profiler_set_gc_handle_created_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_gc_handle_deleted_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_gc_handle_created_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_handle_deleted_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, GC_FINALIZATION_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, GC_FINALIZATION_KEYWORD)) {
-				mono_profiler_set_gc_finalizing_callback (_mono_profiler_provider, gc_finalizing_callback);
-				mono_profiler_set_gc_finalized_callback (_mono_profiler_provider, gc_finalized_callback);
-				mono_profiler_set_gc_finalizing_object_callback (_mono_profiler_provider, gc_finalizing_object_callback);
-				mono_profiler_set_gc_finalized_object_callback (_mono_profiler_provider, gc_finalized_object_callback);
-			}
+		if (is_keword_enabled(live_keywords, GC_FINALIZATION_KEYWORD)) {
+			mono_profiler_set_gc_finalizing_callback (_mono_profiler_provider, gc_finalizing_callback);
+			mono_profiler_set_gc_finalized_callback (_mono_profiler_provider, gc_finalized_callback);
+			mono_profiler_set_gc_finalizing_object_callback (_mono_profiler_provider, gc_finalizing_object_callback);
+			mono_profiler_set_gc_finalized_object_callback (_mono_profiler_provider, gc_finalized_object_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, GC_FINALIZATION_KEYWORD)) {
-				mono_profiler_set_gc_finalizing_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_gc_finalized_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_gc_finalizing_object_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_gc_finalized_object_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_gc_finalizing_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalized_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalizing_object_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalized_object_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled(match_any_keywords, GC_ROOT_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
-				mono_profiler_set_gc_root_register_callback (_mono_profiler_provider, gc_root_register_callback);
-				mono_profiler_set_gc_root_unregister_callback (_mono_profiler_provider, gc_root_unregister_callback);
-			}
+		if (is_keword_enabled(live_keywords, GC_ROOT_KEYWORD)) {
+			mono_profiler_set_gc_root_register_callback (_mono_profiler_provider, gc_root_register_callback);
+			mono_profiler_set_gc_root_unregister_callback (_mono_profiler_provider, gc_root_unregister_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, GC_ROOT_KEYWORD)) {
-				mono_profiler_set_gc_root_register_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_gc_root_unregister_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_gc_root_register_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_root_unregister_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled (match_any_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-				mono_profiler_set_gc_finalized_callback (_mono_heap_dump_profiler_provider, gc_heap_dump_trigger_callback);
-			}
+		if (is_keword_enabled (live_keywords, GC_HEAP_COLLECT_KEYWORD)) {
+			mono_profiler_set_gc_finalized_callback (_mono_heap_dump_profiler_provider, gc_heap_dump_trigger_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-				mono_profiler_set_gc_finalized_callback (_mono_heap_dump_profiler_provider, NULL);
-			}
+			mono_profiler_set_gc_finalized_callback (_mono_heap_dump_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled (match_any_keywords, MONITOR_KEYWORD) || is_keword_enabled (match_any_keywords, CONTENTION_KEYWORD)) {
-			if (!(is_keword_enabled (enabled_keywords, MONITOR_KEYWORD) && is_keword_enabled (enabled_keywords, CONTENTION_KEYWORD))) {
-				mono_profiler_set_monitor_contention_callback (_mono_profiler_provider, monitor_contention_callback);
-			}
+		if (is_keword_enabled (live_keywords, MONITOR_KEYWORD) || is_keword_enabled (match_any_keywords, CONTENTION_KEYWORD)) {
+			mono_profiler_set_monitor_contention_callback (_mono_profiler_provider, monitor_contention_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, MONITOR_KEYWORD) || is_keword_enabled (enabled_keywords, CONTENTION_KEYWORD)) {
-				mono_profiler_set_monitor_contention_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_monitor_contention_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled (match_any_keywords, MONITOR_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, MONITOR_KEYWORD)) {
-				mono_profiler_set_monitor_failed_callback (_mono_profiler_provider, monitor_failed_callback);
-				mono_profiler_set_monitor_acquired_callback (_mono_profiler_provider, monitor_acquired_callback);
-			}
+		if (is_keword_enabled (live_keywords, MONITOR_KEYWORD)) {
+			mono_profiler_set_monitor_failed_callback (_mono_profiler_provider, monitor_failed_callback);
+			mono_profiler_set_monitor_acquired_callback (_mono_profiler_provider, monitor_acquired_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, MONITOR_KEYWORD)) {
-				mono_profiler_set_monitor_failed_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_monitor_acquired_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_monitor_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_monitor_acquired_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (is_keword_enabled (match_any_keywords, THREADING_KEYWORD)) {
-			if (!is_keword_enabled (enabled_keywords, THREADING_KEYWORD)) {
-				mono_profiler_set_thread_started_callback (_mono_profiler_provider, thread_started_callback);
-				mono_profiler_set_thread_stopping_callback (_mono_profiler_provider, thread_stopping_callback);
-				mono_profiler_set_thread_stopped_callback (_mono_profiler_provider, thread_stopped_callback);
-				mono_profiler_set_thread_exited_callback (_mono_profiler_provider, thread_exited_callback);
-				mono_profiler_set_thread_name_callback (_mono_profiler_provider, thread_name_callback);
-			}
+		if (is_keword_enabled (live_keywords, THREADING_KEYWORD)) {
+			mono_profiler_set_thread_started_callback (_mono_profiler_provider, thread_started_callback);
+			mono_profiler_set_thread_stopping_callback (_mono_profiler_provider, thread_stopping_callback);
+			mono_profiler_set_thread_stopped_callback (_mono_profiler_provider, thread_stopped_callback);
+			mono_profiler_set_thread_exited_callback (_mono_profiler_provider, thread_exited_callback);
+			mono_profiler_set_thread_name_callback (_mono_profiler_provider, thread_name_callback);
 		} else {
-			if (is_keword_enabled (enabled_keywords, THREADING_KEYWORD)) {
-				mono_profiler_set_thread_started_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_thread_stopping_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_thread_stopped_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_thread_exited_callback (_mono_profiler_provider, NULL);
-				mono_profiler_set_thread_name_callback (_mono_profiler_provider, NULL);
-			}
+			mono_profiler_set_thread_started_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_stopping_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_stopped_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_exited_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_name_callback (_mono_profiler_provider, NULL);
 		}
 
-		if (!_mono_profiler_provider_callspec.enabled) {
-			if (is_keword_enabled(match_any_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
-				if (!is_keword_enabled (enabled_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
-					mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
-				}
+		if (_mono_profiler_provider_callspec.enabled) {
+			if (is_keword_enabled(live_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
+				mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, method_instrumentation_filter_callback);
 			} else {
-				if (is_keword_enabled (enabled_keywords, METHOD_INSTRUMENTATION_KEYWORD)) {
-					mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
-				}
+				mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
 			}
 		}
 
-		if (match_any_keywords) {
-			bool request_heap_collect = false;
-			if (is_keword_enabled (match_any_keywords, GC_HEAP_COLLECT_KEYWORD)) {
-				if (ep_rt_mono_is_runtime_initialized () && !is_keword_enabled (enabled_keywords, GC_HEAP_COLLECT_KEYWORD))
-					request_heap_collect = true;
-			}
-
+		if (trigger_heap_dump) {
 			if (filter_data) {
 				if (provider_params_contains_heap_collect_ondemand (filter_data) && !provider_params_remove (filter_data)) {
 					provider_params_add (filter_data);
-					if (ep_rt_mono_is_runtime_initialized () && is_keword_enabled (match_any_keywords, GC_HEAP_COLLECT_KEYWORD))
-						request_heap_collect = true;
 				}
 			}
 
-			if (request_heap_collect) {
-				gc_heap_dump_request_params_push_value (filter_data);
-				gc_heap_dump_requests_inc ();
-				mono_gc_finalize_notify ();
-			}
+			gc_heap_dump_request_params_push_value (filter_data);
+			gc_heap_dump_requests_inc ();
+			mono_gc_finalize_notify ();
 		} else {
 			provider_params_free ();
 		}
 
 		RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT.Level = level;
-		RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT.EnabledKeywordsBitmask = match_any_keywords;
-		RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT.IsEnabled = (is_enabled == 1 ? true : false);
+		RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT.EnabledKeywordsBitmask = live_keywords;
+		RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT.IsEnabled = (live_keywords == 1 ? true : false);
 	EP_LOCK_EXIT (section1)
 
 ep_on_exit:
@@ -3008,9 +2975,19 @@ EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	EventFilterDescriptor *filter_data,
 	void *callback_data)
 {
-	ep_rt_spin_lock_requires_lock_not_held (&_gc_state_lock);
+	if (!_mono_profiler_provider_enabled) {
+		mono_trace (
+			G_LOG_LEVEL_WARNING,
+			MONO_TRACE_DIAGNOSTICS,
+			"Microsoft-DotNETRuntimeMonoProfiler disabled, "
+			"set MONO_DIAGNOSTICS=--diagnostic-mono-profiler=enable "
+			"environment variable to enable provider.");
+		return;
+	}
 
-	EP_SPIN_LOCK_ENTER (&_gc_state_lock, section1);
+	ep_rt_spin_lock_requires_lock_not_held (&_gc_lock);
+
+	EP_SPIN_LOCK_ENTER (&_gc_lock, section1);
 		eventpipe_provider_callback (
 			source_id,
 			is_enabled,
@@ -3019,10 +2996,10 @@ EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 			match_all_keywords,
 			filter_data,
 			callback_data);
-	EP_SPIN_LOCK_EXIT (&_gc_state_lock, section1);
+	EP_SPIN_LOCK_EXIT (&_gc_lock, section1);
 
 ep_on_exit:
-	ep_rt_spin_lock_requires_lock_not_held (&_gc_state_lock);
+	ep_rt_spin_lock_requires_lock_not_held (&_gc_lock);
 	return;
 
 ep_on_error:
@@ -3032,31 +3009,37 @@ ep_on_error:
 void
 ep_rt_mono_profiler_provider_component_init (void)
 {
-	_mono_profiler_provider = mono_profiler_create (NULL);
-	_mono_heap_dump_profiler_provider = mono_profiler_create (NULL);
+	if (_mono_profiler_provider_enabled) {
+		_mono_profiler_provider = mono_profiler_create (NULL);
+		_mono_heap_dump_profiler_provider = mono_profiler_create (NULL);
+	}
 }
 
 void
 ep_rt_mono_profiler_provider_init (void)
 {
-	EP_ASSERT (_mono_profiler_provider != NULL);
-	EP_ASSERT (_mono_heap_dump_profiler_provider != NULL);
+	if (_mono_profiler_provider_enabled) {
+		EP_ASSERT (_mono_profiler_provider != NULL);
+		EP_ASSERT (_mono_heap_dump_profiler_provider != NULL);
 
-	ep_rt_spin_lock_alloc (&_gc_state_lock);
+		ep_rt_spin_lock_alloc (&_gc_lock);
+	}
 }
 
 void
 ep_rt_mono_profiler_provider_fini (void)
 {
-	if (_mono_profiler_provider_callspec.enabled) {
-		mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
-		mono_callspec_cleanup (&_mono_profiler_provider_callspec);
+	if (_mono_profiler_provider_enabled) {
+		if (_mono_profiler_provider_callspec.enabled) {
+			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
+			mono_callspec_cleanup (&_mono_profiler_provider_callspec);
+		}
+
+		gc_heap_dump_request_params_free ();
+		provider_params_free ();
+
+		ep_rt_spin_lock_free (&_gc_lock);
 	}
-
-	gc_heap_dump_request_params_free ();
-	provider_params_free ();
-
-	ep_rt_spin_lock_free (&_gc_state_lock);
 }
 
 static
@@ -3067,13 +3050,22 @@ profiler_parse_options (const ep_char8_t *option)
 		if (!*option)
 			return false;
 
-		if (!strncmp (option, "alloc", 5)) {
+		if (!strncmp (option, "enable", 6)) {
+			_mono_profiler_provider_enabled = true;
+			option += 6;
+		} else if (!strncmp (option, "disable", 7)) {
+			_mono_profiler_provider_enabled = false;
+			option += 7;
+		} else if (!strncmp (option, "alloc", 5)) {
+			_mono_profiler_provider_enabled = true;
 			mono_profiler_enable_allocations ();
 			option += 5;
 		} else if (!strncmp (option, "exception", 9)) {
+			_mono_profiler_provider_enabled = true;
 			mono_profiler_enable_clauses ();
 			option += 9;
 		/*} else if (!strncmp (option, "sample", 6)) {
+		*	_mono_profiler_provider_enabled = true;
 			mono_profiler_enable_sampling (_mono_profiler_provider);
 			option += 6;*/
 		} else {
