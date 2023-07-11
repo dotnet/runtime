@@ -30,6 +30,7 @@ namespace Microsoft.Interop
             if (generator.Generator is Forwarder || info.ByValueContentsMarshalKind == ByValueContentsMarshalKind.Default)
             {
                 // Forwarder allows everything since it just forwards to a P/Invoke.
+                // The Default marshal kind is always valid.
                 return generator;
             }
 
