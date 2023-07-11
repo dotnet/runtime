@@ -942,28 +942,36 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool TryGetCustomAttributeName(CustomAttributeHandle customAttribute, MetadataReader metadataReader, out string name)
         {
             name = "";
-            EntityHandle ctorHandle = metadataReader.GetCustomAttribute(customAttribute).Constructor;
-            if (ctorHandle.Kind != HandleKind.MemberReference)
-                return false;
-            EntityHandle? container = ctorHandle.Kind switch
+            try
             {
-                HandleKind.MethodDefinition => metadataReader.GetMethodDefinition((MethodDefinitionHandle)ctorHandle).GetDeclaringType(),
-                HandleKind.MemberReference => metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent,
-                _ => null,
-            };
-            if (container == null)
-                return false;
-            StringHandle? attributeTypeNameHandle = container.Value.Kind switch
+                EntityHandle ctorHandle = metadataReader.GetCustomAttribute(customAttribute).Constructor;
+                if (ctorHandle.Kind != HandleKind.MemberReference)
+                    return false;
+                EntityHandle? container = ctorHandle.Kind switch
+                {
+                    HandleKind.MethodDefinition => metadataReader.GetMethodDefinition((MethodDefinitionHandle)ctorHandle).GetDeclaringType(),
+                    HandleKind.MemberReference => metadataReader.GetMemberReference((MemberReferenceHandle)ctorHandle).Parent,
+                    _ => null,
+                };
+                if (container == null)
+                    return false;
+                StringHandle? attributeTypeNameHandle = container.Value.Kind switch
+                {
+                    HandleKind.TypeDefinition => metadataReader.GetTypeDefinition((TypeDefinitionHandle)container.Value).Name,
+                    HandleKind.TypeReference => metadataReader.GetTypeReference((TypeReferenceHandle)container.Value).Name,
+                    HandleKind.TypeSpecification => null, // custom generic attributes, TypeSpecification does not keep the attribute name for them
+                    _ => null,
+                };
+                if (attributeTypeNameHandle == null)
+                    return false;
+                name = EnCGetString(attributeTypeNameHandle.Value);
+                return true;
+            }
+            catch (Exception e)
             {
-                HandleKind.TypeDefinition => metadataReader.GetTypeDefinition((TypeDefinitionHandle)container.Value).Name,
-                HandleKind.TypeReference => metadataReader.GetTypeReference((TypeReferenceHandle)container.Value).Name,
-                HandleKind.TypeSpecification => null, // custom generic attributes, TypeSpecification does not keep the attribute name for them
-                _ => null,
-            };
-            if (attributeTypeNameHandle == null)
-                return false;
-            name = EnCGetString(attributeTypeNameHandle.Value);
-            return true;
+                logger.LogError($"Not able to get CustomAttributeName {e}");
+            }
+            return false;
         }
 
         public async Task<int> GetDebugId(MonoSDBHelper sdbAgent, CancellationToken token)
