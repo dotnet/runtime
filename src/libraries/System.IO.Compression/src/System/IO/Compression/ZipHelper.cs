@@ -209,7 +209,7 @@ namespace System.IO.Compression
             {
                 return encoding.GetBytes(text);
             }
-            
+
             int textByteCount = encoding.GetByteCount(text);
             byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(textByteCount);
             encoding.GetBytes(text, 0, text.Length, sharedBuffer, 0);
