@@ -3433,7 +3433,7 @@ protected:
 
 #ifdef USE_REGIONS
     PER_HEAP
-    uint8_t** get_region_mark_list (uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
+    uint8_t** get_region_mark_list (BOOL& use_mark_list, uint8_t* start, uint8_t* end, uint8_t*** mark_list_end);
 #endif //USE_REGIONS
 
 #ifdef BACKGROUND_GC
