@@ -312,9 +312,13 @@ namespace Tracing.Tests.ProcessInfoValidation
                 }
                 Logger.logger.Log("Finished checking process modules.");
             }
-            else if (OperatingSystem.IsAndroid() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
             {
                 expectedPortableRidOs = "unix";
+            }
+            else if (OperatingSystem.IsAndroid())
+            {
+                expectedPortableRidOs = "linux-bionic";
             }
             
             Utils.Assert(!string.IsNullOrEmpty(expectedPortableRidOs), $"Unable to calculate expected portable RID OS.");
