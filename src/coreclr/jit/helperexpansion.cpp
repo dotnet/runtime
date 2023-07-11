@@ -452,7 +452,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     assert(opts.IsReadyToRun());
     BasicBlock* block = *pBlock;
     assert(call->IsHelperCall());
-    if (!call->IsExpTLSFieldAccess())
+    if (!(call->IsExpTLSFieldAccess() && call->IsExpTLSFieldAccessLazyCtor()))
     {
         return false;
     }
@@ -460,6 +460,8 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     JITDUMP("Expanding thread static local access for [%06d] in " FMT_BB ":\n", dspTreeID(call), block->bbNum);
     DISPTREE(call);
     JITDUMP("\n");
+    bool hasLazyStaticCtor = call->IsExpTLSFieldAccessLazyCtor();
+
     CORINFO_THREAD_STATIC_BLOCKS_INFO threadStaticBlocksInfo;
     memset(&threadStaticBlocksInfo, 0, sizeof(CORINFO_THREAD_STATIC_BLOCKS_INFO));
 
@@ -477,6 +479,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     JITDUMP("offsetOfGCDataPointer= %u\n", dspOffset(threadStaticBlocksInfo.offsetOfGCDataPointer));
 
     call->ClearExpTLSFieldAccess();
+    call->ClearExpTLSFieldAccessLazyCtor();
 
     // Split block right before the call tree
     BasicBlock* prevBb       = block;
@@ -487,6 +490,55 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
     *pBlock                  = block;
     var_types callType       = call->TypeGet();
     assert(prevBb != nullptr && block != nullptr);
+
+    if (hasLazyStaticCtor)
+    {
+        BasicBlock* lazyCtorBlock = nullptr;
+
+        CORINFO_CONST_LOOKUP classCtorRunHelper;
+        CORINFO_CONST_LOOKUP targetSymbol;
+        memset(&classCtorRunHelper, 0, sizeof(CORINFO_CONST_LOOKUP));
+        memset(&targetSymbol, 0, sizeof(CORINFO_CONST_LOOKUP));
+        int size =
+            info.compCompHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(&classCtorRunHelper, &targetSymbol);
+
+        // target symbol
+        GenTree* targetSymbolAddr = gtNewIconHandleNode(classCtorRunHelper.addr, GTF_ICON_OBJ_HDL);
+        targetSymbolAddr          = gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(size, TYP_UINT));
+        targetSymbolAddr          = gtNewIndir(TYP_I_IMPL, targetSymbolAddr);
+
+        GenTree* targetSymbolNullCond = gtNewOperNode(GT_NE, TYP_INT, targetSymbolAddr, gtNewIconNode(0, TYP_I_IMPL));
+        targetSymbolNullCond          = gtNewOperNode(GT_JTRUE, TYP_VOID, targetSymbolNullCond);
+
+
+        GenTreeCall* classCtorRunHelperCall =
+            gtNewIndCallNode(gtNewIconHandleNode((size_t)classCtorRunHelper.addr, GTF_ICON_FTN_ADDR), TYP_I_IMPL);
+
+        // arg0: unused
+        classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewIconNode(0)));
+
+        // arg1: -1 (index of inlined storage)
+        classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtNewIconNode(-1)));
+
+        // arg2: NonGCStatics targetSymbol
+        classCtorRunHelperCall->gtArgs.PushBack(this, NewCallArg::Primitive(gtCloneExpr(targetSymbolAddr)));
+
+        fgMorphArgs(classCtorRunHelperCall);
+
+        // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
+        //      targetSymbolAddr = [targetSymbol + size]
+        //      if (*targetSymbolAddr == 0)
+        //          goto fastPathBb;
+        //
+        // fallbackBb (BBJ_ALWAYS):                                         [weight: 0] ???? Check if this is true
+        //      tlsRoot = HelperCall(0, -1, targetSymbolAddr);
+        //      goto block;
+        //
+        // tlsAccess(BBJ_ALWAYS):                                          [weight: 1.0]
+        //      tlsRoot = fastPathValue;
+
+        prevBb = lazyCtorBlock;
+    }
 
     // Block ops inserted by the split need to be morphed here since we are after morph.
     // We cannot morph stmt yet as we may modify it further below, and the morphing

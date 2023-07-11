@@ -948,6 +948,14 @@ void WrapICorJitInfo::getThreadStaticBaseSlowInfo(
     API_LEAVE(getThreadStaticBaseSlowInfo);
 }
 
+void WrapICorJitInfo::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    API_ENTER(getEnsureClassCtorRunAndReturnThreadStaticBaseHelper);
+    wrapHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(addr);
+    API_LEAVE(getEnsureClassCtorRunAndReturnThreadStaticBaseHelper);
+}
+
 bool WrapICorJitInfo::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

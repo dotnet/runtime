@@ -777,6 +777,13 @@ void interceptor_ICJI::getThreadStaticBaseSlowInfo(
     original_ICorJitInfo->getThreadStaticBaseSlowInfo(addr);
 }
 
+void interceptor_ICJI::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
+          CORINFO_CONST_LOOKUP* addr)
+{
+    mcs->AddCall("getEnsureClassCtorRunAndReturnThreadStaticBaseHelper");
+    original_ICorJitInfo->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(addr);
+}
+
 bool interceptor_ICJI::isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd)
 {

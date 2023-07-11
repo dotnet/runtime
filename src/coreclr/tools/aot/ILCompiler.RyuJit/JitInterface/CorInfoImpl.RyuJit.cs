@@ -2100,6 +2100,7 @@ namespace Internal.JitInterface
                         // Find out what kind of base do we need to look up.
                         if (field.IsThreadStatic)
                         {
+                            Debug.Assert(false, "Another instance");
                             helperId = ReadyToRunHelperId.GetThreadStaticBase;
                         }
                         else if (field.HasGCStaticBase)
@@ -2146,7 +2147,24 @@ namespace Internal.JitInterface
                         if (MethodBeingCompiled.Context.Target.IsWindows && MethodBeingCompiled.Context.Target.Architecture == TargetArchitecture.X64)
                         {
                             //  TODO: Do it only for windows?
-                            fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                            ISortableSymbolNode index = _compilation.NodeFactory.TypeThreadStaticIndex((MetadataType)field.OwningType);
+                            if (index is TypeThreadStaticIndexNode ti && ti.Type == null)
+                            {
+                                if (!_compilation.HasLazyStaticConstructor(field.OwningType))
+                                {
+                                    Console.WriteLine("Done: {0}.{1}", field.OwningType.Name, field.Name);
+                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED;
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Lazy: {0}.{1}", field.OwningType.Name, field.Name);
+                                    fieldAccessor = CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY;
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Non-TypeThreadStaticIndexNode: {0}.{1}", field.OwningType.Name, field.Name);
+                            }
                         }
                         pResult->helper = CorInfoHelpFunc.CORINFO_HELP_READYTORUN_THREADSTATIC_BASE;
                         helperId = ReadyToRunHelperId.GetThreadStaticBase;
@@ -2426,6 +2444,19 @@ namespace Internal.JitInterface
             pInfo->tlsIndex = CreateConstLookupToSymbol(_compilation.NodeFactory.ExternSymbol("_tls_index"));
             pInfo->tlsRoot = CreateConstLookupToSymbol(_compilation.NodeFactory.TlsRoot);
             // Implemented for JIT only for now.
+        }
+
+        private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
+        {
+            MetadataType clsType = HandleToObject(cls) as MetadataType;
+            if (clsType == null)
+            {
+                return 0;
+            }
+
+            addr         = CreateConstLookupToSymbol(_compilation.NodeFactory.HelperEntrypoint(HelperEntrypoint.EnsureClassConstructorRunAndReturnThreadStaticBase));
+            targetSymbol = CreateConstLookupToSymbol(_compilation.NodeFactory.TypeNonGCStaticsSymbol(clsType));
+            return -NonGCStaticsNode.GetClassConstructorContextSize(_compilation.NodeFactory.Target);
         }
     }
 }

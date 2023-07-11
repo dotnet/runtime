@@ -1685,6 +1685,7 @@ enum CORINFO_FIELD_ACCESSOR
     CORINFO_FIELD_STATIC_ADDR_HELPER,       // static field accessed using address-of helper (argument is FieldDesc *)
     CORINFO_FIELD_STATIC_TLS,               // unmanaged TLS access
     CORINFO_FIELD_STATIC_TLS_MANAGED,       // managed TLS access
+    CORINFO_FIELD_STATIC_TLS_MANAGED_LAZY,  // managed TLS access lazy
     CORINFO_FIELD_STATIC_READYTORUN_HELPER, // static field access using a runtime lookup helper
     CORINFO_FIELD_STATIC_RELOCATABLE,       // static field access using relocation (used in AOT)
     CORINFO_FIELD_INTRINSIC_ZERO,           // intrinsic zero (IntPtr.Zero, UIntPtr.Zero)
@@ -2791,8 +2792,10 @@ public:
             bool                                isGCType
             ) = 0;
 
+    //TODO: Rename the method names to get*Helper
     virtual void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr) = 0;
     virtual void getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr) = 0;
+    virtual int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol) = 0;
 
     // Returns true iff "fldHnd" represents a static field.
     virtual bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd) = 0;

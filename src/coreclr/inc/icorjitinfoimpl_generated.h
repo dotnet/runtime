@@ -402,6 +402,9 @@ void getTlsRootInfo(
 void getThreadStaticBaseSlowInfo(
           CORINFO_CONST_LOOKUP* addr) override;
 
+void getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
+          CORINFO_CONST_LOOKUP* addr) override;
+
 bool isFieldStatic(
           CORINFO_FIELD_HANDLE fldHnd) override;
 

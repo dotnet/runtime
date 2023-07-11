@@ -257,6 +257,7 @@ FUNCTIONS
     void getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
     void getTlsRootInfo(CORINFO_CONST_LOOKUP* addr)
     void getThreadStaticBaseSlowInfo(CORINFO_CONST_LOOKUP* addr)
+    int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol)
     bool isFieldStatic(CORINFO_FIELD_HANDLE fldHnd)
     int getArrayOrStringLength(CORINFO_OBJECT_HANDLE objHnd)
     void getBoundaries(CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries)

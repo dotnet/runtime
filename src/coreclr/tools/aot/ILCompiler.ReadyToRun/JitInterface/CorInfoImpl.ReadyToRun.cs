@@ -3246,6 +3246,12 @@ namespace Internal.JitInterface
         {
             // Implemented for JIT and NativeAOT only for now.
         }
+
+        private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
+        {
+            // Implemented for JIT and NativeAOT only for now.
+            return 0;
+        }
 #pragma warning restore CA1822 // Mark members as static
     }
 }

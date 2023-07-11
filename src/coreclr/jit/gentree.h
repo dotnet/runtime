@@ -4060,6 +4060,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
     GTF_CALL_M_LDVIRTFTN_INTERFACE     = 0x20000000, // ldvirtftn on an interface type
     GTF_CALL_M_EXP_TLS_ACCESS          = 0x40000000, // this call is a helper for access TLS marked field
+    GTF_CALL_M_EXP_TLS_ACCESS_LAZY     = 0x80000000, // this call is a helper for access TLS marked field and has lazy ctor
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -5408,6 +5409,21 @@ struct GenTreeCall final : public GenTree
     bool IsExpTLSFieldAccess() const
     {
         return (gtCallMoreFlags & GTF_CALL_M_EXP_TLS_ACCESS) != 0;
+    }
+
+    void SetExpTLSFieldAccessLazyCtor()
+    {
+        gtCallMoreFlags |= GTF_CALL_M_EXP_TLS_ACCESS_LAZY;
+    }
+
+    void ClearExpTLSFieldAccessLazyCtor()
+    {
+        gtCallMoreFlags &= ~GTF_CALL_M_EXP_TLS_ACCESS_LAZY;
+    }
+
+    bool IsExpTLSFieldAccessLazyCtor() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_EXP_TLS_ACCESS_LAZY) != 0;
     }
 
     void SetExpandedEarly()
