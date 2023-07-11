@@ -2458,6 +2458,8 @@ public:
         StubTailCallStoreArgs,
         StubTailCallCallTarget,
 
+        StubVirtualStaticMethodDispatch,
+
         StubLast
     };
 

@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 
 //  .NET IL Disassembler.  Version 8.0.0-dev
 
@@ -27,14 +30,14 @@
   .ver 0:0:0:0
 }
 .module Reabstraction.dll
-// MVID: {1cb5ff91-f6d7-418c-a4d9-ada8b1e5f155}
+// MVID: {4ee6a8fb-8613-4283-b627-03940d079e9b}
 .custom instance void [System.Runtime]System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(int32) = ( 01 00 0B 00 00 00 00 00 ) 
 .imagebase 0x00400000
 .file alignment 0x00000200
 .stackreserve 0x00100000
 .subsystem 0x0003       // WINDOWS_CUI
 .corflags 0x00000001    //  ILONLY
-// Image base: 0x00000209B5A30000
+// Image base: 0x0000027C06280000
 
 
 // =============== CLASS MEMBERS DECLARATION ===================
@@ -46,6 +49,15 @@
   {
     .method public hidebysig static virtual 
             void  Frob() cil managed
+    {
+      // Code size       2 (0x2)
+      .maxstack  8
+      IL_0000:  ldnull
+      IL_0001:  throw
+    } // end of method IFoo::Frob
+
+    .method public hidebysig static virtual 
+            void  Frob<Z>() cil managed
     {
       // Code size       2 (0x2)
       .maxstack  8
@@ -68,6 +80,16 @@
       IL_0001:  throw
     } // end of method IBar::VirtualStaticMethodReabstraction.IFoo.Frob
 
+    .method private hidebysig static void 
+            VirtualStaticMethodReabstraction.IFoo.Frob<Z>() cil managed
+    {
+      .override VirtualStaticMethodReabstraction/IFoo::Frob
+      // Code size       2 (0x2)
+      .maxstack  8
+      IL_0000:  ldnull
+      IL_0001:  throw
+    } // end of method IBar::VirtualStaticMethodReabstraction.IFoo.Frob
+
   } // end of class IBar
 
   .class interface abstract auto ansi nested private IBaz
@@ -75,6 +97,12 @@
   {
     .method private hidebysig static abstract virtual final 
             void  VirtualStaticMethodReabstraction.IFoo.Frob() cil managed
+    {
+      .override VirtualStaticMethodReabstraction/IFoo::Frob
+    } // end of method IBaz::VirtualStaticMethodReabstraction.IFoo.Frob
+
+    .method private hidebysig static abstract virtual final 
+            void  VirtualStaticMethodReabstraction.IFoo.Frob<Z>() cil managed
     {
       .override VirtualStaticMethodReabstraction/IFoo::Frob
     } // end of method IBaz::VirtualStaticMethodReabstraction.IFoo.Frob
@@ -115,6 +143,10 @@
     .field public static initonly class VirtualStaticMethodReabstraction/'<>c' '<>9'
     .field public static class [System.Runtime]System.Action '<>9__0_0'
     .field public static class [System.Runtime]System.Action '<>9__0_1'
+    .field public static class [System.Runtime]System.Action '<>9__0_2'
+    .field public static class [System.Runtime]System.Action '<>9__0_3'
+    .field public static class [System.Runtime]System.Action '<>9__0_4'
+    .field public static class [System.Runtime]System.Action '<>9__0_5'
     .method private hidebysig specialname rtspecialname static 
             void  .cctor() cil managed
     {
@@ -158,13 +190,57 @@
       IL_0007:  ret
     } // end of method '<>c'::'<Main>b__0_1'
 
+    .method assembly hidebysig instance void 
+            '<Main>b__0_2'() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  nop
+      IL_0001:  call       void VirtualStaticMethodReabstraction::Call<valuetype VirtualStaticMethodReabstraction/BarStruct,class VirtualStaticMethodReabstraction/BarClass>()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::'<Main>b__0_2'
+
+    .method assembly hidebysig instance void 
+            '<Main>b__0_3'() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  nop
+      IL_0001:  call       void VirtualStaticMethodReabstraction::Call<valuetype VirtualStaticMethodReabstraction/BarStruct,valuetype VirtualStaticMethodReabstraction/BarStruct>()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::'<Main>b__0_3'
+
+    .method assembly hidebysig instance void 
+            '<Main>b__0_4'() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  nop
+      IL_0001:  call       void VirtualStaticMethodReabstraction::Call<class VirtualStaticMethodReabstraction/BarClass,class VirtualStaticMethodReabstraction/BarClass>()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::'<Main>b__0_4'
+
+    .method assembly hidebysig instance void 
+            '<Main>b__0_5'() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  nop
+      IL_0001:  call       void VirtualStaticMethodReabstraction::Call<class VirtualStaticMethodReabstraction/BarClass,valuetype VirtualStaticMethodReabstraction/BarStruct>()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::'<Main>b__0_5'
+
   } // end of class '<>c'
 
   .method private hidebysig static int32 
           Main() cil managed
   {
     .entrypoint
-    // Code size       82 (0x52)
+    // Code size       230 (0xe6)
     .maxstack  2
     .locals init (int32 V_0)
     IL_0000:  nop
@@ -194,12 +270,64 @@
     IL_0040:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_1'
     IL_0045:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
     IL_004a:  pop
-    IL_004b:  ldc.i4.s   100
-    IL_004d:  stloc.0
-    IL_004e:  br.s       IL_0050
+    IL_004b:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_2'
+    IL_0050:  dup
+    IL_0051:  brtrue.s   IL_006a
 
-    IL_0050:  ldloc.0
-    IL_0051:  ret
+    IL_0053:  pop
+    IL_0054:  ldsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+    IL_0059:  ldftn      instance void VirtualStaticMethodReabstraction/'<>c'::'<Main>b__0_2'()
+    IL_005f:  newobj     instance void [System.Runtime]System.Action::.ctor(object,
+                                                                            native int)
+    IL_0064:  dup
+    IL_0065:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_2'
+    IL_006a:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_006f:  pop
+    IL_0070:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_3'
+    IL_0075:  dup
+    IL_0076:  brtrue.s   IL_008f
+
+    IL_0078:  pop
+    IL_0079:  ldsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+    IL_007e:  ldftn      instance void VirtualStaticMethodReabstraction/'<>c'::'<Main>b__0_3'()
+    IL_0084:  newobj     instance void [System.Runtime]System.Action::.ctor(object,
+                                                                            native int)
+    IL_0089:  dup
+    IL_008a:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_3'
+    IL_008f:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0094:  pop
+    IL_0095:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_4'
+    IL_009a:  dup
+    IL_009b:  brtrue.s   IL_00b4
+
+    IL_009d:  pop
+    IL_009e:  ldsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+    IL_00a3:  ldftn      instance void VirtualStaticMethodReabstraction/'<>c'::'<Main>b__0_4'()
+    IL_00a9:  newobj     instance void [System.Runtime]System.Action::.ctor(object,
+                                                                            native int)
+    IL_00ae:  dup
+    IL_00af:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_4'
+    IL_00b4:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_00b9:  pop
+    IL_00ba:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_5'
+    IL_00bf:  dup
+    IL_00c0:  brtrue.s   IL_00d9
+
+    IL_00c2:  pop
+    IL_00c3:  ldsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+    IL_00c8:  ldftn      instance void VirtualStaticMethodReabstraction/'<>c'::'<Main>b__0_5'()
+    IL_00ce:  newobj     instance void [System.Runtime]System.Action::.ctor(object,
+                                                                            native int)
+    IL_00d3:  dup
+    IL_00d4:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_5'
+    IL_00d9:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_00de:  pop
+    IL_00df:  ldc.i4.s   100
+    IL_00e1:  stloc.0
+    IL_00e2:  br.s       IL_00e4
+
+    IL_00e4:  ldloc.0
+    IL_00e5:  ret
   } // end of method VirtualStaticMethodReabstraction::Main
 
   .method private hidebysig static void  Call<(VirtualStaticMethodReabstraction/IFoo) T>() cil managed
@@ -208,6 +336,16 @@
     .maxstack  8
     IL_0000:  constrained. !!T
     IL_0006:  call       void VirtualStaticMethodReabstraction/IFoo::Frob()
+    IL_000b:  nop
+    IL_000c:  ret
+  } // end of method VirtualStaticMethodReabstraction::Call
+
+  .method private hidebysig static void  Call<(VirtualStaticMethodReabstraction/IFoo) T,U>() cil managed
+  {
+    // Code size       13 (0xd)
+    .maxstack  8
+    IL_0000:  constrained. !!T
+    IL_0006:  call       void VirtualStaticMethodReabstraction/IFoo::Frob<!!1>()
     IL_000b:  nop
     IL_000c:  ret
   } // end of method VirtualStaticMethodReabstraction::Call
