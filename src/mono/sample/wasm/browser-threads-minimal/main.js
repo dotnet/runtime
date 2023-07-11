@@ -76,7 +76,7 @@ try {
     console.log("smoke: HttpClientThread(blurst.txt) done " + t4);
 
     console.log("smoke: running WsClientMain");
-    let w0 = await exports.Sample.Test.WsClientMain("wss://socketsbay.com/wss/v2/1/demo/");
+    let w0 = await exports.Sample.Test.WsClientMain("wss://corefx-net-http11.azurewebsites.net/WebSocket/EchoWebSocket.ashx");
     console.log("smoke: WsClientMain done " + w0);
 
     /* ActiveIssue https://github.com/dotnet/runtime/issues/88057
@@ -110,6 +110,7 @@ try {
     console.log("smoke: running StartAllocatorFromWorker");
     exports.Sample.Test.StartAllocatorFromWorker();
 
+    /* ActiveIssue https://github.com/dotnet/runtime/issues/88663
     await delay(5000);
 
     console.log("smoke: running GCCollect");
@@ -119,6 +120,8 @@ try {
 
     console.log("smoke: running GCCollect");
     exports.Sample.Test.GCCollect();
+    console.log("smoke: running GCCollect done");
+    */
 
     console.log("smoke: running StopTimerFromWorker");
     exports.Sample.Test.StopTimerFromWorker();
