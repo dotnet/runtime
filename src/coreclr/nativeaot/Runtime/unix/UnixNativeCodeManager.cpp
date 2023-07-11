@@ -28,6 +28,7 @@
 #define UBF_FUNC_HAS_EHINFO             0x04
 #define UBF_FUNC_REVERSE_PINVOKE        0x08
 #define UBF_FUNC_HAS_ASSOCIATED_DATA    0x10
+#define UBF_FUNC_HAS_PROLOG_LENGTH      0x20
 
 struct UnixNativeMethodInfo
 {
@@ -39,6 +40,8 @@ struct UnixNativeMethodInfo
     unw_word_t start_ip;
     unw_word_t unwind_info;
     uint32_t format;
+
+    uint8_t prolog_length;
 
     bool executionAborted;
 };
@@ -67,7 +70,9 @@ bool UnixNativeCodeManager::VirtualUnwind(MethodInfo* pMethodInfo, REGDISPLAY* p
 {
     UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
 
-    return UnwindHelpers::StepFrame(pRegisterSet, pNativeMethodInfo->start_ip, pNativeMethodInfo->format, pNativeMethodInfo->unwind_info);
+    return UnwindHelpers::StepFrame(
+        pRegisterSet, pNativeMethodInfo->start_ip, pNativeMethodInfo->format, pNativeMethodInfo->unwind_info,
+        pNativeMethodInfo->prolog_length);
 }
 
 bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
@@ -123,6 +128,15 @@ bool UnixNativeCodeManager::FindMethodInfo(PTR_VOID        ControlPC,
         pMethodInfo->pMethodStartAddress = dac_cast<PTR_VOID>(procInfo.start_ip);
     }
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+    {
+        pMethodInfo->prolog_length = *p++;
+    }
+    else
+    {
+        pMethodInfo->prolog_length = 0;
+    }
+
     pMethodInfo->executionAborted = false;
 
     return true;
@@ -166,6 +180,9 @@ uint32_t UnixNativeCodeManager::GetCodeOffset(MethodInfo* pMethodInfo, PTR_VOID 
     PTR_UInt8 p = pNativeMethodInfo->pMainLSDA;
 
     uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+        p++;
 
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
@@ -258,13 +275,16 @@ uintptr_t UnixNativeCodeManager::GetConservativeUpperBoundForOutgoingArgs(Method
 
     uint8_t unwindBlockFlags = *p++;
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
-
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
         // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+            p++;
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+            p += sizeof(int32_t);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
@@ -320,13 +340,16 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
     uint8_t unwindBlockFlags = *p++;
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
-
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
     {
         // Reverse PInvoke transition should be on the main function body only
         assert(pNativeMethodInfo->pMainLSDA == pNativeMethodInfo->pLSDA);
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+            p++;
+
+        if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+            p += sizeof(int32_t);
 
         if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
             p += sizeof(int32_t);
@@ -682,9 +705,6 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 
     uint8_t unwindBlockFlags = *p++;
 
-    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
-        p += sizeof(int32_t);
-
     // Check whether this is a funclet
     if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
         return false;
@@ -693,6 +713,12 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     // with the GC on the way back to native code.
     if ((unwindBlockFlags & UBF_FUNC_REVERSE_PINVOKE) != 0)
         return false;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+        p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
+        p += sizeof(int32_t);
 
     if ((unwindBlockFlags & UBF_FUNC_HAS_EHINFO) != 0)
         p += sizeof(int32_t);
@@ -810,6 +836,9 @@ bool UnixNativeCodeManager::EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMet
 
     uint8_t unwindBlockFlags = *p++;
 
+    if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+        p++;
+
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) != 0)
         p += sizeof(int32_t);
 
@@ -919,6 +948,13 @@ PTR_VOID UnixNativeCodeManager::GetAssociatedData(PTR_VOID ControlPC)
     PTR_UInt8 p = methodInfo.pLSDA;
 
     uint8_t unwindBlockFlags = *p++;
+
+    if ((unwindBlockFlags & UBF_FUNC_KIND_MASK) != UBF_FUNC_KIND_ROOT)
+        p += sizeof(uint32_t);
+
+    if ((unwindBlockFlags & UBF_FUNC_HAS_PROLOG_LENGTH) != 0)
+        p++;
+
     if ((unwindBlockFlags & UBF_FUNC_HAS_ASSOCIATED_DATA) == 0)
         return NULL;
 

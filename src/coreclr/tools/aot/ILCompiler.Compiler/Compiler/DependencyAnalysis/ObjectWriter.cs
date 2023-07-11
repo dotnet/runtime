@@ -643,6 +643,8 @@ namespace ILCompiler.DependencyAnalysis
                 int end = frameInfo.EndOffset;
                 int len = frameInfo.BlobData.Length;
                 byte[] blob = frameInfo.BlobData;
+                bool emitDwarf = true;
+                byte dwarfPrologLength = 0;
 
                 ObjectNodeSection lsdaSection = LsdaSection;
                 if (ShouldShareSymbol(node))
@@ -655,9 +657,24 @@ namespace ILCompiler.DependencyAnalysis
                 byte[] blobSymbolName = _sb.ToUtf8String().UnderlyingArray;
                 EmitSymbolDef(blobSymbolName);
 
+                if (_targetPlatform.IsOSXLike &&
+                    TryGetCompactUnwindEncoding(blob, out uint compactEncoding))
+                {
+                    _offsetToCfiCompactEncoding[start] = compactEncoding;
+                    emitDwarf = false;
+
+                    // Calculate the length of the prolog covered by DWARF codes
+                    for (int j = 0; j < len; j += CfiCodeSize)
+                    {
+                        // The first byte of CFI_CODE is code offset.
+                        dwarfPrologLength = Math.Max(blob[j], dwarfPrologLength);
+                    }
+                }
+
                 FrameInfoFlags flags = frameInfo.Flags;
                 flags |= ehInfo != null ? FrameInfoFlags.HasEHInfo : 0;
                 flags |= associatedDataNode != null ? FrameInfoFlags.HasAssociatedData : 0;
+                flags |= !emitDwarf ? FrameInfoFlags.HasPrologLength : 0;
 
                 EmitIntValue((byte)flags, 1);
 
@@ -667,6 +684,11 @@ namespace ILCompiler.DependencyAnalysis
 
                     // emit relative offset from the main function
                     EmitIntValue((ulong)(start - frameInfos[0].StartOffset), 4);
+                }
+
+                if (!emitDwarf)
+                {
+                    EmitIntValue(dwarfPrologLength, 1);
                 }
 
                 if (associatedDataNode != null)
@@ -697,12 +719,7 @@ namespace ILCompiler.DependencyAnalysis
                 _byteInterruptionOffsets[end] = true;
                 _offsetToCfiLsdaBlobName.Add(start, blobSymbolName);
 
-                if (_targetPlatform.IsOSXLike &&
-                    TryGetCompactUnwindEncoding(blob, out uint compactEncoding))
-                {
-                    _offsetToCfiCompactEncoding[start] = compactEncoding;
-                }
-                else
+                if (emitDwarf)
                 {
                     for (int j = 0; j < len; j += CfiCodeSize)
                     {

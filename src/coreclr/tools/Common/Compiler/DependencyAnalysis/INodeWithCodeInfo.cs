@@ -14,6 +14,8 @@ namespace ILCompiler.DependencyAnalysis
         HasEHInfo           = 0x04,
         ReversePInvoke      = 0x08,
         HasAssociatedData   = 0x10,
+
+        HasPrologLength     = 0x20,
     }
 
     public struct FrameInfo
