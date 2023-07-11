@@ -417,6 +417,7 @@ namespace Microsoft.Interop
                         comInterfaceAndMethods.DeclaredMethods
                             .Select(m => m.UnmanagedToManagedStub)
                             .OfType<GeneratedStubCodeContext>()
+                            .Where(context => context.Diagnostics.Any(diag => diag.Descriptor.DefaultSeverity == DiagnosticSeverity.Error))
                             .Select(context => context.Stub.Node)));
         }
 
@@ -577,7 +578,11 @@ namespace Microsoft.Interop
                                         })))));
             }
 
-            var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(interfaceMethodStubs, vtableLocalName);
+            var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(
+                interfaceMethods.Methods
+                    .Where(context => context.UnmanagedToManagedStub.Diagnostics.Any(diag => diag.Descriptor.DefaultSeverity == DiagnosticSeverity.Error))
+                    .Select(context => context.GenerationContext),
+                vtableLocalName);
 
             return ImplementationInterfaceTemplate
                 .AddMembers(
