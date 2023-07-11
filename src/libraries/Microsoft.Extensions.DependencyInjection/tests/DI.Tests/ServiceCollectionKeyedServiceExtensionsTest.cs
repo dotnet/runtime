@@ -431,16 +431,6 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Equal(new[] { descriptor }, collection);
         }
 
-        [Fact]
-        public void NullServiceKey_ThrowsErrorWithFactory()
-        {
-            Assert.Throws<ArgumentNullException>(() =>
-                new ServiceDescriptor(
-                    typeof(IFakeService),
-                    null,
-                    (sp, key) => new FakeService(), ServiceLifetime.Transient));
-        }
-
         public static TheoryData NullServiceKeyData
         {
             get
@@ -453,7 +443,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 return new TheoryData<ServiceDescriptor>
                 {
                     { ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedTransient<IFakeService>(key, (sp, key) => new FakeService()) },
                     { ServiceDescriptor.KeyedScoped<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedScoped<IFakeService>(key, (sp, key) => new FakeService()) },
                     { ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>(key) },
                     { ServiceDescriptor.KeyedSingleton<IFakeService>(key, new FakeService()) },
                 };
@@ -465,6 +457,9 @@ namespace Microsoft.Extensions.DependencyInjection
         public void NullServiceKey_IsKeyedServiceFalse(ServiceDescriptor serviceDescriptor)
         {
             Assert.False(serviceDescriptor.IsKeyedService);
+            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.KeyedImplementationInstance);
+            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.KeyedImplementationType);
+            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.KeyedImplementationFactory);
         }
 
         public static TheoryData NotNullServiceKeyData
@@ -479,7 +474,9 @@ namespace Microsoft.Extensions.DependencyInjection
                 return new TheoryData<ServiceDescriptor>
                 {
                     { ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedTransient<IFakeService>(key, (sp, key) => new FakeService()) },
                     { ServiceDescriptor.KeyedScoped<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedScoped<IFakeService>(key, (sp, key) => new FakeService()) },
                     { ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>(key) },
                     { ServiceDescriptor.KeyedSingleton<IFakeService>(key, new FakeService()) },
                 };
@@ -491,6 +488,9 @@ namespace Microsoft.Extensions.DependencyInjection
         public void NotNullServiceKey_IsKeyedServiceTrue(ServiceDescriptor serviceDescriptor)
         {
             Assert.True(serviceDescriptor.IsKeyedService);
+            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.ImplementationInstance);
+            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.ImplementationType);
+            Assert.Throws<InvalidOperationException>(() => serviceDescriptor.ImplementationFactory);
         }
     }
 }

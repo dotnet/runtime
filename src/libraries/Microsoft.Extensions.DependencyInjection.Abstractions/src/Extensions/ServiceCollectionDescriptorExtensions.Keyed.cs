@@ -63,8 +63,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedTransient(
             this IServiceCollection collection,
             Type service,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory)
         {
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(service);
@@ -118,8 +118,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="implementationFactory">The factory that creates the service.</param>
         public static void TryAddKeyedTransient<TService>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TService> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
             services.TryAdd(ServiceDescriptor.KeyedTransient(serviceKey, implementationFactory));
@@ -179,8 +179,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedScoped(
             this IServiceCollection collection,
             Type service,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory)
         {
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(service);
@@ -234,8 +234,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="serviceKey">The service key.</param>
         public static void TryAddKeyedScoped<TService>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TService> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
             services.TryAdd(ServiceDescriptor.KeyedScoped(serviceKey, implementationFactory));
@@ -295,8 +295,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         public static void TryAddKeyedSingleton(
             this IServiceCollection collection,
             Type service,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory)
         {
             ThrowHelper.ThrowIfNull(collection);
             ThrowHelper.ThrowIfNull(service);
@@ -369,8 +369,8 @@ namespace Microsoft.Extensions.DependencyInjection.Extensions
         /// <param name="implementationFactory">The factory that creates the service.</param>
         public static void TryAddKeyedSingleton<TService>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TService> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
             services.TryAdd(ServiceDescriptor.KeyedSingleton(serviceKey, implementationFactory));

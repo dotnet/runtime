@@ -49,8 +49,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddKeyedTransient(
             this IServiceCollection services,
             Type serviceType,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory)
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(serviceType);
@@ -133,8 +133,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient<TService>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TService> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(services);
@@ -158,8 +158,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="ServiceLifetime.Transient"/>
         public static IServiceCollection AddKeyedTransient<TService, TImplementation>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TImplementation> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TImplementation> implementationFactory)
             where TService : class
             where TImplementation : class, TService
         {
@@ -207,8 +207,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddKeyedScoped(
             this IServiceCollection services,
             Type serviceType,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory)
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(serviceType);
@@ -291,8 +291,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped<TService>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TService> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(services);
@@ -316,8 +316,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="ServiceLifetime.Scoped"/>
         public static IServiceCollection AddKeyedScoped<TService, TImplementation>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TImplementation> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TImplementation> implementationFactory)
             where TService : class
             where TImplementation : class, TService
         {
@@ -366,8 +366,8 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddKeyedSingleton(
             this IServiceCollection services,
             Type serviceType,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory)
         {
             ThrowHelper.ThrowIfNull(services);
             ThrowHelper.ThrowIfNull(serviceType);
@@ -450,8 +450,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<TService>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TService> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TService> implementationFactory)
             where TService : class
         {
             ThrowHelper.ThrowIfNull(services);
@@ -475,8 +475,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <seealso cref="ServiceLifetime.Singleton"/>
         public static IServiceCollection AddKeyedSingleton<TService, TImplementation>(
             this IServiceCollection services,
-            object serviceKey,
-            Func<IServiceProvider, object, TImplementation> implementationFactory)
+            object? serviceKey,
+            Func<IServiceProvider, object?, TImplementation> implementationFactory)
             where TService : class
             where TImplementation : class, TService
         {
@@ -549,8 +549,8 @@ namespace Microsoft.Extensions.DependencyInjection
         private static IServiceCollection AddKeyed(
             IServiceCollection collection,
             Type serviceType,
-            object serviceKey,
-            Func<IServiceProvider, object, object> implementationFactory,
+            object? serviceKey,
+            Func<IServiceProvider, object?, object> implementationFactory,
             ServiceLifetime lifetime)
         {
             var descriptor = new ServiceDescriptor(serviceType, serviceKey, implementationFactory, lifetime);

@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public ServiceDescriptor(System.Type serviceType, System.Func<System.IServiceProvider, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, object instance) { }
-        public ServiceDescriptor(System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
+        public ServiceDescriptor(System.Type serviceType, object? serviceKey, System.Func<System.IServiceProvider, object?, object> factory, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, object? serviceKey, object instance) { }
         public ServiceDescriptor(System.Type serviceType, object? serviceKey, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
         public ServiceDescriptor(System.Type serviceType, [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)] System.Type implementationType, Microsoft.Extensions.DependencyInjection.ServiceLifetime lifetime) { }
@@ -154,7 +154,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? ImplementationType { get { throw null; } }
         public bool IsKeyedService { get { throw null; } }
-        public System.Func<System.IServiceProvider, object, object>? KeyedImplementationFactory { get { throw null; } }
+        public System.Func<System.IServiceProvider, object?, object>? KeyedImplementationFactory { get { throw null; } }
         public object? KeyedImplementationInstance { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicConstructors)]
         public System.Type? KeyedImplementationType { get { throw null; } }
