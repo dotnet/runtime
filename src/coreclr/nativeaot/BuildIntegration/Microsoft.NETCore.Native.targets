@@ -255,6 +255,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcMaxVectorTBitWidth) != ''" Include="--max-vectort-bitwidth:$(IlcMaxVectorTBitWidth)" />
       <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
+      <IlcArg Condition="'$(_targetOS)' == 'win' and $(IlcMultiModule) != 'true' and '$(IlcGenerateWin32Resources)' != 'false'" Include="--win32resourcemodule:%(ManagedBinary.Filename)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
       <IlcArg Condition="$(TrimmerSingleWarn) == 'true'" Include="--singlewarn" />
@@ -311,26 +312,10 @@ The .NET Foundation licenses this file to you under the MIT license.
       <Copy SourceFiles="@(NativeObjects)" DestinationFolder="$(NativeOutputPath)" />
   </Target>
 
-  <PropertyGroup>
-    <_Win32ResFile>$(NativeIntermediateOutputPath)$(TargetName).res</_Win32ResFile>
-  </PropertyGroup>
-
-  <UsingTask TaskName="DumpNativeResources" AssemblyFile="$(IlcBuildTasksPath)" />
-  <Target Name="GenerateResFile"
-      Inputs="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
-      Outputs="$(_Win32ResFile)"
-      Condition="'$(_targetOS)' == 'win'">
-
-    <DumpNativeResources
-        MainAssembly="$(IntermediateOutputPath)$(TargetName)$(TargetExt)"
-        ResourceFile="$(_Win32ResFile)" />
-
-  </Target>
-
   <Target Name="LinkNative"
       Inputs="$(NativeObject);@(NativeLibrary)"
       Outputs="$(NativeBinary)"
-      DependsOnTargets="$(LinkNativeDependsOn);GenerateResFile">
+      DependsOnTargets="$(LinkNativeDependsOn)">
 
     <ItemGroup>
       <CustomLinkerArg Include="&quot;$(NativeObject)&quot;" />
@@ -341,7 +326,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(IlcExportUnmanagedEntrypoints)' == 'true' and '$(NativeLib)' == ''" />
-      <CustomLinkerArg Condition="Exists('$(_Win32ResFile)')" Include="&quot;$(_Win32ResFile)&quot;" />
       <CustomLinkerArg Include="@(LinkerArg)" />
     </ItemGroup>
     <ItemGroup Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true'">

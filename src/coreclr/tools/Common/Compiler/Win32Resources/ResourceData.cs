@@ -83,6 +83,11 @@ namespace ILCompiler.Win32Resources
 
         public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder)
         {
+            WriteResources(nodeAssociatedWithDataBuilder, ref dataBuilder, ref dataBuilder);
+        }
+
+        public void WriteResources(ISymbolNode nodeAssociatedWithDataBuilder, ref ObjectDataBuilder dataBuilder, ref ObjectDataBuilder contentBuilder)
+        {
             Debug.Assert(dataBuilder.CountBytes == 0);
 
             SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable = new SortedDictionary<string, List<ObjectDataBuilder.Reservation>>();
@@ -145,9 +150,9 @@ namespace ILCompiler.Win32Resources
             // Emit byte arrays of resource data, capture the offsets
             foreach (Tuple<ResLanguage, ObjectDataBuilder.Reservation> language in resLanguages)
             {
-                dataBuilder.PadAlignment(4); // Data in resource files is 4 byte aligned
-                dataEntryTable.Add(language.Item1, dataBuilder.CountBytes);
-                dataBuilder.EmitBytes(language.Item1.DataEntry);
+                contentBuilder.PadAlignment(4); // Data in resource files is 4 byte aligned
+                dataEntryTable.Add(language.Item1, contentBuilder.CountBytes);
+                contentBuilder.EmitBytes(language.Item1.DataEntry);
             }
 
             dataBuilder.PadAlignment(4); // resource data entries are 4 byte aligned
