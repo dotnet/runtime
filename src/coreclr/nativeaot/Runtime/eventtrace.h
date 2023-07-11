@@ -27,8 +27,10 @@
 #ifndef _VMEVENTTRACE_H_
 #define _VMEVENTTRACE_H_
 
+#include <CommonTypes.h>
 #include "eventtracebase.h"
-#include "gcinterface.h"
+#include <gcenv.base.h>
+#include <gcinterface.h>
 
 #ifdef FEATURE_EVENT_TRACE
 struct ProfilingScanContext : ScanContext

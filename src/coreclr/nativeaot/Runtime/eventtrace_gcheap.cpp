@@ -20,6 +20,7 @@
 #include "threadstore.h"
 #include "threadstore.inl"
 
+#include "eventtrace_etw.h"
 #include "eventtracepriv.h"
 
 /****************************************************************************/

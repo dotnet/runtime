@@ -19,6 +19,8 @@
 
 #if defined(FEATURE_ETW) && !defined(DACCESS_COMPILE)
 
+#include <wchar.h>
+
 #ifndef RH_ETW_INLINE
 #define RH_ETW_INLINE __declspec(noinline) __inline
 #endif

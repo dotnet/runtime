@@ -11,7 +11,6 @@
 #include "SpinLock.h"
 
 void EventPipeAdapter_Initialize() { EventPipeAdapter::Initialize(); }
-bool EventPipeAdapter_Enabled() { return EventPipeAdapter::Enabled(); }
 
 bool DiagnosticServerAdapter_Initialize() { return DiagnosticServerAdapter::Initialize(); }
 void DiagnosticServerAdapter_PauseForDiagnosticsMonitor() { DiagnosticServerAdapter::PauseForDiagnosticsMonitor();}
