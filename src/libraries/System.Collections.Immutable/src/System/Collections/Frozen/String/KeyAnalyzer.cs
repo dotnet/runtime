@@ -124,7 +124,7 @@ namespace System.Collections.Frozen
                 // actually perform the comparison as case-sensitive even if case-insensitive
                 // was requested, as there's nothing that would compare equally to the substring
                 // other than the substring itself.
-                bool canSwitchIgnoreCaseToCaseSensitive = ignoreCase;
+                bool canSwitchIgnoreCaseToCaseSensitive = true;
 
                 foreach (string s in uniqueStrings)
                 {
