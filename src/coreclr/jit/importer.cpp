@@ -2040,18 +2040,18 @@ GenTree* Compiler::impCloneExpr(GenTree*    tree,
 }
 
 //------------------------------------------------------------------------
-// impImportHandleFromTree: Imports a tree that's only used for obtaining a type handle
-// to its value
+// impImportHandleFromTree: Imports the tree on the top of the stack
+//    and extracts the handle from it
 //
 // Arguments:
-//    tree        - imported tree
 //    allowShared - whether shared types are considered as valid handles
 //
 // Return Value:
 //    The extracted handle, or NO_CLASS_HANDLE if no handle could be extracted
 //
-CORINFO_CLASS_HANDLE Compiler::impImportHandleFromTree(GenTree* tree, bool allowShared)
+CORINFO_CLASS_HANDLE Compiler::impImportHandleFromStack(bool allowShared)
 {
+    GenTree*             tree    = impStackTop().val;
     bool                 isExact = false;
     bool                 notNull = false;
     CORINFO_CLASS_HANDLE typeHnd = gtGetClassHandle(tree, &isExact, &notNull);
@@ -2064,6 +2064,7 @@ CORINFO_CLASS_HANDLE Compiler::impImportHandleFromTree(GenTree* tree, bool allow
         }
 
         JITDUMP("Retuning a constant handle from imported tree\n");
+        impPopStack();
         if (!notNull && fgAddrCouldBeNull(tree))
         {
             impAppendTree(gtNewNullCheck(tree, compCurBB), CHECK_SPILL_ALL, impCurStmtDI);

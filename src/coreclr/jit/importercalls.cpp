@@ -3564,11 +3564,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 // Load handle directly for known types
                 if (retNode == nullptr)
                 {
-                    CORINFO_CLASS_HANDLE typeHnd = impImportHandleFromTree(op1, false);
+                    CORINFO_CLASS_HANDLE typeHnd = impImportHandleFromStack(false);
                     if (typeHnd != NO_CLASS_HANDLE)
                     {
                         JITDUMP("Optimizing object.GetType() with known type to typeof\n");
-                        impPopStack();
                         GenTree* handle = gtNewIconEmbClsHndNode(typeHnd);
                         retNode         = gtNewHelperCallNode(CORINFO_HELP_TYPEHANDLE_TO_RUNTIMETYPE, TYP_REF, handle);
                     }

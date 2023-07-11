@@ -4069,7 +4069,7 @@ public:
                           unsigned             curLevel,
                           Statement** pAfterStmt DEBUGARG(const char* reason));
 
-    CORINFO_CLASS_HANDLE impImportHandleFromTree(GenTree* tree, bool allowShared);
+    CORINFO_CLASS_HANDLE impImportHandleFromStack(bool allowShared);
 
     GenTree* impStoreStruct(GenTree*         store,
                              unsigned         curLevel,
