@@ -43,7 +43,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
                     new Dictionary<string, ExpectedEventCount>(){{ "Microsoft-Windows-DotNETRuntime", -1}}, 
                     _eventGeneratingActionForFinalizers, 
                     new List<EventPipeProvider>(){new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Informational, 0b1)}, 
-                    1024, _DoesTraceContainFinazlierEvents, enableRundownProvider:false);
+                    1024, _DoesTraceContainFinalizerEvents, enableRundownProvider:false);
                 }
             }
 
@@ -88,8 +88,6 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             {
                 if (i % 10 == 0)
                     Logger.logger.Log($"Called GC.WaitForPendingFinalizers() {i} times...");
-                RuntimeEventValidation providerValidation = new RuntimeEventValidation();
-                providerValidation = null;
                 GC.WaitForPendingFinalizers();
             }
             GC.Collect();
@@ -154,7 +152,7 @@ namespace Tracing.Tests.SimpleRuntimeEventValidation
             };
         };
 
-        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainFinazlierEvents = (source) =>
+        private static Func<EventPipeEventSource, Func<int>> _DoesTraceContainFinalizerEvents = (source) =>
         {
             int GCFinalizersEndEvents = 0;
             source.Clr.GCFinalizersStop += (eventData) => GCFinalizersEndEvents += 1;
