@@ -348,11 +348,13 @@ public class GenerateWasmBootJson : Task
 
     private static ResourceHashesByNameDictionary EnsureLibraryInitializers(ResourcesData resourceData, string key)
     {
+        var libraryInitializers = (Dictionary<string, object>)resourceData.libraryInitializers;
+
         ResourceHashesByNameDictionary resourceList;
-        if (resourceData.libraryInitializers.TryGetValue(key, out var rl))
+        if (libraryInitializers.TryGetValue(key, out var rl))
             resourceList = (ResourceHashesByNameDictionary)rl;
         else
-            resourceData.libraryInitializers[key] = resourceList = new();
+            libraryInitializers[key] = resourceList = new();
 
         return resourceList;
     }
