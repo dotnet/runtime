@@ -207,6 +207,7 @@ namespace System
             return CreateInstance(elementType, intLengths);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int length)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -215,12 +216,13 @@ namespace System
             if (!arrayType.IsArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
 
-            RuntimeType t = (arrayType.GetElementType()!.UnderlyingSystemType as RuntimeType)!;
+            RuntimeType t = (arrayType.GetElementType() as RuntimeType)!;
             Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
 
             return InternalCreate(t, 1, &length, null);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, params int[] lengths)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -231,7 +233,7 @@ namespace System
             if (!arrayType.IsArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
 
-            RuntimeType t = (arrayType.GetElementType()!.UnderlyingSystemType as RuntimeType)!;
+            RuntimeType t = (arrayType.GetElementType() as RuntimeType)!;
             Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
@@ -246,6 +248,7 @@ namespace System
                 return InternalCreate(t, lengths.Length, pLengths, null);
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public static unsafe Array CreateInstanceFromArrayType(Type arrayType, int[] lengths, int[] lowerBounds)
         {
             ArgumentNullException.ThrowIfNull(arrayType);
@@ -259,7 +262,7 @@ namespace System
             if (!arrayType.IsArray)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
 
-            RuntimeType t = (arrayType.GetElementType()!.UnderlyingSystemType as RuntimeType)!;
+            RuntimeType t = (arrayType.GetElementType() as RuntimeType)!;
             Debug.Assert(t is not null, $"CreateInstanceFromArrayType can not get underlying system type for \"{arrayType}\"");
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
