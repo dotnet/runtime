@@ -196,132 +196,130 @@ namespace System.Dynamic.Utils
 
                 if (thunkMethod == null)
                 {
-                    IDisposable? forceAllowDynamicCodeScope = null;
-                    if (!RuntimeFeature.IsDynamicCodeSupported)
+                    static IDisposable? CreateForceAllowDynamicCodeScope()
                     {
-                        // Force 'new DynamicMethod' to not throw even though RuntimeFeature.IsDynamicCodeSupported is false.
-                        // If we are running on a runtime that supports dynamic code, even though the feature switch is off,
-                        // for example when running on CoreClr with PublishAot=true, this will allow IL to be emitted.
-                        // If we are running on a runtime that really doesn't support dynamic code, like NativeAOT,
-                        // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
-                        forceAllowDynamicCodeScope = ForceAllowDynamicCodeLightup.ForceAllowDynamicCodeDelegate?.Invoke();
+                        if (!RuntimeFeature.IsDynamicCodeSupported)
+                        {
+                            // Force 'new DynamicMethod' to not throw even though RuntimeFeature.IsDynamicCodeSupported is false.
+                            // If we are running on a runtime that supports dynamic code, even though the feature switch is off,
+                            // for example when running on CoreClr with PublishAot=true, this will allow IL to be emitted.
+                            // If we are running on a runtime that really doesn't support dynamic code, like NativeAOT,
+                            // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
+                            return ForceAllowDynamicCodeLightup.ForceAllowDynamicCodeDelegate?.Invoke();
+                        }
+
+                        return null;
                     }
 
-                    try
+                    using IDisposable? forceAllowDynamicCodeScope = CreateForceAllowDynamicCodeScope();
+
+                    int thunkIndex = Interlocked.Increment(ref s_ThunksCreated);
+                    Type[] paramTypes = new Type[parameters.Length + 1];
+                    paramTypes[0] = typeof(Func<object[], object>);
+
+                    StringBuilder thunkName = new StringBuilder();
+                    thunkName.Append("Thunk");
+                    thunkName.Append(thunkIndex);
+                    if (hasReturnValue)
                     {
+                        thunkName.Append("ret_");
+                        thunkName.Append(returnType.Name);
+                    }
 
-                        int thunkIndex = Interlocked.Increment(ref s_ThunksCreated);
-                        Type[] paramTypes = new Type[parameters.Length + 1];
-                        paramTypes[0] = typeof(Func<object[], object>);
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        thunkName.Append('_');
+                        thunkName.Append(parameters[i].ParameterType.Name);
+                        paramTypes[i + 1] = parameters[i].ParameterType;
+                    }
 
-                        StringBuilder thunkName = new StringBuilder();
-                        thunkName.Append("Thunk");
-                        thunkName.Append(thunkIndex);
-                        if (hasReturnValue)
-                        {
-                            thunkName.Append("ret_");
-                            thunkName.Append(returnType.Name);
-                        }
+                    DynamicMethod dynamicThunkMethod = new DynamicMethod(thunkName.ToString(), returnType, paramTypes);
+                    thunkMethod = dynamicThunkMethod;
+                    ILGenerator ilgen = dynamicThunkMethod.GetILGenerator();
 
-                        for (int i = 0; i < parameters.Length; i++)
-                        {
-                            thunkName.Append('_');
-                            thunkName.Append(parameters[i].ParameterType.Name);
-                            paramTypes[i + 1] = parameters[i].ParameterType;
-                        }
+                    LocalBuilder argArray = ilgen.DeclareLocal(typeof(object[]));
+                    LocalBuilder retValue = ilgen.DeclareLocal(typeof(object));
 
-                        DynamicMethod dynamicThunkMethod = new DynamicMethod(thunkName.ToString(), returnType, paramTypes);
-                        thunkMethod = dynamicThunkMethod;
-                        ILGenerator ilgen = dynamicThunkMethod.GetILGenerator();
+                    // create the argument array
+                    if (parameters.Length == 0)
+                    {
+                        ilgen.Emit(OpCodes.Call, s_ArrayEmpty);
+                    }
+                    else
+                    {
+                        ilgen.Emit(OpCodes.Ldc_I4, parameters.Length);
+                        ilgen.Emit(OpCodes.Newarr, typeof(object));
+                    }
+                    ilgen.Emit(OpCodes.Stloc, argArray);
 
-                        LocalBuilder argArray = ilgen.DeclareLocal(typeof(object[]));
-                        LocalBuilder retValue = ilgen.DeclareLocal(typeof(object));
+                    // populate object array
+                    bool hasRefArgs = false;
+                    for (int i = 0; i < parameters.Length; i++)
+                    {
+                        bool paramIsByReference = parameters[i].ParameterType.IsByRef;
+                        Type paramType = parameters[i].ParameterType;
+                        if (paramIsByReference)
+                            paramType = paramType.GetElementType()!;
 
-                        // create the argument array
-                        if (parameters.Length == 0)
-                        {
-                            ilgen.Emit(OpCodes.Call, s_ArrayEmpty);
-                        }
-                        else
-                        {
-                            ilgen.Emit(OpCodes.Ldc_I4, parameters.Length);
-                            ilgen.Emit(OpCodes.Newarr, typeof(object));
-                        }
-                        ilgen.Emit(OpCodes.Stloc, argArray);
+                        hasRefArgs = hasRefArgs || paramIsByReference;
 
-                        // populate object array
-                        bool hasRefArgs = false;
-                        for (int i = 0; i < parameters.Length; i++)
-                        {
-                            bool paramIsByReference = parameters[i].ParameterType.IsByRef;
-                            Type paramType = parameters[i].ParameterType;
-                            if (paramIsByReference)
-                                paramType = paramType.GetElementType()!;
-
-                            hasRefArgs = hasRefArgs || paramIsByReference;
-
-                            ilgen.Emit(OpCodes.Ldloc, argArray);
-                            ilgen.Emit(OpCodes.Ldc_I4, i);
-                            ilgen.Emit(OpCodes.Ldarg, i + 1);
-
-                            if (paramIsByReference)
-                            {
-                                ilgen.Emit(OpCodes.Ldobj, paramType);
-                            }
-                            Type boxType = ConvertToBoxableType(paramType);
-                            ilgen.Emit(OpCodes.Box, boxType);
-                            ilgen.Emit(OpCodes.Stelem_Ref);
-                        }
-
-                        if (hasRefArgs)
-                        {
-                            ilgen.BeginExceptionBlock();
-                        }
-
-                        // load delegate
-                        ilgen.Emit(OpCodes.Ldarg_0);
-
-                        // load array
                         ilgen.Emit(OpCodes.Ldloc, argArray);
+                        ilgen.Emit(OpCodes.Ldc_I4, i);
+                        ilgen.Emit(OpCodes.Ldarg, i + 1);
 
-                        // invoke Invoke
-                        ilgen.Emit(OpCodes.Callvirt, s_FuncInvoke);
-                        ilgen.Emit(OpCodes.Stloc, retValue);
-
-                        if (hasRefArgs)
+                        if (paramIsByReference)
                         {
-                            // copy back ref/out args
-                            ilgen.BeginFinallyBlock();
-                            for (int i = 0; i < parameters.Length; i++)
-                            {
-                                if (parameters[i].ParameterType.IsByRef)
-                                {
-                                    Type byrefToType = parameters[i].ParameterType.GetElementType()!;
-
-                                    // update parameter
-                                    ilgen.Emit(OpCodes.Ldarg, i + 1);
-                                    ilgen.Emit(OpCodes.Ldloc, argArray);
-                                    ilgen.Emit(OpCodes.Ldc_I4, i);
-                                    ilgen.Emit(OpCodes.Ldelem_Ref);
-                                    ilgen.Emit(OpCodes.Unbox_Any, byrefToType);
-                                    ilgen.Emit(OpCodes.Stobj, byrefToType);
-                                }
-                            }
-                            ilgen.EndExceptionBlock();
+                            ilgen.Emit(OpCodes.Ldobj, paramType);
                         }
-
-                        if (hasReturnValue)
-                        {
-                            ilgen.Emit(OpCodes.Ldloc, retValue);
-                            ilgen.Emit(OpCodes.Unbox_Any, ConvertToBoxableType(returnType));
-                        }
-
-                        ilgen.Emit(OpCodes.Ret);
+                        Type boxType = ConvertToBoxableType(paramType);
+                        ilgen.Emit(OpCodes.Box, boxType);
+                        ilgen.Emit(OpCodes.Stelem_Ref);
                     }
-                    finally
+
+                    if (hasRefArgs)
                     {
-                        forceAllowDynamicCodeScope?.Dispose();
+                        ilgen.BeginExceptionBlock();
                     }
+
+                    // load delegate
+                    ilgen.Emit(OpCodes.Ldarg_0);
+
+                    // load array
+                    ilgen.Emit(OpCodes.Ldloc, argArray);
+
+                    // invoke Invoke
+                    ilgen.Emit(OpCodes.Callvirt, s_FuncInvoke);
+                    ilgen.Emit(OpCodes.Stloc, retValue);
+
+                    if (hasRefArgs)
+                    {
+                        // copy back ref/out args
+                        ilgen.BeginFinallyBlock();
+                        for (int i = 0; i < parameters.Length; i++)
+                        {
+                            if (parameters[i].ParameterType.IsByRef)
+                            {
+                                Type byrefToType = parameters[i].ParameterType.GetElementType()!;
+
+                                // update parameter
+                                ilgen.Emit(OpCodes.Ldarg, i + 1);
+                                ilgen.Emit(OpCodes.Ldloc, argArray);
+                                ilgen.Emit(OpCodes.Ldc_I4, i);
+                                ilgen.Emit(OpCodes.Ldelem_Ref);
+                                ilgen.Emit(OpCodes.Unbox_Any, byrefToType);
+                                ilgen.Emit(OpCodes.Stobj, byrefToType);
+                            }
+                        }
+                        ilgen.EndExceptionBlock();
+                    }
+
+                    if (hasReturnValue)
+                    {
+                        ilgen.Emit(OpCodes.Ldloc, retValue);
+                        ilgen.Emit(OpCodes.Unbox_Any, ConvertToBoxableType(returnType));
+                    }
+
+                    ilgen.Emit(OpCodes.Ret);
                 }
 
                 s_thunks[delegateType] = thunkMethod;
