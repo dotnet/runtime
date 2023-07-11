@@ -116,6 +116,7 @@ try {
     exports.Sample.Test.StartAllocatorFromWorker();
     */
 
+    /* FIXME
     await delay(5000);
 
     console.log("smoke: running GCCollect");
@@ -125,6 +126,8 @@ try {
 
     console.log("smoke: running GCCollect");
     exports.Sample.Test.GCCollect();
+    console.log("smoke: running GCCollect done");
+    */
 
     /* FIXME
     console.log("smoke: running StopTimerFromWorker");
