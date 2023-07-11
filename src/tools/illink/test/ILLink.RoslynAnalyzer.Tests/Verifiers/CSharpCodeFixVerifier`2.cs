@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ILLink.Shared;
@@ -35,6 +37,15 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 					return solution;
 				});
+			}
+
+			protected override ImmutableArray<(Project project, Diagnostic diagnostic)> SortDistinctDiagnostics (IEnumerable<(Project project, Diagnostic diagnostic)> diagnostics)
+			{
+				// Only include non-suppressed diagnostics in the result. Our tests suppress diagnostics
+				// with 'UnconditionalSuppressMessageAttribute', and expect them not to be reported.
+				return base.SortDistinctDiagnostics (diagnostics)
+					.Where (diagnostic => !diagnostic.diagnostic.IsSuppressed)
+					.ToImmutableArray ();
 			}
 		}
 

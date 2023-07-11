@@ -7,7 +7,12 @@ let node_url: any | undefined = undefined;
 
 export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
 
-    loaderHelpers.scriptUrl = normalizeFileUrl(/* webpackIgnore: true */import.meta.url);
+    const scriptUrlQuery =/* webpackIgnore: true */import.meta.url;
+    const queryIndex = scriptUrlQuery.indexOf("?");
+    if (queryIndex > 0) {
+        loaderHelpers.modulesUniqueQuery = scriptUrlQuery.substring(queryIndex);
+    }
+    loaderHelpers.scriptUrl = normalizeFileUrl(scriptUrlQuery);
     loaderHelpers.scriptDirectory = normalizeDirectoryUrl(loaderHelpers.scriptUrl);
     loaderHelpers.locateFile = (path) => {
         if (isPathAbsolute(path)) return path;

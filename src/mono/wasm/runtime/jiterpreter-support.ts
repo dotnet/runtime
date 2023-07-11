@@ -1120,10 +1120,17 @@ type CfgBranch = {
     from: MintOpcodePtr;
     target: MintOpcodePtr;
     isBackward: boolean; // FIXME: This should be inferred automatically
-    isConditional: boolean;
+    branchType: CfgBranchType;
 }
 
 type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+
+export const enum CfgBranchType {
+    Unconditional,
+    Conditional,
+    SafepointUnconditional,
+    SafepointConditional,
+}
 
 class Cfg {
     builder: WasmBuilder;
@@ -1204,7 +1211,7 @@ class Cfg {
         this.overheadBytes += 1; // each branch block just costs us an end
     }
 
-    branch(target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+    branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
         this.observedBranchTargets.add(target);
         this.appendBlob();
         this.segments.push({
@@ -1212,7 +1219,7 @@ class Cfg {
             from: this.ip,
             target,
             isBackward,
-            isConditional,
+            branchType: branchType,
         });
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
@@ -1224,6 +1231,14 @@ class Cfg {
             // i32.const <n>
             // set_local <disp>
             this.overheadBytes += 11;
+        }
+
+        // Account for the size of the safepoint
+        if (
+            (branchType === CfgBranchType.SafepointConditional) ||
+            (branchType === CfgBranchType.SafepointUnconditional)
+        ) {
+            this.overheadBytes += 17;
         }
     }
 
@@ -1387,10 +1402,32 @@ class Cfg {
                     }
 
                     if ((indexInStack >= 0) || successfulBackBranch) {
-                        // Conditional branches are nested in an extra block, so the depth is +1
-                        const offset = segment.isConditional ? 1 : 0;
-                        this.builder.appendU8(WasmOpcode.br);
+                        let offset = 0;
+                        switch (segment.branchType) {
+                            case CfgBranchType.SafepointUnconditional:
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.SafepointConditional:
+                                // Wrap the safepoint + branch in an if
+                                this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                offset = 1;
+                                break;
+                            case CfgBranchType.Unconditional:
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.Conditional:
+                                this.builder.appendU8(WasmOpcode.br_if);
+                                break;
+                            default:
+                                throw new Error("Unimplemented branch type");
+                        }
+
                         this.builder.appendULeb(offset + indexInStack);
+                        if (offset) // close the if
+                            this.builder.endBlock();
                         if (this.trace > 1)
                             mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
@@ -1401,7 +1438,14 @@ class Cfg {
                             else if (this.trace > 1)
                                 mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
                         }
+
+                        const isConditional = (segment.branchType === CfgBranchType.Conditional) ||
+                            (segment.branchType === CfgBranchType.SafepointConditional);
+                        if (isConditional)
+                            this.builder.block(WasmValtype.void, WasmOpcode.if_);
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
+                        if (isConditional)
+                            this.builder.endBlock();
                     }
                     break;
                 }
@@ -1474,6 +1518,20 @@ export const _now = (globalThis.performance && globalThis.performance.now)
     : Date.now;
 
 let scratchBuffer: NativePointer = <any>0;
+
+export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+    // Check whether a safepoint is required
+    builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(0, 2);
+    // If the polling flag is set we call mono_jiterp_do_safepoint()
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+    builder.local("frame");
+    // Not ip_const, because we can't pass relative IP to do_safepoint
+    builder.i32_const(ip);
+    builder.callImport("safepoint");
+    builder.endBlock();
+}
 
 export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);

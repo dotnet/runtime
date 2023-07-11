@@ -17,6 +17,8 @@ namespace System.Text.Json.Serialization.Tests
         /// </summary>
         public abstract JsonSerializerOptions DefaultOptions { get; }
 
+        public bool IsSourceGeneratedSerializer => DefaultOptions.TypeInfoResolver is JsonSerializerContext;
+
         /// <summary>
         /// Do the deserialize methods allow a value of 'null'.
         /// For example, deserializing JSON to a String supports null by returning a 'null' String reference from a literal value of "null".
