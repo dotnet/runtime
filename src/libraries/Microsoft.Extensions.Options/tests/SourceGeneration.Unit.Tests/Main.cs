@@ -1267,7 +1267,7 @@ namespace __OptionValidationStaticInstances
     }
 
     [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
-    public void InaccessibleValidationAttributesTest()
+    public async Task InaccessibleValidationAttributesTest()
     {
         string source = """
             using System;
@@ -1382,6 +1382,58 @@ namespace __OptionValidationStaticInstances
         }, assemblyPath).Dispose();
 
         File.Delete(assemblyPath); // cleanup
+
+        // Test private validation attribute in the same assembly
+
+        string source3 = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            #nullable enable
+
+            namespace ValidationTest;
+
+            public class MyOptions
+            {
+                [Timeout] // private attribute
+                public int Prop1 { get; set; }
+
+                [Required]
+                public string Prop2 { get; set; }
+
+                [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+                private sealed class TimeoutAttribute : ValidationAttribute
+                {
+                    protected override ValidationResult IsValid(object? value, ValidationContext? validationContext)
+                    {
+                        return ValidationResult.Success!;
+                    }
+                }
+            }
+
+            [OptionsValidator]
+            public sealed partial class MyOptionsValidator : IValidateOptions<MyOptions>
+            {
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                new Generator(),
+                new[]
+                {
+                    Assembly.GetAssembly(typeof(RequiredAttribute)),
+                    Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
+                    Assembly.GetAssembly(typeof(IValidateOptions<object>)),
+                },
+                new List<string> { source3 })
+            .ConfigureAwait(false);
+
+        _ = Assert.Single(generatedSources);
+        Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.InaccessibleValidationAttribute.Id, diagnostics[0].Id);
+        string generatedSource = generatedSources[0].SourceText.ToString();
+        Assert.DoesNotContain("Timeout", generatedSource);
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
