@@ -104,17 +104,17 @@ namespace Microsoft.Interop
             }
         }
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
         {
             if (marshalKind is ByValueContentsMarshalKind.In)
             {
                 diagnostic = new GeneratorDiagnostic.NotSupported(info, context)
                 {
-                    NotSupportedDetails = SR.InAttributeNotSupportedWithoutOutBlittableArray
+                    NotSupportedDetails = SR.InAttributeOnlyNotSupportedOnPinnedParameters
                 };
                 return ByValueMarshalKindSupport.NotSupported;
             }
-            return GeneratorDiagnostic.ByValueMarshalKindSupportManager.PinnedByReferenceParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
+            return ByValueMarshalKindSupportDescriptor.PinnedByReferenceParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
         }
     }
 }

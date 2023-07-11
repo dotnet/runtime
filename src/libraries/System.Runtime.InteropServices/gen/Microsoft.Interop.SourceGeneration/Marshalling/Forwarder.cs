@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
@@ -34,7 +33,7 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => false;
 
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, [NotNullWhen(false)] out GeneratorDiagnostic? diagnostic)
-            => GeneratorDiagnostic.ByValueMarshalKindSupportManager.ReferenceTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => ByValueMarshalKindSupportDescriptor.ReferenceTypeParameterDefault.GetSupport(marshalKind, info, context, out diagnostic);
     }
 }

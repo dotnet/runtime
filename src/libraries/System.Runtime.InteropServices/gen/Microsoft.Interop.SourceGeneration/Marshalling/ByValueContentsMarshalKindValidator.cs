@@ -34,14 +34,6 @@ namespace Microsoft.Interop
                 return generator;
             }
 
-            if (info.IsByRef)
-            {
-                return ResolvedGenerator.ResolvedWithDiagnostics(s_forwarder, generator.Diagnostics.Add(new GeneratorDiagnostic.NotSupported(info, context)
-                {
-                    NotSupportedDetails = SR.InOutAttributeByRefNotSupported
-                }));
-            }
-
             var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic? diagnostic);
             return support switch
             {

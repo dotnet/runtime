@@ -293,7 +293,6 @@ namespace ComInterfaceGenerator.Tests
                 _data = array;
                 _widths = widths;
             }
-            public void asds([MarshalUsing(ConstantElementCount = 10)] ref int[][][][] array) { }
         }
 
         [CustomMarshaller(typeof(int), MarshalMode.ElementIn, typeof(ThrowOn4thElementMarshalled))]

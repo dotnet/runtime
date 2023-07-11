@@ -195,8 +195,8 @@
   <data name="InAttributeNotSupportedWithoutOutBlittableArray" xml:space="preserve">
     <value>The '[In]' attribute is not supported unless the '[Out]' attribute is also used. Blittable arrays cannot be marshalled as '[In]' only.</value>
   </data>
-  <data name="OutAttributeNotSupportedOnByValueParameters" xml:space="preserve">
-    <value>The `[Out]` attribute is not supported on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</value>
+  <data name="OutAttributeNotSupportedOnByValueValueTypeParameters" xml:space="preserve">
+    <value>The `[Out]` attribute is not allowed on value-type parameters passed by-value. Consider using the 'out' or 'ref' keyword to make the parameter passed by reference.</value>
   </data>
   <data name="AddGeneratedComClassAddUnsafe" xml:space="preserve">
     <value>Add 'GeneratedComClassAttribute' to enable passing objects of this type to COM and allow unsafe code</value>
@@ -876,5 +876,11 @@
   </data>
   <data name="InRefKindIsNotSupportedOnPinnedParameters" xml:space="preserve">
     <value>The 'in' keyword is not supported on parameters that are marshalled by pinning. Use 'ref' or 'out' instead.</value>
+  </data>
+  <data name="TypeDoesNotSupportByValueMarshalingAttributes" xml:space="preserve">
+    <value>'[In]' and '[Out]' attributes are not supported on this type.</value>
+  </data>
+  <data name="OutAttributeNotSupportedOnByValueReferenceTypeParameters" xml:space="preserve">
+    <value>The `[Out]` attribute is not supported on reference-type parameters. Consider using the 'out' or 'ref' keyword.</value>
   </data>
 </root>

@@ -390,14 +390,14 @@ namespace LibraryImportGenerator.UnitTests
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueValueTypeParameters, "p")
             } };
 
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueValueTypeParameters, "p")
             } };
 
             // LCIDConversion
@@ -836,16 +836,7 @@ namespace LibraryImportGenerator.UnitTests
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, "p")
-            } };
-        }
-        public static IEnumerable<object[]> MyCodeSnippetsToCompile()
-        {
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("In"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, "p")
+                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, "p")
             } };
         }
 
