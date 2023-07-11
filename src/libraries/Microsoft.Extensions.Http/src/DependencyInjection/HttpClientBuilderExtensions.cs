@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.Versioning;
 using System.Threading;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
@@ -236,6 +237,40 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder;
         }
+
+#if NET5_0_OR_GREATER
+        [UnsupportedOSPlatform("browser")]
+        public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<SocketsHttpHandler, IServiceProvider>? configureHandler = null)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.HttpMessageHandlerBuilderActions.Add(b =>
+                {
+                    if (b.PrimaryHandler is not SocketsHttpHandler handler)
+                    {
+                        handler = new SocketsHttpHandler();
+                    }
+                    configureHandler?.Invoke(handler, b.Services);
+                    b.PrimaryHandler = handler;
+                });
+            });
+
+            return builder;
+        }
+
+        [UnsupportedOSPlatform("browser")]
+        public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<ISocketsHttpHandlerBuilder> configureBuilder)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            UseSocketsHttpHandler(builder);
+            configureBuilder(new DefaultSocketsHttpHandlerBuilder(builder.Services, builder.Name));
+
+            return builder;
+        }
+#endif
 
         /// <summary>
         /// Configures a binding between the <typeparamref name="TClient" /> type and the named <see cref="HttpClient"/>
