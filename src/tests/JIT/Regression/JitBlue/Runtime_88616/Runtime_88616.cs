@@ -32,8 +32,6 @@ public class Runtime_88616
         return Check(foo);
     }
 
-    private static int s_numCalls;
-
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Mutate(S s)
     {
