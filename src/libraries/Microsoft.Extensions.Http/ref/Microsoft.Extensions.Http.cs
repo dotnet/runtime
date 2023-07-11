@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, System.IServiceProvider, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder AddHttpClient<TClient, TImplementation>(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, string name, System.Func<System.Net.Http.HttpClient, TImplementation> factory) where TClient : class where TImplementation : class, TClient { throw null; }
     }
-
     public partial interface IHttpClientBuilder
     {
         string Name { get; }
@@ -103,14 +102,12 @@ namespace Microsoft.Extensions.Http.Logging
         [System.Diagnostics.DebuggerStepThroughAttribute]
         protected override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
-
     public partial interface IHttpClientAsyncLogger : Microsoft.Extensions.Http.Logging.IHttpClientLogger
     {
         System.Threading.Tasks.ValueTask<object?> LogRequestStartAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.ValueTask LogRequestStopAsync(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage response, System.TimeSpan elapsed, System.Threading.CancellationToken cancellationToken = default);
         System.Threading.Tasks.ValueTask LogRequestFailedAsync(object? context, System.Net.Http.HttpRequestMessage request, System.Net.Http.HttpResponseMessage? response, System.Exception exception, System.TimeSpan elapsed, System.Threading.CancellationToken cancellationToken = default);
     }
-
     public partial interface IHttpClientLogger
     {
         object? LogRequestStart(System.Net.Http.HttpRequestMessage request);
