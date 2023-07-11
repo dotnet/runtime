@@ -39,7 +39,7 @@ namespace Microsoft.Interop
             InOutSupport: ByValueMarshalKindSupport.Supported, InOutSupportDetails: null);
 
         /// <summary>
-        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for pinned by reference parameters. [In] is not allowed. [In, Out] is the default and unnecessary. [Out] is allowed.
+        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for pinned by value parameters. [In] is not allowed. [In, Out] is the default and unnecessary. [Out] is allowed.
         /// </summary>
         public static readonly ByValueMarshalKindSupportDescriptor PinnedArrayParameterDefault = new ByValueMarshalKindSupportDescriptor(
             InSupport: ByValueMarshalKindSupport.NotSupported, InSupportDetails: SR.InAttributeOnlyNotSupportedOnPinnedParameters,
