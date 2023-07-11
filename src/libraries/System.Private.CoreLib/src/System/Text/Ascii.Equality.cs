@@ -99,7 +99,7 @@ namespace System.Text
                     }
                 }
             }
-            else if (Avx.IsSupported && length >= (uint)Vector256<TRight>.Count)
+            else if (Avx.IsSupported && length >= (uint)Vector256<TLeft>.Count)
             {
                 ref TLeft currentLeftSearchSpace = ref left;
                 ref TRight currentRightSearchSpace = ref right;
