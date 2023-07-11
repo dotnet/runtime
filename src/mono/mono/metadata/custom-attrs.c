@@ -2076,17 +2076,19 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 		}
 	}
 
-	if (!cinfo->cached)
-		mono_custom_attrs_free(cinfo);
-
-	if (!attr)
+	if (!attr){
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
 		return FALSE;
+	}
 
 	MonoDecodeCustomAttr *decoded_args = mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size, error);
 	
 	if (!is_ok (error)) {
 		mono_error_cleanup (error);
 		mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+		if (!cinfo->cached)
+			mono_custom_attrs_free(cinfo);
 		return FALSE;
 	}
 
@@ -2105,6 +2107,9 @@ mono_method_get_unsafe_accessor_attr_data (MonoMethod *method, int *accessor_kin
 	}
 
 	mono_reflection_free_custom_attr_data_args_noalloc (decoded_args);
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
+
 	return TRUE;
 }
 
