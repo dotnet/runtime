@@ -62,7 +62,9 @@ namespace ILCompiler
         public CliOption<string[]> RdXmlFilePaths { get; } =
             new("--rdxml") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "RD.XML file(s) for compilation" };
         public CliOption<string[]> LinkTrimFilePaths { get; } =
-            new("--descriptor") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "ILLinkTrim.Descriptor file(s) for compilation" };
+            new("--descriptor") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "ILLink.Descriptor file(s) for compilation" };
+        public CliOption<string[]> SubstitutionFilePaths { get; } =
+            new("--substitution") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "ILLink.Substitution file(s) for compilation" };
         public CliOption<string> MapFileName { get; } =
             new("--map") { Description = "Generate a map file" };
         public CliOption<string> MstatFileName { get; } =
@@ -184,6 +186,7 @@ namespace ILCompiler
             Options.Add(CodegenOptions);
             Options.Add(RdXmlFilePaths);
             Options.Add(LinkTrimFilePaths);
+            Options.Add(SubstitutionFilePaths);
             Options.Add(MapFileName);
             Options.Add(MstatFileName);
             Options.Add(MetadataLogFileName);
