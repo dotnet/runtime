@@ -166,6 +166,7 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessFieldClass)}");
