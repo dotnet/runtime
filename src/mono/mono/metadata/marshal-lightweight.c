@@ -2329,21 +2329,27 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 
 	MonoType *target_type = sig->params[0]; // params[0] is the accessor wrapper's parent
 	MonoType *ret_type = sig->ret;
-	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID)
+	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedArgCheck");
+		return;
+	}
 
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 	gboolean target_byref = m_type_is_byref (target_type);
 	gboolean target_valuetype = m_class_is_valuetype (target_class);
 	gboolean ret_byref = m_type_is_byref (ret_type);
-	if (!ret_byref || (kind == MONO_UNSAFE_ACCESSOR_FIELD && target_valuetype && !target_byref))
+	if (!ret_byref || (kind == MONO_UNSAFE_ACCESSOR_FIELD && target_valuetype && !target_byref)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedRefCheck");
+		return;
+	}
 
 	mono_mb_emit_ldarg (mb, 0);
 	
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
-	if (target_field == NULL || target_field->type->type != ret_type->type)
+	if (target_field == NULL || target_field->type->type != ret_type->type) {
 		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", "UnsafeAccessor");
+		return;
+	}
 
 	mono_mb_emit_op (mb, CEE_LDFLDA, target_field);
 	mono_mb_emit_byte (mb, CEE_RET);
@@ -2352,6 +2358,16 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 static void
 emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
+	if (accessor_method->is_generic) {
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
+		return;
+	}
+
+	if (!m_method_is_static (accessor_method)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_NonStatic");
+		return;
+	}
+
 	switch (kind) {
 	case MONO_UNSAFE_ACCESSOR_FIELD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_FIELD:
