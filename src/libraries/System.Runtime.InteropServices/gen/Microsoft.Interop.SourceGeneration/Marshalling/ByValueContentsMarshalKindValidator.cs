@@ -35,6 +35,7 @@ namespace Microsoft.Interop
             }
 
             var support = generator.Generator.SupportsByValueMarshalKind(info.ByValueContentsMarshalKind, info, context, out GeneratorDiagnostic? diagnostic);
+            Debug.Assert(support == ByValueMarshalKindSupport.Supported || diagnostic is not null);
             return support switch
             {
                 ByValueMarshalKindSupport.Supported => generator,
