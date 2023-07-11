@@ -85,12 +85,13 @@
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
+    <!-- Important: Set this to the GA version during servicing when GA packages are available. -->
+    <ApiCompatNetCoreAppBaselineVersion>7.0</ApiCompatNetCoreAppBaselineVersion>
 
     <!-- The previous supported .NET version. -->
     <NetCoreAppPreviousVersion>7.0</NetCoreAppPreviousVersion>
     <NetCoreAppPrevious>net$(NetCoreAppPreviousVersion)</NetCoreAppPrevious>
     <NetCoreAppPrevious Condition="'$(DotNetBuildFromSource)' == 'true'">$(NetCoreAppCurrent)</NetCoreAppPrevious>
-    <NetCoreAppPreviousPackageBaselineVersion>$(NetCoreAppPreviousVersion).0</NetCoreAppPreviousPackageBaselineVersion>
 
     <!-- The minimum supported .NET version. -->
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
@@ -348,6 +349,13 @@
     <IsShippingPackage Condition="$(IsPrivateAssembly)">false</IsShippingPackage>
     <PlaceholderFile>$(RepositoryEngineeringDir)_._</PlaceholderFile>
   </PropertyGroup>
+
+  <!-- Flow these properties to consuming projects. -->
+  <ItemDefinitionGroup>
+    <TargetPathWithTargetPlatformMoniker>
+      <IsPrivateAssembly>$(IsPrivateAssembly.ToLowerInvariant())</IsPrivateAssembly>
+    </TargetPathWithTargetPlatformMoniker>
+  </ItemDefinitionGroup>
 
   <!-- Language configuration -->
   <PropertyGroup>
