@@ -177,7 +177,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .CaptureStdErr()
                 .Execute()
                 .Should().Pass()
-                .And.HaveStdOutContaining("Hello World");
+                .And.HaveStdOutContaining("Hello World")
+                .And.NotHaveStdErr();
         }
 
         // Run the app with a startup hook assembly that depends on assemblies not on the TPA list

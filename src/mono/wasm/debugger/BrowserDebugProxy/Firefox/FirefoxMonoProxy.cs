@@ -23,7 +23,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
     public FirefoxExecutionContext GetContextFixefox(SessionId sessionId)
     {
-        if (contexts.TryGetValue(sessionId, out ExecutionContext context))
+        if (Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
             return context as FirefoxExecutionContext;
         throw new ArgumentException($"Invalid Session: \"{sessionId}\"", nameof(sessionId));
     }
@@ -254,7 +254,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         }
         if (args["frame"] != null && args["type"] == null)
         {
-            OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["frame"]["consoleActor"].Value<string>()));
+            Contexts.OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["frame"]["consoleActor"].Value<string>()));
             return false;
         }
 
@@ -317,7 +317,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 }
             case "target-available-form":
                 {
-                    OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["target"]["consoleActor"].Value<string>()));
+                    Contexts.OnDefaultContextUpdate(sessionId, new FirefoxExecutionContext(new MonoSDBHelper (this, logger, sessionId), 0, args["target"]["consoleActor"].Value<string>()));
                     break;
                 }
         }
@@ -334,7 +334,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         {
             case "resume":
                 {
-                    if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                    if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                         return false;
                     context.PausedOnWasm = false;
                     if (context.CallStack == null)
@@ -396,7 +396,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 }
             case "setBreakpoint":
                 {
-                    if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                    if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                         return false;
                     var req = JObject.FromObject(new
                     {
@@ -436,7 +436,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                 }
             case "removeBreakpoint":
                 {
-                    if (!contexts.TryGetValue(sessionId, out ExecutionContext context))
+                    if (!Contexts.TryGetCurrentExecutionContextValue(sessionId, out ExecutionContext context))
                         return false;
                     Result resp = await SendCommand(sessionId, "", args, token);
 
