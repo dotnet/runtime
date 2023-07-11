@@ -925,6 +925,9 @@ public:
 
     IGCHeap() {}
     virtual ~IGCHeap() {}
+
+    // Get the total paused duration
+    virtual int64_t GetTotalPauseDuration() = 0;
 };
 
 #ifdef WRITE_BARRIER_CHECK
