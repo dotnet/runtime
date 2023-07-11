@@ -2107,7 +2107,6 @@ mono_method_metadata_has_header (MonoMethod *method)
 	guint32 rva;
 	MonoImage* img;
 	gpointer loc = NULL;
-	MonoGenericContainer *container;
 
 	img = m_class_get_image (method->klass);
 
@@ -2117,8 +2116,6 @@ mono_method_metadata_has_header (MonoMethod *method)
 
 	if (method->is_inflated) {
 		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
-		MonoMethodHeader *header, *iheader;
-
 		return mono_method_metadata_has_header (imethod->declaring);
 	}
 

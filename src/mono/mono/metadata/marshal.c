@@ -5139,10 +5139,6 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	MonoGenericContext *ctx = NULL;
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
-	MonoClass *accessor_klass = accessor_method->klass;
-
-	if (accessor_method->is_generic)
-		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
 
 	if (member_name == NULL)
 		member_name = accessor_method->name;
@@ -5163,6 +5159,9 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	sig->pinvoke = 0;
 
 	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
+
+	if (accessor_method->is_generic)
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
 
 	get_marshal_cb ()->mb_skip_visibility (mb);
 
