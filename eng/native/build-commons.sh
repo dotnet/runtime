@@ -78,7 +78,7 @@ build_native()
         cmakeArgs="-DCMAKE_SYSTEM_VARIANT=maccatalyst $cmakeArgs"
     fi
 
-    if [[ ( "$targetOS" == android || "$targetOS" == linux-bionic ) && -z "$ROOTFS_DIR" ]]; then
+    if [[ "$targetOS" == android || "$targetOS" == linux-bionic ]]; then
         if [[ -z "$ANDROID_NDK_ROOT" ]]; then
             echo "Error: You need to set the ANDROID_NDK_ROOT environment variable pointing to the Android NDK root."
             exit 1

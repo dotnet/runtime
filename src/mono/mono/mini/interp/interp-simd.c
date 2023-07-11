@@ -602,72 +602,72 @@ _interp_wasm_simd_assert_not_reached (v128_t lhs, v128_t rhs) {
 	*((v128_t *)res) = temp;
 
 static void
-interp_packedsimd_extractlane_i1 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_i1 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(gint32, gint8);
 }
 
 static void
-interp_packedsimd_extractlane_u1 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_u1 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(gint32, guint8);
 }
 
 static void
-interp_packedsimd_extractlane_i2 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_i2 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(gint32, gint16);
 }
 
 static void
-interp_packedsimd_extractlane_u2 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_u2 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(gint32, guint16);
 }
 
 static void
-interp_packedsimd_extractlane_i4 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_i4 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(gint32, gint32);
 }
 
 static void
-interp_packedsimd_extractlane_i8 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_i8 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(gint64, gint64);
 }
 
 static void
-interp_packedsimd_extractlane_r4 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_r4 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(float, float);
 }
 
 static void
-interp_packedsimd_extractlane_r8 (gpointer res, gpointer vec, gpointer lane) {
+interp_packedsimd_extractscalar_r8 (gpointer res, gpointer vec, gpointer lane) {
 	EXTRACT_LANE(double, double);
 }
 
 static void
-interp_packedsimd_replacelane_i1 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+interp_packedsimd_replacescalar_i1 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
 	REPLACE_LANE(gint8);
 }
 
 static void
-interp_packedsimd_replacelane_i2 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+interp_packedsimd_replacescalar_i2 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
 	REPLACE_LANE(gint16);
 }
 
 static void
-interp_packedsimd_replacelane_i4 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+interp_packedsimd_replacescalar_i4 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
 	REPLACE_LANE(gint32);
 }
 
 static void
-interp_packedsimd_replacelane_i8 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+interp_packedsimd_replacescalar_i8 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
 	REPLACE_LANE(gint64);
 }
 
 static void
-interp_packedsimd_replacelane_r4 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+interp_packedsimd_replacescalar_r4 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
 	REPLACE_LANE(float);
 }
 
 static void
-interp_packedsimd_replacelane_r8 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
+interp_packedsimd_replacescalar_r8 (gpointer res, gpointer vec, gpointer lane, gpointer value) {
 	REPLACE_LANE(double);
 }
 

@@ -231,7 +231,7 @@ namespace System
         /// needed.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is a null
-        /// reference (Nothing in Visual Basic).</exception>
+        /// reference (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <remarks>
         /// An instance created with this constructor may be used concurrently from multiple threads.
         /// </remarks>
@@ -272,7 +272,7 @@ namespace System
         /// <param name="isThreadSafe">true if this instance should be usable by multiple threads concurrently; false if the instance will only be used by one thread at a time.
         /// </param>
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
-        /// a null reference (Nothing in Visual Basic).</exception>
+        /// a null reference (<see langword="Nothing" /> in Visual Basic).</exception>
         public Lazy(Func<T> valueFactory, bool isThreadSafe) :
             this(valueFactory, LazyHelper.GetModeFromIsThreadSafe(isThreadSafe), useDefaultConstructor: false)
         {
@@ -287,7 +287,7 @@ namespace System
         /// </param>
         /// <param name="mode">The lazy thread-safety mode.</param>
         /// <exception cref="ArgumentNullException"><paramref name="valueFactory"/> is
-        /// a null reference (Nothing in Visual Basic).</exception>
+        /// a null reference (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid value.</exception>
         public Lazy(Func<T> valueFactory, LazyThreadSafetyMode mode)
             : this(valueFactory, mode, useDefaultConstructor: false)
