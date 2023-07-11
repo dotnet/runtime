@@ -87,7 +87,7 @@ elif [[ "$__TargetOS" == android && -z "$ROOTFS_DIR" ]]; then
     # nothing to do here
     true
 else
-    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableSsl $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
     if [[ "$__TargetOS" != linux-bionic && "$__TargetArch" != x86 && "$__TargetArch" != x64 && "$__TargetArch" != "$__HostArch" ]]; then

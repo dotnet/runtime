@@ -411,6 +411,10 @@ while :; do
             __PortableBuild=0
             ;;
 
+        portablessl=true|-portablebuild=true)
+            __PortableSsl=1
+            ;;
+
         release|-release)
             __BuildType=Release
             ;;
@@ -511,6 +515,8 @@ if [[ "$__PortableBuild" == 0 ]]; then
     __CommonMSBuildArgs="$__CommonMSBuildArgs /p:PortableBuild=false"
 fi
 
+__PortableSsl="${__PortableSsl:-$__PortableBuild}"
+
 if [[ "$__TargetArch" == wasm ]]; then
     # nothing to do here
     true
@@ -524,7 +530,7 @@ elif [[ "$__TargetOS" == android ]]; then
     # nothing to do here
     true
 else
-    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
+    __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableSsl $__CMakeArgs"
 fi
 
 # Configure environment if we are doing a cross compile.

@@ -30,6 +30,7 @@
       <_CoreClrBuildArg Condition="'$(ContinuousIntegrationBuild)' == 'true'" Include="-ci" />
       <_CoreClrBuildArg Condition="'$(CrossBuild)' == 'true'" Include="-cross" />
       <_CoreClrBuildArg Condition="'$(PortableBuild)' != 'true'" Include="-portablebuild=false" />
+      <_CoreClrBuildArg Condition="'$(PortableSsl)' == 'true'" Include="-portablessl=true" />
       <_CoreClrBuildArg Condition="'$(KeepNativeSymbols)' != 'false'" Include="-keepnativesymbols" />
       <_CoreClrBuildArg Include="-os $(_BuildNativeTargetOS)" />
 
