@@ -1,0 +1,231 @@
+
+//  .NET IL Disassembler.  Version 8.0.0-dev
+
+
+
+// Metadata version: v4.0.30319
+.assembly extern System.Runtime
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )                         // .?_....:
+  .ver 8:0:0:0
+}
+.assembly extern xunit.assert
+{
+  .publickeytoken = (8D 05 B1 BB 7A 6F DB 6C )                         // ....zo.l
+  .ver 2:4:2:0
+}
+.assembly Reabstraction
+{
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilationRelaxationsAttribute::.ctor(int32) = ( 01 00 08 00 00 00 00 00 ) 
+  .custom instance void [System.Runtime]System.Runtime.CompilerServices.RuntimeCompatibilityAttribute::.ctor() = ( 01 00 01 00 54 02 16 57 72 61 70 4E 6F 6E 45 78   // ....T..WrapNonEx
+                                                                                                                   63 65 70 74 69 6F 6E 54 68 72 6F 77 73 01 )       // ceptionThrows.
+
+  // --- The following custom attribute is added automatically, do not uncomment -------
+  //  .custom instance void [System.Runtime]System.Diagnostics.DebuggableAttribute::.ctor(valuetype [System.Runtime]System.Diagnostics.DebuggableAttribute/DebuggingModes) = ( 01 00 07 01 00 00 00 00 ) 
+
+  .hash algorithm 0x00008004
+  .ver 0:0:0:0
+}
+.module Reabstraction.dll
+// MVID: {1cb5ff91-f6d7-418c-a4d9-ada8b1e5f155}
+.custom instance void [System.Runtime]System.Runtime.CompilerServices.RefSafetyRulesAttribute::.ctor(int32) = ( 01 00 0B 00 00 00 00 00 ) 
+.imagebase 0x00400000
+.file alignment 0x00000200
+.stackreserve 0x00100000
+.subsystem 0x0003       // WINDOWS_CUI
+.corflags 0x00000001    //  ILONLY
+// Image base: 0x00000209B5A30000
+
+
+// =============== CLASS MEMBERS DECLARATION ===================
+
+.class private auto ansi beforefieldinit VirtualStaticMethodReabstraction
+       extends [System.Runtime]System.Object
+{
+  .class interface abstract auto ansi nested private IFoo
+  {
+    .method public hidebysig static virtual 
+            void  Frob() cil managed
+    {
+      // Code size       2 (0x2)
+      .maxstack  8
+      IL_0000:  ldnull
+      IL_0001:  throw
+    } // end of method IFoo::Frob
+
+  } // end of class IFoo
+
+  .class interface abstract auto ansi nested private IBar
+         implements VirtualStaticMethodReabstraction/IFoo
+  {
+    .method private hidebysig static void 
+            VirtualStaticMethodReabstraction.IFoo.Frob() cil managed
+    {
+      .override VirtualStaticMethodReabstraction/IFoo::Frob
+      // Code size       2 (0x2)
+      .maxstack  8
+      IL_0000:  ldnull
+      IL_0001:  throw
+    } // end of method IBar::VirtualStaticMethodReabstraction.IFoo.Frob
+
+  } // end of class IBar
+
+  .class interface abstract auto ansi nested private IBaz
+         implements VirtualStaticMethodReabstraction/IFoo
+  {
+    .method private hidebysig static abstract virtual final 
+            void  VirtualStaticMethodReabstraction.IFoo.Frob() cil managed
+    {
+      .override VirtualStaticMethodReabstraction/IFoo::Frob
+    } // end of method IBaz::VirtualStaticMethodReabstraction.IFoo.Frob
+
+  } // end of class IBaz
+
+  .class auto ansi nested private beforefieldinit BarClass
+         extends [System.Runtime]System.Object
+         implements VirtualStaticMethodReabstraction/IBaz,
+                    VirtualStaticMethodReabstraction/IFoo
+  {
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method BarClass::.ctor
+
+  } // end of class BarClass
+
+  .class sequential ansi sealed nested private beforefieldinit BarStruct
+         extends [System.Runtime]System.ValueType
+         implements VirtualStaticMethodReabstraction/IBaz,
+                    VirtualStaticMethodReabstraction/IFoo
+  {
+    .pack 0
+    .size 1
+  } // end of class BarStruct
+
+  .class auto ansi serializable sealed nested private beforefieldinit '<>c'
+         extends [System.Runtime]System.Object
+  {
+    .custom instance void [System.Runtime]System.Runtime.CompilerServices.CompilerGeneratedAttribute::.ctor() = ( 01 00 00 00 ) 
+    .field public static initonly class VirtualStaticMethodReabstraction/'<>c' '<>9'
+    .field public static class [System.Runtime]System.Action '<>9__0_0'
+    .field public static class [System.Runtime]System.Action '<>9__0_1'
+    .method private hidebysig specialname rtspecialname static 
+            void  .cctor() cil managed
+    {
+      // Code size       11 (0xb)
+      .maxstack  8
+      IL_0000:  newobj     instance void VirtualStaticMethodReabstraction/'<>c'::.ctor()
+      IL_0005:  stsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+      IL_000a:  ret
+    } // end of method '<>c'::.cctor
+
+    .method public hidebysig specialname rtspecialname 
+            instance void  .ctor() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  ldarg.0
+      IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::.ctor
+
+    .method assembly hidebysig instance void 
+            '<Main>b__0_0'() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  nop
+      IL_0001:  call       void VirtualStaticMethodReabstraction::Call<valuetype VirtualStaticMethodReabstraction/BarStruct>()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::'<Main>b__0_0'
+
+    .method assembly hidebysig instance void 
+            '<Main>b__0_1'() cil managed
+    {
+      // Code size       8 (0x8)
+      .maxstack  8
+      IL_0000:  nop
+      IL_0001:  call       void VirtualStaticMethodReabstraction::Call<class VirtualStaticMethodReabstraction/BarClass>()
+      IL_0006:  nop
+      IL_0007:  ret
+    } // end of method '<>c'::'<Main>b__0_1'
+
+  } // end of class '<>c'
+
+  .method private hidebysig static int32 
+          Main() cil managed
+  {
+    .entrypoint
+    // Code size       82 (0x52)
+    .maxstack  2
+    .locals init (int32 V_0)
+    IL_0000:  nop
+    IL_0001:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_0'
+    IL_0006:  dup
+    IL_0007:  brtrue.s   IL_0020
+
+    IL_0009:  pop
+    IL_000a:  ldsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+    IL_000f:  ldftn      instance void VirtualStaticMethodReabstraction/'<>c'::'<Main>b__0_0'()
+    IL_0015:  newobj     instance void [System.Runtime]System.Action::.ctor(object,
+                                                                            native int)
+    IL_001a:  dup
+    IL_001b:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_0'
+    IL_0020:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_0025:  pop
+    IL_0026:  ldsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_1'
+    IL_002b:  dup
+    IL_002c:  brtrue.s   IL_0045
+
+    IL_002e:  pop
+    IL_002f:  ldsfld     class VirtualStaticMethodReabstraction/'<>c' VirtualStaticMethodReabstraction/'<>c'::'<>9'
+    IL_0034:  ldftn      instance void VirtualStaticMethodReabstraction/'<>c'::'<Main>b__0_1'()
+    IL_003a:  newobj     instance void [System.Runtime]System.Action::.ctor(object,
+                                                                            native int)
+    IL_003f:  dup
+    IL_0040:  stsfld     class [System.Runtime]System.Action VirtualStaticMethodReabstraction/'<>c'::'<>9__0_1'
+    IL_0045:  call       !!0 [xunit.assert]Xunit.Assert::Throws<class [System.Runtime]System.EntryPointNotFoundException>(class [System.Runtime]System.Action)
+    IL_004a:  pop
+    IL_004b:  ldc.i4.s   100
+    IL_004d:  stloc.0
+    IL_004e:  br.s       IL_0050
+
+    IL_0050:  ldloc.0
+    IL_0051:  ret
+  } // end of method VirtualStaticMethodReabstraction::Main
+
+  .method private hidebysig static void  Call<(VirtualStaticMethodReabstraction/IFoo) T>() cil managed
+  {
+    // Code size       13 (0xd)
+    .maxstack  8
+    IL_0000:  constrained. !!T
+    IL_0006:  call       void VirtualStaticMethodReabstraction/IFoo::Frob()
+    IL_000b:  nop
+    IL_000c:  ret
+  } // end of method VirtualStaticMethodReabstraction::Call
+
+  .method public hidebysig specialname rtspecialname 
+          instance void  .ctor() cil managed
+  {
+    // Code size       8 (0x8)
+    .maxstack  8
+    IL_0000:  ldarg.0
+    IL_0001:  call       instance void [System.Runtime]System.Object::.ctor()
+    IL_0006:  nop
+    IL_0007:  ret
+  } // end of method VirtualStaticMethodReabstraction::.ctor
+
+} // end of class VirtualStaticMethodReabstraction
+
+
+// =============================================================
+
+// *********** DISASSEMBLY COMPLETE ***********************
