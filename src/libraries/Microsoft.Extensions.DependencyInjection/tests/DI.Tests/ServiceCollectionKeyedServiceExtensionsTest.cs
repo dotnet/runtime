@@ -430,5 +430,67 @@ namespace Microsoft.Extensions.DependencyInjection
             // Assert
             Assert.Equal(new[] { descriptor }, collection);
         }
+
+        [Fact]
+        public void NullServiceKey_ThrowsErrorWithFactory()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                new ServiceDescriptor(
+                    typeof(IFakeService),
+                    null,
+                    (sp, key) => new FakeService(), ServiceLifetime.Transient));
+        }
+
+        public static TheoryData NullServiceKeyData
+        {
+            get
+            {
+                var serviceType = typeof(IFakeService);
+                object key = null;
+                var implementationType = typeof(FakeService);
+                var objectType = typeof(object);
+
+                return new TheoryData<ServiceDescriptor>
+                {
+                    { ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedScoped<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedSingleton<IFakeService>(key, new FakeService()) },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NullServiceKeyData))]
+        public void NullServiceKey_IsKeyedServiceFalse(ServiceDescriptor serviceDescriptor)
+        {
+            Assert.False(serviceDescriptor.IsKeyedService);
+        }
+
+        public static TheoryData NotNullServiceKeyData
+        {
+            get
+            {
+                var serviceType = typeof(IFakeService);
+                object key = new();
+                var implementationType = typeof(FakeService);
+                var objectType = typeof(object);
+
+                return new TheoryData<ServiceDescriptor>
+                {
+                    { ServiceDescriptor.KeyedTransient<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedScoped<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedSingleton<IFakeService, FakeService>(key) },
+                    { ServiceDescriptor.KeyedSingleton<IFakeService>(key, new FakeService()) },
+                };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(NotNullServiceKeyData))]
+        public void NotNullServiceKey_IsKeyedServiceTrue(ServiceDescriptor serviceDescriptor)
+        {
+            Assert.True(serviceDescriptor.IsKeyedService);
+        }
     }
 }
