@@ -2424,6 +2424,16 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        [PlatformSpecific(~TestPlatforms.Windows)]
+        public static void UtcAliases_MapToUtc()
+        {
+            foreach (string utcAlias in s_UtcAliases)
+            {
+                Assert.Equal(TimeZoneInfo.Utc, TimeZoneInfo.FindSystemTimeZoneById(utcAlias));
+            }
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/19794", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
