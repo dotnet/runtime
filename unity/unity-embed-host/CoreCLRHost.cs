@@ -501,6 +501,14 @@ static unsafe partial class CoreCLRHost
     }
 
     [return: NativeCallbackType("gboolean")]
+    public static bool class_is_enum(
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Type t = klass.TypeFromHandleIntPtr();
+        return t.IsEnum;
+    }
+  
+    [return: NativeCallbackType("gboolean")]
     public static bool class_is_valuetype(
         [NativeCallbackType("MonoClass*")] IntPtr klass)
     {

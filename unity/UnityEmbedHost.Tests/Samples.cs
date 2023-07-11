@@ -16,6 +16,11 @@ enum Classification
     Avian
 }
 
+struct StructContainingOnlyAnEnum
+{
+    public enum AnEnum{AnEnumValue, AnotherEnumValue}
+}
+
 [Obsolete]
 [Foo]
 class Bacon
