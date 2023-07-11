@@ -134,7 +134,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) => tcs.SetCanceled(), null);
+                ctx.Send((_) => tcs.SetCanceled(), null);
             }
             catch (Exception e)
             {
@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) => tcs.SetCanceled(), null);
+                ctx.Send((_) => tcs.SetCanceled(), null);
             }
             catch (Exception e)
             {
@@ -158,7 +158,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) =>
+                ctx.Send((_) =>
                 {
                     PropagateCompletion(tcs, done);
                 }, null);
@@ -173,7 +173,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) => tcs.SetResult(), null);
+                ctx.Send((_) => tcs.SetResult(), null);
             }
             catch (Exception e)
             {
@@ -185,7 +185,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) => tcs.SetException(ex), null);
+                ctx.Send((_) => tcs.SetException(ex), null);
             }
             catch (Exception e)
             {
@@ -197,7 +197,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) => tcs.SetException(ex), null);
+                ctx.Send((_) => tcs.SetException(ex), null);
             }
             catch (Exception e)
             {
@@ -209,7 +209,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             try
             {
-                ctx.Post((_) =>
+                ctx.Send((_) =>
                 {
                     PropagateCompletion(tcs, done);
                 }, null);

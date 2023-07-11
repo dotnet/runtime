@@ -172,6 +172,7 @@ namespace System.Runtime.InteropServices.JavaScript
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe void InvokeJSImpl(JSObject jsFunction, Span<JSMarshalerArgument> arguments)
         {
+            ObjectDisposedException.ThrowIf(jsFunction.IsDisposed, jsFunction);
 #if FEATURE_WASM_THREADS
             JSObject.AssertThreadAffinity(jsFunction);
 #endif
@@ -205,10 +206,7 @@ namespace System.Runtime.InteropServices.JavaScript
         internal static unsafe JSFunctionBinding BindJSFunctionImpl(string functionName, string moduleName, ReadOnlySpan<JSMarshalerType> signatures)
         {
 #if FEATURE_WASM_THREADS
-            if (JSSynchronizationContext.CurrentJSSynchronizationContext == null)
-            {
-                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads ");
-            }
+            JSSynchronizationContext.AssertWebWorkerContext();
 #endif
 
             var signature = JSHostImplementation.GetMethodSignature(signatures);

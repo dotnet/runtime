@@ -20,6 +20,7 @@ import {
 import { preRunWorker } from "../../startup";
 import { mono_log_debug } from "../../logging";
 import { mono_set_thread_id } from "../../logging";
+import { assertNoProxies } from "../../gc-handles";
 
 // re-export some of the events types
 export {
@@ -94,6 +95,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
     mono_log_debug("detaching pthread from mono runtime 0x" + pthread_id.toString(16));
+    assertNoProxies();
     set_thread_info(pthread_id, false, false, false);
     mono_set_thread_id("");
 }

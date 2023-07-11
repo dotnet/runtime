@@ -55,6 +55,16 @@ namespace System.Runtime.InteropServices.JavaScript
         {
         }
 
+        internal static void AssertWebWorkerContext()
+        {
+#if FEATURE_WASM_THREADS
+            if (CurrentJSSynchronizationContext == null)
+            {
+                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads ");
+            }
+#endif
+        }
+
         private JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, WorkItemQueueType queue)
         {
             TargetThread = targetThread;
