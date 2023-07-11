@@ -571,11 +571,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                 inAttributeIsDefaultDiagnostic,
                 //https://github.com/dotnet/runtime/issues/88540
                 inAttributeIsDefaultDiagnostic } };
-            // new issue before merge: char generated code doesn't seem to work well with [In, Out]
-            //yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U2)]", "char", paramNameWithLocation), new DiagnosticResult[] {
-            //    inAttributeIsDefaultDiagnostic,
-            //    //https://github.com/dotnet/runtime/issues/88540
-            //    inAttributeIsDefaultDiagnostic } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U2)]", "char", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeIsDefaultDiagnostic,
+                //https://github.com/dotnet/runtime/issues/88540
+                inAttributeIsDefaultDiagnostic } };
 
             // [Out] is not allowed on value types passed by value - there is no indirection for the callee to make visible modifications.
             var outAttributeNotSupportedOnValueParameters = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
@@ -704,7 +703,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                         .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, paramName);
 
             // [Out] is not allowed on strings
-            // https://github.com/dotnet/runtime/issues/88438
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(outAttribute, "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
@@ -783,9 +781,11 @@ namespace ComInterfaceGenerator.Unit.Tests
                 inAttributeNotSupportedOnPinnedParameter
             }};
             // new issue before merge: char generated code doesn't seem to work well with [In, Out]
-            //yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)), new DiagnosticResult[] {
-            //    inAttributeNotSupportedOnBlittableArray,
-            //}};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                new DiagnosticResult[] { inAttributeNotSupportedOnPinnedParameter, inAttributeIsDefaultDiagnostic }
+            };
 
             // bools that are marshalled into a new array are in by default
             yield return new object[] {
@@ -815,22 +815,22 @@ namespace ComInterfaceGenerator.Unit.Tests
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
                 new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic, inOutAttributeIsDefaultDiagnostic}
             };
-            // new issue before merge: char generated code doesn't seem to work well with [In, Out]
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-            //    //https://github.com/dotnet/runtime/issues/88540
-            //    new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
-            //};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                //https://github.com/dotnet/runtime/issues/88540
+                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+            };
 
             // [Out] Should not warn
-            // new issue before merge: [Out] int[] does not generate an UnmanagedToManaged stub that can be compiled
+            // https://github.com/dotnet/runtime/issues/88708
             //yield return new object[] {
             //    ID(),
             //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
             //    new DiagnosticResult[] { }
             //};
-            // new issue before merge: char generated code doesn't seem to work well with [In, Out]
+
+            // https://github.com/dotnet/runtime/issues/88708
             //yield return new object[] {
             //    ID(),
             //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
