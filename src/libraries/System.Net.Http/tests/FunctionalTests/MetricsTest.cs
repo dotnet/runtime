@@ -211,9 +211,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public Task RequestDuration_CustomTags_Recorded()
         {
-            // Access the key manually i
-            HttpRequestOptionsKey<ICollection<KeyValuePair<string, object?>>> customMetricsTagsKey = new("CustomMetricsTags");
-
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
@@ -530,8 +527,6 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 Task<HttpResponseMessage> clientTask = SendAsync(client, request);
-
-                Debug.Print(malformedResponse.ToString());
 
                 await server.AcceptConnectionAsync(async connection =>
                 {

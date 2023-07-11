@@ -23,7 +23,7 @@ namespace System.Net.Http.Metrics
     /// </remarks>
     public sealed class HttpMetricsEnrichmentContext
     {
-        private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new("HttpMetricsEnrichmentContext");
+        private static readonly HttpRequestOptionsKey<HttpMetricsEnrichmentContext> s_optionsKeyForContext = new(nameof(HttpMetricsEnrichmentContext));
         private static readonly ConcurrentQueue<HttpMetricsEnrichmentContext> s_contextCache = new();
         private static int s_contextCacheItemCount;
         private const int ContextCacheCapacity = 1024;
@@ -33,6 +33,8 @@ namespace System.Net.Http.Metrics
         private HttpResponseMessage? _response;
         private Exception? _exception;
         private List<KeyValuePair<string, object?>> _tags = new(capacity: 16);
+
+        internal HttpMetricsEnrichmentContext() { } // Hide the default parameterless constructor.
 
         /// <summary>
         /// Gets the <see cref="HttpRequestMessage"/> that has been sent.
