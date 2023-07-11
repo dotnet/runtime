@@ -3749,6 +3749,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8:
             case NI_System_SpanHelpers_SequenceEqual:
             case NI_System_Buffer_Memmove:
             {
@@ -9163,6 +9164,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else if (strcmp(methodName, "NextCallReturnAddress") == 0)
                     {
                         result = NI_System_StubHelpers_NextCallReturnAddress;
+                    }
+                }
+            }
+            else if (strcmp(namespaceName, "Text") == 0)
+            {
+                if (strcmp(className, "UTF8EncodingSealed") == 0)
+                {
+                    if (strcmp(methodName, "ReadUtf8") == 0)
+                    {
+                        assert(strcmp(enclosingClassName, "UTF8Encoding") == 0);
+                        result = NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8;
                     }
                 }
             }

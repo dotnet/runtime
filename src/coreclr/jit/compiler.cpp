@@ -4877,6 +4877,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         bool doBranchOpt               = true;
         bool doCse                     = true;
         bool doAssertionProp           = true;
+        bool doVNBasedIntrinExpansion  = true;
         bool doRangeAnalysis           = true;
         bool doVNBasedDeadStoreRemoval = true;
         int  iterations                = 1;
@@ -4890,6 +4891,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         doBranchOpt               = doValueNum && (JitConfig.JitDoRedundantBranchOpts() != 0);
         doCse                     = doValueNum;
         doAssertionProp           = doValueNum && (JitConfig.JitDoAssertionProp() != 0);
+        doVNBasedIntrinExpansion  = doValueNum;
         doRangeAnalysis           = doAssertionProp && (JitConfig.JitDoRangeAnalysis() != 0);
         doVNBasedDeadStoreRemoval = doValueNum && (JitConfig.JitDoVNBasedDeadStoreRemoval() != 0);
 
@@ -4971,6 +4973,13 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 // Assertion propagation
                 //
                 DoPhase(this, PHASE_ASSERTION_PROP_MAIN, &Compiler::optAssertionPropMain);
+            }
+
+            if (doVNBasedIntrinExpansion)
+            {
+                // Expand some intrinsics based on VN data
+                //
+                DoPhase(this, PHASE_VN_BASED_INTRINSIC_EXPAND, &Compiler::fgVNBasedIntrinsicExpansion);
             }
 
             if (doRangeAnalysis)

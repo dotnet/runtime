@@ -5203,6 +5203,8 @@ public:
         }
     }
 
+    bool GetObjectHandleAndOffset(GenTree* tree, ssize_t* byteOffset, CORINFO_OBJECT_HANDLE* pObj);
+
     // Convert a BYTE which represents the VM's CorInfoGCtype to the JIT's var_types
     var_types getJitGCType(BYTE gcType);
 
@@ -5332,10 +5334,10 @@ public:
     void SplitTreesRemoveCommas();
 
     template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
-    PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks);
+    PhaseStatus fgExpandHelper(bool skipRarelyRunBlocks, bool handleIntrinsics = false);
 
     template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
-    bool fgExpandHelperForBlock(BasicBlock** pBlock);
+    bool fgExpandHelperForBlock(BasicBlock** pBlock, bool handleIntrinsics = false);
 
     PhaseStatus fgExpandRuntimeLookups();
     bool fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
@@ -5345,6 +5347,10 @@ public:
 
     PhaseStatus fgExpandStaticInit();
     bool fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+
+    PhaseStatus fgVNBasedIntrinsicExpansion();
+    bool fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
+    bool fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call);
 
     PhaseStatus fgInsertGCPolls();
     BasicBlock* fgCreateGCPoll(GCPollType pollType, BasicBlock* block);
@@ -7074,6 +7080,7 @@ public:
 #define OMF_HAS_MDARRAYREF                     0x00004000 // Method contains multi-dimensional intrinsic array element loads or stores.
 #define OMF_HAS_STATIC_INIT                    0x00008000 // Method has static initializations we might want to partially inline
 #define OMF_HAS_TLS_FIELD                      0x00010000 // Method contains TLS field access
+#define OMF_HAS_SPECIAL_INTRINSICS             0x00020000 // Method contains special intrinsics expanded in late phases
 
     // clang-format on
 
@@ -7132,6 +7139,16 @@ public:
     void setMethodHasTlsFieldAccess()
     {
         optMethodFlags |= OMF_HAS_TLS_FIELD;
+    }
+
+    bool doesMethodHaveSpecialIntrinsics()
+    {
+        return (optMethodFlags & OMF_HAS_SPECIAL_INTRINSICS) != 0;
+    }
+
+    void setMethodHasSpecialIntrinsics()
+    {
+        optMethodFlags |= OMF_HAS_SPECIAL_INTRINSICS;
     }
 
     void pickGDV(GenTreeCall*           call,
@@ -8945,6 +8962,42 @@ public:
             return 4;
         }
         return size; // 2, 1, 0
+    }
+
+    var_types roundDownMaxRegSize(unsigned size)
+    {
+        assert(size > 0);
+        ssize_t maxRegSize = TARGET_POINTER_SIZE;
+#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
+        if (IsBaselineSimdIsaSupported())
+        {
+            maxRegSize = max(maxRegSize, (ssize_t)roundDownSIMDSize((unsigned)size));
+        }
+#endif
+        int nearestPow2 = 1 << BitOperations::Log2((unsigned)size);
+        switch (min((int)maxRegSize, nearestPow2))
+        {
+            case 1:
+                return TYP_UBYTE;
+            case 2:
+                return TYP_USHORT;
+            case 4:
+                return TYP_INT;
+            case 8:
+                return TYP_LONG;
+#ifdef FEATURE_SIMD
+            case 16:
+                return TYP_SIMD16;
+#ifdef TARGET_XARCH
+            case 32:
+                return TYP_SIMD32;
+            case 64:
+                return TYP_SIMD64;
+#endif
+#endif
+            default:
+                unreached();
+        }
     }
 
     enum UnrollKind
