@@ -97,7 +97,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.mono_wasm_exit) {
+    if (!is_exited() && runtimeHelpers.mono_wasm_exit) {
         runtimeHelpers.mono_wasm_exit(exit_code);
     }
     // just in case mono_wasm_exit didn't exit or throw
