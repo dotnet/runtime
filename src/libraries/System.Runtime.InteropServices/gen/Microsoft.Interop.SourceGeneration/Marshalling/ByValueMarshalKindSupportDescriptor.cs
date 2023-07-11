@@ -31,7 +31,7 @@ namespace Microsoft.Interop
             InOutSupport: ByValueMarshalKindSupport.NotSupported, InOutSupportDetails: SR.OutAttributeNotSupportedOnByValueReferenceTypeParameters);
 
         /// <summary>
-        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by reference parameters. [In] is allowed, but unnecessary. Out is allowed.
+        /// A default <see cref="ByValueMarshalKindSupportDescriptor"/> for by value array parameters. [In] is allowed, but unnecessary. Out is allowed.
         /// </summary>
         public static readonly ByValueMarshalKindSupportDescriptor ArrayParameterDefault = new ByValueMarshalKindSupportDescriptor(
             InSupport: ByValueMarshalKindSupport.Unnecessary, InSupportDetails: SR.InAttributeOnlyIsDefault,
