@@ -1154,14 +1154,21 @@ void StubLinkStubManager::Init()
 
 #endif // #ifndef DACCESS_COMPILE
 
+void StubLinkStubManager::RemoveStubRange(BYTE* start, UINT length)
+{
+    WRAPPER_NO_CONTRACT;
+    _ASSERTE(start != NULL && length > 0);
+
+    BYTE* end = start + length;
+    GetRangeList()->RemoveRanges((LPVOID)start, start, end);
+}
+
 BOOL StubLinkStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
 {
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
-
-    return GetRangeList()->IsInRange(stubStartAddress);
+    return GetRangeList()->IsInRange(stubStartAddress) ? TRUE : FALSE;
 }
-
 
 BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
                                       TraceDestination *trace)
@@ -1208,6 +1215,12 @@ BOOL StubLinkStubManager::DoTraceStub(PCODE stubStartAddress,
         LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(InstantiatingMethod)::DoTraceStub");
         return TRUE;
     }
+    else if (stub->IsManagedThunk())
+    {
+        trace->InitForManagerPush(stubStartAddress, this);
+        LOG_TRACE_DESTINATION(trace, stubStartAddress, "StubLinkStubManager(ManagedThunk)::DoTraceStub");
+        return TRUE;
+    }
     else if (stub->GetPatchOffset() != 0)
     {
         // The patch offset is currently only non-zero in x86 non-IL delegate scenarios.
@@ -1247,6 +1260,103 @@ static PCODE GetStubTarget(PTR_MethodDesc pTargetMD)
         return NULL;
 
     return targetCode.GetNativeCode();
+}
+
+// Managed thunks are often implemented in terms of Delegates
+// so the below utilizes Delegate internals.
+static BOOL TraceManagedThunk(
+    TraceDestination *trace,
+    T_CONTEXT *pContext,
+    BYTE **pRetAddr)
+{
+    CONTRACTL
+    {
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+    PCODE destAddr;
+    PCODE pc = ::GetIP(pContext);
+
+    // Retrieve the this pointer from the context.
+#if defined(TARGET_X86)
+    (*pRetAddr) = *(BYTE **)(size_t)(pContext->Esp);
+
+    BYTE* pThis = (BYTE*)(size_t)(pContext->Ecx);
+
+    destAddr = *(PCODE*)(pThis + DelegateObject::GetOffsetOfMethodPtrAux());
+
+#elif defined(TARGET_AMD64)
+
+    // <TODO>
+    // We need to check whether the following is the correct return address.
+    // </TODO>
+    (*pRetAddr) = *(BYTE **)(size_t)(pContext->Rsp);
+
+    LOG((LF_CORDB, LL_INFO10000, "TraceManagedThunk: at %p, retAddr is %p\n", pc, (*pRetAddr)));
+
+    DELEGATEREF orDelegate;
+    if (GetEEFuncEntryPoint(SinglecastDelegateInvokeStub) == pc)
+    {
+        LOG((LF_CORDB, LL_INFO10000, "TraceManagedThunk: isSingle\n"));
+
+        orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
+        destAddr = orDelegate->GetMethodPtr();
+        if (StubManager::TraceStub(destAddr, trace))
+        {
+            LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: ppbDest: %p\n", destAddr));
+            LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: res: 1, result type: %d\n", trace->GetTraceType()));
+            return TRUE;
+        }
+    }
+    else
+    {
+        // We get here if we are stopped at the beginning of a shuffle thunk.
+        // The next address we are going to is _methodPtrAux.
+        Stub* pStub = Stub::RecoverStub(pc);
+
+        // We use the patch offset field to indicate whether the stub has a hidden return buffer argument.
+        // This field is set in SetupShuffleThunk().
+        orDelegate = (pStub->GetPatchOffset() != 0)
+            ? (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetSecondArg(pContext)) // This stub has a hidden return buffer argument.
+            : (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
+    }
+
+    destAddr = orDelegate->GetMethodPtrAux();
+
+#elif defined(TARGET_ARM)
+    (*pRetAddr) = (BYTE *)(size_t)(pContext->Lr);
+    BYTE* pThis = (BYTE*)(size_t)(pContext->R0);
+
+    // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
+    // shuffle thunk (destination in _methodPtrAux).
+    int offsetOfNextDest = (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
+        ? DelegateObject::GetOffsetOfMethodPtr()
+        : DelegateObject::GetOffsetOfMethodPtrAux();
+    destAddr = *(PCODE*)(pThis + offsetOfNextDest);
+
+#elif defined(TARGET_ARM64)
+    (*pRetAddr) = (BYTE *)(size_t)(pContext->Lr);
+    BYTE* pThis = (BYTE*)(size_t)(pContext->X0);
+
+    // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
+    // shuffle thunk (destination in _methodPtrAux).
+    int offsetOfNextDest = (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
+        ? DelegateObject::GetOffsetOfMethodPtr()
+        : DelegateObject::GetOffsetOfMethodPtrAux();
+    destAddr = *(PCODE*)(pThis + offsetOfNextDest);
+
+#else
+    PORTABILITY_ASSERT("TraceManagedThunk");
+    destAddr = NULL;
+#endif
+
+    LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: ppbDest: %p\n", destAddr));
+
+    BOOL res = StubManager::TraceStub(destAddr, trace);
+    LOG((LF_CORDB,LL_INFO10000, "TraceManagedThunk: res: %d, result type: %d\n", res, trace->GetTraceType()));
+
+    return res;
 }
 
 BOOL StubLinkStubManager::TraceManager(Thread *thread,
@@ -1290,7 +1400,12 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
     {
         LOG((LF_CORDB,LL_INFO10000, "SLSM:TM MultiCastDelegate\n"));
         BYTE *pbDel = (BYTE *)StubManagerHelpers::GetThisPtr(pContext);
-        return DelegateInvokeStubManager::TraceDelegateObject(pbDel, trace);
+        return DelegateInvokeStub::TraceDelegateObject(pbDel, trace);
+    }
+    else if (stub->IsManagedThunk())
+    {
+        LOG((LF_CORDB,LL_INFO10000, "SLSM:TM ManagedThunk\n"));
+        return TraceManagedThunk(trace, pContext, pRetAddr);
     }
 
     // Runtime bug if we get here. Did we make a change in StubLinkStubManager::DoTraceStub() that
@@ -1721,7 +1836,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
                                ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
 
             _ASSERTE(pbDel);
-            return DelegateInvokeStubManager::TraceDelegateObject(pbDel, trace);
+            return DelegateInvokeStub::TraceDelegateObject(pbDel, trace);
         }
     }
     else
@@ -1987,200 +2102,9 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
 }
 #endif //!DACCESS_COMPILE
 
-//
-// Since we don't generate delegate invoke stubs at runtime on IA64, we
-// can't use the StubLinkStubManager for these stubs.  Instead, we create
-// an additional DelegateInvokeStubManager instead.
-//
-SPTR_IMPL(DelegateInvokeStubManager, DelegateInvokeStubManager, g_pManager);
-
 #ifndef DACCESS_COMPILE
-
 // static
-void DelegateInvokeStubManager::Init()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END
-
-    g_pManager = new DelegateInvokeStubManager();
-    StubManager::AddStubManager(g_pManager);
-}
-
-BOOL DelegateInvokeStubManager::AddStub(Stub* pStub)
-{
-    WRAPPER_NO_CONTRACT;
-    PCODE start = pStub->GetEntryPoint();
-
-    // We don't really care about the size here.  We only stop in these stubs at the first instruction,
-    // so we'll never be asked to claim an address in the middle of a stub.
-    return GetRangeList()->AddRange((BYTE *)start, (BYTE *)start + 1, (LPVOID)start);
-}
-
-void DelegateInvokeStubManager::RemoveStub(Stub* pStub)
-{
-    WRAPPER_NO_CONTRACT;
-    PCODE start = pStub->GetEntryPoint();
-
-    // We don't really care about the size here.  We only stop in these stubs at the first instruction,
-    // so we'll never be asked to claim an address in the middle of a stub.
-    GetRangeList()->RemoveRanges((LPVOID)start);
-}
-
-#endif
-
-BOOL DelegateInvokeStubManager::CheckIsStub_Internal(PCODE stubStartAddress)
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    bool fIsStub = false;
-
-#ifndef DACCESS_COMPILE
-#ifndef TARGET_X86
-    fIsStub = fIsStub || (stubStartAddress == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub));
-#endif
-#endif // !DACCESS_COMPILE
-
-    fIsStub = fIsStub || GetRangeList()->IsInRange(stubStartAddress);
-
-    return fIsStub ? TRUE : FALSE;
-}
-
-BOOL DelegateInvokeStubManager::DoTraceStub(PCODE stubStartAddress, TraceDestination *trace)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    LOG((LF_CORDB, LL_EVERYTHING, "DelegateInvokeStubManager::DoTraceStub called\n"));
-
-    _ASSERTE(CheckIsStub_Internal(stubStartAddress));
-
-    // If it's a MC delegate, then we want to set a BP & do a context-ful
-    // manager push, so that we can figure out if this call will be to a
-    // single multicast delegate or a multi multicast delegate
-    trace->InitForManagerPush(stubStartAddress, this);
-
-    LOG_TRACE_DESTINATION(trace, stubStartAddress, "DelegateInvokeStubManager::DoTraceStub");
-
-    return TRUE;
-}
-
-#if !defined(DACCESS_COMPILE)
-
-BOOL DelegateInvokeStubManager::TraceManager(Thread *thread, TraceDestination *trace,
-                                             T_CONTEXT *pContext, BYTE **pRetAddr)
-{
-    CONTRACTL
-    {
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-    PCODE destAddr;
-
-    PCODE pc;
-    pc = ::GetIP(pContext);
-
-    BYTE* pThis;
-    pThis = NULL;
-
-    // Retrieve the this pointer from the context.
-#if defined(TARGET_X86)
-    (*pRetAddr) = *(BYTE **)(size_t)(pContext->Esp);
-
-    pThis = (BYTE*)(size_t)(pContext->Ecx);
-
-    destAddr = *(PCODE*)(pThis + DelegateObject::GetOffsetOfMethodPtrAux());
-
-#elif defined(TARGET_AMD64)
-
-    // <TODO>
-    // We need to check whether the following is the correct return address.
-    // </TODO>
-    (*pRetAddr) = *(BYTE **)(size_t)(pContext->Rsp);
-
-    LOG((LF_CORDB, LL_INFO10000, "DISM:TM at 0x%p, retAddr is 0x%p\n", pc, (*pRetAddr)));
-
-    DELEGATEREF orDelegate;
-    if (GetEEFuncEntryPoint(SinglecastDelegateInvokeStub) == pc)
-    {
-        LOG((LF_CORDB, LL_INFO10000, "DISM::TraceManager: isSingle\n"));
-
-        orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
-
-        // _methodPtr is where we are going to next.  However, in ngen cases, we may have a shuffle thunk
-        // burned into the ngen image, in which case the shuffle thunk is not added to the range list of
-        // the DelegateInvokeStubManager.  So we use _methodPtrAux as a fallback.
-        destAddr = orDelegate->GetMethodPtr();
-        if (StubManager::TraceStub(destAddr, trace))
-        {
-            LOG((LF_CORDB,LL_INFO10000, "DISM::TM: ppbDest: 0x%p\n", destAddr));
-            LOG((LF_CORDB,LL_INFO10000, "DISM::TM: res: 1, result type: %d\n", trace->GetTraceType()));
-            return TRUE;
-        }
-    }
-    else
-    {
-        // We get here if we are stopped at the beginning of a shuffle thunk.
-        // The next address we are going to is _methodPtrAux.
-        Stub* pStub = Stub::RecoverStub(pc);
-
-        // We use the patch offset field to indicate whether the stub has a hidden return buffer argument.
-        // This field is set in SetupShuffleThunk().
-        if (pStub->GetPatchOffset() != 0)
-        {
-            // This stub has a hidden return buffer argument.
-            orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetSecondArg(pContext));
-        }
-        else
-        {
-            orDelegate = (DELEGATEREF)ObjectToOBJECTREF(StubManagerHelpers::GetThisPtr(pContext));
-        }
-    }
-
-    destAddr = orDelegate->GetMethodPtrAux();
-#elif defined(TARGET_ARM)
-    (*pRetAddr) = (BYTE *)(size_t)(pContext->Lr);
-    pThis = (BYTE*)(size_t)(pContext->R0);
-
-    // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
-    // shuffle thunk (destination in _methodPtrAux).
-    int offsetOfNextDest;
-    if (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
-        offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtr();
-    else
-        offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtrAux();
-    destAddr = *(PCODE*)(pThis + offsetOfNextDest);
-#elif defined(TARGET_ARM64)
-    (*pRetAddr) = (BYTE *)(size_t)(pContext->Lr);
-    pThis = (BYTE*)(size_t)(pContext->X0);
-
-    // Could be in the singlecast invoke stub (in which case the next destination is in _methodPtr) or a
-    // shuffle thunk (destination in _methodPtrAux).
-    int offsetOfNextDest;
-    if (pc == GetEEFuncEntryPoint(SinglecastDelegateInvokeStub))
-        offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtr();
-    else
-        offsetOfNextDest = DelegateObject::GetOffsetOfMethodPtrAux();
-    destAddr = *(PCODE*)(pThis + offsetOfNextDest);
-#else
-    PORTABILITY_ASSERT("DelegateInvokeStubManager::TraceManager");
-    destAddr = NULL;
-#endif
-
-    LOG((LF_CORDB,LL_INFO10000, "DISM::TM: ppbDest: 0x%p\n", destAddr));
-
-    BOOL res = StubManager::TraceStub(destAddr, trace);
-    LOG((LF_CORDB,LL_INFO10000, "DISM::TM: res: %d, result type: %d\n", res, trace->GetTraceType()));
-
-    return res;
-}
-
-// static
-BOOL DelegateInvokeStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *trace)
+BOOL DelegateInvokeStub::TraceDelegateObject(BYTE* pbDel, TraceDestination *trace)
 {
     CONTRACTL
     {
@@ -2270,7 +2194,6 @@ BOOL DelegateInvokeStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestinatio
     pbDel = *(BYTE**)(((ArrayBase *)pbDelInvocationList)->GetDataPtr());
     return TraceDelegateObject(pbDel, trace);
 }
-
 #endif // DACCESS_COMPILE
 
 
@@ -2462,16 +2385,6 @@ InteropDispatchStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     WRAPPER_NO_CONTRACT;
     DAC_ENUM_VTHIS();
     EMEM_OUT(("MEM: %p InteropDispatchStubManager\n", dac_cast<TADDR>(this)));
-}
-
-void
-DelegateInvokeStubManager::DoEnumMemoryRegions(CLRDataEnumMemoryFlags flags)
-{
-    SUPPORTS_DAC;
-    WRAPPER_NO_CONTRACT;
-    DAC_ENUM_VTHIS();
-    EMEM_OUT(("MEM: %p DelegateInvokeStubManager\n", dac_cast<TADDR>(this)));
-    GetRangeList()->EnumMemoryRegions(flags);
 }
 
 void
