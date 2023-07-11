@@ -72,6 +72,19 @@ async function flush_node_streams() {
 }
 
 function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
+    let bytesAllocated = 0;
+    const allocationSize = 8 * 1024 * 1024, numAllocations = 20;
+    try {
+        const buffers : Uint8Array[] = [];
+        for (let i = 0; i < numAllocations; i++) {
+            buffers.push(new Uint8Array(allocationSize));
+            bytesAllocated += allocationSize;
+        }
+        mono_log_info_no_prefix(`successfully allocated ${bytesAllocated} bytes of memory at exit`);
+    } catch (exc) {
+        mono_log_info_no_prefix(`allocating memory at exit failed after ${bytesAllocated} bytes`);
+    }
+
     if (runtimeHelpers.ExitStatus) {
         if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
             if (!loaderHelpers.config.logExitCode) {
