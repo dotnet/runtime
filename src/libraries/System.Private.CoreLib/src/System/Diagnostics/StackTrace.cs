@@ -126,6 +126,20 @@ namespace System.Diagnostics
         }
 
         /// <summary>
+        /// Constructs a stack trace from a set of <see cref="StackFrame"/> objects
+        /// </summary>
+        /// <param name="frames">The set of stack frames that should be present in the stack trace</param>
+        public StackTrace(IEnumerable<StackFrame> frames)
+        {
+            ArgumentNullException.ThrowIfNull(frames);
+
+            List<StackFrame> frameList = new List<StackFrame>(frames);
+
+            _stackFrames = frameList.ToArray();
+            _numOfFrames = frameList.Count;
+        }
+
+        /// <summary>
         /// Property to get the number of frames in the stack trace
         /// </summary>
         public virtual int FrameCount => _numOfFrames;

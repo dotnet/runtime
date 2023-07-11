@@ -142,6 +142,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Contexts.DestroyContext(sessionId, args["executionContextId"].Value<int>());
                         return false;
                     }
+                case "Runtime.executionContextsCleared":
+                    {
+                        Contexts.ClearContexts(sessionId);
+                        return false;
+                    }
 
                 case "Debugger.paused":
                     {
@@ -1541,7 +1546,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (req.TryResolve(source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, false, token);
+                    try
+                    {
+                        await SetBreakpoint(sessionId, context.store, req, true, false, token);
+                    }
+                    catch (DebuggerAgentException e)
+                    {
+                        //it's not a wasm page then the command throws an error
+                        if (!e.Message.Contains("getDotnetRuntime is not defined"))
+                            logger.LogDebug($"Unexpected error on RuntimeReady {e}");
+                        return;
+                    }
                 }
             }
         }

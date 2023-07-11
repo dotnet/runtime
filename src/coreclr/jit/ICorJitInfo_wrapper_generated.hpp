@@ -51,10 +51,11 @@ void WrapICorJitInfo::getMethodSig(
 
 bool WrapICorJitInfo::getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info)
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context)
 {
     API_ENTER(getMethodInfo);
-    bool temp = wrapHnd->getMethodInfo(ftn, info);
+    bool temp = wrapHnd->getMethodInfo(ftn, info, context);
     API_LEAVE(getMethodInfo);
     return temp;
 }
@@ -545,6 +546,17 @@ CORINFO_FIELD_HANDLE WrapICorJitInfo::getFieldInClass(
     API_ENTER(getFieldInClass);
     CORINFO_FIELD_HANDLE temp = wrapHnd->getFieldInClass(clsHnd, num);
     API_LEAVE(getFieldInClass);
+    return temp;
+}
+
+GetTypeLayoutResult WrapICorJitInfo::getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes)
+{
+    API_ENTER(getTypeLayout);
+    GetTypeLayoutResult temp = wrapHnd->getTypeLayout(typeHnd, treeNodes, numTreeNodes);
+    API_LEAVE(getTypeLayout);
     return temp;
 }
 

@@ -74,19 +74,19 @@ public class WasiTemplateTests : BuildTestBase
                         UseCache: false));
     }
 
-    public static TheoryData<string, bool> TestDataForConsolePublishAndRun()
+    public static TheoryData<string, bool, bool> TestDataForConsolePublishAndRun()
     {
-        var data = new TheoryData<string, bool>();
-        data.Add("Debug", false);
-        data.Add("Debug", true);
-        data.Add("Release", false); // Release relinks by default
+        var data = new TheoryData<string, bool, bool>();
+        data.Add("Debug", false, false);
+        data.Add("Debug", true, true);
+        data.Add("Release", false, false); // Release relinks by default
         return data;
     }
 
     [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/82515", TestPlatforms.Windows)]
     [MemberData(nameof(TestDataForConsolePublishAndRun))]
-    public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking)
+    public void ConsolePublishAndRunForSingleFileBundle(string config, bool relinking, bool invariantTimezone)
     {
         string id = $"{config}_{Path.GetRandomFileName()}";
         string projectFile = CreateWasmTemplateProject(id, "wasiconsole");
@@ -96,6 +96,8 @@ public class WasiTemplateTests : BuildTestBase
         string extraProperties = "<WasmSingleFileBundle>true</WasmSingleFileBundle>";
         if (relinking)
             extraProperties += "<WasmBuildNative>true</WasmBuildNative>";
+        if (invariantTimezone)
+            extraProperties += "<InvariantTimezone>true</InvariantTimezone>";
 
         AddItemsPropertiesToProject(projectFile, extraProperties);
 
@@ -125,6 +127,15 @@ public class WasiTemplateTests : BuildTestBase
         Assert.Contains("args[0] = x", res.Output);
         Assert.Contains("args[1] = y", res.Output);
         Assert.Contains("args[2] = z", res.Output);
+        if(invariantTimezone)
+        {
+            Assert.Contains("Could not find Asia/Tokyo", res.Output);
+        }
+        else
+        {
+            Assert.Contains("Asia/Tokyo BaseUtcOffset is 09:00:00", res.Output);
+        }
+
     }
 
     private static readonly string s_simpleMainWithArgs = """
@@ -133,6 +144,17 @@ public class WasiTemplateTests : BuildTestBase
         Console.WriteLine("Hello, Wasi Console!");
         for (int i = 0; i < args.Length; i ++)
             Console.WriteLine($"args[{i}] = {args[i]}");
+
+        try
+        {
+            TimeZoneInfo tst = TimeZoneInfo.FindSystemTimeZoneById("Asia/Tokyo");
+            Console.WriteLine($"{tst.DisplayName} BaseUtcOffset is {tst.BaseUtcOffset}");
+        }
+        catch (TimeZoneNotFoundException tznfe)
+        {
+            Console.WriteLine($"Could not find Asia/Tokyo: {tznfe.Message}");
+        }
+
         return 42;
         """;
 }
