@@ -2428,14 +2428,10 @@ namespace System.Tests
         [PlatformSpecific(~TestPlatforms.Windows)]
         public static void UtcAliases_MapToUtc()
         {
-            TimeZoneInfo.AdjustmentRule[] expectedAdjustmentRules = TimeZoneInfo.Utc.GetAdjustmentRules();
-
             foreach (string utcAlias in s_UtcAliases)
             {
                 TimeZoneInfo actualUtc = TimeZoneInfo.FindSystemTimeZoneById(utcAlias);
-                Assert.Equal(TimeZoneInfo.Utc.BaseUtcOffset, actualUtc.BaseUtcOffset);
-                Assert.Equal(TimeZoneInfo.Utc.SupportsDaylightSavingTime, actualUtc.SupportsDaylightSavingTime);
-                Assert.Equal(expectedAdjustmentRules, actualUtc.GetAdjustmentRules());
+                Assert.True(TimeZoneInfo.Utc.HasSameRules(actualUtc));
             }
         }
 
