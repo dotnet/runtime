@@ -33,8 +33,8 @@ namespace System
                 case 69: // e
                 case 101: // E
                     return string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
+                           string.Equals(id, "Etc/UCT", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "Etc/Universal", StringComparison.OrdinalIgnoreCase) ||
-                           string.Equals(id, "Etc/UTC", StringComparison.OrdinalIgnoreCase) ||
                            string.Equals(id, "Etc/Zulu", StringComparison.OrdinalIgnoreCase);
                 case 85: // u
                 case 117: // U
