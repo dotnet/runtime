@@ -62,7 +62,7 @@ export function mono_exit(exit_code: number, reason?: any): void {
 
     if (is_exited()) {
         if (reason.silent !== true) {
-            mono_log_warn("mono_exit called more than once", reason.toString());
+            mono_log_warn("mono_exit called more than once \n" + reason.stack);
         }
         reason.silent = true;
     } else {
