@@ -162,6 +162,10 @@ namespace System.Text.Tests
                 yield return new object[] { "\0xyz\0", "\0xyz\0", "\0XYZ\0" };
                 yield return new object[] { "\0XYZ\0", "\0xyz\0", "\0XYZ\0" };
                 yield return new object[] { "AbCdEFgHIJkLmNoPQRStUVwXyZ", "abcdefghijklmnopqrstuvwxyz", "ABCDEFGHIJKLMNOPQRSTUVWXYZ" };
+                yield return new object[] { "AbCdEFgHIJkLmNoPQRStUVwXyZasdWSq", "abcdefghijklmnopqrstuvwxyzasdwsq", "ABCDEFGHIJKLMNOPQRSTUVWXYZASDWSQ" }; // Test case for Vector256 path.
+                yield return new object[] { "AbCdEFgHIJkLmNoPQRStUVwXyZasdWSqAbCdEFgHIJkLmNoPQRStUVwXyZasdWSq", 
+                                            "abcdefghijklmnopqrstuvwxyzasdwsqabcdefghijklmnopqrstuvwxyzasdwsq", 
+                                            "ABCDEFGHIJKLMNOPQRSTUVWXYZASDWSQABCDEFGHIJKLMNOPQRSTUVWXYZASDWSQ" };  // Test case for Vector512 path.
 
                 // exercise all possible code paths
                 for (int i = 1; i <= MaxValidAsciiChar; i++)
@@ -180,7 +184,6 @@ namespace System.Text.Tests
         {
             Assert.Equal(sourceChars.Length, expectedLowerChars.Length);
             Assert.Equal(expectedLowerChars.Length, expectedUpperChars.Length);
-
             byte[] sourceBytes = Encoding.ASCII.GetBytes(sourceChars);
             byte[] expectedLowerBytes = Encoding.ASCII.GetBytes(expectedLowerChars);
             byte[] expectedUpperBytes = Encoding.ASCII.GetBytes(expectedUpperChars);
