@@ -216,24 +216,26 @@ public class GenerateWasmBootJson : Task
                     resourceList = resourceData.runtime;
                 }
                 else if (string.Equals("JSModule", assetTraitName, StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(assetTraitValue, "JSLibraryModule", StringComparison.OrdinalIgnoreCase))
+                    string.Equals(assetTraitValue, "JSLibraryModule", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a library initializer resource.", resource.ItemSpec);
 
                     if (TargetingNET80OrLater)
                     {
-                        resourceData.libraryInitializers ??= new Dictionary<object, object>();
+                        resourceData.libraryInitializers ??= new TypedLibraryInitializers();
+                        TypedLibraryInitializers libraryInitializers = (TypedLibraryInitializers)resourceData.libraryInitializers;
+
                         if (File.Exists(resource.ItemSpec))
                         {
                             string fileContent = File.ReadAllText(resource.ItemSpec);
                             if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart"))
-                                resourceList = EnsureLibraryInitializers(resourceData, "onRuntimeConfigLoaded");
+                                resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
                             else
-                                resourceList = EnsureLibraryInitializers(resourceData, "onRuntimeReady");
+                                resourceList = libraryInitializers.onRuntimeReady ??= new();
                         }
                         else
                         {
-                            resourceList = EnsureLibraryInitializers(resourceData, "onRuntimeConfigLoaded");
+                            resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
                         }
                     }
                     else
@@ -330,7 +332,9 @@ public class GenerateWasmBootJson : Task
 
         var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
         {
-            UseSimpleDictionaryFormat = true
+            UseSimpleDictionaryFormat = true,
+            KnownTypes = new[] { typeof(TypedLibraryInitializers) },
+            EmitTypeInformation = EmitTypeInformation.Never
         });
 
         using var writer = JsonReaderWriterFactory.CreateJsonWriter(output, Encoding.UTF8, ownsStream: false, indent: true);
@@ -344,19 +348,6 @@ public class GenerateWasmBootJson : Task
                 resourceList.Add(resourceKey, $"sha256-{resource.GetMetadata("FileHash")}");
             }
         }
-    }
-
-    private static ResourceHashesByNameDictionary EnsureLibraryInitializers(ResourcesData resourceData, string key)
-    {
-        var libraryInitializers = (Dictionary<string, object>)resourceData.libraryInitializers;
-
-        ResourceHashesByNameDictionary resourceList;
-        if (libraryInitializers.TryGetValue(key, out var rl))
-            resourceList = (ResourceHashesByNameDictionary)rl;
-        else
-            libraryInitializers[key] = resourceList = new();
-
-        return resourceList;
     }
 
     private static bool? ParseOptionalBool(string value)
