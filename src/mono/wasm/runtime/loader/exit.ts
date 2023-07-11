@@ -53,14 +53,34 @@ export function abort_startup(reason: any, should_exit: boolean, should_throw?: 
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
+    // make sure we have both reason and exit_code
+    exit_code = reason?.status || exit_code;
+    reason = reason || runtimeHelpers.ExitStatus
+        ? new runtimeHelpers.ExitStatus(exit_code)
+        : new Error("Exit with code " + exit_code);
+    reason.status = exit_code;
+
     if (is_exited()) {
-        mono_log_warn("mono_exit called more than once", new Error().stack);
-        return;
+        if (reason.silent !== true) {
+            mono_log_warn("mono_exit called more than once", reason.toString());
+        }
+        reason.silent = true;
+    } else {
+        try {
+            reason.stack;// force stack to be generated before we shut down managed code
+            logErrorOnExit(exit_code, reason);
+            appendElementOnExit(exit_code);
+            if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
+        }
+        catch {
+            // ignore
+        }
+
+        // TODO forceDisposeProxies(); here
+
+        loaderHelpers.exitCode = exit_code;
+        if (!loaderHelpers.isAborted && !runtimeHelpers.runtimeReady) abort_startup(reason, false, false);
     }
-
-    // TODO forceDisposeProxies(); here
-
-    loaderHelpers.exitCode = exit_code;
 
     if (loaderHelpers.config && loaderHelpers.config.asyncFlushOnExit && exit_code === 0) {
         // this would NOT call Node's exit() immediately, it's a hanging promise
@@ -74,13 +94,27 @@ export function mono_exit(exit_code: number, reason?: any): void {
         })();
         // we need to throw, rather than let the caller continue the normal execution
         // in the middle of some code, which expects this to stop the process
-        throw runtimeHelpers.ExitStatus
-            ? new runtimeHelpers.ExitStatus(exit_code)
-            : reason
-                ? reason
-                : new Error("Stop with exit code " + exit_code);
+        throw reason;
     } else {
         set_exit_code_and_quit_now(exit_code, reason);
+    }
+}
+
+function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
+    if (runtimeHelpers.mono_wasm_exit) {
+        runtimeHelpers.mono_wasm_exit(exit_code);
+    }
+    // just in case mono_wasm_exit didn't exit or throw
+    if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
+        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
+            INTERNAL.process.exit(exit_code);
+            throw reason;
+        }
+        else if (runtimeHelpers.quit) {
+            runtimeHelpers.quit(exit_code, reason);
+        } else {
+            throw reason;
+        }
     }
 }
 
@@ -103,57 +137,6 @@ async function flush_node_streams() {
     }
 }
 
-function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
-    if (runtimeHelpers.ExitStatus) {
-        if (reason && !(reason instanceof runtimeHelpers.ExitStatus)) {
-            if (!loaderHelpers.config.logExitCode) {
-                if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
-                    loaderHelpers.err(runtimeHelpers.stringify_as_error_with_stack(reason));
-                else if (typeof reason == "string")
-                    loaderHelpers.err(reason);
-                else
-                    loaderHelpers.err(JSON.stringify(reason));
-            }
-        }
-        else if (!reason) {
-            reason = new runtimeHelpers.ExitStatus(exit_code);
-        } else if (typeof reason.status === "number") {
-            exit_code = reason.status;
-        }
-    }
-    logErrorOnExit(exit_code, reason);
-    try {
-        if (runtimeHelpers.jiterpreter_dump_stats) runtimeHelpers.jiterpreter_dump_stats(false);
-    } catch {
-        // eslint-disable-next-line @typescript-eslint/no-extra-semi
-        ;
-    }
-
-    appendElementOnExit(exit_code);
-    if (!loaderHelpers.isAborted && !runtimeHelpers.runtimeReady) abort_startup(reason, false, false);
-    if (runtimeHelpers.mono_wasm_exit) {
-        try {
-            runtimeHelpers.mono_wasm_exit(exit_code);
-        }
-        catch (expected) {
-            if (expected && runtimeHelpers.ExitStatus && !(expected instanceof runtimeHelpers.ExitStatus)) {
-                throw expected;
-            }
-        }
-    }
-    if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
-        if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
-            INTERNAL.process.exit(exit_code);
-            throw reason;
-        }
-        else if (runtimeHelpers.quit) {
-            runtimeHelpers.quit(exit_code, reason);
-        } else {
-            throw reason;
-        }
-    }
-}
-
 function appendElementOnExit(exit_code: number) {
     if (ENVIRONMENT_IS_WEB && loaderHelpers.config && loaderHelpers.config.appendElementOnExit) {
         //Tell xharness WasmBrowserTestRunner what was the exit code
@@ -165,16 +148,16 @@ function appendElementOnExit(exit_code: number) {
     }
 }
 
-function logErrorOnExit(exit_code: number, reason?: any) {
+function logErrorOnExit(exit_code: number, reason: any) {
+    if (exit_code !== 0 && reason) {
+        if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
+            mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
+        else if (typeof reason == "string")
+            mono_log_error(reason);
+        else
+            mono_log_error(JSON.stringify(reason));
+    }
     if (loaderHelpers.config && loaderHelpers.config.logExitCode) {
-        if (exit_code != 0 && reason) {
-            if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
-                mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
-            else if (typeof reason == "string")
-                mono_log_error(reason);
-            else
-                mono_log_error(JSON.stringify(reason));
-        }
         if (consoleWebSocket) {
             const stop_when_ws_buffer_empty = () => {
                 if (consoleWebSocket.bufferedAmount == 0) {

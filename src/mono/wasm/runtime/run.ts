@@ -18,10 +18,15 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
         loaderHelpers.mono_exit(result);
         return result;
     } catch (error) {
+        try {
+            loaderHelpers.mono_exit(1, error);
+        }
+        catch (e) {
+            // ignore
+        }
         if (error instanceof runtimeHelpers.ExitStatus) {
             return error.status;
         }
-        loaderHelpers.mono_exit(1, error);
         return 1;
     }
 }

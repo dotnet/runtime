@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module, mono_assert, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
@@ -319,6 +319,7 @@ export class ManagedObject implements IDisposable {
 
 export class ManagedError extends Error implements IDisposable {
     private superStack: any;
+    private managed_stack: any;
     constructor(message: string) {
         super(message);
         this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
@@ -335,11 +336,17 @@ export class ManagedError extends Error implements IDisposable {
     }
 
     getManageStack() {
-        const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
-        if (gc_handle && (!MonoWasmThreads || runtimeHelpers.jsSynchronizationContextInstalled)) {
-            const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
-            if (managed_stack) {
-                return managed_stack + "\n" + this.getSuperStack();
+        if (this.managed_stack) {
+            return this.managed_stack;
+        }
+        if (loaderHelpers.is_runtime_running() && (!MonoWasmThreads || runtimeHelpers.jsSynchronizationContextInstalled)) {
+            const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
+            if (gc_handle !== GCHandleNull) {
+                const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+                if (managed_stack) {
+                    this.managed_stack = managed_stack + "\n" + this.getSuperStack();
+                    return this.managed_stack;
+                }
             }
         }
         return this.getSuperStack();
