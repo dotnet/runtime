@@ -361,7 +361,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
-      TargetingNET80OrLater="$(_TargetingNET80OrLater)" />
+      TargetingNET80OrLater="$(_TargetingNET80OrLater)"
+      LibraryInitializerOnRuntimeConfigLoaded="@(WasmLibraryInitializerOnRuntimeConfigLoaded)"
+      LibraryInitializerOnRuntimeReady="@(WasmLibraryInitializerOnRuntimeReady)" />
 
     <ItemGroup>
       <FileWrites Include="$(_WasmBuildBootJsonPath)" />
@@ -550,7 +552,9 @@ Copyright (c) .NET Foundation. All rights reserved.
       Jiterpreter="$(_BlazorWebAssemblyJiterpreter)"
       RuntimeOptions="$(_BlazorWebAssemblyRuntimeOptions)"
       Extensions="@(WasmBootConfigExtension)"
-      TargetingNET80OrLater="$(_TargetingNET80OrLater)" />
+      TargetingNET80OrLater="$(_TargetingNET80OrLater)"
+      LibraryInitializerOnRuntimeConfigLoaded="@(WasmLibraryInitializerOnRuntimeConfigLoaded)"
+      LibraryInitializerOnRuntimeReady="@(WasmLibraryInitializerOnRuntimeReady)" />
 
     <ItemGroup>
       <FileWrites Include="$(IntermediateOutputPath)blazor.publish.boot.json" />

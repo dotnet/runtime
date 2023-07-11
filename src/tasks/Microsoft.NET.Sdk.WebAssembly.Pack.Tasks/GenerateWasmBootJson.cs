@@ -59,6 +59,10 @@ public class GenerateWasmBootJson : Task
     [Required]
     public bool TargetingNET80OrLater { get; set; }
 
+    public ITaskItem[] LibraryInitializerOnRuntimeConfigLoaded { get; set; }
+
+    public ITaskItem[] LibraryInitializerOnRuntimeReady { get; set; }
+
     [Required]
     public string OutputPath { get; set; }
 
@@ -143,6 +147,9 @@ public class GenerateWasmBootJson : Task
             result.runtimeOptions = runtimeOptions.ToArray();
         }
 
+        var libraryInitializerOnRuntimeConfigLoaded = LibraryInitializerOnRuntimeConfigLoaded?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+        var libraryInitializerOnRuntimeReady = LibraryInitializerOnRuntimeReady?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+
         // Build a two-level dictionary of the form:
         // - assembly:
         //   - UriPath (e.g., "System.Text.Json.dll")
@@ -225,10 +232,18 @@ public class GenerateWasmBootJson : Task
                         resourceData.libraryInitializers ??= new TypedLibraryInitializers();
                         TypedLibraryInitializers libraryInitializers = (TypedLibraryInitializers)resourceData.libraryInitializers;
 
-                        if (File.Exists(resource.ItemSpec))
+                        if (libraryInitializerOnRuntimeConfigLoaded.Contains(resource.ItemSpec))
+                        {
+                            resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
+                        }
+                        else if (libraryInitializerOnRuntimeReady.Contains(resource.ItemSpec))
+                        {
+                            resourceList = libraryInitializers.onRuntimeReady ??= new();
+                        }
+                        else if (File.Exists(resource.ItemSpec))
                         {
                             string fileContent = File.ReadAllText(resource.ItemSpec);
-                            if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart"))
+                            if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart") || fileContent.Contains("afterStarted"))
                                 resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
                             else
                                 resourceList = libraryInitializers.onRuntimeReady ??= new();
