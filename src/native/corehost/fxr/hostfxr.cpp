@@ -560,8 +560,8 @@ namespace
                 return StatusCode::CoreHostCurHostFindFailure;
 
             startup_info.dotnet_root = get_dotnet_root_from_fxr_path(mod_path);
-            // Use realpath to find the root behind symlinks
-            if (!pal::realpath(&startup_info.dotnet_root))
+            // We don't support directory symlinks, so use fullpath
+            if (!pal::fullpath(&startup_info.dotnet_root))
             {
                 trace::error(_X("Failed to resolve full path of dotnet root [%s]"), startup_info.dotnet_root.c_str());
                 return StatusCode::CoreHostCurHostFindFailure;
