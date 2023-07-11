@@ -76,7 +76,7 @@ try {
     console.log("smoke: HttpClientThread(blurst.txt) done " + t4);
 
     console.log("smoke: running WsClientMain");
-    let w0 = await exports.Sample.Test.WsClientMain("wss://socketsbay.com/wss/v2/1/demo/");
+    let w0 = await exports.Sample.Test.WsClientMain("wss://corefx-net-http11.azurewebsites.net/WebSocket/EchoWebSocket.ashx");
     console.log("smoke: WsClientMain done " + w0);
 
     console.log("smoke: running FetchBackground(blurst.txt)");
