@@ -14,11 +14,13 @@ namespace Microsoft.Interop
     {
         private readonly ICustomTypeMarshallingStrategy _nativeTypeMarshaller;
         private readonly ByValueMarshalKindSupportDescriptor _byValueContentsMarshallingSupport;
+        private readonly bool _isPinned;
 
-        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, ByValueMarshalKindSupportDescriptor byValueContentsMarshallingSupport)
+        public CustomTypeMarshallingGenerator(ICustomTypeMarshallingStrategy nativeTypeMarshaller, ByValueMarshalKindSupportDescriptor byValueContentsMarshallingSupport, bool isPinned)
         {
             _nativeTypeMarshaller = nativeTypeMarshaller;
             _byValueContentsMarshallingSupport = byValueContentsMarshallingSupport;
+            _isPinned = isPinned;
         }
 
         public bool IsSupported(TargetFramework target, Version version)
@@ -106,9 +108,12 @@ namespace Microsoft.Interop
 
         private bool ShouldGenerateByValueOutMarshalling(TypePositionInfo info, StubCodeContext context)
         {
-            return info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
+            _ = (info, context, this);
+            return
+            info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
                 && _byValueContentsMarshallingSupport.GetSupport(info.ByValueContentsMarshalKind, info, context, out _) == ByValueMarshalKindSupport.Supported
-                && !info.IsByRef;
+                && !info.IsByRef
+                && !_isPinned;
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)

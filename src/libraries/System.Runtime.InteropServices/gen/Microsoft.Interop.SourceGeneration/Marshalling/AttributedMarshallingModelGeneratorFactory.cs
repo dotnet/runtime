@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.ReferenceTypeParameterDefault);
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.ReferenceTypeParameterDefault, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -444,16 +444,13 @@ namespace Microsoft.Interop
                 byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.PinnedByReferenceParameterDefault;
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(
-                marshallingStrategy,
-                byValueMarshalKindSupport);
-
             // Elements in the collection must be blittable to use the pinnable marshaller.
-            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable)
+            bool isPinned = marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable;
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, byValueMarshalKindSupport, isPinned);
+            if (isPinned)
             {
                 marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
             }
-
             return ResolvedGenerator.Resolved(marshallingGenerator);
         }
 

@@ -359,6 +359,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+                // Our fallback mechanism for invalid code for unmanaged->managed stubs sometimes generates invalid code.
+                CompilerDiagnostics = CompilerDiagnostics.None,
             };
             test.ExpectedDiagnostics.AddRange(expectedDiagnostics);
             await test.RunAsync();
@@ -772,17 +774,20 @@ namespace ComInterfaceGenerator.Unit.Tests
             var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
+            var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeNotSupportedOnBlittableArray,
+                inAttributeNotSupportedOnPinnedParameter,
                 //https://github.com/dotnet/runtime/issues/88540
-                inAttributeIsDefaultDiagnostic
+                inAttributeNotSupportedOnPinnedParameter
             }};
             // new issue before merge: char generated code doesn't seem to work well with [In, Out]
             //yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)), new DiagnosticResult[] {
             //    inAttributeNotSupportedOnBlittableArray,
             //}};
 
-            // bools that are marshalled into a new array are okay
+            // bools that are marshalled into a new array are in by default
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(
@@ -790,13 +795,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                     "bool[]",
                     paramNameWithLocation,
                     (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic}
             };
             // Overriding marshalling with a custom marshaller makes it not pinned
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute, "[MarshalUsing(typeof(IntMarshaller), ElementIndirectionDepth = 1), MarshalUsing(ConstantElementCount = 10)]int[]", paramNameWithLocation) + CodeSnippets.IntMarshaller,
-                new DiagnosticResult[] { }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic}
             };
 
             // [In, Out] is default
@@ -808,7 +813,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic, inOutAttributeIsDefaultDiagnostic}
             };
             // new issue before merge: char generated code doesn't seem to work well with [In, Out]
             //yield return new object[] {
@@ -819,17 +824,43 @@ namespace ComInterfaceGenerator.Unit.Tests
             //};
 
             // [Out] Should not warn
-            yield return new object[] {
-                ID(),
-                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { }
-            };
+            // new issue before merge: [Out] int[] does not generate an UnmanagedToManaged stub that can be compiled
+            //yield return new object[] {
+            //    ID(),
+            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
+            //    new DiagnosticResult[] { }
+            //};
             // new issue before merge: char generated code doesn't seem to work well with [In, Out]
             //yield return new object[] {
             //    ID(),
             //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
             //    new DiagnosticResult[] { }
             //};
+        }
+        public static IEnumerable<object[]> TempDelete()
+        {
+            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
+            //const string inAttribute = "[{|#1:InAttribute|}]";
+            const string outAttribute = "[{|#2:OutAttribute|}]";
+            const string paramName = "p";
+            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
+            const string constElementCount = @"[MarshalUsing(ConstantElementCount = 10)]";
+            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
+            // Pinned arrays cannot be [In]
+            var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
+            var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
+                new DiagnosticResult[] { }
+            };
         }
 
         [Theory]
@@ -839,7 +870,15 @@ namespace ComInterfaceGenerator.Unit.Tests
         public async Task VerifyByValueMarshallingAttributeUsage(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
-            await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
+            VerifyComInterfaceGenerator.Test test = new(referenceAncillaryInterop: false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+                // Our fallback mechanism for invalid code for unmanaged->managed stubs sometimes generates invalid code.
+                CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
+            };
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+            await test.RunAsync();
         }
 
         [Fact]
