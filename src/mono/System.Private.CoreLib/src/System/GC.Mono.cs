@@ -313,5 +313,10 @@ namespace System
         {
             return (int)EventPipeInternal.GetRuntimeCounterValue(EventPipeInternal.RuntimeCounters.GC_LAST_PERCENT_TIME_IN_GC);
         }
+
+        public static TimeSpan GetTotalPauseDuration()
+        {
+            return TimeSpan.Zero;
+        }
     }
 }
