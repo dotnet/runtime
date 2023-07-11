@@ -2266,7 +2266,7 @@ void Compiler::compSetProcessor()
 // the total sum of flags is still valid.
 #if defined(TARGET_XARCH)
     // Get the preferred vector bitwidth, rounding down to the nearest multiple of 128-bits
-    uint32_t preferredVectorBitWidth   = (JitConfig.PreferredVectorBitWidth() / 128) * 128;
+    uint32_t preferredVectorBitWidth   = (ReinterpretHexAsDecimal(JitConfig.PreferredVectorBitWidth()) / 128) * 128;
     uint32_t preferredVectorByteLength = preferredVectorBitWidth / 8;
 
     if (instructionSetFlags.HasInstructionSet(InstructionSet_SSE))
@@ -2305,8 +2305,14 @@ void Compiler::compSetProcessor()
             // default preferred vector width to 256-bits in some scenarios. Power
             // users can override this with `DOTNET_PreferredVectorBitWidth=512` to
             // allow using such instructions where hardware support is available.
+            //
+            // Under stress, sometimes leave the preferred vector width at 512, even if that means
+            // throttling. This helps with test coverage on test machines that might be older.
 
-            preferredVectorByteLength = 256 / 8;
+            if (!compStressCompile(STRESS_GENERIC_VARN, 20))
+            {
+                preferredVectorByteLength = 256 / 8;
+            }
         }
     }
 
@@ -2843,6 +2849,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disDiffable  = false;
     opts.dspDiffable  = false;
     opts.disAlignment = false;
+    opts.disCodeBytes = false;
 #ifdef DEBUG
     opts.dspInstrs       = false;
     opts.dspLines        = false;
@@ -3037,6 +3044,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
+        }
+        if (JitConfig.JitDisasmWithCodeBytes())
+        {
+            opts.disCodeBytes = true;
         }
         if (JitConfig.JitDisasmDiffable())
         {
@@ -5015,11 +5026,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     // Partially inline static initializations
     DoPhase(this, PHASE_EXPAND_STATIC_INIT, &Compiler::fgExpandStaticInit);
 
-    if (TargetOS::IsWindows)
-    {
-        // Currently this is only applicable for Windows
-        DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
-    }
+    // Expand thread local access
+    DoPhase(this, PHASE_EXPAND_TLS, &Compiler::fgExpandThreadLocalAccess);
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -10342,6 +10350,8 @@ const char* Compiler::devirtualizationDetailToString(CORINFO_DEVIRTUALIZATION_DE
                    "interface implementations";
         case CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE:
             return "Decl method cannot be represented in R2R image";
+        case CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE:
+            return "Support for type equivalence in devirtualization is not yet implemented in crossgen2";
         default:
             return "undefined";
     }

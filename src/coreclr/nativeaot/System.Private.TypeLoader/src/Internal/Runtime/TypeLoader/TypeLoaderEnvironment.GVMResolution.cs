@@ -39,7 +39,7 @@ namespace Internal.Runtime.TypeLoader
                 RuntimeTypeHandle rtth = type.GetRuntimeTypeHandle();
 
                 // Check if we have metadata.
-                if (Instance.TryGetMetadataForNamedType(rtth, out qTypeDefinition))
+                if (TryGetMetadataForNamedType(rtth, out qTypeDefinition))
                     return qTypeDefinition.NativeFormatHandle.GetFullName(qTypeDefinition.NativeFormatReader);
             }
             return "?";

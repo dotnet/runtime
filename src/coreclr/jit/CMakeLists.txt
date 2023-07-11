@@ -21,11 +21,8 @@ function(create_standalone_jit)
   set(multiValueArgs DESTINATIONS)
   cmake_parse_arguments(TARGETDETAILS "" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-  if(TARGETDETAILS_OS STREQUAL "unix_osx")
-    if (NOT (TARGETDETAILS_ARCH STREQUAL "arm64"))
-      message(FATAL_ERROR "Only arm64 Apple has a special ABI, use just unix for x64 Mac OS." )
-    endif()
-    set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_arm64)
+  if(TARGETDETAILS_OS STREQUAL "unix_osx" OR TARGETDETAILS_OS STREQUAL "unix_anyos")
+    set(JIT_ARCH_LINK_LIBRARIES gcinfo_unix_${TARGETDETAILS_ARCH})
   else()
     set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
   endif()
@@ -615,8 +612,8 @@ set(JIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
-if (CLR_CMAKE_TARGET_OSX AND CLR_CMAKE_TARGET_ARCH_ARM64)
-  set(TARGET_OS_NAME unix_osx) # Apple Arm64 has a special ABI, distinguish it.
+if (CLR_CMAKE_TARGET_OSX)
+  set(TARGET_OS_NAME unix_osx)
 elseif (CLR_CMAKE_TARGET_UNIX)
   set(TARGET_OS_NAME unix)
 else()
@@ -631,7 +628,7 @@ add_pgo(clrjit)
 
 if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
   create_standalone_jit(TARGET clrjit_universal_arm64_${ARCH_HOST_NAME} OS universal ARCH arm64 DESTINATIONS .)
-  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix ARCH x64 DESTINATIONS .)
+  create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix_anyos ARCH x64 DESTINATIONS .)
   create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64 DESTINATIONS .)
 endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
 

@@ -307,3 +307,44 @@ NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
 
   ret
 NESTED_END ProfileTailcallNaked, _TEXT
+
+#ifdef TARGET_OSX
+# EXTERN_C void* GetThreadVarsAddress()
+# <NOTE>
+# Helper to calculate the address of relevant __thread_vars section that holds the address of symbol tlv_get_address for thread
+# local `t_ThreadStatics`. The address is updated by the linker, which we retrieve here. In JIT code, this address is called
+# to retrieve the address of the thread local.
+# </NOTE>
+LEAF_ENTRY GetThreadVarsAddress, _TEXT
+        mov     rdi,    _t_ThreadStatics@TLVP[rip]
+        ret
+LEAF_END GetThreadVarsAddress, _TEXT
+// ------------------------------------------------------------------
+#endif // TARGET_OSX
+
+#ifndef TARGET_OSX
+# EXTERN_C void* GetTlsIndexObjectDescOffset();
+
+# <NOTE>
+# Helper to calculate the offset of native thread local variable `t_ThreadStatics`. The offset has to be found at runtime
+# once linker does its relocation and fixup of thread locals. The runtime gets the address of this function, so
+# it can walk through the instruction bytes to retrieve the offset embedded by the linker and calculate the
+# final offset that should be passed to __tls_get_addr() in order to calculate the address of `t_ThreadStatics` for
+# the current thread. Here, we have to call `__tls_get_addr()`, because if the linker tries to find the code pattern
+# of "lea t_ThreadStatics@TLSGD", followed by `call __tls_get_addr()`. Without adding the call, the linker complains.
+# We never have to call this method directly, and hence there is a `int 3` at the end.
+# </NOTE>
+
+LEAF_ENTRY GetTlsIndexObjectDescOffset, _TEXT
+# On The `lea` instruction has a data16 prefix and the call instruction has two data16 (0x66) prefixes and one rex64 prefix.
+# This is so the total size of lea+call to be 16, suitable for link-time optimization.
+
+        .byte 0x66
+        lea     rdi,    t_ThreadStatics@TLSGD[rip]   # instruction where offset is embedded by the linker during compilation
+        .byte 0x66
+        .byte 0x66
+        .byte 0x48 # rex.W prefix for padding
+        call    __tls_get_addr                      # dummy call to have linker see the code pattern to replace the offset
+        int 3
+LEAF_END GetTlsIndexObjectDescOffset, _TEXT
+#endif

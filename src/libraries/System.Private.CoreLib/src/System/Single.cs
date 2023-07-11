@@ -1,15 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: A wrapper class for the primitive type float.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -21,6 +12,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a single-precision floating-point number.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -563,6 +557,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        [Intrinsic]
         public static float Log2(float value) => MathF.Log2(value);
 
         //
@@ -616,6 +611,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
+        [Intrinsic]
         public static float Exp(float x) => MathF.Exp(x);
 
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
@@ -638,12 +634,15 @@ namespace System
         //
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Ceiling(TSelf)" />
+        [Intrinsic]
         public static float Ceiling(float x) => MathF.Ceiling(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Floor(TSelf)" />
+        [Intrinsic]
         public static float Floor(float x) => MathF.Floor(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf)" />
+        [Intrinsic]
         public static float Round(float x) => MathF.Round(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Round(TSelf, int)" />
@@ -656,6 +655,7 @@ namespace System
         public static float Round(float x, int digits, MidpointRounding mode) => MathF.Round(x, digits, mode);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
+        [Intrinsic]
         public static float Truncate(float x) => MathF.Truncate(x);
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
@@ -799,6 +799,7 @@ namespace System
         static float IFloatingPointIeee754<float>.PositiveInfinity => PositiveInfinity;
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Atan2(float y, float x) => MathF.Atan2(y, x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Atan2Pi(TSelf, TSelf)" />
@@ -811,6 +812,7 @@ namespace System
         public static float BitIncrement(float x) => MathF.BitIncrement(x);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.FusedMultiplyAdd(TSelf, TSelf, TSelf)" />
+        [Intrinsic]
         public static float FusedMultiplyAdd(float left, float right, float addend) => MathF.FusedMultiplyAdd(left, right, addend);
 
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.Ieee754Remainder(TSelf, TSelf)" />
@@ -839,21 +841,27 @@ namespace System
         //
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Acosh(TSelf)" />
+        [Intrinsic]
         public static float Acosh(float x) => MathF.Acosh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Asinh(TSelf)" />
+        [Intrinsic]
         public static float Asinh(float x) => MathF.Asinh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Atanh(TSelf)" />
+        [Intrinsic]
         public static float Atanh(float x) => MathF.Atanh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Cosh(TSelf)" />
+        [Intrinsic]
         public static float Cosh(float x) => MathF.Cosh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Sinh(TSelf)" />
+        [Intrinsic]
         public static float Sinh(float x) => MathF.Sinh(x);
 
         /// <inheritdoc cref="IHyperbolicFunctions{TSelf}.Tanh(TSelf)" />
+        [Intrinsic]
         public static float Tanh(float x) => MathF.Tanh(x);
 
         //
@@ -868,6 +876,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf)" />
+        [Intrinsic]
         public static float Log(float x) => MathF.Log(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
@@ -877,6 +886,7 @@ namespace System
         public static float LogP1(float x) => MathF.Log(x + 1);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
+        [Intrinsic]
         public static float Log10(float x) => MathF.Log10(x);
 
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
@@ -927,9 +937,11 @@ namespace System
         public static float CopySign(float value, float sign) => MathF.CopySign(value, sign);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Max(float x, float y) => MathF.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumNumber` function
@@ -952,9 +964,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Min(float x, float y) => MathF.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumNumber` function
@@ -993,6 +1007,7 @@ namespace System
         static float INumberBase<float>.Zero => Zero;
 
         /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        [Intrinsic]
         public static float Abs(float value) => MathF.Abs(value);
 
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
@@ -1088,9 +1103,11 @@ namespace System
         static bool INumberBase<float>.IsZero(float value) => (value == 0);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxMagnitude(float x, float y) => MathF.MaxMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MaxMagnitudeNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
@@ -1116,9 +1133,11 @@ namespace System
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinMagnitude(float x, float y) => MathF.MinMagnitude(x, y);
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        [Intrinsic]
         public static float MinMagnitudeNumber(float x, float y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
@@ -1409,6 +1428,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IPowerFunctions{TSelf}.Pow(TSelf, TSelf)" />
+        [Intrinsic]
         public static float Pow(float x, float y) => MathF.Pow(x, y);
 
         //
@@ -1416,6 +1436,7 @@ namespace System
         //
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Cbrt(TSelf)" />
+        [Intrinsic]
         public static float Cbrt(float x) => MathF.Cbrt(x);
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Hypot(TSelf, TSelf)" />
@@ -1596,6 +1617,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IRootFunctions{TSelf}.Sqrt(TSelf)" />
+        [Intrinsic]
         public static float Sqrt(float x) => MathF.Sqrt(x);
 
         //
@@ -1627,6 +1649,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Acos(TSelf)" />
+        [Intrinsic]
         public static float Acos(float x) => MathF.Acos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AcosPi(TSelf)" />
@@ -1636,6 +1659,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Asin(TSelf)" />
+        [Intrinsic]
         public static float Asin(float x) => MathF.Asin(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AsinPi(TSelf)" />
@@ -1645,6 +1669,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Atan(TSelf)" />
+        [Intrinsic]
         public static float Atan(float x) => MathF.Atan(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.AtanPi(TSelf)" />
@@ -1654,6 +1679,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Cos(TSelf)" />
+        [Intrinsic]
         public static float Cos(float x) => MathF.Cos(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
@@ -1746,6 +1772,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
+        [Intrinsic]
         public static float Sin(float x) => MathF.Sin(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.SinCos(TSelf)" />
@@ -1953,6 +1980,7 @@ namespace System
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Tan(TSelf)" />
+        [Intrinsic]
         public static float Tan(float x) => MathF.Tan(x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.TanPi(TSelf)" />

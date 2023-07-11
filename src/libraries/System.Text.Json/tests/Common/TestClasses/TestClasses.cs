@@ -2286,4 +2286,11 @@ namespace System.Text.Json.Serialization.Tests
             Document.Dispose();
         }
     }
+
+    public class ClassWithRecursiveCollectionTypes
+    {
+        public ClassWithRecursiveCollectionTypes? Nested { get; set; }
+        public List<ClassWithRecursiveCollectionTypes> List { get; set; }
+        public IReadOnlyDictionary<string, ClassWithRecursiveCollectionTypes>? Dictionary { get; set; }
+    }
 }

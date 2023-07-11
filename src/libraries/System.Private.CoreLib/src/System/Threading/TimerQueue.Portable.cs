@@ -20,14 +20,9 @@ namespace System.Threading
         /// </summary>
         private static readonly AutoResetEvent s_timerEvent = new AutoResetEvent(false);
 
+        // this means that it's in the s_scheduledTimers collection, not that it's the one which would run on the next TimeoutCallback
         private bool _isScheduled;
         private long _scheduledDueTimeMs;
-
-#pragma warning disable IDE0060
-        private TimerQueue(int id)
-        {
-        }
-#pragma warning restore IDE0060
 
         private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
         {
@@ -50,7 +45,7 @@ namespace System.Threading
             return timers;
         }
 
-        private bool SetTimer(uint actualDuration)
+        private bool SetTimerPortable(uint actualDuration)
         {
             Debug.Assert((int)actualDuration >= 0);
             long dueTimeMs = TickCount64 + (int)actualDuration;

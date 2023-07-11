@@ -186,13 +186,14 @@ jobs:
         PERFLAB_TARGET_FRAMEWORKS: net7.0
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Darwin'))
 
-    # Zip the workitem directory (for xharness based workitems)
-    - task: ArchiveFiles@2
-      inputs:
-        rootFolderOrFile: '$(WorkItemDirectory)'
-        includeRootFolder: false
-        archiveFile: '$(WorkItemDirectory).zip'
-        verbose: True
+    # Zip the workitem directory (for xharness (mobile) based workitems)
+    - ${{ if or(eq(parameters.runKind, 'android_scenarios'), eq(parameters.runKind, 'ios_scenarios')) }}:
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '$(WorkItemDirectory)'
+          includeRootFolder: false
+          archiveFile: '$(WorkItemDirectory).zip'
+          verbose: True
 
     # run perf testing in helix
     - template: /eng/pipelines/coreclr/templates/perf-send-to-helix.yml

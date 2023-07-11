@@ -154,12 +154,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_VEC:
         {
             srcCount = 0;
+
             assert(dstCount == 1);
             assert(!tree->IsReuseRegVal());
-            RefPosition* def               = BuildDef(tree, BuildEvexIncompatibleMask(tree));
+
+            RefPosition* def               = BuildDef(tree);
             def->getInterval()->isConstant = true;
+            break;
         }
-        break;
 
 #if !defined(TARGET_64BIT)
 
@@ -2978,20 +2980,21 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
         return;
     }
 
-    compiler->compExactlyDependsOn(InstructionSet_AVX);
     compiler->GetEmitter()->SetContainsAVX(true);
+
     if (sizeOfSIMDVector == 32)
     {
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+    }
+
+    if (!compiler->canUseEvexEncoding())
+    {
         return;
     }
 
-    if (compiler->canUseEvexEncoding())
+    if (sizeOfSIMDVector == 64)
     {
-        if (compiler->compExactlyDependsOn(InstructionSet_AVX512F) && (sizeOfSIMDVector == 64))
-        {
-            compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
-        }
+        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
 

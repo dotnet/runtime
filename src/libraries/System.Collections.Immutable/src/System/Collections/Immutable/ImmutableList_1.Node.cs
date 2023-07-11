@@ -279,6 +279,25 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Creates a node tree that contains the contents of a span.
+            /// </summary>
+            /// <param name="items">A span with the contents that the new node tree should contain.</param>
+            /// <returns>The root of the created node tree.</returns>
+            internal static Node NodeTreeFromList(ReadOnlySpan<T> items)
+            {
+                if (items.IsEmpty)
+                {
+                    return EmptyNode;
+                }
+
+                int rightCount = (items.Length - 1) / 2;
+                int leftCount = (items.Length - 1) - rightCount;
+                Node left = NodeTreeFromList(items.Slice(0, leftCount));
+                Node right = NodeTreeFromList(items.Slice(leftCount + 1));
+                return new Node(items[leftCount], left, right, frozen: true);
+            }
+
+            /// <summary>
             /// Adds the specified key to the tree.
             /// </summary>
             /// <param name="key">The key.</param>
@@ -336,6 +355,23 @@ namespace System.Collections.Immutable
                 if (this.IsEmpty)
                 {
                     return CreateRange(keys);
+                }
+
+                Node newRight = _right!.AddRange(keys);
+                Node result = this.MutateRight(newRight);
+                return result.BalanceMany();
+            }
+
+            /// <summary>
+            /// Adds the specified keys to this tree.
+            /// </summary>
+            /// <param name="keys">The keys.</param>
+            /// <returns>The new tree.</returns>
+            internal Node AddRange(ReadOnlySpan<T> keys)
+            {
+                if (this.IsEmpty)
+                {
+                    return NodeTreeFromList(keys);
                 }
 
                 Node newRight = _right!.AddRange(keys);

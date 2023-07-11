@@ -368,15 +368,23 @@ bool UnixNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 
 bool UnixNativeCodeManager::IsUnwindable(PTR_VOID pvAddress)
 {
+    MethodInfo * pMethodInfo = NULL;
+
+#if defined(TARGET_ARM64)
+    MethodInfo methodInfo;
+    FindMethodInfo(pvAddress, &methodInfo);
+    pMethodInfo = &methodInfo;
+#endif
+
     // VirtualUnwind can't unwind epilogues.
-    return TrailingEpilogueInstructionsCount(pvAddress) == 0;
+    return TrailingEpilogueInstructionsCount(pMethodInfo, pvAddress) == 0;
 }
 
 // when stopped in an epilogue, returns the count of remaining stack-consuming instructions
 // otherwise returns
 //  0 - not in epilogue,
 // -1 - unknown.
-int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
+int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(MethodInfo * pMethodInfo, PTR_VOID pvAddress)
 {
 #ifdef TARGET_AMD64
 
@@ -598,9 +606,8 @@ int UnixNativeCodeManager::TrailingEpilogueInstructionsCount(PTR_VOID pvAddress)
 #define BEGS_BITS 0x14000000
 #define BEGS_MASK 0x1C000000
 
-    MethodInfo pMethodInfo;
-    FindMethodInfo(pvAddress, &pMethodInfo);
-    UnixNativeMethodInfo* pNativeMethodInfo = (UnixNativeMethodInfo*)&pMethodInfo;
+    UnixNativeMethodInfo * pNativeMethodInfo = (UnixNativeMethodInfo *)pMethodInfo;
+    ASSERT(pNativeMethodInfo != NULL);
 
     uint32_t* start  = (uint32_t*)pNativeMethodInfo->pMethodStartAddress;
 
@@ -699,7 +706,7 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
     GcInfoDecoder decoder(GCInfoToken(p), flags);
     *pRetValueKind = GetGcRefKind(decoder.GetReturnKind());
 
-    int epilogueInstructions = TrailingEpilogueInstructionsCount((PTR_VOID)pRegisterSet->IP);
+    int epilogueInstructions = TrailingEpilogueInstructionsCount(pMethodInfo, (PTR_VOID)pRegisterSet->IP);
     if (epilogueInstructions < 0)
     {
         // can't figure, possibly a breakpoint instruction

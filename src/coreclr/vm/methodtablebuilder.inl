@@ -15,7 +15,7 @@
 
 //***************************************************************************************
 inline MethodTableBuilder::DeclaredMethodIterator::DeclaredMethodIterator(
-            MethodTableBuilder &mtb) : 
+            MethodTableBuilder &mtb) :
                 m_numDeclaredMethods((int)mtb.NumDeclaredMethods()),
                 m_declaredMethods(mtb.bmtMethod->m_rgDeclaredMethods),
                 m_idx(-1)
@@ -121,7 +121,7 @@ inline BOOL  MethodTableBuilder::DeclaredMethodIterator::IsMethodImpl()
 }
 
 //***************************************************************************************
-inline MethodTableBuilder::METHOD_TYPE MethodTableBuilder::DeclaredMethodIterator::MethodType()
+inline MethodClassification MethodTableBuilder::DeclaredMethodIterator::MethodType()
 {
     LIMITED_METHOD_CONTRACT;
     return GetMDMethod()->GetMethodType();
@@ -502,24 +502,5 @@ MethodTableBuilder::bmtMDMethod::SetUnboxedSlotIndex(SLOT_INDEX idx)
     CONSISTENCY_CHECK(m_pUnboxedMD == NULL);
     m_unboxedSlotIndex = idx;
 }
-
-//***************************************************************************************
-inline DWORD
-MethodTableBuilder::GetMethodClassification(MethodTableBuilder::METHOD_TYPE type)
-{
-    LIMITED_METHOD_CONTRACT;
-    // Verify that the enums are in sync, so we can do the conversion by simple cast.
-    C_ASSERT((DWORD)METHOD_TYPE_NORMAL       == (DWORD)mcIL);
-    C_ASSERT((DWORD)METHOD_TYPE_FCALL        == (DWORD)mcFCall);
-    C_ASSERT((DWORD)METHOD_TYPE_NDIRECT      == (DWORD)mcNDirect);
-    C_ASSERT((DWORD)METHOD_TYPE_EEIMPL       == (DWORD)mcEEImpl);
-    C_ASSERT((DWORD)METHOD_TYPE_INSTANTIATED == (DWORD)mcInstantiated);
-#ifdef FEATURE_COMINTEROP
-    C_ASSERT((DWORD)METHOD_TYPE_COMINTEROP   == (DWORD)mcComInterop);
-#endif
-
-    return (DWORD)type;
-}
-
 #endif  // _METHODTABLEBUILDER_INL_
 

@@ -340,10 +340,12 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                         case NI_SSE41_BlendVariable:
                         case NI_AVX_BlendVariable:
                         case NI_AVX2_BlendVariable:
+                        case NI_AVX512F_BlendVariableMask:
                         {
                             genHWIntrinsic_R_R_RM_R(node, ins, simdSize);
                             break;
                         }
+
                         case NI_AVXVNNI_MultiplyWideningAndAdd:
                         case NI_AVXVNNI_MultiplyWideningAndAddSaturate:
                         {
@@ -354,6 +356,7 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
                             genHWIntrinsic_R_R_R_RM(ins, simdSize, targetReg, op1Reg, op2Reg, op3);
                             break;
                         }
+
                         default:
                         {
                             unreached();
@@ -1858,6 +1861,7 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
                 lastOp       = op3;
 
                 // generate all-one mask vector
+                assert(!emitter::isHighSimdReg(targetReg));
                 emit->emitIns_SIMD_R_R_R(INS_pcmpeqd, attr, maskReg, maskReg, maskReg);
             }
 
