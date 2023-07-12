@@ -242,7 +242,7 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
 
     <!-- Functional tests on devices have problems with return codes from mlaunch -->
-    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj" />
+    <!-- <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj" /> -->
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' and '$(TargetArchitecture)' == 'arm64' and '$(RunDisablediOSTests)' != 'true'">

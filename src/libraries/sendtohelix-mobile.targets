@@ -62,7 +62,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</CoreCLRILCompilerDir>
+        <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', '$(HostArchitecture)', 'ilc'))</CoreCLRILCompilerDir>
         <IlcSdkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkDir>
     </PropertyGroup>
 
