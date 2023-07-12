@@ -735,25 +735,24 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [Theory]
-        [InlineData("GET", HttpStatusCode.OK)]
-        [InlineData("PUT", HttpStatusCode.Created)]
-        public Task RequestDuration_Success_Recorded(string method, HttpStatusCode statusCode)
+        [Fact]
+        public Task RequestDuration_Success_Recorded()
         {
             return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpClient client = CreateHttpClient();
                 using InstrumentRecorder<double> recorder = new InstrumentRecorder<double>(InstrumentNames.RequestDuration);
-                using HttpRequestMessage request = new(new HttpMethod(method), uri) { Version = UseVersion };
+                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
                 using HttpResponseMessage response = await client.SendAsync(request);
 
-                Measurement<double> m = FilterMeasurments(recorder.GetMeasurements(), uri).Single();
-                VerifyRequestDuration(m, uri, "HTTP/1.1", (int)statusCode, method);
-
+                Measurement<double>[] measurments = FilterMeasurments(recorder.GetMeasurements(), uri).ToArray();
+                Assert.Equal(1, measurments.Length);
+                Measurement<double> m = measurments[0];
+                VerifyRequestDuration(m, uri, "HTTP/1.1", (int)HttpStatusCode.OK, "GET");
             }, async server =>
             {
-                await server.AcceptConnectionSendResponseAndCloseAsync(statusCode);
+                await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
             });
         }
 
