@@ -28,11 +28,6 @@
     <RunWasmSamples Condition="'$(RunSmokeTestsOnly)' != 'true' and '$(RunHighAOTResourceRequiringTestsOnly)' != 'true' and '$(TargetOS)' == 'browser' and '$(BuildAOTTestsOnHelix)' != 'true' and  '$(TestWasmBuildTests)' != 'true' and '$(TestWasmDebuggerTests)' != 'true'">true</RunWasmSamples>
   </PropertyGroup>
 
-  <!-- wasm EAT/AOT -->
-  <PropertyGroup Condition="'$(TargetOS)' == 'browser' and '$(RunDisabledWasmTests)' != 'true' and '$(EnableAggressiveTrimming)' == 'true'">
-    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(RunAOTCompilation)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(TargetOS)' == 'browser'">
     <!-- https://github.com/dotnet/runtime/issues/65356 - OOM while linking -->
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)System.Text.RegularExpressions\tests\FunctionalTests\System.Text.RegularExpressions.Tests.csproj" />

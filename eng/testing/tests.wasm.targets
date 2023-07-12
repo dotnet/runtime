@@ -41,6 +41,8 @@
     <NoWarn>$(NoWarn);IL2118</NoWarn>
     <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
+
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(RunAOTCompilation)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <PropertyGroup>
