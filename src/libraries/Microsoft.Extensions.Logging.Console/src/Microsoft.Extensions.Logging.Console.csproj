@@ -10,9 +10,6 @@
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
     <!-- M.E.Configuration.Binder.SourceGeneration: JavaScriptEncoder not supported; no logic generated which is okay. -->
     <NoWarn>SYSLIB1100</NoWarn>
-    <!-- Remove after implementing use of Roslyn interceptors feature https://github.com/dotnet/runtime/issues/79527.
-         We want to emit pragma suppressions in emitted code. -->
-    <NoWarn>$(NoWarn);CS0612;CS0618</NoWarn>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 
