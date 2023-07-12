@@ -268,7 +268,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public static SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyName) =>
+        public static SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
 
         [UnsupportedOSPlatform("android")]
@@ -276,7 +276,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("tvos")]
         [UnsupportedOSPlatform("windows")]
-        public static SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyName) =>
+        public static SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyId) =>
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
 
         public SafeEvpPKeyHandle DuplicateHandle() => null!;

@@ -2250,13 +2250,13 @@ namespace System.Security.Cryptography
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyName) { throw null; }
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPrivateKeyFromEngine(string engineName, string keyId) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("android")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("ios")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("tvos")]
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("windows")]
-        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyName) { throw null; }
+        public static System.Security.Cryptography.SafeEvpPKeyHandle OpenPublicKeyFromEngine(string engineName, string keyId) { throw null; }
         protected override bool ReleaseHandle() { throw null; }
     }
     public abstract partial class SHA1 : System.Security.Cryptography.HashAlgorithm

@@ -286,6 +286,8 @@ static EVP_PKEY* LoadKeyFromEngine(
     EVP_PKEY* ret = NULL;
     ENGINE* engine = NULL;
 
+    // Per https://github.com/openssl/openssl/discussions/21427
+    // using EVP_PKEY after freeing ENGINE is correct.
     engine = ENGINE_by_id(engineName);
 
     if (engine != NULL)

@@ -12,6 +12,8 @@ ssc_src_path="$ssc_path/src"
 libsrc_path="$(dirname "$ssc_path")"
 
 src_path="$(dirname "$libsrc_path")"
+repo_root_path="$(dirname "$src_path")"
+dotnet="$repo_root_path/dotnet.sh"
 
 nativelibs_path="$src_path/native/libs"
 
@@ -29,7 +31,7 @@ fi
 if [ "$1" == "--self-check" ]; then
   export DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_ENSURE_FAILING=true
 else
-  echo "INFO: To run self-ceck use:"
+  echo "INFO: To run self-check use:"
   echo "INFO: ./test.sh --self-check"
   echo "INFO: Expect two test failures."
 fi
@@ -37,10 +39,10 @@ fi
 set -e
 
 cd "$nativelibs_path"
-dotnet build ./build-native.proj
+$dotnet build ./build-native.proj
 
 cd "$ssc_src_path"
-dotnet build
+$dotnet build
 
 cd "$ssc_tests_path"
-dotnet test --filter "FullyQualifiedName~System.Security.Cryptography.Tests.OpenSslNamedKeysTests."
+$dotnet test --filter "FullyQualifiedName~System.Security.Cryptography.Tests.OpenSslNamedKeysTests."
