@@ -45,7 +45,7 @@ function get_first_day_of_week(locale: string)
     const saturdayLocales = [ "en-AE", "en-SD", "fa-IR" ];
     if (saturdayLocales.includes(locale))
     {
-         return 6;
+        return 6;
     }
     const sundayLanguages = [ "zh", "th", "pt", "mr", "ml", "ko", "kn", "ja", "id", "hi", "he", "gu", "fil", "bn", "am", "ar" ];
     const sundayLocales = [ "ta-SG", "ta-IN", "sw-KE", "ms-SG", "fr-CA", "es-MX", "en-US", "en-ZW", "en-ZA", "en-WS", "en-VI", "en-UM", "en-TT", "en-SG", "en-PR", "en-PK", "en-PH", "en-MT", "en-MO", "en-MH", "en-KE", "en-JM", "en-IN", "en-IL", "en-HK", "en-GU", "en-DM", "en-CA", "en-BZ", "en-BW", "en-BS", "en-AU", "en-AS", "en-AG" ];
