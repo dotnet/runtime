@@ -21,7 +21,7 @@ bool
 ds_ipc_pal_init (void);
 
 bool
-ds_ipc_pal_shutdown (void);
+ds_ipc_pal_shutdown (ds_ipc_error_callback_func callback);
 
 int32_t
 ds_ipc_get_handle_int32_t (DiagnosticsIpc *ipc);
