@@ -1012,7 +1012,7 @@ bool Compiler::optSubsumeRelop(BasicBlock* const block, BasicBlock* const domBlo
 
         if ((op1VN != totalFN.m_args[0]) || (op2VN != totalFN.m_args[1]))
         {
-            JITDUMP("Could not match up VN " FMT_VN " to operands on [%06u], sorry.\n", totalVN, domCmpTree);
+            JITDUMP("Could not match up VN " FMT_VN " to operands on [%06u], sorry.\n", totalVN, dspTreeID(domCmpTree));
             JITDUMP("Wanted (" FMT_VN ", " FMT_VN ") have (" FMT_VN ", " FMT_VN ")\n", totalFN.m_args[0],
                     totalFN.m_args[1], op1VN, op2VN);
             return false;
