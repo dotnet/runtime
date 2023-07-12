@@ -390,7 +390,7 @@ static int32_t GetValueForNumberFormat(NSLocale *currentLocale, LocaleNumberData
 
 int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, LocaleNumberData localeNumberData)
 {
-#if !NDEBUG
+#ifndef NDEBUG
     bool isSuccess = true;
 #endif
     int32_t value;
@@ -430,7 +430,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         case LocaleNumber_PositivePercentFormat:
         {
             value = GetValueForNumberFormat(currentLocale, localeNumberData);
-#if !NDEBUG
+#ifndef NDEBUG
             if (value < 0)
             {
                 isSuccess = false;
@@ -457,7 +457,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
             else
             {
                 value = -1;
-#if !NDEBUG
+#ifndef NDEBUG
                 isSuccess = false;
 #endif
             }
@@ -479,7 +479,7 @@ int32_t GlobalizationNative_GetLocaleInfoIntNative(const char* localeName, Local
         }
         default:
             value = -1;
-#if !NDEBUG
+#ifndef NDEBUG
             isSuccess = false;
 #endif
             break;
