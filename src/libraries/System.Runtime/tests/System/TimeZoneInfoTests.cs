@@ -2334,6 +2334,11 @@ namespace System.Tests
                         yield return new object[] { tz };
                     }
                 }
+
+                foreach (string alias in s_UtcAliases)
+                {
+                    yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(alias) };
+                }
             }
         }
 
@@ -2421,20 +2426,6 @@ namespace System.Tests
                 {
                     Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
                 }
-            }
-        }
-
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows & ~TestPlatforms.Browser)]
-        public static void UtcAliases_MapToUtc()
-        {
-            TimeZoneInfo.AdjustmentRule[] expectedAdjustmentRules = TimeZoneInfo.Utc.GetAdjustmentRules();
-
-            foreach (var alias in s_UtcAliases)
-            {
-                TimeZoneInfo actualUtc = TimeZoneInfo.FindSystemTimeZoneById(alias);
-                Assert.Equal(TimeZoneInfo.Utc.BaseUtcOffset, actualUtc.BaseUtcOffset);
-                Assert.Equal(expectedAdjustmentRules, actualUtc.GetAdjustmentRules());
             }
         }
 
