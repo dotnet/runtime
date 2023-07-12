@@ -39,8 +39,12 @@ public class MiscTests : BuildTestBase
 
         var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
-        AssertDotNetNativeFiles(expectedFileType, config, forPublish: true, targetFramework: DefaultTargetFrameworkForBlazor);
-        AssertBlazorBundle(config, isPublish: true, dotnetWasmFromRuntimePack: false);
+        AssertBlazorBundle(new BlazorBuildOptions
+            (
+                Id: id,
+                Config: config,
+                ExpectedFileType: expectedFileType
+            ), isPublish: true);
 
         if (expectedFileType == NativeFilesType.AOT)
         {

@@ -3,6 +3,9 @@
 
 namespace System.Runtime.InteropServices.Marshalling
 {
+    /// <summary>
+    /// Specifies that the attributed type is a COM interface and that the source generator should generate code for it.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Interface)]
     public class GeneratedComInterfaceAttribute : Attribute
     {
