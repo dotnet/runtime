@@ -872,13 +872,12 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     //
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
-    const size_t pageSize = getpagesize();
     uint8_t* begin = (uint8_t*)pAddress;
     uint8_t* end = begin + size;
 
     while (begin < end)
     {
-        uint8_t* endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        uint8_t* endOrNextPageBegin = ALIGN_UP(begin + 1, OS_PAGE_SIZE);
         if (endOrNextPageBegin > end)
             endOrNextPageBegin = end;
 
@@ -1151,6 +1150,23 @@ REDHAWK_PALEXPORT int32_t PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize()
+{
+    static int saved_pagesize = 0;
+
+    if (saved_pagesize)
+        return saved_pagesize;
+
+    // Prefer sysconf () as it's signal safe.
+#if defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
+    saved_pagesize = sysconf(_SC_PAGESIZE);
+#else
+    saved_pagesize = getpagesize();
+#endif
+
+    return saved_pagesize;
 }
 
 __thread void* pStackHighOut = NULL;

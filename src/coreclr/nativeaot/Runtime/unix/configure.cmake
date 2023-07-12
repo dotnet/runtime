@@ -33,6 +33,7 @@ check_library_exists(${PTHREAD_LIBRARY} pthread_getthreadid_np "" HAVE_PTHREAD_G
 
 check_function_exists(clock_nanosleep HAVE_CLOCK_NANOSLEEP)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
+check_function_exists(sysconf HAVE_SYSCONF)
 
 check_struct_has_member ("ucontext_t" uc_mcontext.gregs[0] ucontext.h HAVE_GREGSET_T)
 check_struct_has_member ("ucontext_t" uc_mcontext.__gregs[0] ucontext.h HAVE___GREGSET_T)

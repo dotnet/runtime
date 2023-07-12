@@ -117,8 +117,10 @@ FORCEINLINE void PalSetLastError(int32_t error)
 FORCEINLINE int32_t PalOsPageSize()
 {
 #ifdef HOST_APPLE
-    return 0x4000
+    return 0x4000;
+#elif defined(HOST_AMD64)
+    return 0x1000;
 #else
-    return 0x1000
+    return PalGetOsPageSize();
 #endif
 }
