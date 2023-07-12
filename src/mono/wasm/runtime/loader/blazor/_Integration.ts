@@ -205,9 +205,10 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
 
     for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
         const config = resourceLoader.bootConfig.config[i];
-        if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
+        const configFileName = fileName(config);
+        if (configFileName === "appsettings.json" || configFileName === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
-                name: fileName(config),
+                name: configFileName,
                 resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(config), "vfs"),
                 behavior: "vfs",
             });
