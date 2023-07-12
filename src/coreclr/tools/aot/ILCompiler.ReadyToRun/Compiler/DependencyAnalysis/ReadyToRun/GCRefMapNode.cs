@@ -92,12 +92,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     bool needsInstantiationArg = false;
                     if (methodNode is Import methodImport && methodImport.Signature is MethodFixupSignature methodSignature)
                     {
-                        string typeName = methodSignature.ConstrainedType?.ToString() ?? "";
-                        string methodName = methodNode.Method.ToString();
-                        if (methodName.Contains("IFaceNonGeneric") && methodName.Contains("GenericMethod"))
-                        {
-                            Console.WriteLine("Method: {0}", methodName);
-                        }
                         isStub = methodSignature.IsUnboxingStub || methodSignature.IsInstantiatingStub;
                         needsInstantiationArg = methodSignature.NeedsInstantiationArg;
                         if (isStub &&

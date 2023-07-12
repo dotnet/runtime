@@ -2204,9 +2204,7 @@ namespace Internal.JitInterface
                 // class and not requesting the instantiating stub makes the runtime transform the
                 // owning type to its canonical equivalent that would need different codegen
                 // (supplying the instantiation argument).
-                if (!resolvedConstraint &&
-                    !originalMethod.IsSharedByGenericInstantiations &&
-                    targetMethod.IsSharedByGenericInstantiations)
+                if (!resolvedConstraint)
                 {
                     useInstantiatingStub = true;
                 }
