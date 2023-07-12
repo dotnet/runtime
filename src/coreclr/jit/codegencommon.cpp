@@ -1968,7 +1968,7 @@ void CodeGen::genEmitMachineCode()
 
     if (compiler->opts.disAsm)
     {
-        printf("; BEGIN METHOD ANCHOR %s\n", compiler->info.compFullName);
+        printf("; BEGIN METHOD ANCHOR %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
 
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
@@ -1992,7 +1992,7 @@ void CodeGen::genEmitMachineCode()
 
     if (compiler->opts.disAsm)
     {
-        printf("; END METHOD ANCHOR %s\n", compiler->info.compFullName);
+        printf("; END METHOD ANCHOR %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
 
 #ifdef DEBUG
