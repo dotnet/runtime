@@ -23,7 +23,6 @@ set(COMMON_RUNTIME_SOURCES
     TypeManager.cpp
     ObjectLayout.cpp
     portable.cpp
-    profheapwalkhelper.cpp
     RestrictedCallouts.cpp
     RhConfig.cpp
     RuntimeInstance.cpp

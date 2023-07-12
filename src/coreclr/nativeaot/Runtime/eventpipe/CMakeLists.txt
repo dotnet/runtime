@@ -99,18 +99,21 @@ list(APPEND AOT_EVENTPIPE_MANAGED_TO_NATIVE_SOURCES
    ${RUNTIME_DIR}/runtimeeventinternal.cpp
 )
 
-list(APPEND AOT_EVENTTRACE_SOURCES
-  ${RUNTIME_DIR}/eventtrace.cpp
-)
-
-# These are carry-overs from .NET Native and only included for ETW currently
-#   bulktype : directly emits via ETW with EventWrite
-#   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
-if (FEATURE_ETW)
+if (FEATURE_EVENT_TRACE)
   list(APPEND AOT_EVENTTRACE_SOURCES
-    ${RUNTIME_DIR}/eventtrace_bulktype.cpp
-    ${RUNTIME_DIR}/eventtrace_gcheap.cpp
+    ${RUNTIME_DIR}/eventtrace.cpp
+    ${RUNTIME_DIR}/profheapwalkhelper.cpp
   )
+
+  # These are carry-overs from .NET Native and only included for ETW currently
+  #   bulktype : directly emits via ETW with EventWrite
+  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
+  if (FEATURE_ETW)
+    list(APPEND AOT_EVENTTRACE_SOURCES
+      ${RUNTIME_DIR}/eventtrace_bulktype.cpp
+      ${RUNTIME_DIR}/eventtrace_gcheap.cpp
+    )
+  endif()
 endif()
 
 list(APPEND EVENTPIPE_SOURCES
