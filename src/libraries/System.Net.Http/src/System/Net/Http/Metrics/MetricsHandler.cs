@@ -165,11 +165,11 @@ namespace System.Net.Http.Metrics
             return tags;
         }
 
-        private static readonly object[] s_boxedStatusCodes = new object[512];
+        private static object[]? s_boxedStatusCodes;
 
         private static object GetBoxedStatusCode(int statusCode)
         {
-            object[] boxes = s_boxedStatusCodes;
+            object[] boxes = LazyInitializer.EnsureInitialized(ref s_boxedStatusCodes, static () => new object[512]);
 
             return (uint)statusCode < (uint)boxes.Length
                 ? boxes[statusCode] ??= statusCode
@@ -186,7 +186,7 @@ namespace System.Net.Http.Metrics
 
             protected override void Dispose(bool disposing)
             {
-                // NOP to prevent disposing the global instance from arbitrary user code.
+                // NOP to prevent disposing the global instance from MeterListener callbacks.
             }
         }
     }
