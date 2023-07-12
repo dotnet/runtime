@@ -7,56 +7,57 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.Loader;
+using System.Runtime.Serialization.DataContracts;
 
 namespace System.Runtime.Serialization
 {
-    internal sealed class ContextAwareIndex<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T> where T : class?
+    internal sealed class ContextAwareDataContractIndex
     {
-        private (T? strong, WeakReference<T>? weak)[] _items;
-        private ConditionalWeakTable<Type, T> _keepAlive;
+        private (DataContract? strong, WeakReference<DataContract>? weak)[] _contracts;
+        private ConditionalWeakTable<Type, DataContract> _keepAlive;
 
-        public int Length => _items.Length;
+        public int Length => _contracts.Length;
 
-        public ContextAwareIndex(int size)
+        public ContextAwareDataContractIndex(int size)
         {
-            _items = new (T?, WeakReference<T>?)[size];
-            _keepAlive = new ConditionalWeakTable<Type, T>();
+            _contracts = new (DataContract?, WeakReference<DataContract>?)[size];
+            _keepAlive = new ConditionalWeakTable<Type, DataContract>();
         }
 
-        public T? GetItem(int index) => _items[index].strong ?? (_items[index].weak?.TryGetTarget(out T? ret) == true ? ret : null);
+        public DataContract? GetItem(int index) => _contracts[index].strong ?? (_contracts[index].weak?.TryGetTarget(out DataContract? ret) == true ? ret : null);
 
-        public void SetItem(int index, T value, Type keepAliveType)
+        public void SetItem(int index, DataContract dataContract)
         {
             // Check for unloadability to decide how to store the value
-            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(keepAliveType.Assembly);
+            AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(dataContract.UnderlyingType.Assembly);
             if (alc == null || !alc.IsCollectible)
             {
-                _items[index].strong = value;
+                _contracts[index].strong = dataContract;
             }
             else
             {
-                _items[index].weak = new WeakReference<T>(value);
-                _keepAlive.Add(keepAliveType, value);
+                _contracts[index].weak = new WeakReference<DataContract>(dataContract);
+                _keepAlive.Add(dataContract.UnderlyingType, dataContract);
             }
         }
 
         public void Resize(int newSize)
         {
-            Array.Resize<(T?, WeakReference<T>?)>(ref _items, newSize);
+            Array.Resize<(DataContract?, WeakReference<DataContract>?)>(ref _contracts, newSize);
         }
     }
 
-    internal sealed class ContextAwareDictionary<TType, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] T>
-        where TType : Type
-        where T : class?
+    internal sealed class ContextAwareDictionary<TKey, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TValue>
+        where TKey : Type
+        where TValue : class?
     {
-        private readonly ConcurrentDictionary<TType, T> _fastDictionary = new();
-        private readonly ConditionalWeakTable<TType, T> _collectibleTable = new();
+        private readonly ConcurrentDictionary<TKey, TValue> _fastDictionary = new();
+        private readonly ConditionalWeakTable<TKey, TValue> _collectibleTable = new();
 
 
-        internal T GetOrAdd(TType t, Func<TType, T> f)
+        internal TValue GetOrAdd(TKey t, Func<TKey, TValue> f)
         {
-            T? ret;
+            TValue? ret;
 
             // The fast and most common default case
             if (_fastDictionary.TryGetValue(t, out ret))
@@ -91,59 +92,4 @@ namespace System.Runtime.Serialization
             return ret;
         }
     }
-
-    //internal sealed class ContextAwareTables<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T> where T : class?
-    //{
-    //    private readonly Hashtable _defaultTable;
-    //    private readonly ConditionalWeakTable<Type, T> _collectibleTable;
-
-    //    public ContextAwareTables()
-    //    {
-    //        _defaultTable = new Hashtable();
-    //        _collectibleTable = new ConditionalWeakTable<Type, T>();
-    //    }
-
-    //    internal T GetOrCreateValue(Type t, Func<Type, T> f)
-    //    {
-    //        // The fast and most common default case
-    //        T? ret = (T?)_defaultTable[t];
-    //        if (ret != null)
-    //            return ret;
-
-    //        // Common case for collectible contexts
-    //        if (_collectibleTable.TryGetValue(t, out ret))
-    //            return ret;
-
-    //        // Not found. Do the slower work of creating the value in the correct collection.
-    //        AssemblyLoadContext? alc = AssemblyLoadContext.GetLoadContext(t.Assembly);
-
-    //        // Null and non-collectible load contexts use the default table
-    //        if (alc == null || !alc.IsCollectible)
-    //        {
-    //            lock (_defaultTable)
-    //            {
-    //                if ((ret = (T?)_defaultTable[t]) == null)
-    //                {
-    //                    ret = f(t);
-    //                    _defaultTable[t] = ret;
-    //                }
-    //            }
-    //        }
-
-    //        // Collectible load contexts should use the ConditionalWeakTable so they can be unloaded
-    //        else
-    //        {
-    //            lock (_collectibleTable)
-    //            {
-    //                if (!_collectibleTable.TryGetValue(t, out ret))
-    //                {
-    //                    ret = f(t);
-    //                    _collectibleTable.AddOrUpdate(t, ret);
-    //                }
-    //            }
-    //        }
-
-    //        return ret;
-    //    }
-    //}
 }

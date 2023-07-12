@@ -299,7 +299,7 @@ namespace System.Runtime.Serialization.DataContracts
         internal class DataContractCriticalHelper
         {
             private static readonly ConcurrentDictionary<nint, int> s_typeToIDCache = new();
-            private static readonly ContextAwareIndex<DataContract> s_dataContractCache = new(32);
+            private static readonly ContextAwareDataContractIndex s_dataContractCache = new(32);
             private static int s_dataContractID;
             private static readonly ContextAwareDictionary<Type, DataContract?> s_typeToBuiltInContract = new();
             private static Dictionary<XmlQualifiedName, DataContract?>? s_nameToBuiltInContract;
@@ -499,7 +499,7 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 lock (s_cacheLock)
                 {
-                    s_dataContractCache.SetItem(id, dataContract, dataContract.UnderlyingType);
+                    s_dataContractCache.SetItem(id, dataContract);
                 }
             }
 
