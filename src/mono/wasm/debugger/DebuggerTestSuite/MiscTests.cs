@@ -1042,7 +1042,7 @@ namespace DebuggerTests
             );
         }
 
-        [ConditionalTheory(nameof(RunningOnChrome))]
+        [ConditionalTheory]
         [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, true)]
         [InlineData("ClassInheritsFromClassWithoutDebugSymbols", 1287, false)]
         [InlineData("ClassInheritsFromNonUserCodeClass", 1335, true)]
