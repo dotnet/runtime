@@ -137,7 +137,7 @@ uint8_t * AllocHeap::_Alloc(
 #endif // FEATURE_RWX_MEMORY
 
     ASSERT((alignment & (alignment - 1)) == 0); // Power of 2 only.
-    ASSERT(alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
+    ASSERT((int32_t)alignment <= OS_PAGE_SIZE);          // Can't handle this right now.
     ASSERT((m_rwProtectType == m_roProtectType) == (pRWAccessHolder == NULL));
     ASSERT(!_UseAccessManager() || pRWAccessHolder != NULL);
 
