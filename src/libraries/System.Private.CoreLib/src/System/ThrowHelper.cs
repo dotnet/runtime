@@ -1149,8 +1149,8 @@ namespace System
                     return SR.Format_UnclosedFormatItem;
                 case ExceptionResource.Format_ExpectedAsciiDigit:
                     return SR.Format_ExpectedAsciiDigit;
-                case ExceptionResource.Arg_MustBeArrayType:
-                    return SR.Arg_MustBeArrayType;
+                case ExceptionResource.Argument_HasToBeArrayClass:
+                    return SR.Argument_HasToBeArrayClass;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1348,6 +1348,6 @@ namespace System
         Format_UnexpectedClosingBrace,
         Format_UnclosedFormatItem,
         Format_ExpectedAsciiDigit,
-        Arg_MustBeArrayType,
+        Argument_HasToBeArrayClass,
     }
 }

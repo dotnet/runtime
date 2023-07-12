@@ -213,9 +213,9 @@ namespace System
             ArgumentOutOfRangeException.ThrowIfNegative(length);
 
             if (!arrayType.IsArray)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
             if (arrayType.GetArrayRank() != 1)
-                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported, ExceptionArgument.arrayType);
 
             return InternalCreateFromArrayType(arrayType, 1, &length, null);
         }
@@ -228,9 +228,9 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
             if (!arrayType.IsArray)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
             if (arrayType.GetArrayRank() != lengths.Length)
-                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices, ExceptionArgument.lengths);
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
             // a good exception message if they are not; however we check this again inside the execution
@@ -255,9 +255,9 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
             if (!arrayType.IsArray)
-                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeArrayType, ExceptionArgument.arrayType);
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_HasToBeArrayClass, ExceptionArgument.arrayType);
             if (arrayType.GetArrayRank() != lengths.Length)
-                ThrowHelper.ThrowArgumentException_Argument_IncompatibleArrayType();
+                ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices, ExceptionArgument.lengths);
 
             // Check to make sure the lengths are all non-negative. Note that we check this here to give
             // a good exception message if they are not; however we check this again inside the execution
