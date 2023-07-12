@@ -2327,10 +2327,10 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_FIELD || kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD);
 	g_assert (member_name != NULL);
 
-	MonoType *target_type = sig->params[0]; // params[0] is the accessor wrapper's parent
+	MonoType *target_type = sig->params[0]; // params[0] is the field's parent
 	MonoType *ret_type = sig->ret;
 	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID) {
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedArgCheck");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
 
@@ -2339,7 +2339,7 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	gboolean target_valuetype = m_class_is_valuetype (target_class);
 	gboolean ret_byref = m_type_is_byref (ret_type);
 	if (!ret_byref || (kind == MONO_UNSAFE_ACCESSOR_FIELD && target_valuetype && !target_byref)) {
-		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedRefCheck");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
 
@@ -2347,7 +2347,8 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
 	if (target_field == NULL || target_field->type->type != ret_type->type) {
-		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", "UnsafeAccessor");
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", 
+			g_strdup_printf("No '%s' in '%s'. Or the type of '%s' doesn't match", member_name, m_class_get_name (target_class), member_name));
 		return;
 	}
 
