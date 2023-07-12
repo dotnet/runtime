@@ -25,13 +25,13 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             ThrowHelper.ThrowIfNull(optionsBuilder);
 
-            optionsBuilder.Services.AddHostedService<ValidationHostedService>();
-            optionsBuilder.Services.AddOptions<ValidatorOptions>()
+            optionsBuilder.Services.AddTransient<IStartupValidator, StartupValidator>();
+            optionsBuilder.Services.AddOptions<StartupValidatorOptions>()
                 .Configure<IOptionsMonitor<TOptions>>((vo, options) =>
                 {
                     // This adds an action that resolves the options value to force evaluation
                     // We don't care about the result as duplicates are not important
-                    vo.Validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
+                    vo._validators[(typeof(TOptions), optionsBuilder.Name)] = () => options.Get(optionsBuilder.Name);
                 });
 
             return optionsBuilder;
