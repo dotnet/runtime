@@ -33,6 +33,7 @@ namespace System
     [TypeForwardedFrom("System.Core, Version=3.5.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public sealed partial class TimeZoneInfo : IEquatable<TimeZoneInfo?>, ISerializable, IDeserializationCallback
     {
+        internal static bool Unsorted { get; } = AppContextConfigHelper.GetBooleanConfig("System.TimeZoneInfo.SystemTimeZonesUnsorted", "DOTNET_SYSTEM_TIME_ZONE_INFO_SYSTEM_TIME_ZONES_UNSORTED");
         private enum TimeZoneInfoResult
         {
             Success = 0,
@@ -133,6 +134,7 @@ namespace System
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
             public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
+            public bool _systemTimeZonesSorted;
         }
 
         // used by GetUtcOffsetFromUtc (DateTime.Now, DateTime.ToLocalTime) for max/min whole-day range checks
@@ -886,31 +888,43 @@ namespace System
 
             lock (cachedData)
             {
+                if (cachedData._systemTimeZonesSorted)
+                {
+                    Debug.Assert(cachedData._readOnlySystemTimeZones != null);
+                    return cachedData._readOnlySystemTimeZones;
+                }
+
                 if (cachedData._readOnlySystemTimeZones == null)
                 {
                     PopulateAllSystemTimeZones(cachedData);
                     cachedData._allSystemTimeZonesRead = true;
+                }
 
-                    if (cachedData._systemTimeZones != null)
+                if (cachedData._systemTimeZones == null)
+                {
+                    cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
+                }
+                else if (Unsorted)
+                {
+                    List<TimeZoneInfo> unsortedSystemTimeZones = new List<TimeZoneInfo>(cachedData._systemTimeZones.Values);
+                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(unsortedSystemTimeZones);
+                }
+                else
+                {
+                    cachedData._systemTimeZonesSorted = true;
+                    // return a collection of the cached system time zones
+                    TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
+                    cachedData._systemTimeZones.Values.CopyTo(array, 0);
+
+                    // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                    Array.Sort(array, static (x, y) =>
                     {
-                        // return a collection of the cached system time zones
-                        TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
-                        cachedData._systemTimeZones.Values.CopyTo(array, 0);
+                        // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                        int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                        return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                    });
 
-                        // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                        Array.Sort(array, static (x, y) =>
-                        {
-                            // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                            int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
-                        });
-
-                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
-                    }
-                    else
-                    {
-                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
-                    }
+                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                 }
             }
 
