@@ -9,7 +9,7 @@ namespace System.Reflection.Emit
     internal sealed class EnumBuilderImpl : EnumBuilder
     {
         private readonly FieldBuilder _underlyingField;
-        internal TypeBuilderImpl _typeBuilder;
+        internal readonly TypeBuilderImpl _typeBuilder;
 
         internal EnumBuilderImpl(string name, Type underlyingType, TypeAttributes visibility, ModuleBuilderImpl module, TypeDefinitionHandle typeHandle)
         {
