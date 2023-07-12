@@ -19,7 +19,7 @@ internal static partial class Interop
         internal const int FSCTL_SET_SPARSE = 0x000900c4;
         internal struct FILE_SET_SPARSE_BUFFER
         {
-            internal int SetSparse;
+            internal byte SetSparse;
         }
 
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_get_integrity_information

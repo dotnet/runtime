@@ -283,11 +283,8 @@ namespace System.IO
                     }
 
                     // Get the source volume path. Note: we need the real path here for symlinks also, hence openedSourceFullPath.
-                    if (Interop.Kernel32.GetVolumePathName(openedSourceFullPath, out var volumePath) != 0)
-                    {
-                        throw new Exception("K1");
-                        //return false;
-                    }
+                    // Todo: do we care about not propogating an error from this?
+                    string volumePath = Interop.Kernel32.GetVolumePathName(openedSourceFullPath);
 
                     // Read the source volume's cluster size.
                     if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, out int sectorsPerCluster, out int bytesPerCluster, out _, out _))
