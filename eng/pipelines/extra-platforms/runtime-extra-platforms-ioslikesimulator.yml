@@ -119,7 +119,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_NativeAOT_RuntimeTests
       timeoutInMinutes: 240
-      buildArgs: -s --cross clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig) -rc $(_BuildConfig)
+      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(_BuildConfig) -rc $(_BuildConfig)
       # extra steps, run tests
       extraVariablesTemplates:
         - template: /eng/pipelines/common/templates/runtimes/test-variables.yml
