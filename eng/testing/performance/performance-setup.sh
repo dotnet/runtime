@@ -286,7 +286,7 @@ if [[ "$internal" == true ]]; then
         if [[ "$logical_machine" == "perfowl" ]]; then
             queue=Ubuntu.1804.Amd64.Owl.Perf
         else
-            queue=Ubuntu.1804.Amd64.Tiger.Perf
+            queue=Ubuntu.2204.Amd64.Tiger.Perf
         fi
     fi
 
