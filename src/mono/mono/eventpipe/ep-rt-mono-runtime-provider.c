@@ -22,6 +22,8 @@ extern EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_
 #define RUNTIME_PROVIDER_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context
 #define RUNTIME_RUNDOWN_PROVIDER_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context
 
+#define NUM_NANOSECONDS_IN_1_MS 1000000
+
 // Sample profiler.
 static GArray * _sampled_thread_callstacks = NULL;
 static uint32_t _max_sampled_thread_count = 32;
@@ -43,7 +45,6 @@ static MonoJitInfo *_monitor_enter_v4_method_jitinfo = NULL;
 // GC roots table.
 static dn_umap_t _gc_roots_table;
 
-// TODO: Make into a shared provider resource, collapse with mono provider gc lock.
 // Lock used for GC related activities.
 static ep_rt_spin_lock_handle_t _gc_lock = {0};
 
@@ -303,6 +304,13 @@ struct _GCHeapDumpBulkData {
 	uint32_t max_count;
 };
 
+typedef enum {
+	GC_HEAP_DUMP_CONTEXT_STATE_INIT = 0,
+	GC_HEAP_DUMP_CONTEXT_STATE_START = 1,
+	GC_HEAP_DUMP_CONTEXT_STATE_DUMP = 2,
+	GC_HEAP_DUMP_CONTEXT_STATE_END = 3
+} GCHeapDumpContextState;
+
 typedef struct _GCHeapDumpContext GCHeapDumpContext;
 struct _GCHeapDumpContext {
 	EVENTPIPE_TRACE_CONTEXT trace_context;
@@ -317,6 +325,8 @@ struct _GCHeapDumpContext {
 	uint32_t gc_type;
 	uint32_t gc_count;
 	uint32_t gc_depth;
+	uint32_t retry_count;
+	GCHeapDumpContextState state;
 };
 
 // Must match GCBulkNode layout in ClrEtwAll.man.
@@ -373,6 +383,9 @@ static const uint32_t BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE =
 
 static volatile uint32_t _gc_heap_dump_requests = 0;
 static volatile uint32_t _gc_heap_dump_count = 0;
+
+
+
 static volatile uint64_t _gc_heap_dump_trigger_count = 0;
 
 static dn_vector_t _gc_heap_dump_requests_data;
@@ -2970,19 +2983,19 @@ jit_code_buffer_callback (
 }
 
 static
-void
+uint32_t
 gc_heap_dump_requests_inc (void)
 {
 	EP_ASSERT (ep_rt_mono_is_runtime_initialized ());
-	ep_rt_atomic_inc_uint32_t (&_gc_heap_dump_requests);
+	return ep_rt_atomic_inc_uint32_t (&_gc_heap_dump_requests);
 }
 
 static
-void
+uint32_t
 gc_heap_dump_requests_dec (void)
 {
 	EP_ASSERT (ep_rt_mono_is_runtime_initialized ());
-	ep_rt_atomic_dec_uint32_t (&_gc_heap_dump_requests);
+	return ep_rt_atomic_dec_uint32_t (&_gc_heap_dump_requests);
 }
 
 static
@@ -2991,8 +3004,15 @@ gc_heap_dump_requested (void)
 {
 	if (!ep_rt_mono_is_runtime_initialized ())
 		return false;
-
 	return ep_rt_volatile_load_uint32_t(&_gc_heap_dump_requests) != 0 ? true : false;
+}
+
+static
+uint32_t
+gc_heap_dump_count_inc (void)
+{
+	EP_ASSERT (ep_rt_mono_is_runtime_initialized ());
+	return ep_rt_atomic_inc_uint32_t (&_gc_heap_dump_count);
 }
 
 static
@@ -3178,6 +3198,8 @@ gc_heap_dump_context_init (
 	context->gc_type = gc_type;
 	context->gc_count = gc_count;
 	context->gc_depth = gc_depth;
+	context->retry_count = 0;
+	context->state = GC_HEAP_DUMP_CONTEXT_STATE_INIT;
 
 	if (is_gc_heap_dump_enabled (context)) {
 		context->bulk_type_logger = bulk_type_event_logger_alloc ();
@@ -4035,19 +4057,16 @@ gc_event_callback (
 	}
 }
 
-// TODO: Bailout in case nothing triggers but dump requested is still set.
-
 static
 void
 gc_heap_dump_trigger_callback (MonoProfiler *prof)
 {
-	ep_rt_config_requires_lock_not_held ();
+	bool notify_finalizer = false;
+	GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
 
-	GCHeapDumpContext *heap_dump_context = NULL;
-
-	if (gc_heap_dump_requested ()) {
+	if (!heap_dump_context && gc_heap_dump_requested ()) {
 		EP_LOCK_ENTER (section1)
-			if (gc_heap_dump_requested () && ep_rt_mono_sesion_has_all_started ()) {
+			if (gc_heap_dump_requested ()) {
 				EVENTPIPE_TRACE_CONTEXT context = RUNTIME_PROVIDER_CONTEXT;
 				if (!dn_vector_empty (&_gc_heap_dump_requests_data)) {
 					context = *dn_vector_back_t (&_gc_heap_dump_requests_data, EVENTPIPE_TRACE_CONTEXT);
@@ -4055,7 +4074,7 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 				}
 				gc_heap_dump_requests_dec ();
 
-				uint32_t gc_count = ep_rt_atomic_inc_uint32_t (&_gc_heap_dump_count);
+				uint32_t gc_count = gc_heap_dump_count_inc ();
 				uint32_t gc_depth = mono_gc_max_generation () + 1;
 				uint32_t gc_reason = GC_REASON_INDUCED;
 				uint32_t gc_type = GC_TYPE_NGC;
@@ -4074,47 +4093,86 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 	}
 
 	if (heap_dump_context) {
-		FireEtwGCStart_V2 (
-			heap_dump_context->gc_count,
-			heap_dump_context->gc_depth,
-			heap_dump_context->gc_reason,
-			heap_dump_context->gc_type,
-			clr_instance_get_id (),
-			0,
-			NULL,
-			NULL);
+		switch (heap_dump_context->state) {
+		case GC_HEAP_DUMP_CONTEXT_STATE_INIT :
+		{
+			bool all_started = false;
+			EP_LOCK_ENTER (section2)
+				all_started = ep_rt_mono_sesion_has_all_started ();
+			EP_LOCK_EXIT (section2)
 
-		// TODO: Look into a more deterministic solution.
-		// Give session flush threads time to make sure
-		// FireEtwGCStart_V2 has been delivered before STW.
-		g_usleep (1 * 1000 * 1000);
+			if (!all_started && heap_dump_context->retry_count < 5) {
+				heap_dump_context->retry_count++;
+				notify_finalizer = true;
+				break;
+			}
 
-		mono_profiler_set_gc_event_callback (_runtime_profiler_provider, gc_event_callback);
+			heap_dump_context->state = GC_HEAP_DUMP_CONTEXT_STATE_START;
+			// Fallthrough
+		}
+		case GC_HEAP_DUMP_CONTEXT_STATE_START :
+		{
+			FireEtwGCStart_V2 (
+				heap_dump_context->gc_count,
+				heap_dump_context->gc_depth,
+				heap_dump_context->gc_reason,
+				heap_dump_context->gc_type,
+				clr_instance_get_id (),
+				0,
+				NULL,
+				NULL);
 
-		mono_gc_collect (mono_gc_max_generation ());
+			heap_dump_context->state = GC_HEAP_DUMP_CONTEXT_STATE_DUMP;
+			notify_finalizer = true;
+			break;
+		}
+		case GC_HEAP_DUMP_CONTEXT_STATE_DUMP :
+		{
+			bool gc_dump = true;
+			gc_dump &= EventPipeEventEnabledGCBulkNode ();
+			gc_dump &= EventPipeEventEnabledGCBulkEdge ();
+			gc_dump &= EventPipeEventEnabledGCBulkRootEdge ();
+			gc_dump &= EventPipeEventEnabledGCBulkRootStaticVar ();
 
-		mono_profiler_set_gc_event_callback (_runtime_profiler_provider, NULL);
+			if (gc_dump) {
+				mono_profiler_set_gc_event_callback (_runtime_profiler_provider, gc_event_callback);
+				mono_gc_collect (mono_gc_max_generation ());
+				mono_profiler_set_gc_event_callback (_runtime_profiler_provider, NULL);
+			}
 
-		// TODO: Look into a more deterministic solution.
-		// Tooling waits on FireEtwGCEnd_V1 to be delivered.
-		// If events end up in same buffer, all events except the
-		// first will be marked as not sorted, triggering TraceEvent
-		// to cache them on thread. Since tooling waits on FireEtwGCEnd_V1
-		// and since it can be the last event written there is no way
-		// to make sure that won't happen except waiting
-		// for flush threads to call ep_session_write_all_buffers_to_file.
-		g_usleep (1 * 1000 * 1000);
+			heap_dump_context->state = GC_HEAP_DUMP_CONTEXT_STATE_END;
+			notify_finalizer = true;
+			break;
+		}
+		case GC_HEAP_DUMP_CONTEXT_STATE_END :
+		{
+			FireEtwGCEnd_V1 (
+				heap_dump_context->gc_count,
+				heap_dump_context->gc_depth,
+				clr_instance_get_id (),
+				NULL,
+				NULL);
 
-		FireEtwGCEnd_V1 (
-			heap_dump_context->gc_count,
-			heap_dump_context->gc_depth,
-			clr_instance_get_id (),
-			NULL,
-			NULL);
+			gc_heap_dump_context_reset ();
+			heap_dump_context = NULL;
+			break;
+		}
+		default :
+			g_assert_not_reached ();
+		}
+	}
 
-		gc_heap_dump_context_reset ();
-	} else {
-		g_usleep (200 * 1000);
+	if (!heap_dump_context) {
+		EP_LOCK_ENTER (section3)
+			bool gc_enabled = is_keword_enabled(RUNTIME_PROVIDER_CONTEXT.EnabledKeywordsBitmask, GC_KEYWORD);
+			bool gc_dump_enabled = is_keword_enabled(RUNTIME_PROVIDER_CONTEXT.EnabledKeywordsBitmask, GC_HEAP_COLLECT_KEYWORD);
+			if (!(gc_enabled && gc_dump_enabled))
+				mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, NULL);
+		EP_LOCK_EXIT (section3)
+	}
+
+	if (notify_finalizer) {
+		ep_rt_thread_sleep (200 * NUM_NANOSECONDS_IN_1_MS);
 		mono_gc_finalize_notify ();
 	}
 
@@ -4203,10 +4261,9 @@ EventPipeEtwCallbackDotNETRuntime (
 			mono_profiler_set_monitor_failed_callback (_runtime_profiler_provider, NULL);
 		}
 
+		// Disabled in gc_heap_dump_trigger_callback when no longer needed.
 		if (is_keword_enabled(live_keywords, GC_KEYWORD) && is_keword_enabled(live_keywords, GC_HEAP_COLLECT_KEYWORD))
 			mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, gc_heap_dump_trigger_callback);
-		else
-			mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, NULL);
 
 		RUNTIME_PROVIDER_CONTEXT.Level = level;
 		RUNTIME_PROVIDER_CONTEXT.EnabledKeywordsBitmask = live_keywords;
