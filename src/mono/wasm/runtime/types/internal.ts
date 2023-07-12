@@ -137,7 +137,8 @@ export type LoaderHelpers = {
     hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
 
     loadBootResource?: LoadBootResourceCallback;
-    libraryInitializers?: any[];
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
+    libraryInitializers?: { scriptName: string, exports: any }[];
 
     isChromium: boolean,
     isFirefox: boolean

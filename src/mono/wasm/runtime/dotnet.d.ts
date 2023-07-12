@@ -338,7 +338,7 @@ type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;
     getConfig: () => MonoConfig;
-    getLibraryInitializerExports(): any[];
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
     setHeapU8: (offset: NativePointer, value: number) => void;
     setHeapU16: (offset: NativePointer, value: number) => void;

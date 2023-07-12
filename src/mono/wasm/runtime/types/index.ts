@@ -280,7 +280,7 @@ export type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
-    getLibraryInitializerExports(): any[],
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
 
     // memory management
     setHeapB32: (offset: NativePointer, value: number | boolean) => void,

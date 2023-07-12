@@ -8,6 +8,7 @@ import { assertIsControllablePromise, createPromiseController, getPromiseControl
 import { mono_download_assets, resolve_asset_path } from "./assets";
 import { setup_proxy_console } from "./logging";
 import { hasDebuggingEnabled } from "./blazor/_Polyfill";
+import { invokeLibraryInitializers } from "./libraryInitializers";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
@@ -87,6 +88,7 @@ export function setLoaderGlobals(
         setup_proxy_console,
 
         hasDebuggingEnabled,
+        invokeLibraryInitializers,
 
     } as Partial<LoaderHelpers>);
 }
