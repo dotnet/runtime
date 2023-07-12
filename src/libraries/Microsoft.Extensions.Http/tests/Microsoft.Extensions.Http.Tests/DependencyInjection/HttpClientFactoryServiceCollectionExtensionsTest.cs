@@ -766,14 +766,14 @@ namespace Microsoft.Extensions.DependencyInjection
             // Arrange
             var serviceCollection = new ServiceCollection();
 
-            HttpMessageHandlerBuilder builder = null;
+            IList<DelegatingHandler> additionalHandlers = null;
 
             // Act1
-            serviceCollection.AddHttpClient("example.com").ConfigureHttpMessageHandlerBuilder(b =>
+            serviceCollection.AddHttpClient("example.com").ConfigureAdditionalHttpMessageHandlers((handlers, _) =>
             {
-                builder = b;
+                additionalHandlers = handlers;
 
-                b.AdditionalHandlers.Add(Mock.Of<DelegatingHandler>());
+                handlers.Add(Mock.Of<DelegatingHandler>());
             });
 
             var services = serviceCollection.BuildServiceProvider();
@@ -788,7 +788,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.NotNull(client);
 
             Assert.Collection(
-                builder.AdditionalHandlers,
+                additionalHandlers,
                 h => Assert.IsType<LoggingScopeHttpMessageHandler>(h),
                 h => Assert.NotNull(h),
                 h => Assert.IsType<LoggingHttpMessageHandler>(h));
@@ -907,14 +907,14 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             var serviceCollection = new ServiceCollection();
 
-            HttpMessageHandlerBuilder builder = null;
+            IList<DelegatingHandler> additionalHandlers = null;
 
             // Act1
-            serviceCollection.AddHttpClient("example.com").ConfigureHttpMessageHandlerBuilder(b =>
+            serviceCollection.AddHttpClient("example.com").ConfigureAdditionalHttpMessageHandlers((handlers, _) =>
             {
-                builder = b;
+                additionalHandlers = handlers;
 
-                b.AdditionalHandlers.Add(Mock.Of<DelegatingHandler>());
+                handlers.Add(Mock.Of<DelegatingHandler>());
             });
 
             var services = serviceCollection.BuildServiceProvider();
@@ -929,7 +929,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.IsNotType<LoggingScopeHttpMessageHandler>(handler);
 
             Assert.Collection(
-                builder.AdditionalHandlers,
+                additionalHandlers,
                 h => Assert.IsType<LoggingScopeHttpMessageHandler>(h),
                 h => Assert.NotNull(h),
                 h => Assert.IsType<LoggingHttpMessageHandler>(h));
@@ -1507,7 +1507,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
 #if NETFRAMEWORK
                 request.Properties[nameof(ScopedService)] = Service;
-#else                
+#else
                 request.Options.Set(new HttpRequestOptionsKey<ScopedService>(nameof(ScopedService)), Service);
 #endif
                 return Task.FromResult(new HttpResponseMessage());

@@ -236,6 +236,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder ConfigurePrimaryHttpMessageHandler(this IHttpClientBuilder builder, Action<HttpMessageHandler, IServiceProvider> configureHandler)
         {
             ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(configureHandler);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
@@ -252,6 +253,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
         /// <param name="configureBuilder">A delegate that is used to configure an <see cref="HttpMessageHandlerBuilder"/>.</param>
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        [Obsolete("This method has been deprecated. Use ConfigurePrimaryHttpMessageHandler or ConfigureAdditionalHttpMessageHandlers instead.")]
         public static IHttpClientBuilder ConfigureHttpMessageHandlerBuilder(this IHttpClientBuilder builder, Action<HttpMessageHandlerBuilder> configureBuilder)
         {
             ThrowHelper.ThrowIfNull(builder);
