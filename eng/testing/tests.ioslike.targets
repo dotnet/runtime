@@ -99,6 +99,7 @@
 
     <!-- Remove the runtime pack parts from the self contained app.  We'll restore on helix -->
     <Delete Condition="'$(UsePortableRuntimePack)' == 'true'" Files="@(_RuntimePackFilesToDelete)" />
+
     <!-- To recreate the original project on helix, we need to set the apple properties also, same as the
          library test project. Eg. $(InvariantGlobalization) -->
     <ItemGroup>
