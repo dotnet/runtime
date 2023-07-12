@@ -2321,13 +2321,6 @@ emit_array_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *method, Mo
 }
 
 static void
-emit_unsafe_accessor_exception (MonoMethodBuilder *mb, const char *id, const char *msg)
-{
-	mono_mb_emit_exception_full (mb, "System", id, msg);
-	mb->method->iflags |= METHOD_IMPL_ATTRIBUTE_NOINLINING;
-}
-
-static void
 emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	// Field access requires a single argument for target type and a return type.
@@ -2337,7 +2330,7 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	MonoType *target_type = sig->params[0]; // params[0] is the accessor wrapper's parent
 	MonoType *ret_type = sig->ret;
 	if (sig->param_count != 1 || target_type == NULL || sig->ret->type == MONO_TYPE_VOID) {
-		emit_unsafe_accessor_exception (mb, "BadImageFormatException", "UnsafeAccessor_FailedArgCheck");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedArgCheck");
 		return;
 	}
 
@@ -2346,7 +2339,7 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	gboolean target_valuetype = m_class_is_valuetype (target_class);
 	gboolean ret_byref = m_type_is_byref (ret_type);
 	if (!ret_byref || (kind == MONO_UNSAFE_ACCESSOR_FIELD && target_valuetype && !target_byref)) {
-		emit_unsafe_accessor_exception (mb, "BadImageFormatException", "UnsafeAccessor_FailedRefCheck");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_FailedRefCheck");
 		return;
 	}
 
@@ -2354,7 +2347,7 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
 	if (target_field == NULL || target_field->type->type != ret_type->type) {
-		emit_unsafe_accessor_exception (mb, "MissingFieldException", "UnsafeAccessor");
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", "UnsafeAccessor");
 		return;
 	}
 
@@ -2366,12 +2359,12 @@ static void
 emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	if (accessor_method->is_generic) {
-		emit_unsafe_accessor_exception (mb, "NotImplementedException", "UnsafeAccessor_Generics");
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
 		return;
 	}
 
 	if (!m_method_is_static (accessor_method)) {
-		emit_unsafe_accessor_exception (mb, "BadImageFormatException", "UnsafeAccessor_NonStatic");
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_NonStatic");
 		return;
 	}
 
@@ -2382,12 +2375,12 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
 		// TODO
-		emit_unsafe_accessor_exception (mb, "NotImplementedException", "UnsafeAccessor");
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
 		// TODO
-		emit_unsafe_accessor_exception (mb, "NotImplementedException", "UnsafeAccessor");
+		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
 		return;
 	default:
 		g_assert_not_reached(); // some unknown wrapper kind
