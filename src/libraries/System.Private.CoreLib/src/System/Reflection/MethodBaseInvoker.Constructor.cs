@@ -63,7 +63,7 @@ namespace System.Reflection
             }
             finally
             {
-                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
+                RuntimeImports.UnregisterForGCReporting(&regByRefStorage);
                 RuntimeImports.UnregisterForGCReporting(&regArgStorage);
             }
         }
