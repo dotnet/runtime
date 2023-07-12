@@ -26,7 +26,7 @@ public class LibraryInitializerTests : AppTestBase
     [Fact]
     public async Task LoadLibraryInitializer()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_LoadLibraryInitializer");
         PublishProject("Debug");
 
         var result = await RunSdkStyleApp(new(Configuration: "Debug", ForPublish: true, TestScenario: "LibraryInitializerTest"));
@@ -37,17 +37,18 @@ public class LibraryInitializerTests : AppTestBase
     }
 
     [Fact]
-    public async Task LogAndSwallowError()
+    public async Task AbortStartupOnError()
     {
-        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests");
+        CopyTestAsset("WasmBasicTestApp", "LibraryInitializerTests_AbortStartupOnError");
         PublishProject("Debug");
 
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
             ForPublish: true,
             TestScenario: "LibraryInitializerTest",
-            BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" }
+            BrowserQueryString: new Dictionary<string, string> { ["throwError"] = "true" },
+            ExpectedExitCode: 1
         ));
-        Assert.True(result.ConsoleOutput.Any(m => m.Contains("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer: Error: Error thrown from library initializer")), "The library initializer test didn't emit expected error message");
+        Assert.True(result.ConsoleOutput.Any(m => m.Contains("MONO_WASM: Failed to invoke 'onRuntimeConfigLoaded' on library initializer '../WasmBasicTestApp.lib.module.js': Error: Error thrown from library initializer")), "The library initializer test didn't emit expected error message");
     }
 }
