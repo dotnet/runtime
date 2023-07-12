@@ -924,7 +924,16 @@ DWORD SyncBlockCache::NewSyncBlockSlot(Object *obj)
     {
         // This is kept out of line to keep stuff like the C++ EH prolog (needed for holders) off
         // of the common path.
+        DWORD oldSyncTableSize = m_SyncTableSize;
         Grow();
+        SYSTEMTIME st;
+        GetSystemTime(&st);
+        FILE * pFile = fopen ("NewSyncBlockSlot.log", "a");
+        if (pFile != NULL)
+        {
+          fprintf (pFile, "[%lu]%02lu:%02lu:%02lu m_SyncTableSize:%d->%d m_FreeSyncTableIndex:%d\n", (ULONG)st.wDay, (ULONG)st.wHour, (ULONG)st.wMinute, (ULONG)st.wSecond, oldSyncTableSize, m_SyncTableSize, m_FreeSyncTableIndex);
+          fclose (pFile);
+        }
     }
     else
     {
