@@ -108,7 +108,7 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _cachedBufferListSendOperation, null) ??
             new BufferListSendOperation(this);
 
-        private abstract class AsyncOperation : IThreadPoolWorkItem
+        private abstract unsafe class AsyncOperation : IThreadPoolWorkItem
         {
             private enum State
             {
@@ -128,7 +128,7 @@ namespace System.Net.Sockets
             public readonly SocketAsyncContext AssociatedContext;
             public AsyncOperation Next = null!; // initialized by helper called from ctor
             public SocketError ErrorCode;
-            public byte[]? SocketAddress;
+            public Memory<byte> SocketAddress;
             public int SocketAddressLen;
             public CancellationTokenRegistration CancellationRegistration;
 
@@ -348,7 +348,7 @@ namespace System.Net.Sockets
             void IThreadPoolWorkItem.Execute() => AssociatedContext.ProcessAsyncWriteOperation(this);
         }
 
-        private abstract class SendOperation : WriteOperation
+        private abstract unsafe class SendOperation : WriteOperation
         {
             public SocketFlags Flags;
             public int BytesTransferred;
@@ -357,10 +357,10 @@ namespace System.Net.Sockets
 
             public SendOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback { get; set; }
+            public Action<int, Memory<byte>, SocketFlags, SocketError>? Callback { get; set; }
 
-            public override void InvokeCallback(bool allowPooling) =>
-                Callback!(BytesTransferred, SocketAddress, SocketAddressLen, SocketFlags.None, ErrorCode);
+            public override unsafe void InvokeCallback(bool allowPooling) =>
+                Callback!(BytesTransferred, SocketAddress, SocketFlags.None, ErrorCode);
         }
 
         private sealed class BufferMemorySendOperation : SendOperation
@@ -372,15 +372,14 @@ namespace System.Net.Sockets
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
                 int bufferIndex = 0;
-                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, Buffer.Span, null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress.Span, ref BytesTransferred, out ErrorCode);
             }
 
-            public override void InvokeCallback(bool allowPooling)
+            public override unsafe void InvokeCallback(bool allowPooling)
             {
                 var cb = Callback!;
                 int bt = BytesTransferred;
-                byte[]? sa = SocketAddress;
-                int sal = SocketAddressLen;
+                Memory<byte> sa = SocketAddress;
                 SocketError ec = ErrorCode;
 
                 if (allowPooling)
@@ -388,7 +387,7 @@ namespace System.Net.Sockets
                     AssociatedContext.ReturnOperation(this);
                 }
 
-                cb(bt, sa, sal, SocketFlags.None, ec);
+                cb(bt, sa, SocketFlags.None, ec);
             }
         }
 
@@ -401,15 +400,14 @@ namespace System.Net.Sockets
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                return SocketPal.TryCompleteSendTo(context._socket, default(ReadOnlySpan<byte>), Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, default(ReadOnlySpan<byte>), Buffers, ref BufferIndex, ref Offset, ref Count, Flags, SocketAddress.Span, ref BytesTransferred, out ErrorCode);
             }
 
             public override void InvokeCallback(bool allowPooling)
             {
                 var cb = Callback!;
                 int bt = BytesTransferred;
-                byte[]? sa = SocketAddress;
-                int sal = SocketAddressLen;
+                Memory<byte> sa = SocketAddress;
                 SocketError ec = ErrorCode;
 
                 if (allowPooling)
@@ -417,7 +415,7 @@ namespace System.Net.Sockets
                     AssociatedContext.ReturnOperation(this);
                 }
 
-                cb(bt, sa, sal, SocketFlags.None, ec);
+                cb(bt, sa, SocketFlags.None, ec);
             }
         }
 
@@ -431,7 +429,7 @@ namespace System.Net.Sockets
             {
                 int bufferIndex = 0;
                 int bufferLength = Offset + Count; // TryCompleteSendTo expects the entire buffer, which it then indexes into with the ref Offset and ref Count arguments
-                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, bufferLength), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress, SocketAddressLen, ref BytesTransferred, out ErrorCode);
+                return SocketPal.TryCompleteSendTo(context._socket, new ReadOnlySpan<byte>(BufferPtr, bufferLength), null, ref bufferIndex, ref Offset, ref Count, Flags, SocketAddress.Span, ref BytesTransferred, out ErrorCode);
             }
         }
 
@@ -443,10 +441,10 @@ namespace System.Net.Sockets
 
             public ReceiveOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<int, byte[]?, int, SocketFlags, SocketError>? Callback { get; set; }
+            public Action<int, Memory<byte>, SocketFlags, SocketError>? Callback { get; set; }
 
             public override void InvokeCallback(bool allowPooling) =>
-                Callback!(BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, ErrorCode);
+                Callback!(BytesTransferred, SocketAddress, ReceivedFlags, ErrorCode);
         }
 
         private sealed class BufferMemoryReceiveOperation : ReceiveOperation
@@ -460,7 +458,7 @@ namespace System.Net.Sockets
             {
                 // Zero byte read is performed to know when data is available.
                 // We don't have to call receive, our caller is interested in the event.
-                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
+                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress.Length == 0)
                 {
                     BytesTransferred = 0;
                     ReceivedFlags = SocketFlags.None;
@@ -471,14 +469,14 @@ namespace System.Net.Sockets
                 {
                     if (!SetReceivedFlags)
                     {
-                        Debug.Assert(SocketAddress == null);
+                        Debug.Assert(SocketAddress.Length == 0);
 
                         ReceivedFlags = SocketFlags.None;
                         return SocketPal.TryCompleteReceive(context._socket, Buffer.Span, Flags, out BytesTransferred, out ErrorCode);
                     }
                     else
                     {
-                        return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                        return SocketPal.TryCompleteReceiveFrom(context._socket, Buffer.Span, null, Flags, SocketAddress.Span, out SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
                     }
                 }
             }
@@ -487,7 +485,7 @@ namespace System.Net.Sockets
             {
                 var cb = Callback!;
                 int bt = BytesTransferred;
-                byte[]? sa = SocketAddress;
+                Memory<byte> sa = SocketAddress;
                 int sal = SocketAddressLen;
                 SocketFlags rf = ReceivedFlags;
                 SocketError ec = ErrorCode;
@@ -497,7 +495,7 @@ namespace System.Net.Sockets
                     AssociatedContext.ReturnOperation(this);
                 }
 
-                cb(bt, sa, sal, rf, ec);
+                cb(bt, sa, rf, ec);
             }
         }
 
@@ -508,14 +506,13 @@ namespace System.Net.Sockets
             public BufferListReceiveOperation(SocketAsyncContext context) : base(context) { }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
-                SocketPal.TryCompleteReceiveFrom(context._socket, default(Span<byte>), Buffers, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                SocketPal.TryCompleteReceiveFrom(context._socket, default(Span<byte>), Buffers, Flags, SocketAddress.Span, out SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
 
             public override void InvokeCallback(bool allowPooling)
             {
                 var cb = Callback!;
                 int bt = BytesTransferred;
-                byte[]? sa = SocketAddress;
-                int sal = SocketAddressLen;
+                Memory<byte> sa = SocketAddress;
                 SocketFlags rf = ReceivedFlags;
                 SocketError ec = ErrorCode;
 
@@ -524,7 +521,7 @@ namespace System.Net.Sockets
                     AssociatedContext.ReturnOperation(this);
                 }
 
-                cb(bt, sa, sal, rf, ec);
+                cb(bt, sa, rf, ec);
             }
         }
 
@@ -536,7 +533,7 @@ namespace System.Net.Sockets
             public BufferPtrReceiveOperation(SocketAsyncContext context) : base(context) { }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
-                SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress, ref SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
+                SocketPal.TryCompleteReceiveFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress.Span, out SocketAddressLen, out BytesTransferred, out ReceivedFlags, out ErrorCode);
         }
 
         private sealed class ReceiveMessageFromOperation : ReadOperation
@@ -553,13 +550,13 @@ namespace System.Net.Sockets
 
             public ReceiveMessageFromOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
+            public Action<int, Memory<byte>, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
-                SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer.Span, Buffers, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                SocketPal.TryCompleteReceiveMessageFrom(context._socket, Buffer.Span, Buffers, Flags, SocketAddress, out SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
 
             public override void InvokeCallback(bool allowPooling) =>
-                Callback!(BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
+                Callback!(BytesTransferred, SocketAddress, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
         private sealed unsafe class BufferPtrReceiveMessageFromOperation : ReadOperation
@@ -576,13 +573,13 @@ namespace System.Net.Sockets
 
             public BufferPtrReceiveMessageFromOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
+            public Action<int, Memory<byte>, int, SocketFlags, IPPacketInformation, SocketError>? Callback { get; set; }
 
             protected override bool DoTryComplete(SocketAsyncContext context) =>
-                SocketPal.TryCompleteReceiveMessageFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress!, ref SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
+                SocketPal.TryCompleteReceiveMessageFrom(context._socket, new Span<byte>(BufferPtr, Length), null, Flags, SocketAddress!, out SocketAddressLen, IsIPv4, IsIPv6, out BytesTransferred, out ReceivedFlags, out IPPacketInformation, out ErrorCode);
 
             public override void InvokeCallback(bool allowPooling) =>
-                Callback!(BytesTransferred, SocketAddress!, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
+                Callback!(BytesTransferred, SocketAddress, SocketAddressLen, ReceivedFlags, IPPacketInformation, ErrorCode);
         }
 
         private sealed class AcceptOperation : ReadOperation
@@ -591,11 +588,11 @@ namespace System.Net.Sockets
 
             public AcceptOperation(SocketAsyncContext context) : base(context) { }
 
-            public Action<IntPtr, byte[], int, SocketError>? Callback { get; set; }
+            public Action<IntPtr, Memory<byte>, SocketError>? Callback { get; set; }
 
             protected override bool DoTryComplete(SocketAsyncContext context)
             {
-                bool completed = SocketPal.TryCompleteAccept(context._socket, SocketAddress!, ref SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
+                bool completed = SocketPal.TryCompleteAccept(context._socket, SocketAddress, out SocketAddressLen, out AcceptedFileDescriptor, out ErrorCode);
                 Debug.Assert(ErrorCode == SocketError.Success || AcceptedFileDescriptor == (IntPtr)(-1), $"Unexpected values: ErrorCode={ErrorCode}, AcceptedFileDescriptor={AcceptedFileDescriptor}");
                 return completed;
             }
@@ -604,7 +601,7 @@ namespace System.Net.Sockets
             {
                 var cb = Callback!;
                 IntPtr fd = AcceptedFileDescriptor;
-                byte[] sa = SocketAddress!;
+                Memory<byte> sa = SocketAddress;
                 int sal = SocketAddressLen;
                 SocketError ec = ErrorCode;
 
@@ -613,7 +610,7 @@ namespace System.Net.Sockets
                     AssociatedContext.ReturnOperation(this);
                 }
 
-                cb(fd, sa, sal, ec);
+                cb(fd, sa.Slice(0, sal), ec);
             }
         }
 
@@ -1383,15 +1380,14 @@ namespace System.Net.Sockets
 
         private void ProcessAsyncWriteOperation(WriteOperation op) => _sendQueue.ProcessAsyncOperation(op);
 
-        public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd)
+        public SocketError Accept(Memory<byte> socketAddress, out int socketAddressLen, out IntPtr acceptedFd)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
-            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
 
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
+                SocketPal.TryCompleteAccept(_socket, socketAddress, out socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == (IntPtr)(-1), $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
                 return errorCode;
@@ -1400,7 +1396,7 @@ namespace System.Net.Sockets
             var operation = new AcceptOperation(this)
             {
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
             };
 
             PerformSyncOperation(ref _receiveQueue, operation, -1, observedSequenceNumber);
@@ -1410,10 +1406,9 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError AcceptAsync(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, Action<IntPtr, byte[], int, SocketError> callback, CancellationToken cancellationToken)
+        public SocketError AcceptAsync(Memory<byte> socketAddress, out int socketAddressLen, out IntPtr acceptedFd, Action<IntPtr, Memory<byte>, SocketError> callback, CancellationToken cancellationToken)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
-            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
             Debug.Assert(callback != null, "Expected non-null callback");
 
             SetHandleNonBlocking();
@@ -1421,7 +1416,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteAccept(_socket, socketAddress, ref socketAddressLen, out acceptedFd, out errorCode))
+                SocketPal.TryCompleteAccept(_socket, socketAddress, out socketAddressLen, out acceptedFd, out errorCode))
             {
                 Debug.Assert(errorCode == SocketError.Success || acceptedFd == (IntPtr)(-1), $"Unexpected values: errorCode={errorCode}, acceptedFd={acceptedFd}");
 
@@ -1431,7 +1426,7 @@ namespace System.Net.Sockets
             AcceptOperation operation = RentAcceptOperation();
             operation.Callback = callback;
             operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
+            operation.SocketAddressLen = socketAddress.Length;
 
             if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
@@ -1444,6 +1439,7 @@ namespace System.Net.Sockets
             }
 
             acceptedFd = (IntPtr)(-1);
+            socketAddressLen = 0;
             return SocketError.IOPending;
         }
 
@@ -1514,23 +1510,21 @@ namespace System.Net.Sockets
 
         public SocketError Receive(Memory<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
-            int socketAddressLen = 0;
-            return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
+            //int socketAddressLen = 0;
+            return ReceiveFrom(buffer, ref flags, Memory<byte>.Empty, out int _, timeout, out bytesReceived);
         }
 
         public SocketError Receive(Span<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
-            int socketAddressLen = 0;
-            return ReceiveFrom(buffer, ref flags, null, ref socketAddressLen, timeout, out bytesReceived);
+            return ReceiveFrom(buffer, ref flags, Memory<byte>.Empty, out int _, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
+        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
-            int socketAddressLen = 0;
-            return ReceiveFromAsync(buffer, flags, null, ref socketAddressLen, out bytesReceived, out receivedFlags, callback, cancellationToken);
+            return ReceiveFromAsync(buffer, flags, Memory<byte>.Empty, out int _, out bytesReceived, out receivedFlags, callback, cancellationToken);
         }
 
-        public SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
+        public unsafe SocketError ReceiveFrom(Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1538,7 +1532,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
+                (SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 flags = receivedFlags;
@@ -1551,23 +1545,24 @@ namespace System.Net.Sockets
                 Flags = flags,
                 SetReceivedFlags = true,
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
             };
 
             PerformSyncOperation(ref _receiveQueue, operation, timeout, observedSequenceNumber);
 
             flags = operation.ReceivedFlags;
             bytesReceived = operation.BytesTransferred;
+            socketAddressLen = operation.SocketAddressLen;
             return operation.ErrorCode;
         }
 
-        public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, int timeout, out int bytesReceived)
+        public unsafe SocketError ReceiveFrom(Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
             SocketFlags receivedFlags;
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteReceiveFrom(_socket, buffer, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
+                (SocketPal.TryCompleteReceiveFrom(_socket, buffer, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 flags = receivedFlags;
@@ -1582,18 +1577,19 @@ namespace System.Net.Sockets
                     Length = buffer.Length,
                     Flags = flags,
                     SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
+                    SocketAddressLen = socketAddress.Length,
                 };
 
                 PerformSyncOperation(ref _receiveQueue, operation, timeout, observedSequenceNumber);
 
                 flags = operation.ReceivedFlags;
                 bytesReceived = operation.BytesTransferred;
+                socketAddressLen = operation.SocketAddressLen;
                 return operation.ErrorCode;
             }
         }
 
-        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError ReceiveAsync(Memory<byte> buffer, SocketFlags flags, out int bytesReceived, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
@@ -1626,15 +1622,16 @@ namespace System.Net.Sockets
             return SocketError.IOPending;
         }
 
-        public SocketError ReceiveFromAsync(Memory<byte> buffer, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError ReceiveFromAsync(Memory<byte> buffer, SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+                SocketPal.TryCompleteReceiveFrom(_socket, buffer.Span, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
+                //ocketAddressLen = socketAddressLength;
                 return errorCode;
             }
 
@@ -1644,35 +1641,36 @@ namespace System.Net.Sockets
             operation.Buffer = buffer;
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
+            operation.SocketAddressLen = socketAddress.Length;
 
             if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
             {
                 receivedFlags = operation.ReceivedFlags;
                 bytesReceived = operation.BytesTransferred;
                 errorCode = operation.ErrorCode;
+                socketAddressLen = operation.SocketAddressLen;
 
                 ReturnOperation(operation);
                 return errorCode;
             }
 
             bytesReceived = 0;
+            socketAddressLen = 0;
             receivedFlags = SocketFlags.None;
             return SocketError.IOPending;
         }
 
         public SocketError Receive(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesReceived)
         {
-            return ReceiveFrom(buffers, ref flags, null, 0, timeout, out bytesReceived);
+            return ReceiveFrom(buffers, ref flags, Memory<byte>.Empty, out int _, timeout, out bytesReceived);
         }
 
-        public SocketError ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
+        public SocketError ReceiveAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesReceived, out SocketFlags receivedFlags, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
-            int socketAddressLen = 0;
-            return ReceiveFromAsync(buffers, flags, null, ref socketAddressLen, out bytesReceived, out receivedFlags, callback);
+            return ReceiveFromAsync(buffers, flags, Memory<byte>.Empty, out int _, out bytesReceived, out receivedFlags, callback);
         }
 
-        public SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesReceived)
+        public unsafe SocketError ReceiveFrom(IList<ArraySegment<byte>> buffers, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, int timeout, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1680,7 +1678,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
+                (SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 flags = receivedFlags;
@@ -1692,7 +1690,7 @@ namespace System.Net.Sockets
                 Buffers = buffers,
                 Flags = flags,
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen
+                SocketAddressLen = socketAddress.Length,
             };
 
             PerformSyncOperation(ref _receiveQueue, operation, timeout, observedSequenceNumber);
@@ -1703,14 +1701,14 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
+        public SocketError ReceiveFromAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
             SetHandleNonBlocking();
 
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
+                SocketPal.TryCompleteReceiveFrom(_socket, buffers, flags, socketAddress.Span, out socketAddressLen, out bytesReceived, out receivedFlags, out errorCode))
             {
                 // Synchronous success or failure
                 return errorCode;
@@ -1721,7 +1719,7 @@ namespace System.Net.Sockets
             operation.Buffers = buffers;
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
+            operation.SocketAddressLen = socketAddress.Length;
 
             if (!_receiveQueue.StartAsyncOperation(this, operation, observedSequenceNumber))
             {
@@ -1735,12 +1733,13 @@ namespace System.Net.Sockets
             }
 
             receivedFlags = SocketFlags.None;
+            socketAddressLen = 0;
             bytesReceived = 0;
             return SocketError.IOPending;
         }
 
         public SocketError ReceiveMessageFrom(
-            Memory<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+            Memory<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1748,7 +1747,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, null, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
+                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, null, flags, socketAddress, out socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 flags = receivedFlags;
@@ -1761,7 +1760,7 @@ namespace System.Net.Sockets
                 Buffers = null,
                 Flags = flags,
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
                 IsIPv4 = isIPv4,
                 IsIPv6 = isIPv6,
             };
@@ -1776,7 +1775,7 @@ namespace System.Net.Sockets
         }
 
         public unsafe SocketError ReceiveMessageFrom(
-            Span<byte> buffer, ref SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
+            Span<byte> buffer, ref SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, int timeout, out IPPacketInformation ipPacketInformation, out int bytesReceived)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1784,7 +1783,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, null, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
+                (SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer, null, flags, socketAddress, out socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 flags = receivedFlags;
@@ -1799,7 +1798,7 @@ namespace System.Net.Sockets
                     Length = buffer.Length,
                     Flags = flags,
                     SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
+                    SocketAddressLen = socketAddress.Length,
                     IsIPv4 = isIPv4,
                     IsIPv6 = isIPv6,
                 };
@@ -1814,14 +1813,14 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, byte[], int, SocketFlags, IPPacketInformation, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError ReceiveMessageFromAsync(Memory<byte> buffer, IList<ArraySegment<byte>>? buffers, SocketFlags flags, Memory<byte> socketAddress, out int socketAddressLen, bool isIPv4, bool isIPv6, out int bytesReceived, out SocketFlags receivedFlags, out IPPacketInformation ipPacketInformation, Action<int, Memory<byte>, SocketFlags, IPPacketInformation, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
             SocketError errorCode;
             int observedSequenceNumber;
             if (_receiveQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, buffers, flags, socketAddress, ref socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
+                SocketPal.TryCompleteReceiveMessageFrom(_socket, buffer.Span, buffers, flags, socketAddress, out socketAddressLen, isIPv4, isIPv6, out bytesReceived, out receivedFlags, out ipPacketInformation, out errorCode))
             {
                 return errorCode;
             }
@@ -1833,7 +1832,7 @@ namespace System.Net.Sockets
                 Buffers = buffers,
                 Flags = flags,
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
                 IsIPv4 = isIPv4,
                 IsIPv6 = isIPv6,
             };
@@ -1849,25 +1848,25 @@ namespace System.Net.Sockets
 
             ipPacketInformation = default(IPPacketInformation);
             bytesReceived = 0;
+            socketAddressLen = 0;
             receivedFlags = SocketFlags.None;
             return SocketError.IOPending;
         }
 
         public SocketError Send(ReadOnlySpan<byte> buffer, SocketFlags flags, int timeout, out int bytesSent) =>
-            SendTo(buffer, flags, null, 0, timeout, out bytesSent);
+            SendTo(buffer, flags, Memory<byte>.Empty, timeout, out bytesSent);
 
         public SocketError Send(byte[] buffer, int offset, int count, SocketFlags flags, int timeout, out int bytesSent)
         {
-            return SendTo(buffer, offset, count, flags, null, 0, timeout, out bytesSent);
+            return SendTo(buffer, offset, count, flags, Memory<byte>.Empty, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
+        public SocketError SendAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken)
         {
-            int socketAddressLen = 0;
-            return SendToAsync(buffer, offset, count, flags, null, ref socketAddressLen, out bytesSent, callback, cancellationToken);
+            return SendToAsync(buffer, offset, count, flags, Memory<byte>.Empty, out bytesSent, callback, cancellationToken);
         }
 
-        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(byte[] buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1875,7 +1874,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffer, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -1888,7 +1887,7 @@ namespace System.Net.Sockets
                 Count = count,
                 Flags = flags,
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
                 BytesTransferred = bytesSent
             };
 
@@ -1898,7 +1897,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public unsafe SocketError SendTo(ReadOnlySpan<byte> buffer, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1907,7 +1906,7 @@ namespace System.Net.Sockets
             int bufferIndexIgnored = 0, offset = 0, count = buffer.Length;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffer, null, ref bufferIndexIgnored, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -1922,7 +1921,7 @@ namespace System.Net.Sockets
                     Count = count,
                     Flags = flags,
                     SocketAddress = socketAddress,
-                    SocketAddressLen = socketAddressLen,
+                    SocketAddressLen = socketAddress.Length,
                     BytesTransferred = bytesSent
                 };
 
@@ -1933,7 +1932,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
+        public SocketError SendToAsync(Memory<byte> buffer, int offset, int count, SocketFlags flags, Memory<byte> socketAddress, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback, CancellationToken cancellationToken = default)
         {
             SetHandleNonBlocking();
 
@@ -1941,7 +1940,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+                SocketPal.TryCompleteSendTo(_socket, buffer.Span, ref offset, ref count, flags, socketAddress.Span, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -1953,7 +1952,6 @@ namespace System.Net.Sockets
             operation.Count = count;
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
             operation.BytesTransferred = bytesSent;
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber, cancellationToken))
@@ -1970,16 +1968,15 @@ namespace System.Net.Sockets
 
         public SocketError Send(IList<ArraySegment<byte>> buffers, SocketFlags flags, int timeout, out int bytesSent)
         {
-            return SendTo(buffers, flags, null, 0, timeout, out bytesSent);
+            return SendTo(buffers, flags, Memory<byte>.Empty, timeout, out bytesSent);
         }
 
-        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
+        public SocketError SendAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
-            int socketAddressLen = 0;
-            return SendToAsync(buffers, flags, null, ref socketAddressLen, out bytesSent, callback);
+            return SendToAsync(buffers, flags, Memory<byte>.Empty, out bytesSent, callback);
         }
 
-        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, int socketAddressLen, int timeout, out int bytesSent)
+        public SocketError SendTo(IList<ArraySegment<byte>> buffers, SocketFlags flags, Memory<byte> socketAddress, int timeout, out int bytesSent)
         {
             Debug.Assert(timeout == -1 || timeout > 0, $"Unexpected timeout: {timeout}");
 
@@ -1989,7 +1986,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode) ||
+                (SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress.Span, ref bytesSent, out errorCode) ||
                 !ShouldRetrySyncOperation(out errorCode)))
             {
                 return errorCode;
@@ -2002,7 +1999,7 @@ namespace System.Net.Sockets
                 Offset = offset,
                 Flags = flags,
                 SocketAddress = socketAddress,
-                SocketAddressLen = socketAddressLen,
+                SocketAddressLen = socketAddress.Length,
                 BytesTransferred = bytesSent
             };
 
@@ -2012,7 +2009,7 @@ namespace System.Net.Sockets
             return operation.ErrorCode;
         }
 
-        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[]? socketAddress, ref int socketAddressLen, out int bytesSent, Action<int, byte[]?, int, SocketFlags, SocketError> callback)
+        public SocketError SendToAsync(IList<ArraySegment<byte>> buffers, SocketFlags flags, Memory<byte> socketAddress, out int bytesSent, Action<int, Memory<byte>, SocketFlags, SocketError> callback)
         {
             SetHandleNonBlocking();
 
@@ -2022,7 +2019,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int observedSequenceNumber;
             if (_sendQueue.IsReady(this, out observedSequenceNumber) &&
-                SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode))
+                SocketPal.TryCompleteSendTo(_socket, buffers, ref bufferIndex, ref offset, flags, socketAddress.Span, ref bytesSent, out errorCode))
             {
                 return errorCode;
             }
@@ -2034,7 +2031,7 @@ namespace System.Net.Sockets
             operation.Offset = offset;
             operation.Flags = flags;
             operation.SocketAddress = socketAddress;
-            operation.SocketAddressLen = socketAddressLen;
+            operation.SocketAddressLen = socketAddress.Length;
             operation.BytesTransferred = bytesSent;
 
             if (!_sendQueue.StartAsyncOperation(this, operation, observedSequenceNumber))

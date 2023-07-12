@@ -13,10 +13,10 @@ internal static partial class Interop
         [LibraryImport(Interop.Libraries.Ws2_32, SetLastError = true)]
         internal static unsafe partial int recvfrom(
             SafeSocketHandle socketHandle,
-            byte* pinnedBuffer,
+            Span<byte> pinnedBuffer,
             int len,
             SocketFlags socketFlags,
-            byte[] socketAddress,
+            Span<byte> socketAddress,
             ref int socketAddressSize);
     }
 }

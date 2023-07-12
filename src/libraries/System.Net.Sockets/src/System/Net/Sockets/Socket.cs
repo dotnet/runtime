@@ -1014,13 +1014,15 @@ namespace System.Net.Sockets
             // This may throw ObjectDisposedException.
             SafeSocketHandle acceptedSocketHandle;
             SocketError errorCode;
+            int socketAddressLen;
             try
             {
                 errorCode = SocketPal.Accept(
                     _handle,
-                    socketAddress.Buffer,
-                    ref socketAddress.InternalSize,
+                    socketAddress.SocketBuffer,
+                    out socketAddressLen,
                     out acceptedSocketHandle);
+                socketAddress.Size = socketAddressLen;
             }
             catch (Exception ex)
             {
@@ -1282,7 +1284,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.SocketBuffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1354,7 +1356,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.SocketBuffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1371,6 +1373,42 @@ namespace System.Net.Sockets
 
             // Save a copy of the EndPoint so we can use it for Create().
             _rightEndPoint ??= remoteEP;
+
+            return bytesTransferred;
+        }
+
+        /// <summary>
+        /// Sends data to a specific endpoint using the specified <see cref="SocketFlags"/>.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="remoteSA">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <returns>The number of bytes sent.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, SocketAddress remoteSA)
+        {
+            ThrowIfDisposed();
+            ArgumentNullException.ThrowIfNull(remoteSA);
+
+            ValidateBlockingMode();
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, remoteSA.SocketBuffer, out bytesTransferred);
+
+            // Throw an appropriate SocketException if the native call fails.
+            if (errorCode != SocketError.Success)
+            {
+                UpdateSendSocketErrorForDisposed(ref errorCode);
+
+                UpdateStatusAfterSocketErrorAndThrowException(errorCode);
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesSent(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramSent();
+            }
 
             return bytesTransferred;
         }
@@ -1681,7 +1719,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -1702,6 +1740,8 @@ namespace System.Net.Sockets
                 SocketsTelemetry.Log.BytesReceived(bytesTransferred);
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
+
+            socketAddress.Size = socketAddressLength;
 
             if (!socketAddressOriginal.Equals(socketAddress))
             {
@@ -1788,7 +1828,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.Buffer, out int socketAddressLength, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -1810,6 +1850,7 @@ namespace System.Net.Sockets
                 if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
             }
 
+            socketAddress.Size = socketAddressLength;
             if (!socketAddressOriginal.Equals(socketAddress))
             {
                 try
@@ -1836,6 +1877,55 @@ namespace System.Net.Sockets
             {
                 throw socketException;
             }
+
+            return bytesTransferred;
+        }
+
+        /// <summary>
+        /// Receives a datagram into the data buffer, using the specified <see cref="SocketFlags"/>, and stores the endpoint.
+        /// </summary>
+        /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
+        /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
+        /// <param name="remoteSA">An <see cref="SocketAddress"/>, passed by reference, that represents the remote server.</param>
+        /// <returns>The number of bytes received.</returns>
+        /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
+        /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
+        /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress remoteSA)
+        {
+            ThrowIfDisposed();
+
+            ValidateBlockingMode();
+
+            int bytesTransferred;
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, remoteSA.SocketBuffer, out int socketAddressSize, out bytesTransferred);
+
+            UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
+            // If the native call fails we'll throw a SocketException.
+            SocketException? socketException = null;
+            if (errorCode != SocketError.Success)
+            {
+                socketException = new SocketException((int)errorCode);
+                UpdateStatusAfterSocketError(socketException);
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, socketException);
+
+                if (socketException.SocketErrorCode != SocketError.MessageSize)
+                {
+                    throw socketException;
+                }
+            }
+            else if (SocketsTelemetry.Log.IsEnabled())
+            {
+                SocketsTelemetry.Log.BytesReceived(bytesTransferred);
+                if (SocketType == SocketType.Dgram) SocketsTelemetry.Log.DatagramReceived();
+            }
+
+            if (socketException != null)
+            {
+                throw socketException;
+            }
+
+            remoteSA.Size = socketAddressSize;
 
             return bytesTransferred;
         }

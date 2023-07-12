@@ -50,6 +50,11 @@ namespace System.Net.Internals
             {
                 return InternalSize;
             }
+            set
+            {
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Buffer.Length);
+                InternalSize = value;
+            }
         }
 
         // Access to unmanaged serialized data. This doesn't
@@ -137,6 +142,14 @@ namespace System.Net.Internals
             Buffer = buffer.ToArray();
             InternalSize = Buffer.Length;
             SocketAddressPal.SetAddressFamily(Buffer, addressFamily);
+        }
+
+        public Memory<byte> SocketBuffer
+        {
+            get
+            {
+                return new Memory<byte>(Buffer, 0, InternalSize);
+            }
         }
 
         internal IPAddress GetIPAddress()
