@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
     /// Asyncronous methods (such as <see cref="LogRequestStartAsync"/>) would be called from async code paths (such as
     /// <see cref="HttpClient.SendAsync(HttpRequestMessage, CancellationToken)"/>), and their
     /// syncronous counterparts inherited from <see cref="IHttpClientLogger"/> (such as <see cref="IHttpClientLogger.LogRequestStart"/>)
-    /// would be called from sync code paths (such as <see cref="HttpClient.Send(HttpRequestMessage)"/>).
+    /// would be called from the corresponding sync code paths.
     /// </para>
     /// <para>
     /// It is up to the user implementing the interface to decide where (to <see cref="Microsoft.Extensions.Logging.ILogger"/>, or anything else) and what exactly to log.
