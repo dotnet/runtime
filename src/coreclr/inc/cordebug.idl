@@ -5718,7 +5718,8 @@ ICorDebugFunction5 is a logical extension to ICorDebugFunction.
 interface ICorDebugFunction5 : IUnknown 
 {
     /*
-     * Triggers a new JIT so the next time the function is called, it will be unoptimized.
+     * Triggers a new JIT so the next time the function is called, it will be unoptimized. Will
+     * trigger a JIT even for R2R code.
      */
     HRESULT DisableOptimizations();
 
