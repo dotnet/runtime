@@ -17,6 +17,7 @@ typedef guint16 v128_u2 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef gint8 v128_i1 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef guint8 v128_u1 __attribute__ ((vector_size (SIZEOF_V128)));
 typedef float v128_r4 __attribute__ ((vector_size (SIZEOF_V128)));
+typedef double v128_r8 __attribute__ ((vector_size (SIZEOF_V128)));
 
 // get_AllBitsSet
 static void
@@ -122,7 +123,30 @@ interp_v128_op_bitwise_inequality (gpointer res, gpointer v1, gpointer v2)
 		*(gint32*)res = 1;
 }
 
-// op_Addition
+// Vector128<float>EqualsFloatingPoint
+static void
+interp_v128_r4_float_equality (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_r4 v1_cast = *(v128_r4*)v1;
+	v128_r4 v2_cast = *(v128_r4*)v2;
+	v128_r4 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V128);
+
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+}
+
+static void
+interp_v128_r8_float_equality (gpointer res, gpointer v1, gpointer v2)
+{
+	v128_r8 v1_cast = *(v128_r8*)v1;
+	v128_r8 v2_cast = *(v128_r8*)v2;
+	v128_r8 result = (v1_cast == v2_cast) | ~((v1_cast == v1_cast) | (v2_cast == v2_cast));
+	memset (&v1_cast, 0xff, SIZEOF_V128);
+
+	*(gint32*)res = memcmp (&v1_cast, &result, SIZEOF_V128) == 0;
+}
+
+// op_Multiply
 static void
 interp_v128_i1_op_multiply (gpointer res, gpointer v1, gpointer v2)
 {
@@ -147,6 +171,7 @@ interp_v128_r4_op_multiply (gpointer res, gpointer v1, gpointer v2)
 	*(v128_r4*)res = *(v128_r4*)v1 * *(v128_r4*)v2;
 }
 
+// op_Division
 static void
 interp_v128_r4_op_division (gpointer res, gpointer v1, gpointer v2)
 {

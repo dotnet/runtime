@@ -1789,6 +1789,8 @@ function append_ldloc(builder: WasmBuilder, offset: number, opcodeOrPrefix: Wasm
     if (simdOpcode !== undefined) {
         // This looks wrong but I assure you it's correct.
         builder.appendULeb(simdOpcode);
+    } else if (opcodeOrPrefix === WasmOpcode.PREFIX_simd) {
+        throw new Error("PREFIX_simd ldloc without a simdOpcode");
     }
     const alignment = computeMemoryAlignment(offset, opcodeOrPrefix, simdOpcode);
     builder.appendMemarg(offset, alignment);
@@ -3493,7 +3495,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             // Indirect load, so v1 is T** and res is Vector128*
             builder.local("pLocals");
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-            builder.appendSimd(simple);
+            builder.appendSimd(simple, true);
             builder.appendMemarg(0, 0);
             append_simd_store(builder, ip);
         } else {
@@ -3609,6 +3611,33 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
                 builder.appendU8(WasmOpcode.i32_eqz);
             append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
             return true;
+        case SimdIntrinsic3.V128_R4_FLOAT_EQUALITY:
+        case SimdIntrinsic3.V128_R8_FLOAT_EQUALITY: {
+            /*
+            Vector128<T> result = Vector128.Equals(lhs, rhs) | ~(Vector128.Equals(lhs, lhs) | Vector128.Equals(rhs, rhs));
+            return result.AsInt32() == Vector128<int>.AllBitsSet;
+            */
+            const isR8 = index === SimdIntrinsic3.V128_R8_FLOAT_EQUALITY,
+                eqOpcode = isR8 ? WasmSimdOpcode.f64x2_eq : WasmSimdOpcode.f32x4_eq;
+            builder.local("pLocals");
+            append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            builder.local("math_lhs128", WasmOpcode.tee_local);
+            append_ldloc(builder, getArgU16(ip, 3), WasmOpcode.PREFIX_simd, WasmSimdOpcode.v128_load);
+            builder.local("math_rhs128", WasmOpcode.tee_local);
+            builder.appendSimd(eqOpcode);
+            builder.local("math_lhs128");
+            builder.local("math_lhs128");
+            builder.appendSimd(eqOpcode);
+            builder.local("math_rhs128");
+            builder.local("math_rhs128");
+            builder.appendSimd(eqOpcode);
+            builder.appendSimd(WasmSimdOpcode.v128_or);
+            builder.appendSimd(WasmSimdOpcode.v128_not);
+            builder.appendSimd(WasmSimdOpcode.v128_or);
+            builder.appendSimd(isR8 ? WasmSimdOpcode.i64x2_all_true : WasmSimdOpcode.i32x4_all_true);
+            append_stloc_tail(builder, getArgU16(ip, 1), WasmOpcode.i32_store);
+            return true;
+        }
         case SimdIntrinsic3.V128_I1_SHUFFLE: {
             // Detect a constant indices vector and turn it into a const. This allows
             //  v8 to use a more optimized implementation of the swizzle opcode
