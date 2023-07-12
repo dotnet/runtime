@@ -45,7 +45,8 @@ export function setLoaderGlobals(
     exportedRuntimeAPI = globalObjects.api;
     INTERNAL = globalObjects.internal;
     Object.assign(exportedRuntimeAPI, {
-        INTERNAL
+        INTERNAL,
+        invokeLibraryInitializers
     });
 
     Object.assign(globalObjects.module, {
