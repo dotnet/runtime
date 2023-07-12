@@ -42,7 +42,7 @@
     <!-- IL2121: Unnecessary UnconditionalSuppressMessage attribute -->
     <NoWarn>$(NoWarn);IL2121</NoWarn>
 
-    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(RunAOTCompilation)' != 'true'">true</JsonSerializerIsReflectionEnabledByDefault>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <PropertyGroup>
