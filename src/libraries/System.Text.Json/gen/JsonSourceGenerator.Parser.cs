@@ -401,21 +401,6 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.Enum;
                 }
-                else if (IsMemoryType(type, out INamedTypeSymbol? namedMemoryType, out collectionType))
-                {
-                    underlyingType = namedMemoryType.TypeArguments[0];
-
-                    if (underlyingType.SpecialType == SpecialType.System_Byte)
-                    {
-                        classType = ClassType.BuiltInSupportType;
-                        collectionType = default;
-                    }
-                    else
-                    {
-                        classType = ClassType.Enumerable;
-                        collectionValueType = EnqueueType(underlyingType, typeToGenerate.Mode);
-                    }
-                }
                 else if (TryResolveCollectionType(type,
                     out ITypeSymbol? valueType,
                     out ITypeSymbol? keyType,
@@ -579,27 +564,6 @@ namespace System.Text.Json.SourceGeneration
                 }
             }
 
-            private bool IsMemoryType(ITypeSymbol type, [NotNullWhen(true)] out INamedTypeSymbol? namedType, out CollectionType collectionType)
-            {
-                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.MemoryType))
-                {
-                    namedType = (type as INamedTypeSymbol)!;
-                    collectionType = CollectionType.MemoryOfT;
-                    return true;
-                }
-
-                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.ReadOnlyMemoryType))
-                {
-                    namedType = (type as INamedTypeSymbol)!;
-                    collectionType = CollectionType.ReadOnlyMemoryOfT;
-                    return true;
-                }
-
-                namedType = null;
-                collectionType = default;
-                return false;
-            }
-
             private bool TryResolveCollectionType(
                 ITypeSymbol type,
                 [NotNullWhen(true)] out ITypeSymbol? valueType,
@@ -614,6 +578,22 @@ namespace System.Text.Json.SourceGeneration
                 collectionType = default;
                 immutableCollectionFactoryTypeFullName = null;
                 needsRuntimeType = false;
+
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.MemoryType))
+                {
+                    Debug.Assert(!SymbolEqualityComparer.Default.Equals(type, _knownSymbols.MemoryByteType));
+                    valueType = ((INamedTypeSymbol)type).TypeArguments[0];
+                    collectionType = CollectionType.MemoryOfT;
+                    return true;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.ReadOnlyMemoryType))
+                {
+                    Debug.Assert(!SymbolEqualityComparer.Default.Equals(type, _knownSymbols.ReadOnlyMemoryByteType));
+                    valueType = ((INamedTypeSymbol)type).TypeArguments[0];
+                    collectionType = CollectionType.ReadOnlyMemoryOfT;
+                    return true;
+                }
 
                 // IAsyncEnumerable<T> takes precedence over IEnumerable.
                 if (type.GetCompatibleGenericBaseType(_knownSymbols.IAsyncEnumerableOfTType) is INamedTypeSymbol iAsyncEnumerableType)
@@ -1508,6 +1488,8 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning restore
 
                 AddTypeIfNotNull(knownSymbols.ByteArrayType);
+                AddTypeIfNotNull(knownSymbols.MemoryByteType);
+                AddTypeIfNotNull(knownSymbols.ReadOnlyMemoryByteType);
                 AddTypeIfNotNull(knownSymbols.TimeSpanType);
                 AddTypeIfNotNull(knownSymbols.DateTimeOffsetType);
                 AddTypeIfNotNull(knownSymbols.DateOnlyType);
