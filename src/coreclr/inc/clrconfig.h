@@ -125,9 +125,6 @@ public:
     // You own the string that's returned.
     static HRESULT GetConfigValue(const ConfigStringInfo & info, _Outptr_result_z_ LPWSTR * outVal);
 
-    // Reinterpret the value returned by GetConfigValue as a decimal, rather than hexadecimal input.
-    static DWORD ReinterpretHexAsDecimal(DWORD value);
-
     //
     // Check whether an option is specified (e.g. explicitly listed) in the CLRConfig.
     //

@@ -565,48 +565,6 @@ HRESULT CLRConfig::GetConfigValue(const ConfigStringInfo & info, _Outptr_result_
 }
 
 //
-// Reinterpret the value returned by GetConfigValue as a decimal, rather than hexadecimal input.
-//
-// Return value:
-//     * Value reinterpreted from a hexadecimal to decimal base
-//
-// Arguments:
-//     * value - The value to reinterpret
-//
-// Remarks:
-//     This is beneficial for a subset of configuration options, such as MaxVectorTBitWidth,
-//     where a decimal based input is much more intuitive to use. For example, `MaxVectorTBitWidth=256`
-//     is much more easily understandable than `MaxVectorTBitWidth=100`
-//
-//     Given how GetConfigValue works, the user specifying `MaxVectorTBitWidth=256` will cause it to
-//     interpret that as 0x256 and therefore produce a result of 598. This function then accounts for
-//     that and converts it back to the intended 256 (i.e. 0x100) instead.
-//
-// static
-DWORD CLRConfig::ReinterpretHexAsDecimal(DWORD value)
-{
-    unsigned result = 0;
-    unsigned index  = 1;
-
-    if (value == INT_MAX)
-    {
-        // default value
-        return value;
-    }
-
-    while (value != 0)
-    {
-        unsigned digit = value % 16;
-        value >>= 4;
-        assert(digit < 10);
-        result += digit * index;
-        index *= 10;
-    }
-
-    return result;
-}
-
-//
 // Check whether an option is specified (e.g. explicitly listed) in any location
 //
 // Arguments:
