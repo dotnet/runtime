@@ -4,9 +4,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-#if !NET8_0_OR_GREATER
 using System.Runtime.CompilerServices;
-#endif
 
 namespace System.Collections.Frozen
 {
@@ -29,88 +27,70 @@ namespace System.Collections.Frozen
         /// operations, then we can select an ASCII-specific case-insensitive comparer which yields faster overall performance.
         /// </remarks>
         public static AnalysisResults Analyze(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength)
+            string[] uniqueStrings, bool ignoreCase, int minLength, int maxLength)
         {
-            Debug.Assert(!uniqueStrings.IsEmpty);
+            Debug.Assert(uniqueStrings.Length > 0);
 
-            // Try to pick a substring comparer. If we can't find a good substring comparer, fallback to a full string comparer.
-            AnalysisResults results;
-            if (minLength == 0 || !TryUseSubstring(uniqueStrings, ignoreCase, minLength, maxLength, out results))
+            if (minLength > 0)
             {
-                results = CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0, static (s, _, _) => s.AsSpan());
-            }
+                const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit...it's not worth the increase in algorithmic complexity to analyze longer substrings
 
-            return results;
-        }
-
-        /// <summary>Try to find the minimal unique substring index/length to use for comparisons.</summary>
-        private static bool TryUseSubstring(ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, out AnalysisResults results)
-        {
-            const int MaxSubstringLengthLimit = 8; // arbitrary small-ish limit... t's not worth the increase in algorithmic complexity to analyze longer substrings
-
-            SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
-            HashSet<string> set = new HashSet<string>(
+                // Try to pick a substring comparer.
+                SubstringComparer comparer = ignoreCase ? new JustifiedCaseInsensitiveSubstringComparer() : new JustifiedSubstringComparer();
+                HashSet<string> set = new HashSet<string>(
 #if NET6_0_OR_GREATER
-                uniqueStrings.Length,
+                    uniqueStrings.Length,
 #endif
-                comparer);
+                    comparer);
 
-            // For each substring length...
-            int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
-            for (int count = 1; count <= maxSubstringLength; count++)
-            {
-                comparer.IsLeft = true;
-                comparer.Count = count;
-
-                // For each index, get a uniqueness factor for the left-justified substrings.
-                // If any is above our threshold, we're done.
-                for (int index = 0; index <= minLength - count; index++)
+                // For each substring length...preferring the shortest length that provides
+                // enough uniqueness
+                int maxSubstringLength = Math.Min(minLength, MaxSubstringLengthLimit);
+                for (int count = 1; count <= maxSubstringLength; count++)
                 {
-                    comparer.Index = index;
+                    comparer.Count = count;
 
-                    if (HasSufficientUniquenessFactor(set, uniqueStrings))
-                    {
-                        results = CreateAnalysisResults(
-                            uniqueStrings, ignoreCase, minLength, maxLength, index, count,
-                            static (string s, int index, int count) => s.AsSpan(index, count));
-                        return true;
-                    }
-                }
-
-                // There were no left-justified substrings of this length available.
-                // If all of the strings are of the same length, then just checking left-justification is sufficient.
-                // But if any strings are of different lengths, then we'll get different alignments for left- vs
-                // right-justified substrings, and so we also check right-justification.
-                if (minLength != maxLength)
-                {
-                    // toggle the direction and re-use the comparer and hashset (HasSufficientUniquenessFactor clears it)
-                    comparer.IsLeft = false;
-
-                    // For each index, get a uniqueness factor for the right-justified substrings.
+                    // For each index, get a uniqueness factor for the left-justified substrings.
                     // If any is above our threshold, we're done.
                     for (int index = 0; index <= minLength - count; index++)
                     {
-                        // Get a uniqueness factor for the right-justified substrings.
-                        // If it's above our threshold, we're done.
-                        comparer.Index = -index - count;
+                        comparer.Index = index;
+
                         if (HasSufficientUniquenessFactor(set, uniqueStrings))
                         {
-                            results = CreateAnalysisResults(
-                                uniqueStrings, ignoreCase, minLength, maxLength, comparer.Index, count,
-                                static (string s, int index, int count) => s.AsSpan(s.Length + index, count));
-                            return true;
+                            return CreateAnalysisResults(set, ignoreCase, minLength, maxLength, index, count);
+                        }
+                    }
+
+                    // There were no left-justified substrings of this length available.
+                    // If all of the strings are of the same length, then just checking left-justification is sufficient.
+                    // But if any strings are of different lengths, then we'll get different alignments for left- vs
+                    // right-justified substrings, and so we also check right-justification.
+                    if (minLength != maxLength)
+                    {
+                        // For each index, get a uniqueness factor for the right-justified substrings.
+                        // If any is above our threshold, we're done.
+                        comparer.Index = -count;
+
+                        for (int offset = 0; offset <= minLength - count; offset++, comparer.Index--)
+                        {
+                            // Get a uniqueness factor for the right-justified substrings.
+                            // If it's above our threshold, we're done.
+                            if (HasSufficientUniquenessFactor(set, uniqueStrings))
+                            {
+                                return CreateAnalysisResults(set, ignoreCase, minLength, maxLength, comparer.Index, count);
+                            }
                         }
                     }
                 }
             }
 
-            // Could not find a substring index/length that was good enough.
-            results = default;
-            return false;
+            // Could not find a substring index/length that was good enough, use the entire string.
+            return CreateAnalysisResults(uniqueStrings, ignoreCase, minLength, maxLength, 0, 0);
         }
 
         private static AnalysisResults CreateAnalysisResults(
-            ReadOnlySpan<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count, GetSpan getSubstringSpan)
+            IEnumerable<string> uniqueStrings, bool ignoreCase, int minLength, int maxLength, int index, int count)
         {
             // Start off by assuming all strings are ASCII
             bool allAsciiIfIgnoreCase = true;
@@ -129,7 +109,7 @@ namespace System.Collections.Frozen
                 foreach (string s in uniqueStrings)
                 {
                     // Get the span for the substring.
-                    ReadOnlySpan<char> substring = getSubstringSpan(s, index, count);
+                    ReadOnlySpan<char> substring = s.AsSpan();
 
                     // If the substring isn't ASCII, bail out to return the results.
                     if (!IsAllAscii(substring))
@@ -157,8 +137,6 @@ namespace System.Collections.Frozen
             // Return the analysis results.
             return new AnalysisResults(ignoreCase, allAsciiIfIgnoreCase, index, count, minLength, maxLength);
         }
-
-        private delegate ReadOnlySpan<char> GetSpan(string s, int index, int count);
 
         internal static unsafe bool IsAllAscii(ReadOnlySpan<char> s)
         {
@@ -221,7 +199,7 @@ namespace System.Collections.Frozen
 #endif
         }
 
-        private static bool HasSufficientUniquenessFactor(HashSet<string> set, ReadOnlySpan<string> uniqueStrings)
+        private static bool HasSufficientUniquenessFactor(HashSet<string> set, string[] uniqueStrings)
         {
             set.Clear();
 
@@ -263,25 +241,34 @@ namespace System.Collections.Frozen
             public bool RightJustifiedSubstring => HashIndex < 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> Slicer(this string s, int index, int count) => s.AsSpan((index >= 0 ? index : s.Length + index), count);
+
         private abstract class SubstringComparer : IEqualityComparer<string>
         {
-            public int Index;
-            public int Count;
-            public bool IsLeft;
+            public int Index;   // offset from left side (if positive) or right side (if negative) of the string
+            public int Count;   // number of characters in the span
+
             public abstract bool Equals(string? x, string? y);
             public abstract int GetHashCode(string s);
         }
 
         private sealed class JustifiedSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).SequenceEqual(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count));
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override bool Equals(string? x, string? y) => x!.Slicer(Index, Count).SequenceEqual(y!.Slicer(Index, Count));
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinal(s.Slicer(Index, Count));
         }
 
         private sealed class JustifiedCaseInsensitiveSubstringComparer : SubstringComparer
         {
-            public override bool Equals(string? x, string? y) => x.AsSpan(IsLeft ? Index : (x!.Length + Index), Count).Equals(y.AsSpan(IsLeft ? Index : (y!.Length + Index), Count), StringComparison.OrdinalIgnoreCase);
-            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.AsSpan(IsLeft ? Index : (s.Length + Index), Count));
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override bool Equals(string? x, string? y) => x!.Slicer(Index, Count).Equals(y!.Slicer(Index, Count), StringComparison.OrdinalIgnoreCase);
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public override int GetHashCode(string s) => Hashing.GetHashCodeOrdinalIgnoreCase(s.Slicer(Index, Count));
         }
     }
 }
