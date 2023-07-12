@@ -16,9 +16,56 @@ namespace System.Text.Json.Serialization
     sealed class JsonSourceGenerationOptionsAttribute : JsonAttribute
     {
         /// <summary>
+        /// Constructs a new <see cref="JsonSourceGenerationOptionsAttribute"/> instance.
+        /// </summary>
+        public JsonSourceGenerationOptionsAttribute() { }
+
+        /// <summary>
+        /// Constructs a new <see cref="JsonSourceGenerationOptionsAttribute"/> instance with a predefined set of options determined by the specified <see cref="JsonSerializerDefaults"/>.
+        /// </summary>
+        /// <param name="defaults">The <see cref="JsonSerializerDefaults"/> to reason about.</param>
+        /// <exception cref="ArgumentOutOfRangeException">Invalid <paramref name="defaults"/> parameter.</exception>
+        public JsonSourceGenerationOptionsAttribute(JsonSerializerDefaults defaults)
+        {
+            // Constructor kept in sync with equivalent overload in JsonSerializerOptions
+
+            if (defaults is JsonSerializerDefaults.Web)
+            {
+                PropertyNameCaseInsensitive = true;
+                PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase;
+                NumberHandling = JsonNumberHandling.AllowReadingFromString;
+            }
+            else if (defaults is not JsonSerializerDefaults.General)
+            {
+                throw new ArgumentOutOfRangeException(nameof(defaults));
+            }
+        }
+
+        /// <summary>
+        /// Defines whether an extra comma at the end of a list of JSON values in an object or array
+        /// is allowed (and ignored) within the JSON payload being deserialized.
+        /// </summary>
+        public bool AllowTrailingCommas { get; set; }
+
+        /// <summary>
+        /// Specifies a list of custom converter types to be used.
+        /// </summary>
+        public Type[]? Converters { get; set; }
+
+        /// <summary>
+        /// The default buffer size in bytes used when creating temporary buffers.
+        /// </summary>
+        public int DefaultBufferSize { get; set; }
+
+        /// <summary>
         /// Specifies the default ignore condition.
         /// </summary>
         public JsonIgnoreCondition DefaultIgnoreCondition { get; set; }
+
+        /// <summary>
+        /// Specifies the policy used to convert a dictionary key to another format, such as camel-casing.
+        /// </summary>
+        public JsonKnownNamingPolicy DictionaryKeyPolicy { get; set; }
 
         /// <summary>
         /// Specifies whether to ignore read-only fields.
@@ -36,9 +83,45 @@ namespace System.Text.Json.Serialization
         public bool IncludeFields { get; set; }
 
         /// <summary>
+        /// Gets or sets the maximum depth allowed when serializing or deserializing JSON, with the default (i.e. 0) indicating a max depth of 64.
+        /// </summary>
+        public int MaxDepth { get; set; }
+
+        /// <summary>
+        /// Specifies how number types should be handled when serializing or deserializing.
+        /// </summary>
+        public JsonNumberHandling NumberHandling { get; set; }
+
+        /// <summary>
+        /// Specifies preferred object creation handling for properties when deserializing JSON.
+        /// </summary>
+        public JsonObjectCreationHandling PreferredObjectCreationHandling { get; set; }
+
+        /// <summary>
+        /// Determines whether a property name uses a case-insensitive comparison during deserialization.
+        /// </summary>
+        public bool PropertyNameCaseInsensitive { get; set; }
+
+        /// <summary>
         /// Specifies a built-in naming polices to convert JSON property names with.
         /// </summary>
         public JsonKnownNamingPolicy PropertyNamingPolicy { get; set; }
+
+        /// <summary>
+        /// Defines how JSON comments are handled during deserialization.
+        /// </summary>
+        public JsonCommentHandling ReadCommentHandling { get; set; }
+
+        /// <summary>
+        /// Defines how deserializing a type declared as an <see cref="object"/> is handled during deserialization.
+        /// </summary>
+        public JsonUnknownTypeHandling UnknownTypeHandling { get; set; }
+
+        /// <summary>
+        /// Determines how <see cref="JsonSerializer"/> handles JSON properties that
+        /// cannot be mapped to a specific .NET member when deserializing object types.
+        /// </summary>
+        public JsonUnmappedMemberHandling UnmappedMemberHandling { get; set; }
 
         /// <summary>
         /// Specifies whether JSON output should be pretty-printed.
