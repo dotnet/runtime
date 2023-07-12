@@ -106,6 +106,7 @@ namespace Wasm.Build.Tests
             // `runtime` repo's build environment sets these, and they
             // mess up the build for the test project, which is using a different
             // dotnet
+            EnvVars["DOTNET_ROOT"] = sdkForWorkloadPath;
             EnvVars["DOTNET_INSTALL_DIR"] = sdkForWorkloadPath;
             EnvVars["DOTNET_MULTILEVEL_LOOKUP"] = "0";
             EnvVars["DOTNET_SKIP_FIRST_TIME_EXPERIENCE"] = "1";
