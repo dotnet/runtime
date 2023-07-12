@@ -25,7 +25,7 @@
 //
 // With FEATURE_RX_THUNKS, thunks are created by allocating new virtual memory space, where the first half of
 // that space is filled with thunk stubs, and gets RX permissions, and the second half is for the thunks data,
-// and gets RW permissions. The thunk stubs and data blocks are not groupped in pairs:
+// and gets RW permissions. The thunk stubs and data blocks are not grouped in pairs:
 // all the thunk stubs blocks are groupped at the beginning of the allocated virtual memory space, and all the
 // thunk data blocks are groupped in the second half of the virtual space.
 //
