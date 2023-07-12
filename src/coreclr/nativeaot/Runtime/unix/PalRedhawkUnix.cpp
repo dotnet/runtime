@@ -1155,17 +1155,10 @@ REDHAWK_PALEXPORT int32_t PalGetProcessCpuCount()
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize()
 {
     static int saved_pagesize = 0;
-
     if (saved_pagesize)
         return saved_pagesize;
 
-    // Prefer sysconf () as it's signal safe.
-#if defined (HAVE_SYSCONF) && defined (_SC_PAGESIZE)
     saved_pagesize = sysconf(_SC_PAGESIZE);
-#else
-    saved_pagesize = getpagesize();
-#endif
-
     return saved_pagesize;
 }
 
