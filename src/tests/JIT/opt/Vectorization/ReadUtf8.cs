@@ -6,10 +6,12 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
+using Xunit;
 
-public class GetUtf8Bytes
+public class ReadUtf8
 {
-    static int Main(string[] args)
+    [Fact]
+    public static int TestEntryPoint()
     {
         // Warm up for PGO
         for (int i=0; i<200; i++)
@@ -20,7 +22,6 @@ public class GetUtf8Bytes
             Test_SIMD();
             Thread.Sleep(10);
         }
-
         return 100;
     }
 
