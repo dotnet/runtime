@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
-  <PropertyGroup>
-    <MainLibraryFileName></MainLibraryFileName>
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'">
     <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
     <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     <MonoForceInterpreter>true</MonoForceInterpreter>
     <UseMonoJustInterp>true</UseMonoJustInterp>
-    <DevTeamProvisioning>-</DevTeamProvisioning>
+    <UseRuntimeComponents>true</UseRuntimeComponents>
   </PropertyGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets, $(MSBuildThisFileDirectory)..))" />

@@ -415,10 +415,7 @@
     <PropertyGroup>
       <PublishDir>$(BuildDir)/</PublishDir>
       <TestProjectName>$(AssemblyName)</TestProjectName>
-      <CoreRootPath>$(CORE_ROOT)</CoreRootPath>
-      <MainLibraryFileName></MainLibraryFileName>
     </PropertyGroup>
-    <Message Importance="High" Text="App: $(FinalPath)" />
 
     <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)">
       <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />

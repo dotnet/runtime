@@ -280,15 +280,9 @@
 
     <ItemGroup>
       <ReducedLegacyPayloadFilesFinal Remove="$(PublishedMergedPayloadsToExclude)" />
-      <PublishPayloads Include="$(ArtifactsDir)helix\tests\$(OSPlatformConfig)\*.zip" />
     </ItemGroup>
 
     <Copy SourceFiles="@(ReducedLegacyPayloadFilesFinal)" DestinationFiles="@(ReducedLegacyPayloadFilesFinal->'$(LegacyPayloadsRootDirectory)%(FileRelativeToPayloadsRootDirectory)')" />
-    <!-- Temporary patch, test the CI -->
-    <RemoveDir Directories="$(LegacyPayloadsRootDirectory)/$(_PayloadGroup)" />
-    <MakeDir Directories="$(LegacyPayloadsRootDirectory)/$(_PayloadGroup)" />
-    <Unzip SourceFiles="%(PublishPayloads.FullPath)" DestinationFolder="$(LegacyPayloadsRootDirectory)/$(_PayloadGroup)" />
-    <Message Importance="High" Text="PublishPayloads: @(PublishPayloads)" />
   </Target>
 
   <Target Name="PrepareCorrelationPayloadDirectory">

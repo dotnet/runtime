@@ -104,8 +104,8 @@
       <_ApplePropertyNames Include="HybridGlobalization" />
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
-      <_ApplePropertyNames Include="CoreRootPath" />
-      <_ApplePropertyNames Include="RuntimeTests" />
+      <_ApplePropertyNames Include="CustomMain" />
+      <_ApplePropertyNames Include="UseRuntimeComponents" />
       <_ApplePropertyNames Include="MonoForceInterpreter" />
       <_ApplePropertyNames Include="UseMonoJustInterp" />
       <_ApplePropertyNames Include="MainLibraryFileName" />
@@ -144,7 +144,7 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(RuntimeTests)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(CustomMain)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
     
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>

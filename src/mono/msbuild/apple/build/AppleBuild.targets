@@ -117,10 +117,8 @@
           Condition="'$(RunAOTCompilation)' == 'true'">
 
     <PropertyGroup>
-      <!-- <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode> -->
-      <!-- <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode> -->
-      <_AOTMode>JustInterp</_AOTMode>
-      <MonoForceInterpreter>true</MonoForceInterpreter>
+      <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
+      <_AOTMode Condition="'$(UseMonoJustInterp)' == 'true'">JustInterp</_AOTMode>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
@@ -218,7 +216,6 @@
     <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
-        AdditionalAssemblySearchPaths="$(CoreRootPath)"
         Assemblies="@(_AotInputAssembliesDedup)"
         CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
         DedupAssembly="$(_iOSLikeDedupAssembly)"
@@ -264,7 +261,7 @@
     </RemoveDuplicates>
 
     <PropertyGroup>
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <RuntimeComponents Condition="'$(UseRuntimeComponents)' == 'true'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
     </PropertyGroup>
 
     <AppleAppBuilderTask

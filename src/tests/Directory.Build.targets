@@ -9,7 +9,7 @@
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'">
     <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
     <TestArchiveRoot>$(ArtifactsDir)helix/</TestArchiveRoot>
     <TestArchiveTestsRoot>$(TestArchiveRoot)tests/</TestArchiveTestsRoot>
@@ -22,11 +22,11 @@
     <PublishTestAsSelfContainedDependsOn>BuildiOSApp</PublishTestAsSelfContainedDependsOn>
     <PublishTestAsSelfContainedAfterTargets>BuildiOSApp</PublishTestAsSelfContainedAfterTargets>
     <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
-    <RuntimeTests>true</RuntimeTests>
+    <CustomMain>true</CustomMain>
   </PropertyGroup>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
 
-  <Target Name="_CustomGenerateRunScriptProps" BeforeTargets="GenerateRunScript">
+  <Target Name="_SetCustomRunScriptOutputPath" BeforeTargets="GenerateRunScript">
     <PropertyGroup>
       <CustomRunScriptOutputPath>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/$(TestProjectName)/AppBundle</CustomRunScriptOutputPath>
     </PropertyGroup>
