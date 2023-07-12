@@ -103,4 +103,25 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine($"add a breakpoint the instance method of the new class");
         }
     }
+
+
+
+
+
+
+
+
+
+
+    public class MethodBody10 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a method in a new class");
+            StaticMethod2();
+            Console.WriteLine("do not step into StaticMethod2");
+        }
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void StaticMethod2 () {
+            Console.WriteLine($"do not step into here");
+        }
+    }
 }

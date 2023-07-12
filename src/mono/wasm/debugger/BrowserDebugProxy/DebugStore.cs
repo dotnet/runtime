@@ -389,11 +389,14 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.IsEnCMethod = false;
             this.TypeInfo = type;
             DebuggerAttrInfo = new DebuggerAttributesInfo();
-            foreach (CustomAttributeHandle cattr in methodDef.GetCustomAttributes())
+            //we need to loop in all the CustomAttributes from asmMetadataReader because methodDef.GetCustomAttributes() does not work correctly on EnC metadata
+            foreach (CustomAttributeHandle cattr in asmMetadataReader.CustomAttributes)
             {
+                var ca = asmMetadataReader.GetCustomAttribute(cattr);
+                if (ca.Parent.Kind != HandleKind.MethodDefinition || (ca.Parent.Kind == HandleKind.MethodDefinition && ca.Parent.GetHashCode() != (token | (int)TokenType.MdtMethodDef)))
+                    continue;
                 if (!assembly.TryGetCustomAttributeName(cattr, asmMetadataReader, out string name))
                     continue;
-
                 switch (name)
                 {
                     case "DebuggerHiddenAttribute":
@@ -1122,7 +1125,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                     var entryRow = asmMetadataReader.GetRowNumber(entry.Handle);
                     if (entry.Handle.Kind == HandleKind.MethodDefinition)
                     {
-                        var methodDefinition = asmMetadataReaderParm.GetMethodDefinition(MetadataTokens.MethodDefinitionHandle(methodIdxAsm));
                         int methodIdx = GetMethodDebugInformationIdx(pdbMetadataReaderParm, entryRow);
                         if (methods.TryGetValue(entryRow, out MethodInfo method))
                         {

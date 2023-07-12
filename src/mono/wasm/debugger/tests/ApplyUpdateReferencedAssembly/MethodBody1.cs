@@ -85,6 +85,24 @@ namespace ApplyUpdateReferencedAssembly
     
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     // public class MethodBody9 {
     //     public static int M1(int a, int b) {
     //         return a + b;
