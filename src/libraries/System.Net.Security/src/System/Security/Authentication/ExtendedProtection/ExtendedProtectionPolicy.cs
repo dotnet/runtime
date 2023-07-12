@@ -143,14 +143,5 @@ namespace System.Security.Authentication.ExtendedProtection
 
             return sb.ToString();
         }
-
-        public static bool OSSupportsExtendedProtection
-        {
-            get
-            {
-                // .NET Core is supported only on Win7+ where ExtendedProtection is supported.
-                return true;
-            }
-        }
     }
 }
