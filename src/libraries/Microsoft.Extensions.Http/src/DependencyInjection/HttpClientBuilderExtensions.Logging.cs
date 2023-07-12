@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AddLogger(this IHttpClientBuilder builder, Func<IServiceProvider, IHttpClientLogger> httpClientLoggerFactory, bool wrapHandlersPipeline = false)
         {
             ThrowHelper.ThrowIfNull(builder);
+            ThrowHelper.ThrowIfNull(httpClientLoggerFactory);
 
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
