@@ -384,6 +384,24 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
+static uint32_t g_RhPageSize;
+
+void InitializeOsPageSize()
+{
+    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
+
+#if defined(HOST_AMD64)
+    ASSERT(g_RhPageSize == 0x1000);
+#elif defined(HOST_APPLE)
+    ASSERT(g_RhPageSize == 0x4000);
+#endif
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize()
+{
+    return g_RhPageSize;
+}
+
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 static pthread_key_t key;
 #endif
@@ -411,6 +429,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
+
+    InitializeOsPageSize();
 
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
@@ -1150,16 +1170,6 @@ REDHAWK_PALEXPORT int32_t PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
-}
-
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize()
-{
-    static int saved_pagesize = 0;
-    if (saved_pagesize)
-        return saved_pagesize;
-
-    saved_pagesize = sysconf(_SC_PAGESIZE);
-    return saved_pagesize;
 }
 
 __thread void* pStackHighOut = NULL;
