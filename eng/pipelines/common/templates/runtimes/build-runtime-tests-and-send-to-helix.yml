@@ -28,6 +28,7 @@ parameters:
   enableMicrobuild: ''
   gatherAssetManifests: false
   shouldContinueOnError: false
+  compileOnHelix: false
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
@@ -76,7 +77,7 @@ steps:
 
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
-  - ${{ if and(eq(parameters.runtimeFlavor, 'mono'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+  - ${{ if eq(parameters.compileOnHelix, 'true') }}:
     #  Send tests to Helix
     - script: $(_msbuildCommand) $(_warnAsErrorParamHelixOverride) -restore
               $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
