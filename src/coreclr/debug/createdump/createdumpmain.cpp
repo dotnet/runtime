@@ -33,7 +33,8 @@ const char* g_help = "createdump [options]\n"
 "--crashreportonly - write crash report file only (no dump).\n"
 "--crashthread <id> - the thread id of the crashing thread.\n"
 "--signal <code> - the signal code of the crash.\n"
-"--singlefile - enable single-file app check.\n"
+"--singlefile - single-file app model.\n"
+"--nativeaot - native AOT app model.\n"
 #endif
 ;
 
