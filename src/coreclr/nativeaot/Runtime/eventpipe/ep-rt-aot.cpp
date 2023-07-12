@@ -28,6 +28,14 @@
 #include "holder.h"
 #include "SpinLock.h"
 
+#ifndef DIRECTORY_SEPARATOR_CHAR
+#ifdef TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // TARGET_UNIX
+#endif
+
 #ifdef TARGET_UNIX
 // Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
 pthread_key_t eventpipe_tls_key;
@@ -84,69 +92,59 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 {
 }
 
-#if defined (__linux__)
-extern char *__progname;
-#endif
-
 const ep_char8_t *
 ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
 {
-    // Although PalGetModuleFileName exists, non-windows implementation has issues and we use __progname for Linux.
     // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
     static const ep_char8_t * entrypoint_assembly_name = nullptr;
     if (entrypoint_assembly_name == nullptr) {
         ep_char8_t * entrypoint_assembly_name_local;
-#ifdef HOST_WINDOWS
         const TCHAR * wszModuleFileName = NULL;
-        if(PalGetModuleFileName(&wszModuleFileName, nullptr) == 0) {
-            // Allocating since we delete this empty string later
+        HANDLE moduleHandle = PalGetModuleHandleFromPointer((void*)&ep_rt_aot_entrypoint_assembly_name_get_utf8);
+        if(PalGetModuleFileName(&wszModuleFileName, moduleHandle) == 0) {
             entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
-            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
-        } else {
-            const wchar_t* process_name = wcsrchr(wszModuleFileName, '\\');
-            if (process_name != NULL) {
-                // We don't want to include the first '\'
-                process_name++;
-                const wchar_t* extension = wcschr(process_name, '.');
-                if (extension != NULL) {
-                    size_t len = extension - process_name;
-                    const ep_char16_t* process_name_wo_ext_l = reinterpret_cast<const ep_char16_t *>(process_name);
-                    entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_wo_ext_l, len);
-                } else {
-                    const ep_char16_t* process_name_l = reinterpret_cast<const ep_char16_t *>(process_name);
-                    entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name_l, -1);
-                }
-            } else{
-                // Allocating since we delete this empty string later
-                entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
-                entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
+            if(entrypoint_assembly_name_local==NULL) {
+                return NULL;
             }
+            *entrypoint_assembly_name_local = '\0';
         }
-#elif defined (__linux__)
-        size_t program_len = strlen(__progname);
-        ep_char8_t *process_name =  reinterpret_cast<ep_char8_t *>(malloc(program_len + 1));
-        if (process_name == NULL) {
-            // Allocating since we delete this empty string later
-            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
-            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
-        } else {
-            char *dot = strrchr(process_name, '.');
-            if (dot != NULL) {
-                program_len = program_len - strlen(dot);
+        else {
+#ifdef HOST_WINDOWS
+            const wchar_t* process_name_const = wcsrchr(wszModuleFileName, DIRECTORY_SEPARATOR_CHAR);
+            if (process_name_const != NULL) {
+                process_name_const++;
             }
-            memcpy (process_name, __progname, program_len);
-            process_name[program_len] = '\0';
-        }
-        entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t*>(process_name);
+            size_t len = -1;
+            const wchar_t* extension = wcsrchr(process_name_const, '.');
+            if (extension != NULL) {
+                len = extension - process_name_const;
+            }
+            const ep_char16_t* process_name = reinterpret_cast<const ep_char16_t *>(process_name_const);
+            entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name, len);
 #else
-        // Allocating since we delete this empty string later
-        entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
-        entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>('\0');
+            const ep_char8_t* process_name_const = strrchr(wszModuleFileName, DIRECTORY_SEPARATOR_CHAR);
+            if (process_name_const != NULL) {
+                process_name_const++;
+            }
+            size_t len = strlen(process_name_const);
+            const ep_char8_t *extension = strrchr(process_name_const, '.');
+            if (extension != NULL) {
+                len = len - strlen(extension);
+            }
+            ep_char8_t* process_name = reinterpret_cast<ep_char8_t *>(malloc(len + 1));
+            if (process_name == NULL) {
+                return NULL;
+            }
+            memcpy(process_name, process_name_const, len);
+            process_name[len] = '\0';
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t*>(process_name);
 #endif // HOST_WINDOWS
+        }
 
         if (PalInterlockedCompareExchangePointer((void**)(&entrypoint_assembly_name), (void*)(entrypoint_assembly_name_local), nullptr) != nullptr)
-            delete[] entrypoint_assembly_name_local;
+            free(entrypoint_assembly_name_local);
     }
+
     return reinterpret_cast<const char*>(entrypoint_assembly_name);
 }
 
