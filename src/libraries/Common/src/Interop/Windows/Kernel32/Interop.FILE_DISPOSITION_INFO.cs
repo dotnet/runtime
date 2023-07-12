@@ -11,7 +11,7 @@ internal static partial class Interop
 
         internal struct FILE_DISPOSITION_INFO
         {
-            internal int DeleteFile;
+            internal byte DeleteFile;
         }
     }
 }

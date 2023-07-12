@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,61 +17,34 @@ internal static partial class Interop
         private static unsafe partial bool GetVolumeInformationByHandleW(
             SafeFileHandle hFile,
             char* volumeName,
-            int volumeNameBufLen,
-            int* volSerialNumber,
-            int* maxFileNameLen,
-            int* fileSystemFlags,
+            uint volumeNameBufLen,
+            uint* volSerialNumber,
+            uint* maxFileNameLen,
+            uint* fileSystemFlags,
             char* fileSystemName,
-            int fileSystemNameBufLen);
+            uint fileSystemNameBufLen);
 
         public static unsafe int GetVolumeInformationByHandle(
             SafeFileHandle hFile,
-            out string? volumePath,
-            bool wantsVolumePath,
-            int* volSerialNumber,
-            int* maxFileNameLen,
-            out int fileSystemFlags,
+            uint* volSerialNumber,
+            uint* maxFileNameLen,
+            out uint fileSystemFlags,
             char* fileSystemName,
-            int fileSystemNameBufLen)
+            uint fileSystemNameBufLen)
         {
-            // Allocate output buffer on the stack initially.
-            const int stackAllocation = 512;
-            Span<char> volumePathBuffer = wantsVolumePath ? stackalloc char[stackAllocation + 1] : stackalloc char[0]; // +1 to ensure a \0 at the end, todo: is this necessary
-            int bufferSize = stackAllocation;
-
-            // Loop until the buffer's big enough.
-            while (true)
+            // Try to get the volume information.
+            fixed (uint* pFileSystemFlags = &fileSystemFlags)
             {
-                fixed (char* lpszVolumePathName = volumePathBuffer)
+                if (GetVolumeInformationByHandleW(hFile, null, 0, volSerialNumber, maxFileNameLen, pFileSystemFlags, fileSystemName, fileSystemNameBufLen))
                 {
-                    // Try to get the volume name, will succeed if the buffer's big enough.
-                    fixed (int* pFileSystemFlags = &fileSystemFlags)
-                    {
-                        if (GetVolumeInformationByHandleW(hFile, lpszVolumePathName, Math.Max(volumePathBuffer.Length - 1, 0), volSerialNumber, maxFileNameLen, pFileSystemFlags, fileSystemName, fileSystemNameBufLen))
-                        {
-                            if (wantsVolumePath) volumePath = new string(lpszVolumePathName);
-                            else volumePath = null;
-                            return 0;
-                        }
-                    }
-
-                    // Check if the error was that the buffer is not large enough.
-                    int error = Marshal.GetLastWin32Error();
-                    if (wantsVolumePath && error == Interop.Errors.ERROR_INSUFFICIENT_BUFFER) //todo: check this is the correct error
-                    {
-                        // Create a new buffer and try again.
-                        // todo: use array pool and check for overflow
-                        volumePathBuffer = new char[bufferSize *= 2];
-                        continue;
-                    }
-                    else
-                    {
-                        // Return our error.
-                        volumePath = null;
-                        return error;
-                    }
+                    return 0;
                 }
             }
+
+            // Return the error.
+            int error = Marshal.GetLastWin32Error();
+            Debug.Assert(error != Errors.ERROR_INSUFFICIENT_BUFFER);
+            return error;
         }
     }
 }

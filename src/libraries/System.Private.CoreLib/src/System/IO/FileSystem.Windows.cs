@@ -186,8 +186,8 @@ namespace System.IO
 
                 // Read the source's volume's info.
                 // todo: do we want GetVolumePathName + GetVolumeInformationByHandle instead?
-                int sourceSerialNumber;
-                if (Interop.Kernel32.GetVolumeInformationByHandle(sourceHandle, out _, false, &sourceSerialNumber, null, out int sourceVolumeFlags, null, 0) != 0)
+                uint sourceSerialNumber;
+                if (Interop.Kernel32.GetVolumeInformationByHandle(sourceHandle, &sourceSerialNumber, null, out uint sourceVolumeFlags, null, 0) != 0)
                 {
                     throw new Exception("C");
                     //return false;
@@ -260,8 +260,8 @@ namespace System.IO
                     }
 
                     // Read the destination file's volume's serial number.
-                    int destSerialNumber;
-                    if (Interop.Kernel32.GetVolumeInformationByHandle(sourceHandle, out _, false, &destSerialNumber, null, out int destVolumeFlags, null, 0) != 0)
+                    uint destSerialNumber;
+                    if (Interop.Kernel32.GetVolumeInformationByHandle(sourceHandle, &destSerialNumber, null, out uint destVolumeFlags, null, 0) != 0)
                     {
                         throw new Exception("G");
                         //return false;
