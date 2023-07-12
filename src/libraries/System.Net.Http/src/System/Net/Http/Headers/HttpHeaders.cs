@@ -577,7 +577,7 @@ namespace System.Net.Http.Headers
 
         private static HeaderStoreItemInfo CloneHeaderInfo(HeaderDescriptor descriptor, HeaderStoreItemInfo sourceInfo)
         {
-            lock (sourceInfo)
+            //lock (sourceInfo)
             {
                 var destinationInfo = new HeaderStoreItemInfo
                 {
@@ -721,7 +721,7 @@ namespace System.Net.Http.Headers
         {
             // Unlike TryGetHeaderInfo() this method tries to parse all non-validated header values (if any)
             // before returning to the caller.
-            lock (info)
+            //lock (info)
             {
                 Debug.Assert(!info.IsEmpty);
                 if (info.RawValue != null)
@@ -749,7 +749,7 @@ namespace System.Net.Http.Headers
 
         private static void ParseSingleRawHeaderValue(HeaderStoreItemInfo info, HeaderDescriptor descriptor, string rawValue)
         {
-            Debug.Assert(Monitor.IsEntered(info));
+            //Debug.Assert(Monitor.IsEntered(info));
             if (descriptor.Parser == null)
             {
                 if (HttpRuleParser.ContainsNewLine(rawValue))
@@ -1107,7 +1107,7 @@ namespace System.Net.Http.Headers
                 return;
             }
 
-            lock (info)
+            //lock (info)
             {
                 int length = GetValueCount(info);
 
@@ -1150,7 +1150,7 @@ namespace System.Net.Http.Headers
                 return 1;
             }
 
-            lock (info)
+            //lock (info)
             {
                 int length = GetValueCount(info);
                 Debug.Assert(length > 0);
@@ -1172,7 +1172,7 @@ namespace System.Net.Http.Headers
         private static int GetValueCount(HeaderStoreItemInfo info)
         {
             Debug.Assert(info != null);
-            Debug.Assert(Monitor.IsEntered(info));
+            //Debug.Assert(Monitor.IsEntered(info));
 
             return Count<object>(info.ParsedAndInvalidValues) + Count<string>(info.RawValue);
 
@@ -1316,6 +1316,16 @@ namespace System.Net.Http.Headers
             }
 
             public bool IsEmpty => RawValue == null && ParsedAndInvalidValues == null;
+
+            private static int s_hashCodeCounter;
+            private int? _hashCode;
+            public override int GetHashCode()
+            {
+                if (!_hashCode.HasValue) _hashCode = Interlocked.Increment(ref s_hashCodeCounter);
+                return _hashCode.Value;
+            }
+
+            public override string ToString() => $"HeaderStoreItemInfo,{_hashCode}, RawValue:{RawValue}({RawValue?.GetType()}),ParsedAndInvalidValues:{ParsedAndInvalidValues}({ParsedAndInvalidValues?.GetType()})";
         }
 
 
