@@ -49,7 +49,7 @@ namespace ILCompiler.Win32Resources
                 OffsetToData = blobReader.ReadUInt32();
             }
 
-            public static ObjectDataBuilder.Reservation Write(ref ObjectDataBuilder dataBuilder, string name, IDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable)
+            public static ObjectDataBuilder.Reservation Write(ref ObjectDataBuilder dataBuilder, string name, SortedDictionary<string, List<ObjectDataBuilder.Reservation>> nameTable)
             {
                 List<ObjectDataBuilder.Reservation> relatedNameReferences;
                 if (!nameTable.TryGetValue(name, out relatedNameReferences))
@@ -84,7 +84,13 @@ namespace ILCompiler.Win32Resources
 
             public static void Write(ref ObjectDataBuilder dataBuilder, ISymbolNode node, int offsetFromSymbol, int sizeOfData)
             {
-                dataBuilder.EmitReloc(node, RelocType.IMAGE_REL_BASED_ADDR32NB, offsetFromSymbol);
+                dataBuilder.EmitReloc(node,
+#if READYTORUN
+                    RelocType.IMAGE_REL_BASED_ADDR32NB,
+#else
+                    RelocType.IMAGE_REL_BASED_ABSOLUTE,
+#endif
+                    offsetFromSymbol);
                 dataBuilder.EmitInt(sizeOfData);
                 dataBuilder.EmitInt(1252);  // CODEPAGE = DEFAULT_CODEPAGE
                 dataBuilder.EmitInt(0); // RESERVED

@@ -1680,8 +1680,15 @@ ves_pinvoke_method (
 	}
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+	gpointer call_info = *cache;
+
+	if (!call_info) {
+		call_info = mono_arch_get_interp_native_call_info (get_default_mem_manager (), sig);
+		mono_memory_barrier ();
+		*cache = call_info;
+	}
 	CallContext ccontext;
-	mono_arch_set_native_call_context_args (&ccontext, &frame, sig);
+	mono_arch_set_native_call_context_args (&ccontext, &frame, sig, call_info);
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, &frame);
@@ -1705,7 +1712,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!context->has_resume_state) {
-		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig);
+		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
 	}
 
 	g_free (ccontext.stack);
@@ -3045,8 +3052,10 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	frame.stack = sp;
 	frame.retval = sp;
 
+	gpointer call_info = mono_arch_get_interp_native_call_info (NULL, sig);
+
 	/* Copy the args saved in the trampoline to the frame stack */
-	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig);
+	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig, call_info);
 
 	/* Allocate storage for value types */
 	stackval *newsp = sp;
@@ -3087,7 +3096,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 
 	/* Write back the return value */
 	/* 'frame' is still valid */
-	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, retp);
+	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, call_info, retp);
+
+	mono_arch_free_interp_native_call_info (call_info);
 }
 
 #else

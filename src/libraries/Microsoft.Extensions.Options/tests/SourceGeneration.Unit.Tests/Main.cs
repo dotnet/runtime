@@ -1179,7 +1179,9 @@ namespace __OptionValidationStaticInstances
         Assert.Equal(DiagDescriptors.ValidatorsNeedSimpleConstructor.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    private static bool SupportRemoteExecutionAndNotInBrowser => RemoteExecutor.IsSupported && !PlatformDetection.IsBrowser;
+
+    [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
     public void ProduceDiagnosticFromOtherAssemblyTest()
     {
         string source = """
@@ -1262,6 +1264,176 @@ namespace __OptionValidationStaticInstances
         }, assemblyPath).Dispose();
 
         File.Delete(assemblyPath); // cleanup
+    }
+
+    [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    public async Task InaccessibleValidationAttributesTest()
+    {
+        string source = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+
+            #nullable enable
+
+            namespace ValidationTest;
+
+            public class BaseOptions
+            {
+                [Timeout] // internal attribute not visible outside the assembly
+                public int Prop1 { get; set; }
+
+                [Required]
+                public string Prop2 { get; set; }
+            }
+
+            [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+            internal sealed class TimeoutAttribute : ValidationAttribute
+            {
+                protected override ValidationResult IsValid(object? value, ValidationContext? validationContext)
+                {
+                    return ValidationResult.Success!;
+                }
+            }
+        """;
+
+        string assemblyName = Path.GetRandomFileName();
+        string assemblyPath = Path.Combine(Path.GetTempPath(), assemblyName + ".dll");
+
+        var compilation = CSharpCompilation
+                .Create(assemblyName, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                .AddReferences(MetadataReference.CreateFromFile(AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "System.Runtime").Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(OptionsValidatorAttribute).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(IValidateOptions<object>).Assembly.Location))
+                .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
+
+        EmitResult emitResult = compilation.Emit(assemblyPath);
+        Assert.True(emitResult.Success);
+
+        RemoteExecutor.Invoke(async (assemblyFullPath) => {
+            string source0 = """
+                using Microsoft.Extensions.Options;
+                """;
+
+            string source1 = """
+                using System.ComponentModel.DataAnnotations;
+
+                #nullable enable
+                #pragma warning disable CS1591
+
+                namespace ValidationTest
+                {
+                    public class ExtOptions : BaseOptions
+                    {
+                        [Range(0, 10)]
+                        public int Prop3 { get; set; }
+                    }
+                }
+                """;
+
+            string source2 = """
+                namespace ValidationTest
+                {
+                    [OptionsValidator]
+                    internal sealed partial class ExtOptionsValidator : IValidateOptions<ExtOptions>
+                    {
+                    }
+                }
+                """;
+
+            Assembly assembly = Assembly.LoadFrom(assemblyFullPath);
+
+            var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                    new Generator(),
+                    new[]
+                    {
+                        assembly,
+                        Assembly.GetAssembly(typeof(RequiredAttribute)),
+                        Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
+                        Assembly.GetAssembly(typeof(IValidateOptions<object>)),
+                    },
+                    new List<string> { source0 + source1 + source2 })
+                .ConfigureAwait(false);
+
+            _ = Assert.Single(generatedSources);
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagDescriptors.InaccessibleValidationAttribute.Id, diagnostics[0].Id);
+            string generatedSource = generatedSources[0].SourceText.ToString();
+            Assert.Contains("global::System.ComponentModel.DataAnnotations.RangeAttribute", generatedSource);
+            Assert.Contains("global::System.ComponentModel.DataAnnotations.RequiredAttribute", generatedSource);
+            Assert.DoesNotContain("Timeout", generatedSource);
+
+            // Ensure the generated source compiles
+            var compilation = CSharpCompilation
+                    .Create(Path.GetRandomFileName()+".dll", options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                    .AddReferences(MetadataReference.CreateFromFile(AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "System.Runtime").Location))
+                    .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location))
+                    .AddReferences(MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location))
+                    .AddReferences(MetadataReference.CreateFromFile(typeof(OptionsValidatorAttribute).Assembly.Location))
+                    .AddReferences(MetadataReference.CreateFromFile(typeof(IValidateOptions<object>).Assembly.Location))
+                    .AddReferences(MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location))
+                    .AddReferences(MetadataReference.CreateFromFile(assemblyFullPath))
+                    .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source1 + Environment.NewLine + generatedSource));
+
+            MemoryStream ms = new();
+            EmitResult emitResult = compilation.Emit(ms);
+            Assert.True(emitResult.Success);
+        }, assemblyPath).Dispose();
+
+        File.Delete(assemblyPath); // cleanup
+
+        // Test private validation attribute in the same assembly
+
+        string source3 = """
+            using System;
+            using System.ComponentModel.DataAnnotations;
+            using Microsoft.Extensions.Options;
+
+            #nullable enable
+
+            namespace ValidationTest;
+
+            public class MyOptions
+            {
+                [Timeout] // private attribute
+                public int Prop1 { get; set; }
+
+                [Required]
+                public string Prop2 { get; set; }
+
+                [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
+                private sealed class TimeoutAttribute : ValidationAttribute
+                {
+                    protected override ValidationResult IsValid(object? value, ValidationContext? validationContext)
+                    {
+                        return ValidationResult.Success!;
+                    }
+                }
+            }
+
+            [OptionsValidator]
+            public sealed partial class MyOptionsValidator : IValidateOptions<MyOptions>
+            {
+            }
+            """;
+
+        var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
+                new Generator(),
+                new[]
+                {
+                    Assembly.GetAssembly(typeof(RequiredAttribute)),
+                    Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
+                    Assembly.GetAssembly(typeof(IValidateOptions<object>)),
+                },
+                new List<string> { source3 })
+            .ConfigureAwait(false);
+
+        _ = Assert.Single(generatedSources);
+        Assert.Single(diagnostics);
+        Assert.Equal(DiagDescriptors.InaccessibleValidationAttribute.Id, diagnostics[0].Id);
+        string generatedSource = generatedSources[0].SourceText.ToString();
+        Assert.DoesNotContain("Timeout", generatedSource);
     }
 
     [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

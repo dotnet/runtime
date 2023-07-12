@@ -4300,7 +4300,7 @@ static gboolean
 prefer_gsharedvt_method (MonoAotCompile *acfg, MonoMethod *method)
 {
 	/* One instantiation with valuetypes is generated for each async method */
-	if (m_class_get_image (method->klass) == mono_defaults.corlib && (!strcmp (m_class_get_name (method->klass), "AsyncMethodBuilderCore") || !strcmp (m_class_get_name (method->klass), "AsyncVoidMethodBuilder")))
+	if (!acfg->aot_opts.profile_only && m_class_get_image (method->klass) == mono_defaults.corlib && (!strcmp (m_class_get_name (method->klass), "AsyncMethodBuilderCore") || !strcmp (m_class_get_name (method->klass), "AsyncVoidMethodBuilder")))
 		return TRUE;
 	else
 		return FALSE;

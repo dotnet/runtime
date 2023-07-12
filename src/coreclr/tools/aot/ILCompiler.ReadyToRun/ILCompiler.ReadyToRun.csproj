@@ -122,6 +122,11 @@
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\TypePreserve.cs" Link="Compiler\TypePreserve.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="..\..\Common\JitInterface\CorInfoTypes.VarInfo.cs" Link="JitInterface\CorInfoTypes.VarInfo.cs" />
     <Compile Include="..\..\Common\JitInterface\SystemVStructClassificator.cs" Link="JitInterface\SystemVStructClassificator.cs" />
     <Compile Include="..\..\Common\JitInterface\LoongArch64PassStructInRegister.cs" Link="JitInterface\LoongArch64PassStructInRegister.cs" />
@@ -265,11 +270,6 @@
     <Compile Include="ObjectWriter\ProfileFileBuilder.cs" />
     <Compile Include="ObjectWriter\SymbolFileBuilder.cs" />
     <Compile Include="ObjectWriter\TypeString.cs" />
-    <Compile Include="Win32Resources\ResourceData.cs" />
-    <Compile Include="Win32Resources\ResourceData.Reader.cs" />
-    <Compile Include="Win32Resources\ResourceData.ResourcesDataModel.cs" />
-    <Compile Include="Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
-    <Compile Include="Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="Compiler\RuntimeDeterminedTypeHelper.cs" />
     <Compile Include="Compiler\SingleMethodCompilationModuleGroup.cs" />
     <Compile Include="Compiler\NoMethodsCompilationModuleGroup.cs" />
