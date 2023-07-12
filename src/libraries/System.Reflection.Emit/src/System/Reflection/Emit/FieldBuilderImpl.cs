@@ -40,7 +40,6 @@ namespace System.Reflection.Emit
                 // nullable value types can hold null value.
                 if (_fieldType.IsValueType && !(_fieldType.IsGenericType && _fieldType.GetGenericTypeDefinition() == typeof(Nullable<>)))
                     throw new ArgumentException(SR.Argument_ConstantNull);
-
             }
             else
             {

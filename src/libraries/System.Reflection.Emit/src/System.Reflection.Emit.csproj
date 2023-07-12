@@ -14,8 +14,8 @@
     <Compile Include="System\Reflection\Emit\ModuleBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\ParameterBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\PseudoCustomAttributesData.cs" />
-    <Compile Include="System\Reflection\Emit\TypeBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\SignatureHelper.cs" />
+    <Compile Include="System\Reflection\Emit\TypeBuilderImpl.cs" />
     <Compile Include="System\Reflection\Emit\TypeNameBuilder.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -21,9 +21,9 @@ namespace System.Reflection.Emit.Tests
         };
 
         private static readonly Type s_comVisibleType = typeof(ComVisibleAttribute);
-        private static readonly Type s_guideType = typeof(GuidAttribute);
+        private static readonly Type s_guidType = typeof(GuidAttribute);
         private static readonly (ConstructorInfo con, object[] args) s_comVisiblePair = (s_comVisibleType.GetConstructor(new Type[] { typeof(bool) }), new object[] { true });
-        private static readonly (ConstructorInfo con, object[] args) s_guidPair = (s_guideType.GetConstructor(new Type[] { typeof(string) }), new object[] { "9ED54F84-A89D-4fcd-A854-44251E925F09" });
+        private static readonly (ConstructorInfo con, object[] args) s_guidPair = (s_guidType.GetConstructor(new Type[] { typeof(string) }), new object[] { "9ED54F84-A89D-4fcd-A854-44251E925F09" });
 
         private static AssemblyName PopulateAssemblyName()
         {
@@ -109,7 +109,7 @@ namespace System.Reflection.Emit.Tests
                 {
                     Assert.Equal(s_guidPair.con.MetadataToken, attribute.Constructor.MetadataToken);
                     Assert.Equal(s_guidPair.args[0].GetType().FullName, attribute.ConstructorArguments[0].ArgumentType.FullName);
-                    Assert.Equal(attribute.AttributeType.Name, s_guideType.Name);
+                    Assert.Equal(attribute.AttributeType.Name, s_guidType.Name);
                     Assert.Equal(s_guidPair.args[0], attribute.ConstructorArguments[0].Value);
                 }
             }
@@ -480,14 +480,14 @@ namespace System.Reflection.Emit.Tests
                 AssemblySaveTools.AssertTypeProperties(enumBuilder, testEnum);
 
                 CustomAttributeData[] attributes = testEnum.GetCustomAttributesData().ToArray();
-                if (attributes[0].AttributeType.Name == s_guideType.Name)
+                if (attributes[0].AttributeType.Name == s_guidType.Name)
                 {
-                    AssertEnumAttributes(s_guideType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[0]);
+                    AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[0]);
                     AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[1]);
                 }
                 else
                 {
-                    AssertEnumAttributes(s_guideType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[1]);
+                    AssertEnumAttributes(s_guidType.FullName, "9ED54F84-A89D-4fcd-A854-44251E925F09", attributes[1]);
                     AssertEnumAttributes(typeof(BoolAttribute).FullName, true, attributes[0]);
                 }
 
