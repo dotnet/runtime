@@ -1138,13 +1138,13 @@ Dictionary::PopulateEntry(
                 if (pMethod->IsStatic())
                 {
                     // Virtual Static Method resolution
-                    _ASSERTE(!thInterfaceType.IsTypeDesc());
-                    _ASSERTE(thInterfaceType.IsInterface());
+                    _ASSERTE(!ownerType.IsTypeDesc());
+                    _ASSERTE(ownerType.IsInterface());
                     BOOL uniqueResolution;
-                    pResolvedMD = ResolveVirtualStaticMethod(
-                        thInterfaceType.GetMethodTable(),
-                        pInterfaceMD,
-                        /* allowNullResult */pfForceUseRuntimeLookup != NULL,
+                    pResolvedMD = constraintType.GetMethodTable()->ResolveVirtualStaticMethod(
+                        ownerType.GetMethodTable(),
+                        pMethod,
+                        /* allowNullResult */ TRUE,
                         /* verifyImplemented */ FALSE,
                         /* allowVariantMatches */ TRUE,
                         &uniqueResolution);
