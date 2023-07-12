@@ -1339,7 +1339,8 @@ void EEJitManager::SetCpuInfo()
     CORJIT_FLAGS CPUCompileFlags;
 
     // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
-    uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
+    uint32_t maxVectorTBitWidth = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth);
+    maxVectorTBitWidth = (CLRConfig::ReinterpretHexAsDecimal(maxVectorTBitWidth) * 128) / 128;
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     CPUCompileFlags.Set(InstructionSet_X86Base);
