@@ -62,6 +62,16 @@
         <target state="translated">Десериализация свойств, предназначенных только для инициализации, сейчас не поддерживается в режиме создания исходного кода.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
+        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
+        <target state="new">The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleTitle">
+        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
+        <target state="new">Constructor annotated with JsonConstructorAttribute is inaccessible.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
         <target state="translated">Тип "JsonConverterAttribute" "{0}", указанный в элементе "{1}", не является типом преобразователя или не содержит доступного конструктора без параметров.</target>

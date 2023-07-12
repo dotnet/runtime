@@ -4,7 +4,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
@@ -13,6 +15,8 @@ namespace Microsoft.Extensions.Logging
     /// <summary>
     /// Produces instances of <see cref="ILogger"/> classes based on the given providers.
     /// </summary>
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(LoggerFactoryDebugView))]
     public class LoggerFactory : ILoggerFactory
     {
         private readonly ConcurrentDictionary<string, Logger> _loggers = new ConcurrentDictionary<string, Logger>(StringComparer.Ordinal);
@@ -313,6 +317,18 @@ namespace Microsoft.Extensions.Logging
             {
                 _loggerFactory.AddProvider(provider);
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $"Providers = {_providerRegistrations.Count}, {_filterOptions.DebuggerToString()}";
+        }
+
+        private sealed class LoggerFactoryDebugView(LoggerFactory loggerFactory)
+        {
+            public List<ILoggerProvider> Providers => loggerFactory._providerRegistrations.Select(r => r.Provider).ToList();
+            public bool Disposed => loggerFactory._disposed;
+            public LoggerFilterOptions FilterOptions => loggerFactory._filterOptions;
         }
     }
 }

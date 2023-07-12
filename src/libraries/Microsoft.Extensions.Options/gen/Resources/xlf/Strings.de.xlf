@@ -32,6 +32,16 @@
         <target state="translated">"ValidateObjectMembersAttribute" oder "ValidateEnumeratedItemsAttribute" kann nicht für Felder oder Eigenschaften mit offenen generischen Typen verwendet werden.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="translated">Validierungsattribute können nicht auf konstanten oder statischen Member {0} angewendet werden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="translated">Konstanten, statische Felder oder Eigenschaften können nicht überprüft werden.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">Es gibt einen Zirkelverweis, der den Typ "{0}" verhindert, dass er für die statische Validierung verwendet wird.</target>
@@ -50,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">Ein mit "OptionsValidatorAttribute" versehener Typ implementiert nicht die erforderliche Schnittstelle.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">
