@@ -1179,7 +1179,7 @@ namespace __OptionValidationStaticInstances
         Assert.Equal(DiagDescriptors.ValidatorsNeedSimpleConstructor.Id, diagnostics[0].Id);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "RemoteExecutor is not supported on Browser, iOS, MacCatalyst, or tvOS.")]
     public void ProduceDiagnosticFromOtherAssemblyTest()
     {
         string source = """
