@@ -6510,8 +6510,6 @@ void CodeGen::genJmpMethod(GenTree* jmp)
         {
             var_types loadType = TYP_UNDEF;
 
-            // NOTE for RISCV64: not supports the HFA.
-            assert(!varDsc->lvIsHfaRegArg());
             if (varTypeIsStruct(varDsc))
             {
                 // Must be <= 16 bytes or else it wouldn't be passed in registers, except for HFA,
