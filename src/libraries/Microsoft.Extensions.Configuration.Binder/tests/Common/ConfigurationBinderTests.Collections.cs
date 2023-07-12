@@ -15,7 +15,7 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderCollectionTests
+    public sealed partial class ConfigurationBinderCollectionTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void GetList()

@@ -917,6 +917,15 @@ namespace System.Text.RegularExpressions.Tests
                 yield return (@"^(?i:[\u24B6-\u24D0])$", ((char)('\u24CF' + 26)).ToString(), RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, 0, 1, true, ((char)('\u24CF' + 26)).ToString());
             }
 
+            // [:XX:] inside a range has no special treatment; the [:XX: is literal, the ] closes the range
+            if (PlatformDetection.IsNetCore)
+            {
+                yield return (@"[[::]]", "x", RegexOptions.None, 0, 1, false, "");
+                yield return (@"[[:a:]]", "a]", RegexOptions.None, 0, 2, true, "a]");
+                yield return (@"[c[:ab:]", "c", RegexOptions.None, 0, 1, true, "c");
+                yield return (@"[c[:ab:]{3}d]", "abcd]", RegexOptions.None, 0, 5, true, "abcd]");
+            }
+
             // Long inputs
             string longCharacterRange = string.Concat(Enumerable.Range(1, 0x2000).Select(c => (char)c));
             foreach (RegexOptions options in new[] { RegexOptions.None, RegexOptions.IgnoreCase })

@@ -795,8 +795,11 @@ function generate_wasm(
             "temp_f64": WasmValtype.f64,
             "backbranched": WasmValtype.i32,
         };
-        if (builder.options.enableSimd)
+        if (builder.options.enableSimd) {
             traceLocals["v128_zero"] = WasmValtype.v128;
+            traceLocals["math_lhs128"] = WasmValtype.v128;
+            traceLocals["math_rhs128"] = WasmValtype.v128;
+        }
 
         let keep = true,
             traceValue = 0;

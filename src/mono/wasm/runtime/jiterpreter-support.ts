@@ -297,9 +297,10 @@ export class WasmBuilder {
         return this.current.appendU8(value);
     }
 
-    appendSimd(value: WasmSimdOpcode) {
+    appendSimd(value: WasmSimdOpcode, allowLoad?: boolean) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
         // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
+        mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
         return this.current.appendULeb(value);
     }
 
@@ -993,6 +994,7 @@ export class BlobBuilder {
     }
 
     appendULeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendULeb expected number but got ${value}`);
         mono_assert(value >= 0, "cannot pass negative value to appendULeb");
         if (value < 0x7F) {
             if (this.size + 1 >= this.capacity)
@@ -1013,6 +1015,7 @@ export class BlobBuilder {
     }
 
     appendLeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendLeb expected number but got ${value}`);
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -1721,7 +1724,7 @@ export function try_append_memmove_fast(
         while (count >= sizeofV128) {
             builder.local(destLocal);
             builder.local(srcLocal);
-            builder.appendSimd(WasmSimdOpcode.v128_load);
+            builder.appendSimd(WasmSimdOpcode.v128_load, true);
             builder.appendMemarg(srcOffset, 0);
             builder.appendSimd(WasmSimdOpcode.v128_store);
             builder.appendMemarg(destOffset, 0);

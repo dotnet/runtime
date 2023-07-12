@@ -81,7 +81,7 @@ try {
 
     /* FIXME
     console.log("smoke: running WsClientMain");
-    let w0 = await exports.Sample.Test.WsClientMain("wss://socketsbay.com/wss/v2/1/demo/");
+    let w0 = await exports.Sample.Test.WsClientMain("wss://corefx-net-http11.azurewebsites.net/WebSocket/EchoWebSocket.ashx");
     console.log("smoke: WsClientMain done " + w0);
     */
 
@@ -118,7 +118,7 @@ try {
     exports.Sample.Test.StartAllocatorFromWorker();
     */
 
-    /* FIXME
+    /* ActiveIssue https://github.com/dotnet/runtime/issues/88663
     await delay(5000);
 
     console.log("smoke: running GCCollect");

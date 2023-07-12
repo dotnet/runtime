@@ -30,6 +30,9 @@ namespace System.Runtime.InteropServices.Marshalling
             _instancePointer = IUnknownStrategy.CreateInstancePointer(thisPointer);
         }
 
+        /// <summary>
+        /// Release all references to the underlying COM object.
+        /// </summary>
         ~ComObject()
         {
             CacheStrategy.Clear(IUnknownStrategy);
@@ -54,11 +57,11 @@ namespace System.Runtime.InteropServices.Marshalling
         internal bool UniqueInstance { get; init; }
 
         /// <summary>
-        /// Releases all references owned by this ComObject if it is a unique instance.
+        /// Releases all references owned by this <see cref="ComObject" /> if it is a unique instance.
         /// </summary>
         /// <remarks>
-        /// This method does nothing if the ComObject was not created with
-        /// CreateObjectFlags.UniqueInstance.
+        /// This method does nothing if the <see cref="ComObject" /> was not created with
+        /// <see cref="CreateObjectFlags.UniqueInstance" />.
         /// </remarks>
         public void FinalRelease()
         {
