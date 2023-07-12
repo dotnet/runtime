@@ -314,10 +314,11 @@ typedef enum {
 typedef struct _GCHeapDumpContext GCHeapDumpContext;
 struct _GCHeapDumpContext {
 	EVENTPIPE_TRACE_CONTEXT trace_context;
-	GCHeapDumpBulkData bulk_node;
-	GCHeapDumpBulkData bulk_edge;
-	GCHeapDumpBulkData bulk_root_edge;
-	GCHeapDumpBulkData bulk_root_static_var;
+	GCHeapDumpBulkData bulk_nodes;
+	GCHeapDumpBulkData bulk_edges;
+	GCHeapDumpBulkData bulk_root_edges;
+	GCHeapDumpBulkData bulk_root_cwt_elem_edges;
+	GCHeapDumpBulkData bulk_root_static_vars;
 	BulkTypeEventLogger *bulk_type_logger;
 	GCHeapDumpBuffer *buffer;
 	dn_vector_ptr_t *gc_roots;
@@ -355,6 +356,15 @@ static const uint32_t BULK_ROOT_EDGE_EVENT_TYPE_SIZE =
 	sizeof (uint8_t) +
 	// GCRootFlag
 	sizeof (uint32_t) +
+	// GCRootID
+	sizeof (uintptr_t);
+
+// Must match GCBulkRootConditionalWeakTableElementEdge layout in ClrEtwAll.man.
+static const uint32_t BULK_ROOT_CWT_ELEM_EDGE_EVENT_TYPE_SIZE =
+	// GCKeyNodeID
+	sizeof (uintptr_t) +
+	// GCValueNodeID
+	sizeof (uintptr_t) +
 	// GCRootID
 	sizeof (uintptr_t);
 
@@ -3178,6 +3188,40 @@ gc_heap_dump_context_buffer_free (GCHeapDumpBuffer *buffer)
 
 static
 bool
+gc_heap_dump_context_alloc_bulk_data (
+	GCHeapDumpBulkData *data,
+	size_t len,
+	size_t count)
+{
+	data->data_start = g_malloc (len);
+	data->data_current = data->data_start;
+	data->data_end = data->data_start + len;
+	data->max_count = GSIZE_TO_UINT32 (count);
+	data->index = 0;
+	data->count = 0;
+
+	return data->data_start;
+}
+
+static
+void
+gc_heap_dump_context_free_bulk_data (GCHeapDumpBulkData *data)
+{
+	g_free (data->data_start);
+}
+
+static
+void
+gc_heap_dump_context_clear_bulk_data (GCHeapDumpBulkData *data)
+{
+	if (data->data_start)
+		memset (data->data_start, 0, data->data_end - data->data_start);
+	data->data_current = data->data_start;
+	data->count = 0;
+}
+
+static
+bool
 gc_heap_dump_context_init (
 	GCHeapDumpContext *context,
 	EVENTPIPE_TRACE_CONTEXT trace_context,
@@ -3203,52 +3247,34 @@ gc_heap_dump_context_init (
 
 		context->buffer = gc_heap_dump_context_buffer_alloc ();
 
-		const size_t bulk_node_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
-		const size_t bulk_node_max_count = bulk_node_max_data_len / BULK_NODE_EVENT_TYPE_SIZE;
+		const size_t bulk_nodes_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
+		const size_t bulk_nodes_max_count = bulk_nodes_max_data_len / BULK_NODE_EVENT_TYPE_SIZE;
 
-		const size_t bulk_edge_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
-		const size_t bulk_edge_max_count = bulk_edge_max_data_len / BULK_EDGE_EVENT_TYPE_SIZE;
+		const size_t bulk_edges_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
+		const size_t bulk_edges_max_count = bulk_edges_max_data_len / BULK_EDGE_EVENT_TYPE_SIZE;
 
-		const size_t bulk_root_edge_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
-		const size_t bulk_root_edge_max_count = bulk_root_edge_max_data_len / BULK_ROOT_EDGE_EVENT_TYPE_SIZE;
+		const size_t bulk_root_edges_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
+		const size_t bulk_root_edges_max_count = bulk_root_edges_max_data_len / BULK_ROOT_EDGE_EVENT_TYPE_SIZE;
 
-		const size_t bulk_root_static_var_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x30);
-		const size_t bulk_root_static_var_max_count = bulk_root_static_var_max_data_len / BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE;
+		const size_t bulk_root_cwt_elem_edges_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x100);
+		const size_t bulk_root_cwt_elem_edges_max_count = bulk_root_cwt_elem_edges_max_data_len / BULK_ROOT_CWT_ELEM_EDGE_EVENT_TYPE_SIZE;
 
-		context->bulk_node.data_start = g_malloc (bulk_node_max_data_len);
-		context->bulk_node.data_current = context->bulk_node.data_start;
-		context->bulk_node.data_end = context->bulk_node.data_start + bulk_node_max_data_len;
-		context->bulk_node.max_count = GSIZE_TO_UINT32 (bulk_node_max_count);
-		context->bulk_node.index = 0;
-		context->bulk_node.count = 0;
+		const size_t bulk_root_static_vars_max_data_len = (MAX_EVENT_BYTE_COUNT - 0x30);
+		const size_t bulk_root_static_vars_max_count = bulk_root_static_vars_max_data_len / BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE;
 
-		context->bulk_edge.data_start = g_malloc (bulk_edge_max_data_len);
-		context->bulk_edge.data_current = context->bulk_edge.data_start;
-		context->bulk_edge.data_end = context->bulk_edge.data_start + bulk_edge_max_data_len;
-		context->bulk_edge.max_count = GSIZE_TO_UINT32 (bulk_edge_max_count);
-		context->bulk_edge.index = 0;
-		context->bulk_edge.count = 0;
-
-		context->bulk_root_edge.data_start = g_malloc (bulk_root_edge_max_data_len);
-		context->bulk_root_edge.data_current = context->bulk_root_edge.data_start;
-		context->bulk_root_edge.data_end = context->bulk_root_edge.data_start + bulk_root_edge_max_data_len;
-		context->bulk_root_edge.max_count = GSIZE_TO_UINT32 (bulk_root_edge_max_count);
-		context->bulk_root_edge.index = 0;
-		context->bulk_root_edge.count = 0;
-
-		context->bulk_root_static_var.data_start = g_malloc (bulk_root_static_var_max_data_len);
-		context->bulk_root_static_var.data_current = context->bulk_root_static_var.data_start;
-		context->bulk_root_static_var.data_end = context->bulk_root_static_var.data_start + bulk_root_static_var_max_data_len;
-		context->bulk_root_static_var.max_count = GSIZE_TO_UINT32 (bulk_root_static_var_max_count);
-		context->bulk_root_static_var.index = 0;
-		context->bulk_root_static_var.count = 0;
+		gc_heap_dump_context_alloc_bulk_data (&context->bulk_nodes, bulk_nodes_max_data_len, bulk_nodes_max_count);
+		gc_heap_dump_context_alloc_bulk_data (&context->bulk_edges, bulk_edges_max_data_len, bulk_edges_max_count);
+		gc_heap_dump_context_alloc_bulk_data (&context->bulk_root_edges, bulk_root_edges_max_data_len, bulk_root_edges_max_count);
+		gc_heap_dump_context_alloc_bulk_data (&context->bulk_root_cwt_elem_edges, bulk_root_cwt_elem_edges_max_data_len, bulk_root_cwt_elem_edges_max_count);
+		gc_heap_dump_context_alloc_bulk_data (&context->bulk_root_static_vars, bulk_root_static_vars_max_data_len, bulk_root_static_vars_max_count);
 
 		result = context->bulk_type_logger &&
-			context->bulk_node.data_start &&
-			context->bulk_edge.data_start &&
-			context->bulk_root_edge.data_start &&
-			context->bulk_root_static_var.data_start &&
-			context->buffer;
+			context->buffer &&
+			context->bulk_nodes.data_start &&
+			context->bulk_edges.data_start &&
+			context->bulk_root_edges.data_start &&
+			context->bulk_root_cwt_elem_edges.data_start &&
+			context->bulk_root_static_vars.data_start;
 	}
 
 	return result;
@@ -3263,10 +3289,11 @@ gc_heap_dump_context_fini (GCHeapDumpContext *context)
 			if (context->gc_roots)
 				dn_vector_ptr_free (context->gc_roots);
 
-			g_free (context->bulk_root_static_var.data_start);
-			g_free (context->bulk_root_edge.data_start);
-			g_free (context->bulk_edge.data_start);
-			g_free (context->bulk_node.data_start);
+			gc_heap_dump_context_free_bulk_data (&context->bulk_root_static_vars);
+			gc_heap_dump_context_free_bulk_data (&context->bulk_root_cwt_elem_edges);
+			gc_heap_dump_context_free_bulk_data (&context->bulk_root_edges);
+			gc_heap_dump_context_free_bulk_data (&context->bulk_edges);
+			gc_heap_dump_context_free_bulk_data (&context->bulk_nodes);
 
 			gc_heap_dump_context_buffer_free (context->buffer);
 
@@ -3333,7 +3360,6 @@ gc_heap_dump_context_reset (void)
 {
 	gc_heap_dump_context_set (NULL);
 }
-
 
 static
 int32_t
@@ -3423,11 +3449,7 @@ void
 gc_heap_dump_context_clear_nodes (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
-
-	if (context->bulk_node.data_start)
-		memset (context->bulk_node.data_start, 0, context->bulk_node.data_end - context->bulk_node.data_start);
-	context->bulk_node.data_current = context->bulk_node.data_start;
-	context->bulk_node.count = 0;
+	gc_heap_dump_context_clear_bulk_data (&context->bulk_nodes);
 }
 
 static
@@ -3435,11 +3457,7 @@ void
 gc_heap_dump_context_clear_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
-
-	if (context->bulk_edge.data_start)
-		memset (context->bulk_edge.data_start, 0, context->bulk_edge.data_end - context->bulk_edge.data_start);
-	context->bulk_edge.data_current = context->bulk_edge.data_start;
-	context->bulk_edge.count = 0;
+	gc_heap_dump_context_clear_bulk_data (&context->bulk_edges);
 }
 
 static
@@ -3447,41 +3465,44 @@ void
 gc_heap_dump_context_clear_root_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
-
-	if (context->bulk_root_edge.data_start)
-		memset (context->bulk_root_edge.data_start, 0, context->bulk_root_edge.data_end - context->bulk_root_edge.data_start);
-	context->bulk_root_edge.data_current = context->bulk_root_edge.data_start;
-	context->bulk_root_edge.count = 0;
+	gc_heap_dump_context_clear_bulk_data (&context->bulk_root_edges);
 }
 
 static
 void
-gc_heap_dump_context_clear_root_static_var (GCHeapDumpContext *context)
+gc_heap_dump_context_clear_root_cwt_elem_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
-
-	if (context->bulk_root_static_var.data_start)
-		memset (context->bulk_root_static_var.data_start, 0, context->bulk_root_static_var.data_end - context->bulk_root_static_var.data_start);
-	context->bulk_root_static_var.data_current = context->bulk_root_static_var.data_start;
-	context->bulk_root_static_var.count = 0;
+	gc_heap_dump_context_clear_bulk_data (&context->bulk_root_cwt_elem_edges);
 }
 
 static
 void
-flush_gc_event_bulk_node (GCHeapDumpContext *context)
+gc_heap_dump_context_clear_root_static_vars (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	gc_heap_dump_context_clear_bulk_data (&context->bulk_root_static_vars);
+}
+
+static
+void
+flush_gc_event_bulk_nodes (GCHeapDumpContext *context)
+{
+	EP_ASSERT (is_gc_heap_dump_enabled (context));
+
+	if (!context->bulk_nodes.count)
+		return;
 
 	FireEtwGCBulkNode (
-		context->bulk_node.index,
-		context->bulk_node.count,
+		context->bulk_nodes.index,
+		context->bulk_nodes.count,
 		clr_instance_get_id (),
 		BULK_NODE_EVENT_TYPE_SIZE,
-		context->bulk_node.data_start,
+		context->bulk_nodes.data_start,
 		NULL,
 		NULL);
 
-	context->bulk_node.index++;
+	context->bulk_nodes.index++;
 	gc_heap_dump_context_clear_nodes (context);
 }
 
@@ -3496,23 +3517,23 @@ fire_gc_event_bulk_node (
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
-	bool update_previous_bulk_node = (size == 0 && context->bulk_node.count != 0);
+	bool update_previous_bulk_node = (size == 0 && context->bulk_nodes.count != 0);
 
 	if (update_previous_bulk_node)
-		context->bulk_node.count--;
+		context->bulk_nodes.count--;
 
-	if (context->bulk_node.count == context->bulk_node.max_count)
-		flush_gc_event_bulk_node (context);
+	if (context->bulk_nodes.count == context->bulk_nodes.max_count)
+		flush_gc_event_bulk_nodes (context);
 
 	// Mono profiler object reference callback might split bulk node
 	// into several calls if it contains more edges than internal buffer size.
 	// Mono profiler pass an object size of 0 to identify this case.
 	if (update_previous_bulk_node) {
-		context->bulk_node.data_current -= sizeof (edge_count);
+		context->bulk_nodes.data_current -= sizeof (edge_count);
 		uint64_t previous_edge_count;
-		memcpy (&previous_edge_count, context->bulk_node.data_current, sizeof (edge_count));
+		memcpy (&previous_edge_count, context->bulk_nodes.data_current, sizeof (edge_count));
 		edge_count = GUINT64_FROM_LE (previous_edge_count) + edge_count;
-		ep_write_buffer_uint64_t (&context->bulk_node.data_current, edge_count);
+		ep_write_buffer_uint64_t (&context->bulk_nodes.data_current, edge_count);
 	} else {
 		uint64_t type_id = type;
 		MonoVTable *vtable = (MonoVTable *)type;
@@ -3523,31 +3544,34 @@ fire_gc_event_bulk_node (
 		}
 
 		// NOTE, must match manifest GCBulkNode values type.
-		ep_write_buffer_uintptr_t (&context->bulk_node.data_current, address);
-		ep_write_buffer_uint64_t (&context->bulk_node.data_current, size);
-		ep_write_buffer_uint64_t (&context->bulk_node.data_current, type_id);
-		ep_write_buffer_uint64_t (&context->bulk_node.data_current, edge_count);
+		ep_write_buffer_uintptr_t (&context->bulk_nodes.data_current, address);
+		ep_write_buffer_uint64_t (&context->bulk_nodes.data_current, size);
+		ep_write_buffer_uint64_t (&context->bulk_nodes.data_current, type_id);
+		ep_write_buffer_uint64_t (&context->bulk_nodes.data_current, edge_count);
 	}
 
-	context->bulk_node.count++;
+	context->bulk_nodes.count++;
 }
 
 static
 void
-flush_gc_event_bulk_edge (GCHeapDumpContext *context)
+flush_gc_event_bulk_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
+	if (!context->bulk_edges.count)
+		return;
+
 	FireEtwGCBulkEdge (
-		context->bulk_edge.index,
-		context->bulk_edge.count,
+		context->bulk_edges.index,
+		context->bulk_edges.count,
 		clr_instance_get_id (),
 		BULK_EDGE_EVENT_TYPE_SIZE,
-		context->bulk_edge.data_start,
+		context->bulk_edges.data_start,
 		NULL,
 		NULL);
 
-	context->bulk_edge.index++;
+	context->bulk_edges.index++;
 	gc_heap_dump_context_clear_edges (context);
 }
 
@@ -3560,14 +3584,14 @@ fire_gc_event_bulk_edge (
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
-	if (context->bulk_edge.count == context->bulk_edge.max_count)
-		flush_gc_event_bulk_edge (context);
+	if (context->bulk_edges.count == context->bulk_edges.max_count)
+		flush_gc_event_bulk_edges (context);
 
 	// NOTE, must match manifest GCBulkEdge values type.
-	ep_write_buffer_uintptr_t (&context->bulk_edge.data_current, address);
-	ep_write_buffer_uint32_t (&context->bulk_edge.data_current, ref_field_id);
+	ep_write_buffer_uintptr_t (&context->bulk_edges.data_current, address);
+	ep_write_buffer_uint32_t (&context->bulk_edges.data_current, ref_field_id);
 
-	context->bulk_edge.count++;
+	context->bulk_edges.count++;
 }
 
 static
@@ -3686,21 +3710,24 @@ buffer_gc_event_object_reference_callback (
 
 static
 void
-flush_gc_event_bulk_root_static_var (GCHeapDumpContext *context)
+flush_gc_event_bulk_root_static_vars (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
+	if (!context->bulk_root_static_vars.count)
+		return;
+
 	FireEtwGCBulkRootStaticVar (
-		context->bulk_root_static_var.count,
+		context->bulk_root_static_vars.count,
 		(uint64_t)mono_get_root_domain (),
 		clr_instance_get_id (),
-		context->bulk_root_static_var.data_current - context->bulk_root_static_var.data_start,
-		context->bulk_root_static_var.data_start,
+		context->bulk_root_static_vars.data_current - context->bulk_root_static_vars.data_start,
+		context->bulk_root_static_vars.data_start,
 		NULL,
 		NULL);
 
-	context->bulk_root_static_var.index++;
-	gc_heap_dump_context_clear_root_static_var (context);
+	context->bulk_root_static_vars.index++;
+	gc_heap_dump_context_clear_root_static_vars (context);
 }
 
 static
@@ -3749,10 +3776,10 @@ fire_gc_event_bulk_root_static_var (
 
 	size_t event_size = BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE + (name_len * sizeof (ep_char16_t));
 
-	if (context->bulk_root_static_var.data_end <=  context->bulk_root_static_var.data_current + event_size)
-		flush_gc_event_bulk_root_static_var (context);
+	if (context->bulk_root_static_vars.data_end <=  context->bulk_root_static_vars.data_current + event_size)
+		flush_gc_event_bulk_root_static_vars (context);
 
-	if (context->bulk_root_static_var.data_end <=  context->bulk_root_static_var.data_current + event_size)
+	if (context->bulk_root_static_vars.data_end <=  context->bulk_root_static_vars.data_current + event_size)
 		return;
 
 	if (vtable && vtable->klass) {
@@ -3762,32 +3789,78 @@ fire_gc_event_bulk_root_static_var (
 	}
 
 	// NOTE, needs to match manifest GCBulkRootStaticVar values type.
-	ep_write_buffer_uint64_t (&context->bulk_root_static_var.data_current, (uint64_t)address);
-	ep_write_buffer_uint64_t (&context->bulk_root_static_var.data_current, (uint64_t)object);
-	ep_write_buffer_uint64_t (&context->bulk_root_static_var.data_current, type_id);
-	ep_write_buffer_uint32_t (&context->bulk_root_static_var.data_current, static_var_flags);
-	ep_write_buffer_string_utf8_to_utf16_t (&context->bulk_root_static_var.data_current, static_var_name, GSIZE_TO_UINT32 (name_len));
+	ep_write_buffer_uint64_t (&context->bulk_root_static_vars.data_current, (uint64_t)address);
+	ep_write_buffer_uint64_t (&context->bulk_root_static_vars.data_current, (uint64_t)object);
+	ep_write_buffer_uint64_t (&context->bulk_root_static_vars.data_current, type_id);
+	ep_write_buffer_uint32_t (&context->bulk_root_static_vars.data_current, static_var_flags);
+	ep_write_buffer_string_utf8_to_utf16_t (&context->bulk_root_static_vars.data_current, static_var_name, GSIZE_TO_UINT32 (name_len));
 
-	context->bulk_root_static_var.count++;
+	context->bulk_root_static_vars.count++;
 }
 
 static
 void
-flush_gc_event_bulk_root_edge (GCHeapDumpContext *context)
+flush_gc_event_bulk_root_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
+	if (!context->bulk_root_edges.count)
+		return;
+
 	FireEtwGCBulkRootEdge (
-		context->bulk_root_edge.index,
-		context->bulk_root_edge.count,
+		context->bulk_root_edges.index,
+		context->bulk_root_edges.count,
 		clr_instance_get_id (),
 		BULK_ROOT_EDGE_EVENT_TYPE_SIZE,
-		context->bulk_root_edge.data_start,
+		context->bulk_root_edges.data_start,
 		NULL,
 		NULL);
 
-	context->bulk_root_edge.index++;
+	context->bulk_root_edges.index++;
 	gc_heap_dump_context_clear_root_edges (context);
+}
+
+static
+void
+flush_gc_event_bulk_root_cwt_elem_edges (GCHeapDumpContext *context)
+{
+	EP_ASSERT (is_gc_heap_dump_enabled (context));
+
+	if (!context->bulk_root_cwt_elem_edges.count)
+		return;
+
+	FireEtwGCBulkRootConditionalWeakTableElementEdge (
+		context->bulk_root_cwt_elem_edges.index,
+		context->bulk_root_cwt_elem_edges.count,
+		clr_instance_get_id (),
+		BULK_ROOT_CWT_ELEM_EDGE_EVENT_TYPE_SIZE,
+		context->bulk_root_cwt_elem_edges.data_start,
+		NULL,
+		NULL);
+
+	context->bulk_root_cwt_elem_edges.index++;
+	gc_heap_dump_context_clear_root_cwt_elem_edges (context);
+}
+
+static
+void
+fire_gc_event_bulk_root_cwt_elem_edge (
+	GCHeapDumpContext *context,
+	uintptr_t address,
+	uintptr_t key,
+	uintptr_t value)
+{
+	EP_ASSERT (is_gc_heap_dump_enabled (context));
+
+	if (context->bulk_root_cwt_elem_edges.count == context->bulk_root_cwt_elem_edges.max_count)
+		flush_gc_event_bulk_root_cwt_elem_edges (context);
+
+	// NOTE, must match manifest GCBulkRootConditionalWeakTableElementEdge values type.
+	ep_write_buffer_uintptr_t (&context->bulk_root_cwt_elem_edges.data_current, key);
+	ep_write_buffer_uintptr_t (&context->bulk_root_cwt_elem_edges.data_current, value);
+	ep_write_buffer_uintptr_t (&context->bulk_root_cwt_elem_edges.data_current, address);
+
+	context->bulk_root_cwt_elem_edges.count++;
 }
 
 static
@@ -3799,8 +3872,8 @@ fire_gc_event_bulk_root_edge (
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
-	if (context->bulk_root_edge.count == context->bulk_root_edge.max_count)
-		flush_gc_event_bulk_root_edge (context);
+	if (context->bulk_root_edges.count == context->bulk_root_edges.max_count)
+		flush_gc_event_bulk_root_edges (context);
 
 	uint8_t root_kind = GC_ROOT_KIND_OTHER;
 	uint32_t root_flags = GC_ROOT_FLAGS_NONE;
@@ -3814,6 +3887,22 @@ fire_gc_event_bulk_root_edge (
 				gc_root,
 				address,
 				object);
+			return;
+		}
+
+		if (gc_root->source == MONO_ROOT_SOURCE_EPHEMERON) {
+			// Should be ephemeron key, but current profiler
+			// API won't report it and key is only validated
+			// to be none 0 and a aligned pointer by gcdump.
+			// Use object as key until we get key reported
+			// in gc_roots profiler callback.
+			uintptr_t key = object;
+			uintptr_t value = object;
+			fire_gc_event_bulk_root_cwt_elem_edge (
+				context,
+				root_id,
+				key,
+				value);
 			return;
 		}
 
@@ -3844,12 +3933,12 @@ fire_gc_event_bulk_root_edge (
 	}
 
 	// NOTE, needs to match manifest GCBulkRootEdge values type.
-	ep_write_buffer_uintptr_t (&context->bulk_root_edge.data_current, object);
-	ep_write_buffer_uint8_t (&context->bulk_root_edge.data_current, root_kind);
-	ep_write_buffer_uint32_t (&context->bulk_root_edge.data_current, root_flags);
-	ep_write_buffer_uintptr_t (&context->bulk_root_edge.data_current, root_id);
+	ep_write_buffer_uintptr_t (&context->bulk_root_edges.data_current, object);
+	ep_write_buffer_uint8_t (&context->bulk_root_edges.data_current, root_kind);
+	ep_write_buffer_uint32_t (&context->bulk_root_edges.data_current, root_flags);
+	ep_write_buffer_uintptr_t (&context->bulk_root_edges.data_current, root_id);
 
-	context->bulk_root_edge.count++;
+	context->bulk_root_edges.count++;
 }
 
 static
@@ -3934,10 +4023,11 @@ flush_gc_events (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
-	flush_gc_event_bulk_node (context);
-	flush_gc_event_bulk_edge (context);
-	flush_gc_event_bulk_root_edge (context);
-	flush_gc_event_bulk_root_static_var (context);
+	flush_gc_event_bulk_nodes (context);
+	flush_gc_event_bulk_edges (context);
+	flush_gc_event_bulk_root_edges (context);
+	flush_gc_event_bulk_root_cwt_elem_edges (context);
+	flush_gc_event_bulk_root_static_vars (context);
 
 	if (context->bulk_type_logger && is_keyword_and_level_enabled (&context->trace_context, EP_EVENT_LEVEL_INFORMATIONAL, TYPE_KEYWORD))
 		bulk_type_fire_bulk_type_event (context->bulk_type_logger);
