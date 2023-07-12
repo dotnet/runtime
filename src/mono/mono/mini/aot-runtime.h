@@ -280,7 +280,6 @@ gboolean mono_aot_is_pagefault              (void *ptr);
 void     mono_aot_handle_pagefault          (void *ptr);
 
 void mini_nollvm_init_method                (MonoAotModule* amodule, MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited);
-void mini_nollvm_init_method1               (MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited);
 
 guint32  mono_aot_find_method_index         (MonoMethod *method);
 gboolean mono_aot_init_llvm_method          (gpointer aot_module, gpointer method_info, MonoClass *init_class, MonoError *error);

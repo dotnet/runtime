@@ -1094,7 +1094,7 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				g_free (sig);
 			} else if (subtype == WRAPPER_SUBTYPE_AOT_INIT) {
 				guint32 init_type = decode_value (p, &p);
-				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type, NULL, 0, NULL, NULL);
+				ref->method = mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype) init_type, 0, NULL);
 			} else if (subtype == WRAPPER_SUBTYPE_LLVM_FUNC) {
 				guint32 init_type = decode_value (p, &p);
 				ref->method = mono_marshal_get_llvm_func_wrapper ((MonoLLVMFuncWrapperSubtype) init_type);
@@ -4369,6 +4369,8 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 			res = init_method (amodule, NULL, method_index, method, NULL, error);
 			if (!res)
 				goto cleanup;
+			else 
+				mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
 		}
 	}
 
@@ -5933,18 +5935,10 @@ void
 mini_nollvm_init_method (MonoAotModule* amodule, MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited)
 {
 	ERROR_DECL (error);
-	if (init_method (amodule, NULL, method_index, method, NULL, error)) {
-		mono_bitset_set(mono_inited, method_index);
-	}
-	mono_error_assert_ok (error);
-}
-
-void
-mini_nollvm_init_method1 (MonoMethod* method, guint32 method_index, MonoBitSet* mono_inited)
-{
-	ERROR_DECL (error);
-	if (init_method (m_class_get_image (method->klass)->aot_module, NULL, method_index, method, NULL, error)) {
-		mono_bitset_set(mono_inited, method_index);
+	if (!mono_bitset_test(mono_inited, method_index)) {
+		if (init_method (amodule, NULL, method_index, method, NULL, error)) {
+			mono_bitset_set (mono_inited, method_index);
+		}
 	}
 	mono_error_assert_ok (error);
 }

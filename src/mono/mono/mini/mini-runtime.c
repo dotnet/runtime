@@ -4981,7 +4981,6 @@ register_icalls (void)
 
 	register_icall (mini_llvm_init_method, mono_icall_sig_void_ptr_ptr_ptr_ptr, TRUE);
 	register_icall (mini_nollvm_init_method, mono_icall_sig_void_ptr_ptr_int_ptr, TRUE);
-	register_icall (mini_nollvm_init_method1, mono_icall_sig_void_ptr_int_ptr, TRUE);
 	register_icall_no_wrapper (mini_llvmonly_resolve_iface_call_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt, mono_icall_sig_ptr_object_int_ptr_ptr);
 	register_icall_no_wrapper (mini_llvmonly_resolve_vcall_gsharedvt_fast, mono_icall_sig_ptr_object_int);

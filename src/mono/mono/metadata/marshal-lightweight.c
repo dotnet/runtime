@@ -3124,16 +3124,19 @@ emit_return_ilgen (MonoMethodBuilder *mb)
 }
 
 static void
-emit_method_init_ilgen (MonoMethodBuilder *mb, MonoAotModule *aot_module, MonoMethod *method, MonoBitSet *bitset, guint32 index, MonoBitSet* mono_inited)
+emit_method_init_ilgen (MonoMethodBuilder *mb, MonoMethod *method, guint32 index)
 {	
 	// load aot_module
-	mono_mb_emit_ptr (mb, aot_module);
+	// mono_mb_emit_ptr (mb, aot_module);
+	mono_mb_emit_op (mb, MONO_CEE_AOT_MODULE, NULL);
 	// load method
 	mono_mb_emit_ptr (mb, method);
 	// load method_index
 	mono_mb_emit_i4 (mb, index);
 	/// load bitset
-	mono_mb_emit_ptr (mb, bitset);
+	// mono_mb_emit_ptr (mb, bitset);
+	mono_mb_emit_op (mb, MONO_CEE_AOT_INIT_BITSET, NULL);
+
 	mono_mb_emit_icall_id (mb, MONO_JIT_ICALL_mini_nollvm_init_method);
 
 	mono_mb_emit_byte (mb, CEE_RET);

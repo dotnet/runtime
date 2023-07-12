@@ -4455,7 +4455,7 @@ static void
 add_lazy_init_wrappers (MonoAotCompile *acfg)
 {
 	for (int i = 0; i < AOT_INIT_METHOD_NUM; ++i)
-		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i, NULL, 0, NULL, NULL));
+		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i, 0, NULL));
 }
 
 #endif
@@ -6717,7 +6717,7 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						/*
 						 * This is a call from a JITted method to the init wrapper emitted by LLVM.
 						 */
-						g_assert (acfg->aot_opts.llvm && acfg->aot_opts.direct_extern_calls);
+						// g_assert (acfg->aot_opts.llvm && acfg->aot_opts.direct_extern_calls);
 
 						const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
 						char *symbol = g_strdup_printf ("%s%s_%s", acfg->user_symbol_prefix, acfg->global_prefix, init_name);
@@ -13236,7 +13236,7 @@ compile_asm (MonoAotCompile *acfg)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
 		g_string_append_printf (str, "\"%s%s\"", tool_prefix, ld_binary_name);
-	g_string_append_printf (str, " -shared");
+	g_string_append_printf (str, " -shared -v");
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",
 							wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),

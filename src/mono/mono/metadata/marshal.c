@@ -2954,7 +2954,7 @@ mono_marshal_get_aot_init_wrapper_name (MonoAotInitSubtype subtype)
 }
 
 MonoMethod *
-mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype, MonoBitSet *bitset, guint32 token, MonoAotModule *aot_module, MonoMethod *method)
+mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype, guint32 token, MonoMethod *method)
 {
 	MonoMethodBuilder *mb;
 	const char *name = mono_marshal_get_aot_init_wrapper_name (subtype);
@@ -2991,9 +2991,7 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype, MonoBitSet *bitse
 	// Our codegen backend generates other code here
 	get_marshal_cb ()->emit_return (mb);
 #else
-	if (!mono_bitset_test(bitset, token)) {
-		get_marshal_cb ()->emit_method_init(mb, aot_module, method, bitset, token, bitset);
-	}
+	get_marshal_cb ()->emit_method_init(mb, method, token);
 #endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_AOT_INIT);

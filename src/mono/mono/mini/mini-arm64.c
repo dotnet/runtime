@@ -5731,7 +5731,7 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	MonoAotModule *aot_module = m_class_get_image (method->klass)->aot_module;
+	// MonoAotModule *aot_module = m_class_get_image (method->klass)->aot_module;
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	guint8 *code;
@@ -5791,11 +5791,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	// code = emit_aotconst (cfg, code, ARMREG_R1, MONO_PATCH_INFO_INIT_BITSET, aot_module);
 	// code = emit_imm (code, ARMREG_R2, token);
 	// code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD, mono_aot_get_mono_inited(aot_module), token, aot_module, method));
-	
-	// emit_imm (code, ARMREG_R0, method);
-	// Load token
-	// code = emit_aotconst (cfg, code, ARMREG_R1, MONO_PATCH_INFO_INIT_BITSET, NULL);
-	// code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mini_nollvm_init_method1), NULL);
+	code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD, token, method));
 
 
 	/* Save return area addr received in R8 */
