@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -157,7 +155,7 @@ namespace Microsoft.Interop
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
-                GetResourceString(nameof(SR.InvalidExceptionMarshallingConfigurationMessage)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageParameter)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,

@@ -311,7 +311,7 @@ ReturnFromEndOfRecursiveFunction:
                 }
 #endif
 
-                return verticesInAFlaggedCycleTarjanStyle.Select(v => v.Payload).ToArray();
+                return verticesInAFlaggedCycleTarjanStyle.Select(v => v.Payload);
             }
 
             /// <summary>

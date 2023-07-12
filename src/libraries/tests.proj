@@ -716,12 +716,12 @@
 
     <ItemGroup>
       <NormalTestAppBundles Include="$(NormalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <NormalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
       <NormalTestCMakeEntries Include="project(NormalTestAppBundles)" />
       <NormalTestCMakeEntries Include="add_subdirectory(%(NormalTestAppBundles.RootDir)%(NormalTestAppBundles.Directory) %(NormalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
 
       <FunctionalTestAppBundles Include="$(FunctionalTestsAppBundleRoot)*/AppBundle/CMakeLists.txt" />
-      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.16)" />
+      <FunctionalTestCMakeEntries Include="cmake_minimum_required(VERSION 3.20)" />
       <FunctionalTestCMakeEntries Include="project(FunctionalTestAppBundles)" />
       <FunctionalTestCMakeEntries Include="add_subdirectory(%(FunctionalTestAppBundles.RootDir)%(FunctionalTestAppBundles.Directory) %(FunctionalTestAppBundles.RecursiveDir) EXCLUDE_FROM_ALL)" />
     </ItemGroup>
