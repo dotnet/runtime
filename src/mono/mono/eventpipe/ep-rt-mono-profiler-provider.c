@@ -17,7 +17,8 @@ extern EVENTPIPE_TRACE_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DO
 #define RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_DOTNET_Context
 
 // Enable/Disable mono profiler provider.
-static bool _mono_profiler_provider_enabled = false;
+#define DEFAULT_MONO_PROFILER_PROVIDER_ENABLED false
+static bool _mono_profiler_provider_enabled = DEFAULT_MONO_PROFILER_PROVIDER_ENABLED;
 
 // Mono profilers.
 static MonoProfilerHandle _mono_profiler_provider = NULL;
@@ -551,8 +552,6 @@ static
 void
 gc_heap_dump_mem_block_free_all (void)
 {
-	EP_ASSERT (gc_in_progress ());
-
 	GCHeapDumpMemBlock *current_block = (GCHeapDumpMemBlock *)ep_rt_volatile_load_ptr ((volatile void **)&_gc_heap_dump_current_mem_block);
 
 	ep_rt_volatile_store_ptr_without_barrier ((volatile void **)&_gc_heap_dump_current_mem_block, NULL);
@@ -3030,10 +3029,96 @@ void
 ep_rt_mono_profiler_provider_fini (void)
 {
 	if (_mono_profiler_provider_enabled) {
-		if (_mono_profiler_provider_callspec.enabled) {
-			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
+		if (_mono_profiler_provider_callspec.enabled)
 			mono_callspec_cleanup (&_mono_profiler_provider_callspec);
+
+		if (_mono_profiler_provider) {
+			mono_profiler_set_gc_root_register_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_root_unregister_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_event_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_allocation_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_handle_created_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_handle_deleted_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalizing_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalized_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalizing_object_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_gc_finalized_object_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_domain_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_unloading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_unloaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_domain_name_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_image_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_unloading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_image_unloaded_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_assembly_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_loaded_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_unloading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_assembly_unloaded_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_jit_begin_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_done_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_chunk_created_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_chunk_destroyed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_jit_code_buffer_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_class_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_class_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_class_loaded_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_vtable_loading_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_vtable_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_vtable_loaded_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_method_enter_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_leave_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_tail_call_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_exception_leave_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_free_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_begin_invoke_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_method_end_invoke_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_exception_throw_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_exception_clause_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_monitor_contention_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_monitor_failed_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_monitor_acquired_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_thread_started_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_stopping_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_stopped_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_exited_callback (_mono_profiler_provider, NULL);
+			mono_profiler_set_thread_name_callback (_mono_profiler_provider, NULL);
+
+			mono_profiler_set_call_instrumentation_filter_callback (_mono_profiler_provider, NULL);
 		}
+		_mono_profiler_provider = NULL;
+
+		if (_mono_heap_dump_profiler_provider) {
+			mono_profiler_set_gc_root_register_callback (_mono_heap_dump_profiler_provider, NULL);
+			mono_profiler_set_gc_root_unregister_callback (_mono_heap_dump_profiler_provider, NULL);
+			mono_profiler_set_gc_roots_callback (_mono_heap_dump_profiler_provider, NULL);
+			mono_profiler_set_gc_moves_callback (_mono_heap_dump_profiler_provider, NULL);
+			mono_profiler_set_gc_resize_callback (_mono_heap_dump_profiler_provider, NULL);
+			mono_profiler_set_gc_finalized_callback (_mono_heap_dump_profiler_provider, NULL);
+		}
+		_mono_heap_dump_profiler_provider = NULL;
+
+		_gc_heap_dump_requests = 0;
+		_gc_heap_dump_in_progress = 0;
+		_gc_heap_dump_trigger_count = 0;
+		_gc_state = 0;
+
+		_mono_profiler_provider_enabled = DEFAULT_MONO_PROFILER_PROVIDER_ENABLED;
+
+		gc_heap_dump_mem_block_free_all ();
 
 		gc_heap_dump_request_params_free ();
 		provider_params_free ();

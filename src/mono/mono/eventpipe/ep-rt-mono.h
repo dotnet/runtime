@@ -2018,6 +2018,8 @@ extern bool ep_rt_mono_sesion_has_all_started (void);
 extern void ep_rt_mono_runtime_provider_component_init (void);
 extern void ep_rt_mono_runtime_provider_init (void);
 extern void ep_rt_mono_runtime_provider_fini (void);
+extern void ep_rt_mono_runtime_provider_thread_started_callback (MonoProfiler *prof, uintptr_t tid);
+extern void ep_rt_mono_runtime_provider_thread_stopped_callback (MonoProfiler *prof, uintptr_t tid);
 
 extern void ep_rt_mono_profiler_provider_component_init (void);
 extern void ep_rt_mono_profiler_provider_init (void);

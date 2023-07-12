@@ -43,8 +43,8 @@ char *_ep_rt_mono_os_cmd_line = NULL;
 mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
 char *_ep_rt_mono_managed_cmd_line = NULL;
 
-// Mono profilers.
-static MonoProfilerHandle _default_profiler_provider = NULL;
+// Mono profilers (shared with runtime provider).
+MonoProfilerHandle _ep_rt_mono_default_profiler_provider = NULL;
 
 // Providers
 EVENTPIPE_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context = {0};
@@ -720,10 +720,21 @@ runtime_initialized_callback (MonoProfiler *prof)
 
 static
 void
-thread_exited_callback (
+thread_started_callback (
 	MonoProfiler *prof,
 	uintptr_t tid)
 {
+	ep_rt_mono_runtime_provider_thread_started_callback (prof, tid);
+}
+
+static
+void
+thread_stopped_callback (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	ep_rt_mono_runtime_provider_thread_stopped_callback (prof, tid);
+
 	if (_eventpipe_initialized) {
 		EventPipeThreadHolder *thread_holder = (EventPipeThreadHolder *)mono_native_tls_get_value (_ep_rt_mono_thread_holder_tls_id);
 		if (thread_holder)
@@ -740,7 +751,7 @@ thread_exited_callback (
 void
 ep_rt_mono_component_init (void)
 {
-	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
+	ep_rt_spin_lock_alloc (&_ep_rt_mono_config_lock);
 
 	RUNTIME_PROVIDER_CONTEXT = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_EVENTPIPE_Context;
 	RUNTIME_PRIVATE_PROVIDER_CONTEXT = MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_EVENTPIPE_Context;
@@ -748,7 +759,7 @@ ep_rt_mono_component_init (void)
 	RUNTIME_STRESS_PROVIDER_CONTEXT = MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context;
 	RUNTIME_MONO_PROFILER_PROVIDER_CONTEXT = MICROSOFT_DOTNETRUNTIME_MONO_PROFILER_PROVIDER_EVENTPIPE_Context;
 
-	_default_profiler_provider = mono_profiler_create (NULL);
+	_ep_rt_mono_default_profiler_provider = mono_profiler_create (NULL);
 
 	char *diag_env = g_getenv("MONO_DIAGNOSTICS");
 	if (diag_env) {
@@ -792,7 +803,7 @@ ep_rt_mono_component_init (void)
 void
 ep_rt_mono_init (void)
 {
-	EP_ASSERT (_default_profiler_provider != NULL);
+	EP_ASSERT (_ep_rt_mono_default_profiler_provider != NULL);
 
 	mono_native_tls_alloc (&_ep_rt_mono_thread_holder_tls_id, NULL);
 	mono_native_tls_alloc (&_thread_data_tls_id, NULL);
@@ -804,8 +815,9 @@ ep_rt_mono_init (void)
 	ep_rt_mono_runtime_provider_init ();
 	ep_rt_mono_profiler_provider_init ();
 
-	mono_profiler_set_runtime_initialized_callback (_default_profiler_provider, runtime_initialized_callback);
-	mono_profiler_set_thread_stopped_callback (_default_profiler_provider, thread_exited_callback);
+	mono_profiler_set_runtime_initialized_callback (_ep_rt_mono_default_profiler_provider, runtime_initialized_callback);
+	mono_profiler_set_thread_started_callback (_ep_rt_mono_default_profiler_provider, thread_started_callback);
+	mono_profiler_set_thread_stopped_callback (_ep_rt_mono_default_profiler_provider, thread_stopped_callback);
 
 	_eventpipe_initialized = TRUE;
 }
@@ -844,7 +856,28 @@ ep_rt_mono_fini (void)
 
 	_ep_rt_mono_runtime_initialized = FALSE;
 
-	ep_rt_spin_lock_free (ep_rt_mono_config_lock_get ());
+	if (_ep_rt_mono_default_profiler_provider) {
+		mono_profiler_set_runtime_initialized_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_thread_started_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_thread_stopped_callback (_ep_rt_mono_default_profiler_provider, NULL);
+	}
+	_ep_rt_mono_default_profiler_provider = NULL;
+
+	if (_ep_rt_mono_thread_holder_tls_id)
+		mono_native_tls_free (_ep_rt_mono_thread_holder_tls_id);
+	_ep_rt_mono_thread_holder_tls_id = 0;
+
+	if (_thread_data_tls_id)
+		mono_native_tls_free (_thread_data_tls_id);
+	_thread_data_tls_id = 0;
+
+	_ep_rt_mono_os_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
+	_ep_rt_mono_os_cmd_line = NULL;
+
+	_ep_rt_mono_managed_cmd_line_init = MONO_LAZY_INIT_STATUS_NOT_INITIALIZED;
+	_ep_rt_mono_managed_cmd_line = NULL;
+
+	ep_rt_spin_lock_free (&_ep_rt_mono_config_lock);
 }
 
 void

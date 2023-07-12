@@ -29,7 +29,7 @@ static GArray * _sampled_thread_callstacks = NULL;
 static uint32_t _max_sampled_thread_count = 32;
 
 // Mono profilers.
-static MonoProfilerHandle _runtime_profiler_provider = NULL;
+extern MonoProfilerHandle _ep_rt_mono_default_profiler_provider;
 
 // Phantom JIT compile method.
 static MonoMethod *_runtime_helper_compile_method = NULL;
@@ -43,7 +43,7 @@ static MonoMethod *_monitor_enter_v4_method = NULL;
 static MonoJitInfo *_monitor_enter_v4_method_jitinfo = NULL;
 
 // GC roots table.
-static dn_umap_t _gc_roots_table;
+static dn_umap_t _gc_roots_table = {0};
 
 // Lock used for GC related activities.
 static ep_rt_spin_lock_handle_t _gc_lock = {0};
@@ -383,12 +383,9 @@ static const uint32_t BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE =
 
 static volatile uint32_t _gc_heap_dump_requests = 0;
 static volatile uint32_t _gc_heap_dump_count = 0;
-
-
-
 static volatile uint64_t _gc_heap_dump_trigger_count = 0;
 
-static dn_vector_t _gc_heap_dump_requests_data;
+static dn_vector_t _gc_heap_dump_requests_data = {0};
 
 static
 uint64_t
@@ -4031,7 +4028,7 @@ gc_event_callback (
 	{
 		GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
 		if (is_gc_heap_dump_enabled (heap_dump_context))
-			mono_profiler_set_gc_roots_callback (_runtime_profiler_provider, buffer_gc_event_roots_callback);
+			mono_profiler_set_gc_roots_callback (_ep_rt_mono_default_profiler_provider, buffer_gc_event_roots_callback);
 		break;
 	}
 	case MONO_GC_EVENT_PRE_START_WORLD:
@@ -4039,7 +4036,7 @@ gc_event_callback (
 		GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
 		if (is_gc_heap_dump_enabled (heap_dump_context)) {
 			mono_gc_walk_heap (0, buffer_gc_event_object_reference_callback, heap_dump_context);
-			mono_profiler_set_gc_roots_callback (_runtime_profiler_provider, NULL);
+			mono_profiler_set_gc_roots_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 		break;
 	}
@@ -4135,9 +4132,9 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 			gc_dump &= EventPipeEventEnabledGCBulkRootStaticVar ();
 
 			if (gc_dump) {
-				mono_profiler_set_gc_event_callback (_runtime_profiler_provider, gc_event_callback);
+				mono_profiler_set_gc_event_callback (_ep_rt_mono_default_profiler_provider, gc_event_callback);
 				mono_gc_collect (mono_gc_max_generation ());
-				mono_profiler_set_gc_event_callback (_runtime_profiler_provider, NULL);
+				mono_profiler_set_gc_event_callback (_ep_rt_mono_default_profiler_provider, NULL);
 			}
 
 			heap_dump_context->state = GC_HEAP_DUMP_CONTEXT_STATE_END;
@@ -4167,7 +4164,7 @@ gc_heap_dump_trigger_callback (MonoProfiler *prof)
 			bool gc_enabled = is_keword_enabled(RUNTIME_PROVIDER_CONTEXT.EnabledKeywordsBitmask, GC_KEYWORD);
 			bool gc_dump_enabled = is_keword_enabled(RUNTIME_PROVIDER_CONTEXT.EnabledKeywordsBitmask, GC_HEAP_COLLECT_KEYWORD);
 			if (!(gc_enabled && gc_dump_enabled))
-				mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, NULL);
+				mono_profiler_set_gc_finalized_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		EP_LOCK_EXIT (section3)
 	}
 
@@ -4196,7 +4193,7 @@ EventPipeEtwCallbackDotNETRuntime (
 {
 	ep_rt_config_requires_lock_not_held ();
 
-	EP_ASSERT (_runtime_profiler_provider != NULL);
+	EP_ASSERT (_ep_rt_mono_default_profiler_provider != NULL);
 
 	EP_LOCK_ENTER (section1)
 		uint64_t live_keywords = 0;
@@ -4204,66 +4201,58 @@ EventPipeEtwCallbackDotNETRuntime (
 		calculate_live_keywords (&live_keywords, &trigger_heap_dump);
 
 		if (is_keword_enabled(live_keywords, JIT_KEYWORD)) {
-			mono_profiler_set_jit_begin_callback (_runtime_profiler_provider, jit_begin_callback);
-			mono_profiler_set_jit_failed_callback (_runtime_profiler_provider, jit_failed_callback);
-			mono_profiler_set_jit_done_callback (_runtime_profiler_provider, jit_done_callback);
+			mono_profiler_set_jit_begin_callback (_ep_rt_mono_default_profiler_provider, jit_begin_callback);
+			mono_profiler_set_jit_failed_callback (_ep_rt_mono_default_profiler_provider, jit_failed_callback);
+			mono_profiler_set_jit_done_callback (_ep_rt_mono_default_profiler_provider, jit_done_callback);
 		} else {
-			mono_profiler_set_jit_begin_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_jit_failed_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_jit_done_callback (_runtime_profiler_provider, NULL);
+			mono_profiler_set_jit_begin_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_jit_failed_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_jit_done_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 
 		if (is_keword_enabled(live_keywords, LOADER_KEYWORD)) {
-			mono_profiler_set_image_loaded_callback (_runtime_profiler_provider, image_loaded_callback);
-			mono_profiler_set_image_unloaded_callback (_runtime_profiler_provider, image_unloaded_callback);
-			mono_profiler_set_assembly_loaded_callback (_runtime_profiler_provider, assembly_loaded_callback);
-			mono_profiler_set_assembly_unloaded_callback (_runtime_profiler_provider, assembly_unloaded_callback);
+			mono_profiler_set_image_loaded_callback (_ep_rt_mono_default_profiler_provider, image_loaded_callback);
+			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_default_profiler_provider, image_unloaded_callback);
+			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_default_profiler_provider, assembly_loaded_callback);
+			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_default_profiler_provider, assembly_unloaded_callback);
 		} else {
-			mono_profiler_set_image_loaded_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_image_unloaded_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_assembly_loaded_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_assembly_unloaded_callback (_runtime_profiler_provider, NULL);
-		}
-
-		if (is_keword_enabled(live_keywords, APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD) || is_keword_enabled (live_keywords, THREADING_KEYWORD)) {
-			mono_profiler_set_thread_started_callback (_runtime_profiler_provider, thread_started_callback);
-			mono_profiler_set_thread_stopped_callback (_runtime_profiler_provider, thread_stopped_callback);
-		} else {
-			mono_profiler_set_thread_started_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_thread_stopped_callback (_runtime_profiler_provider, NULL);
+			mono_profiler_set_image_loaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_image_unloaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 
 		if (is_keword_enabled(live_keywords, TYPE_DIAGNOSTIC_KEYWORD)) {
-			mono_profiler_set_class_loading_callback (_runtime_profiler_provider, class_loading_callback);
-			mono_profiler_set_class_failed_callback (_runtime_profiler_provider, class_failed_callback);
-			mono_profiler_set_class_loaded_callback (_runtime_profiler_provider, class_loaded_callback);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_default_profiler_provider, class_loading_callback);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_default_profiler_provider, class_failed_callback);
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_default_profiler_provider, class_loaded_callback);
 		} else {
-			mono_profiler_set_class_loading_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_class_failed_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_class_loaded_callback (_runtime_profiler_provider, NULL);
+			mono_profiler_set_class_loading_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_class_failed_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_class_loaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 
 		if (is_keword_enabled(live_keywords, EXCEPTION_KEYWORD)) {
-			mono_profiler_set_exception_throw_callback (_runtime_profiler_provider, exception_throw_callback);
-			mono_profiler_set_exception_clause_callback (_runtime_profiler_provider, exception_clause_callback);
+			mono_profiler_set_exception_throw_callback (_ep_rt_mono_default_profiler_provider, exception_throw_callback);
+			mono_profiler_set_exception_clause_callback (_ep_rt_mono_default_profiler_provider, exception_clause_callback);
 		} else {
-			mono_profiler_set_exception_throw_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_exception_clause_callback (_runtime_profiler_provider, NULL);
+			mono_profiler_set_exception_throw_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_exception_clause_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 
 		if (is_keword_enabled(live_keywords, CONTENTION_KEYWORD)) {
-			mono_profiler_set_monitor_contention_callback (_runtime_profiler_provider, monitor_contention_callback);
-			mono_profiler_set_monitor_acquired_callback (_runtime_profiler_provider, monitor_acquired_callback);
-			mono_profiler_set_monitor_failed_callback (_runtime_profiler_provider, monitor_failed_callback);
+			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_default_profiler_provider, monitor_contention_callback);
+			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_default_profiler_provider, monitor_acquired_callback);
+			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_default_profiler_provider, monitor_failed_callback);
 		} else {
-			mono_profiler_set_monitor_contention_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_monitor_acquired_callback (_runtime_profiler_provider, NULL);
-			mono_profiler_set_monitor_failed_callback (_runtime_profiler_provider, NULL);
+			mono_profiler_set_monitor_contention_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_default_profiler_provider, NULL);
+			mono_profiler_set_monitor_failed_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 
 		// Disabled in gc_heap_dump_trigger_callback when no longer needed.
 		if (is_keword_enabled(live_keywords, GC_KEYWORD) && is_keword_enabled(live_keywords, GC_HEAP_COLLECT_KEYWORD))
-			mono_profiler_set_gc_finalized_callback (_runtime_profiler_provider, gc_heap_dump_trigger_callback);
+			mono_profiler_set_gc_finalized_callback (_ep_rt_mono_default_profiler_provider, gc_heap_dump_trigger_callback);
 
 		RUNTIME_PROVIDER_CONTEXT.Level = level;
 		RUNTIME_PROVIDER_CONTEXT.EnabledKeywordsBitmask = live_keywords;
@@ -4367,8 +4356,6 @@ ep_rt_mono_runtime_provider_component_init (void)
 {
 	ep_rt_spin_lock_alloc (&_gc_lock);
 
-	_runtime_profiler_provider = mono_profiler_create (NULL);
-
 	dn_umap_custom_init_params_t params = {0,};
 	params.value_dispose_func = gc_root_data_free;
 
@@ -4376,15 +4363,14 @@ ep_rt_mono_runtime_provider_component_init (void)
 
 	dn_vector_init_t (&_gc_heap_dump_requests_data, EVENTPIPE_TRACE_CONTEXT);
 
-	mono_profiler_set_gc_root_register_callback (_runtime_profiler_provider, gc_root_register_callback);
-	mono_profiler_set_gc_root_unregister_callback (_runtime_profiler_provider, gc_root_unregister_callback);
+	EP_ASSERT (_ep_rt_mono_default_profiler_provider != NULL);
+	mono_profiler_set_gc_root_register_callback (_ep_rt_mono_default_profiler_provider, gc_root_register_callback);
+	mono_profiler_set_gc_root_unregister_callback (_ep_rt_mono_default_profiler_provider, gc_root_unregister_callback);
 }
 
 void
 ep_rt_mono_runtime_provider_init (void)
 {
-	EP_ASSERT (_runtime_profiler_provider != NULL);
-
 	MonoMethodSignature *method_signature = mono_metadata_signature_alloc (mono_get_corlib (), 1);
 	if (method_signature) {
 		method_signature->params[0] = m_class_get_byval_arg (mono_get_object_class());
@@ -4458,10 +4444,13 @@ ep_rt_mono_runtime_provider_fini (void)
 		g_array_free (_sampled_thread_callstacks, TRUE);
 	_sampled_thread_callstacks = NULL;
 
+	_max_sampled_thread_count = 32;
+
 	g_free (_runtime_helper_compile_method_jitinfo);
 	_runtime_helper_compile_method_jitinfo = NULL;
 
-	mono_free_method (_runtime_helper_compile_method);
+	if (_runtime_helper_compile_method)
+		mono_free_method (_runtime_helper_compile_method);
 	_runtime_helper_compile_method = NULL;
 
 	g_free (_monitor_enter_method_jitinfo);
@@ -4472,14 +4461,59 @@ ep_rt_mono_runtime_provider_fini (void)
 	_monitor_enter_v4_method_jitinfo = NULL;
 	_monitor_enter_v4_method = NULL;
 
-	mono_profiler_set_gc_root_register_callback (_runtime_profiler_provider, NULL);
-	mono_profiler_set_gc_root_unregister_callback (_runtime_profiler_provider, NULL);
+	if (_ep_rt_mono_default_profiler_provider) {
+		mono_profiler_set_jit_begin_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_jit_failed_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_jit_done_callback (_ep_rt_mono_default_profiler_provider, NULL);
+
+		mono_profiler_set_image_loaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_image_unloaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_assembly_loaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_assembly_unloaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+
+		mono_profiler_set_class_loading_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_class_failed_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_class_loaded_callback (_ep_rt_mono_default_profiler_provider, NULL);
+
+		mono_profiler_set_exception_throw_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_exception_clause_callback (_ep_rt_mono_default_profiler_provider, NULL);
+
+		mono_profiler_set_monitor_contention_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_monitor_acquired_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_monitor_failed_callback (_ep_rt_mono_default_profiler_provider, NULL);
+
+		mono_profiler_set_gc_root_register_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_gc_root_unregister_callback (_ep_rt_mono_default_profiler_provider, NULL);
+		mono_profiler_set_gc_finalized_callback (_ep_rt_mono_default_profiler_provider, NULL);
+	}
+
+	_gc_heap_dump_requests = 0;
+	_gc_heap_dump_count = 0;
+	_gc_heap_dump_trigger_count = 0;
 
 	dn_vector_dispose (&_gc_heap_dump_requests_data);
+	memset (&_gc_heap_dump_requests_data, 0, sizeof (_gc_heap_dump_requests_data));
 
 	dn_umap_dispose (&_gc_roots_table);
+	memset (&_gc_roots_table, 0, sizeof (_gc_roots_table));
 
 	ep_rt_spin_lock_free (&_gc_lock);
+}
+
+void
+ep_rt_mono_runtime_provider_thread_started_callback (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	thread_started_callback (prof, tid);
+}
+
+void
+ep_rt_mono_runtime_provider_thread_stopped_callback (
+	MonoProfiler *prof,
+	uintptr_t tid)
+{
+	thread_stopped_callback (prof, tid);
 }
 
 #endif /* ENABLE_PERFTRACING */
