@@ -51,6 +51,7 @@
   <!-- Samples that require a multi-threaded runtime -->
   <ItemGroup Condition="'$(TargetOS)' == 'browser' and '$(MonoWasmBuildVariant)' != 'multithread'" >
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads\Wasm.Browser.Threads.Sample.csproj" />
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-threads-minimal\Wasm.Browser.Threads.Minimal.Sample.csproj" />
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
   </ItemGroup>
 
