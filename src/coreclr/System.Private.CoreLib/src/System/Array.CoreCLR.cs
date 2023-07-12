@@ -19,25 +19,9 @@ namespace System
 
         private static unsafe Array InternalCreateFromArrayType(Type arrayType, int rank, int* pLengths, int* pLowerBounds)
         {
-            if (rank == 1 && !ContainsLowerBounds(rank, pLowerBounds))
-            {
-                return GC.AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC.GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS);
-            }
-
-            return InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
-
-            static bool ContainsLowerBounds(int rank, int* pLowerBounds)
-            {
-                if (pLowerBounds != null)
-                {
-                    for (int i = 0; i < rank; i++)
-                    {
-                        if (pLowerBounds[i] != 0)
-                            return true;
-                    }
-                }
-                return false;
-            }
+            return rank == 1 && (pLowerBounds == null || pLowerBounds[0] == 0)
+                ? GC.AllocateNewArray(arrayType.TypeHandle.Value, pLengths[0], GC.GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS)
+                : InternalCreate((arrayType.GetElementType() as RuntimeType)!, rank, pLengths, pLowerBounds);
         }
 
         private static unsafe void CopyImpl(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
