@@ -12,10 +12,9 @@
     <ApiCompatNetStandard20BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.0.xml</ApiCompatNetStandard20BaselineFile>
   </PropertyGroup>
 
-  <!-- In servicing, the live targeting pack is compared against the GA version in strict mode, without a suppression file. -->
-  <PropertyGroup Condition="'$(DotNetFinalVersionKind)' == 'servicing' and '$(ApiCompatNetCoreAppBaselineVersion)' == '$(NetCoreAppCurrentVersion)'">
+  <!-- In servicing, the live targeting pack is compared against the GA version in strict mode. -->
+  <PropertyGroup Condition="'$(DotNetFinalVersionKind)' == 'servicing'">
     <ApiCompatEnableStrictMode>true</ApiCompatEnableStrictMode>
-    <ApiCompatNetCoreAppLatestStableBaselineFile />
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="net$(ApiCompatNetCoreAppBaselineVersion)/$1" />
+    <ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(ApiCompatNetCoreAppBaselineTFM)/$1" />
     <ApiCompatNetStandard21LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.1/$1" />
     <ApiCompatNetStandard20LeftAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="netstandard2.0/$1" />
     <ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern Include=".+%5C$([System.IO.Path]::DirectorySeparatorChar)(.+)" ReplacementString="$(NetCoreAppCurrent)/$1" />
@@ -39,7 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ApiCompatNetCoreAppBaselineVersion).0]" />
+    <PackageDownload Include="Microsoft.NETCore.App.Ref" Version="[$(ApiCompatNetCoreAppBaselineVersion)]" />
     <PackageDownload Include="NETStandard.Library.Ref" Version="[$(NETStandardLibraryRefVersion)]" />
     <PackageDownload Include="NETStandard.Library" Version="[$(NetStandardLibraryVersion)]" />
     <PackageReference Include="Microsoft.DotNet.ApiCompat.Task" Version="$(MicrosoftDotNetApiCompatTaskVersion)" IsImplicitlyDefined="true" />
@@ -50,7 +49,7 @@
           AfterTargets="Build"
           Inputs="@(ReferencePathWithRefAssemblies);$(ApiCompatNetStandard20BaselineFile);$(ApiCompatNetStandard21BaselineFile);$(ApiCompatNetCoreAppLatestStableBaselineFile);@(ApiCompatExcludeAttributesFile)"
           Outputs="$(IntermediateOutputPath)$(TargetArchitecture)-marker.txt">
-    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against netstandard2.x and net$(ApiCompatNetCoreAppBaselineVersion)..." Importance="high"  />
+    <Message Text="ApiCompat -> Comparing $(NetCoreAppCurrent) reference assemblies against .NETStandard 2.x and .NETCoreApp $(ApiCompatNetCoreAppBaselineVersion)..." Importance="high"  />
 
     <ItemGroup>
       <ApiCompatRightAssembly Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'SharedFrameworkAssembly'))" />
@@ -59,7 +58,7 @@
 
     <!-- ApiCompat: NetCoreAppCurrent <-> .NETCoreApp ApiCompatNetCoreAppBaselineVersion -->
     <Microsoft.DotNet.ApiCompat.Task.ValidateAssembliesTask
-      LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(ApiCompatNetCoreAppBaselineVersion).0', 'ref', 'net$(ApiCompatNetCoreAppBaselineVersion)'))"
+      LeftAssemblies="$([MSBuild]::NormalizeDirectory('$(NuGetPackageRoot)', 'microsoft.netcore.app.ref', '$(ApiCompatNetCoreAppBaselineVersion)', 'ref', '$(ApiCompatNetCoreAppBaselineTFM)'))"
       RightAssemblies="@(ApiCompatRightAssembly)"
       RoslynAssembliesPath="$(RoslynAssembliesPath)"
       GenerateSuppressionFile="$(ApiCompatGenerateSuppressionFile)"

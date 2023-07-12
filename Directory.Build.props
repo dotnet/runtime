@@ -85,8 +85,6 @@
     <MicrosoftNetCoreAppFrameworkName>Microsoft.NETCore.App</MicrosoftNetCoreAppFrameworkName>
     <NetCoreAppCurrentBrandName>.NET $(NetCoreAppCurrentVersion)</NetCoreAppCurrentBrandName>
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
-    <!-- Important: Set this to the GA version during servicing when GA packages are available. -->
-    <ApiCompatNetCoreAppBaselineVersion>7.0</ApiCompatNetCoreAppBaselineVersion>
 
     <!-- The previous supported .NET version. -->
     <NetCoreAppPreviousVersion>7.0</NetCoreAppPreviousVersion>
@@ -113,6 +111,10 @@
     <NetFrameworkMinimum Condition="'$(DotNetBuildFromSource)' == 'true'" />
     <NetFrameworkToolCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
     <NetFrameworkCurrent Condition="'$(DotNetBuildFromSource)' == 'true'" />
+
+    <!-- Important: Set this to the GA version (or a close approximation) during servicing and adjust the TFM property below. -->
+    <ApiCompatNetCoreAppBaselineVersion>7.0.0</ApiCompatNetCoreAppBaselineVersion>
+    <ApiCompatNetCoreAppBaselineTFM>net7.0</ApiCompatNetCoreAppBaselineTFM>
 
     <TargetFrameworkForNETFrameworkTasks>$(NetFrameworkToolCurrent)</TargetFrameworkForNETFrameworkTasks>
     <!-- Don't build for NETFramework during source-build. -->
