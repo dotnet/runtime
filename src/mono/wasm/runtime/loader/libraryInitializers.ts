@@ -3,7 +3,7 @@
 
 import { mono_log_warn } from "./logging";
 import { MonoConfig } from "../types";
-import { appendUniqueQuery, toAbsoluteBaseUri } from "./assets";
+import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
 import { abort_startup } from "./exit";
 
@@ -29,7 +29,7 @@ async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitial
 
     async function importInitializer(path: string): Promise<void> {
         try {
-            const adjustedPath = appendUniqueQuery(toAbsoluteBaseUri(path), "js-module-library-initializer");
+            const adjustedPath = appendUniqueQuery(loaderHelpers.locateFile(path), "js-module-library-initializer");
             const initializer = await import(/* webpackIgnore: true */ adjustedPath);
 
             loaderHelpers.libraryInitializers!.push({ scriptName: path, exports: initializer });

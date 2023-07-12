@@ -15,6 +15,10 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     loaderHelpers.scriptUrl = normalizeFileUrl(scriptUrlQuery);
     loaderHelpers.scriptDirectory = normalizeDirectoryUrl(loaderHelpers.scriptUrl);
     loaderHelpers.locateFile = (path) => {
+        if ("URL" in globalThis) {
+            return new URL(path, loaderHelpers.scriptDirectory).toString();
+        }
+
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
     };

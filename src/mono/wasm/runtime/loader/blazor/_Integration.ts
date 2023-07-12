@@ -10,7 +10,7 @@ import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
-import { appendUniqueQuery, toAbsoluteBaseUri } from "../assets";
+import { appendUniqueQuery } from "../assets";
 
 let resourceLoader: WebAssemblyResourceLoader;
 
@@ -207,8 +207,8 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         const config = resourceLoader.bootConfig.config[i];
         if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
-                name: config,
-                resolvedUrl: appendUniqueQuery(toAbsoluteBaseUri(config), "vfs"),
+                name: fileName(config),
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(config), "vfs"),
                 behavior: "vfs",
             });
         }
@@ -253,6 +253,14 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     if (resourceLoader.bootConfig.runtimeOptions) {
         moduleConfig.runtimeOptions = [...(moduleConfig.runtimeOptions || []), ...(resourceLoader.bootConfig.runtimeOptions || [])];
     }
+}
+
+function fileName(name: string) {
+    let lastIndexOfSlash = name.lastIndexOf("/");
+    if (lastIndexOfSlash >= 0) {
+        lastIndexOfSlash++;
+    }
+    return name.substring(lastIndexOfSlash);
 }
 
 function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigInternal, culture: string | undefined): string {

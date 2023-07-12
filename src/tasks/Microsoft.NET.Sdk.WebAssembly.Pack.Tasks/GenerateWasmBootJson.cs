@@ -261,6 +261,10 @@ public class GenerateWasmBootJson : Task
 
                     var targetPath = resource.GetMetadata("TargetPath");
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
+
+                    if (TargetingNET80OrLater)
+                        targetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+
                     AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
@@ -324,7 +328,11 @@ public class GenerateWasmBootJson : Task
         {
             foreach (var configFile in ConfigurationFiles)
             {
-                result.config.Add(Path.GetFileName(configFile.ItemSpec));
+                string configUrl = Path.GetFileName(configFile.ItemSpec);
+                if (TargetingNET80OrLater)
+                    configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+
+                result.config.Add(configUrl);
             }
         }
 

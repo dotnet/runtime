@@ -423,11 +423,3 @@ export function cleanupAsset(asset: AssetEntryInternal) {
     asset.pendingDownload = null as any; // GC
     asset.buffer = null as any; // GC
 }
-
-export function toAbsoluteBaseUri(path: string) {
-    if ("URL" in globalThis && document && document.baseURI) {
-        return new URL(path, document.baseURI).toString();
-    }
-
-    return "/" + path;
-}
