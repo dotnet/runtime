@@ -148,7 +148,7 @@ jobs:
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool). Use 11 on public, 12 on internal.
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), eq(variables['System.TeamProject'], 'public')) }}:
-          vmImage: 'macos-12'
+          vmImage: 'macos-11'
 
         ${{ if and(in(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator'), ne(variables['System.TeamProject'], 'public')) }}:
           vmImage: 'macos-12'
