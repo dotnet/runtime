@@ -70,7 +70,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         [JsonSerializable(typeof(Guid?))]
         [JsonSerializable(typeof(byte))]
         [JsonSerializable(typeof(sbyte))]
-        // slip in the number types
         [JsonSerializable(typeof(short))]
         [JsonSerializable(typeof(int))]
         [JsonSerializable(typeof(long))]
