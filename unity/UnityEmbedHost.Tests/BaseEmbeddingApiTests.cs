@@ -616,6 +616,27 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(actualFlat, Is.EquivalentTo(expectedFlat));
     }
 
+    [TestCase(typeof(Animal),                        false)]
+    [TestCase(typeof(List<>),                         true)]
+    [TestCase(typeof(GenericAnimal<, >),              true)]
+    [TestCase(typeof(GenericAnimal<int, string>),    false)]
+#pragma warning disable CS8500
+    [TestCase(typeof(GenericAnimal<int, string>*),   false)]
+#pragma warning restore CS8500
+    [TestCase(typeof(GenericAnimal<int, string>[]),  false)]
+    public void ClassIsGenericReturnsProperValue(Type klass, bool expectedResult)
+    {
+        bool isGeneric = ClrHost.class_is_generic(klass);
+        Assert.That(isGeneric, Is.EqualTo(expectedResult));
+    }
+
+    [TestCase(typeof(List<>),                       false)]
+    public void ClassIsGenericByRefReturnsProperValue(Type klass, bool expectedResult)
+    {
+        bool isGeneric = ClrHost.class_is_generic(klass.MakeByRefType());
+        Assert.That(isGeneric, Is.EqualTo(expectedResult));
+    }
+  
     [TestCase(typeof(Classification),                    true)]
     [TestCase(typeof(Classification*),                  false)]
     [TestCase(typeof(Classification[]),                 false)]
