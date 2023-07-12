@@ -21,7 +21,6 @@ enum CrstType
     CrstObjectiveCMarshalCallouts,
     CrstGcStressControl,
     CrstThreadStore,
-    CrstThunkPool,
     CrstYieldProcessorNormalized,
     CrstEventPipe,
     CrstEventPipeConfig,

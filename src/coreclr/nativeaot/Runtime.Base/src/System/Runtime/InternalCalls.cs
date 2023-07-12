@@ -316,14 +316,6 @@ namespace System.Runtime
 
         [DllImport(Redhawk.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpAcquireThunkPoolLock();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        internal static extern void RhpReleaseThunkPoolLock();
-
-        [DllImport(Redhawk.BaseName)]
-        [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         internal static extern IntPtr RhAllocateThunksMapping();
 
         // Enters a no GC region, possibly doing a blocking GC if there is not enough
