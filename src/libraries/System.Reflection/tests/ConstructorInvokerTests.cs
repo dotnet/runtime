@@ -95,8 +95,9 @@ namespace System.Reflection.Tests
             Assert.Null(tc._args);
 
             MethodInvoker invoker = MethodInvoker.Create(ci);
-            invoker.Invoke(tc);
+            object? obj = invoker.Invoke(tc);
             Assert.Equal("0", tc._args);
+            Assert.Null(obj);
         }
 
         private class TestClass

@@ -10,21 +10,21 @@ namespace System.Reflection
         internal unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
         {
             _invocationFlags = method.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke;
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
-        internal unsafe MethodInvoker(DynamicMethod method) : this(method, method.ArgumentTypes)
+        internal unsafe MethodInvoker(DynamicMethod method) : this(method.GetRuntimeMethodInfo(), method.ArgumentTypes)
         {
-            _invokeFunc_RefArgs = InterpretedInvoke;
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
         internal unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
         {
             _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke;
+            _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
         }
 
-        private unsafe object? InterpretedInvoke(object? obj, IntPtr *args)
+        private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr *args)
         {
             object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out Exception? exc);
 
@@ -32,6 +32,16 @@ namespace System.Reflection
                 throw exc;
 
             return o;
+        }
+
+        private unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr *args)
+        {
+            object? o = ((RuntimeConstructorInfo)_method).InternalInvoke(obj, args, out Exception? exc);
+
+            if (exc != null)
+                throw exc;
+
+            return obj == null ? o : null;
         }
     }
 }

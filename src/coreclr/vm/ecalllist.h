@@ -560,8 +560,8 @@ FCFuncStart(gRuntimeHelpers)
 FCFuncEnd()
 
 FCFuncStart(gRuntimeImports)
-    FCFuncElement("RhRegisterForGCReporting", GCReporting::Register)
-    FCFuncElement("RhUnregisterForGCReporting", GCReporting::Unregister)
+    FCFuncElement("RegisterForGCReporting", GCReporting::Register)
+    FCFuncElement("UnregisterForGCReporting", GCReporting::Unregister)
 FCFuncEnd()
 
 FCFuncStart(gMethodTableFuncs)

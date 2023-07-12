@@ -12,16 +12,16 @@ namespace System.Reflection
 {
     public sealed partial class ConstructorInvoker
     {
-        internal InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
-        internal InvokeFunc_Obj4Args? _invokeFunc_Obj4Args;
-        internal InvokeFunc_RefArgs? _invokeFunc_RefArgs;
-        internal InvokerStrategy _strategy;
-        internal readonly int _argCount;
-        internal readonly RuntimeType[] _argTypes;
-        internal readonly InvocationFlags _invocationFlags;
-        internal readonly InvokerArgFlags[] _invokerArgFlags;
-        internal readonly RuntimeConstructorInfo _method;
-        internal readonly bool _needsByRefStrategy;
+        private InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
+        private InvokeFunc_Obj4Args? _invokeFunc_Obj4Args;
+        private InvokeFunc_RefArgs? _invokeFunc_RefArgs;
+        private InvokerStrategy _strategy;
+        private readonly int _argCount;
+        private readonly RuntimeType[] _argTypes;
+        private readonly InvocationFlags _invocationFlags;
+        private readonly InvokerArgFlags[] _invokerArgFlags;
+        private readonly RuntimeConstructorInfo _method;
+        private readonly bool _needsByRefStrategy;
 
         public static ConstructorInvoker Create(ConstructorInfo constructor)
         {
@@ -216,7 +216,7 @@ namespace System.Reflection
         internal unsafe object? InvokeWithManyArgs(Span<object?> arguments)
         {
             Span<object?> copyOfArgs;
-            RuntimeImports.GCFrameRegistration regArgStorage;
+            GCFrameRegistration regArgStorage;
 
             if (!_needsByRefStrategy)
             {
@@ -234,7 +234,7 @@ namespace System.Reflection
 
                     try
                     {
-                        RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
+                        RuntimeImports.RegisterForGCReporting(&regArgStorage);
 
                         for (int i = 0; i < _argCount; i++)
                         {
@@ -248,7 +248,7 @@ namespace System.Reflection
                     }
                     finally
                     {
-                        RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+                        RuntimeImports.UnregisterForGCReporting(&regArgStorage);
                     }
                 }
             }
@@ -266,12 +266,12 @@ namespace System.Reflection
             scoped Span<bool> shouldCopyBack = stackalloc bool[_argCount];
 
             regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
-            RuntimeImports.GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
 
             try
             {
-                RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
-                RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
+                RuntimeImports.RegisterForGCReporting(&regArgStorage);
+                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
 
                 for (int i = 0; i < _argCount; i++)
                 {
@@ -291,8 +291,8 @@ namespace System.Reflection
             }
             finally
             {
-                RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
-                RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+                RuntimeImports.UnregisterForGCReporting(&regByRefStorage);
+                RuntimeImports.UnregisterForGCReporting(&regArgStorage);
             }
         }
 
@@ -318,9 +318,8 @@ namespace System.Reflection
             }
         }
 
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal bool CheckArgument(ref object? arg, int i)
+        private bool CheckArgument(ref object? arg, int i)
         {
             RuntimeType sigType = _argTypes[i];
 

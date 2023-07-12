@@ -178,7 +178,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Nullable.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeArgumentHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeFieldHandle.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\RuntimeImports.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeMethodHandle.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\RuntimeTypeHandle.cs" />
@@ -250,6 +249,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />

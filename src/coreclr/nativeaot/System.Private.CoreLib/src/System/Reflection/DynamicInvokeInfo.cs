@@ -420,8 +420,8 @@ namespace System.Reflection
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
 #pragma warning restore 8500
 
-            RuntimeImports.GCFrameRegistration regArgStorage = new(pStorage, (uint)argCount, areByRefs: false);
-            RuntimeImports.GCFrameRegistration regByRefStorage = new(pByRefStorage, (uint)argCount, areByRefs: true);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
 
             try
             {
@@ -471,8 +471,8 @@ namespace System.Reflection
             void* pByRefStorage = (ByReference*)(pStorage + argCount);
 #pragma warning restore 8500
 
-            RuntimeImports.GCFrameRegistration regArgStorage = new(pStorage, (uint)argCount, areByRefs: false);
-            RuntimeImports.GCFrameRegistration regByRefStorage = new(pByRefStorage, (uint)argCount, areByRefs: true);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
 
             try
             {

@@ -28,14 +28,14 @@ namespace System.Reflection
             IntPtr* pStorage = stackalloc IntPtr[2 * argCount];
             NativeMemory.Clear(pStorage, (nuint)(2 * argCount) * (nuint)sizeof(IntPtr));
             Span<object?> copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), argCount);
-            RuntimeImports.GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
+            GCFrameRegistration regArgStorage = new((void**)pStorage, (uint)argCount, areByRefs: false);
             IntPtr* pByRefStorage = pStorage + argCount;
-            RuntimeImports.GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)argCount, areByRefs: true);
 
             try
             {
-                RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
-                RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
+                RuntimeImports.RegisterForGCReporting(&regArgStorage);
+                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
 
                 CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
@@ -63,8 +63,8 @@ namespace System.Reflection
             }
             finally
             {
-                RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
-                RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
+                RuntimeImports.UnregisterForGCReporting(&regArgStorage);
             }
         }
 

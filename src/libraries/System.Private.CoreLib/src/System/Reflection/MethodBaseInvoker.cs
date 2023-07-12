@@ -16,15 +16,15 @@ namespace System.Reflection
     {
         internal const int MaxStackAllocArgCount = 4;
 
-        internal InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
-        internal InvokeFunc_RefArgs? _invokeFunc_RefArgs;
-        internal InvokerStrategy _strategy;
+        private InvokeFunc_ObjSpanArgs? _invokeFunc_ObjSpanArgs;
+        private InvokeFunc_RefArgs? _invokeFunc_RefArgs;
+        private InvokerStrategy _strategy;
         internal readonly InvocationFlags _invocationFlags;
-        internal readonly InvokerArgFlags[] _invokerArgFlags;
-        internal readonly RuntimeType[] _argTypes;
-        internal readonly MethodBase _method;
-        internal readonly int _argCount;
-        internal readonly bool _needsByRefStrategy;
+        private readonly InvokerArgFlags[] _invokerArgFlags;
+        private readonly RuntimeType[] _argTypes;
+        private readonly MethodBase _method;
+        private readonly int _argCount;
+        private readonly bool _needsByRefStrategy;
 
         private MethodBaseInvoker(MethodBase method, RuntimeType[] argumentTypes)
         {
@@ -199,7 +199,7 @@ namespace System.Reflection
 
             Span<object?> copyOfArgs;
             object? ret;
-            RuntimeImports.GCFrameRegistration regArgStorage;
+            GCFrameRegistration regArgStorage;
             Span<bool> shouldCopyBack;
 
             if (!_needsByRefStrategy)
@@ -219,7 +219,7 @@ namespace System.Reflection
 
                     try
                     {
-                        RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
+                        RuntimeImports.RegisterForGCReporting(&regArgStorage);
 
                         CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
@@ -237,7 +237,7 @@ namespace System.Reflection
                     }
                     finally
                     {
-                        RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+                        RuntimeImports.UnregisterForGCReporting(&regArgStorage);
                     }
                 }
             }
@@ -252,13 +252,13 @@ namespace System.Reflection
             copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
             regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
             IntPtr* pByRefStorage = pStorage + _argCount;
-            RuntimeImports.GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
+            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
             shouldCopyBack = new Span<bool>(pStorage + _argCount * 2, _argCount);
 
             try
             {
-                RuntimeImports.RhRegisterForGCReporting(&regArgStorage);
-                RuntimeImports.RhRegisterForGCReporting(&regByRefStorage);
+                RuntimeImports.RegisterForGCReporting(&regArgStorage);
+                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
 
                 CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
@@ -285,8 +285,8 @@ namespace System.Reflection
             }
             finally
             {
-                RuntimeImports.RhUnregisterForGCReporting(&regByRefStorage);
-                RuntimeImports.RhUnregisterForGCReporting(&regArgStorage);
+                RuntimeImports.UnregisterForGCReporting(&regByRefStorage);
+                RuntimeImports.UnregisterForGCReporting(&regArgStorage);
             }
         }
 
@@ -401,7 +401,7 @@ namespace System.Reflection
             }
         }
 
-        internal static bool TryByRefFastPath(RuntimeType type, ref object arg)
+        private static bool TryByRefFastPath(RuntimeType type, ref object arg)
         {
             if (RuntimeType.TryGetByRefElementType(type, out RuntimeType? sigElementType) &&
                 ReferenceEquals(sigElementType, arg.GetType()))

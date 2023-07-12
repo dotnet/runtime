@@ -17,16 +17,6 @@ namespace System.Reflection
             _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
         }
 
-        internal unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args)
-        {
-            object? o = ((RuntimeConstructorInfo)_method).InternalInvoke(obj, args, out Exception? exc);
-
-            if (exc != null)
-                throw exc;
-
-            return obj == null ? o : null;
-        }
-
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr *args)
         {
             object? o = ((RuntimeMethodInfo)_method).InternalInvoke(obj, args, out Exception? exc);
@@ -35,6 +25,16 @@ namespace System.Reflection
                 throw exc;
 
             return o;
+        }
+
+        internal unsafe object? InterpretedInvoke_Constructor(object? obj, IntPtr* args)
+        {
+            object? o = ((RuntimeConstructorInfo)_method).InternalInvoke(obj, args, out Exception? exc);
+
+            if (exc != null)
+                throw exc;
+
+            return obj == null ? o : null;
         }
     }
 }
