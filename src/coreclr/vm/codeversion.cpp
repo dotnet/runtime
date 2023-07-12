@@ -558,20 +558,21 @@ ILCodeVersionNode::ILCodeVersionNode() :
     m_rejitState(ILCodeVersion::kStateRequested),
     m_pIL(),
     m_jitFlags(0),
-    m_debuggerDeoptimized(FALSE)
+    m_deoptimized(FALSE)
 {
     m_pIL.Store(dac_cast<PTR_COR_ILMETHOD>(nullptr));
 }
 
 #ifndef DACCESS_COMPILE
-ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id) :
+ILCodeVersionNode::ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized) :
     m_pModule(pModule),
     m_methodDef(methodDef),
     m_rejitId(id),
     m_pNextILVersionNode(dac_cast<PTR_ILCodeVersionNode>(nullptr)),
     m_rejitState(ILCodeVersion::kStateRequested),
     m_pIL(nullptr),
-    m_jitFlags(0)
+    m_jitFlags(0),
+    m_deoptimized(isDeoptimized)
 {}
 #endif
 
@@ -632,10 +633,10 @@ PTR_ILCodeVersionNode ILCodeVersionNode::GetNextILVersionNode() const
     return m_pNextILVersionNode;
 }
 
-BOOL ILCodeVersionNode::IsDebuggerDeoptimized() const
+BOOL ILCodeVersionNode::IsDeoptimized() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
-    return m_debuggerDeoptimized;
+    return m_deoptimized;
 }
 
 #ifndef DACCESS_COMPILE
@@ -691,12 +692,6 @@ void ILCodeVersionNode::SetNextILVersionNode(ILCodeVersionNode* pNextILVersionNo
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(CodeVersionManager::IsLockOwnedByCurrentThread());
     m_pNextILVersionNode = pNextILVersionNode;
-}
-
-void ILCodeVersionNode::SetDebuggerDeoptimized()
-{
-    LIMITED_METHOD_CONTRACT;
-    m_debuggerDeoptimized = TRUE;
 }
 #endif
 
@@ -958,12 +953,12 @@ const InstrumentedILOffsetMapping* ILCodeVersion::GetInstrumentedILMap() const
     }
 }
 
-BOOL ILCodeVersion::IsDebuggerDeoptimized() const
+BOOL ILCodeVersion::IsDeoptimized() const
 {
     LIMITED_METHOD_DAC_CONTRACT;
     if (m_storageKind == StorageKind::Explicit)
     {
-        return AsNode()->IsDebuggerDeoptimized();
+        return AsNode()->IsDeoptimized();
     }
     else
     {
@@ -1000,12 +995,6 @@ void ILCodeVersion::SetInstrumentedILMap(SIZE_T cMap, COR_IL_MAP * rgMap)
 {
     LIMITED_METHOD_CONTRACT;
     AsNode()->SetInstrumentedILMap(cMap, rgMap);
-}
-
-void ILCodeVersion::SetDebuggerDeoptimized()
-{
-    LIMITED_METHOD_CONTRACT;
-    AsNode()->SetDebuggerDeoptimized();
 }
 
 HRESULT ILCodeVersion::AddNativeCodeVersion(
@@ -1484,7 +1473,7 @@ NativeCodeVersion CodeVersionManager::GetNativeCodeVersion(PTR_MethodDesc pMetho
 }
 
 #ifndef DACCESS_COMPILE
-HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion)
+HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized)
 {
     LIMITED_METHOD_CONTRACT;
     _ASSERTE(IsLockOwnedByCurrentThread());
@@ -1497,7 +1486,7 @@ HRESULT CodeVersionManager::AddILCodeVersion(Module* pModule, mdMethodDef method
         return hr;
     }
 
-    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId)));
+    ILCodeVersionNode* pILCodeVersionNode = new (nothrow) ILCodeVersionNode(pModule, methodDef, InterlockedIncrement(reinterpret_cast<LONG*>(&s_GlobalReJitId)), isDeoptimized);
     if (pILCodeVersionNode == NULL)
     {
         return E_OUTOFMEMORY;

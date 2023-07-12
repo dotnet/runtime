@@ -213,11 +213,10 @@ public:
 
     RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
-    BOOL IsDebuggerDeoptimized() const;
+    BOOL IsDeoptimized() const;
 #ifndef DACCESS_COMPILE
     void SetRejitState(RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
-    void SetDebuggerDeoptimized();
 #endif
 
 #ifdef DACCESS_COMPILE
@@ -367,7 +366,7 @@ class ILCodeVersionNode
 public:
     ILCodeVersionNode();
 #ifndef DACCESS_COMPILE
-    ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id);
+    ILCodeVersionNode(Module* pModule, mdMethodDef methodDef, ReJITID id, BOOL isDeoptimized);
 #endif
     PTR_Module GetModule() const;
     mdMethodDef GetMethodDef() const;
@@ -378,7 +377,7 @@ public:
     ILCodeVersion::RejitFlags GetRejitState() const;
     BOOL GetEnableReJITCallback() const;
     PTR_ILCodeVersionNode GetNextILVersionNode() const;
-    BOOL IsDebuggerDeoptimized() const;
+    BOOL IsDeoptimized() const;
 #ifndef DACCESS_COMPILE
     void SetIL(COR_ILMETHOD* pIL);
     void SetJitFlags(DWORD flags);
@@ -386,7 +385,6 @@ public:
     void SetRejitState(ILCodeVersion::RejitFlags newState);
     void SetEnableReJITCallback(BOOL state);
     void SetNextILVersionNode(ILCodeVersionNode* pNextVersionNode);
-    void SetDebuggerDeoptimized();
 #endif
 
 private:
@@ -398,7 +396,7 @@ private:
     VolatilePtr<COR_ILMETHOD, PTR_COR_ILMETHOD> m_pIL;
     Volatile<DWORD> m_jitFlags;
     InstrumentedILOffsetMapping m_instrumentedILMap;
-    Volatile<BOOL> m_debuggerDeoptimized;
+    BOOL m_deoptimized;
 };
 
 class ILCodeVersionCollection
@@ -596,7 +594,7 @@ public:
         HRESULT hrStatus;
     };
 
-    HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion);
+    HRESULT AddILCodeVersion(Module* pModule, mdMethodDef methodDef, ILCodeVersion* pILCodeVersion, BOOL isDeoptimized);
     HRESULT AddNativeCodeVersion(ILCodeVersion ilCodeVersion, MethodDesc* pClosedMethodDesc, NativeCodeVersion::OptimizationTier optimizationTier, NativeCodeVersion* pNativeCodeVersion,
         PatchpointInfo* patchpointInfo = NULL, unsigned ilOffset = 0);
     PCODE PublishVersionableCodeIfNecessary(

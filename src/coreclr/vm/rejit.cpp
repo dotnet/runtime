@@ -897,7 +897,7 @@ HRESULT ReJitManager::BindILVersion(
     // Either there was no ILCodeVersion yet for this MethodDesc OR whatever we've found
     // couldn't be reused (and needed to be reverted).  Create a new ILCodeVersion to return
     // to the caller.
-    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion);
+    HRESULT hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, pILCodeVersion, FALSE);
     pILCodeVersion->SetEnableReJITCallback(fDoCallback);
     return hr;
 }
