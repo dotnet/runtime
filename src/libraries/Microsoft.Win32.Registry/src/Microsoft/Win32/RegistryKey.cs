@@ -334,22 +334,23 @@ namespace Microsoft.Win32
 
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
-            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, false);
+            // If the key has values, it must be opened with KEY_SET_VALUE,
+            // or RegDeleteTree will fail with ERROR_ACCESS_DENIED.
+
+            RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
             if (key != null)
             {
                 using (key)
                 {
-                    // The access requirement of RegDeleteTree is different with old implementation.
-                    // Open a new handle to the subkey to restore old behavior.
                     int ret = Interop.Advapi32.RegDeleteTree(key._hkey, string.Empty);
                     if (ret != 0)
                     {
                         Win32Error(ret, null);
                     }
 
-                    // RegDeleteTree only delete subkeys and values of the key
-                    // if subkey is null.
-                    // Also delete the key.
+                    // RegDeleteTree doesn't self-delete when lpSubKey is empty.
+                    // Manually delete the key to restore old behavior.
+
                     ret = Interop.Advapi32.RegDeleteKeyEx(key._hkey, string.Empty, (int)_regView, 0);
                     if (ret != 0)
                     {
