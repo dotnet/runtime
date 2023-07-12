@@ -29,6 +29,7 @@ parameters:
   gatherAssetManifests: false
   shouldContinueOnError: false
   compileOnHelix: false
+  interpreter: false
 
 steps:
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests.yml
