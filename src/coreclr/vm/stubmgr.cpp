@@ -1137,7 +1137,7 @@ SPTR_IMPL(StubLinkStubManager, StubLinkStubManager, g_pManager);
 
 #ifndef DACCESS_COMPILE
 
-/* static */
+// static
 void StubLinkStubManager::Init()
 {
     CONTRACTL
@@ -1152,7 +1152,97 @@ void StubLinkStubManager::Init()
     StubManager::AddStubManager(g_pManager);
 }
 
-#endif // #ifndef DACCESS_COMPILE
+// static
+BOOL StubLinkStubManager::TraceDelegateObject(BYTE* pbDel, TraceDestination *trace)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    BYTE **ppbDest;
+
+    // If we got here, then we're here b/c we're at the start of a delegate stub
+    // need to figure out the kind of delegates we are dealing with.
+    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
+
+    LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: invocationList: %p\n", pbDelInvocationList));
+
+    if (pbDelInvocationList == NULL)
+    {
+        // A null invocationList can be one of the following:
+        //  - Instance closed, Instance open non-virt, Instance open virtual, Static closed, Static opened, Unmanaged FtnPtr
+        //  - Instance open virtual is complex and we need to figure out what to do (TODO).
+        // For the others the logic is the following:
+        // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the taret is _methodPtrAux
+
+        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
+        if (*ppbDest == NULL)
+        {
+            ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtr());
+
+            if (*ppbDest == NULL)
+            {
+                // it's not looking good, bail out
+                LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: can't trace into it\n"));
+                return FALSE;
+            }
+        }
+
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
+
+        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
+
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %s, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
+
+        return res;
+    }
+
+    // invocationList is not null, so it can be one of the following:
+    // Multicast, Static closed (special sig), Secure
+
+    // rule out the static with special sig
+    BYTE *pbCount = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationCount());
+    if (pbCount == NULL)
+    {
+        // it's a static closed, the target lives in _methodAuxPtr
+        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
+
+        if (*ppbDest == NULL)
+        {
+            // it's not looking good, bail out
+            LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: can't trace into it\n"));
+            return FALSE;
+        }
+
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: ppbDest: %p *ppbDest:%p\n", ppbDest, *ppbDest));
+
+        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
+
+        LOG((LF_CORDB,LL_INFO10000, "SLSM::TDO: res: %d, result type: %d\n", (res ? "true" : "false"), trace->GetTraceType()));
+
+        return res;
+    }
+
+    MethodTable *pType = *(MethodTable**)pbDelInvocationList;
+    if (pType->IsDelegate())
+    {
+        // this is a secure delegate. The target is hidden inside this field, so recurse.
+        return TraceDelegateObject(pbDelInvocationList, trace);
+    }
+
+    // Otherwise, we're going for the first invoke of the multi case.
+    // In order to go to the correct spot, we have just have to fish out
+    // slot 0 of the invocation list, and figure out where that's going to,
+    // then put a breakpoint there.
+    pbDel = *(BYTE**)(((ArrayBase *)pbDelInvocationList)->GetDataPtr());
+    return TraceDelegateObject(pbDel, trace);
+}
+
+#endif // DACCESS_COMPILE
 
 void StubLinkStubManager::RemoveStubRange(BYTE* start, UINT length)
 {
@@ -1400,7 +1490,7 @@ BOOL StubLinkStubManager::TraceManager(Thread *thread,
     {
         LOG((LF_CORDB,LL_INFO10000, "SLSM:TM MultiCastDelegate\n"));
         BYTE *pbDel = (BYTE *)StubManagerHelpers::GetThisPtr(pContext);
-        return DelegateInvokeStub::TraceDelegateObject(pbDel, trace);
+        return TraceDelegateObject(pbDel, trace);
     }
     else if (stub->IsManagedThunk())
     {
@@ -1836,7 +1926,7 @@ BOOL ILStubManager::TraceManager(Thread *thread,
                                ((ArrayBase *)pbDelInvocationList)->GetComponentSize()*delegateCount);
 
             _ASSERTE(pbDel);
-            return DelegateInvokeStub::TraceDelegateObject(pbDel, trace);
+            return StubLinkStubManager::TraceDelegateObject(pbDel, trace);
         }
     }
     else
@@ -2101,101 +2191,6 @@ BOOL InteropDispatchStubManager::TraceManager(Thread *thread,
     return TRUE;
 }
 #endif //!DACCESS_COMPILE
-
-#ifndef DACCESS_COMPILE
-// static
-BOOL DelegateInvokeStub::TraceDelegateObject(BYTE* pbDel, TraceDestination *trace)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-    BYTE **ppbDest = NULL;
-    // If we got here, then we're here b/c we're at the start of a delegate stub
-    // need to figure out the kind of delegates we are dealing with
-
-    BYTE *pbDelInvocationList = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationList());
-
-    LOG((LF_CORDB,LL_INFO10000, "DISM::TMI: invocationList: 0x%p\n", pbDelInvocationList));
-
-    if (pbDelInvocationList == NULL)
-    {
-        // null invocationList can be one of the following:
-        // Instance closed, Instance open non-virt, Instance open virtual, Static closed, Static opened, Unmanaged FtnPtr
-        // Instance open virtual is complex and we need to figure out what to do (TODO).
-        // For the others the logic is the following:
-        // if _methodPtrAux is 0 the target is in _methodPtr, otherwise the taret is _methodPtrAux
-
-        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
-
-        if (*ppbDest == NULL)
-        {
-            ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtr());
-
-            if (*ppbDest == NULL)
-            {
-                // it's not looking good, bail out
-                LOG((LF_CORDB,LL_INFO10000, "DISM(DelegateStub)::TM: can't trace into it\n"));
-                return FALSE;
-            }
-
-        }
-
-        LOG((LF_CORDB,LL_INFO10000, "DISM(DelegateStub)::TM: ppbDest: 0x%p *ppbDest:0x%p\n", ppbDest, *ppbDest));
-
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
-
-        LOG((LF_CORDB,LL_INFO10000, "DISM(MCDel)::TM: res: %d, result type: %d\n", res, trace->GetTraceType()));
-
-        return res;
-    }
-
-    // invocationList is not null, so it can be one of the following:
-    // Multicast, Static closed (special sig), Secure
-
-    // rule out the static with special sig
-    BYTE *pbCount = *(BYTE **)(pbDel + DelegateObject::GetOffsetOfInvocationCount());
-
-    if (!pbCount)
-    {
-        // it's a static closed, the target lives in _methodAuxPtr
-        ppbDest = (BYTE **)(pbDel + DelegateObject::GetOffsetOfMethodPtrAux());
-
-        if (*ppbDest == NULL)
-        {
-            // it's not looking good, bail out
-            LOG((LF_CORDB,LL_INFO10000, "DISM(DelegateStub)::TM: can't trace into it\n"));
-            return FALSE;
-        }
-
-        LOG((LF_CORDB,LL_INFO10000, "DISM(DelegateStub)::TM: ppbDest: 0x%p *ppbDest:0x%p\n", ppbDest, *ppbDest));
-
-        BOOL res = StubManager::TraceStub((PCODE) (*ppbDest), trace);
-
-        LOG((LF_CORDB,LL_INFO10000, "DISM(MCDel)::TM: res: %d, result type: %d\n", res, trace->GetTraceType()));
-
-        return res;
-    }
-
-    MethodTable *pType = *(MethodTable**)pbDelInvocationList;
-    if (pType->IsDelegate())
-    {
-        // this is a secure deelgate. The target is hidden inside this field, so recurse in and pray...
-        return TraceDelegateObject(pbDelInvocationList, trace);
-    }
-
-    // Otherwise, we're going for the first invoke of the multi case.
-    // In order to go to the correct spot, we have just have to fish out
-    // slot 0 of the invocation list, and figure out where that's going to,
-    // then put a breakpoint there...
-    pbDel = *(BYTE**)(((ArrayBase *)pbDelInvocationList)->GetDataPtr());
-    return TraceDelegateObject(pbDel, trace);
-}
-#endif // DACCESS_COMPILE
-
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 

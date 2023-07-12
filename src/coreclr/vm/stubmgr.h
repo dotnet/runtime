@@ -446,10 +446,14 @@ class StubLinkStubManager : public StubManager
 
     static void Init();
 
-#ifndef DACCESS_COMPILE
+#if !defined(DACCESS_COMPILE)
+    static BOOL TraceDelegateObject(BYTE *orDel, TraceDestination *trace);
+#endif // DACCESS_COMPILE
+
+#if !defined(DACCESS_COMPILE)
     StubLinkStubManager() : StubManager(), m_rangeList() {LIMITED_METHOD_CONTRACT;}
     ~StubLinkStubManager() {WRAPPER_NO_CONTRACT;}
-#endif
+#endif // DACCESS_COMPILE
 
   protected:
     LockedRangeList m_rangeList;
@@ -719,14 +723,6 @@ class InteropDispatchStubManager : public StubManager
         { LIMITED_METHOD_CONTRACT; return W("InteropDispatchStub"); }
 #endif
 };
-
-#if !defined(DACCESS_COMPILE)
-class DelegateInvokeStub final
-{
-public:
-    static BOOL TraceDelegateObject(BYTE *orDel, TraceDestination *trace);
-};
-#endif // DACCESS_COMPILE
 
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 //---------------------------------------------------------------------------------------
