@@ -351,12 +351,6 @@ gpointer
 mono_arch_get_this_arg_from_call (host_mgreg_t *regs, guint8 *code)
 {
 	MonoObject *this = (MonoObject *)regs [RISCV_A0];
-	// FIXME:
-	// The Mono will treat first parameter as this_pointer,
-	// it get conflict with RISC-V ABI.
-	// more information refer to get_call_info().
-	if (!this->vtable)
-		this = (MonoObject *)regs [RISCV_A1];
 	return (gpointer)this;
 }
 
@@ -920,6 +914,7 @@ static CallInfo *
 get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 {
 	CallInfo *cinfo;
+	gboolean is_pinvoke = sig->pinvoke;
 	int paramNum = sig->hasthis + sig->param_count;
 	int pindex;
 	if (mp)
@@ -934,32 +929,28 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 	cinfo->next_farg = RISCV_FA0;
 	add_param (cinfo, &cinfo->ret, sig->ret);
 
-	// The ABI specify that
-	// If the reture value would have been passed by reference,
-	// the caller will allocates memory for the return value, and
-	// passes the address as an implicit first parameter.
-
-	// FIXME:
-	// The Mono will treat first parameter as this_pointer
-	// reference to `mono_vcall_trampoline()`. 
-	// They are conflict a bit. 
-	if (cinfo->ret.storage == ArgVtypeByRef) {
-		g_assert (cinfo->ret.reg == RISCV_A0);
-		cinfo->next_arg = RISCV_A1;
-	}
-	else
-		cinfo->next_arg = RISCV_A0;
-
+	cinfo->next_arg = RISCV_A0;
 	cinfo->next_farg = RISCV_FA0;
 	// reset status
 	cinfo->stack_usage = 0;
 
-	// add this pointer as first argument if hasthis == true
-	if (sig->hasthis)
+	guint32 paramStart = 0;
+	if (cinfo->ret.storage == ArgVtypeByRef && !is_pinvoke && (sig->hasthis || (sig->param_count > 0 && MONO_TYPE_IS_REFERENCE (mini_get_underlying_type (sig->params [0]))))) {
 		add_arg (cinfo, cinfo->args + 0, sizeof (host_mgreg_t), FALSE);
+		if (!sig->hasthis)
+			paramStart = 1;
+		add_param (cinfo, &cinfo->ret, sig->ret);
+	}
+	else{
+		// add this pointer as first argument if hasthis == true
+		if (sig->hasthis)
+			add_arg (cinfo, cinfo->args + 0, sizeof (host_mgreg_t), FALSE);
+
+		if (cinfo->ret.storage == ArgVtypeByRef)
+			add_param (cinfo, &cinfo->ret, sig->ret);
+	}
 
 	// other general Arguments
-	guint32 paramStart = 0;
 	guint32 argStack = 0;
 	for (pindex = paramStart; pindex < sig->param_count; ++pindex) {
 		ArgInfo *ainfo = cinfo->args + sig->hasthis + pindex;
@@ -1046,7 +1037,6 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 	if (sig->ret->type != MONO_TYPE_VOID) {
 		ainfo = &cinfo->ret;
 		if (ainfo->storage == ArgVtypeByRef) {
-			g_assert (cinfo->ret.reg == RISCV_A0);
 			storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, -1);
 			ccontext->gregs [cinfo->ret.reg] = (gsize)storage;
 		}
@@ -1058,8 +1048,8 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		ainfo = &cinfo->args [i];
 
 		if (ainfo->storage == ArgVtypeByRef) {
-			ccontext->gregs [ainfo->reg] =
-			    (host_mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
+			storage = arg_get_storage (ccontext, ainfo);
+			*(gpointer *)storage = interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
 			continue;
 		}
 
@@ -1418,8 +1408,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		MONO_EMIT_NEW_UNALU (cfg, OP_MOVE, cfg->arch.vret_addr_loc->dreg, call->vret_var->dreg);
 		break;
 	case ArgVtypeByRef:
-		/* Pass the vtype return address in A0 */
-		g_assert (cinfo->ret.reg == RISCV_A0);
 		g_assert (!MONO_IS_TAILCALL_OPCODE (call) || call->vret_var == cfg->vret_addr);
 		MONO_INST_NEW (cfg, vtarg, OP_MOVE);
 		vtarg->sreg1 = call->vret_var->dreg;
@@ -1821,7 +1809,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			break;
 		case ArgVtypeByRef:
 			/**
-			 * Caller pass the address of return value by A0 as an implicit param.
+			 * Caller pass the address of return value as an implicit param.
 			 * It will be saved in the prolog
 			 */
 			cfg->vret_addr->opcode = OP_REGOFFSET;
@@ -3456,6 +3444,7 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	guint8 *code;
+	MonoMethodSignature *sig = mono_method_signature_internal (cfg->method);
 
 	cfg->code_size = MAX (cfg->header->code_size * 4, 1024);
 	code = cfg->native_code = g_malloc (cfg->code_size);
@@ -3525,7 +3514,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		MonoInst *ins = cfg->vret_addr;
 
 		g_assert (ins->opcode == OP_REGOFFSET);
-		code = mono_riscv_emit_store (code, RISCV_A0, ins->inst_basereg, ins->inst_offset, 0);
+		code = mono_riscv_emit_store (code, sig->hasthis ? RISCV_A1 : RISCV_A0, ins->inst_basereg, ins->inst_offset, 0);
 	}
 
 	/* Save mrgctx received in MONO_ARCH_RGCTX_REG */
