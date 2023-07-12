@@ -130,9 +130,9 @@ namespace System.Text
 
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<byte>.Count)
             {
-                uint SizeOfVector512InBytes = (uint)Vector512<byte>.Count; // JIT will make this a const
+                uint SizeOfVector512InBytes = (uint)Vector512.Size; // JIT will make this a const
 
-                if (Unsafe.ReadUnaligned<Vector512<byte>>(pBuffer).ExtractMostSignificantBits() == 0)
+                if (!VectorContainsNonAsciiChar(Vector512.Load(pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
                     // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
@@ -152,7 +152,7 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % SizeOfVector512InBytes == 0, "Vector read should be aligned.");
-                        if (Unsafe.Read<Vector512<byte>>(pBuffer).ExtractMostSignificantBits() != 0)
+                        if (VectorContainsNonAsciiChar(Vector512.LoadAligned(pBuffer)))
                         {
                             break; // found non-ASCII data
                         }
@@ -168,9 +168,9 @@ namespace System.Text
             }
             else if (Vector256.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector256<byte>.Count)
             {
-                uint SizeOfVector256InBytes = (uint)Vector256<byte>.Count; // JIT will make this a const
+                uint SizeOfVector256InBytes = (uint)Vector256.Size; // JIT will make this a const
 
-                if (Unsafe.ReadUnaligned<Vector256<byte>>(pBuffer).ExtractMostSignificantBits() == 0)
+                if (!VectorContainsNonAsciiChar(Vector256.Load(pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
                     // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
@@ -190,7 +190,7 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % SizeOfVector256InBytes == 0, "Vector read should be aligned.");
-                        if (Unsafe.Read<Vector256<byte>>(pBuffer).ExtractMostSignificantBits() != 0)
+                        if (VectorContainsNonAsciiChar(Vector256.LoadAligned(pBuffer)))
                         {
                             break; // found non-ASCII data
                         }
@@ -206,9 +206,9 @@ namespace System.Text
             }
             else if (Vector128.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector128<byte>.Count)
             {
-                uint SizeOfVector128InBytes = (uint)Vector128<byte>.Count; // JIT will make this a const
+                uint SizeOfVector128InBytes = (uint)Vector128.Size; // JIT will make this a const
 
-                if (Unsafe.ReadUnaligned<Vector128<byte>>(pBuffer).ExtractMostSignificantBits() == 0)
+                if (!VectorContainsNonAsciiChar(Vector128.Load(pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
                     // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
@@ -228,7 +228,7 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % SizeOfVector128InBytes == 0, "Vector read should be aligned.");
-                        if (Unsafe.Read<Vector128<byte>>(pBuffer).ExtractMostSignificantBits() != 0)
+                        if (VectorContainsNonAsciiChar(Vector128.LoadAligned(pBuffer)))
                         {
                             break; // found non-ASCII data
                         }
@@ -899,11 +899,11 @@ namespace System.Text
             if (Vector512.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector512<ushort>.Count)
             {
                 uint SizeOfVector512InChars = (uint)Vector512<ushort>.Count; // JIT will make this a const
-                uint SizeOfVector512InBytes = (uint)Vector512<byte>.Count; // JIT will make this a const
+                uint SizeOfVector512InBytes = (uint)Vector512.Size; // JIT will make this a const
 
                 Vector512<ushort> asciiMask = Vector512.Create((ushort) 0xFF80);
 
-                if (!VectorContainsNonAsciiChar(Unsafe.ReadUnaligned<Vector512<ushort>>(pBuffer)))
+                if (!VectorContainsNonAsciiChar(Vector512.Load((ushort*)pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
                     // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
@@ -923,7 +923,7 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % SizeOfVector512InChars == 0, "Vector read should be aligned.");
-                        if (VectorContainsNonAsciiChar(Unsafe.Read<Vector512<ushort>>(pBuffer)))
+                        if (VectorContainsNonAsciiChar(Vector512.LoadAligned((ushort*)pBuffer)))
                         {
                             break; // found non-ASCII data
                         }
@@ -938,11 +938,11 @@ namespace System.Text
             else if (Vector256.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector256<ushort>.Count)
             {
                 uint SizeOfVector256InChars = (uint)Vector256<ushort>.Count; // JIT will make this a const
-                uint SizeOfVector256InBytes = (uint)Vector256<byte>.Count; // JIT will make this a const
+                uint SizeOfVector256InBytes = (uint)Vector256.Size; // JIT will make this a const
 
                 Vector256<ushort> asciiMask = Vector256.Create((ushort) 0xFF80);
 
-                if (!VectorContainsNonAsciiChar(Unsafe.ReadUnaligned<Vector256<ushort>>(pBuffer)))
+                if (!VectorContainsNonAsciiChar(Vector256.Load((ushort*)pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
                     // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
@@ -962,7 +962,7 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % SizeOfVector256InChars == 0, "Vector read should be aligned.");
-                        if (VectorContainsNonAsciiChar(Unsafe.Read<Vector256<ushort>>(pBuffer)))
+                        if (VectorContainsNonAsciiChar(Vector256.LoadAligned((ushort*)pBuffer)))
                         {
                             break; // found non-ASCII data
                         }
@@ -977,11 +977,11 @@ namespace System.Text
             else if (Vector128.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector128<ushort>.Count)
             {
                 uint SizeOfVector128InChars = (uint)Vector128<ushort>.Count; // JIT will make this a const
-                uint SizeOfVector128InBytes = (uint)Vector128<byte>.Count; // JIT will make this a const
+                uint SizeOfVector128InBytes = (uint)Vector128.Size; // JIT will make this a const
 
                 Vector128<ushort> asciiMask = Vector128.Create((ushort) 0xFF80);
 
-                if (!VectorContainsNonAsciiChar(Unsafe.ReadUnaligned<Vector128<ushort>>(pBuffer)))
+                if (!VectorContainsNonAsciiChar(Vector128.Load((ushort*)pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
                     // next aligned boundary, then perform aligned reads from here on out until we find non-ASCII
@@ -1000,7 +1000,7 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % SizeOfVector128InChars == 0, "Vector read should be aligned.");
-                        if (VectorContainsNonAsciiChar(Unsafe.Read<Vector128<ushort>>(pBuffer)))
+                        if (VectorContainsNonAsciiChar(Vector128.LoadAligned((ushort*)pBuffer)))
                         {
                             break; // found non-ASCII data
                         }
@@ -1868,6 +1868,20 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector256<byte> asciiVector)
+        {
+            // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
+            return asciiVector.ExtractMostSignificantBits() != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar(Vector512<byte> asciiVector)
+        {
+            // max ASCII character is 0b_0111_1111, so the most significant bit (0x80) tells whether it contains non ascii
+            return asciiVector.ExtractMostSignificantBits() != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar(Vector128<ushort> utf16Vector)
         {
             // prefer architecture specific intrinsic as they offer better perf
@@ -1932,6 +1946,28 @@ namespace System.Text
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool VectorContainsNonAsciiChar<T>(Vector128<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? VectorContainsNonAsciiChar(vector.AsByte())
+                : VectorContainsNonAsciiChar(vector.AsUInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar<T>(Vector256<T> vector)
+            where T : unmanaged
+        {
+            Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
+
+            return typeof(T) == typeof(byte)
+                ? VectorContainsNonAsciiChar(vector.AsByte())
+                : VectorContainsNonAsciiChar(vector.AsUInt16());
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool VectorContainsNonAsciiChar<T>(Vector512<T> vector)
             where T : unmanaged
         {
             Debug.Assert(typeof(T) == typeof(byte) || typeof(T) == typeof(ushort));
