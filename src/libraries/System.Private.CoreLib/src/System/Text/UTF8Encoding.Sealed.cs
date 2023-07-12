@@ -185,7 +185,7 @@ namespace System.Text
                 fixed (char* pInput = &input)
                 fixed (byte* pOutput = &output)
                 {
-                    return ((UTF8EncodingSealed)UTF8).GetBytesCommon(pInput, inputLength, pOutput, outputLength);
+                    return ((UTF8EncodingSealed)UTF8).GetBytesCommon(pInput, inputLength, pOutput, outputLength, throwForDestinationOverflow: false);
                 }
             }
         }
