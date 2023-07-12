@@ -137,7 +137,7 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Uri requestUri, EndPoint? remoteEndPoint)
         {
             _pool = pool;
             _stream = stream;
@@ -179,7 +179,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http20ConnectionEstablished(_id);
+                HttpTelemetry.Log.Http20ConnectionEstablished(_id, requestUri, remoteEndPoint);
                 _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 

@@ -90,10 +90,17 @@ namespace System.Net.Http
             WriteEvent(eventId: 3, exceptionMessage);
         }
 
-        [Event(4, Level = EventLevel.Informational)]
-        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId)
+        [NonEvent]
+        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, Uri uri, EndPoint? remoteEndPoint)
         {
-            WriteEvent(eventId: 4, versionMajor, versionMinor, connectionId);
+            string? remoteAddress = (remoteEndPoint as IPEndPoint)?.Address?.ToString();
+            ConnectionEstablished(versionMajor, versionMinor, connectionId, uri.Scheme, uri.Host, uri.Port, remoteAddress);
+        }
+
+        [Event(4, Level = EventLevel.Informational)]
+        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, string scheme, string host, int port, string? remoteAddress)
+        {
+            WriteEvent(eventId: 4, versionMajor, versionMinor, connectionId, scheme, host, port, remoteAddress);
         }
 
         [Event(5, Level = EventLevel.Informational)]
@@ -163,10 +170,10 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http11ConnectionEstablished(long connectionId)
+        public void Http11ConnectionEstablished(long connectionId, Uri uri, EndPoint? remoteEndPoint)
         {
             Interlocked.Increment(ref _openedHttp11Connections);
-            ConnectionEstablished(versionMajor: 1, versionMinor: 1, connectionId);
+            ConnectionEstablished(versionMajor: 1, versionMinor: 1, connectionId, uri, remoteEndPoint);
         }
 
         [NonEvent]
@@ -178,10 +185,10 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http20ConnectionEstablished(long connectionId)
+        public void Http20ConnectionEstablished(long connectionId, Uri uri, EndPoint? remoteEndPoint)
         {
             Interlocked.Increment(ref _openedHttp20Connections);
-            ConnectionEstablished(versionMajor: 2, versionMinor: 0, connectionId);
+            ConnectionEstablished(versionMajor: 2, versionMinor: 0, connectionId, uri, remoteEndPoint);
         }
 
         [NonEvent]
@@ -193,10 +200,10 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http30ConnectionEstablished(long connectionId)
+        public void Http30ConnectionEstablished(long connectionId, Uri uri, EndPoint? remoteEndPoint)
         {
             Interlocked.Increment(ref _openedHttp30Connections);
-            ConnectionEstablished(versionMajor: 3, versionMinor: 0, connectionId);
+            ConnectionEstablished(versionMajor: 3, versionMinor: 0, connectionId, uri, remoteEndPoint);
         }
 
         [NonEvent]
@@ -313,6 +320,61 @@ namespace System.Net.Http
                 DataPointer = (IntPtr)(&arg3),
                 Size = sizeof(long)
             };
+
+            WriteEventCore(eventId, NumEventDatas, descrs);
+        }
+
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
+           Justification = "Parameters to this method are primitive and are trimmer safe")]
+        [NonEvent]
+        private unsafe void WriteEvent(int eventId, byte arg1, byte arg2, long arg3, string? arg4, string arg5, int arg6, string? arg7)
+        {
+            arg4 ??= "";
+            arg7 ??= "";
+
+            const int NumEventDatas = 7;
+            EventData* descrs = stackalloc EventData[NumEventDatas];
+
+            fixed (char* arg4Ptr = arg4)
+            fixed (char* arg5Ptr = arg5)
+            fixed (char* arg7Ptr = arg7)
+            {
+                descrs[0] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg1),
+                    Size = sizeof(byte)
+                };
+                descrs[1] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg2),
+                    Size = sizeof(byte)
+                };
+                descrs[2] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg3),
+                    Size = sizeof(long)
+                };
+                descrs[3] = new EventData
+                {
+                    DataPointer = (IntPtr)arg4Ptr,
+                    Size = (arg4.Length + 1) * sizeof(char)
+                };
+                descrs[4] = new EventData
+                {
+                    DataPointer = (IntPtr)arg5Ptr,
+                    Size = (arg5.Length + 1) * sizeof(char)
+                };
+                descrs[5] = new EventData
+                {
+                    DataPointer = (IntPtr)(&arg6),
+                    Size = sizeof(int)
+                };
+                descrs[6] = new EventData
+                {
+                    DataPointer = (IntPtr)arg7Ptr,
+                    Size = (arg7.Length + 1) * sizeof(char)
+                };
+            }
 
             WriteEventCore(eventId, NumEventDatas, descrs);
         }

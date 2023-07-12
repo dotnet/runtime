@@ -76,7 +76,9 @@ namespace System.Net.Http
         public HttpConnection(
             HttpConnectionPool pool,
             Stream stream,
-            TransportContext? transportContext)
+            TransportContext? transportContext,
+            Uri requestUri,
+            EndPoint? remoteEndPoint)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -93,7 +95,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http11ConnectionEstablished(_id);
+                HttpTelemetry.Log.Http11ConnectionEstablished(_id, requestUri, remoteEndPoint);
                 _disposed = Status_NotDisposedAndTrackedByTelemetry;
             }
 

@@ -71,7 +71,7 @@ namespace System.Net.Http
             }
         }
 
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection, Uri requestUri, bool includeAltUsedHeader)
         {
             _pool = pool;
             _origin = origin;
@@ -95,7 +95,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http30ConnectionEstablished(_id);
+                HttpTelemetry.Log.Http30ConnectionEstablished(_id, requestUri, connection.RemoteEndPoint);
                 _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 

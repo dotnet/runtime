@@ -69,11 +69,13 @@ namespace System.Net.Http.Functional.Tests
 
                 bool buffersResponse = false;
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
+                            expectedUri = uri;
                             using HttpClientHandler handler = CreateHttpClientHandler(version);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
                             using var invoker = new HttpMessageInvoker(handler);
@@ -177,7 +179,7 @@ namespace System.Net.Http.Functional.Tests
 
                 ValidateStartFailedStopEvents(events, version);
 
-                ValidateConnectionEstablishedClosed(events, version);
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
 
                 ValidateRequestResponseStartStopEvents(
                     events,
@@ -207,6 +209,7 @@ namespace System.Net.Http.Functional.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     var semaphore = new SemaphoreSlim(0, 1);
@@ -215,6 +218,7 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
+                            expectedUri = uri;
                             using HttpClientHandler handler = CreateHttpClientHandler(version);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
                             using var invoker = new HttpMessageInvoker(handler);
@@ -286,7 +290,7 @@ namespace System.Net.Http.Functional.Tests
 
                 ValidateStartFailedStopEvents(events, version, shouldHaveFailures: true);
 
-                ValidateConnectionEstablishedClosed(events, version);
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
 
                 ValidateEventCounters(events, requestCount: 1, shouldHaveFailures: true, versionMajor: version.Major);
             }, UseVersion.ToString(), testMethod).Dispose();
@@ -318,11 +322,13 @@ namespace System.Net.Http.Functional.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
+                            expectedUri = uri;
                             using HttpClientHandler handler = CreateHttpClientHandler(version);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
                             using var invoker = new HttpMessageInvoker(handler);
@@ -381,7 +387,7 @@ namespace System.Net.Http.Functional.Tests
 
                 ValidateStartFailedStopEvents(events, version);
 
-                ValidateConnectionEstablishedClosed(events, version);
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
 
                 ValidateRequestResponseStartStopEvents(
                     events,
@@ -449,16 +455,24 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, long connectionId = 0)
+        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, long connectionId = 0)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
             Assert.Equal(1, connectionsEstablished.Length);
             foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
             {
-                Assert.Equal(3, connectionEstablished.Payload.Count);
+                Assert.Equal(7, connectionEstablished.Payload.Count);
                 Assert.Equal(version.Major, (byte)connectionEstablished.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionEstablished.Payload[1]);
                 Assert.Equal(connectionId, (long)connectionEstablished.Payload[2]);
+                Assert.Equal(uri.Scheme, (string)connectionEstablished.Payload[3]);
+                Assert.Equal(uri.Host, (string)connectionEstablished.Payload[4]);
+                Assert.Equal(uri.Port, (int)connectionEstablished.Payload[5]);
+
+                IPAddress ip = IPAddress.Parse((string)connectionEstablished.Payload[6]);
+                Assert.True(ip.Equals(IPAddress.Loopback.MapToIPv6()) ||
+                    ip.Equals(IPAddress.Loopback) ||
+                    ip.Equals(IPAddress.IPv6Loopback));
             }
 
             EventWrittenEventArgs[] connectionsClosed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
@@ -645,6 +659,7 @@ namespace System.Net.Http.Functional.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
                 await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
                 {
                     var firstRequestReceived = new SemaphoreSlim(0, 1);
@@ -654,6 +669,7 @@ namespace System.Net.Http.Functional.Tests
                     await GetFactoryForVersion(version).CreateClientAndServerAsync(
                         async uri =>
                         {
+                            expectedUri = uri;
                             using HttpClientHandler handler = CreateHttpClientHandler(version, allowAllCertificates: true);
                             using HttpClient client = CreateHttpClient(handler, useVersionString);
 
@@ -717,7 +733,7 @@ namespace System.Net.Http.Functional.Tests
 
                 ValidateStartFailedStopEvents(events, version, count: 3);
 
-                ValidateConnectionEstablishedClosed(events, version);
+                ValidateConnectionEstablishedClosed(events, version, expectedUri);
 
                 var requestLeftQueueEvents = events.Where(e => e.Event.EventName == "RequestLeftQueue");
                 var (minCount, maxCount) = version.Major switch
