@@ -147,8 +147,8 @@ public class GenerateWasmBootJson : Task
             result.runtimeOptions = runtimeOptions.ToArray();
         }
 
-        var libraryInitializerOnRuntimeConfigLoaded = LibraryInitializerOnRuntimeConfigLoaded?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
-        var libraryInitializerOnRuntimeReady = LibraryInitializerOnRuntimeReady?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+        string[] libraryInitializerOnRuntimeConfigLoadedFullPaths = LibraryInitializerOnRuntimeConfigLoaded?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+        string[] libraryInitializerOnRuntimeReadyFullPath = LibraryInitializerOnRuntimeReady?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
 
         // Build a two-level dictionary of the form:
         // - assembly:
@@ -232,11 +232,11 @@ public class GenerateWasmBootJson : Task
                         resourceData.libraryInitializers ??= new TypedLibraryInitializers();
                         TypedLibraryInitializers libraryInitializers = (TypedLibraryInitializers)resourceData.libraryInitializers;
 
-                        if (libraryInitializerOnRuntimeConfigLoaded.Contains(resource.ItemSpec))
+                        if (libraryInitializerOnRuntimeConfigLoadedFullPaths.Contains(resource.ItemSpec))
                         {
                             resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
                         }
-                        else if (libraryInitializerOnRuntimeReady.Contains(resource.ItemSpec))
+                        else if (libraryInitializerOnRuntimeReadyFullPath.Contains(resource.ItemSpec))
                         {
                             resourceList = libraryInitializers.onRuntimeReady ??= new();
                         }
