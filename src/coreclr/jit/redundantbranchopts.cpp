@@ -997,6 +997,27 @@ bool Compiler::optSubsumeRelop(BasicBlock* const block, BasicBlock* const domBlo
             return false;
         }
 
+        // Verify that domCmpTree's operands have suitable value numbers.
+        //
+        // This safeguards against a case like
+        //   V15 = LT V01($c0) , V13($147)
+        //   JTRUE EQ($14A) V15($149), 0($40)
+        // where VN $14A is a function of V01 and V13, not V15 and 0...
+        //
+        // This reflects the current "one-way" nature of VNs. It is easy to map from IR
+        // to VN, but not easy to create IR that will have a given VN.
+        //
+        ValueNum op1VN = vnStore->VNNormalValue(domCmpTree->AsOp()->gtOp1->GetVN(VNK_Liberal));
+        ValueNum op2VN = vnStore->VNNormalValue(domCmpTree->AsOp()->gtOp2->GetVN(VNK_Liberal));
+
+        if ((op1VN != totalFN.m_args[0]) || (op2VN != totalFN.m_args[1]))
+        {
+            JITDUMP("Could not match up VN " FMT_VN " to operands on [%06u], sorry.\n", totalVN, domCmpTree);
+            JITDUMP("Wanted (" FMT_VN ", " FMT_VN ") have (" FMT_VN ", " FMT_VN ")\n", totalFN.m_args[0],
+                    totalFN.m_args[1], op1VN, op2VN);
+            return false;
+        }
+
         // grab old Conservative VN
         //
         ValueNum domCmpCnsVN    = ValueNumStore::NoVN;
