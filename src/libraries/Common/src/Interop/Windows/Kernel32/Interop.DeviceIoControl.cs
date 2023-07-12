@@ -44,7 +44,6 @@ internal static partial class Interop
 
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_duplicate_extents_to_file
         internal const int FSCTL_DUPLICATE_EXTENTS_TO_FILE = 0x00098344;
-        [StructLayout(LayoutKind.Sequential, Pack = 4)] //the longs are aligned to 4 bytes on 32-bit, and 8 on 64-bit
         internal struct DUPLICATE_EXTENTS_DATA
         {
             internal IntPtr FileHandle;
