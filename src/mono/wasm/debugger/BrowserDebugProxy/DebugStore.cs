@@ -370,7 +370,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             _asyncScopes = Array.Empty<AsyncScopeDebugInformation>();
         }
 
-        public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader)
+        public MethodInfo(AssemblyInfo assembly, MethodDefinitionHandle methodDefHandle, int token, SourceFile source, TypeInfo type, MetadataReader asmMetadataReader, MetadataReader pdbMetadataReader, bool fromEnC = false)
         {
             this.IsAsync = -1;
             this.Assembly = assembly;
@@ -390,10 +390,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             this.TypeInfo = type;
             DebuggerAttrInfo = new DebuggerAttributesInfo();
             //we need to loop in all the CustomAttributes from asmMetadataReader because methodDef.GetCustomAttributes() does not work correctly on EnC metadata
-            foreach (CustomAttributeHandle cattr in asmMetadataReader.CustomAttributes)
+            var customAttributes = fromEnC ? asmMetadataReader.CustomAttributes : methodDef.GetCustomAttributes();
+            foreach (CustomAttributeHandle cattr in customAttributes)
             {
                 var ca = asmMetadataReader.GetCustomAttribute(cattr);
-                if (ca.Parent.Kind != HandleKind.MethodDefinition || (ca.Parent.Kind == HandleKind.MethodDefinition && ca.Parent.GetHashCode() != (token | (int)TokenType.MdtMethodDef)))
+                if (fromEnC && (ca.Parent.Kind != HandleKind.MethodDefinition || (ca.Parent.Kind == HandleKind.MethodDefinition && ca.Parent.GetHashCode() != (token | (int)TokenType.MdtMethodDef))))
                     continue;
                 if (!assembly.TryGetCustomAttributeName(cattr, asmMetadataReader, out string name))
                     continue;
@@ -1140,7 +1141,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 var documentName = pdbMetadataReaderParm.GetString(document.Name);
                                 source = GetOrAddSourceFile(methodDebugInformation.Document, documentName);
                             }
-                            var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm);
+                            var methodInfo = new MethodInfo(this, MetadataTokens.MethodDefinitionHandle(methodIdxAsm), entryRow, source, typeInfo, asmMetadataReaderParm, pdbMetadataReaderParm, fromEnC: true);
                             methods[entryRow] = methodInfo;
 
                             source?.AddMethod(methodInfo);
