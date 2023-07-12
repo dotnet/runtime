@@ -23,6 +23,7 @@ import { initializeLegacyExports } from "./net6-legacy/globals";
 import { mono_log_warn, mono_wasm_stringify_as_error_with_stack } from "./logging";
 import { instantiate_asset, instantiate_symbols_asset } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
+import { forceDisposeProxies } from "./gc-handles";
 
 function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
     const module = Module;
@@ -45,6 +46,7 @@ function initializeExports(globalObjects: GlobalObjects): RuntimeAPI {
         instantiate_symbols_asset,
         instantiate_asset,
         jiterpreter_dump_stats,
+        forceDisposeProxies,
     });
 
     const API = export_api();

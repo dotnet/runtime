@@ -146,8 +146,8 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
     let keepSomeCsAlive = false;
     let keepSomeJsAlive = false;
     // dispose all proxies to C# objects
-    const gchandles = [..._js_owned_object_table.keys()];
-    for (const gc_handle of gchandles) {
+    const gc_handles = [..._js_owned_object_table.keys()];
+    for (const gc_handle of gc_handles) {
         const wr = _js_owned_object_table.get(gc_handle);
         const obj = wr.deref();
         if (_use_finalization_registry && obj) {
@@ -155,7 +155,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
         }
 
         if (obj) {
-            const keepAlive = typeof obj.keep === "boolean" && obj.keep;
+            const keepAlive = typeof obj[do_not_force_dispose] === "boolean" && obj[do_not_force_dispose];
             if (verbose) {
                 const proxy_debug = BuildConfiguration === "Debug" ? obj[proxy_debug_symbol] : undefined;
                 if (BuildConfiguration === "Debug" && proxy_debug) {

@@ -98,6 +98,9 @@ function set_exit_code_and_quit_now(exit_code: number, reason?: any): void {
     }
 
     appendElementOnExit(exit_code);
+    if (exit_code === 0 && loaderHelpers.config?.interopCleanupOnExit) {
+        runtimeHelpers.forceDisposeProxies(true, true);
+    }
     if (exit_code !== 0 || !ENVIRONMENT_IS_WEB) {
         if (ENVIRONMENT_IS_NODE && INTERNAL.process) {
             INTERNAL.process.exit(exit_code);
