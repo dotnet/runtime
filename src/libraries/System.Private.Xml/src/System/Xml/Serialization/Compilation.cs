@@ -59,29 +59,41 @@ namespace System.Xml.Serialization
                 }
             }
 
+#if FALLBACK_TO_CSHARP_GEN_COMPILE
             // We will make best effort to use RefEmit for assembly generation
             bool fallbackToCSharpAssemblyGeneration = false;
+#endif
 
             if (!containsSoapMapping && !TempAssembly.UseLegacySerializerGeneration)
             {
+#if FALLBACK_TO_CSHARP_GEN_COMPILE
                 try
                 {
+#endif
                     _assembly = GenerateRefEmitAssembly(xmlMappings, types);
+#if FALLBACK_TO_CSHARP_GEN_COMPILE
                 }
                 // Only catch and handle known failures with RefEmit
                 catch (CodeGeneratorConversionException)
                 {
-                    fallbackToCSharpAssemblyGeneration = true;
+                    // There is no CSharp-generating/compiling fallback in .Net Core because compilers are not part of the SDK.
+                    // Instead of throwing a PNSE as a result of trying this "fallback" which doesn't exist, lets just throw the
+                    // original exception.
+                    //fallbackToCSharpAssemblyGeneration = true;
+                    throw;
                 }
                 // Add other known exceptions here...
                 //
+#endif
             }
             else
+#if FALLBACK_TO_CSHARP_GEN_COMPILE
             {
                 fallbackToCSharpAssemblyGeneration = true;
             }
 
             if (fallbackToCSharpAssemblyGeneration)
+#endif
             {
                 throw new PlatformNotSupportedException(SR.CompilingScriptsNotSupported);
             }
