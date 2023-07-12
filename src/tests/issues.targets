@@ -3,7 +3,7 @@
     <!-- All OS/Arch/Runtime excludes -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
         <ExcludeList Include="$(XunitTestBinBase)/readytorun/DynamicMethodGCStress/DynamicMethodGCStress/*">
-            <Issue>timeout </Issue>
+            <Issue>timeout</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/GitHub_22888/test22888/*">
             <Issue>https://github.com/dotnet/runtime/issues/13703</Issue>
@@ -1254,6 +1254,9 @@
 
     <!-- Known failures for mono runtime on *all* architectures/operating systems in *all* runtime modes -->
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono'" >
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/Reabstraction/**">
+            <Issue>https://github.com/dotnet/runtime/issues/88775</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/InterfaceVariance/**">
             <Issue>https://github.com/dotnet/runtime/issues/88689</Issue>
         </ExcludeList>

@@ -1154,7 +1154,7 @@ Dictionary::PopulateEntry(
                     // EntryPointNotFoundException at exactly the right time
                     if (!uniqueResolution || pResolvedMD == NULL || pResolvedMD->IsAbstract())
                     {
-                        _ASSERTE(pResolvedMD->IsStatic());
+                        _ASSERTE(pResolvedMD == NULL || pResolvedMD->IsStatic());
                         result = (CORINFO_GENERIC_HANDLE)CreateStubForStaticVirtualDispatch(constraintType.GetMethodTable(), ownerType.GetMethodTable(), pMethod);
                         break;
                     }
