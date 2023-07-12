@@ -1,5 +1,5 @@
 # Current Status:
- - Tring to run all programs in [dotnet/samples/csharp](https://github.com/dotnet/samples/csharp)
+ - Tring to run all programs in [dotnet/samples/csharp](https://github.com/dotnet/samples/tree/main/csharp)
 
 > PS. Following result are all run on my device, it might be different if run on different device.
 
