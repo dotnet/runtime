@@ -213,11 +213,10 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, "yyyy年M月d日 dddd tth:mm:ss" };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection.IsHybridGlobalizationOnBrowse)]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [MemberData(nameof(FullDateTimePattern_Get_TestData))]
-        public void FullDateTimePattern_Get_GetReturnsExpected(string value)
+        public void FullDateTimePattern_Get_GetReturnsExpected(DateTimeFormatInfo format, string value)
         {
-            var format = new DateTimeFormatInfo();
             format.FullDateTimePattern = value;
             Assert.Equal(value, format.FullDateTimePattern);
         }

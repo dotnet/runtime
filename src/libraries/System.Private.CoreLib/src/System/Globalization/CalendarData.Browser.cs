@@ -11,14 +11,12 @@ namespace System.Globalization
 {
     internal sealed partial class CalendarData
     {
-    // CalendarData_Uninitialized = 0,
-    // CalendarData_NativeName = 1, // is it still present? there are some chances ICU has it; public: NativeCalendarName
-    // CalendarData_ShortDates = 3, // event.toLocaleDateString("bg-BG", {dateStyle: "short"}); public: ShortDatePattern
     // CalendarData_EraNames = 13, // ?? DateTimeFormatInfo.GetEraName  ?? date.toLocaleDateString("pl-PL", { era: "long"})
     // CalendarData_AbbrevEraNames = 14, // ?? DateTimeFormatInfo.GetAbbreviatedEraName ?? date.toLocaleDateString("pl-PL", { era: "short"})
 //==================================================================
     // CalendarData_Uninitialized = 0,
     // CalendarData_NativeName = 1, // is it still present? there are some chances ICU has it; public: NativeCalendarName
+    // usage: https://github.com/search?q=.NativeCalendarName+language%3AC%23+AND+NOT+%28path%3ASystem.Private.CoreLib%29&type=code
     // CalendarData_MonthDay = 2, // event.toLocaleDateString("pl-PL", {month: "long", day: "numeric"}); public: MonthDayPattern
     // CalendarData_ShortDates = 3, // event.toLocaleDateString("bg-BG", {dateStyle: "short"}); public: ShortDatePattern
     // CalendarData_LongDates = 4, // FULL = THIS + GetLocaleTimeFormat(shortFormat: false)
