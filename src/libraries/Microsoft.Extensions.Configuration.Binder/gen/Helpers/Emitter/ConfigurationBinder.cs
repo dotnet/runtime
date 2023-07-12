@@ -24,21 +24,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                _writer.WriteLine("/// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>");
-                _writer.WriteBlockStart($"internal static class {Identifier.GeneratedConfigurationBinder}");
+                _emitBlankLineBeforeNextStatement = false;
+                EmitRootBindingClassBlockStart(Identifier.GeneratedConfigurationBinder);
 
                 EmitGetMethods();
                 EmitGetValueMethods();
                 EmitBindMethods_ConfigurationBinder();
 
                 _writer.WriteBlockEnd();
-
-                _precedingBlockExists = true;
+                _emitBlankLineBeforeNextStatement = true;
             }
 
             private void EmitGetMethods()
             {
-                const string expressionForGetCore = $"{FullyQualifiedDisplayString.CoreBindingHelper}.{Identifier.GetCore}";
+                const string expressionForGetCore = $"{FullyQualifiedDisplayString.CoreBindingHelper}.{nameof(MethodsToGen_CoreBindingHelper.GetCore)}";
                 const string documentation = "Attempts to bind the configuration instance to a new instance of type T.";
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.Get_T))
@@ -72,7 +71,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitGetValueMethods()
             {
-                const string expressionForGetValueCore = $"{FullyQualifiedDisplayString.CoreBindingHelper}.{Identifier.GetValueCore}";
+                const string expressionForGetValueCore = $"{FullyQualifiedDisplayString.CoreBindingHelper}.{nameof(MethodsToGen_CoreBindingHelper.GetValueCore)}";
                 const string documentation = "Extracts the value with the specified key and converts it to the specified type.";
 
                 if (ShouldEmitMethods(MethodsToGen_ConfigurationBinder.GetValue_T_key))
@@ -144,7 +143,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         EmitMethodImplementation(
                             type,
                             additionalParams: $"string {Identifier.key}, {GetObjParameter(type)}",
-                            configExpression: $"{Identifier.configuration}.{Identifier.GetSection}({Identifier.key})",
+                            configExpression: $"{Expression.configurationGetSection}({Identifier.key})",
                             configureOptions: false);
                     }
                 }
@@ -152,9 +151,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 void EmitMethodImplementation(TypeSpec type, string additionalParams, string configExpression, bool configureOptions)
                 {
                     string binderOptionsArg = configureOptions ? $"{Expression.GetBinderOptions}({Identifier.configureOptions})" : $"{Identifier.binderOptions}: null";
-                    string returnExpression = type.CanInitialize
-                        ? $"{FullyQualifiedDisplayString.CoreBindingHelper}.{Identifier.BindCore}({configExpression}, ref {Identifier.obj}, {binderOptionsArg})"
-                        : GetInitException(type.InitExceptionMessage);
+
+                    string returnExpression;
+                    if (type.CanInitialize)
+                    {
+                        returnExpression = type.NeedsMemberBinding
+                            ? $"{FullyQualifiedDisplayString.CoreBindingHelper}.{nameof(MethodsToGen_CoreBindingHelper.BindCore)}({configExpression}, ref {Identifier.obj}, {binderOptionsArg})"
+                            : "{ }";
+                    }
+                    else
+                    {
+                        returnExpression = GetInitException(type.InitExceptionMessage);
+                    }
 
                     StartMethodDefinition("Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.");
                     _writer.WriteLine($"public static void {Identifier.Bind}(this {FullyQualifiedDisplayString.IConfiguration} {Identifier.configuration}, {additionalParams}) => "
