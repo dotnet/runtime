@@ -566,18 +566,14 @@ namespace Internal.Reflection.Execution
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_InvokeMap;
-        private Func<NativeFormatModuleInfo, FunctionPointersToOffsets> _computeLdFtnLookupInvokeMapInvokeMap = ComputeLdftnReverseLookup_InvokeMap;
 
         /// <summary>
         /// Initialize a lookup array of module to function pointer/parser offset pair arrays. Do so in a manner that will allow
         /// future work which will invalidate the cache (by setting it to null)
         /// </summary>
-        /// <param name="ldftnReverseLookupStatic">pointer to static which holds cache value. This is treated as a volatile variable</param>
-        /// <param name="lookupComputer"></param>
-        /// <returns></returns>
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_Helper(ref KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldftnReverseLookupStatic, Func<NativeFormatModuleInfo, FunctionPointersToOffsets> lookupComputer)
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_InvokeMap()
         {
-            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = Volatile.Read(ref ldftnReverseLookupStatic);
+            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
 
             if (ldFtnReverseLookup != null)
                 return ldFtnReverseLookup;
@@ -585,7 +581,7 @@ namespace Internal.Reflection.Execution
             {
                 lock (this)
                 {
-                    ldFtnReverseLookup = Volatile.Read(ref ldftnReverseLookupStatic);
+                    ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
 
                     // double checked lock, safe due to use of volatile on s_ldftnReverseHashes
                     if (ldFtnReverseLookup != null)
@@ -612,7 +608,7 @@ namespace Internal.Reflection.Execution
                                 break;
                             }
 
-                            ldFtnReverseLookup[index] = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, lookupComputer(module));
+                            ldFtnReverseLookup[index] = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module));
                             index++;
                         }
 
@@ -623,17 +619,10 @@ namespace Internal.Reflection.Execution
                         break;
                     }
 
-                    Volatile.Write(ref ldftnReverseLookupStatic, ldFtnReverseLookup);
+                    _ldftnReverseLookup_InvokeMap = ldFtnReverseLookup;
                     return ldFtnReverseLookup;
                 }
             }
-        }
-
-        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_InvokeMap()
-        {
-#pragma warning disable 0420 // GetLdFtnReverseLookups_Helper treats its first parameter as volatile by using explicit Volatile operations
-            return GetLdFtnReverseLookups_Helper(ref _ldftnReverseLookup_InvokeMap, _computeLdFtnLookupInvokeMapInvokeMap);
-#pragma warning restore 0420
         }
 
         internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)
