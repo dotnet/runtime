@@ -2425,7 +2425,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows)]
+        [PlatformSpecific(~TestPlatforms.Windows & ~TestPlatforms.Browser)]
         public static void UtcAliases_MapToUtc()
         {
             TimeZoneInfo.AdjustmentRule[] expectedAdjustmentRules = TimeZoneInfo.Utc.GetAdjustmentRules();
