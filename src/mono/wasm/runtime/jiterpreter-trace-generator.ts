@@ -3495,7 +3495,7 @@ function emit_simd_2(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             // Indirect load, so v1 is T** and res is Vector128*
             builder.local("pLocals");
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
-            builder.appendSimd(simple);
+            builder.appendSimd(simple, true);
             builder.appendMemarg(0, 0);
             append_simd_store(builder, ip);
         } else {
