@@ -8951,7 +8951,7 @@ private:
 
 public:
     // Similar to roundUpSIMDSize, but for General Purpose Registers (GPR)
-    unsigned int roundUpGPRSize(unsigned size)
+    unsigned roundUpGPRSize(unsigned size)
     {
         if (size > 4 && (REGSIZE_BYTES == 8))
         {
@@ -8964,37 +8964,28 @@ public:
         return size; // 2, 1, 0
     }
 
-    var_types roundDownMaxRegSize(unsigned size)
+    var_types roundDownMaxType(unsigned size)
     {
         assert(size > 0);
-        ssize_t maxRegSize = TARGET_POINTER_SIZE;
-#if defined(FEATURE_SIMD) && defined(TARGET_XARCH)
-        if (IsBaselineSimdIsaSupported())
+        var_types result = TYP_UNDEF;
+#ifdef FEATURE_SIMD
+        if (IsBaselineSimdIsaSupported() && (roundDownSIMDSize(size) > 0))
         {
-            maxRegSize = max(maxRegSize, (ssize_t)roundDownSIMDSize((unsigned)size));
+            return getSIMDTypeForSize(roundDownSIMDSize(size));
         }
 #endif
         int nearestPow2 = 1 << BitOperations::Log2((unsigned)size);
-        switch (min((int)maxRegSize, nearestPow2))
+        switch (min(nearestPow2, REGSIZE_BYTES))
         {
             case 1:
-                return TYP_UBYTE;
+                return TYP_BYTE;
             case 2:
                 return TYP_USHORT;
             case 4:
                 return TYP_INT;
             case 8:
+                assert(REGSIZE_BYTES == 8);
                 return TYP_LONG;
-#ifdef FEATURE_SIMD
-            case 16:
-                return TYP_SIMD16;
-#ifdef TARGET_XARCH
-            case 32:
-                return TYP_SIMD32;
-            case 64:
-                return TYP_SIMD64;
-#endif
-#endif
             default:
                 unreached();
         }

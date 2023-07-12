@@ -1233,7 +1233,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
 
 //------------------------------------------------------------------------------
 // fgVNBasedIntrinsicExpansionForCall_ReadUtf8 : Expand NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
-//    when src data is a string literal (UTF16) tha can be narrowed to ASCII (UTF8), e.g.:
+//    when src data is a string literal (UTF16) that can be narrowed to ASCII (UTF8), e.g.:
 //
 //      string str = "Hello, world!";
 //      int bytesWritten = ReadUtf8(ref str[0], str.Length, buffer, buffer.Length);
@@ -1241,10 +1241,10 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement
 //    becomes:
 //
 //      bytesWritten = 0; // default value
-//      if (buffer.Length >= str.Length) // *might* be folded if buffer.Length is a constant
+//      if (buffer.Length >= 13)
 //      {
-//          memcpy(buffer, "Hello, world!"u8, str.Length); // note the u8 suffix
-//          bytesWritten = str.Length;
+//          memcpy(buffer, "Hello, world!"u8, 13); // note the u8 suffix
+//          bytesWritten = 13;
 //      }
 //
 // Arguments:
@@ -1259,7 +1259,6 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 {
     BasicBlock* block = *pBlock;
 
-    // NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
     assert(call->gtArgs.CountUserArgs() == 4);
 
     GenTree* srcPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
@@ -1268,7 +1267,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // srcLen doesn't have to match the srcPtr's length, but it should not exceed it.
     ssize_t               strObjOffset = 0;
     CORINFO_OBJECT_HANDLE strObj       = nullptr;
-    if (!GetObjectHandleAndOffset(srcPtr, &strObjOffset, &strObj) || (strObjOffset > INT_MAX))
+    if (!GetObjectHandleAndOffset(srcPtr, &strObjOffset, &strObj) || ((size_t)strObjOffset > INT_MAX))
     {
         // We might want to support more cases here, e.g. ROS<char> RVA data.
         // Also, we check that strObjOffset (which is in most cases is expected to be just
@@ -1295,7 +1294,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     const int      MaxPossibleUnrollThreshold = 256;
     const unsigned unrollThreshold            = min(getUnrollThreshold(UnrollKind::Memcpy), MaxPossibleUnrollThreshold);
     const unsigned srcLenCns                  = (unsigned)vnStore->GetConstantInt32(srcLen->gtVNPair.GetLiberal());
-    if (srcLenCns == 0 || srcLenCns > unrollThreshold)
+    if ((srcLenCns == 0) || (srcLenCns > unrollThreshold))
     {
         // TODO: handle srcLenCns == 0 if it's a common case
         JITDUMP("ReadUtf8: srcLenCns is out of unrollable range\n")
@@ -1304,14 +1303,14 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     // Read the string literal (UTF16) into a local buffer (UTF8)
     assert(strObj != nullptr);
-    BYTE srcUtf8cns[MaxPossibleUnrollThreshold * 2] = {};
+    BYTE buffer[MaxPossibleUnrollThreshold * 2];
 
     // Both must be within [0..INT_MAX] range as we're going to cast them to int
     assert((unsigned)srcLenCns <= INT_MAX);
     assert((unsigned)strObjOffset <= INT_MAX);
 
     // getObjectContent is expected to validate the offset and length
-    if (!info.compCompHnd->getObjectContent(strObj, srcUtf8cns, (int)srcLenCns, (int)strObjOffset))
+    if (!info.compCompHnd->getObjectContent(strObj, buffer, (int)srcLenCns * 2, (int)strObjOffset))
     {
         JITDUMP("ReadUtf8: getObjectContent returned false.\n")
         return false;
@@ -1319,7 +1318,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     for (unsigned charIndex = 0; charIndex < srcLenCns; charIndex++)
     {
-        uint16_t ch = ((uint16_t*)srcUtf8cns)[charIndex];
+        // Buffer keeps the original utf16 chars
+        uint16_t ch = ((uint16_t*)buffer)[charIndex];
         if (ch > 127)
         {
             // Only ASCII is supported.
@@ -1327,8 +1327,8 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
             return false;
         }
 
-        // Narrow U16 to U8 in the same buffer (it's ok since we only deal with ASCII)
-        srcUtf8cns[charIndex] = (BYTE)ch;
+        // Narrow U16 to U8 in the same buffer
+        buffer[charIndex] = (BYTE)ch;
     }
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
@@ -1370,7 +1370,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // srcLenCns is the length of the string literal in chars (UTF16)
     // but we're going to use the same value as the "bytesWritten" result in the fast path and in the length check.
     GenTree* srcLenCnsNode = gtNewIconNode(srcLenCns);
-    fgUpdateConstTreeValueNumber(srcLenCnsNode);
+    fgValueNumberTreeConst(srcLenCnsNode);
 
     // We're going to insert the following blocks:
     //
@@ -1391,20 +1391,16 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     //
     // Block 1: lengthCheckBb (we check that dstLen < srcLen)
-    //  In case if destIsKnownToFit is true we'll use this block to keep side-effects of the original arguments.
-    //  and it will be a fall-through block.
     //
     BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
     lengthCheckBb->bbFlags |= BBF_INTERNAL;
-
-    GenTree* dstPtr = call->gtArgs.GetUserArgByIndex(2)->GetNode();
-    GenTree* dstLen = call->gtArgs.GetUserArgByIndex(3)->GetNode();
 
     // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
     GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
     fgInsertStmtAtEnd(lengthCheckBb, fgNewStmtFromTree(bytesWrittenDefaultVal, debugInfo));
 
-    GenTree* lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtClone(dstLen), srcLenCnsNode);
+    GenTree* dstLen      = call->gtArgs.GetUserArgByIndex(3)->GetNode();
+    GenTree* lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(dstLen), srcLenCnsNode);
     lengthCheck->gtFlags |= GTF_RELOP_JMP_USED;
     Statement* lengthCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, lengthCheck), debugInfo);
     fgInsertStmtAtEnd(lengthCheckBb, lengthCheckStmt);
@@ -1422,45 +1418,44 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fastpathBb->bbFlags |= BBF_INTERNAL;
 
     // The widest type we can use for loads
-    const var_types maxLoadType = roundDownMaxRegSize(srcLenCns);
+    const var_types maxLoadType = roundDownMaxType(srcLenCns);
+    assert(genTypeSize(maxLoadType) > 0);
 
     // How many iterations we need to copy UTF8 const data to the destination
     unsigned iterations = srcLenCns / genTypeSize(maxLoadType);
 
     // Add one more iteration if we have a remainder
-    iterations += srcLenCns % genTypeSize(maxLoadType) == 0 ? 0 : 1;
+    iterations += (srcLenCns % genTypeSize(maxLoadType) == 0) ? 0 : 1;
 
+    GenTree* dstPtr = call->gtArgs.GetUserArgByIndex(2)->GetNode();
     for (unsigned i = 0; i < iterations; i++)
     {
-        ssize_t offest = (ssize_t)i * genTypeSize(maxLoadType);
+        ssize_t offset = (ssize_t)i * genTypeSize(maxLoadType);
 
         // Last iteration: overlap with previous load if needed
         if (i == iterations - 1)
         {
-            offest = (ssize_t)srcLenCns - genTypeSize(maxLoadType);
+            offset = (ssize_t)srcLenCns - genTypeSize(maxLoadType);
         }
 
-        // We're going to emit the following tree:
+        // We're going to emit the following tree (in case of SIMD16 load):
+        //
+        // -A-XG------         *  STOREIND  simd16 (copy)
+        // -------N---         +--*  ADD       byref
+        // -----------         |  +--*  LCL_VAR   byref
+        // -----------         |  \--*  CNS_INT   int
+        // -----------         \--*  CNS_VEC   simd16
 
-        // -A-XG------       *  ASG       %maxLoadType% (copy)
-        // D--XG--N---       +--*  IND       %maxLoadType%
-        // -------N---       |  \--*  ADD       byref
-        // -----------       |     +--*  LCL_VAR   byref dstPtr
-        // -----------       |     \--*  CNS_INT   int   %offset%
-        // -----------       \--*  CNS_VEC or CNS_INT representing UTF8 const data chunk
-
-        GenTreeIntCon* offsetNode = gtNewIconNode(offest);
-        fgUpdateConstTreeValueNumber(offsetNode);
+        GenTreeIntCon* offsetNode = gtNewIconNode(offset);
+        fgValueNumberTreeConst(offsetNode);
 
         // Grab a chunk from srcUtf8cnsData for the given offset and width
-        GenTree* utf8cnsChunkNode = gtNewGenericCon(maxLoadType, srcUtf8cns + offest);
-        fgUpdateConstTreeValueNumber(utf8cnsChunkNode);
+        GenTree* utf8cnsChunkNode = gtNewGenericCon(maxLoadType, buffer + offset);
+        fgValueNumberTreeConst(utf8cnsChunkNode);
 
-        GenTree*   dstAddOffsetNode = gtNewOperNode(GT_ADD, TYP_BYREF, gtClone(dstPtr), offsetNode);
+        GenTree*   dstAddOffsetNode = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(dstPtr), offsetNode);
         GenTreeOp* storeInd         = gtNewStoreIndNode(maxLoadType, dstAddOffsetNode, utf8cnsChunkNode);
-        Statement* storeIndStmt     = fgNewStmtFromTree(storeInd, debugInfo);
-        fgInsertStmtAtEnd(fastpathBb, storeIndStmt);
-        gtUpdateStmtSideEffects(storeIndStmt);
+        fgInsertStmtAtEnd(fastpathBb, fgNewStmtFromTree(storeInd, debugInfo));
     }
 
     // Finally, store the number of bytes written to the resultLcl local
@@ -1476,7 +1471,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     fgRemoveRefPred(block, prevBb);
     // prevBb flows into lengthCheckBb
     fgAddRefPred(lengthCheckBb, prevBb);
-    // lengthCheckBb has two successors: block and fastpathBb (if !destIsKnownToFit)
+    // lengthCheckBb has two successors: block and fastpathBb
     fgAddRefPred(fastpathBb, lengthCheckBb);
     fgAddRefPred(block, lengthCheckBb);
     // fastpathBb flows into block
@@ -1488,8 +1483,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     // Re-distribute weights
     //
     lengthCheckBb->inheritWeight(prevBb);
-    // we don't have any real world data on how often this fallback path is taken so we just assume 20% of the time
-    fastpathBb->inheritWeightPercentage(lengthCheckBb, 80);
+    fastpathBb->inheritWeight(lengthCheckBb);
     block->inheritWeight(prevBb);
 
     //
