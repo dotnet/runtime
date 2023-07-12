@@ -221,30 +221,30 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, format.CalendarWeekRule);
         }
 
-        // [Theory]
-        // [InlineData(CalendarWeekRule.FirstDay)]
-        // [InlineData(CalendarWeekRule.FirstFourDayWeek)]
-        // [InlineData(CalendarWeekRule.FirstFullWeek)]
-        // public void CalendarWeekRule_Set_GetReturnsExpected(CalendarWeekRule value)
-        // {
-        //     var format = new DateTimeFormatInfo();
-        //     format.CalendarWeekRule = value;
-        //     Assert.Equal(value, format.CalendarWeekRule);
-        // }
+        [Theory]
+        [InlineData(CalendarWeekRule.FirstDay)]
+        [InlineData(CalendarWeekRule.FirstFourDayWeek)]
+        [InlineData(CalendarWeekRule.FirstFullWeek)]
+        public void CalendarWeekRule_Set_GetReturnsExpected(CalendarWeekRule value)
+        {
+            var format = new DateTimeFormatInfo();
+            format.CalendarWeekRule = value;
+            Assert.Equal(value, format.CalendarWeekRule);
+        }
 
-        // [Theory]
-        // [InlineData(CalendarWeekRule.FirstDay - 1)]
-        // [InlineData(CalendarWeekRule.FirstFourDayWeek + 1)]
-        // public void CalendarWeekRule_SetInvalidValue_ThrowsArgumentOutOfRangeException(CalendarWeekRule value)
-        // {
-        //     var format = new DateTimeFormatInfo();
-        //     AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => format.CalendarWeekRule = value);
-        // }
+        [Theory]
+        [InlineData(CalendarWeekRule.FirstDay - 1)]
+        [InlineData(CalendarWeekRule.FirstFourDayWeek + 1)]
+        public void CalendarWeekRule_SetInvalidValue_ThrowsArgumentOutOfRangeException(CalendarWeekRule value)
+        {
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => format.CalendarWeekRule = value);
+        }
 
-        // [Fact]
-        // public void CalendarWeekRule_SetReadOnly_ThrowsInvalidOperationException()
-        // {
-        //     Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.CalendarWeekRule = CalendarWeekRule.FirstDay);
-        // }
+        [Fact]
+        public void CalendarWeekRule_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.CalendarWeekRule = CalendarWeekRule.FirstDay);
+        }
     }
 }

@@ -212,34 +212,34 @@ namespace System.Globalization.Tests
             Assert.Equal(expected, format.FirstDayOfWeek);
         }
 
-        // [Theory]
-        // [InlineData(DayOfWeek.Sunday)]
-        // [InlineData(DayOfWeek.Monday)]
-        // [InlineData(DayOfWeek.Tuesday)]
-        // [InlineData(DayOfWeek.Wednesday)]
-        // [InlineData(DayOfWeek.Thursday)]
-        // [InlineData(DayOfWeek.Friday)]
-        // [InlineData(DayOfWeek.Saturday)]
-        // public void FirstDayOfWeek_Set_GetReturnsExpected(DayOfWeek value)
-        // {
-        //     var format = new DateTimeFormatInfo();
-        //     format.FirstDayOfWeek = value;
-        //     Assert.Equal(value, format.FirstDayOfWeek);
-        // }
+        [Theory]
+        [InlineData(DayOfWeek.Sunday)]
+        [InlineData(DayOfWeek.Monday)]
+        [InlineData(DayOfWeek.Tuesday)]
+        [InlineData(DayOfWeek.Wednesday)]
+        [InlineData(DayOfWeek.Thursday)]
+        [InlineData(DayOfWeek.Friday)]
+        [InlineData(DayOfWeek.Saturday)]
+        public void FirstDayOfWeek_Set_GetReturnsExpected(DayOfWeek value)
+        {
+            var format = new DateTimeFormatInfo();
+            format.FirstDayOfWeek = value;
+            Assert.Equal(value, format.FirstDayOfWeek);
+        }
 
-        // [Theory]
-        // [InlineData(DayOfWeek.Sunday - 1)]
-        // [InlineData(DayOfWeek.Saturday + 1)]
-        // public void FirstDayOfWeek_SetInvalid_ThrowsArgumentOutOfRangeException(DayOfWeek value)
-        // {
-        //     var format = new DateTimeFormatInfo();
-        //     AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => format.FirstDayOfWeek = value);
-        // }
+        [Theory]
+        [InlineData(DayOfWeek.Sunday - 1)]
+        [InlineData(DayOfWeek.Saturday + 1)]
+        public void FirstDayOfWeek_SetInvalid_ThrowsArgumentOutOfRangeException(DayOfWeek value)
+        {
+            var format = new DateTimeFormatInfo();
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => format.FirstDayOfWeek = value);
+        }
 
-        // [Fact]
-        // public void FirstDayOfWeek_SetReadOnly_ThrowsInvalidOperationException()
-        // {
-        //     Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FirstDayOfWeek = DayOfWeek.Wednesday);
-        // }
+        [Fact]
+        public void FirstDayOfWeek_SetReadOnly_ThrowsInvalidOperationException()
+        {
+            Assert.Throws<InvalidOperationException>(() => DateTimeFormatInfo.InvariantInfo.FirstDayOfWeek = DayOfWeek.Wednesday);
+        }
     }
 }
