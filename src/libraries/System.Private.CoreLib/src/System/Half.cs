@@ -15,7 +15,7 @@ namespace System
     // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 
     /// <summary>
-    /// An IEEE 754 compliant float16 type.
+    /// Represents a half-precision floating-point number.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public readonly struct Half

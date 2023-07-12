@@ -34,12 +34,12 @@
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberMessage">
         <source>Can't apply validation attributes to constant or static member {0}.</source>
-        <target state="new">Can't apply validation attributes to constant or static member {0}.</target>
+        <target state="translated">無法將驗證屬性套用至常數或靜態成員 {0}。</target>
         <note />
       </trans-unit>
       <trans-unit id="CantValidateStaticOrConstMemberTitle">
         <source>Can't validate constants, static fields or properties.</source>
-        <target state="new">Can't validate constants, static fields or properties.</target>
+        <target state="translated">無法驗證常數、靜態欄位或屬性。</target>
         <note />
       </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
