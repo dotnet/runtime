@@ -25,7 +25,8 @@ namespace System
           IEquatable<Half>,
           IBinaryFloatingPointIeee754<Half>,
           IMinMaxValue<Half>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IBinaryFloatParseAndFormatInfo<Half>
     {
         private const NumberStyles DefaultParseStyle = NumberStyles.Float | NumberStyles.AllowThousands;
 
@@ -54,6 +55,9 @@ namespace System
 
         internal const ushort MinTrailingSignificand = 0x0000;
         internal const ushort MaxTrailingSignificand = 0x03FF;
+
+        internal const int TrailingSignificandLength = 10;
+        internal const int SignificandLength = TrailingSignificandLength + 1;
 
         // Constants representing the private bit-representation for various default values
 
@@ -283,11 +287,7 @@ namespace System
         /// </summary>
         /// <param name="s">The input to be parsed.</param>
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.CurrentInfo);
-        }
+        public static Half Parse(string s) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> in the given <see cref="NumberStyles"/>.
@@ -295,12 +295,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="style">The <see cref="NumberStyles"/> used to parse the input.</param>
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s, NumberStyles style)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, style, NumberFormatInfo.CurrentInfo);
-        }
+        public static Half Parse(string s, NumberStyles style) => Parse(s, style, provider: null);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> and <see cref="IFormatProvider"/>.
@@ -308,11 +303,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="provider">A format provider.</param>
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
-        public static Half Parse(string s, IFormatProvider? provider)
-        {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, DefaultParseStyle, NumberFormatInfo.GetInstance(provider));
-        }
+        public static Half Parse(string s, IFormatProvider? provider) => Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider);
 
         /// <summary>
         /// Parses a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -323,9 +314,11 @@ namespace System
         /// <returns>The equivalent <see cref="Half"/> value representing the input string. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. </returns>
         public static Half Parse(string s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseHalf(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            }
+            return Parse(s.AsSpan(), style, provider);
         }
 
         /// <summary>
@@ -338,7 +331,7 @@ namespace System
         public static Half Parse(ReadOnlySpan<char> s, NumberStyles style = DefaultParseStyle, IFormatProvider? provider = null)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.ParseHalf(s, style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseFloat<char, Half>(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         /// <summary>
@@ -347,15 +340,7 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse([NotNullWhen(true)] string? s, out Half result)
-        {
-            if (s == null)
-            {
-                result = default;
-                return false;
-            }
-            return TryParse(s, DefaultParseStyle, provider: null, out result);
-        }
+        public static bool TryParse([NotNullWhen(true)] string? s, out Half result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="ReadOnlySpan{Char}"/> in the default parse style.
@@ -363,10 +348,13 @@ namespace System
         /// <param name="s">The input to be parsed.</param>
         /// <param name="result">The equivalent <see cref="Half"/> value representing the input string if the parse was successful. If the input exceeds Half's range, a <see cref="PositiveInfinity"/> or <see cref="NegativeInfinity"/> is returned. If the parse was unsuccessful, a default <see cref="Half"/> value is returned.</param>
         /// <returns><see langword="true" /> if the parse was successful, <see langword="false" /> otherwise.</returns>
-        public static bool TryParse(ReadOnlySpan<char> s, out Half result)
-        {
-            return TryParse(s, DefaultParseStyle, provider: null, out result);
-        }
+        public static bool TryParse(ReadOnlySpan<char> s, out Half result) => TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
+
+        /// <summary>Tries to convert a UTF-8 character span containing the string representation of a number to its half-precision floating-point number equivalent.</summary>
+        /// <param name="utf8Text">A read-only UTF-8 character span that contains the number to convert.</param>
+        /// <param name="result">When this method returns, contains a half-precision floating-point number equivalent of the numeric value or symbol contained in <paramref name="utf8Text" /> if the conversion succeeded or zero if the conversion failed. The conversion fails if the <paramref name="utf8Text" /> is <see cref="ReadOnlySpan{T}.Empty" /> or is not in a valid format. This parameter is passed uninitialized; any value originally supplied in result will be overwritten.</param>
+        /// <returns><c>true</c> if <paramref name="utf8Text" /> was converted successfully; otherwise, false.</returns>
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, out Half result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider: null, out result);
 
         /// <summary>
         /// Tries to parse a <see cref="Half"/> from a <see cref="string"/> with the given <see cref="NumberStyles"/> and <see cref="IFormatProvider"/>.
@@ -382,11 +370,10 @@ namespace System
 
             if (s == null)
             {
-                result = default;
+                result = Zero;
                 return false;
             }
-
-            return TryParse(s.AsSpan(), style, provider, out result);
+            return Number.TryParseFloat(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         /// <summary>
@@ -400,7 +387,7 @@ namespace System
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Half result)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Number.TryParseHalf(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseFloat(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         private static bool AreZero(Half left, Half right)
@@ -2198,5 +2185,69 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         public static Half operator +(Half value) => value;
+
+        //
+        // IUtf8SpanParsable
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)" />
+        public static Half Parse(ReadOnlySpan<byte> utf8Text, NumberStyles style = NumberStyles.Float | NumberStyles.AllowThousands, IFormatProvider? provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.ParseFloat<byte, Half>(utf8Text, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, NumberStyles style, IFormatProvider? provider, out Half result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseFloat(utf8Text, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.Parse(ReadOnlySpan{byte}, IFormatProvider?)" />
+        public static Half Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider) => Parse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider);
+
+        /// <inheritdoc cref="IUtf8SpanParsable{TSelf}.TryParse(ReadOnlySpan{byte}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider, out Half result) => TryParse(utf8Text, NumberStyles.Float | NumberStyles.AllowThousands, provider, out result);
+
+        //
+        // IBinaryFloatParseAndFormatInfo
+        //
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.NumberBufferLength => Number.HalfNumberBufferLength;
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.ZeroBits => 0;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.InfinityBits => 0x7C00;
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaMask => (1UL << SignificandLength) - 1;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaMask => TrailingSignificandMask;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinBinaryExponent => 1 - MaxExponent;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxBinaryExponent => MaxExponent;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxDecimalExponent => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.ExponentBias => ExponentBias;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.ExponentBits => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.OverflowDecimalExponent => (MaxExponent + (2 * SignificandLength)) / 3;
+        static int IBinaryFloatParseAndFormatInfo<Half>.InfinityExponent => 0x1F;
+
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.NormalMantissaBits => SignificandLength;
+        static ushort IBinaryFloatParseAndFormatInfo<Half>.DenormalMantissaBits => TrailingSignificandLength;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinFastFloatDecimalExponent => -8;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxFastFloatDecimalExponent => 4;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MinExponentRoundToEven => -21;
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentRoundToEven => 5;
+
+        static int IBinaryFloatParseAndFormatInfo<Half>.MaxExponentFastPath => 4;
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.MaxMantissaFastPath => 2UL << TrailingSignificandLength;
+
+        static Half IBinaryFloatParseAndFormatInfo<Half>.BitsToFloat(ulong bits) => BitConverter.UInt16BitsToHalf((ushort)(bits));
+
+        static ulong IBinaryFloatParseAndFormatInfo<Half>.FloatToBits(Half value) => BitConverter.HalfToUInt16Bits(value);
     }
 }
