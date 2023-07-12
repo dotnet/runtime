@@ -57,14 +57,8 @@ namespace System.Text.Json.Serialization.Tests
             MemoryOfTClass<int> memoryOfIntClass = new MemoryOfTClass<int>();
             memoryOfIntClass.Memory = new int[] { 1, 2, 3 };
 
-            string json = await Serializer.SerializeWrapper(memoryOfIntClass, new JsonSerializerOptions { WriteIndented = true });
-            Assert.Equal(@"{
-  ""Memory"": [
-    1,
-    2,
-    3
-  ]
-}".NormalizeLineEndings(), json);
+            string json = await Serializer.SerializeWrapper(memoryOfIntClass);
+            Assert.Equal(@"{""Memory"":[1,2,3]}", json);
         }
 
         [Fact]
@@ -73,41 +67,22 @@ namespace System.Text.Json.Serialization.Tests
             ReadOnlyMemoryOfTClass<int> memoryOfIntClass = new ReadOnlyMemoryOfTClass<int>();
             memoryOfIntClass.ReadOnlyMemory = new int[] { 1, 2, 3 };
 
-            string json = await Serializer.SerializeWrapper(memoryOfIntClass, new JsonSerializerOptions { WriteIndented = true });
-            Assert.Equal(@"{
-  ""ReadOnlyMemory"": [
-    1,
-    2,
-    3
-  ]
-}".NormalizeLineEndings(), json);
+            string json = await Serializer.SerializeWrapper(memoryOfIntClass);
+            Assert.Equal(@"{""ReadOnlyMemory"":[1,2,3]}", json);
         }
 
         [Fact]
         public async Task DeserializeMemoryOfTClassAsync()
         {
-            string json = @"{
-  ""Memory"": [
-    1,
-    2,
-    3
-  ]
-}";
+            string json = @"{""Memory"":[1,2,3]}";
             MemoryOfTClass<int> memoryOfIntClass = await Serializer.DeserializeWrapper<MemoryOfTClass<int>>(json);
             AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }, memoryOfIntClass.Memory.Span);
         }
 
-
         [Fact]
         public async Task DeserializeReadOnlyMemoryOfTClassAsync()
         {
-            string json = @"{
-  ""ReadOnlyMemory"": [
-    1,
-    2,
-    3
-  ]
-}";
+            string json = @"{""ReadOnlyMemory"":[1,2,3]}";
             ReadOnlyMemoryOfTClass<int> memoryOfIntClass = await Serializer.DeserializeWrapper<ReadOnlyMemoryOfTClass<int>>(json);
             AssertExtensions.SequenceEqual(new int[] { 1, 2, 3 }, memoryOfIntClass.ReadOnlyMemory.Span);
         }
@@ -135,18 +110,14 @@ namespace System.Text.Json.Serialization.Tests
             MemoryOfTClass<byte> memoryOfByteClass = new MemoryOfTClass<byte>();
             memoryOfByteClass.Memory = s_testData;
 
-            string json = await Serializer.SerializeWrapper(memoryOfByteClass, new JsonSerializerOptions { WriteIndented = true });
-            Assert.Equal(@"{
-  ""Memory"": ""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""
-}".NormalizeLineEndings(), json);
+            string json = await Serializer.SerializeWrapper(memoryOfByteClass);
+            Assert.Equal(@"{""Memory"":""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""}", json);
         }
 
         [Fact]
         public async Task DeserializeMemoryByteClassAsync()
         {
-            string json = @"{
-  ""Memory"": ""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""
-}";
+            string json = @"{""Memory"":""VGhpcyBpcyBzb21lIHRlc3QgZGF0YSEhIQ==""}";
 
             MemoryOfTClass<byte> memoryOfByteClass = await Serializer.DeserializeWrapper<MemoryOfTClass<byte>>(json);
             AssertExtensions.SequenceEqual<byte>(s_testData, memoryOfByteClass.Memory.Span);

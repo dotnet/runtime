@@ -416,14 +416,15 @@ namespace System.Text.Json.SourceGeneration
                 const string elementVarName = "element";
                 switch (typeGenerationSpec.CollectionType)
                 {
+                    case CollectionType.Array:
+                        writer.WriteLine($"for (int i = 0; i < {ValueVarName}.Length; i++)");
+                        getCurrentElementExpr = $"{ValueVarName}[i]";
+                        break;
+
                     case CollectionType.MemoryOfT:
                     case CollectionType.ReadOnlyMemoryOfT:
                         writer.WriteLine($"foreach ({valueTypeGenerationSpec.TypeRef.FullyQualifiedName} {elementVarName} in {ValueVarName}.Span)");
                         getCurrentElementExpr = elementVarName;
-                        break;
-                    case CollectionType.Array:
-                        writer.WriteLine($"for (int i = 0; i < {ValueVarName}.Length; i++)");
-                        getCurrentElementExpr = $"{ValueVarName}[i]";
                         break;
 
                     case CollectionType.IListOfT:

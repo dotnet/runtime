@@ -409,7 +409,6 @@ namespace System.Text.Json.SourceGeneration
                     {
                         classType = ClassType.BuiltInSupportType;
                         collectionType = default;
-                        primitiveTypeKind = JsonPrimitiveTypeKind.ByteArray;
                     }
                     else
                     {
@@ -582,16 +581,16 @@ namespace System.Text.Json.SourceGeneration
 
             private bool IsMemoryType(ITypeSymbol type, [NotNullWhen(true)] out INamedTypeSymbol? namedType, out CollectionType collectionType)
             {
-                if (type.GetCompatibleGenericBaseType(_knownSymbols.MemoryType) is INamedTypeSymbol memoryType)
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.MemoryType))
                 {
-                    namedType = memoryType;
+                    namedType = (type as INamedTypeSymbol)!;
                     collectionType = CollectionType.MemoryOfT;
                     return true;
                 }
 
-                if (type.GetCompatibleGenericBaseType(_knownSymbols.ReadOnlyMemoryType) is INamedTypeSymbol readOnlyMemoryType)
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.ReadOnlyMemoryType))
                 {
-                    namedType = readOnlyMemoryType;
+                    namedType = (type as INamedTypeSymbol)!;
                     collectionType = CollectionType.ReadOnlyMemoryOfT;
                     return true;
                 }
