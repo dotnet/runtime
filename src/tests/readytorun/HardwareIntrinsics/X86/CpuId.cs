@@ -251,9 +251,13 @@ namespace XarchHardwareIntrinsicTest._CpuId
                     }
                 }
 
-                if (isVector512Throttling)
+                if (isAvx512HierarchyDisabled || isVector512Throttling)
                 {
                     preferredVectorByteLength = 256 / 8;
+                }
+                else
+                {
+                    preferredVectorByteLength = 512 / 8;
                 }
             }
 
