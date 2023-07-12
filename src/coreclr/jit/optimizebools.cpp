@@ -2110,8 +2110,8 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
         return false;
     }
 
-    // One of the case blocks has to follow the switch block. All the pattern blocks will be removed and the first
-    // pattern block will be converted to Switch, so it has to follow the last pattern block.
+    // One of the case blocks has to follow the switch block. All the pattern blocks except for the first pattern block
+    // will be removed from Switch conversion. So, we need to check if jump target follows the last pattern block.
     BasicBlock* bbCase0           = nullptr;
     BasicBlock* bbCase1           = jmpTab[0];
     BasicBlock* nextBbAfterSwitch = m_optLastBB->bbNext;
@@ -2126,6 +2126,21 @@ bool OptRangePatternDsc::optMakeSwitchDesc()
     }
     if ((nextBbAfterSwitch != bbCase0) && (nextBbAfterSwitch != bbCase1))
     {
+        return false;
+    }
+
+    // If the next basic block after Switch is an empty block with an unconditional jump, skip it.
+    if (nextBbAfterSwitch->isEmpty() && (nextBbAfterSwitch->bbJumpKind == BBJ_ALWAYS) &&
+        (nextBbAfterSwitch != nextBbAfterSwitch->bbJumpDest))
+    {
+#ifdef DEBUG
+        if (m_comp->verbose)
+        {
+            printf("\nSkip converting to Switch block if Switch jumps to an empty block with an unconditional "
+                   "jump (" FMT_BB " -> " FMT_BB ")\n",
+                   m_optFirstBB->bbNum, nextBbAfterSwitch->bbNum);
+        }
+#endif // DEBUG
         return false;
     }
 
@@ -2426,6 +2441,18 @@ PhaseStatus Compiler::optFindSpecificPattern()
                             if (!foundPattern)
                             {
                                 assert(patternIndex == 0 && prevCmpOp->OperIs(GT_EQ));
+                                // If the first pattern block is rarely run, skip it.
+                                if (prevBb->isRunRarely())
+                                {
+#ifdef DEBUG
+                                    if (this->verbose)
+                                    {
+                                        printf(FMT_BB " is run rarely. Skip optimizing this block.\n", prevBb->bbNum);
+                                    }
+#endif // DEBUG
+                                    prevBb = currBb;
+                                    continue;
+                                }
                                 ssize_t firstPatternVal = prevCmpOp->gtGetOp2()->AsIntCon()->IconValue();
 
                                 // Initialize the pattern range

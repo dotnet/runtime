@@ -5074,8 +5074,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         //
         DoPhase(this, PHASE_OPTIMIZE_BOOLS, &Compiler::optOptimizeBools);
 
-        DoPhase(this, PHASE_Find_Specific_Pattern, &Compiler::optFindSpecificPattern);
-
         // If conversion
         //
         DoPhase(this, PHASE_IF_CONVERSION, &Compiler::optIfConversion);
@@ -5083,6 +5081,10 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         // Optimize block order
         //
         DoPhase(this, PHASE_OPTIMIZE_LAYOUT, &Compiler::optOptimizeLayout);
+
+        // Conditional to Switch conversion
+        //
+        DoPhase(this, PHASE_Find_Specific_Pattern, &Compiler::optFindSpecificPattern);
     }
 
     // Determine start of cold region if we are hot/cold splitting
