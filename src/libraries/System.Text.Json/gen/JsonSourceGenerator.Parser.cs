@@ -401,6 +401,22 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.Enum;
                 }
+                else if (IsMemoryType(type, out INamedTypeSymbol? namedMemoryType, out collectionType))
+                {
+                    underlyingType = namedMemoryType.TypeArguments[0];
+
+                    if (underlyingType.SpecialType == SpecialType.System_Byte)
+                    {
+                        classType = ClassType.BuiltInSupportType;
+                        collectionType = default;
+                        primitiveTypeKind = JsonPrimitiveTypeKind.ByteArray;
+                    }
+                    else
+                    {
+                        classType = ClassType.Enumerable;
+                        collectionValueType = EnqueueType(underlyingType, typeToGenerate.Mode);
+                    }
+                }
                 else if (TryResolveCollectionType(type,
                     out ITypeSymbol? valueType,
                     out ITypeSymbol? keyType,
@@ -562,6 +578,27 @@ namespace System.Text.Json.SourceGeneration
                         isPolymorphic = true;
                     }
                 }
+            }
+
+            private bool IsMemoryType(ITypeSymbol type, [NotNullWhen(true)] out INamedTypeSymbol? namedType, out CollectionType collectionType)
+            {
+                if (type.GetCompatibleGenericBaseType(_knownSymbols.MemoryType) is INamedTypeSymbol memoryType)
+                {
+                    namedType = memoryType;
+                    collectionType = CollectionType.MemoryOfT;
+                    return true;
+                }
+
+                if (type.GetCompatibleGenericBaseType(_knownSymbols.ReadOnlyMemoryType) is INamedTypeSymbol readOnlyMemoryType)
+                {
+                    namedType = readOnlyMemoryType;
+                    collectionType = CollectionType.ReadOnlyMemoryOfT;
+                    return true;
+                }
+
+                namedType = null;
+                collectionType = default;
+                return false;
             }
 
             private bool TryResolveCollectionType(
@@ -1449,8 +1486,6 @@ namespace System.Text.Json.SourceGeneration
                     SymbolEqualityComparer.Default.Equals(_knownSymbols.UIntPtrType, type) ||
                     _knownSymbols.MemberInfoType.IsAssignableFrom(type) ||
                     _knownSymbols.DelegateType.IsAssignableFrom(type) ||
-                    SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.MemoryType) ||
-                    SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.ReadOnlyMemoryType) ||
                     type is IArrayTypeSymbol { Rank: > 1 };
             }
 

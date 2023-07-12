@@ -114,9 +114,14 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\CastingConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ReadOnlyMemoryConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.Reflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\ReadOnlyMemoryByteConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\MemoryByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonPrimitiveConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserialized.cs" />
