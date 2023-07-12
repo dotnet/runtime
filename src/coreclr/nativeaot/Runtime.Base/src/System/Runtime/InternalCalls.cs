@@ -285,6 +285,10 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern Exception RhpGetThreadAbortException();
 
+        [RuntimeImport(Redhawk.BaseName, "RhCurrentNativeThreadId")]
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe IntPtr RhCurrentNativeThreadId();
+
         //------------------------------------------------------------------------------------------------------------
         // PInvoke-based internal calls
         //

@@ -86,11 +86,11 @@ namespace System.Runtime
 
             _allocatedBlocks = new AllocatedBlock();
 
-            InternalCalls.RhpAcquireThunkPoolLock();
-
-            IntPtr thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
-
-            InternalCalls.RhpReleaseThunkPoolLock();
+            IntPtr thunkStubsBlock;
+            lock (this)
+            {
+                thunkStubsBlock = ThunkBlocks.GetNewThunksBlock();
+            }
 
             if (thunkStubsBlock != IntPtr.Zero)
             {
@@ -183,28 +183,26 @@ namespace System.Runtime
 
             Debug.Assert(_nextAvailableThunkPtr != IntPtr.Zero);
 
-            InternalCalls.RhpAcquireThunkPoolLock();
-
-            IntPtr nextAvailableThunkPtr = _nextAvailableThunkPtr;
-            IntPtr nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
-
-            if (nextNextAvailableThunkPtr == IntPtr.Zero)
+            IntPtr nextAvailableThunkPtr;
+            lock (this)
             {
-                if (!ExpandHeap())
+                nextAvailableThunkPtr = _nextAvailableThunkPtr;
+                IntPtr nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
+
+                if (nextNextAvailableThunkPtr == IntPtr.Zero)
                 {
-                    InternalCalls.RhpReleaseThunkPoolLock();
-                    return IntPtr.Zero;
+                    if (!ExpandHeap())
+                    {
+                        return IntPtr.Zero;
+                    }
+
+                    nextAvailableThunkPtr = _nextAvailableThunkPtr;
+                    nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
+                    Debug.Assert(nextNextAvailableThunkPtr != IntPtr.Zero);
                 }
 
-                nextAvailableThunkPtr = _nextAvailableThunkPtr;
-                nextNextAvailableThunkPtr = *((IntPtr*)(nextAvailableThunkPtr));
-                Debug.Assert(nextNextAvailableThunkPtr != IntPtr.Zero);
+                _nextAvailableThunkPtr = nextNextAvailableThunkPtr;
             }
-
-            _nextAvailableThunkPtr = nextNextAvailableThunkPtr;
-
-            InternalCalls.RhpReleaseThunkPoolLock();
-
             Debug.Assert(nextAvailableThunkPtr != IntPtr.Zero);
 
 #if DEBUG
@@ -238,12 +236,11 @@ namespace System.Runtime
             *((IntPtr*)(dataAddress + IntPtr.Size)) = new IntPtr(-1);
 #endif
 
-            InternalCalls.RhpAcquireThunkPoolLock();
-
-            *((IntPtr*)(dataAddress)) = _nextAvailableThunkPtr;
-            _nextAvailableThunkPtr = dataAddress;
-
-            InternalCalls.RhpReleaseThunkPoolLock();
+            lock (this)
+            {
+                *((IntPtr*)(dataAddress)) = _nextAvailableThunkPtr;
+                _nextAvailableThunkPtr = dataAddress;
+            }
         }
 
         private bool IsThunkInHeap(IntPtr thunkAddress)
