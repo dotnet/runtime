@@ -9,10 +9,10 @@ using Xunit;
 namespace Microsoft.Extensions.DependencyInjection
 {
     // These are mostly integration tests that verify the configuration experience.
-    public class AddHttpClientDefaultsTest
+    public class ConfigureHttpClientDefaultsTest
     {
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void AddHttpClientDefaults_WithNameConfig_NameConfigUsed()
+        public void ConfigureHttpClientDefaults_WithNameConfig_NameConfigUsed()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();
@@ -36,7 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void AddHttpClientDefaults_MultipleConfig_LastWins()
+        public void ConfigureHttpClientDefaults_MultipleConfig_LastWins()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();
@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public void AddHttpClientDefaults_MultipleConfigInOneDefault_LastWins()
+        public void ConfigureHttpClientDefaults_MultipleConfigInOneDefault_LastWins()
         {
             // Arrange
             var serviceCollection = new ServiceCollection();
@@ -102,7 +102,7 @@ namespace Microsoft.Extensions.DependencyInjection
             });
 
             // Assert
-            Assert.Equal("AddTypedClient isn't supported with AddHttpClientDefaults.", ex.Message);
+            Assert.Equal("AddTypedClient isn't supported with ConfigureHttpClientDefaults.", ex.Message);
         }
     }
 }

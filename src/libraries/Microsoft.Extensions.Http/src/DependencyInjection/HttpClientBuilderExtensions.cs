@@ -304,7 +304,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             if (builder.Name is null)
             {
-                throw new InvalidOperationException("AddTypedClient isn't supported with AddHttpClientDefaults.");
+                throw new InvalidOperationException($"{nameof(HttpClientBuilderExtensions.AddTypedClient)} isn't supported with {nameof(HttpClientFactoryServiceCollectionExtensions.ConfigureHttpClientDefaults)}.");
             }
 
             ReserveClient(builder, typeof(TClient), builder.Name, validateSingleType);
