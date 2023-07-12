@@ -725,3 +725,136 @@ ULONG FireEtwGCFitBucketInfo(
     const GUID * RelatedActivityId = nullptr
 )
 { return ERROR_SUCCESS; }
+
+ULONG FireEtwPinPlugAtGCTime(
+    const void*  PlugStart,
+    const void*  PlugEnd,
+    const void*  GapBeforeSize,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGCBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGC1stNonConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGC1stConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGC2ndNonConBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGC2ndNonConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGC2ndConBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGC2ndConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGCDrainMark(
+    const unsigned __int64  Objects,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGCRevisit(
+    const unsigned __int64  Pages,
+    const unsigned __int64  Objects,
+    const unsigned int  IsLarge,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGCOverflow(
+    const unsigned __int64  Min,
+    const unsigned __int64  Max,
+    const unsigned __int64  Objects,
+    const unsigned int  IsLarge,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGCAllocWaitBegin(
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwBGCAllocWaitEnd(
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwGCFullNotify_V1(
+    const unsigned int  GenNumber,
+    const unsigned int  IsAlloc,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwPrvSetGCHandle(
+    const void*  HandleID,
+    const void*  ObjectID,
+    const unsigned int  Kind,
+    const unsigned int  Generation,
+    const unsigned __int64  AppDomainID,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
+ULONG FireEtwPrvDestroyGCHandle(
+    const void*  HandleID,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }

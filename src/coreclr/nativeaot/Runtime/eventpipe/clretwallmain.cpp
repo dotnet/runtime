@@ -1067,3 +1067,176 @@ ULONG FireEtwGCFitBucketInfo(
     ULONG status = EventPipeWriteEventGCFitBucketInfo(ClrInstanceID,BucketKind,TotalSize,Count,Values_ElementSize, Values,ActivityId,RelatedActivityId);
     return status;
 }
+
+#ifdef FEATURE_ETW
+
+// ==================================================================
+// Events currently only fired via ETW (private runtime provider)
+// ==================================================================
+
+ULONG FireEtwPinPlugAtGCTime(
+    const void*  PlugStart,
+    const void*  PlugEnd,
+    const void*  GapBeforeSize,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatPinPlugAtGCTime(PlugStart,PlugEnd,GapBeforeSize,ClrInstanceID);
+}
+
+ULONG FireEtwBGCBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGCBegin(ClrInstanceID);
+}
+
+ULONG FireEtwBGC1stNonConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGC1stNonConEnd(ClrInstanceID);
+}
+
+ULONG FireEtwBGC1stConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGC1stConEnd(ClrInstanceID);
+}
+
+ULONG FireEtwBGC2ndNonConBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGC2ndNonConBegin(ClrInstanceID);
+}
+
+ULONG FireEtwBGC2ndNonConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGC2ndNonConEnd(ClrInstanceID);
+}
+
+ULONG FireEtwBGC2ndConBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGC2ndConBegin(ClrInstanceID);
+}
+
+ULONG FireEtwBGC2ndConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGC2ndConEnd(ClrInstanceID);
+}
+
+ULONG FireEtwBGCDrainMark(
+    const unsigned __int64  Objects,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGCDrainMark(Objects,ClrInstanceID);
+}
+
+ULONG FireEtwBGCRevisit(
+    const unsigned __int64  Pages,
+    const unsigned __int64  Objects,
+    const unsigned int  IsLarge,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGCRevisit(Pages,Objects,IsLarge,ClrInstanceID);
+}
+
+ULONG FireEtwBGCOverflow(
+    const unsigned __int64  Min,
+    const unsigned __int64  Max,
+    const unsigned __int64  Objects,
+    const unsigned int  IsLarge,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGCOverflow(Min,Max,Objects,IsLarge,ClrInstanceID);
+}
+
+ULONG FireEtwBGCAllocWaitBegin(
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGCAllocWaitBegin(Reason,ClrInstanceID);
+}
+
+ULONG FireEtwBGCAllocWaitEnd(
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatBGCAllocWaitEnd(Reason,ClrInstanceID);
+}
+
+ULONG FireEtwGCFullNotify_V1(
+    const unsigned int  GenNumber,
+    const unsigned int  IsAlloc,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatGCFullNotify_V1(GenNumber,IsAlloc,ClrInstanceID);
+}
+
+ULONG FireEtwPrvSetGCHandle(
+    const void*  HandleID,
+    const void*  ObjectID,
+    const unsigned int  Kind,
+    const unsigned int  Generation,
+    const unsigned __int64  AppDomainID,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatPrvSetGCHandle(HandleID,ObjectID,Kind,Generation,AppDomainID,ClrInstanceID);
+}
+
+ULONG FireEtwPrvDestroyGCHandle(
+    const void*  HandleID,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatPrvDestroyGCHandle(HandleID,ClrInstanceID);
+}
+
+#endif // FEATURE_ETW

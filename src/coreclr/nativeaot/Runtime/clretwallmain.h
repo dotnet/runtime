@@ -8,8 +8,6 @@
 #ifndef CLR_ETW_ALL_MAIN_H
 #define CLR_ETW_ALL_MAIN_H
 
-#include "EtwEvents.h"
-
 BOOL EventEnabledDestroyGCHandle(void);
 ULONG FireEtwDestroyGCHandle(
     void*  HandleID,
@@ -660,4 +658,149 @@ ULONG FireEtwGCFitBucketInfo(
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
 );
+
+#ifdef FEATURE_ETW
+
+// ==================================================================
+// Events currently only fired via ETW (private runtime provider)
+// ==================================================================
+
+ULONG FireEtwPinPlugAtGCTime(
+    const void*  PlugStart,
+    const void*  PlugEnd,
+    const void*  GapBeforeSize,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGCBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGC1stNonConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGC1stConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGC2ndNonConBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGC2ndNonConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGC2ndConBegin(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGC2ndConEnd(
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGCDrainMark(
+    const unsigned __int64  Objects,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGCRevisit(
+    const unsigned __int64  Pages,
+    const unsigned __int64  Objects,
+    const unsigned int  IsLarge,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGCOverflow(
+    const unsigned __int64  Min,
+    const unsigned __int64  Max,
+    const unsigned __int64  Objects,
+    const unsigned int  IsLarge,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGCAllocWaitBegin(
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwBGCAllocWaitEnd(
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwGCFullNotify_V1(
+    const unsigned int  GenNumber,
+    const unsigned int  IsAlloc,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwPrvSetGCHandle(
+    const void*  HandleID,
+    const void*  ObjectID,
+    const unsigned int  Kind,
+    const unsigned int  Generation,
+    const unsigned __int64  AppDomainID,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+ULONG FireEtwPrvDestroyGCHandle(
+    const void*  HandleID,
+    const unsigned short  ClrInstanceID,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
+#else
+
+#define FireEtwBGC1stConEnd(ClrInstanceID)
+#define FireEtwBGC1stNonConEnd(ClrInstanceID)
+#define FireEtwBGC2ndConBegin(ClrInstanceID)
+#define FireEtwBGC2ndConEnd(ClrInstanceID)
+#define FireEtwBGC2ndNonConBegin(ClrInstanceID)
+#define FireEtwBGC2ndNonConEnd(ClrInstanceID)
+#define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID)
+#define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID)
+#define FireEtwBGCBegin(ClrInstanceID)
+#define FireEtwBGCDrainMark(Objects, ClrInstanceID)
+#define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID)
+#define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID)
+#define FireEtwGCFullNotify_V1(GenNumber, IsAlloc, ClrInstanceID)
+#define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID)
+#define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID)
+#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID)
+
+#endif // FEATURE_ETW
+
 #endif // __CLR_ETW_ALL_MAIN_H__
