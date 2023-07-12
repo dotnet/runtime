@@ -247,7 +247,7 @@ ds_server_shutdown (void)
 		ds_ipc_stream_factory_shutdown (server_error_callback_close);
 
 	ds_ipc_stream_factory_fini ();
-	ds_ipc_pal_shutdown ();
+	ds_ipc_pal_shutdown (server_error_callback_close);
 	return true;
 }
 
