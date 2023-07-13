@@ -113,7 +113,7 @@ namespace System.Text
                     Vector128.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector128<T>.Count)));
             }
 
-            if (Vector512.IsHardwareAccelerated)
+            if (Vector512.IsHardwareAccelerated && length >= Vector512<T>.Count)
             {
                 // Process inputs with lengths [33, 64] bytes.
                 if (length <= 2 * Vector512<T>.Count)
