@@ -9,5 +9,7 @@
 
     <!-- We expect trimming to be fully enabled in these tests -->
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+
+    <IlcUseConservativeGc>true</IlcUseConservativeGc>
   </PropertyGroup>
 </Project>

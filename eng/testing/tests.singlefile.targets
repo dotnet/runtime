@@ -1,5 +1,7 @@
 <Project>
   <PropertyGroup>
+    <IlcUseConservativeGc>true</IlcUseConservativeGc>
+
     <OutputType>Exe</OutputType>
 
     <BundleDir>$([MSBuild]::NormalizeDirectory('$(OutDir)', 'publish'))</BundleDir>
