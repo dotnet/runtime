@@ -287,7 +287,7 @@ interface ICorDebugDataTarget : IUnknown
         CORDB_PLATFORM_POSIX_ARM,         // Posix supporting OS on ARM32
         CORDB_PLATFORM_POSIX_ARM64,       // Posix supporting OS on ARM64
         CORDB_PLATFORM_POSIX_LOONGARCH64, // Posix supporting OS on LoongArch64
-        CORDB_PLATFORM_POSIX_RISC64       // Posix supporting OS on RISC64
+        CORDB_PLATFORM_POSIX_RISCV64      // Posix supporting OS on RISC64
     } CorDebugPlatform;
 
     HRESULT GetPlatform([out] CorDebugPlatform * pTargetPlatform);
