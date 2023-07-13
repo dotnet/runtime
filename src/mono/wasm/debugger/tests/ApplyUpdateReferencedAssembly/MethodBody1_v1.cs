@@ -84,25 +84,25 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine($"add a breakpoint the instance method of the new class");
         }
     }
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
     // public class MethodBody9 {
     //     public static int M1(int x, int y) {
     //         return x + y;

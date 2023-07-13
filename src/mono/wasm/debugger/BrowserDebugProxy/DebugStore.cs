@@ -394,7 +394,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             foreach (CustomAttributeHandle cattr in customAttributes)
             {
                 var ca = asmMetadataReader.GetCustomAttribute(cattr);
-                if (fromEnC && (ca.Parent.Kind != HandleKind.MethodDefinition || (ca.Parent.Kind == HandleKind.MethodDefinition && ca.Parent.GetHashCode() != (token | (int)TokenType.MdtMethodDef))))
+                if (fromEnC && (ca.Parent.Kind != HandleKind.MethodDefinition || ca.Parent.GetHashCode() != (token | (int)TokenType.MdtMethodDef)))
                     continue;
                 if (!assembly.TryGetCustomAttributeName(cattr, asmMetadataReader, out string name))
                     continue;
@@ -849,7 +849,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal MetadataReader asmMetadataReader { get; }
         internal MetadataReader pdbMetadataReader { get; set; }
 
-        internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader = new List<Tuple<MetadataReader, MetadataReader>>();
+        internal List<Tuple<MetadataReader, MetadataReader>> enCMetadataReader = new();
         private int debugId;
         internal int PdbAge { get; }
         internal System.Guid PdbGuid { get; }
