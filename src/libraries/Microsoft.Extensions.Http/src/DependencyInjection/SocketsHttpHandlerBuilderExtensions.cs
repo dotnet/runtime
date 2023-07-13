@@ -33,175 +33,166 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static ISocketsHttpHandlerBuilder Configure(this ISocketsHttpHandlerBuilder builder, IConfigurationSection configurationSection)
+        public static ISocketsHttpHandlerBuilder Configure(this ISocketsHttpHandlerBuilder builder, IConfiguration configuration)
         {
-            SocketsHttpHandlerConfiguration parsedConfig = SocketsHttpHandlerConfiguration.ParseFromConfig(configurationSection);
+            SocketsHttpHandlerConfiguration parsedConfig = ParseSocketsHttpHandlerConfiguration(configuration);
             return Configure(builder, (handler, _) => FillFromConfig(handler, parsedConfig));
         }
 
         [UnsupportedOSPlatform("browser")]
-        private static void FillFromConfig(SocketsHttpHandler handler, SocketsHttpHandlerConfiguration parsedConfig)
+        private static void FillFromConfig(SocketsHttpHandler handler, SocketsHttpHandlerConfiguration config)
         {
-            if(parsedConfig.PooledConnectionIdleTimeout is not null)
+            if (config.PooledConnectionIdleTimeout is not null)
             {
-                handler.PooledConnectionIdleTimeout = parsedConfig.PooledConnectionIdleTimeout.Value;
+                handler.PooledConnectionIdleTimeout = config.PooledConnectionIdleTimeout.Value;
             }
 
-            if(parsedConfig.PooledConnectionLifetime is not null)
+            if (config.PooledConnectionLifetime is not null)
             {
-                handler.PooledConnectionLifetime = parsedConfig.PooledConnectionLifetime.Value;
+                handler.PooledConnectionLifetime = config.PooledConnectionLifetime.Value;
             }
 
-            if(parsedConfig.PreAuthenticate is not null)
+            if (config.PreAuthenticate is not null)
             {
-                handler.PreAuthenticate = parsedConfig.PreAuthenticate.Value;
+                handler.PreAuthenticate = config.PreAuthenticate.Value;
             }
 
-            if(parsedConfig.ResponseDrainTimeout is not null)
+            if (config.ResponseDrainTimeout is not null)
             {
-                handler.ResponseDrainTimeout = parsedConfig.ResponseDrainTimeout.Value;
+                handler.ResponseDrainTimeout = config.ResponseDrainTimeout.Value;
             }
 
-            if(parsedConfig.UseCookies is not null)
+            if (config.UseCookies is not null)
             {
-                handler.UseCookies = parsedConfig.UseCookies.Value;
+                handler.UseCookies = config.UseCookies.Value;
             }
 
-            if(parsedConfig.UseProxy is not null)
+            if (config.UseProxy is not null)
             {
-                handler.UseProxy = parsedConfig.UseProxy.Value;
+                handler.UseProxy = config.UseProxy.Value;
             }
 
-            if(parsedConfig.EnableMultipleHttp2Connections is not null)
+            if (config.EnableMultipleHttp2Connections is not null)
             {
-                handler.EnableMultipleHttp2Connections = parsedConfig.EnableMultipleHttp2Connections.Value;
+                handler.EnableMultipleHttp2Connections = config.EnableMultipleHttp2Connections.Value;
             }
 
-            if(parsedConfig.MaxResponseHeadersLength is not null)
+            if (config.MaxResponseHeadersLength is not null)
             {
-                handler.MaxResponseHeadersLength = parsedConfig.MaxResponseHeadersLength.Value;
+                handler.MaxResponseHeadersLength = config.MaxResponseHeadersLength.Value;
             }
 
-            if(parsedConfig.MaxResponseDrainSize is not null)
+            if (config.MaxResponseDrainSize is not null)
             {
-                handler.MaxResponseDrainSize = parsedConfig.MaxResponseDrainSize.Value;
+                handler.MaxResponseDrainSize = config.MaxResponseDrainSize.Value;
             }
 
-            if(parsedConfig.MaxConnectionsPerServer is not null)
+            if (config.MaxConnectionsPerServer is not null)
             {
-                handler.MaxConnectionsPerServer = parsedConfig.MaxConnectionsPerServer.Value;
+                handler.MaxConnectionsPerServer = config.MaxConnectionsPerServer.Value;
             }
 
-            if(parsedConfig.MaxAutomaticRedirections is not null)
+            if (config.MaxAutomaticRedirections is not null)
             {
-                handler.MaxAutomaticRedirections = parsedConfig.MaxAutomaticRedirections.Value;
+                handler.MaxAutomaticRedirections = config.MaxAutomaticRedirections.Value;
             }
 
-            if(parsedConfig.InitialHttp2StreamWindowSize is not null)
+            if (config.InitialHttp2StreamWindowSize is not null)
             {
-                handler.InitialHttp2StreamWindowSize = parsedConfig.InitialHttp2StreamWindowSize.Value;
+                handler.InitialHttp2StreamWindowSize = config.InitialHttp2StreamWindowSize.Value;
             }
 
-            if(parsedConfig.AllowAutoRedirect is not null)
+            if (config.AllowAutoRedirect is not null)
             {
-                handler.AllowAutoRedirect = parsedConfig.AllowAutoRedirect.Value;
+                handler.AllowAutoRedirect = config.AllowAutoRedirect.Value;
             }
 
-            if(parsedConfig.AutomaticDecompression is not null)
+            if (config.AutomaticDecompression is not null)
             {
-                handler.AutomaticDecompression = parsedConfig.AutomaticDecompression.Value;
+                handler.AutomaticDecompression = config.AutomaticDecompression.Value;
             }
 
-            if(parsedConfig.ConnectTimeout is not null)
+            if (config.ConnectTimeout is not null)
             {
-                handler.ConnectTimeout = parsedConfig.ConnectTimeout.Value;
+                handler.ConnectTimeout = config.ConnectTimeout.Value;
             }
 
-            if(parsedConfig.Expect100ContinueTimeout is not null)
+            if (config.Expect100ContinueTimeout is not null)
             {
-                handler.Expect100ContinueTimeout = parsedConfig.Expect100ContinueTimeout.Value;
+                handler.Expect100ContinueTimeout = config.Expect100ContinueTimeout.Value;
             }
 
-            if(parsedConfig.KeepAlivePingDelay is not null)
+            if (config.KeepAlivePingDelay is not null)
             {
-                handler.KeepAlivePingDelay = parsedConfig.KeepAlivePingDelay.Value;
+                handler.KeepAlivePingDelay = config.KeepAlivePingDelay.Value;
             }
 
-            if(parsedConfig.KeepAlivePingTimeout is not null)
+            if (config.KeepAlivePingTimeout is not null)
             {
-                handler.KeepAlivePingTimeout = parsedConfig.KeepAlivePingTimeout.Value;
+                handler.KeepAlivePingTimeout = config.KeepAlivePingTimeout.Value;
             }
 
-            if(parsedConfig.KeepAlivePingPolicy is not null)
+            if (config.KeepAlivePingPolicy is not null)
             {
-                handler.KeepAlivePingPolicy = parsedConfig.KeepAlivePingPolicy.Value;
+                handler.KeepAlivePingPolicy = config.KeepAlivePingPolicy.Value;
             }
         }
 
-        private record struct SocketsHttpHandlerConfiguration
+        private readonly record struct SocketsHttpHandlerConfiguration
         {
-            public TimeSpan? PooledConnectionIdleTimeout { get; set; }
-            public TimeSpan? PooledConnectionLifetime { get; set; }
-            public bool? PreAuthenticate { get; set; }
-            public TimeSpan? ResponseDrainTimeout { get; set; }
-            public bool? UseCookies { get; set; }
-            public bool? UseProxy { get; set; }
-            public bool? EnableMultipleHttp2Connections { get; set; }
-            public int? MaxResponseHeadersLength { get; set; }
-            public int? MaxResponseDrainSize { get; set; }
-            public int? MaxConnectionsPerServer { get; set; }
-            public int? MaxAutomaticRedirections { get; set; }
-            public int? InitialHttp2StreamWindowSize { get; set; }
-            public bool? AllowAutoRedirect { get; set; }
-            public DecompressionMethods? AutomaticDecompression { get; set; }
-            public TimeSpan? ConnectTimeout { get; set; }
-            public TimeSpan? Expect100ContinueTimeout { get; set; }
-            public TimeSpan? KeepAlivePingDelay { get; set; }
-            public TimeSpan? KeepAlivePingTimeout { get; set; }
-            public HttpKeepAlivePingPolicy? KeepAlivePingPolicy { get; set; }
-
-            [UnsupportedOSPlatform("browser")]
-            public static SocketsHttpHandlerConfiguration ParseFromConfig(IConfigurationSection config)
-            {
-                return new SocketsHttpHandlerConfiguration()
-                {
-                    PooledConnectionIdleTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.PooledConnectionIdleTimeout)]),
-                    PooledConnectionLifetime = ParseTimeSpan(config[nameof(SocketsHttpHandler.PooledConnectionLifetime)]),
-                    PreAuthenticate = ParseBool(config[nameof(SocketsHttpHandler.PreAuthenticate)]),
-                    ResponseDrainTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.ResponseDrainTimeout)]),
-                    UseCookies = ParseBool(config[nameof(SocketsHttpHandler.UseCookies)]),
-                    UseProxy = ParseBool(config[nameof(SocketsHttpHandler.UseProxy)]),
-                    EnableMultipleHttp2Connections = ParseBool(config[nameof(SocketsHttpHandler.EnableMultipleHttp2Connections)]),
-                    MaxResponseHeadersLength = ParseInt(config[nameof(SocketsHttpHandler.MaxResponseHeadersLength)]),
-                    MaxResponseDrainSize = ParseInt(config[nameof(SocketsHttpHandler.MaxResponseDrainSize)]),
-                    MaxConnectionsPerServer = ParseInt(config[nameof(SocketsHttpHandler.MaxConnectionsPerServer)]),
-                    MaxAutomaticRedirections = ParseInt(config[nameof(SocketsHttpHandler.MaxAutomaticRedirections)]),
-                    InitialHttp2StreamWindowSize = ParseInt(config[nameof(SocketsHttpHandler.InitialHttp2StreamWindowSize)]),
-                    AllowAutoRedirect = ParseBool(config[nameof(SocketsHttpHandler.AllowAutoRedirect)]),
-                    AutomaticDecompression = ParseDecompressionMethods(config[nameof(SocketsHttpHandler.AutomaticDecompression)]),
-                    ConnectTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.ConnectTimeout)]),
-                    Expect100ContinueTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.Expect100ContinueTimeout)]),
-                    KeepAlivePingDelay = ParseTimeSpan(config[nameof(SocketsHttpHandler.KeepAlivePingDelay)]),
-                    KeepAlivePingTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.KeepAlivePingTimeout)]),
-                    KeepAlivePingPolicy = ParseHttpKeepAlivePingPolicy(config[nameof(SocketsHttpHandler.KeepAlivePingPolicy)])
-                };
-            }
+            public TimeSpan? PooledConnectionIdleTimeout { get; init; }
+            public TimeSpan? PooledConnectionLifetime { get; init; }
+            public bool? PreAuthenticate { get; init; }
+            public TimeSpan? ResponseDrainTimeout { get; init; }
+            public bool? UseCookies { get; init; }
+            public bool? UseProxy { get; init; }
+            public bool? EnableMultipleHttp2Connections { get; init; }
+            public int? MaxResponseHeadersLength { get; init; }
+            public int? MaxResponseDrainSize { get; init; }
+            public int? MaxConnectionsPerServer { get; init; }
+            public int? MaxAutomaticRedirections { get; init; }
+            public int? InitialHttp2StreamWindowSize { get; init; }
+            public bool? AllowAutoRedirect { get; init; }
+            public DecompressionMethods? AutomaticDecompression { get; init; }
+            public TimeSpan? ConnectTimeout { get; init; }
+            public TimeSpan? Expect100ContinueTimeout { get; init; }
+            public TimeSpan? KeepAlivePingDelay { get; init; }
+            public TimeSpan? KeepAlivePingTimeout { get; init; }
+            public HttpKeepAlivePingPolicy? KeepAlivePingPolicy { get; init; }
         }
 
-        private static DecompressionMethods? ParseDecompressionMethods(string? decompressionMethods)
-            => Enum.TryParse<DecompressionMethods>(decompressionMethods, ignoreCase: true, out var result)
-                ? result
-                : null;
+        [UnsupportedOSPlatform("browser")]
+        private static SocketsHttpHandlerConfiguration ParseSocketsHttpHandlerConfiguration(IConfiguration config)
+        {
+            return new SocketsHttpHandlerConfiguration()
+            {
+                PooledConnectionIdleTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.PooledConnectionIdleTimeout)]),
+                PooledConnectionLifetime = ParseTimeSpan(config[nameof(SocketsHttpHandler.PooledConnectionLifetime)]),
+                PreAuthenticate = ParseBool(config[nameof(SocketsHttpHandler.PreAuthenticate)]),
+                ResponseDrainTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.ResponseDrainTimeout)]),
+                UseCookies = ParseBool(config[nameof(SocketsHttpHandler.UseCookies)]),
+                UseProxy = ParseBool(config[nameof(SocketsHttpHandler.UseProxy)]),
+                EnableMultipleHttp2Connections = ParseBool(config[nameof(SocketsHttpHandler.EnableMultipleHttp2Connections)]),
+                MaxResponseHeadersLength = ParseInt(config[nameof(SocketsHttpHandler.MaxResponseHeadersLength)]),
+                MaxResponseDrainSize = ParseInt(config[nameof(SocketsHttpHandler.MaxResponseDrainSize)]),
+                MaxConnectionsPerServer = ParseInt(config[nameof(SocketsHttpHandler.MaxConnectionsPerServer)]),
+                MaxAutomaticRedirections = ParseInt(config[nameof(SocketsHttpHandler.MaxAutomaticRedirections)]),
+                InitialHttp2StreamWindowSize = ParseInt(config[nameof(SocketsHttpHandler.InitialHttp2StreamWindowSize)]),
+                AllowAutoRedirect = ParseBool(config[nameof(SocketsHttpHandler.AllowAutoRedirect)]),
+                AutomaticDecompression = ParseEnum<DecompressionMethods>(config[nameof(SocketsHttpHandler.AutomaticDecompression)]),
+                ConnectTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.ConnectTimeout)]),
+                Expect100ContinueTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.Expect100ContinueTimeout)]),
+                KeepAlivePingDelay = ParseTimeSpan(config[nameof(SocketsHttpHandler.KeepAlivePingDelay)]),
+                KeepAlivePingTimeout = ParseTimeSpan(config[nameof(SocketsHttpHandler.KeepAlivePingTimeout)]),
+                KeepAlivePingPolicy = ParseEnum<HttpKeepAlivePingPolicy>(config[nameof(SocketsHttpHandler.KeepAlivePingPolicy)])
+            };
+        }
 
-        private static HttpKeepAlivePingPolicy? ParseHttpKeepAlivePingPolicy(string? httpKeepAlivePingPolicy)
-            => Enum.TryParse<HttpKeepAlivePingPolicy>(httpKeepAlivePingPolicy, ignoreCase: true, out var result)
-                ? result
-                : null;
+        private static TEnum? ParseEnum<TEnum>(string? enumString) where TEnum : struct
+            => Enum.TryParse<TEnum>(enumString, ignoreCase: true, out var result) ? result : null;
 
         private static bool? ParseBool(string? boolString) => bool.TryParse(boolString, out var result) ? result : null;
-
         private static int? ParseInt(string? intString) => int.TryParse(intString, out var result) ? result : null;
-
         private static TimeSpan? ParseTimeSpan(string? timeSpanString) => TimeSpan.TryParse(timeSpanString, out var result) ? result : null;
     }
 }

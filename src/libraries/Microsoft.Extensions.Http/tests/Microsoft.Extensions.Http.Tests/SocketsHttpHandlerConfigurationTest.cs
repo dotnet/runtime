@@ -22,7 +22,8 @@ namespace Microsoft.Extensions.Http
             { $"{ParentSectionName}:{SectionName}:AllowAutoRedirect", "true" },
             { $"{ParentSectionName}:{SectionName}:UseCookies", "false" },
             { $"{ParentSectionName}:{SectionName}:ConnectTimeout", "00:00:05" },
-            { $"{ParentSectionName}:{SectionName}:PooledConnectionLifetime", "00:01:00" }
+            { $"{ParentSectionName}:{SectionName}:PooledConnectionLifetime", "00:01:00" },
+            { $"{ParentSectionName}:{SectionName}:SomeUnrelatedProperty", "WillBeIgnored" }
         };
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]

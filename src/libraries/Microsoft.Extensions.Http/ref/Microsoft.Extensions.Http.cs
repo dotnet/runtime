@@ -69,7 +69,7 @@ namespace Microsoft.Extensions.DependencyInjection
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public static Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder Configure(this Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder builder, System.Action<System.Net.Http.SocketsHttpHandler, System.IServiceProvider> configure) { throw null; }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
-        public static Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder Configure(this Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder builder, Microsoft.Extensions.Configuration.IConfigurationSection configurationSection) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder Configure(this Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder builder, Microsoft.Extensions.Configuration.IConfiguration configuration) { throw null; }
     }
 #endif
 }
