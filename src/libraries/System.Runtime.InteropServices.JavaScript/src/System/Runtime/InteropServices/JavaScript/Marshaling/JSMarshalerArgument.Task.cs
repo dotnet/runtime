@@ -51,7 +51,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (arguments_buffer == null)
                 {
-                    tcs.SetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                    return;
                 }
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
                 // arg_3 set by caller when this is SetResult call, un-used here
@@ -94,7 +95,8 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (arguments_buffer == null)
                 {
-                    tcs.SetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                    tcs.TrySetException(new TaskCanceledException("WebWorker which is origin of the Promise is being terminated."));
+                    return;
                 }
 
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
