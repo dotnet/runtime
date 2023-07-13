@@ -7,14 +7,22 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <MonoEnableLLVM>true</MonoEnableLLVM>
 
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>Link</TrimMode>
+    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
+    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
+
+    <AppName>HelloiOS</AppName>
+    <SelfContained Condition="'$(ArchiveTests)' == 'true'">true</SelfContained>
+    <UseConsoleUITemplate>false</UseConsoleUITemplate>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+
+    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
   </PropertyGroup>
 
   <ItemGroup>
