@@ -13,6 +13,7 @@ namespace Tracing.Tests
         public volatile int TPWorkerThreadStartCount = 0;
         public volatile int TPWorkerThreadStopCount = 0;
         public volatile int TPWorkerThreadWaitCount = 0;
+        public volatile int TPIOPack = 0;
 
     public ManualResetEvent TPWaitEvent = new ManualResetEvent(false);
         
@@ -40,6 +41,10 @@ namespace Tracing.Tests
             {
                 Interlocked.Increment(ref TPWorkerThreadWaitCount);
                 TPWaitEvent.Set();
+            } else if (eventData.EventName.Equals("IOPack"))
+            {
+                Interlocked.Increment(ref TPIOPack);
+                TPWaitEvent.Set();
             }
         }
     }
@@ -50,18 +55,17 @@ namespace Tracing.Tests
         {
             using (RuntimeEventListener listener = new RuntimeEventListener())
             {
-                int someNumber = 0;
-                Task[] tasks = new Task[100];
-                for (int i = 0; i < tasks.Length; i++) 
+                Overlapped overlapped = new Overlapped();
+                IOCompletionCallback completionCallback = null;
+
+                unsafe
                 {
-                    tasks[i] = Task.Run(() => { someNumber += 1; });
+                    overlapped.Pack(completionCallback);
                 }
 
                 listener.TPWaitEvent.WaitOne(TimeSpan.FromMinutes(3));
 
-                if (listener.TPWorkerThreadStartCount > 0 ||
-                    listener.TPWorkerThreadStopCount > 0 ||
-                    listener.TPWorkerThreadWaitCount > 0)
+                if (listener.TPIOPack > 0)
                 {
                     Console.WriteLine("Test Passed.");
                     return 100;
