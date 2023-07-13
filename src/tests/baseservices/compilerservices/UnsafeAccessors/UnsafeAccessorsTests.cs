@@ -391,7 +391,7 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : UserDataClass.StaticFieldName,
             () => FieldNotFoundStaticMismatch1(null));
         AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
-            isNativeAot ? null : DoesNotExist,
+            isNativeAot ? null : UserDataValue.FieldName,
             () => FieldNotFoundStaticMismatch2(null));
         AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
             isNativeAot ? null : DoesNotExist,
