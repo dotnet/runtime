@@ -12320,11 +12320,15 @@ emit_method_inner (EmitContext *ctx)
 	char **names;
 	LLVMBuilderRef entry_builder = NULL;
 	LLVMBasicBlockRef entry_bb = NULL;
+	gboolean can_specialize = FALSE;
 
 	if (cfg->gsharedvt && !cfg->llvm_only) {
 		set_failure (ctx, "gsharedvt");
 		return;
 	}
+
+	if (cfg->compile_aot)
+		can_specialize = mono_aot_can_specialize(cfg->method);
 
 #if 0
 	{
@@ -12483,10 +12487,11 @@ emit_method_inner (EmitContext *ctx)
 			LLVMSetLinkage (method, LLVMInternalLinkage);
 			//all methods have internal visibility when doing llvm_only
 			if (!cfg->llvm_only && ctx->module->external_symbols) {
-				if (mono_aot_can_specialize(cfg->method))
+				if (can_specialize) {
 					LLVMSetLinkage (method, LLVMInternalLinkage);
-				else
+				} else {
 					LLVMSetLinkage (method, LLVMExternalLinkage);
+				}
 
 				LLVMSetVisibility (method, LLVMHiddenVisibility);
 			}
@@ -12966,10 +12971,8 @@ after_codegen_1:
 
 	if (mini_get_debug_options ()->llvm_disable_inlining)
 		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
-	
-	int is_specialized = 0;
-	if (mono_aot_can_specialize (cfg->method)) {
-		is_specialized = 1;
+
+	if (can_specialize) {
 		printf ("MOO: %s\n", mono_method_get_full_name (cfg->method));
 		g_hash_table_insert (ctx->module->no_method_table_lmethods, method, method);
 	}
@@ -12998,11 +13001,9 @@ after_codegen:
 		g_print ("***\n\n");
 	}
 
-	if (cfg->compile_aot && !cfg->llvm_only && !is_specialized)
+	if (cfg->compile_aot && !cfg->llvm_only && !can_specialize)
 		mark_as_used (ctx->module, method);
-
-	is_specialized = 0;
-
+		
 	if (!cfg->llvm_only) {
 		LLVMValueRef md_args [16];
 		LLVMValueRef md_node;

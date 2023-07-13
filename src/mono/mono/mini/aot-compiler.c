@@ -4667,7 +4667,24 @@ add_gc_wrappers (MonoAotCompile *acfg)
 }
 
 static gboolean
-contains_disable_reflection_attribute (MonoCustomAttrInfo *cattr)
+contains_attribute (MonoCustomAttrInfo* cattr, const char* namespace, const char* name)
+{
+	for (int i = 0; i < cattr->num_attrs; ++i) {
+		MonoCustomAttrEntry *attr = &cattr->attrs [i];
+
+		if (!attr->ctor)
+			continue;
+
+		if (!strcmp (m_class_get_name_space (attr->ctor->klass), namespace) && 
+			!strcmp (m_class_get_name (attr->ctor->klass), name))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+static gboolean
+contains_dynamically_accessed_attribute (MonoCustomAttrInfo *cattr)
 {
 	for (int i = 0; i < cattr->num_attrs; ++i) {
 		MonoCustomAttrEntry *attr = &cattr->attrs [i];
@@ -4675,14 +4692,29 @@ contains_disable_reflection_attribute (MonoCustomAttrInfo *cattr)
 		if (!attr->ctor)
 			return FALSE;
 
-		if (strcmp (m_class_get_name_space (attr->ctor->klass), "System.Runtime.CompilerServices"))
+		if (strcmp (m_class_get_name_space (attr->ctor->klass), "System.Diagnostics.CodeAnalysis"))
 			return FALSE;
 
-		if (strcmp (m_class_get_name (attr->ctor->klass), "DisablePrivateReflectionAttribute"))
+		if (strcmp (m_class_get_name (attr->ctor->klass), "DynamicallyAccessedMembersAttribute"))
 			return FALSE;
 	}
 
 	return TRUE;
+}
+
+static gboolean
+type_has_nonprivate_generic_method (MonoClass* klass)
+{
+	MonoMethod* method;
+	gpointer iter = NULL;
+	
+	while (method = mono_class_get_methods (klass, &iter)) {
+		if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) == METHOD_ATTRIBUTE_PUBLIC &&
+			method->is_generic)
+			return TRUE;
+	}
+
+	return FALSE;
 }
 
 gboolean
@@ -4691,18 +4723,38 @@ mono_aot_can_specialize (MonoMethod *method)
 	if (!method)
 		return FALSE;
 
+	if (strstr (mono_method_full_name(method, TRUE), "HashCode:Add"))
+	{
+		printf("here\n");
+	}
+
+	// Disallow specialization if the method can get called from outside the assembly,
+	// this includes:
+	// - Public methods
+	// - Internal methods (can be accessed with InternalsVisibleTo...)
+	// - Called by runtime (from wrappers and trampolines, static constructors). We check against
+	//   a list of such known methods.
+	// - Called through reflection.
+	// - Called from a generic method that is instantiated in another assembly. This cannot be 
+	//   easily detected, so disallow any class in its entirety that has a generic public method.
+
 	if (method->wrapper_type != MONO_WRAPPER_NONE)
 		return FALSE;
 
-	// If it's not private, we can't specialize
-	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE && 
-			(method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_ASSEM)
+	if ((method->flags & METHOD_ATTRIBUTE_MEMBER_ACCESS_MASK) != METHOD_ATTRIBUTE_PRIVATE)
 		return FALSE;
 
 	if (method->is_inflated)
 		return FALSE;
 
+	if (mono_aot_is_externally_callable (method) || 
+		type_has_nonprivate_generic_method (method->klass))
+		return FALSE;
+
 	if (!strcmp (method->name, ".cctor"))
+		return FALSE;
+
+	if (!strcmp (method->name, "OnAssemblyLoad"))
 		return FALSE;
 
 	if (!strcmp (method->name, "FilterAttributeImpl"))
@@ -4714,14 +4766,84 @@ mono_aot_can_specialize (MonoMethod *method)
 	if (!strcmp (method->name, "MonoResolveUnmanagedDll"))
 		return FALSE;
 
+	// Generalized the following names that arise from using lambdas.
+	if (!strncmp (method->name, "<.cctor>b__", 11))
+		return FALSE;
+
+/*
 	if (!strcmp (method->name, "<.cctor>b__288_0"))
 		return FALSE;
 
 	if (!strcmp (method->name, "<.cctor>b__288_1"))
 		return FALSE;
 
+	if (!strcmp (method->name, "<.cctor>b__299_0"))
+		return FALSE;
+
+	if (!strcmp (method->name, "<.cctor>b__299_1"))
+		return FALSE;
+*/
+
 	if (!strcmp (method->name, "Setup"))
 		return FALSE;
+
+	if (!strcmp (method->name, "ProcessStartupHooks")) // void System.StartupHookProvider:ProcessStartupHooks (string)
+		return FALSE;
+
+	if (!strcmp (method->name, "Main")) // void HelloWorld.Program:Main (string[])
+		return FALSE;
+
+	// this is dynamically accessed
+	if (!strcmp (method->name, "Initialize")) // void System.Diagnostics.Tracing.EventSource:Initialize (System.Guid,string,string[])
+		return FALSE;
+
+	if (!strcmp (method->name, "System.ISpanFormattable.TryFormat")) // bool char:System.ISpanFormattable.TryFormat (System.Span`1<char>,int&,System.ReadOnlySpan`1<char>,System.IFormatProvider)
+		return FALSE;
+
+	// The following seem to be called from within the runtime, e.g. in wrappers
+	if (!strcmp (method->name, "memset")) // void string:memset (byte*,int,int)
+		return FALSE;
+
+	if (!strncmp (method->name, "memcpy", 6)) // string:memcpy, string:memcpy_aligned_<align>
+		return FALSE;
+
+	if (!strncmp (method->name, "bzero", 5)) // string:bzero, string:bzero_aligned_<align>
+		return FALSE;
+
+
+	// does the following work?
+	gboolean is_dynamically_accessed = FALSE;
+
+	ERROR_DECL (cattr_error);
+	MonoCustomAttrInfo* cattr = mono_custom_attrs_from_class_checked (method->klass, cattr_error);
+	if (is_ok (cattr_error) && cattr && 
+			(contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "DynamicallyAccessedMembersAttribute") ||
+			contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute") ||
+			contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute")))
+			is_dynamically_accessed = TRUE;
+
+	if (cattr)
+		mono_custom_attrs_free (cattr);
+
+	cattr = mono_custom_attrs_from_method_checked (method, cattr_error);
+	if (!is_dynamically_accessed && is_ok (cattr_error) && cattr && 
+			(contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "DynamicallyAccessedMembersAttribute") ||
+			contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute") ||
+			contains_attribute (cattr, "System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute")))
+			is_dynamically_accessed = TRUE;
+
+	if (is_ok (cattr_error) && cattr && contains_attribute (cattr, "System.Runtime", "ReferencedPrivateMethodAttribute")) {
+		printf ("*** LDFTN: %s\n", mono_method_full_name (method, TRUE));
+		is_dynamically_accessed = TRUE;
+	}
+
+	if (cattr)
+		mono_custom_attrs_free (cattr);
+
+	if (is_dynamically_accessed) {
+		//printf ("*** DYN: %s\n", mono_method_full_name (method, TRUE));
+		return FALSE;
+	}
 
 	return TRUE;
 

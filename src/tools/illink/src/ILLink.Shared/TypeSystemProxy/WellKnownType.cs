@@ -18,6 +18,7 @@ namespace ILLink.Shared.TypeSystemProxy
 		System_Array,
 		System_Object,
 		System_Attribute,
+		System_AttributeUsageAttribute,
 		System_NotSupportedException,
 		System_Runtime_CompilerServices_DisablePrivateReflectionAttribute,
 		System_Void
@@ -35,6 +36,7 @@ namespace ILLink.Shared.TypeSystemProxy
 				WellKnownType.System_Array => ("System", "Array"),
 				WellKnownType.System_Object => ("System", "Object"),
 				WellKnownType.System_Attribute => ("System", "Attribute"),
+				WellKnownType.System_AttributeUsageAttribute => ("System", "AttributeUsageAttribute"),
 				WellKnownType.System_NotSupportedException => ("System", "NotSupportedException"),
 				WellKnownType.System_Runtime_CompilerServices_DisablePrivateReflectionAttribute => ("System.Runtime.CompilerServices", "DisablePrivateReflectionAttribute"),
 				WellKnownType.System_Void => ("System", "Void"),
@@ -52,6 +54,7 @@ namespace ILLink.Shared.TypeSystemProxy
 					"Type" => WellKnownType.System_Type,
 					"Array" => WellKnownType.System_Array,
 					"Attribute" => WellKnownType.System_Attribute,
+					"AttributeUsageAttribute" => WellKnownType.System_AttributeUsageAttribute,
 					"Object" => WellKnownType.System_Object,
 					"NotSupportedException" => WellKnownType.System_NotSupportedException,
 					"Void" => WellKnownType.System_Void,

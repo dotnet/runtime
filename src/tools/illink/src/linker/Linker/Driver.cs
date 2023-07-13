@@ -756,6 +756,7 @@ namespace Mono.Linker
 			}
 
 			p.AddStepBefore (typeof (OutputStep), new SealerStep ());
+			p.AddStepBefore (typeof (OutputStep), new ReferencedPrivateMethodsStep ());
 
 			//
 			// Pipeline setup with all steps enabled
@@ -1412,6 +1413,7 @@ namespace Mono.Linker
 			p.AppendStep (new CodeRewriterStep ());
 			p.AppendStep (new CleanStep ());
 			p.AppendStep (new RegenerateGuidStep ());
+			p.AppendStep (new ReferencedPrivateMethodsStep ());
 			p.AppendStep (new OutputStep ());
 			return p;
 		}
