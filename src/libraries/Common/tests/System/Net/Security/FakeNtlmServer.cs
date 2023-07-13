@@ -396,6 +396,12 @@ namespace System.Net.Security
 
         public void ResetKeys()
         {
+            if (_clientSeal != null)
+                _clientSeal.Dispose();
+
+            if (_serverSeal != null)
+                _serverSeal.Dispose();
+
             _clientSeal = new RC4(_clientSealingKey);
             _serverSeal = new RC4(_serverSealingKey);
         }
