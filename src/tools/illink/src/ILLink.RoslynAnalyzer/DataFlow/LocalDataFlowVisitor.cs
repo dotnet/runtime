@@ -282,7 +282,13 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// (don't have specific I*Operation types), such as pointer dereferences.
 				if (targetOperation.Kind is OperationKind.None)
 					break;
-				throw new NotImplementedException ($"{targetOperation.GetType ()}: {targetOperation.Syntax.GetLocation ().GetLineSpan ()}");
+
+				// Assert on anything else as it means we need to implement support for it
+				// but do not throw here as it means new Roslyn version could cause the analyzer to crash
+				// which is not fixable by the user. The analyzer is not going to be 100% correct no matter what we do
+				// so effectively ignoring constructs it doesn't understand is OK.
+				Debug.Fail ($"{targetOperation.GetType ()}: {targetOperation.Syntax.GetLocation ().GetLineSpan ()}");
+				break;
 			}
 			return Visit (operation.Value, state);
 		}
