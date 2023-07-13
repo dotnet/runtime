@@ -44,9 +44,9 @@ namespace System
         private const int MaxKeyLength = 255;
 
         private readonly string _id;
-        private readonly string? _displayName;
-        private readonly string? _standardDisplayName;
-        private readonly string? _daylightDisplayName;
+        private string? _displayName;
+        private string? _standardDisplayName;
+        private string? _daylightDisplayName;
         private readonly TimeSpan _baseUtcOffset;
         private readonly bool _supportsDaylightSavingTime;
         private readonly AdjustmentRule[]? _adjustmentRules;
@@ -85,9 +85,9 @@ namespace System
                         timeZone = new TimeZoneInfo(
                                             timeZone._id,
                                             timeZone._baseUtcOffset,
-                                            timeZone._displayName,
-                                            timeZone._standardDisplayName,
-                                            timeZone._daylightDisplayName,
+                                            timeZone.DisplayName,
+                                            timeZone.StandardName,
+                                            timeZone.DaylightName,
                                             timeZone._adjustmentRules,
                                             disableDaylightSavingTime: false,
                                             timeZone.HasIanaId);
@@ -146,11 +146,38 @@ namespace System
         /// </summary>
         public bool HasIanaId { get; }
 
-        public string DisplayName => _displayName ?? string.Empty;
+        public string DisplayName
+        {
+            get
+            {
+                if (_displayName == null)
+                    Interlocked.CompareExchange(ref _displayName, PopulateDisplayName(), null);
 
-        public string StandardName => _standardDisplayName ?? string.Empty;
+                return _displayName ?? string.Empty;
+            }
+        }
 
-        public string DaylightName => _daylightDisplayName ?? string.Empty;
+        public string StandardName
+        {
+            get
+            {
+                if (_standardDisplayName == null)
+                    Interlocked.CompareExchange(ref _standardDisplayName, PopulateStandardDisplayName(), null);
+
+                return _standardDisplayName ?? string.Empty;
+            }
+        }
+
+        public string DaylightName
+        {
+            get
+            {
+                if (_daylightDisplayName == null)
+                    Interlocked.CompareExchange(ref _daylightDisplayName, PopulateDaylightDisplayName(), null);
+
+                return _daylightDisplayName ?? string.Empty;
+            }
+        }
 
         public TimeSpan BaseUtcOffset => _baseUtcOffset;
 
@@ -962,9 +989,9 @@ namespace System
 
             _id = id;
             _baseUtcOffset = baseUtcOffset;
-            _displayName = displayName;
-            _standardDisplayName = standardDisplayName;
-            _daylightDisplayName = disableDaylightSavingTime ? null : daylightDisplayName;
+            _displayName = displayName ?? string.Empty;
+            _standardDisplayName = standardDisplayName ?? string.Empty;
+            _daylightDisplayName = disableDaylightSavingTime ? string.Empty : daylightDisplayName ?? string.Empty;
             _supportsDaylightSavingTime = adjustmentRulesSupportDst && !disableDaylightSavingTime;
             _adjustmentRules = adjustmentRules;
 

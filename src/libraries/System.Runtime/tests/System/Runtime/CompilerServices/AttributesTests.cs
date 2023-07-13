@@ -192,6 +192,32 @@ namespace System.Runtime.CompilerServices.Tests
             Assert.Equal(MethodImplOptions.Unmanaged, attr3.Value);
         }
 
+        [Fact]
+        public static void NullableAttributeTests()
+        {
+            var attr = new NullableAttribute(42);
+            Assert.Equal(new byte[] { 42 }, attr.NullableFlags);
+
+            attr = new NullableAttribute(new byte[] { 1, 2, 3 });
+            Assert.Equal(new byte[] { 1, 2, 3 }, attr.NullableFlags);
+        }
+
+        [Fact]
+        public static void NullableContextAttributeTests()
+        {
+            var attr = new NullableContextAttribute(42);
+            Assert.Equal(42, attr.Flag);
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void NullablePublicOnlyAttributeTests(bool includeInternals)
+        {
+            var attr = new NullablePublicOnlyAttribute(includeInternals);
+            Assert.Equal(includeInternals, attr.IncludesInternals);
+        }
+
         [Theory]
         [InlineData(-1)]
         [InlineData(42)]
@@ -300,6 +326,12 @@ namespace System.Runtime.CompilerServices.Tests
         }
 
         [Fact]
+        public static void IsUnmanagedAttributeTests()
+        {
+            new IsUnmanagedAttribute();
+        }
+
+        [Fact]
         public static void EnumeratorCancellationAttributeTests()
         {
             new EnumeratorCancellationAttribute();
@@ -334,6 +366,12 @@ namespace System.Runtime.CompilerServices.Tests
         public static void RequiredMemberAttributeTests()
         {
             new RequiredMemberAttribute();
+        }
+
+        [Fact]
+        public static void ScopedRefAttributeTests()
+        {
+            new ScopedRefAttribute();
         }
 
         [Fact]

@@ -1634,6 +1634,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
     CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
     CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
     CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+    CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
     CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
 };
 
@@ -1726,8 +1727,11 @@ struct CORINFO_FIELD_INFO
 
 struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
-    CORINFO_CONST_LOOKUP tlsIndex;
-    uint32_t offsetOfThreadLocalStoragePointer;
+    CORINFO_CONST_LOOKUP tlsIndex;              // windows specific
+    void* tlsGetAddrFtnPtr;                     // linux/x64 specific - address of __tls_get_addr() function
+    void* tlsIndexObject;                       // linux/x64 specific - address of tls_index object
+    void* threadVarsSection;                    // osx x64/arm64 specific - address of __thread_vars section of `t_ThreadStatics`
+    uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
     uint32_t offsetOfGCDataPointer;
