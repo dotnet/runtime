@@ -14,11 +14,13 @@
     <PackageReference Include="Microsoft.Build.Tasks.Core" Version="$(MicrosoftBuildTasksCoreVersion)" />
   </ItemGroup>
   <ItemGroup>
+      <ProjectReference Include="$(RepoRoot)src\tasks\MobileBuildTasks\MobileBuildTasks.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="ApkBuilder.cs" />
     <Compile Include="AndroidAppBuilder.cs" />
     <Compile Include="AndroidApkFileReplacerTask.cs" />
     <Compile Include="AndroidLibBuilderTask.cs" />
-    <Compile Include="..\Common\Builders\AndroidProject.cs" />
     <Compile Include="..\Common\AndroidSdkHelper.cs" />
     <Compile Include="..\Common\DexBuilder.cs" />
     <Compile Include="..\Common\JarBuilder.cs" />

@@ -45,6 +45,7 @@ initialize_runtimeconfig (const char *bundle_path)
     if (!arg->runtimeconfig.data.data)
         return;
 #else
+    char *file_name = "runtimeconfig.bin";
     size_t str_len = sizeof (char) * (strlen (bundle_path) + strlen (file_name) + 2); // +1 "/", +1 null-terminating char
     char *file_path = (char *)malloc (str_len);
     if (!file_path)

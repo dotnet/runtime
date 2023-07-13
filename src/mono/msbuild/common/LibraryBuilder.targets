@@ -24,6 +24,10 @@
       <_ExtraLinkerArgs Include="@(_CommonLinkerArgs)" />
       <_BundledRuntimeConfig Include="@(_BundledResources)" Condition="$([System.String]::Copy('%(Identity)').EndsWith('runtimeconfig.bin'))" />
     </ItemGroup>
+    <ItemGroup Condition="'$(TargetOS)' == 'android'">
+      <_ExtraLinkerArgs Include="-l:libz.so;-l:liblog.so;-l:libc.so;-l:libandroid.so;-l:libm.so;" />
+      <_ExtraLinkerArgs Include="--build-id=sha1" />
+    </ItemGroup>
 
     <LibraryBuilderTask
       Assemblies="@(_AssembliesToBundleInternal)"

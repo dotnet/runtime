@@ -354,6 +354,24 @@ internal static class Utils
 #endif
     }
 
+    public static bool IsMacOS()
+    {
+#if NETCOREAPP
+        return OperatingSystem.IsMacOS();
+#else
+        return false;
+#endif
+    }
+
+    public static bool IsLinux()
+    {
+#if NETCOREAPP
+        return OperatingSystem.IsLinux();
+#else
+        return false;
+#endif
+    }
+
     public static bool IsManagedAssembly(string filePath)
     {
         if (!File.Exists(filePath))

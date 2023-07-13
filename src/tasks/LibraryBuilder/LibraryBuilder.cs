@@ -9,6 +9,7 @@ using System.IO;
 using System.Text;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.Android.Build;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
@@ -137,6 +138,10 @@ public class LibraryBuilderTask : AppBuilderTask
         StringBuilder extraSources = new StringBuilder();
         StringBuilder linkerArgs = new StringBuilder();
 
+        List<string> sources = new List<string>();
+        List<string> libs = new List<string>();
+        List<string> lArgs = new List<string>();
+
         if (!ValidateValidTargetOS())
         {
             throw new ArgumentException($"{TargetOS} is not yet supported by the librarybuilder task.");
@@ -148,24 +153,122 @@ public class LibraryBuilderTask : AppBuilderTask
             return false;
         }
 
-        GatherAotSourcesObjects(aotSources, aotObjects, extraSources, linkerArgs);
-        GatherLinkerArgs(linkerArgs);
-
-        File.WriteAllText(Path.Combine(OutputDirectory, "library-builder.h"),
-            Utils.GetEmbeddedResource("library-builder.h"));
-
-        GenerateAssembliesLoader();
-
-        if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
+        if (TargetOS == "android")
         {
-            WriteAutoInitializationFromTemplate();
-            extraSources.AppendLine("    autoinit.c");
+            File.WriteAllText(Path.Combine(OutputDirectory, "library-builder.h"),
+                Utils.GetEmbeddedResource("library-builder.h"));
+
+            GenerateAssembliesLoader();
+
+            if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
+            {
+                WriteAutoInitializationFromTemplate();
+            }
+
+            GatherSourcesAndLibs(sources, libs, lArgs);
+            OutputPath = BuildLibrary(sources, libs, lArgs);
+        }
+        else
+        {
+            GatherAotSourcesObjects(aotSources, aotObjects, extraSources, linkerArgs);
+            GatherLinkerArgs(linkerArgs);
+
+            File.WriteAllText(Path.Combine(OutputDirectory, "library-builder.h"),
+                Utils.GetEmbeddedResource("library-builder.h"));
+
+            GenerateAssembliesLoader();
+
+            if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
+            {
+                WriteAutoInitializationFromTemplate();
+                extraSources.AppendLine("    autoinit.c");
+            }
+
+            WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
+            OutputPath = BuildLibrary();
         }
 
-        WriteCMakeFileFromTemplate(aotSources.ToString(), aotObjects.ToString(), extraSources.ToString(), linkerArgs.ToString());
-        OutputPath = BuildLibrary();
-
         return true;
+    }
+
+    private void GatherSourcesAndLibs(List<string> sources, List<string> libs, List<string> linkerArgs)
+    {
+        List<string> exportedSymbols = new List<string>();
+
+        foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
+        {
+            if (!usesAOTDataFile && !string.IsNullOrEmpty(compiledAssembly.DataFile))
+            {
+                usesAOTDataFile = true;
+            }
+
+            if (!string.IsNullOrEmpty(compiledAssembly.LlvmObjectFile))
+            {
+                sources.Add(compiledAssembly.LlvmObjectFile);
+            }
+
+            if (!string.IsNullOrEmpty(compiledAssembly.ObjectFile))
+            {
+                sources.Add(compiledAssembly.ObjectFile);
+            }
+
+            if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
+            {
+                int symbolsAdded = GatherExportedSymbols(compiledAssembly.ExportsFile, exportedSymbols);
+
+                if (symbolsAdded > 0)
+                {
+                    exportedAssemblies.Add(Path.GetFileName(compiledAssembly.Path));
+                }
+            }
+        }
+
+        foreach (ITaskItem lib in RuntimeLibraries)
+        {
+            string ext = Path.GetExtension(lib.ItemSpec);
+
+            if (ext == ".so" || ext == ".dylib")
+            {
+                libs.Add(lib.ItemSpec);
+            }
+            else
+            {
+                sources.Add(lib.ItemSpec);
+            }
+        }
+
+        foreach (ITaskItem item in ExtraLinkerArguments)
+        {
+            linkerArgs.Add(item.ItemSpec);
+        }
+
+        if (exportedAssemblies.Count == 0)
+        {
+            throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. The library must export only symbols resulting from [UnmanageCallersOnly(Entrypoint = )]Resulting shared library would be unusable.");
+        }
+
+        if (IsSharedLibrary)
+        {
+            // for android, all symbols to keep go in one linker script
+            //
+            // for ios, multiple files can be specified
+            if (TargetOS == "android")
+            {
+                WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
+                linkerArgs.Add($"\"--version-script={MobileSymbolFileName}\"");
+            }
+            else
+            {
+                throw new NotImplementedException("iOS coming");
+            }
+        }
+
+        foreach (ITaskItem item in ExtraSources)
+        {
+            sources.Add(item.ItemSpec);
+        }
+
+        ExportedSymbols = exportedSymbols.ToArray();
     }
 
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
@@ -319,6 +422,10 @@ public class LibraryBuilderTask : AppBuilderTask
                 .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
                 .Replace("%RUNTIME_CONFIG_DATA_LEN%", dataLenSymbol);
         }
+        else
+        {
+            autoInitialization = autoInitialization.Replace("%EXTERN_BUNDLED_RESOURCES_SYMBOLS%", string.Empty);
+        }
 
         File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"), autoInitialization);
     }
@@ -368,6 +475,50 @@ public class LibraryBuilderTask : AppBuilderTask
         }
 
         return extraDefinitions.ToString();
+    }
+
+    private string BuildLibrary(List<string> sources, List<string> libs, List<string> linkerArgs)
+    {
+        string libraryName = GetLibraryName();
+
+        if (TargetOS == "android")
+        {
+            AndroidBuildOptions buildOptions = new AndroidBuildOptions();
+            buildOptions.CompilerArguments.Add("-D ANDROID=1");
+            buildOptions.CompilerArguments.Add("-D HOST_ANDROID=1");
+            buildOptions.CompilerArguments.Add("-fPIC");
+            buildOptions.CompilerArguments.Add(IsSharedLibrary ? $"-shared -o {libraryName}" : $"-o {libraryName}");
+            buildOptions.IncludePaths.Add(MonoRuntimeHeaders);
+            buildOptions.LinkerArguments.Add($"--soname={libraryName}");
+            buildOptions.LinkerArguments.AddRange(linkerArgs);
+            buildOptions.NativeLibraryPaths.AddRange(libs);
+            buildOptions.Sources.AddRange(sources);
+            buildOptions.Sources.Add("preloaded-assemblies.c");
+
+            if (UsesRuntimeInitCallback && !UsesCustomRuntimeInitCallback)
+            {
+                buildOptions.Sources.Add("autoinit.c");
+            }
+
+            if (BundlesResources)
+            {
+                buildOptions.CompilerArguments.Add("-D BUNDLED_RESOURCES=1");
+            }
+
+            if (usesAOTDataFile)
+            {
+                buildOptions.CompilerArguments.Add("-D USES_AOT_DATA=1");
+            }
+
+            AndroidProject project = new AndroidProject("netlibrary", RuntimeIdentifier, Log);
+            project.Build(OutputDirectory, buildOptions, StripDebugSymbols);
+        }
+        else
+        {
+            throw new NotImplementedException("iOS without CMake is not yet implemented");
+        }
+
+        return Path.Combine(OutputDirectory, libraryName);
     }
 
     private string BuildLibrary()

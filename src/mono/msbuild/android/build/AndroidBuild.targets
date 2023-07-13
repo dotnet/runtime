@@ -3,7 +3,7 @@
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
     <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
-    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
+    <!--<AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>-->
 
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
@@ -74,6 +74,7 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
+    <MakeDir Directories="$(AndroidBundleDir)" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -110,6 +111,7 @@
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_UsesRuntimeInitCallback>$(UsesRuntimeInitCallback)</_UsesRuntimeInitCallback>
       <_UsesRuntimeInitCallback Condition="'$(_UsesRuntimeInitCallback)' == ''">true</_UsesRuntimeInitCallback>
+      <_AotOutputType>ObjectFile</_AotOutputType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -142,7 +144,6 @@
     </PropertyGroup>
 
     <NdkToolFinderTask
-      Condition="'$(AOTWithLibraryFiles)' == 'true'"
       Architecture="$(TargetArchitecture)"
       HostOS="$(_HostOS)"
       MinApiLevel="$(AndroidLibraryMinApiLevel)">
@@ -154,7 +155,7 @@
       <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
     </NdkToolFinderTask>
 
-    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
+    <PropertyGroup>
       <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
       <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>
