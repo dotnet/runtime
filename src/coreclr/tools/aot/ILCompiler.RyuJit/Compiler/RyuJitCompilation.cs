@@ -244,5 +244,6 @@ namespace ILCompiler
         ControlFlowGuardAnnotations = 0x2,
         UseDwarf5 = 0x4,
         UseResilience = 0x8,
+        NoPreciseGc = 0x10,
     }
 }

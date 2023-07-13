@@ -91,6 +91,8 @@ namespace ILCompiler
             new("--stacktracedata") { Description = "Emit data to support generating stack trace strings at runtime" };
         public CliOption<bool> MethodBodyFolding { get; } =
             new("--methodbodyfolding") { Description = "Fold identical method bodies" };
+        public CliOption<bool> NoPreciseGc { get; } =
+            new("--noprecisegc") { Description = "Do not generate precise stack GC information" };
         public CliOption<string[]> InitAssemblies { get; } =
             new("--initassembly") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "Assembly(ies) with a library initializer" };
         public CliOption<string[]> FeatureSwitches { get; } =
@@ -202,6 +204,7 @@ namespace ILCompiler
             Options.Add(IlDump);
             Options.Add(EmitStackTraceData);
             Options.Add(MethodBodyFolding);
+            Options.Add(NoPreciseGc);
             Options.Add(InitAssemblies);
             Options.Add(FeatureSwitches);
             Options.Add(RuntimeOptions);

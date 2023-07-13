@@ -25,6 +25,7 @@ namespace ILCompiler
         protected SecurityMitigationOptions _mitigationOptions;
         protected bool _dehydrate;
         protected bool _useDwarf5;
+        protected bool _isPreciseGc = true;
 
         partial void InitializePartial()
         {
@@ -119,6 +120,12 @@ namespace ILCompiler
         public CompilationBuilder UseDwarf5(bool value)
         {
             _useDwarf5 = value;
+            return this;
+        }
+
+        public CompilationBuilder UseGCStackReporting(bool isPrecise)
+        {
+            _isPreciseGc = isPrecise;
             return this;
         }
 

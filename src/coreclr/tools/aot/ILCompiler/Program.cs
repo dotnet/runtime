@@ -535,6 +535,7 @@ namespace ILCompiler
                 .UseInstructionSetSupport(instructionSetSupport)
                 .UseBackendOptions(Get(_command.CodegenOptions))
                 .UseMethodBodyFolding(enable: Get(_command.MethodBodyFolding))
+                .UseGCStackReporting(isPrecise: !Get(_command.NoPreciseGc))
                 .UseParallelism(parallelism)
                 .UseMetadataManager(metadataManager)
                 .UseInteropStubManager(interopStubManager)

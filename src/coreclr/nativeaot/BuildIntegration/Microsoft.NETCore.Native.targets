@@ -272,6 +272,9 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="--resilient" />
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
+      <IlcArg Condition="'$(IlcUseConservativeGc)' == 'true'" Include="--runtimeopt:gcConservative=1" />
+      <IlcArg Condition="'$(IlcUseConservativeGc)' == 'true'" Include="--noprecisegc" />
+
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
 
       <!-- Configure LINQ expressions - disable Emit everywhere -->

@@ -495,7 +495,15 @@ namespace Internal.JitInterface
             _methodCodeNode.InitializeColdFrameInfos(_coldFrameInfos);
 #endif
             _methodCodeNode.InitializeDebugEHClauseInfos(debugEHClauseInfos);
-            _methodCodeNode.InitializeGCInfo(_gcInfo);
+
+#if !READYTORUN
+            if ((_compilation._compilationOptions & RyuJitCompilationOptions.NoPreciseGc) == 0
+                // GC info is necessary to unwind reverse P/invokes and cannot be stripped
+                || _methodCodeNode.Method.IsUnmanagedCallersOnly)
+#endif
+            {
+                _methodCodeNode.InitializeGCInfo(_gcInfo);
+            }
             _methodCodeNode.InitializeEHInfo(ehInfo);
 
             _methodCodeNode.InitializeDebugLocInfos(_debugLocInfos);
