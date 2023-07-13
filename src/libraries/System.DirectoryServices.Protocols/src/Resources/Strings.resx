@@ -426,4 +426,7 @@
   <data name="ReferralChasingOptionsNotSupported" xml:space="preserve">
     <value>Only ReferralChasingOptions.None and ReferralChasingOptions.All are supported on Linux.</value>
   </data>
+  <data name="LDAP_LIBRARY_NOT_FOUND" xml:space="preserve">
+    <value>The OpenLDAP library {0} not found.</value>
+  </data>
 </root>

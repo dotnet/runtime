@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices;
 using System.DirectoryServices.Protocols;
+using System.Runtime.InteropServices;
+using System.Runtime.Loader;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -67,6 +68,26 @@ internal static partial class Interop
     {
         static Ldap()
         {
+            // Register callback that tries to load other libraries when the default library "libldap-2.4.so.2" not found
+            AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, ldapName) =>
+            {
+                IntPtr handle = IntPtr.Zero;
+
+                if (ldapName != Libraries.OpenLdap)
+                {
+                    return handle;
+                }
+
+                if (NativeLibrary.TryLoad("libldap-2.5.so.0", out handle) ||
+                    NativeLibrary.TryLoad("libldap-2.6.so.0", out handle) ||
+                    NativeLibrary.TryLoad(Libraries.OpenLdap, out handle))
+                {
+                    return handle;
+                }
+
+                throw new DllNotFoundException(SR.Format(SR.LDAP_LIBRARY_NOT_FOUND, ldapName));
+            };
+
             // OpenLdap must be initialized on a single thread, once this is done it allows concurrent calls
             // By doing so in the static constructor we guarantee this is run before any other methods are called.
 
