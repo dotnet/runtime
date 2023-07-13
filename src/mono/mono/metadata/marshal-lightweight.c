@@ -2343,16 +2343,21 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 		return;
 	}
 
-	mono_mb_emit_ldarg (mb, 0);
-	
 	MonoClassField *target_field = mono_class_get_field_from_name_full (target_class, member_name, NULL);
-	if (target_field == NULL || target_field->type->type != ret_type->type) {
+	if (target_field == NULL || !mono_metadata_type_equal_full (target_field->type, m_class_get_byval_arg (mono_class_from_mono_type_internal (ret_type)), TRUE)) {
 		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", 
 			g_strdup_printf("No '%s' in '%s'. Or the type of '%s' doesn't match", member_name, m_class_get_name (target_class), member_name));
 		return;
 	}
+	gboolean is_field_static = !!(target_field->type->attrs & FIELD_ATTRIBUTE_STATIC);
+	if ((kind == MONO_UNSAFE_ACCESSOR_FIELD && is_field_static) || (kind == MONO_UNSAFE_ACCESSOR_STATIC_FIELD && !is_field_static)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("The status of static of field '%s' in '%s' doesn't match", member_name, m_class_get_name (target_class)));
+		return;
+	}
 
-	mono_mb_emit_op (mb, CEE_LDFLDA, target_field);
+	if (kind == MONO_UNSAFE_ACCESSOR_FIELD)
+		mono_mb_emit_ldarg (mb, 0);
+	mono_mb_emit_op (mb, kind == MONO_UNSAFE_ACCESSOR_FIELD ? CEE_LDFLDA : CEE_LDSFLDA, target_field);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
