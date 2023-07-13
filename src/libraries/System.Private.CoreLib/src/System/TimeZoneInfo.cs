@@ -941,7 +941,6 @@ namespace System
                         int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
                         return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
                     });
-                    cachedData._systemTimeZonesSorted = true;
 
                     cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                 }
@@ -949,6 +948,7 @@ namespace System
                 {
                     cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                 }
+                cachedData._systemTimeZonesSorted = true;
             }
 
             return cachedData._readOnlySystemTimeZones;
