@@ -2479,7 +2479,9 @@ mono_class_get_field_from_name_full (MonoClass *klass, const char *name, MonoTyp
 				continue;
 
 			if (type) {
-				MonoType *field_type = mono_metadata_get_corresponding_field_from_generic_type_definition (field)->type;
+				MonoClassField *gfield = mono_metadata_get_corresponding_field_from_generic_type_definition (field);
+				g_assert (gfield != NULL);
+				MonoType *field_type = gfield->type;
 				if (!mono_metadata_type_equal_full (type, field_type, TRUE))
 					continue;
 			}

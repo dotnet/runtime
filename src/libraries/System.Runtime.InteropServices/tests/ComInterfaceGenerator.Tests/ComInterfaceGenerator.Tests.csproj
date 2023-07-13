@@ -1,18 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <IsPackable>false</IsPackable>
-    <LangVersion>Preview</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
-    <!-- These tests pull the attributes from Ancillary.Interop, so we don't need to include the attribute sources in this assembly. -->
-    <IncludeLibraryImportGeneratorSources>false</IncludeLibraryImportGeneratorSources>
     <ReferencesNativeExports>true</ReferencesNativeExports>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <!-- Declare InteropCompilerGeneratedFilesOutputPath to put generated files in a single repo to easily view diffs -->
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' == ''">$(OutputPath)\Generated</CompilerGeneratedFilesOutputPath>
+    <CompilerGeneratedFilesOutputPath Condition="'$(InteropCompilerGeneratedFilesOutputPath)' != ''">$(InteropCompilerGeneratedFilesOutputPath)\ComInterfaceGenerator.Tests</CompilerGeneratedFilesOutputPath>
+    <EnableDefaultItems>true</EnableDefaultItems>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
-    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\*.cs" Link="ComInterfaces\%(FileName).cs" />
+    <Compile Include="..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
   </ItemGroup>
 
   <ItemGroup>

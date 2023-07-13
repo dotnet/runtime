@@ -18,8 +18,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void CompilingTheSameSourceResultsInEqualModels(Func<Compilation> factory)
         {
-            JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(factory());
-            JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(factory());
+            JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
+            JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
 
             Assert.Equal(result1.ContextGenerationSpecs.Length, result2.ContextGenerationSpecs.Length);
 
@@ -40,7 +40,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static void CompilingEquivalentSourcesResultsInEqualModels()
         {
             string source1 = """
-                using System;
                 using System.Text.Json.Serialization;
                 
                 namespace Test
@@ -50,7 +49,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 
                     public class MyPoco
                     {
-                        public string MyProperty { get; set; } = 42;
+                        public int MyProperty { get; set; } = 42;
                     }
                 }
                 """;
@@ -64,7 +63,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     // Same as above but with different implementation
                     public class MyPoco
                     {
-                        public string MyProperty
+                        public int MyProperty
                         {
                             get => -1;
                             set => throw new NotSupportedException();
@@ -79,8 +78,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source1));
             JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source2));
-            Assert.Empty(result1.Diagnostics);
-            Assert.Empty(result2.Diagnostics);
 
             Assert.Equal(1, result1.ContextGenerationSpecs.Length);
             Assert.Equal(1, result2.ContextGenerationSpecs.Length);
@@ -99,7 +96,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         public static void CompilingDifferentSourcesResultsInUnequalModels()
         {
             string source1 = """
-                using System;
                 using System.Text.Json.Serialization;
                 
                 namespace Test
@@ -109,13 +105,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 
                     public class MyPoco
                     {
-                        public string MyProperty { get; set; } = 42;
+                        public int MyProperty { get; set; } = 42;
                     }
                 }
                 """;
 
             string source2 = """
-                using System;
                 using System.Text.Json.Serialization;
                 
                 namespace Test
@@ -125,15 +120,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 
                     public class MyPoco
                     {
-                        public string MyProperty { get; } = 42; // same, but missing a getter
+                        public int MyProperty { get; } = 42; // same, but missing a getter
                     }
                 }
                 """;
 
             JsonSourceGeneratorResult result1 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source1));
             JsonSourceGeneratorResult result2 = CompilationHelper.RunJsonSourceGenerator(CompilationHelper.CreateCompilation(source2));
-            Assert.Empty(result1.Diagnostics);
-            Assert.Empty(result2.Diagnostics);
 
             Assert.Equal(1, result1.ContextGenerationSpecs.Length);
             Assert.Equal(1, result2.ContextGenerationSpecs.Length);
@@ -147,7 +140,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void SourceGenModelDoesNotEncapsulateSymbolsOrCompilationData(Func<Compilation> factory)
         {
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory());
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(factory(), disableDiagnosticValidation: true);
             WalkObjectGraph(result.ContextGenerationSpecs);
 
             static void WalkObjectGraph(object obj)
@@ -194,8 +187,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         [MemberData(nameof(GetCompilationHelperFactories))]
         public static void IncrementalGenerator_SameInput_DoesNotRegenerate(Func<Compilation> factory)
         {
-            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver();
             Compilation compilation = factory();
+            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];
@@ -286,8 +279,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver();
             Compilation compilation = CompilationHelper.CreateCompilation(source1);
+            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];
@@ -349,8 +342,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver();
             Compilation compilation = CompilationHelper.CreateCompilation(source1);
+            GeneratorDriver driver = CompilationHelper.CreateJsonSourceGeneratorDriver(compilation);
 
             driver = driver.RunGenerators(compilation);
             GeneratorRunResult runResult = driver.GetRunResult().Results[0];

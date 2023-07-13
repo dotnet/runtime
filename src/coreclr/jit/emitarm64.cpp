@@ -937,7 +937,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             datasize = id->idOpSize();
             assert(isGeneralRegister(id->idReg1()));
             assert(datasize == EA_8BYTE);
@@ -1352,7 +1352,7 @@ static const char * const  bRegNames[] =
 // Return value:
 //    A string that represents a general-purpose register name or SIMD and floating-point scalar register name.
 //
-const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
     assert(reg < REG_COUNT);
 
@@ -3736,6 +3736,12 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
         case INS_dczva:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
+            id = emitNewInstrSmall(attr);
+            id->idReg1(reg);
+            fmt = IF_SR_1A;
+            break;
+
+        case INS_mrs_tpid0:
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
@@ -10222,10 +10228,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             assert(fmt == IF_BI_0A);
             assert((distVal & 1) == 0);
-            code_t     code             = emitInsCode(ins, fmt);
-            const bool recordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+            code_t     code               = emitInsCode(ins, fmt);
+            const bool doRecordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 // dst isn't an actual final target location, just some intermediate
                 // location.  Thus we cannot make any guarantees about distVal (not
@@ -10246,7 +10252,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             const unsigned instrSize = emitOutput_Instr(dst, code);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 assert(id->idjKeepLong);
                 if (emitComp->info.compMatchedVM)
@@ -11793,7 +11799,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
@@ -12595,14 +12601,10 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
-#ifdef DEBUG
-    if (!emitComp->opts.disAddr)
+    if (!emitComp->opts.disCodeBytes)
     {
         return;
     }
-#else // DEBUG
-    return;
-#endif
 
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
@@ -13925,8 +13927,16 @@ void emitter::emitDispInsHelp(
             emitDispBarrier((insBarrier)emitGetInsSC(id));
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
-            emitDispReg(id->idReg1(), size, false);
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            if (ins == INS_mrs_tpid0)
+            {
+                emitDispReg(id->idReg1(), size, true);
+                printf("tpidr_el0");
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, false);
+            }
             break;
 
         default:

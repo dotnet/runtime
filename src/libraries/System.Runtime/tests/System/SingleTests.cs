@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -556,6 +557,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => float.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(float.TryParse(value.AsSpan(), style, provider, out float result));
+                Assert.Equal(0, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+
+            float result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(float.TryParse(valueUtf8, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, float.Parse(valueUtf8));
+                }
+
+                Assert.Equal(expected, float.Parse(valueUtf8, provider: provider));
+            }
+
+            Assert.Equal(expected, float.Parse(valueUtf8, style, provider));
+
+            Assert.True(float.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+                Assert.Throws(exceptionType, () => float.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(float.TryParse(valueUtf8, style, provider, out float result));
                 Assert.Equal(0, result);
             }
         }

@@ -1070,10 +1070,15 @@ type_from_op (MonoCompile *cfg, MonoInst *ins, MonoInst *src1, MonoInst *src2)
 		ins->type = STACK_R8;
 		switch (src1->type) {
 		case STACK_I4:
+#if TARGET_SIZEOF_VOID_P == 4
 		case STACK_PTR:
+#endif
 			ins->opcode = OP_ICONV_TO_R_UN;
 			break;
 		case STACK_I8:
+#if TARGET_SIZEOF_VOID_P == 8
+		case STACK_PTR:
+#endif
 			ins->opcode = OP_LCONV_TO_R_UN;
 			break;
 		case STACK_R4:
@@ -6722,7 +6727,10 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		cfg->gsharedvt_info = info;
 
 		var = mono_compile_create_var (cfg, mono_get_int_type (), OP_LOCAL);
-		/* prevent it from being register allocated */
+		/*
+		 * Decomposing ldaddr creates uses for this and gsharedvt_locals_var, so
+		 * when we emit an ldaddr, we emit dummy uses for these in handle_gsharedvt_ldaddr ().
+		 */
 		//var->flags |= MONO_INST_VOLATILE;
 		cfg->gsharedvt_info_var = var;
 
@@ -8943,7 +8951,10 @@ calli_end:
 			if (sp [-1]->type == STACK_R8 || sp [-1]->type == STACK_R4) {
 				/* floats are always signed, _UN has no effect */
 				ADD_UNOP (CEE_CONV_OVF_U8);
-				ADD_UNOP (il_op);
+				if (TARGET_SIZEOF_VOID_P == 8 && il_op == MONO_CEE_CONV_OVF_U)
+					sp [-1]->type = STACK_PTR; // no additional conversion needed
+				else
+					ADD_UNOP (il_op);
 			} else {
 				ADD_UNOP (il_op);
 			}

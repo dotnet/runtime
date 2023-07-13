@@ -427,6 +427,7 @@
 #define BFA_BAD_COMPLUS_SIG                     0x2049
 #define BFA_BAD_ELEM_IN_SIZEOF                  0x204b
 #define BFA_IJW_IN_COLLECTIBLE_ALC              0x204c
+#define BFA_INVALID_UNSAFEACCESSOR              0x204d
 
 #define IDS_CLASSLOAD_INTERFACE_NO_ACCESS       0x204f
 

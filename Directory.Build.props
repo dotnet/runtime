@@ -54,6 +54,7 @@
         - eng/native/build-commons.sh
         - src/native/libs/build-native.sh
         - src/coreclr/tools/aot/ILCompiler.Compiler/Compiler/DependencyAnalysis/ObjectWriter.cs
+        - src/coreclr/nativeaot/BuildIntegration/Microsoft.NETCore.Native.Unix.targets
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-x64.xml
         - src/installer/pkg/sfx/bundle/shared-framework-distribution-template-arm64.xml
      -->
@@ -144,11 +145,11 @@
     <RepoTasksDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'src', 'tasks'))</RepoTasksDir>
     <IbcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'ibc'))</IbcOptimizationDataDir>
     <MibcOptimizationDataDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', 'mibc'))</MibcOptimizationDataDir>
-    <XmlDocDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'docs'))</XmlDocDir>
     <DocsDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', 'docs'))</DocsDir>
 
     <AppleAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AppleAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</AppleAppBuilderDir>
     <AndroidAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'AndroidAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</AndroidAppBuilderDir>
+    <MobileBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'MobileBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</MobileBuildTasksDir>
     <WasmAppBuilderDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppBuilder', 'Debug', '$(NetCoreAppToolCurrent)'))</WasmAppBuilderDir>
     <WasmBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)', 'publish'))</WasmBuildTasksDir>
     <WorkloadBuildTasksDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WorkloadBuildTasks', 'Debug', '$(NetCoreAppToolCurrent)'))</WorkloadBuildTasksDir>
@@ -162,6 +163,7 @@
     <Crossgen2SdkOverrideTargetsPath Condition="'$(MSBuildRuntimeType)' == 'Core'">$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Crossgen2Tasks', 'Debug', '$(NetCoreAppToolCurrent)', 'Microsoft.NET.CrossGen.targets'))</Crossgen2SdkOverrideTargetsPath>
     <AppleAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AppleAppBuilderDir)', 'AppleAppBuilder.dll'))</AppleAppBuilderTasksAssemblyPath>
     <AndroidAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(AndroidAppBuilderDir)', 'AndroidAppBuilder.dll'))</AndroidAppBuilderTasksAssemblyPath>
+    <MobileBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(MobileBuildTasksDir)', 'MobileBuildTasks.dll'))</MobileBuildTasksAssemblyPath>
     <WasmAppBuilderTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmAppBuilderDir)', 'WasmAppBuilder.dll'))</WasmAppBuilderTasksAssemblyPath>
     <WasmBuildTasksAssemblyPath>$([MSBuild]::NormalizePath('$(WasmBuildTasksDir)', 'WasmBuildTasks.dll'))</WasmBuildTasksAssemblyPath>
     <WasmAppHostDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'WasmAppHost', 'wasm', '$(Configuration)'))</WasmAppHostDir>

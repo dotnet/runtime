@@ -408,6 +408,11 @@ namespace System.Reflection.Metadata
 
                 Assert.True ((addedEventToken & 0x00ffffff) < 4);
                 
+                fi = x2.GetType().GetField("AddedDateTime");
+                Assert.NotNull(fi);
+                var dt = DateTime.Now;
+                fi.SetValue(x2, dt);
+                Assert.Equal(dt, fi.GetValue(x2));
 
                 ApplyUpdateUtil.ApplyUpdate(assm);
 
@@ -418,6 +423,8 @@ namespace System.Reflection.Metadata
                 var addedSecondPropInfo = x2.GetType().GetProperty("AddedSecondProp");
                 var secondPropGetter = addedSecondPropInfo.GetGetMethod();
                 Assert.NotNull (secondPropGetter);
+
+                Assert.Equal(dt, x2.GetDateTime());
 
             });
         }
@@ -753,7 +760,7 @@ namespace System.Reflection.Metadata
                 var ty = typeof(System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewMethod);
                 var assm = ty.Assembly;
 
-		var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
+                var bindingFlags = BindingFlags.Instance | BindingFlags.Public;
                 var allMethods = ty.GetMethods(bindingFlags);
 
                 int objectMethods = typeof(object).GetMethods(bindingFlags).Length;
@@ -799,32 +806,120 @@ namespace System.Reflection.Metadata
                     parmPos++;
                 }
 
-		var parmAttrs = parms[4].GetCustomAttributes(false);
+                var parmAttrs = parms[4].GetCustomAttributes(false);
                 Assert.Equal (2, parmAttrs.Length);
-		bool foundCallerMemberName = false;
-		bool foundOptional = false;
-		foreach (var pa in parmAttrs) {
-		    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
-		    {
-			foundCallerMemberName = true;
-		    }
-		    if (typeof (OptionalAttribute).Equals(pa.GetType()))
-		    {
-			foundOptional = true;
-		    }
-		}
-		Assert.True(foundCallerMemberName);
-		Assert.True(foundOptional);
+                bool foundCallerMemberName = false;
+                bool foundOptional = false;
+                foreach (var pa in parmAttrs) {
+                    if (typeof (CallerMemberNameAttribute).Equals(pa.GetType()))
+                    {
+                        foundCallerMemberName = true;
+                    }
+                    if (typeof (OptionalAttribute).Equals(pa.GetType()))
+                    {
+                        foundOptional = true;
+                    }
+                }
+                Assert.True(foundCallerMemberName);
+                Assert.True(foundOptional);
 
-		// n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
-		Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
+                // n.b. this typeof() also makes the rest of the test work on Wasm with aggressive trimming.
+                Assert.Equal (typeof(System.Threading.CancellationToken), parms[3].ParameterType);
 
                 Assert.True(parms[3].HasDefaultValue);
-		Assert.True(parms[4].HasDefaultValue);
+                Assert.True(parms[4].HasDefaultValue);
 
-		Assert.Null(parms[3].DefaultValue);
-		Assert.Equal(string.Empty, parms[4].DefaultValue);
+                Assert.Null(parms[3].DefaultValue);
+                Assert.Equal(string.Empty, parms[4].DefaultValue);
             });
-	} 
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87574", TestRuntimes.CoreCLR)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestGenericAddStaticField()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<>).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<string>();
+
+                x.TestMethod();
+
+                Assert.Equal ("abcd", x.GetField());
+
+                var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddStaticField<double>();
+
+                Assert.Equal (0.0, y.GetField());
+                
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                // there are two updates - the first adds the fields, the second one updates the
+                // methods to use the new fields
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                x.TestMethod();
+
+                string result = x.GetField();
+                Assert.Equal("4567", result);
+
+                Assert.Equal(0.0, y.GetField());
+            });
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87574", TestRuntimes.CoreCLR)]
+        [ConditionalFact(typeof(ApplyUpdateUtil), nameof(ApplyUpdateUtil.IsSupported))]
+        public static void TestGenericAddInstanceField()
+        {
+            ApplyUpdateUtil.TestCase(static () =>
+            {
+                var assm = typeof(System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<>).Assembly;
+
+                var x = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<string>("abcd");
+
+                Assert.Null (x.GetIt());
+
+                var y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(45.0);
+
+                Assert.Equal (0.0, y.GetIt());
+                
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                var fi = x.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.NotNull(fi);
+
+                Assert.Equal ("myAddedField", fi.Name);
+
+                Assert.Equal (typeof(string), fi.FieldType);
+
+                var fi2 = y.GetType().GetField("myAddedField", BindingFlags.Instance | BindingFlags.NonPublic);
+
+                Assert.NotNull(fi2);
+
+                Assert.Equal ("myAddedField", fi2.Name);
+
+                Assert.Equal (typeof(double), fi2.FieldType);
+
+                // there are two updates - the first adds the fields, the second one updates the
+                // methods to use the new fields
+                ApplyUpdateUtil.ApplyUpdate(assm);
+
+                Assert.Null (x.GetIt());
+                Assert.Equal (0.0, y.GetIt());
+
+                x = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<string>("spqr");
+
+                string result = x.GetIt();
+                Assert.Equal("spqr", result);
+
+                y = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<double>(2.717);
+                Assert.Equal(2.717, y.GetIt());
+
+                var dt = DateTime.Now;
+                var z = new System.Reflection.Metadata.ApplyUpdate.Test.GenericAddInstanceField<DateTime>(dt);
+                Assert.Equal(dt, z.GetIt());
+            });
+        }
     }
 }

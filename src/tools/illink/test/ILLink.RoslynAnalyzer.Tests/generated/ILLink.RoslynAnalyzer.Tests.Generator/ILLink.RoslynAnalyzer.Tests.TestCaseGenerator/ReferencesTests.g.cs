@@ -10,6 +10,18 @@ namespace ILLink.RoslynAnalyzer.Tests
 		protected override string TestSuiteName => "References";
 
 		[Fact]
+		public Task AssemblyOnlyUsedByUsingSaveAction ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
+		public Task AssemblyOnlyUsedByUsingSaveActionWithSymbols ()
+		{
+			return RunTest (allowMissingWarnings: true);
+		}
+
+		[Fact]
 		public Task AssemblyOnlyUsedByUsingWithCsc ()
 		{
 			return RunTest (allowMissingWarnings: true);

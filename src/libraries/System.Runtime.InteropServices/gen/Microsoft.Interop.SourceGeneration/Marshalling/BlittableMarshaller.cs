@@ -103,7 +103,7 @@ namespace Microsoft.Interop
             return info.IsByRef && !context.IsInStubReturnPosition(info) && !context.SingleFrameSpansNativeContext;
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => ByValueMarshalKindSupport.NotSupported;
     }
 
 }
