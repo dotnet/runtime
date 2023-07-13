@@ -24,3 +24,7 @@ To build for Bionic:
 Command line apps are not very interesting for Android. The more interesting scenario are shared libraries that can be called into from Java/Kotlin through JNI. This is very similar to building shared libraries in other languages like C/C++/Rust. `PublishAot` allows building shared libraries that are callable from non-.NET languages. See https://learn.microsoft.com/dotnet/core/deploying/native-aot/interop#native-exports.
 
 For an example of a Native AOT shared library invoked through JNI from Java see https://github.com/josephmoresena/NativeAOT-AndroidHelloJniLib.
+
+## Libssl dependency
+
+Crypto in .NET is implemented on top of OS-provided crypto libraries (we do not build or service crypto algorithm implementations). Since Android doesn't come with the standard openssl library inbox, your app will need to provide it. The runtime code can handle various versions of the openssl library. The library has to be placed next to the app.
