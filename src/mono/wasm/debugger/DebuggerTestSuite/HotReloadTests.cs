@@ -609,12 +609,12 @@ namespace DebuggerTests
             string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
 
             await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
-            await SetBreakpoint(".*/MethodBody1.cs$", 118, 12, use_regex: true);
 
             var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
                     asm_file, pdb_file, "MethodBody6", "StaticMethod1", expectBpResolvedEvent: true, sourcesToWait: new string [] { "MethodBody0.cs", "MethodBody1.cs" });
 
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            await SetBreakpoint(".*/MethodBody1.cs$", 118, 12, use_regex: true);            
             //apply first update
             pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
                     asm_file_hot_reload, "MethodBody10", "StaticMethod1", 1);
