@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -93,6 +95,41 @@ namespace System.Runtime.InteropServices.JavaScript
             }
         }
 
+        public static void LoadLazyAssembly(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            ref JSMarshalerArgument arg_2 = ref arguments_buffer[3];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+                arg_2.ToManaged(out byte[]? pdbBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadLazyAssembly(dllBytes, pdbBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
+
+        public static void LoadSatelliteAssembly(JSMarshalerArgument* arguments_buffer)
+        {
+            ref JSMarshalerArgument arg_exc = ref arguments_buffer[0];
+            ref JSMarshalerArgument arg_1 = ref arguments_buffer[2];
+            try
+            {
+                arg_1.ToManaged(out byte[]? dllBytes);
+
+                if (dllBytes != null)
+                    JSHostImplementation.LoadSatelliteAssembly(dllBytes);
+            }
+            catch (Exception ex)
+            {
+                arg_exc.ToJS(ex);
+            }
+        }
 
         // The JS layer invokes this method when the JS wrapper for a JS owned object
         //  has been collected by the JS garbage collector

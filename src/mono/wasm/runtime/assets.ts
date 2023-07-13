@@ -73,9 +73,9 @@ export function instantiate_asset(asset: AssetEntry, url: string, bytes: Uint8Ar
     if (asset.behavior === "assembly") {
         // this is reading flag inside the DLL about the existence of PDB
         // it doesn't relate to whether the .pdb file is downloaded at all
-        const hasPpdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
+        const hasPdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
 
-        if (!hasPpdb) {
+        if (!hasPdb) {
             const index = loaderHelpers._loaded_files.findIndex(element => element.file == virtualName);
             loaderHelpers._loaded_files.splice(index, 1);
         }

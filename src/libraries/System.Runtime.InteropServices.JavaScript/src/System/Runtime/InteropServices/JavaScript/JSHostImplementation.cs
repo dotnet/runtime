@@ -1,13 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Threading.Tasks;
-using System.Reflection;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Threading;
-using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -80,14 +81,14 @@ namespace System.Runtime.InteropServices.JavaScript
             if (obj == null)
                 return IntPtr.Zero;
 
-            IntPtr gcHandle;
+                IntPtr gcHandle;
             if (ThreadJsOwnedObjects.TryGetValue(obj, out gcHandle))
-                return gcHandle;
+                    return gcHandle;
 
             IntPtr result = (IntPtr)GCHandle.Alloc(obj, handleType);
             ThreadJsOwnedObjects[obj] = result;
-            return result;
-        }
+                return result;
+            }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
@@ -211,6 +212,21 @@ namespace System.Runtime.InteropServices.JavaScript
                 ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             return res;
+        }
+
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        public static void LoadLazyAssembly(byte[] dllBytes, byte[]? pdbBytes)
+        {
+            if (pdbBytes == null)
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
+            else
+                AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes), new MemoryStream(pdbBytes));
+        }
+
+        [Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "It's always part of the single compilation (and trimming) unit.")]
+        public static void LoadSatelliteAssembly(byte[] dllBytes)
+        {
+            AssemblyLoadContext.Default.LoadFromStream(new MemoryStream(dllBytes));
         }
 
 #if FEATURE_WASM_THREADS

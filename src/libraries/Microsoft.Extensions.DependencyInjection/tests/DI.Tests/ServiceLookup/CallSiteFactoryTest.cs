@@ -789,7 +789,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             Assert.Equal(expectedLocation, callSite.Cache.Location);
             Assert.Equal(0, callSite.Cache.Key.Slot);
-            Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.Type);
+            Assert.Equal(typeof(IEnumerable<FakeService>), callSite.Cache.Key.ServiceIdentifier.Value.ServiceType);
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
@@ -1001,7 +1001,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             var callSiteFactory = new CallSiteFactory(collection.ToArray());
 
-            return type => callSiteFactory.GetCallSite(type, new CallSiteChain());
+            return type => callSiteFactory.GetCallSite(ServiceIdentifier.FromServiceType(type), new CallSiteChain());
         }
 
         private static IEnumerable<Type> GetParameters(ConstructorCallSite constructorCallSite) =>

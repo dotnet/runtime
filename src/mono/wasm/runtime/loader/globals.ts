@@ -7,6 +7,8 @@ import { abort_startup, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_asset_path } from "./assets";
 import { setup_proxy_console } from "./logging";
+import { hasDebuggingEnabled } from "./blazor/_Polyfill";
+import { invokeLibraryInitializers } from "./libraryInitializers";
 
 export const ENVIRONMENT_IS_NODE = typeof process == "object" && typeof process.versions == "object" && typeof process.versions.node == "string";
 export const ENVIRONMENT_IS_WEB = typeof window == "object";
@@ -43,7 +45,8 @@ export function setLoaderGlobals(
     exportedRuntimeAPI = globalObjects.api;
     INTERNAL = globalObjects.internal;
     Object.assign(exportedRuntimeAPI, {
-        INTERNAL
+        INTERNAL,
+        invokeLibraryInitializers
     });
 
     Object.assign(globalObjects.module, {
@@ -54,7 +57,7 @@ export function setLoaderGlobals(
         mono_wasm_bindings_is_ready: false,
         javaScriptExports: {} as any,
         config: globalObjects.module.config,
-        diagnosticTracing: false,
+        diagnosticTracing: false
     });
     Object.assign(loaderHelpers, {
         config: globalObjects.module.config,
@@ -65,6 +68,7 @@ export function setLoaderGlobals(
 
         _loaded_files: [],
         loadedFiles: [],
+        loadedAssemblies: [],
         actual_downloaded_assets_count: 0,
         actual_instantiated_assets_count: 0,
         expected_downloaded_assets_count: 0,
@@ -83,6 +87,9 @@ export function setLoaderGlobals(
         mono_download_assets,
         resolve_asset_path,
         setup_proxy_console,
+
+        hasDebuggingEnabled,
+        invokeLibraryInitializers,
 
     } as Partial<LoaderHelpers>);
 }
