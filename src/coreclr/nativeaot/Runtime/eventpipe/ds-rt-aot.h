@@ -181,13 +181,8 @@ ds_rt_generate_core_dump (
 {
     STATIC_CONTRACT_NOTHROW;
 
-    ds_ipc_result_t result = DS_IPC_E_FAIL;
-    uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Generate an exception dump
-    // PalDebugBreak();
-
-    return 0;
+    // Eventpipe driven core_dump is not currently supported in NativeAOT
+    return DS_IPC_E_NOTSUPPORTED;
 }
 
 /*
