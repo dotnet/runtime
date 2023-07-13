@@ -336,6 +336,7 @@ namespace System.Net.Http
         private unsafe void WriteEvent(int eventId, byte arg1, byte arg2, long arg3, string? arg4, string arg5, int arg6, string? arg7)
         {
             arg4 ??= "";
+            arg5 ??= "";
             arg7 ??= "";
 
             const int NumEventDatas = 7;

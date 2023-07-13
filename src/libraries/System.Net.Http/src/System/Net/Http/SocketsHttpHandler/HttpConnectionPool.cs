@@ -1549,6 +1549,7 @@ namespace System.Net.Http
                     stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                     if (HttpTelemetry.Log.IsEnabled())
                     {
+                        // remoteEndPoint is returned optionally for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                     }
                     if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
@@ -1561,6 +1562,7 @@ namespace System.Net.Http
                     stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
                     if (HttpTelemetry.Log.IsEnabled())
                     {
+                        // remoteEndPoint is returned optionally for diagnostic purposes.
                         remoteEndPoint = GetRemoteEndPoint(stream);
                     }
                     if (_sslOptionsProxy != null)
