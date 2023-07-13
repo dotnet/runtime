@@ -9,9 +9,10 @@ internal static partial class Interop
         // Use for SetFileInformationByHandle
         internal const int FileDispositionInfo = 4;
 
-        internal struct FILE_DISPOSITION_INFO
+        internal readonly struct FILE_DISPOSITION_INFO
         {
-            internal byte DeleteFile;
+            internal FILE_DISPOSITION_INFO(byte deleteFile) => DeleteFile = deleteFile;
+            internal readonly byte DeleteFile;
         }
     }
 }

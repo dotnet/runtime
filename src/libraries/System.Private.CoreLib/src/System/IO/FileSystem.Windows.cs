@@ -344,10 +344,8 @@ namespace System.IO
                     }
                     if (!madeNew || getIntegrityInfo.ChecksumAlgorithm != 0 || getIntegrityInfo.Flags != 0)
                     {
-                        Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER setIntegrityInfo = default;
-                        setIntegrityInfo.ChecksumAlgorithm = getIntegrityInfo.ChecksumAlgorithm;
-                        setIntegrityInfo.Flags = getIntegrityInfo.Flags;
-                        setIntegrityInfo.Reserved = getIntegrityInfo.Reserved;
+                        Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER setIntegrityInfo =
+                            new(checksumAlgorithm: getIntegrityInfo.ChecksumAlgorithm, reserved: getIntegrityInfo.Reserved, flags: getIntegrityInfo.Flags);
                         if (!Interop.Kernel32.DeviceIoControl(
                                 destinationHandle,
                                 Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION,
@@ -407,8 +405,7 @@ namespace System.IO
                     // Match source sparseness.
                     if ((sourceFileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_SPARSE_FILE) == 0)
                     {
-                        Interop.Kernel32.FILE_SET_SPARSE_BUFFER sparseBuffer;
-                        sparseBuffer.SetSparse = 0;
+                        Interop.Kernel32.FILE_SET_SPARSE_BUFFER sparseBuffer = new(setSparse: 0);
                         Interop.Kernel32.DeviceIoControl(destinationHandle, Interop.Kernel32.FSCTL_SET_SPARSE, &sparseBuffer, (uint)sizeof(Interop.Kernel32.FILE_SET_SPARSE_BUFFER), null, 0, out _, 0);
                     }
 
@@ -438,10 +435,7 @@ namespace System.IO
                     if (madeNew)
                     {
                         // Mark the file for deletion.
-                        Interop.Kernel32.FILE_DISPOSITION_INFO dispositionInfo = new Interop.Kernel32.FILE_DISPOSITION_INFO()
-                        {
-                            DeleteFile = 1,
-                        };
+                        Interop.Kernel32.FILE_DISPOSITION_INFO dispositionInfo = new(deleteFile: 1);
                         if (!Interop.Kernel32.SetFileInformationByHandle(
                                 destinationHandle!,
                                 Interop.Kernel32.FileDispositionInfo,
