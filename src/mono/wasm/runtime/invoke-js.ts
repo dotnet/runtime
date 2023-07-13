@@ -336,8 +336,8 @@ export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
 export function dynamic_import(module_name: string, module_url: string): Promise<any> {
-    mono_assert(typeof module_name === "string", "module_name must be string");
-    mono_assert(typeof module_url === "string", "module_url must be string");
+    mono_assert(module_name && typeof module_name === "string", "module_name must be string");
+    mono_assert(module_url && typeof module_url === "string", "module_url must be string");
     assert_synchronization_context();
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;

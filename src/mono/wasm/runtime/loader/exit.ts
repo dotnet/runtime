@@ -25,7 +25,7 @@ export function abort_startup(reason: any, should_exit: boolean, should_throw?: 
     loaderHelpers.isAborted = true;
     loaderHelpers.exitCode = 1;
 
-    mono_log_debug("abort_startup");
+    mono_log_debug("abort_startup, reason: " + reason);
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
     loaderHelpers.wasmDownloadPromise.promise_control.reject(reason);
