@@ -526,17 +526,17 @@ namespace Internal.Runtime.TypeLoader
             int numSeries = 0;
             int i = 0;
 
-            bool first = true;
+            int first = -1;
             int last = 0;
             short numPtrs = 0;
             while (i < bitfield.Count)
             {
                 if (bitfield[i])
                 {
-                    if (first)
+                    if (first == -1)
                     {
-                        baseOffset += i;
-                        first = false;
+                        first = i;
+                        baseOffset += first;
                     }
                     else if (gcdesc != null)
                     {
@@ -565,7 +565,7 @@ namespace Internal.Runtime.TypeLoader
             {
                 if (numSeries > 0)
                 {
-                    *ptr-- = (short)((bitfield.Count - last) * IntPtr.Size);
+                    *ptr-- = (short)((first + bitfield.Count - last) * IntPtr.Size);
                     *ptr-- = numPtrs;
 
                     *(void**)gcdesc = (void*)-numSeries;
