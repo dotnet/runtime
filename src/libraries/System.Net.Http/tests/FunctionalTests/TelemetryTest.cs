@@ -486,11 +486,16 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count)
+        private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count, long connectionId = 0)
         {
             (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStarts = events.Where(e => e.Event.EventName == "RequestHeadersStart").ToArray();
             Assert.Equal(count, requestHeadersStarts.Length);
-            Assert.All(requestHeadersStarts, r => Assert.Empty(r.Event.Payload));
+            Assert.All(requestHeadersStarts, r =>
+            {
+                EventWrittenEventArgs e = r.Event;
+                Assert.Equal(1, e.Payload.Count);
+                Assert.Equal(connectionId, (long)e.Payload[0]);
+            });
 
             (EventWrittenEventArgs Event, Guid ActivityId)[] requestHeadersStops = events.Where(e => e.Event.EventName == "RequestHeadersStop").ToArray();
             Assert.Equal(count, requestHeadersStops.Length);

@@ -78,7 +78,7 @@ namespace System.Net.Http
             Stream stream,
             TransportContext? transportContext,
             Uri requestUri,
-            EndPoint? remoteEndPoint)
+            IPEndPoint? remoteEndPoint)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -95,7 +95,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http11ConnectionEstablished(_id, requestUri, remoteEndPoint);
+                HttpTelemetry.Log.Http11ConnectionEstablished(Id, requestUri, remoteEndPoint);
                 _disposed = Status_NotDisposedAndTrackedByTelemetry;
             }
 
@@ -118,7 +118,7 @@ namespace System.Net.Http
                 // Only decrement the connection count if we counted this connection
                 if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
                 {
-                    HttpTelemetry.Log.Http11ConnectionClosed(_id);
+                    HttpTelemetry.Log.Http11ConnectionClosed(Id);
                 }
 
                 if (!_detachedFromPool)
@@ -533,7 +533,7 @@ namespace System.Net.Http
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
                 WriteHeaders(request, normalizedMethod);
 

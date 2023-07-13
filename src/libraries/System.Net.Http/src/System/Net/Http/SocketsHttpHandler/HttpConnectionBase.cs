@@ -16,12 +16,13 @@ namespace System.Net.Http
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
         private static long s_connectionCounter = -1;
-        protected readonly long _id = Interlocked.Increment(ref s_connectionCounter);
 
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
         /// <summary>Cached string for the last Server header received on this connection.</summary>
         private string? _lastServerHeaderValue;
+
+        internal long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
         public string GetResponseHeaderValueWithCaching(HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? valueEncoding)
@@ -50,7 +51,7 @@ namespace System.Net.Http
             if (stream is SslStream sslStream)
             {
                 Trace(
-                    $"{this}. Id:{_id}, " +
+                    $"{this}. Id:{Id}, " +
                     $"SslProtocol:{sslStream.SslProtocol}, NegotiatedApplicationProtocol:{sslStream.NegotiatedApplicationProtocol}, " +
                     $"NegotiatedCipherSuite:{sslStream.NegotiatedCipherSuite}, CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
                     $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
@@ -59,7 +60,7 @@ namespace System.Net.Http
             }
             else
             {
-                Trace($"{this}. Id:{_id}");
+                Trace($"{this}. Id:{Id}");
             }
         }
 

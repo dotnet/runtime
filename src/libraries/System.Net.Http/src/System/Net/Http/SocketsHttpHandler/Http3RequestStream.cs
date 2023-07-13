@@ -552,7 +552,7 @@ namespace System.Net.Http
 
         private void BufferHeaders(HttpRequestMessage request)
         {
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(_connection.Id);
 
             // Reserve space for the header frame envelope.
             // The envelope needs to be written after headers are serialized, as we need to know the payload length first.

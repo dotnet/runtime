@@ -137,7 +137,7 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream, Uri requestUri, EndPoint? remoteEndPoint)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, Uri requestUri, IPEndPoint? remoteEndPoint)
         {
             _pool = pool;
             _stream = stream;
@@ -179,7 +179,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http20ConnectionEstablished(_id, requestUri, remoteEndPoint);
+                HttpTelemetry.Log.Http20ConnectionEstablished(Id, requestUri, remoteEndPoint);
                 _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 
@@ -1662,7 +1662,7 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
@@ -1898,7 +1898,7 @@ namespace System.Net.Http
             {
                 if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
                 {
-                    HttpTelemetry.Log.Http20ConnectionClosed(_id);
+                    HttpTelemetry.Log.Http20ConnectionClosed(Id);
                 }
             }
         }

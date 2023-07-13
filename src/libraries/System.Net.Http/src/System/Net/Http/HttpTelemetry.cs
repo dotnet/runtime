@@ -91,9 +91,9 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, Uri uri, EndPoint? remoteEndPoint)
+        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, Uri uri, IPEndPoint? remoteEndPoint)
         {
-            string? remoteAddress = (remoteEndPoint as IPEndPoint)?.Address?.ToString();
+            string? remoteAddress = remoteEndPoint?.Address?.ToString();
             ConnectionEstablished(versionMajor, versionMinor, connectionId, uri.Scheme, uri.Host, uri.Port, remoteAddress);
         }
 
@@ -116,9 +116,9 @@ namespace System.Net.Http
         }
 
         [Event(7, Level = EventLevel.Informational)]
-        public void RequestHeadersStart()
+        public void RequestHeadersStart(long connectionId)
         {
-            WriteEvent(eventId: 7);
+            WriteEvent(eventId: 7, connectionId);
         }
 
         [Event(8, Level = EventLevel.Informational)]
@@ -170,7 +170,7 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http11ConnectionEstablished(long connectionId, Uri uri, EndPoint? remoteEndPoint)
+        public void Http11ConnectionEstablished(long connectionId, Uri uri, IPEndPoint? remoteEndPoint)
         {
             Interlocked.Increment(ref _openedHttp11Connections);
             ConnectionEstablished(versionMajor: 1, versionMinor: 1, connectionId, uri, remoteEndPoint);
@@ -185,7 +185,7 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http20ConnectionEstablished(long connectionId, Uri uri, EndPoint? remoteEndPoint)
+        public void Http20ConnectionEstablished(long connectionId, Uri uri, IPEndPoint? remoteEndPoint)
         {
             Interlocked.Increment(ref _openedHttp20Connections);
             ConnectionEstablished(versionMajor: 2, versionMinor: 0, connectionId, uri, remoteEndPoint);
@@ -200,7 +200,7 @@ namespace System.Net.Http
         }
 
         [NonEvent]
-        public void Http30ConnectionEstablished(long connectionId, Uri uri, EndPoint? remoteEndPoint)
+        public void Http30ConnectionEstablished(long connectionId, Uri uri, IPEndPoint? remoteEndPoint)
         {
             Interlocked.Increment(ref _openedHttp30Connections);
             ConnectionEstablished(versionMajor: 3, versionMinor: 0, connectionId, uri, remoteEndPoint);

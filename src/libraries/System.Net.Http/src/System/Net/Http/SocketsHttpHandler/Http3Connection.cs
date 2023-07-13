@@ -95,7 +95,7 @@ namespace System.Net.Http
 
             if (HttpTelemetry.Log.IsEnabled())
             {
-                HttpTelemetry.Log.Http30ConnectionEstablished(_id, requestUri, connection.RemoteEndPoint);
+                HttpTelemetry.Log.Http30ConnectionEstablished(Id, requestUri, connection.RemoteEndPoint);
                 _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 
@@ -172,7 +172,7 @@ namespace System.Net.Http
                 {
                     if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
                     {
-                        HttpTelemetry.Log.Http30ConnectionClosed(_id);
+                        HttpTelemetry.Log.Http30ConnectionClosed(Id);
                     }
                 }
             }
