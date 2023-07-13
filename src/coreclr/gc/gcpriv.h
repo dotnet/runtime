@@ -4059,6 +4059,8 @@ private:
 
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC gc_mechanisms settings;
 
+    PER_HEAP_ISOLATED_FIELD_SINGLE_GC BOOL high_memory_compact_gtc_p;
+
 #ifdef MULTIPLE_HEAPS
     // These 2 fields' values do not change but are set/unset per GC
     PER_HEAP_ISOLATED_FIELD_SINGLE_GC GCEvent gc_start_event;

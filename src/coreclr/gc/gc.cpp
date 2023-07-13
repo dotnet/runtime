@@ -2374,6 +2374,8 @@ gc_latency_level gc_heap::latency_level = latency_level_default;
 
 gc_mechanisms  gc_heap::settings;
 
+BOOL gc_heap::high_memory_compact_gtc_p;
+
 gc_history_global gc_heap::gc_data_global;
 
 uint64_t    gc_heap::gc_last_ephemeral_decommit_time = 0;
@@ -23745,6 +23747,10 @@ void gc_heap::garbage_collect (int n)
                                             STRESS_HEAP_ARG(n)
                                             );
 
+        // we have decided to do a blocking gen 2 collection due to high memory
+        // set flag so that decide_on_compacting can do the right thing
+        high_memory_compact_gtc_p = (settings.condemned_generation == max_generation) && should_do_blocking_collection;
+
         STRESS_LOG1(LF_GCROOTS|LF_GC|LF_GCALLOC, LL_INFO10,
                 "condemned generation num: %d\n", settings.condemned_generation);
 
@@ -44137,6 +44143,13 @@ BOOL gc_heap::decide_on_compacting (int condemned_gen_number,
 #ifdef BACKGROUND_GC
             }
 #endif // BACKGROUND_GC
+        }
+
+        // if generation_to_condemn decided to do a full blocking GC,
+        // make sure to compact
+        if (high_memory_compact_gtc_p)
+        {
+            should_compact = TRUE;
         }
 
 #ifdef HOST_64BIT
