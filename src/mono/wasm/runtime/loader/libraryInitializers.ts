@@ -17,8 +17,8 @@ async function fetchLibraryInitializers(config: MonoConfig, type: LibraryInitial
     }
 
     const libraryInitializers = type == "onRuntimeConfigLoaded"
-        ? config.resources?.libraryInitializers?.onRuntimeConfigLoaded
-        : config.resources?.libraryInitializers?.onRuntimeReady;
+        ? config.resources?.libraryStartupModules?.onRuntimeConfigLoaded
+        : config.resources?.libraryStartupModules?.onRuntimeReady;
 
     if (!libraryInitializers) {
         return;

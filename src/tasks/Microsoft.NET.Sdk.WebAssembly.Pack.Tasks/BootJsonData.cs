@@ -129,12 +129,17 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
-    ///
-    /// For .NET < 8 it's <see cref="ResourceHashesByNameDictionary"/>
-    /// For .NET >= 8 it's <see cref="TypedLibraryInitializers"/>
+    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
-    public object libraryInitializers { get; set; }
+    public ResourceHashesByNameDictionary libraryInitializers { get; set; }
+
+    /// <summary>
+    /// JavaScript module initializers that runtime will be in charge of loading.
+    /// Used in .NET >= 8
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public TypedLibraryStartupModules libraryStartupModules { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)
@@ -157,7 +162,7 @@ public class ResourcesData
 }
 
 [DataContract]
-public class TypedLibraryInitializers
+public class TypedLibraryStartupModules
 {
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary onRuntimeConfigLoaded { get; set; }

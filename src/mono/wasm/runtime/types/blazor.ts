@@ -35,6 +35,7 @@ export interface ResourceGroups {
     readonly runtime: ResourceList;
     readonly satelliteResources?: { [cultureName: string]: ResourceList };
     readonly libraryInitializers?: ResourceList,
+    readonly libraryStartupModules?: { onRuntimeConfigLoaded: ResourceList, onRuntimeReady: ResourceList },
     readonly extensions?: BootJsonDataExtension
     readonly runtimeAssets: ExtendedResourceList;
     readonly vfs?: { [virtualPath: string]: ResourceList };

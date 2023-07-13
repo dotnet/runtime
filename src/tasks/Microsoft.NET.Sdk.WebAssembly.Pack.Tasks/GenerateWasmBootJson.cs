@@ -207,45 +207,41 @@ public class GenerateWasmBootJson : Task
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a library initializer resource.", resource.ItemSpec);
 
+                    var targetPath = resource.GetMetadata("TargetPath");
+                    Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
+
+                    resourceList = resourceData.libraryInitializers ??= new ResourceHashesByNameDictionary();
+                    AddResourceToList(resource, resourceList, targetPath);
+
                     if (IsTargeting80OrLater())
                     {
-                        resourceData.libraryInitializers ??= new TypedLibraryInitializers();
-                        TypedLibraryInitializers libraryInitializers = (TypedLibraryInitializers)resourceData.libraryInitializers;
+                        var libraryStartupModules = resourceData.libraryStartupModules ??= new TypedLibraryStartupModules();
 
                         if (libraryInitializerOnRuntimeConfigLoadedFullPaths.Contains(resource.ItemSpec))
                         {
-                            resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
+                            resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
                         }
                         else if (libraryInitializerOnRuntimeReadyFullPath.Contains(resource.ItemSpec))
                         {
-                            resourceList = libraryInitializers.onRuntimeReady ??= new();
+                            resourceList = libraryStartupModules.onRuntimeReady ??= new();
                         }
                         else if (File.Exists(resource.ItemSpec))
                         {
                             string fileContent = File.ReadAllText(resource.ItemSpec);
                             if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart") || fileContent.Contains("afterStarted"))
-                                resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
+                                resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
                             else
-                                resourceList = libraryInitializers.onRuntimeReady ??= new();
+                                resourceList = libraryStartupModules.onRuntimeReady ??= new();
                         }
                         else
                         {
-                            resourceList = libraryInitializers.onRuntimeConfigLoaded ??= new();
+                            resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
                         }
-                    }
-                    else
-                    {
-                        resourceData.libraryInitializers ??= new ResourceHashesByNameDictionary();
-                        resourceList = (ResourceHashesByNameDictionary)resourceData.libraryInitializers;
+
+                        string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                        AddResourceToList(resource, resourceList, newTargetPath);
                     }
 
-                    var targetPath = resource.GetMetadata("TargetPath");
-                    Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
-
-                    if (IsTargeting80OrLater())
-                        targetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
-
-                    AddResourceToList(resource, resourceList, targetPath);
                     continue;
                 }
                 else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) &&
@@ -336,7 +332,7 @@ public class GenerateWasmBootJson : Task
         var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
         {
             UseSimpleDictionaryFormat = true,
-            KnownTypes = new[] { typeof(TypedLibraryInitializers) },
+            KnownTypes = new[] { typeof(TypedLibraryStartupModules) },
             EmitTypeInformation = EmitTypeInformation.Never
         });
 
