@@ -455,16 +455,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, long connectionId = 0)
+        // The validation asssumes that the connection id's are in range 0..(connectionCount-1)
+        protected static void ValidateConnectionEstablishedClosed(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, Version version, Uri uri, int connectionCount = 1)
         {
             EventWrittenEventArgs[] connectionsEstablished = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
-            Assert.Equal(1, connectionsEstablished.Length);
+            Assert.Equal(connectionCount, connectionsEstablished.Length);
+            HashSet<long> connectionIds = new HashSet<long>();
             foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
             {
                 Assert.Equal(7, connectionEstablished.Payload.Count);
                 Assert.Equal(version.Major, (byte)connectionEstablished.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionEstablished.Payload[1]);
-                Assert.Equal(connectionId, (long)connectionEstablished.Payload[2]);
+                long connectionId = (long)connectionEstablished.Payload[2];
+                connectionIds.Add(connectionId);
+
                 Assert.Equal(uri.Scheme, (string)connectionEstablished.Payload[3]);
                 Assert.Equal(uri.Host, (string)connectionEstablished.Payload[4]);
                 Assert.Equal(uri.Port, (int)connectionEstablished.Payload[5]);
@@ -474,16 +478,19 @@ namespace System.Net.Http.Functional.Tests
                     ip.Equals(IPAddress.Loopback) ||
                     ip.Equals(IPAddress.IPv6Loopback));
             }
+            Assert.True(connectionIds.SetEquals(Enumerable.Range(0, connectionCount).Select(i => (long)i)), "ConnectionEstablished has logged an unexpected connectionId.");
 
             EventWrittenEventArgs[] connectionsClosed = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionClosed").ToArray();
-            Assert.Equal(1, connectionsClosed.Length);
+            Assert.Equal(connectionCount, connectionsClosed.Length);
             foreach (EventWrittenEventArgs connectionClosed in connectionsClosed)
             {
                 Assert.Equal(3, connectionClosed.Payload.Count);
                 Assert.Equal(version.Major, (byte)connectionClosed.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionClosed.Payload[1]);
-                Assert.Equal(connectionId, (long)connectionClosed.Payload[2]);
+                long connectionId = (long)connectionClosed.Payload[2];
+                Assert.True(connectionIds.Remove(connectionId), $"ConnectionClosed has logged an unexpected connectionId={connectionId}");
             }
+            Assert.Empty(connectionIds);
         }
 
         private static void ValidateRequestResponseStartStopEvents(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int? requestContentLength, int? responseContentLength, int count, long connectionId = 0)
@@ -767,7 +774,7 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
-        private static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
+        protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
         {
             DateTime startTime = DateTime.UtcNow;
             int startCount = events.Count;
@@ -795,6 +802,72 @@ namespace System.Net.Http.Functional.Tests
     public sealed class TelemetryTest_Http11 : TelemetryTest
     {
         public TelemetryTest_Http11(ITestOutputHelper output) : base(output) { }
+
+        [OuterLoop]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
+        {
+            RemoteExecutor.Invoke(async () =>
+            {
+                TimeSpan timeout = TimeSpan.FromSeconds(10);
+                const int NumParallelRequests = 4;
+
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+                Uri expectedUri = null;
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    await Http11LoopbackServerFactory.Singleton.CreateClientAndServerAsync(async uri =>
+                    {
+                        expectedUri = uri;
+                        using HttpClient client = CreateHttpClient(HttpVersion.Version11.ToString());
+
+                        Task<HttpResponseMessage>[] responseTasks = Enumerable.Repeat(uri, NumParallelRequests)
+                            .Select(_ => client.GetAsync(uri))
+                            .ToArray();
+                        await Task.WhenAll(responseTasks).WaitAsync(timeout);
+                    }, async server =>
+                    {
+                        ManualResetEventSlim allConnectionsOpen = new(false);
+                        int connectionCounter = 0;
+
+                        Task[] prallelConnectionTasks = Enumerable.Repeat(server, NumParallelRequests)
+                            .Select(_ => server.AcceptConnectionAsync(HandleConnectionAsync))
+                            .ToArray();
+
+                        await Task.WhenAll(prallelConnectionTasks);
+
+                        async Task HandleConnectionAsync(GenericLoopbackConnection connection)
+                        {
+                            if (Interlocked.Increment(ref connectionCounter) == NumParallelRequests)
+                            {
+                                allConnectionsOpen.Set();
+                            }
+                            await connection.ReadRequestDataAsync().WaitAsync(timeout);
+                            allConnectionsOpen.Wait(timeout);
+                            await connection.SendResponseAsync(HttpStatusCode.OK);
+                        }
+                    });
+                    await WaitForEventCountersAsync(events);
+                }).WaitAsync(timeout);
+
+                Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
+
+                ValidateConnectionEstablishedClosed(events, HttpVersion.Version11, expectedUri, NumParallelRequests);
+
+                EventWrittenEventArgs[] requestHeadersStart = events.Select(e => e.Event).Where(e => e.EventName == "RequestHeadersStart").ToArray();
+                Assert.Equal(NumParallelRequests, requestHeadersStart.Length);
+                HashSet<long> connectionIds = new(Enumerable.Range(0, NumParallelRequests).Select(i => (long)i));
+                foreach (EventWrittenEventArgs e in requestHeadersStart)
+                {
+                    long connectionId = (long)e.Payload[0];
+                    Assert.True(connectionIds.Remove(connectionId), $"RequestHeadersStart has logged an unexpected connectionId={connectionId}.");
+                }
+                Assert.Empty(connectionIds);
+            }).Dispose();
+        }
     }
 
     public sealed class TelemetryTest_Http20 : TelemetryTest
