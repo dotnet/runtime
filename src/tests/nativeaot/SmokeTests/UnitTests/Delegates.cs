@@ -50,10 +50,13 @@ public class Delegates
             Console.WriteLine("Failed");
             result = Fail;
         }
-// Dynamic code generation not supported
-#if !TARGET_IOS && !TARGET_TVOS && !TARGET_MACCATALYST
-        TestLinqExpressions.Run();
-#endif
+
+        // ActiveIssue https://github.com/dotnet/runtime/issues/87924
+        if (!OperatingSystem.IsIOS() && !OperatingSystem.IsTvOS() && !OperatingSystem.IsMacCatalyst())
+        {
+            TestLinqExpressions.Run();
+        }
+
         TestDefaultInterfaceMethods.Run();
 
         return result;

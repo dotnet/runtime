@@ -8,9 +8,6 @@
     <!-- There's just too many of these warnings -->
     <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
     <NoWarn>$(NoWarn);IL3050;IL3054</NoWarn>
-    <DefineConstants Condition="'$(TargetsiOS)' == 'true'">$(DefineConstants);TARGET_IOS</DefineConstants>
-    <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);TARGET_TVOS</DefineConstants>
-    <DefineConstants Condition="'$(TargetsMacCatalyst)' == 'true'">$(DefineConstants);TARGET_MACCATALYST</DefineConstants>
 
   </PropertyGroup>
   <ItemGroup>
