@@ -12,11 +12,17 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly record struct ContainingSyntax(SyntaxTokenList modifiers, SyntaxKind TypeKind, SyntaxToken identifier, TypeParameterListSyntax? TypeParameters)
+    public readonly struct ContainingSyntax(SyntaxTokenList modifiers, SyntaxKind typeKind, SyntaxToken identifier, TypeParameterListSyntax? typeParameters) : IEquatable<ContainingSyntax>
     {
         public SyntaxTokenList Modifiers { get; init; } = modifiers.StripTriviaFromTokens();
 
         public SyntaxToken Identifier { get; init; } = identifier.WithoutTrivia();
+
+        public SyntaxKind TypeKind { get; init; } = typeKind;
+
+        public TypeParameterListSyntax? TypeParameters { get; init; } = typeParameters;
+
+        public override bool Equals(object obj) => obj is ContainingSyntax other && Equals(other);
 
         public bool Equals(ContainingSyntax other)
         {
