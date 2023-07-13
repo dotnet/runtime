@@ -19,15 +19,25 @@ namespace System.Runtime.InteropServices.Marshalling
 
         protected static IIUnknownCacheStrategy CreateDefaultCacheStrategy() => new DefaultCaching();
 
-        [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "The usage is guarded, but the analyzer and the trimmer don't understand it.")]
-        [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The opt-in feature is documented to not work in trimming scenarios.")]
         protected virtual IIUnknownInterfaceDetailsStrategy GetOrCreateInterfaceDetailsStrategy()
         {
-            if (RuntimeFeature.IsDynamicCodeSupported && OperatingSystem.IsWindows() && ComObject.BuiltInComSupported && ComObject.ComImportInteropEnabled)
+            if (OperatingSystem.IsWindows())
             {
-                return ComImportInteropInterfaceDetailsStrategy.Instance;
+                return GetStrategyOnWindows();
             }
             return DefaultIUnknownInterfaceDetailsStrategy;
+
+            // This logic is split into a separate method, otherwise the trimmer will think that these suppressions are unnecessary on non-Windows platforms and error on them.
+            [UnconditionalSuppressMessage("AOT", "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.", Justification = "The usage is guarded, but the analyzer and the trimmer don't understand it.")]
+            [UnconditionalSuppressMessage("Trimming", "IL2026:Members annotated with 'RequiresUnreferencedCodeAttribute' require dynamic access otherwise can break functionality when trimming application code", Justification = "The opt-in feature is documented to not work in trimming scenarios.")]
+            static IIUnknownInterfaceDetailsStrategy GetStrategyOnWindows()
+            {
+                if (RuntimeFeature.IsDynamicCodeSupported && ComObject.BuiltInComSupported && ComObject.ComImportInteropEnabled)
+                {
+                    return ComImportInteropInterfaceDetailsStrategy.Instance;
+                }
+                return DefaultIUnknownInterfaceDetailsStrategy;
+            }
         }
 
         protected virtual IIUnknownStrategy GetOrCreateIUnknownStrategy() => DefaultIUnknownStrategy;
