@@ -26,21 +26,8 @@ namespace System.Text.Json.Serialization.Converters
                 type == typeof(SerializationInfo) ||
                 type == typeof(IntPtr) ||
                 type == typeof(UIntPtr) ||
-                // Exclude Memory<T> and ReadOnlyMemory<T> types.
-                IsMemoryType(type) ||
                 // Exclude delegates.
                 typeof(Delegate).IsAssignableFrom(type);
-
-            static bool IsMemoryType(Type type)
-            {
-                if (!type.IsGenericType || !type.IsValueType)
-                {
-                    return false;
-                }
-
-                Type typeDef = type.GetGenericTypeDefinition();
-                return typeDef == typeof(Memory<>) || typeDef == typeof(ReadOnlyMemory<>);
-            }
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
