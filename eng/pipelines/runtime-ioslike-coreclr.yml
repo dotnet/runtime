@@ -1,6 +1,4 @@
-# This is a wrapper yml for `runtime-extra-platforms-ioslike.yml`, which
-# has all the iOS/tvOS jobs. This file is essentially so we can have point
-# the pipeline in azdo UI to this, and thus avoid any scheduled triggers
+# This is a wrapper yml for `runtime-extra-platforms-ioslike.yml`, which runs Native AOT iOS/tvOS runtime tests.
 
 trigger: none
 

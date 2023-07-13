@@ -499,7 +499,7 @@
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
-      <GlobalizationkNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat" />
+      <GlobalizationNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppleBuildDir)" />
@@ -507,7 +507,7 @@
     <MakeDir Directories="$(AppleBuildDir)" />
 
     <Copy
-        SourceFiles="@(GlobalizationkNativeLibs)"
+        SourceFiles="@(GlobalizationNativeLibs)"
         DestinationFolder="$(AppleBuildDir)" />
   </Target>
 
