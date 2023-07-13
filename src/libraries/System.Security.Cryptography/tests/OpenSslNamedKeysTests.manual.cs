@@ -7,35 +7,24 @@ using Xunit;
 namespace System.Security.Cryptography.Tests
 {
     // See osslplugins/README.md for instructions on how to build and install the test engine and setup for TPM tests.
-    [SkipOnPlatform(~TestPlatforms.Linux, "Named keys tests are only supported on Linux")]
     public class OpenSslNamedKeysTests
     {
-        const string EnvVarPrefix = "DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_";
-        const string TestEngineEnabledEnvVarName = EnvVarPrefix + "ENABLE";
-        const string TestEngineEnsureFailingEnvVarName = EnvVarPrefix + "ENSURE_FAILING";
-        const string TpmTssEngineEcDsaKeyHandleEnvVarName = EnvVarPrefix + "TPM_ECDSA_KEY_HANDLE";
+        private const string EnvVarPrefix = "DOTNET_CRYPTOGRAPHY_TESTS_ENGINE_";
+        private const string TestEngineEnabledEnvVarName = EnvVarPrefix + "ENABLE";
+        private const string TestEngineEnsureFailingEnvVarName = EnvVarPrefix + "ENSURE_FAILING";
+        private const string TpmTssEngineEcDsaKeyHandleEnvVarName = EnvVarPrefix + "TPM_ECDSA_KEY_HANDLE";
 
-        const string NonExistingEngineName = "dntestnonexisting";
-        const string NonExistingEngineKeyName = "nonexisting";
+        private const string NonExistingEngineName = "dntestnonexisting";
+        private const string NonExistingEngineKeyName = "nonexisting";
 
-        const string TestEngineName = "dntest";
-        const string TestEngineKeyId = "first";
-        const string TpmTssEngineName = "tpm2tss";
+        private const string TestEngineName = "dntest";
+        private const string TestEngineKeyId = "first";
+        private const string TpmTssEngineName = "tpm2tss";
 
-        public static bool ShouldRunEngineTests { get; private set; }
-        public static bool ShouldFailTests { get; private set; }
-        public static bool ShouldRunTpmTssTests { get; private set; }
-
-        public static string TpmTssEngineEcDsaKeyHandle { get; private set; }
-
-        static OpenSslNamedKeysTests()
-        {
-            TpmTssEngineEcDsaKeyHandle = Environment.GetEnvironmentVariable(TpmTssEngineEcDsaKeyHandleEnvVarName);
-            ShouldRunEngineTests = StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
-            ShouldFailTests = StringToBool(Environment.GetEnvironmentVariable(TestEngineEnsureFailingEnvVarName));
-
-            ShouldRunTpmTssTests = !string.IsNullOrEmpty(TpmTssEngineEcDsaKeyHandle);
-        }
+        public static string TpmTssEngineEcDsaKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmTssEngineEcDsaKeyHandleEnvVarName);
+        public static bool ShouldRunEngineTests { get;  } = PlatformDetection.IsOpenSslSupported && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
+        public static bool ShouldFailTests { get; } = StringToBool(Environment.GetEnvironmentVariable(TestEngineEnsureFailingEnvVarName));
+        public static bool ShouldRunTpmTssTests => PlatformDetection.IsOpenSslSupported &&  !string.IsNullOrEmpty(TpmTssEngineEcDsaKeyHandle);
 
         private static bool StringToBool(string? value)
             => "true".Equals(value, StringComparison.OrdinalIgnoreCase) || value == "1";
@@ -66,7 +55,14 @@ namespace System.Security.Cryptography.Tests
             "A5F29E03C5AC1888D93744D89638D83AC37774B339E4AFB349C714B12238B0F81A71380F051C585C" +
             "B27434FA544BDAC679E1E16581D0E90203010001").HexToByteArray();
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslNotSupported))]
+        public static void NotSupported()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, TestEngineKeyId));
+            Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, TestEngineKeyId));
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
         public static void NullArguments()
         {
             Assert.Throws<ArgumentNullException>("engineName", () => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(null, TestEngineKeyId));
@@ -76,14 +72,14 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentNullException>("keyId", () => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, null));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
         public static void NonExistingEngine()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(NonExistingEngineName, TestEngineKeyId));
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(NonExistingEngineName, TestEngineKeyId));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
         public static void NonExistingKey()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, NonExistingEngineKeyName));

@@ -9,8 +9,14 @@
 static const char* g_engineId = "dntest";
 static const char* g_engineName = "DotNet Test ENGINE";
 
-// PKCS#1 format
-static char g_pubRsaKey[140] = {
+// Public key and its private key are named `first`.
+// Their namespaces (dntest_load_privkey vs dntest_load_pubkey) allow to use
+// independent unrelated keys.
+// Managed tests validate we're actually loading public key when public is requested
+// and that private key is used when private is requested.
+
+// Public key in PKCS#1 format
+static char g_pubRsaKey[] = {
     0x30,0x81,0x89,0x02,0x81,0x81,0x00,0xBF,0x67,0x16,0x84,0x85,0x21,0x5A,0x6A,0xB8,
     0x9B,0xCA,0xB9,0x33,0x1F,0x6F,0x5F,0x36,0x0F,0x43,0x00,0xBE,0x5C,0xF2,0x82,0xF7,
     0x70,0x42,0x95,0x7E,0xA2,0x02,0x90,0x8B,0x22,0x79,0xF3,0x4A,0x42,0x6D,0x62,0xF5,
@@ -22,8 +28,8 @@ static char g_pubRsaKey[140] = {
     0x79,0xE1,0xE1,0x65,0x81,0xD0,0xE9,0x02,0x03,0x01,0x00,0x01
 };
 
-// PKCS#1 format
-char g_priRsaKey[608] = {
+// Private key in PKCS#1 format for public key above
+char g_priRsaKey[] = {
     0x30,0x82,0x02,0x5C,0x02,0x01,0x00,0x02,0x81,0x81,0x00,0xBF,0x67,0x16,0x84,0x85,
     0x21,0x5A,0x6A,0xB8,0x9B,0xCA,0xB9,0x33,0x1F,0x6F,0x5F,0x36,0x0F,0x43,0x00,0xBE,
     0x5C,0xF2,0x82,0xF7,0x70,0x42,0x95,0x7E,0xA2,0x02,0x90,0x8B,0x22,0x79,0xF3,0x4A,
@@ -77,10 +83,15 @@ static EVP_PKEY* load_priv(BIO* bio)
     if (!EVP_PKEY_assign_RSA(key, rsaKey))
     {
         printf("%s: Error assigning RSA Private Key to EVP_PKEY\n", g_engineId);
+
+        // Assignment has failed we need to free both keys separately
         RSA_free(rsaKey);
+        EVP_PKEY_free(key);
         return NULL;
     }
 
+    // Per documentation EVP_PKEY_assign_RSA sets the referenced RSA key to supplied key internally
+    // and so key will be freed when the parent pkey is freed.
     return key;
 }
 
@@ -97,10 +108,15 @@ static EVP_PKEY* load_pub(BIO* bio)
     if (!EVP_PKEY_assign_RSA(key, rsaKey)) 
     {
         printf("%s: Error assigning RSA Public Key to EVP_PKEY\n", g_engineId);
+
+        // Assignment has failed we need to free both keys separately
         RSA_free(rsaKey);
+        EVP_PKEY_free(key);
         return NULL;
     }
 
+    // Per documentation EVP_PKEY_assign_RSA sets the referenced RSA key to supplied key internally
+    // and so key will be freed when the parent pkey is freed.
     return key;
 }
 
