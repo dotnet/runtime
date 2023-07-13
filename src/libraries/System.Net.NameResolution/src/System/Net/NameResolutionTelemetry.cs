@@ -83,13 +83,13 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void AfterResolution(long startingTimestamp, bool successful)
+        public void AfterResolution(long? startingTimestamp, bool successful)
         {
-            if (startingTimestamp != 0)
+            if (startingTimestamp.HasValue && startingTimestamp != 0)
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp.Value).TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
