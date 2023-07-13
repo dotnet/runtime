@@ -3219,6 +3219,26 @@ mono_riscv_emit_store_stack (guint8 *code, guint64 regs, int basereg, int offset
 	return code;
 }
 
+static __attribute__ ((__warn_unused_result__)) guint8 *
+emit_store_stack_cfa (MonoCompile *cfg, guint8 *code, guint64 regs, int basereg, int offset, guint64 no_cfa_regset)
+{
+	guint32 cfa_regset = regs & ~no_cfa_regset;
+	g_assert (basereg == RISCV_FP);
+	g_assert (offset <= 0);
+
+	code = mono_riscv_emit_store_stack(code, regs, basereg, offset, FALSE);
+
+	int pos = 0;
+	for (int i = 0; i < 32; ++i){
+		if (regs & (1 << i)) {
+			if (cfa_regset & (1 << i))
+				mono_emit_unwind_op_offset (cfg, code, i, offset + (pos * sizeof (host_mgreg_t)));
+			pos++;
+		}
+	}
+	return code;
+}
+
 /* Same as mono_riscv_emitstore_regarray, but emit unwind info */
 /* CFA_OFFSET is the offset between the CFA and basereg */
 static __attribute__ ((__warn_unused_result__)) guint8 *
@@ -3517,7 +3537,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_setup_lmf (cfg, code, cfg->lmf_var->inst_offset);
 	} else
 		/* Save gregs */
-		code = mono_riscv_emit_store_stack (code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
+		code = emit_store_stack_cfa (cfg, code, MONO_ARCH_CALLEE_SAVED_REGS & cfg->used_int_regs, RISCV_FP,
 		                                    -cfg->arch.saved_gregs_offset, FALSE);
 
 	/* Save address of return value received in A0*/
