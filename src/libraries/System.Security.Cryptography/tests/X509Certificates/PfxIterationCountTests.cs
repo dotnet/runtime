@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformSupport), nameof(PlatformSupport.IsRC2Supported))]
         public void ExportedPfxWithNullPassword_DecryptReturnsValidPaddingWithEmptyPassword()
         {
             Assert.NotNull(Import(TestData.MsCertificateExportedToPfx_NullPassword));
