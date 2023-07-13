@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Thu Jan 12 06:50:29 PST 2017
+.\" Manual page created with latex2man on Sun Aug 29 23:45:06 CEST 2021
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "LIBUNWIND" "3" "12 January 2017" "Programming Library " "Programming Library "
+.TH "LIBUNWIND" "3" "29 August 2021" "Programming Library " "Programming Library "
 .SH NAME
 libunwind
 \-\- a (mostly) platform\-independent unwind API 
@@ -215,8 +215,9 @@ frame as the only argument.
 Normally, libunwind
 supports both local and remote unwinding 
 (the latter will be explained in the next section). However, if you 
-tell libunwind that your program only needs local unwinding, then a 
-special implementation can be selected which may run much faster than 
+tell libunwind
+that your program only needs local unwinding, then 
+a special implementation can be selected which may run much faster than 
 the generic implementation which supports both kinds of unwinding. To 
 select this optimized version, simply define the macro 
 UNW_LOCAL_ONLY
@@ -357,7 +358,7 @@ targeting a cross\-platform will result in a link\-time error
 All libunwind
 routines are thread\-safe. What this means is 
 that multiple threads may use libunwind
-simulatenously. 
+simultaneously. 
 However, any given cursor may be accessed by only one thread at 
 any given time. 
 .PP
@@ -431,11 +432,11 @@ select the exact caching policy in use for a given address\-space
 object. In particular, by selecting the policy 
 UNW_CACHE_NONE,
 it is possible to turn off caching 
-completely, therefore eliminating the risk of stale data alltogether 
+completely, therefore eliminating the risk of stale data altogether 
 (at the cost of slower execution). By default, caching is enabled for 
 local unwinding only. The cache size can be dynamically changed with 
 unw_set_cache_size(),
-which also fluches the current cache. 
+which also flushes the current cache. 
 .PP
 .SH FILES
 

@@ -97,7 +97,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
     LPCUTF8 szClassName;
 
     DefineFullyQualifiedNameForClass();
-    if (pMT)
+    if (pMT != NULL)
     {
         szClassName = GetFullyQualifiedNameForClass(pMT);
     }
@@ -106,16 +106,21 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         szClassName = "?";
     };
 
+    if (szMember == NULL)
+        szMember = "?";
+
     if (pSig && cSig && pModule && pModule->IsFullModule())
     {
         MetaSig tmp(pSig, cSig, static_cast<Module*>(pModule), pTypeContext);
-        SigFormat sf(tmp, szMember ? szMember : "?", szClassName, NULL);
+        SigFormat sf(tmp, szMember, szClassName, NULL);
         MAKE_WIDEPTR_FROMUTF8(szwFullName, sf.GetCString());
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, szwFullName));
     }
     else
     {
-        EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, W("?")));
+        SString typeName;
+        typeName.Printf("%s.%s", szClassName, szMember);
+        EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
 }
 

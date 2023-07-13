@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ds-rt.h targeting NativeAOT runtime.
-#ifndef __DIAGNOSTICS_RT_AOT_H__
-#define __DIAGNOSTICS_RT_AOT_H__
+#ifndef DIAGNOSTICS_RT_AOT_H
+#define DIAGNOSTICS_RT_AOT_H
 
 #include <eventpipe/ds-rt-config.h>
 
@@ -12,6 +12,8 @@
 #include <eventpipe/ds-process-protocol.h>
 #include <eventpipe/ds-profiler-protocol.h>
 #include <eventpipe/ds-dump-protocol.h>
+
+#include <RhConfig.h>
 
 #undef DS_LOG_ALWAYS_0
 #define DS_LOG_ALWAYS_0(msg) do {} while (0)
@@ -127,8 +129,10 @@ ds_rt_config_value_get_enable (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
+    bool value;
+    if (RhConfig::Environment::TryGetBooleanValue("EnableDiagnostics", &value))
+        return value;
+
     return true;
 }
 
@@ -137,8 +141,12 @@ inline
 ep_char8_t *
 ds_rt_config_value_get_ports (void)
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
+    STATIC_CONTRACT_NOTHROW;
+
+    char* value;
+    if (RhConfig::Environment::TryGetStringValue("DiagnosticPorts", &value))
+        return (ep_char8_t*)value;
+
     return nullptr;
 }
 
@@ -148,8 +156,14 @@ uint32_t
 ds_rt_config_value_get_default_port_suspend (void)
 {
     STATIC_CONTRACT_NOTHROW;
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: EventPipe Configuration values - RhConfig?
+    
+    uint64_t value;
+    if (RhConfig::Environment::TryGetIntegerValue("DefaultDiagnosticPortSuspend", &value))
+    {
+        EP_ASSERT(value <= UINT32_MAX);
+        return static_cast<uint32_t>(value);
+    }
+
     return 0;
 }
 
@@ -252,9 +266,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-     // return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
-     // PalDebugBreak();
-    return 0xffff;
+    extern uint32_t ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value);
+    return ds_rt_aot_set_environment_variable(name, value);
 }
 
 static
@@ -271,6 +284,13 @@ ds_rt_disable_perfmap (void)
     return DS_IPC_E_NOTSUPPORTED;
 }
 
+static
+uint32_t
+ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
+{
+	return DS_IPC_E_NOTSUPPORTED;
+}
+
 /*
 * DiagnosticServer.
 */
@@ -281,11 +301,16 @@ ds_rt_server_log_pause_message (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-    const char diagPortsName[] = "DOTNET_DiagnosticPorts";
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Cannot find nocache versions of RhConfig
-    // PalDebugBreak();
+    ep_char8_t * ports = ds_rt_config_value_get_ports ();
+	uint32_t port_suspended = ds_rt_config_value_get_default_port_suspend ();
+
+	printf ("The runtime has been configured to pause during startup and is awaiting a Diagnostics IPC ResumeStartup command from a Diagnostic Port.\n");
+	printf ("DOTNET_DiagnosticPorts=\"%s\"\n", ports == nullptr ? "" : ports);
+	printf ("DOTNET_DefaultDiagnosticPortSuspend=%d\n", port_suspended);
+	fflush (stdout);
+
+	ep_rt_utf8_string_free (ports);
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __DIAGNOSTICS_RT_AOT_H__ */
+#endif /* DIAGNOSTICS_RT_AOT_H */

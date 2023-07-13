@@ -17,11 +17,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public required CollectionPopulationStrategy PopulationStrategy { get; init; }
 
-        public override bool CanInitialize => ConcreteType?.CanInitialize ?? CanInitCompexType;
+        public override bool CanInitialize => ConcreteType?.CanInitialize ?? CanInitComplexObject();
 
         public override required InitializationStrategy InitializationStrategy { get; set; }
 
         public required string? ToEnumerableMethodCall { get; init; }
+
+        public sealed override bool NeedsMemberBinding => true;
     }
 
     internal sealed record EnumerableSpec : CollectionSpec

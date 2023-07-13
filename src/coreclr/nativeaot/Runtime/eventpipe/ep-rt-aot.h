@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ep-rt.h targeting NativeAOT runtime.
-#ifndef __EVENTPIPE_RT_AOT_H__
-#define __EVENTPIPE_RT_AOT_H__
+#ifndef EVENTPIPE_RT_AOT_H
+#define EVENTPIPE_RT_AOT_H
 
 #include <ctype.h>  // For isspace
 #ifdef TARGET_UNIX
@@ -20,6 +20,7 @@
 
 #include "rhassert.h"
 #include <RhConfig.h>
+#include <runtime_version.h>
 
 #ifdef TARGET_UNIX
 #define sprintf_s snprintf
@@ -46,6 +47,9 @@
 
 #undef EP_ALIGN_UP
 #define EP_ALIGN_UP(val,align) _rt_aot_align_up(val,align)
+
+#define _TEXT(s) #s
+#define STRINGIFY(s) _TEXT(s)
 
 #ifdef TARGET_UNIX
 extern pthread_key_t eventpipe_tls_key;
@@ -88,12 +92,11 @@ ep_rt_entrypoint_assembly_name_get_utf8 (void)
 
 static
 const ep_char8_t *
-ep_rt_runtime_version_get_utf8 (void) { 
+ep_rt_runtime_version_get_utf8 (void)
+{ 
     STATIC_CONTRACT_NOTHROW;
 
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Find a way to use CoreCLR runtime_version.h here if a more exact version is needed
-    return reinterpret_cast<const ep_char8_t*>("8.0.0");
+    return reinterpret_cast<const ep_char8_t*>(STRINGIFY(RuntimeProductVersion));
 }
 
 /*
@@ -1111,10 +1114,8 @@ static
 void
 ep_rt_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (env_array != NULL);
-
-    // PalDebugBreak();
+    extern void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array);
+    ep_rt_aot_os_environment_get_utf16(env_array);
 }
 
 /*
@@ -1388,10 +1389,7 @@ ep_rt_utf8_to_utf16le_string (
     // Shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one.
     // Assumes that only ASCII is used for ep_char8_t
-    size_t len_utf8 = strlen(str);        
-    if (len_utf8 == 0)
-        return NULL;
-
+    size_t len_utf8 = strlen(str);
     ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc ((len_utf8 + 1) * sizeof (ep_char16_t)));
     if (!str_utf16)
         return NULL;
@@ -1511,16 +1509,9 @@ static
 const ep_char8_t *
 ep_rt_diagnostics_command_line_get (void)
 {
-
     STATIC_CONTRACT_NOTHROW;
-
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: revisit commandline for AOT
-    // return reinterpret_cast<const ep_char8_t *>(::GetCommandLineA());
-
-    extern ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
-    ep_char8_t *old_cmd_line = _ep_rt_aot_diagnostics_cmd_line;
-    return _ep_rt_aot_diagnostics_cmd_line;
+    extern const ep_char8_t * ep_rt_aot_diagnostics_command_line_get (void);
+    return ep_rt_aot_diagnostics_command_line_get();
 }
 
 /*
@@ -2016,4 +2007,4 @@ ep_rt_volatile_store_ptr_without_barrier (
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __EVENTPIPE_RT_AOT_H__ */
+#endif /* EVENTPIPE_RT_AOT_H */

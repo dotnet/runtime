@@ -9,6 +9,7 @@ import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
 import { mono_log_error, mono_log_debug } from "./logging";
+import { invokeLibraryInitializers } from "./libraryInitializers";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -17,9 +18,6 @@ export function deep_merge_config(target: MonoConfigInternal, source: MonoConfig
     }
     if (providedConfig.environmentVariables) {
         providedConfig.environmentVariables = { ...(target.environmentVariables || {}), ...(providedConfig.environmentVariables || {}) };
-    }
-    if (providedConfig.startupOptions) {
-        providedConfig.startupOptions = { ...(target.startupOptions || {}), ...(providedConfig.startupOptions || {}) };
     }
     if (providedConfig.runtimeOptions) {
         providedConfig.runtimeOptions = [...(target.runtimeOptions || []), ...(providedConfig.runtimeOptions || [])];
@@ -44,7 +42,6 @@ export function normalizeConfig() {
     config.environmentVariables = config.environmentVariables || {};
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
-    config.globalizationMode = config.globalizationMode || "auto";
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
@@ -53,7 +50,6 @@ export function normalizeConfig() {
         config.diagnosticTracing = true;
     }
     runtimeHelpers.diagnosticTracing = loaderHelpers.diagnosticTracing = !!config.diagnosticTracing;
-    loaderHelpers.assetUniqueQuery = config.assetUniqueQuery;
     runtimeHelpers.waitForDebugger = config.waitForDebugger;
     config.startupMemoryCache = !!config.startupMemoryCache;
     if (config.startupMemoryCache && runtimeHelpers.waitForDebugger) {
@@ -82,9 +78,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     }
     mono_log_debug("mono_wasm_load_config");
     try {
-        loaderHelpers.config.applicationEnvironment = loaderHelpers.config.applicationEnvironment ?? loaderHelpers.config.startupOptions?.environment ?? "Production";
-
-        if (loaderHelpers.config.startupOptions && loaderHelpers.config.startupOptions.loadBootResource) {
+        if (loaderHelpers.loadBootResource) {
             // If we have custom loadBootResource
             await loadBootConfig(loaderHelpers.config, module);
         } else {
@@ -94,7 +88,8 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
             const loadedAnyConfig: any = (await configResponse.json()) || {};
             if (loadedAnyConfig.resources) {
                 // If we found boot config schema
-                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.config.startupOptions);
+                normalizeConfig();
+                await initializeBootConfig(BootConfigResult.fromFetchResponse(configResponse, loadedAnyConfig as BootJsonData, loaderHelpers.config.applicationEnvironment), module, loaderHelpers.loadBootResource);
             } else {
                 // Otherwise we found mono config schema
                 const loadedConfig = loadedAnyConfig as MonoConfigInternal;
@@ -105,6 +100,8 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         }
 
         normalizeConfig();
+
+        await invokeLibraryInitializers("onRuntimeConfigLoaded", [loaderHelpers.config], "onRuntimeConfigLoaded");
 
         if (module.onConfigLoaded) {
             try {
@@ -118,7 +115,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         }
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
-        const errMessage = `Failed to load config file ${configFilePath} ${err}`;
+        const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = <any>{ message: errMessage, error: err, isError: true };
         loaderHelpers.abort_startup(errMessage, true);
         throw err;

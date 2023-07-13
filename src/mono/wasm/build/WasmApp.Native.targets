@@ -3,9 +3,11 @@
 
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="MonoTargetsTasks.MarshalingPInvokeScanner" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
+      _ScanAssembliesDecideLightweightMarshaler;
       _WasmAotCompileApp;
       _WasmStripAOTAssemblies;
       _PrepareForWasmBuildNative;
@@ -32,9 +34,6 @@
 
   <ItemGroup Condition="'$(Configuration)' == 'Debug' and '@(_MonoComponent->Count())' == 0">
     <_MonoComponent Include="hot_reload;debugger" />
-  </ItemGroup>
-  <ItemGroup>
-    <_MonoComponent Include="marshal-ilgen" />
   </ItemGroup>
 
   <Import Project="$(MSBuildThisFileDirectory)EmSdkRepo.Defaults.props" Condition="'$(WasmUseEMSDK_PATH)' == 'true'" />
@@ -116,6 +115,10 @@
       <!-- removing legacy interop needs relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
 
+      <!-- InvariantTimezone and InvariantGlobalization need rebuild -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantTimezone)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
+
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
 
       <WasmBuildNative Condition="'$(WasmBuildNative)' == ''">false</WasmBuildNative>
@@ -129,6 +132,10 @@
 
       <!-- removing legacy interop needs relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
+
+      <!-- InvariantTimezone and InvariantGlobalization need rebuild -->
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantTimezone)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
 
       <!-- not aot, not trimmed app, no reason to relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(PublishTrimmed)' != 'true'">false</WasmBuildNative>
@@ -174,7 +181,7 @@
 
       <_DriverGenCNeeded Condition="'$(_DriverGenCNeeded)' == '' and '$(_WasmShouldAOT)' == 'true'">true</_DriverGenCNeeded>
 
-      <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug'">true</_WasmDevel>
+      <_WasmDevel Condition="'$(_WasmDevel)' == '' and '$(WasmBuildNative)' == 'true' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">true</_WasmDevel>
 
       <_EmccOptimizationFlagDefault Condition="'$(_WasmDevel)' == 'true'">-O0</_EmccOptimizationFlagDefault>
       <_EmccOptimizationFlagDefault Condition="'$(_EmccOptimizationFlagDefault)' == '' and '$(Configuration)' == 'Debug' and '$(WasmBuildingForNestedPublish)' != 'true'">-O1</_EmccOptimizationFlagDefault>
@@ -202,7 +209,6 @@
 
       <_EmccCommonFlags Include="$(_DefaultEmccFlags)" />
       <_EmccCommonFlags Include="$(EmccFlags)" />
-      <_EmccCommonFlags Include="-s EXPORT_ES6=1" />
       <_EmccCommonFlags Include="-g"                                Condition="'$(WasmNativeStrip)' == 'false'" />
       <_EmccCommonFlags Include="-v"                                Condition="'$(EmccVerbose)' != 'false'" />
       <_EmccCommonFlags Include="-s DISABLE_EXCEPTION_CATCHING=0"   Condition="'$(WasmEnableExceptionHandling)' == 'false'" />
@@ -221,6 +227,7 @@
       <_EmccCFlags Include="-DENABLE_AOT=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DDRIVER_GEN=1"                    Condition="'$(_WasmShouldAOT)' == 'true'" />
       <_EmccCFlags Include="-DINVARIANT_GLOBALIZATION=1"       Condition="'$(InvariantGlobalization)' == 'true'" />
+      <_EmccCFlags Include="-DINVARIANT_TIMEZONE=1"            Condition="'$(InvariantTimezone)' == 'true'" />
       <_EmccCFlags Include="-DLINK_ICALLS=1"                   Condition="'$(WasmLinkIcalls)' == 'true'" />
       <_EmccCFlags Include="-DENABLE_AOT_PROFILER=1"           Condition="$(WasmProfilers.Contains('aot'))" />
       <_EmccCFlags Include="-DENABLE_BROWSER_PROFILER=1"       Condition="$(WasmProfilers.Contains('browser'))" />
@@ -235,6 +242,7 @@
       <!-- Adding optimization flag at the top, so it gets precedence -->
       <_EmccLDFlags Include="$(EmccLinkOptimizationFlag)" />
       <_EmccLDFlags Include="@(_EmccCommonFlags)" />
+      <_EmccLDFlags Include="-s EXPORT_ES6=1" />
 
       <_DriverCDependencies Include="$(_WasmPInvokeHPath);$(_WasmICallTablePath)" />
       <_DriverCDependencies Include="$(_DriverGenCPath)" Condition="'$(_DriverGenCNeeded)' == 'true'" />
@@ -267,6 +275,8 @@
       <EmscriptenEnvVars Include="EM_FROZEN_CACHE=True" />
       <EmscriptenEnvVars Include="DISABLE_LEGACY_JS_INTEROP=1" Condition="'$(WasmEnableLegacyJsInterop)' == 'false'" />
       <EmscriptenEnvVars Include="DISABLE_LEGACY_JS_INTEROP=0" Condition="'$(WasmEnableLegacyJsInterop)' != 'false'" />
+      <EmscriptenEnvVars Include="ENABLE_AOT_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('aot'))))" />
+      <EmscriptenEnvVars Include="ENABLE_BROWSER_PROFILER=$([System.Convert]::ToInt32($(WasmProfilers.Contains('browser'))))" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(WasmAllowUndefinedSymbols)' == 'true'">
@@ -505,7 +515,7 @@
     <ItemGroup>
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.wasm" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js" />
-      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.worker.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.worker.js')" />
+      <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.worker.js" Condition="Exists('$(_WasmIntermediateOutputPath)dotnet.native.worker.js')" />
       <WasmNativeAsset Include="$(_WasmIntermediateOutputPath)dotnet.native.js.symbols" Condition="'$(WasmEmitSymbolMap)' == 'true' and Exists('$(_WasmIntermediateOutputPath)dotnet.native.js.symbols')" />
       <_WasmAssembliesInternal Remove="$(_WasmDedupAssembly)"/>
     </ItemGroup>
@@ -596,7 +606,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="mattr=simd" Condition="'$(WasmEnableSIMD)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="-v" Condition="'$(WasmAOTCompilerVerbose)' == 'true'" />
       <MonoAOTCompilerDefaultProcessArguments Include="--wasm-exceptions" Condition="'$(WasmEnableExceptionHandling)' == 'true'" />
-      <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true'" />
+      <MonoAOTCompilerDefaultProcessArguments Include="--wasm-gc-safepoints" Condition="'$(WasmEnableThreads)' == 'true'" />
       <AotProfilePath Include="$(WasmAotProfilePath)"/>
     </ItemGroup>
     <ItemGroup>
@@ -677,6 +687,20 @@
 
       <!-- Add the skipped assemblies -->
       <_WasmAssembliesInternal Include="@(_AotInputAssemblies->WithMetadataValue('AOT_InternalForceToInterpret', 'true'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler">
+     <ItemGroup>
+      <_AssembliesToScan Include="@(_WasmAssembliesInternal)" />
+    </ItemGroup>
+    
+    <MarshalingPInvokeScanner Assemblies ="@(_AssembliesToScan)">
+      <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
+    </MarshalingPInvokeScanner>
+
+    <ItemGroup Condition="@(MonoLightweightMarshallerIncompatibleAssemblies->Count()) > 0">
+      <_MonoComponent Include="marshal-ilgen" />
     </ItemGroup>
   </Target>
 

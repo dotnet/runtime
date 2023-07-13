@@ -9,9 +9,7 @@
     <RunScriptOutputPath>$([MSBuild]::NormalizePath('$(WasmAppDir)', '$(RunScriptOutputName)'))</RunScriptOutputPath>
 
     <!-- so that SharedArrayBuffer is enabled -->
-    <_MonoWasmThreads Condition="'$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true' or '$(MonoWasmBuildVariant)' == 'multithread' or '$(MonoWasmBuildVariant)' == 'perftrace'">true</_MonoWasmThreads>
-    <WasmXHarnessArgs Condition="'$(_MonoWasmThreads)' == 'true'">$(WasmXHarnessArgs) --web-server-use-cop</WasmXHarnessArgs>
-    <_ServeHeaders    Condition="'$(_MonoWasmThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
+    <_ServeHeaders    Condition="'$(WasmEnableThreads)' == 'true'">$(_ServeHeaders) -h Cross-Origin-Embedder-Policy:require-corp -h Cross-Origin-Opener-Policy:same-origin</_ServeHeaders>
 
     <!-- For streaming instantiation of WASM module and browser cache -->
     <_ServeMimeTypes>$(_ServeMimeTypes) --mime .wasm=application/wasm</_ServeMimeTypes>

@@ -90,11 +90,20 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
 {
     // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
     // TODO: Implement EventPipe assembly name - return filename in nativeaot?
-    PalDebugBreak();
-
-    // fallback to the empty string if we can't get assembly info, e.g., if the runtime is
-    // suspended before an assembly is loaded.
     return reinterpret_cast<const ep_char8_t*>("");
+}
+
+const ep_char8_t *
+ep_rt_aot_diagnostics_command_line_get (void)
+{
+    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+    // TODO: revisit commandline for AOT
+#ifdef TARGET_WINDOWS
+    const ep_char16_t* command_line = reinterpret_cast<const ep_char16_t *>(::GetCommandLineW());
+    return ep_rt_utf16_to_utf8_string(command_line, -1);
+#else
+    return "";
+#endif
 }
 
 uint32_t
@@ -658,6 +667,44 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
         return true;
     }
     return false;
+}
+
+#ifndef HOST_WIN32
+#if defined(__APPLE__)
+#if defined (HOST_OSX)
+extern "C" {char ***_NSGetEnviron(void);}
+#define environ (*_NSGetEnviron())
+#else
+static char *_ep_rt_aot_environ[1] = { NULL };
+#define environ _ep_rt_aot_environ
+#endif /* defined (HOST_OSX) */
+#else
+extern "C" {
+extern char **environ;
+}
+#endif /* defined (__APPLE__) */
+#endif /* !defined (HOST_WIN32) */
+
+void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
+{
+    STATIC_CONTRACT_NOTHROW;
+    EP_ASSERT (env_array != NULL);
+
+#ifdef HOST_WIN32
+    ep_char16_t * envs = reinterpret_cast<ep_char16_t *>(GetEnvironmentStringsW ());
+    if (envs) {
+        const ep_char16_t * next = envs;
+        while (*next) {
+            dn_vector_ptr_push_back (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
+            next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
+        }
+        FreeEnvironmentStringsW (reinterpret_cast<LPWSTR>(envs));
+    }
+#else
+    ep_char8_t **next = NULL;
+    for (next = environ; *next != NULL; ++next)
+        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
+#endif
 }
 
 #ifdef EP_CHECKED_BUILD

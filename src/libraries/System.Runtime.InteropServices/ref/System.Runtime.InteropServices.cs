@@ -342,6 +342,15 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
+    }
+    [System.Flags]
+    public enum ComInterfaceOptions
+    {
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+        None = 0,
+        ManagedObjectWrapper = 0x1,
+        ComObjectWrapper = 0x2,
     }
     public sealed partial class ComObject : System.Runtime.InteropServices.IDynamicInterfaceCastable, System.Runtime.InteropServices.Marshalling.IUnmanagedVirtualMethodTableProvider
     {
@@ -381,8 +390,9 @@ namespace System.Runtime.InteropServices.Marshalling
     public partial class GeneratedComInterfaceAttribute : System.Attribute
     {
         public GeneratedComInterfaceAttribute() { }
-        public StringMarshalling StringMarshalling { get { throw null; } set { } }
-        public Type? StringMarshallingCustomType { get { throw null; } set { } }
+        public System.Runtime.InteropServices.Marshalling.ComInterfaceOptions Options { get { throw null; } set { } }
+        public System.Runtime.InteropServices.StringMarshalling StringMarshalling { get { throw null; } set { } }
+        public System.Type? StringMarshallingCustomType { get { throw null; } set { } }
     }
     [System.CLSCompliantAttribute(false)]
     public partial interface IComExposedClass
@@ -474,6 +484,7 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public static void* ConvertToUnmanaged(T? managed) { throw null; }
         public static T? ConvertToManaged(void* unmanaged) { throw null; }
+        public static void Free(void* unmanaged) { }
     }
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct VirtualMethodTableInfo
@@ -1444,6 +1455,8 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat operator -(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator -(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Runtime.InteropServices.NFloat Parse(string s) { throw null; }
@@ -1505,6 +1518,9 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Truncate(System.Runtime.InteropServices.NFloat x) { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public bool TryFormat(System.Span<byte> utf8Destination, out int bytesWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<byte> utf8Text, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Runtime.InteropServices.NFloat result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, out System.Runtime.InteropServices.NFloat result) { throw null; }

@@ -393,6 +393,7 @@ namespace System.Security.Cryptography
                         Debug.Assert(pwdTmpBytes!.Length == 0);
                     }
 
+                    KdfWorkLimiter.RecordIterations(iterationCount);
                     using (var pbkdf2 = new Rfc2898DeriveBytes(pwdTmpBytes, salt.ToArray(), iterationCount, prf))
                     {
                         derivedKey = pbkdf2.GetBytes(keySizeBytes);

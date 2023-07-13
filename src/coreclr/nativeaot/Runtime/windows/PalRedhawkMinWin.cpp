@@ -769,12 +769,6 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return InterlockedExchangePointer(&pBuffer, pNewBuffer);
-}
-
 #if defined(HOST_ARM64)
 
 #include "IntrinsicConstants.h"

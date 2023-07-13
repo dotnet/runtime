@@ -114,6 +114,7 @@ namespace System.Net.Http
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private SslClientAuthenticationOptions? _sslOptionsHttp3;
+        private SslClientAuthenticationOptions? _sslOptionsProxy;
 
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
         private bool _usedSinceLastCleanup = true;
@@ -302,6 +303,12 @@ namespace System.Net.Http
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
             }
 
+            if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
+            {
+                _sslOptionsProxy = ConstructSslOptions(poolManager, _proxyUri.IdnHost);
+                _sslOptionsProxy.ApplicationProtocols = null;
+            }
+
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
@@ -319,6 +326,15 @@ namespace System.Net.Http
             Debug.Assert(sslHostName != null);
 
             SslClientAuthenticationOptions sslOptions = poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
+
+            // This is only set if we are underlying handler for HttpClientHandler
+            if (poolManager.Settings._clientCertificateOptions == ClientCertificateOption.Manual && sslOptions.LocalCertificateSelectionCallback != null &&
+                    (sslOptions.ClientCertificates == null || sslOptions.ClientCertificates.Count == 0))
+            {
+                // If we have no client certificates do not set callback when internal selection is used.
+                // It breaks TLS resume on Linux
+                sslOptions.LocalCertificateSelectionCallback = null;
+            }
 
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
@@ -918,12 +934,16 @@ namespace System.Net.Http
                 {
                     quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {e}");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {ex}");
 
-                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
-                    BlocklistAuthority(authority, e);
+                    // Block list authority only if the connection attempt was not cancelled.
+                    if (ex is not OperationCanceledException oce || !cancellationToken.IsCancellationRequested || oce.CancellationToken != cancellationToken)
+                    {
+                        // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
+                        BlocklistAuthority(authority, ex);
+                    }
                     throw;
                 }
 
@@ -1525,10 +1545,18 @@ namespace System.Net.Http
                 case HttpConnectionKind.ProxyConnect:
                     Debug.Assert(_originAuthority != null);
                     stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
+                    {
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case HttpConnectionKind.Proxy:
                     stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    if (_sslOptionsProxy != null)
+                    {
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:

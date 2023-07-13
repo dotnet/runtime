@@ -155,10 +155,6 @@ type MONOType = {
      */
     mono_wasm_runtime_ready: () => void;
     /**
-     * @deprecated Please use config.assets instead
-     */
-    mono_wasm_load_data_archive: (data: Uint8Array, prefix: string) => boolean;
-    /**
      * @deprecated Please use [JSImportAttribute] or [JSExportAttribute] for interop instead.
      */
     mono_wasm_new_root_buffer: (capacity: number, name?: string) => WasmRootBuffer;
