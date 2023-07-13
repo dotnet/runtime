@@ -180,6 +180,7 @@ namespace System.Text.Tests
 
             Assert.NotEqual(0, sb.Length);
             Assert.Equal(sb.Length, vsb.Length);
+            Assert.Equal(sb.ToString(), vsb.ToString());
         }
 
         [Fact]
