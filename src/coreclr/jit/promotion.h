@@ -208,13 +208,13 @@ public:
 // Class to represent liveness information for a struct local's fields and remainder.
 class StructDeaths
 {
-    BitVec   m_deaths;
-    unsigned m_numFields = 0;
+    BitVec         m_deaths;
+    AggregateInfo* m_aggregate = nullptr;
 
     friend class PromotionLiveness;
 
 private:
-    StructDeaths(BitVec deaths, unsigned numFields) : m_deaths(deaths), m_numFields(numFields)
+    StructDeaths(BitVec deaths, AggregateInfo* agg) : m_deaths(deaths), m_aggregate(agg)
     {
     }
 

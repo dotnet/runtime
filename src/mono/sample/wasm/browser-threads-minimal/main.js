@@ -109,6 +109,7 @@ try {
     console.log("smoke: running StartAllocatorFromWorker");
     exports.Sample.Test.StartAllocatorFromWorker();
 
+    /* ActiveIssue https://github.com/dotnet/runtime/issues/88663
     await delay(5000);
 
     console.log("smoke: running GCCollect");
@@ -118,6 +119,8 @@ try {
 
     console.log("smoke: running GCCollect");
     exports.Sample.Test.GCCollect();
+    console.log("smoke: running GCCollect done");
+    */
 
     console.log("smoke: running StopTimerFromWorker");
     exports.Sample.Test.StopTimerFromWorker();

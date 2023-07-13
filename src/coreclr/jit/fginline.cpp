@@ -42,13 +42,15 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         assert(inlineContext->GetCode() != nullptr);
         depth++;
 
-        if (inlineContext->GetCode() == candidateCode)
+        if ((inlineContext->GetCode() == candidateCode) && (inlineContext->GetCallee() == inlineInfo->fncHandle) &&
+            (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
         {
-            // This inline candidate has the same IL code buffer as an already
-            // inlined method does.
+            // This is a recursive inline
+            //
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
 
             // No need to note CALLSITE_DEPTH we're already rejecting this candidate
+            //
             return depth;
         }
 
