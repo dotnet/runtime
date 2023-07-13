@@ -127,7 +127,9 @@ namespace ILCompiler
             //
             // Initialize type system context
             //
-            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib, instructionSetSupport);
+            _typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, versionBubbleIncludesCoreLib,
+                instructionSetSupport,
+                oldTypeSystemContext: null);
 
             string compositeRootPath = Get(_command.CompositeRootPath);
 
@@ -269,7 +271,9 @@ namespace ILCompiler
                     {
                         bool singleCompilationVersionBubbleIncludesCoreLib = versionBubbleIncludesCoreLib || (String.Compare(inputFile.Key, "System.Private.CoreLib", StringComparison.OrdinalIgnoreCase) == 0);
 
-                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib, _typeSystemContext.InstructionSetSupport, _typeSystemContext);
+                        typeSystemContext = new ReadyToRunCompilerContext(targetDetails, genericsMode, singleCompilationVersionBubbleIncludesCoreLib,
+                            _typeSystemContext.InstructionSetSupport,
+                            _typeSystemContext);
                         typeSystemContext.InputFilePaths = singleCompilationInputFilePaths;
                         typeSystemContext.ReferenceFilePaths = referenceFilePaths;
                         typeSystemContext.SetSystemModule((EcmaModule)typeSystemContext.GetModuleForSimpleName(systemModuleName));
@@ -588,6 +592,7 @@ namespace ILCompiler
 
                     NodeFactoryOptimizationFlags nodeFactoryFlags = new NodeFactoryOptimizationFlags();
                     nodeFactoryFlags.OptimizeAsyncMethods = Get(_command.AsyncMethodOptimization);
+                    nodeFactoryFlags.TypeValidation = Get(_command.TypeValidation);
                     nodeFactoryFlags.DeterminismStress = Get(_command.DeterminismStress);
                     nodeFactoryFlags.PrintReproArgs = Get(_command.PrintReproInstructions);
 
@@ -616,6 +621,13 @@ namespace ILCompiler
                         .UseDependencyTracking(trackingLevel)
                         .UseCompilationRoots(compilationRoots)
                         .UseOptimizationMode(optimizationMode);
+
+                    if (Get(_command.EnableGenericCycleDetection))
+                    {
+                        builder.UseGenericCycleDetection(
+                            depthCutoff: Get(_command.GenericCycleDepthCutoff),
+                            breadthCutoff: Get(_command.GenericCycleBreadthCutoff));
+                    }
 
                     builder.UsePrintReproInstructions(CreateReproArgumentString);
 
@@ -896,15 +908,15 @@ namespace ILCompiler
             return true;
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
 
         private static int Main(string[] args) =>
-            new CommandLineBuilder(new Crossgen2RootCommand(args))
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("--version", "-v")
-                .UseHelp(context => context.HelpBuilder.CustomizeLayout(Crossgen2RootCommand.GetExtendedHelp))
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new Crossgen2RootCommand(args)
+                .UseVersion()
+                .UseExtendedHelp(Crossgen2RootCommand.GetExtendedHelp))
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableParseErrorReporting = true
+            }.Invoke(args);
     }
 }

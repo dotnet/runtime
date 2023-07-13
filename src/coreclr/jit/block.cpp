@@ -846,7 +846,7 @@ BasicBlock* BasicBlock::GetUniquePred(Compiler* compiler) const
 //
 // Return Value:
 //    The unique successor of a block, or nullptr if there is no unique successor.
-
+//
 BasicBlock* BasicBlock::GetUniqueSucc() const
 {
     if (bbJumpKind == BBJ_ALWAYS)
@@ -1665,9 +1665,9 @@ weight_t BasicBlock::getBBWeight(Compiler* comp)
     {
         weight_t calledCount = getCalledCount(comp);
 
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
+        // Normalize the bbWeight.
         //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
+        weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
 
         return fullResult;
     }

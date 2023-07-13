@@ -12,11 +12,11 @@ git pull upstream main & git push origin main
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-:: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build.cmd -vs System.Text.RegularExpressions
+:: If you use Visual Studio, you might open System.Collections.Concurrent.sln here.
+build.cmd -vs System.Collections.Concurrent
 
-:: Switch to working on a given library (RegularExpressions in this case)
-cd src\libraries\System.Text.RegularExpressions
+:: Switch to working on a given library (System.Collections.Concurrent in this case)
+cd src\libraries\System.Collections.Concurrent
 
 :: Change to test directory
 cd tests
@@ -33,19 +33,19 @@ Instructions for Unix-like operating systems are essentially the same:
 
 # From root:
 git clean -xdf
-git pull upstream main & git push origin main
+git pull upstream main; git push origin main
 # Build Debug libraries on top of Release runtime:
 ./build.sh clr+libs -rc Release
 # Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-# Switch to working on a given library (RegularExpressions in this case)
-cd src/libraries/System.Text.RegularExpressions
+# Switch to working on a given library (System.Collections.Concurrent in this case)
+cd src/libraries/System.Collections.Concurrent
 
 # Change to test directory
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:test
+pushd ../src; dotnet build; popd; dotnet build /t:test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.

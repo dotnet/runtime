@@ -22,8 +22,8 @@ namespace Microsoft.Interop
             _inner = inner;
         }
 
-        public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
-            => info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo ? new Marshaller() : _inner.Create(info, context);
+        public ResolvedGenerator Create(TypePositionInfo info, StubCodeContext context)
+            => info.MarshallingAttributeInfo is ComInterfaceDispatchMarshallingInfo ? ResolvedGenerator.Resolved(new Marshaller()) : _inner.Create(info, context);
 
         private sealed class Marshaller : IMarshallingGenerator
         {
@@ -61,7 +61,8 @@ namespace Microsoft.Interop
             public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => ValueBoundaryBehavior.NativeIdentifier;
             public bool IsSupported(TargetFramework target, Version version)
                 => target == TargetFramework.Net && version >= new Version(5, 0);
-            public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => false;
+            public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+                => ByValueMarshalKindSupportDescriptor.Default.GetSupport(marshalKind, info, context, out diagnostic);
             public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         }
     }

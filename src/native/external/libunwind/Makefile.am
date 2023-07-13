@@ -1,3 +1,4 @@
+ACLOCAL_AMFLAGS = -I m4
 include_HEADERS = include/libunwind-dynamic.h
 
 if BUILD_PTRACE

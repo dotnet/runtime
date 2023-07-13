@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -37,6 +38,13 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     return bs;
                 }
+
+#if FEATURE_WASM_THREADS
+                if (jsException.OwnerThreadId != Thread.CurrentThread.ManagedThreadId)
+                {
+                    return null;
+                }
+#endif
                 string? jsStackTrace = jsException.GetPropertyAsString("stack");
                 if (jsStackTrace == null)
                 {

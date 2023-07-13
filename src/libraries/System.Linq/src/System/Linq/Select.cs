@@ -28,6 +28,11 @@ namespace System.Linq
                 return iterator.Select(selector);
             }
 
+            if (GetEmptyIfEmpty<TSource, TResult>(source) is IEnumerable<TResult> empty)
+            {
+                return empty;
+            }
+
             if (source is IList<TSource> ilist)
             {
                 if (source is TSource[] array)

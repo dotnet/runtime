@@ -142,6 +142,8 @@ namespace System.Net.Http.Tests
         [InlineData("socks4://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks4a://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
         [InlineData("socks5://1.2.3.4:8888/foo", "1.2.3.4", "8888", null, null)]
+        [InlineData("https://1.1.1.5:3005", "1.1.1.5", "3005", null, null)]
+        [InlineData("https://1.1.1.5", "1.1.1.5", "443", null, null)]
         public void HttpProxy_Uri_Parsing(string _input, string _host, string _port, string _user, string _password)
         {
             RemoteExecutor.Invoke((input, host, port, user, password) =>

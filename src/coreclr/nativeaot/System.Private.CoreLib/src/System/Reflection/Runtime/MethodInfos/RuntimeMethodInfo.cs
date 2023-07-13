@@ -325,8 +325,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 return null;
             }
 
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance https://github.com/dotnet/roslyn-analyzers/issues/6751
             IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
             IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
+#pragma warning restore CA1859
             IEnumerator<ParameterInfo> delegateParameterEnumerator = delegateParameters.GetEnumerator();
             IEnumerator<ParameterInfo> targetParameterEnumerator = targetParameters.GetEnumerator();
 

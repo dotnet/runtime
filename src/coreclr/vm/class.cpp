@@ -146,12 +146,16 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
         if (pDelegateEEClass->m_pStaticCallStub)
         {
+            // Collect data to remove stub entry from StubManager if
+            // stub is deleted.
+            BYTE* entry = (BYTE*)pDelegateEEClass->m_pStaticCallStub->GetEntryPoint();
+            UINT length = pDelegateEEClass->m_pStaticCallStub->GetNumCodeBytes();
+
             ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
             BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-
             if (fStubDeleted)
             {
-                DelegateInvokeStubManager::g_pManager->RemoveStub(pDelegateEEClass->m_pStaticCallStub);
+                StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
             }
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)
@@ -942,35 +946,52 @@ EEClass::CheckVarianceInSig(
                 if (!ClassLoader::ResolveTokenToTypeDefThrowing(pModule, typeref, &pDefModule, &typeDef))
                     return TRUE;
 
-                HENUMInternal   hEnumGenericPars;
-                if (FAILED(pDefModule->GetMDImport()->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars)))
-                {
-                    pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
-                }
+                bool foundHasVarianceResult;
 
-                for (unsigned i = 0; i < ntypars; i++)
+                if (!pDefModule->m_pTypeGenericInfoMap->HasVariance(typeDef, &foundHasVarianceResult) && foundHasVarianceResult)
                 {
-                    mdGenericParam tkTyPar;
-                    pDefModule->GetMDImport()->EnumNext(&hEnumGenericPars, &tkTyPar);
-                    DWORD flags;
-                    if (FAILED(pDefModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                    // Fast path, now that we know there isn't variance
+                    uint32_t genericArgCount = pDefModule->m_pTypeGenericInfoMap->GetGenericArgumentCount(typeDef, pDefModule->GetMDImport());
+                    for (uint32_t iGenericArgCount = 0; iGenericArgCount < genericArgCount; iGenericArgCount++)
+                    {
+                        if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, gpNonVariant))
+                            return FALSE;
+
+                        IfFailThrow(psig.SkipExactlyOne());
+                    }
+                }
+                else
+                {
+                    HENUMInternal   hEnumGenericPars;
+                    if (FAILED(pDefModule->GetMDImport()->EnumInit(mdtGenericParam, typeDef, &hEnumGenericPars)))
                     {
                         pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
                     }
-                    CorGenericParamAttr genPosition = (CorGenericParamAttr) (flags & gpVarianceMask);
-                    // If the surrounding context is contravariant then we need to flip the variance of this parameter
-                    if (position == gpContravariant)
-                    {
-                        genPosition = genPosition == gpCovariant ? gpContravariant
-                                    : genPosition == gpContravariant ? gpCovariant
-                                    : gpNonVariant;
-                    }
-                    if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, genPosition))
-                        return FALSE;
 
-                    IfFailThrow(psig.SkipExactlyOne());
+                    for (unsigned i = 0; i < ntypars; i++)
+                    {
+                        mdGenericParam tkTyPar;
+                        pDefModule->GetMDImport()->EnumNext(&hEnumGenericPars, &tkTyPar);
+                        DWORD flags;
+                        if (FAILED(pDefModule->GetMDImport()->GetGenericParamProps(tkTyPar, NULL, &flags, NULL, NULL, NULL)))
+                        {
+                            pDefModule->GetAssembly()->ThrowTypeLoadException(pDefModule->GetMDImport(), typeDef, IDS_CLASSLOAD_BADFORMAT);
+                        }
+                        CorGenericParamAttr genPosition = (CorGenericParamAttr) (flags & gpVarianceMask);
+                        // If the surrounding context is contravariant then we need to flip the variance of this parameter
+                        if (position == gpContravariant)
+                        {
+                            genPosition = genPosition == gpCovariant ? gpContravariant
+                                        : genPosition == gpContravariant ? gpCovariant
+                                        : gpNonVariant;
+                        }
+                        if (!CheckVarianceInSig(numGenericArgs, pVarianceInfo, pModule, psig, genPosition))
+                            return FALSE;
+
+                        IfFailThrow(psig.SkipExactlyOne());
+                    }
+                    pDefModule->GetMDImport()->EnumClose(&hEnumGenericPars);
                 }
-                pDefModule->GetMDImport()->EnumClose(&hEnumGenericPars);
             }
 
             return TRUE;
@@ -1187,8 +1208,6 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
     }
     CONTRACT_END;
 
-    MethodTable *pApproxParentMT = pMT->GetParentMethodTable();
-
     if (!pMT->IsCanonicalMethodTable())
     {
         EnsureLoaded(TypeHandle(pMT->GetCanonicalMethodTable()), CLASS_LOAD_EXACTPARENTS);
@@ -1196,9 +1215,11 @@ void ClassLoader::LoadExactParents(MethodTable* pMT)
 
     LoadExactParentAndInterfacesTransitively(pMT);
 
-    MethodTableBuilder::CopyExactParentSlots(pMT, pApproxParentMT);
-
-    PropagateCovariantReturnMethodImplSlots(pMT);
+    if (pMT->GetClass()->HasVTableMethodImpl())
+    {
+        MethodTableBuilder::CopyExactParentSlots(pMT);
+        PropagateCovariantReturnMethodImplSlots(pMT);
+    }
 
 #ifdef EnC_SUPPORTED
     // Generics for EnC - create static FieldDescs.

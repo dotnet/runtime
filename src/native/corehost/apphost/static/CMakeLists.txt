@@ -56,7 +56,9 @@ endif()
 if(CLR_CMAKE_TARGET_WIN32)
     add_definitions(-DUNICODE)
     list(APPEND SOURCES
-        ../apphost.windows.cpp)
+        ../apphost.windows.cpp
+        ${CLR_SRC_NATIVE_DIR}/libs/Common/delayloadhook_windows.cpp
+    )
 
     list(APPEND HEADERS
         ../apphost.windows.h)
@@ -106,6 +108,9 @@ if(CLR_CMAKE_TARGET_WIN32)
 
     # Delay load libraries required for WinRT as that is not supported on all platforms
     add_linker_flag("/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll")
+
+    # Delay load version.dll so that we can specify how to search when loading it as it is not part of Windows' known DLLs
+    add_linker_flag("/DELAYLOAD:version.dll")
 endif()
 
 if(CLR_CMAKE_TARGET_WIN32)
