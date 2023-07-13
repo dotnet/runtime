@@ -108,7 +108,7 @@ namespace System.Tests
             Assert.False(BinaryNumberHelper<double>.IsPow2(-0.0));
             Assert.False(BinaryNumberHelper<double>.IsPow2(double.NaN));
             Assert.False(BinaryNumberHelper<double>.IsPow2(0.0));
-            Assert.False(BinaryNumberHelper<double>.IsPow2(double.Epsilon));
+            Assert.True(BinaryNumberHelper<double>.IsPow2(double.Epsilon));
             Assert.False(BinaryNumberHelper<double>.IsPow2(MaxSubnormal));
             Assert.True(BinaryNumberHelper<double>.IsPow2(MinNormal));
             Assert.True(BinaryNumberHelper<double>.IsPow2(1.0));

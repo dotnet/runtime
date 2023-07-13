@@ -1194,12 +1194,28 @@ namespace System
         {
             ushort bits = BitConverter.HalfToUInt16Bits(value);
 
+            if ((short)bits <= 0)
+            {
+                // Zero and negative values cannot be powers of 2
+                return false;
+            }
+
             byte biasedExponent = ExtractBiasedExponentFromBits(bits);
             ushort trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
-            return (value > Zero)
-                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
-                && (trailingSignificand == MinTrailingSignificand);
+            if (biasedExponent == MinBiasedExponent)
+            {
+                // Subnormal values have 1 bit set when they're powers of 2
+                return ushort.PopCount(trailingSignificand) == 1;
+            }
+            else if (biasedExponent == MaxBiasedExponent)
+            {
+                // NaN and Infinite values cannot be powers of 2
+                return false;
+            }
+
+            // Normal values have 0 bits set when they're powers of 2
+            return trailingSignificand == MinTrailingSignificand;
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
