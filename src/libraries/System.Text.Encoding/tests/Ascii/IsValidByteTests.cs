@@ -28,7 +28,12 @@ namespace System.Text.Tests
             Vector128<byte>.Count + 1,
             Vector256<byte>.Count - 1,
             Vector256<byte>.Count,
-            Vector256<byte>.Count + 1 };
+            Vector256<byte>.Count + 1,
+            Vector512<byte>.Count - 1,
+            Vector512<byte>.Count,
+            Vector512<byte>.Count + 1,
+            4*Vector512<byte>.Count,
+            4*Vector512<byte>.Count + 1 };
 
         public static IEnumerable<object[]> AsciiOnlyBuffers
         {

@@ -115,7 +115,7 @@ namespace System.Text
 
             if (Vector512.IsHardwareAccelerated && length >= Vector512<T>.Count)
             {
-                // Process inputs with lengths [33, 64] bytes.
+                // Process inputs with lengths [65, 128] bytes.
                 if (length <= 2 * Vector512<T>.Count)
                 {
                     return AllCharsInVectorAreAscii(
@@ -123,10 +123,10 @@ namespace System.Text
                         Vector512.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector512<T>.Count)));
                 }
 
-                // Process long inputs 128 bytes at a time.
+                // Process long inputs 256 bytes at a time.
                 if (length > 4 * Vector512<T>.Count)
                 {
-                    // Process the first 128 bytes.
+                    // Process the first 256 bytes.
                     if (!AllCharsInVectorAreAscii(
                         Vector512.LoadUnsafe(ref searchSpace) |
                         Vector512.LoadUnsafe(ref searchSpace, (nuint)Vector512<T>.Count) |
@@ -164,7 +164,7 @@ namespace System.Text
                     searchSpace = ref Unsafe.Add(ref searchSpace, finalStart);
                 }
 
-                // Process the last [1, 128] bytes.
+                // Process the last [1, 256] bytes.
                 // The search space has at least 2 * Vector512 bytes available to read.
                 // We process the first 2 and last 2 vectors, which may overlap.
                 return AllCharsInVectorAreAscii(
