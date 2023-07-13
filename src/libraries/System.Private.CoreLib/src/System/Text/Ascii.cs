@@ -113,6 +113,67 @@ namespace System.Text
                     Vector128.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector128<T>.Count)));
             }
 
+            if (Vector512.IsHardwareAccelerated)
+            {
+                // Process inputs with lengths [33, 64] bytes.
+                if (length <= 2 * Vector512<T>.Count)
+                {
+                    return AllCharsInVectorAreAscii(
+                        Vector512.LoadUnsafe(ref searchSpace) |
+                        Vector512.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector512<T>.Count)));
+                }
+
+                // Process long inputs 128 bytes at a time.
+                if (length > 4 * Vector512<T>.Count)
+                {
+                    // Process the first 128 bytes.
+                    if (!AllCharsInVectorAreAscii(
+                        Vector512.LoadUnsafe(ref searchSpace) |
+                        Vector512.LoadUnsafe(ref searchSpace, (nuint)Vector512<T>.Count) |
+                        Vector512.LoadUnsafe(ref searchSpace, 2 * (nuint)Vector512<T>.Count) |
+                        Vector512.LoadUnsafe(ref searchSpace, 3 * (nuint)Vector512<T>.Count)))
+                    {
+                        return false;
+                    }
+
+                    nuint i = 4 * (nuint)Vector512<T>.Count;
+
+                    // Try to opportunistically align the reads below. The input isn't pinned, so the GC
+                    // is free to move the references. We're therefore assuming that reads may still be unaligned.
+                    // They may also be unaligned if the input chars aren't 2-byte aligned.
+                    nuint misalignedElements = ((nuint)Unsafe.AsPointer(ref searchSpace) & (nuint)(Vector512<byte>.Count - 1)) / (nuint)sizeof(T);
+                    i -= misalignedElements;
+                    Debug.Assert((int)i > 3 * Vector512<T>.Count);
+
+                    nuint finalStart = (nuint)length - 4 * (nuint)Vector512<T>.Count;
+
+                    for (; i < finalStart; i += 4 * (nuint)Vector512<T>.Count)
+                    {
+                        ref T current = ref Unsafe.Add(ref searchSpace, i);
+
+                        if (!AllCharsInVectorAreAscii(
+                            Vector512.LoadUnsafe(ref current) |
+                            Vector512.LoadUnsafe(ref current, (nuint)Vector512<T>.Count) |
+                            Vector512.LoadUnsafe(ref current, 2 * (nuint)Vector512<T>.Count) |
+                            Vector512.LoadUnsafe(ref current, 3 * (nuint)Vector512<T>.Count)))
+                        {
+                            return false;
+                        }
+                    }
+
+                    searchSpace = ref Unsafe.Add(ref searchSpace, finalStart);
+                }
+
+                // Process the last [1, 128] bytes.
+                // The search space has at least 2 * Vector512 bytes available to read.
+                // We process the first 2 and last 2 vectors, which may overlap.
+                return AllCharsInVectorAreAscii(
+                    Vector512.LoadUnsafe(ref searchSpace) |
+                    Vector512.LoadUnsafe(ref searchSpace, (nuint)Vector512<T>.Count) |
+                    Vector512.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, 2 * Vector512<T>.Count)) |
+                    Vector512.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector512<T>.Count)));
+            }
+
             if (Avx.IsSupported)
             {
                 // Process inputs with lengths [33, 64] bytes.
