@@ -2335,9 +2335,12 @@ namespace System.Tests
                     }
                 }
 
-                foreach (string alias in s_UtcAliases)
+                if (!PlatformDetection.IsBrowser)
                 {
-                    yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(alias) };
+                    foreach (string alias in s_UtcAliases)
+                    {
+                        yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(alias) };
+                    }
                 }
             }
         }
