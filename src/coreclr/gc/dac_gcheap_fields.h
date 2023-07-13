@@ -39,7 +39,8 @@ DEFINE_MISSING_FIELD(saved_sweep_ephemeral_start)
 // This field is unused
 DEFINE_FIELD(generation_table, void*)
 
-// Here is where v0.2 fields starts
+// Here is where v5.2 fields starts
+
 #if defined(ALL_FIELDS) || defined(BACKGROUND_GC)
 DEFINE_DPTR_FIELD  (freeable_soh_segment,               dac_heap_segment)
 DEFINE_DPTR_FIELD  (freeable_uoh_segment,               dac_heap_segment)

@@ -51943,7 +51943,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     };
 
     assert(gcDacVars != nullptr);
-
     // Note: These version numbers do not need to be checked in the .Net dac/SOS because
     // we always match the compiled dac and GC to the version used.  NativeAOT's SOS may
     // work differently than .Net SOS.  When making breaking changes here you may need to
