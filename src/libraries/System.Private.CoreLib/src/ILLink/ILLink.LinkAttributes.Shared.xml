@@ -320,6 +320,9 @@
     <type fullname="System.Runtime.CompilerServices.ScopedRefAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
+    <type fullname="System.Runtime.CompilerServices.RefSafetyRulesAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
 
     <!-- Microsoft.CodeAnalysis -->
     <type fullname="Microsoft.CodeAnalysis.EmbeddedAttribute">
