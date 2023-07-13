@@ -1791,6 +1791,21 @@ namespace System.Runtime.Intrinsics
             return Unsafe.ReadUnaligned<Vector512<T>>(ref Unsafe.As<T, byte>(ref source));
         }
 
+        /// <summary>Loads a vector from the given source and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<ushort> LoadUnsafe(ref char source) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source));
+
+        /// <summary>Loads a vector from the given source and element offset and reinterprets it as <see cref="ushort"/>.</summary>
+        /// <param name="source">The source to which <paramref name="elementOffset" /> will be added before loading the vector.</param>
+        /// <param name="elementOffset">The element offset from <paramref name="source" /> from which the vector will be loaded.</param>
+        /// <returns>The vector loaded from <paramref name="source" /> plus <paramref name="elementOffset" />.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector512<ushort> LoadUnsafe(ref char source, nuint elementOffset) =>
+            LoadUnsafe(ref Unsafe.As<char, ushort>(ref source), elementOffset);
+
         /// <summary>Computes the maximum of two vectors on a per-element basis.</summary>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>
         /// <param name="left">The vector to compare with <paramref name="right" />.</param>

@@ -19,7 +19,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// [Optional] Properties to attach to any diagnostic emitted due to this exception.
         /// </summary>
-        public ImmutableDictionary<string, string>? DiagnosticProperties { get; init; }
+        public ImmutableDictionary<string, string> DiagnosticProperties { get; init; } = ImmutableDictionary<string, string>.Empty;
         public TypePositionInfo TypePositionInfo { get; }
         public StubCodeContext StubCodeContext { get; }
         public bool IsFatal { get; }

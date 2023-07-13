@@ -91,5 +91,19 @@ namespace Microsoft.Extensions.Options.Generators
             messageFormat: SR.PotentiallyMissingEnumerableValidationMessage,
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning);
+
+        public static DiagnosticDescriptor CantValidateStaticOrConstMember { get; } = Make(
+            id: "SYSLIB1214",
+            title: SR.CantValidateStaticOrConstMemberTitle,
+            messageFormat: SR.CantValidateStaticOrConstMemberMessage,
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Warning);
+
+        public static DiagnosticDescriptor InaccessibleValidationAttribute { get; } = Make(
+            id: "SYSLIB1215",
+            title: SR.InaccessibleValidationAttributeTitle,
+            messageFormat: SR.InaccessibleValidationAttributeMessage,
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Info);
     }
 }

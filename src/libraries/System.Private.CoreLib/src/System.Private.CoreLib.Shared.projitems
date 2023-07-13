@@ -330,6 +330,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Invariant.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CompareOptions.cs" />
@@ -375,6 +376,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\NumberFormatInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\NumberStyles.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Ordinal.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Ordinal.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\OrdinalCasing.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\PersianCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\RegionInfo.cs" />
@@ -389,6 +391,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Icu.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.Nls.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.OSX.cs" Condition="'$(IsOSXLike)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextInfo.WebAssembly.cs" Condition="'$(TargetsBrowser)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanFormat.cs" />
@@ -509,6 +512,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\ISpanFormattable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IUtfChar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanFormattable.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IUtf8SpanParsable.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Lazy.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LazyOfTTMetadata.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\LoaderOptimization.cs" />
@@ -525,7 +529,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryDebugView.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Globalization.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\MemoryExtensions.Trim.Utf8.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MethodAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MidpointRounding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\MissingFieldException.cs" />
@@ -813,6 +819,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InterpolatedStringHandlerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\InterpolatedStringHandlerArgumentAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\DefaultInterpolatedStringHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IsUnmanagedAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\IteratorStateMachineAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ITuple.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\LoadHint.cs" />
@@ -821,6 +828,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MethodImplOptions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ModuleInitializerAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\MetadataUpdateOriginalTypeAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\NullableAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\NullableContextAttribute.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\NullablePublicOnlyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ReferenceAssemblyAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\PoolingAsyncValueTaskMethodBuilderT.cs" />
@@ -832,6 +842,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeFeature.NonNativeAot.cs" Condition="'$(FeatureNativeAot)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeHelpers.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\RuntimeWrappedException.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\ScopedRefAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SkipLocalsInitAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\SpecialNameAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Runtime\CompilerServices\StateMachineAttribute.cs" />
@@ -1273,6 +1284,9 @@
     <Compile Include="$(CommonPath)Interop\Interop.Casing.cs">
       <Link>Common\Interop\Interop.Casing.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Interop.Casing.OSX.cs" Condition="'$(IsOSXLike)' == 'true'">
+      <Link>Common\Interop\Interop.Casing.OSX.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Interop.Collation.cs">
       <Link>Common\Interop\Interop.Collation.cs</Link>
     </Compile>
@@ -1445,8 +1459,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingEventCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\IncrementingPollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.cs" Condition="'$(FeaturePerfTracing)' != 'true' or '$(FeatureNativeAot)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true' and '$(FeatureNativeAot)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.cs" Condition="'$(FeaturePerfTracing)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\NativeRuntimeEventSource.Threading.NativeSinks.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\PollingCounter.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\RuntimeEventSource.cs" Condition="'$(FeaturePerfTracing)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Diagnostics\Tracing\Winmeta.cs" />

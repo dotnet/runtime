@@ -18,7 +18,9 @@ namespace AssemblyStripper
         {
             CustomAttributeRow row_left = (CustomAttributeRow)left;
             CustomAttributeRow row_right = (CustomAttributeRow)right;
-            return row_left.Parent.RID.CompareTo(row_right.Parent.RID);
+            var leftParentCodedIdx = Utilities.CompressMetadataToken(CodedIndex.HasCustomAttribute, row_left.Parent);
+            var rightParentCodedIdx = Utilities.CompressMetadataToken(CodedIndex.HasCustomAttribute, row_right.Parent);
+            return leftParentCodedIdx.CompareTo(rightParentCodedIdx);
         }
     }
 

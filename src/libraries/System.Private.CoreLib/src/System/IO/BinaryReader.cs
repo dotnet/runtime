@@ -1,18 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Wraps a stream and provides convenient read functionality
-** for strings and primitive types.
-**
-**
-============================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -20,6 +8,9 @@ using System.Text;
 
 namespace System.IO
 {
+    /// <summary>
+    /// Reads primitive data types as binary values in a specific encoding.
+    /// </summary>
     public class BinaryReader : IDisposable
     {
         private const int MaxCharBytesSize = 128;
