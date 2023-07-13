@@ -30,6 +30,7 @@
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(CustomMain)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
+      <UseMonoJustInterp Condition="'$(CustomMain)' == 'true'">true</UseMonoJustInterp>
       <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
     </PropertyGroup>
 
