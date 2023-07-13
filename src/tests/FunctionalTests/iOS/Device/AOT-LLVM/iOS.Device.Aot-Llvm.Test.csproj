@@ -9,7 +9,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
-    <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
+    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <MonoEnableLLVM>true</MonoEnableLLVM>
