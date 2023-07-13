@@ -8,6 +8,7 @@
 ## Runable:
  - [default-interface-members-versions](https://github.com/dotnet/samples/tree/main/csharp/tutorials/default-interface-members-versions)
  - [exploration](https://github.com/dotnet/samples/tree/main/csharp/tutorials/exploration)
+ - [toll-calculator](https://github.com/dotnet/samples/tree/main/csharp/tutorials/toll-calculator)
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
