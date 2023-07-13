@@ -476,11 +476,23 @@ namespace System.Numerics
 
             if (!TryFormat(utf16Destination, out int charsWritten, format, provider))
             {
+                if (utf16DestinationArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16DestinationArray);
+                }
+
                 bytesWritten = 0;
                 return false;
             }
 
             OperationStatus utf8DestinationStatus = Utf8.FromUtf16(utf16Destination, utf8Destination, out _, out bytesWritten, replaceInvalidSequences: false);
+
+            if (utf16DestinationArray != null)
+            {
+                // Return rented buffers if necessary
+                ArrayPool<char>.Shared.Return(utf16DestinationArray);
+            }
 
             if (utf8DestinationStatus != OperationStatus.Done)
             {
