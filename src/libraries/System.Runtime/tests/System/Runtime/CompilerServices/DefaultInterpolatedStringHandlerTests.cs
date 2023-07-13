@@ -18,17 +18,17 @@ namespace System.Runtime.CompilerServices.Tests
         [InlineData(-16, 1)]
         public void LengthAndHoleArguments_Valid(int literalLength, int formattedCount)
         {
-            new DefaultInterpolatedStringHandler(literalLength, formattedCount);
+            new DefaultInterpolatedStringHandler(literalLength, formattedCount).ToStringAndClear();
 
             Span<char> scratch1 = stackalloc char[1];
             foreach (IFormatProvider provider in new IFormatProvider[] { null, new ConcatFormatter(), CultureInfo.InvariantCulture, CultureInfo.CurrentCulture, new CultureInfo("en-US"), new CultureInfo("fr-FR") })
             {
-                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider);
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider).ToStringAndClear();
 
-                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, default);
-                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, scratch1);
-                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, Array.Empty<char>());
-                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, new char[256]);
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, default).ToStringAndClear();
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, scratch1).ToStringAndClear();
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, Array.Empty<char>()).ToStringAndClear();
+                new DefaultInterpolatedStringHandler(literalLength, formattedCount, provider, new char[256]).ToStringAndClear();
             }
         }
 
@@ -244,6 +244,8 @@ namespace System.Runtime.CompilerServices.Tests
                 handler.AppendFormatted(tss, 1, "X2");
                 Assert.Same(provider, tss.ToStringState.LastProvider);
             }
+
+            handler.ToStringAndClear();
         }
 
         [Fact]
@@ -357,6 +359,8 @@ namespace System.Runtime.CompilerServices.Tests
 
                 handler.AppendFormatted(t, 1, "X2");
                 Assert.Same(provider, ((IHasToStringState)t).ToStringState.LastProvider);
+
+                handler.ToStringAndClear();
             }
 
             Test(new FormattableInt32Wrapper(42));
