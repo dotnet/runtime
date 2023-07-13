@@ -1871,6 +1871,18 @@ namespace System
             return result;
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static double DegreesToRadians(double degrees)
+        {
+            return (degrees * Pi) / 180.0;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static double RadiansToDegrees(double radians)
+        {
+            return (radians * 180.0) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         [Intrinsic]
         public static double Sin(double x) => Math.Sin(x);

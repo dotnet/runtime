@@ -1752,6 +1752,18 @@ namespace System
             return result;
         }
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static float DegreesToRadians(float degrees)
+        {
+            return (degrees * Pi) / 180.0f;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static float RadiansToDegrees(float radians)
+        {
+            return (radians * 180.0f) / Pi;
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         [Intrinsic]
         public static float Sin(float x) => MathF.Sin(x);

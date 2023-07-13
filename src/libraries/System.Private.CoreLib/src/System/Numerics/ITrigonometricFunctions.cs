@@ -57,6 +57,22 @@ namespace System.Numerics
         /// <remarks>This computes <c>cos(x * PI)</c>.</remarks>
         static abstract TSelf CosPi(TSelf x);
 
+        /// <summary>Converts a given value from degrees to radians.</summary>
+        /// <param name="degrees">The value to convert to radians.</param>
+        /// <returns>The value of <paramref name="degrees" /> converted to radians.</returns>
+        static virtual TSelf DegreesToRadians(TSelf degrees)
+        {
+            return (degrees * TSelf.Pi) / TSelf.CreateChecked(180);
+        }
+
+        /// <summary>Converts a given value from radians to degrees.</summary>
+        /// <param name="radians">The value to convert to degrees.</param>
+        /// <returns>The value of <paramref name="radians" /> converted to degrees.</returns>
+        static virtual TSelf RadiansToDegrees(TSelf radians)
+        {
+            return (radians * TSelf.CreateChecked(180)) / TSelf.Pi;
+        }
+
         /// <summary>Computes the sine of a value.</summary>
         /// <param name="x">The value, in radians, whose sine is to be computed.</param>
         /// <returns>The sine of <paramref name="x" />.</returns>
