@@ -3135,39 +3135,10 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             break;
 
         case GT_IND:
-            // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsIconHandle())
-            {
-                if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
-                {
-                    actualFlags |= GTF_IND_INVARIANT;
-                }
-                if ((tree->gtFlags & GTF_IND_NONFAULTING) != 0)
-                {
-                    actualFlags |= GTF_IND_NONFAULTING;
-                }
-
-                GenTreeFlags handleKind = op1->GetIconHandleFlag();
-
-                // Some of these aren't handles to invariant data...
-                if ((handleKind == GTF_ICON_STATIC_HDL) || // Pointer to a mutable class Static variable
-                    (handleKind == GTF_ICON_BBC_PTR) ||    // Pointer to a mutable basic block count value
-                    (handleKind == GTF_ICON_GLOBAL_PTR))   // Pointer to mutable data from the VM state
-                {
-                    // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
-                    // fail to set it in a number of situations, and so this check is disabled.
-                    // TODO: enable checking of GTF_GLOB_REF.
-                    // expectedFlags |= GTF_GLOB_REF;
-                }
-                else // All the other handle indirections are considered invariant
-                {
-                    expectedFlags |= GTF_IND_INVARIANT;
-                }
-
-                // Currently we expect all indirections with constant addresses to be nonfaulting.
-                expectedFlags |= GTF_IND_NONFAULTING;
-            }
-
+            // For statics, we expect the GTF_GLOB_REF to be set. However, we currently
+            // fail to set it in a number of situations, and so this check is disabled.
+            // TODO: enable checking of GTF_GLOB_REF.
+            expectedFlags |= gtGetFlagsForOperand(GT_IND, op1);
             assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 

@@ -4699,17 +4699,7 @@ GenTree* Compiler::optAssertionProp_Update(GenTree* newTree, GenTree* tree, Stat
             if (parent != nullptr)
             {
                 parent->ReplaceOperand(useEdge, newTree);
-                if ((parent->gtOper == GT_IND) && newTree->IsIconHandle())
-                {
-                    parent->gtFlags |= GTF_IND_NONFAULTING;
-                    GenTreeFlags handleKind = newTree->GetIconHandleFlag();
-
-                    if ((handleKind != GTF_ICON_STATIC_HDL) && (handleKind != GTF_ICON_BBC_PTR) &&
-                        (handleKind != GTF_ICON_GLOBAL_PTR))
-                    {
-                        parent->gtFlags |= GTF_IND_INVARIANT;
-                    }
-                }
+                parent->gtFlags |= gtGetFlagsForOperand(parent->gtOper, newTree);
             }
             else
             {

@@ -3007,6 +3007,8 @@ public:
     // having to re-run the algorithm that looks for them (might also improve CQ).
     bool gtMarkAddrMode(GenTree* addr, int* costEx, int* costSz, var_types type);
 
+    GenTreeFlags gtGetFlagsForOperand(genTreeOps oper, GenTree* op);
+
     unsigned gtSetEvalOrder(GenTree* tree);
 
     void gtSetStmtInfo(Statement* stmt);

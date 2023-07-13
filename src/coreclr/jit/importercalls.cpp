@@ -2763,7 +2763,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->sigInst.methInstCount == 1);
                 CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
-                retNode                     = gtNewIconNode(eeIsValueClass(hClass) ? 0 : 1);
+
+                retNode = gtNewIconNode(eeIsValueClass(hClass) ? 0 : 1);
                 break;
             }
 
@@ -2771,11 +2772,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             {
                 assert(sig->sigInst.methInstCount == 1);
                 CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
-                retNode =
-                    gtNewIconNode(((info.compCompHnd->getClassAttribs(hClass) &
-                                    (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR)) == CORINFO_FLG_VALUECLASS)
-                                      ? 0
-                                      : 1);
+
+                uint32_t flags = info.compCompHnd->getClassAttribs(hClass) &
+                    (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR);
+                retNode = gtNewIconNode((flags == CORINFO_FLG_VALUECLASS) ? 0 : 1);
                 break;
             }
 
