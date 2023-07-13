@@ -662,8 +662,16 @@ write_buffer_string_utf8_to_utf16_t (
     size_t *size,
     bool *fixed_buffer)
 {
-    if (!value)
+    if (!value || value_len == 0) {
+        value_len = sizeof (ep_char16_t);
+        if ((value_len + *offset) > *size)
+            ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_len, fixed_buffer));
+        (*buffer) [*offset] = 0;
+        (*offset)++;
+        (*buffer) [*offset] = 0;
+        (*offset)++;
         return true;
+    }
 
     GFixedBufferCustomAllocatorData custom_alloc_data;
     custom_alloc_data.buffer = *buffer + *offset;
@@ -695,9 +703,23 @@ write_buffer_string_utf8_t (
     bool *fixed_buffer)
 {
     if (!value)
-        return true;
+        value_len = 0;
 
-    return write_buffer ((const uint8_t *)value, (value_len + 1) * sizeof(*value), buffer, offset, size, fixed_buffer);
+    if ((value_len + 1 + *offset) > *size)
+        ep_raise_error_if_nok (resize_buffer (buffer, size, *offset, *size + value_len + 1, fixed_buffer));
+
+    if (value_len != 0) {
+        memcpy (*buffer + *offset, value, value_len);
+        *offset += value_len;
+    }
+
+    (*buffer) [*offset] = 0;
+    (*offset)++;
+
+    return true;
+
+ep_on_error:
+    return false;
 }
 
 """

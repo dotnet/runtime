@@ -450,6 +450,34 @@ is_gc_heap_dump_enabled (GCHeapDumpContext *context)
 }
 
 static
+uint32_t
+write_buffer_string_utf8_to_utf16_t (
+	uint8_t **buf,
+	const ep_char8_t *str,
+	uint32_t len)
+{
+	uint32_t num_bytes_utf16_str = 0;
+	if (str && len != 0) {
+		uint32_t len_utf16 = 0;
+		ep_char16_t *str_utf16 = (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, (glong *)&len_utf16, NULL));
+		if (str_utf16 && len_utf16 != 0) {
+			num_bytes_utf16_str = len_utf16 * sizeof (ep_char16_t);
+			memcpy (*buf, str_utf16, num_bytes_utf16_str);
+		}
+		g_free (str_utf16);
+	}
+
+	(*buf) [num_bytes_utf16_str] = 0;
+	num_bytes_utf16_str++;
+
+	(*buf) [num_bytes_utf16_str] = 0;
+	num_bytes_utf16_str++;
+
+	*buf += num_bytes_utf16_str;
+	return num_bytes_utf16_str;
+}
+
+static
 bool
 fire_method_rundown_events (
 	const uint64_t method_id,
@@ -1384,59 +1412,6 @@ bulk_type_event_logger_free (BulkTypeEventLogger *type_logger)
 	g_free (type_logger);
 }
 
-static
-int
-write_event_buffer (
-	const uint8_t *val,
-	int size,
-	char *buf_start,
-	char **buf_next)
-{
-	memcpy (buf_start, val, size);
-	*buf_next = buf_start + size;
-	return size;
-}
-
-static
-int
-write_event_buffer_int8 (
-	int8_t val,
-	char *buf_start,
-	char **buf_next)
-{
-	return write_event_buffer ((const uint8_t *)&val, sizeof (int8_t), buf_start, buf_next);
-}
-
-static
-int
-write_event_buffer_int16 (
-	int16_t val,
-	char *buf_start,
-	char **buf_next)
-{
-	return write_event_buffer ((const uint8_t *)&val, sizeof (int16_t), buf_start, buf_next);
-}
-
-static
-int
-write_event_buffer_int32 (
-	int32_t val,
-	char *buf_start,
-	char **buf_next)
-{
-	return write_event_buffer ((const uint8_t *)&val, sizeof (int32_t), buf_start, buf_next);
-}
-
-static
-int
-write_event_buffer_int64 (
-	int64_t val,
-	char *buf_start,
-	char **buf_next)
-{
-	return write_event_buffer ((const uint8_t *)&val, sizeof (int64_t), buf_start, buf_next);
-}
-
 //---------------------------------------------------------------------------------------
 //
 // fire_bulk_type_event fires an ETW event for all the types batched so far,
@@ -1468,7 +1443,7 @@ bulk_type_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
 		values_element_size += ep_write_buffer_uint8_t (&ptr, target->fixed_sized_data.cor_element_type);
 
 		uint32_t target_name_len = target->name && target->name [0] != '\0' ? GSIZE_TO_UINT32 (strlen (target->name)) : 0;
-		values_element_size += ep_write_buffer_string_utf8_to_utf16_t (&ptr, target->name, target_name_len);
+		values_element_size += write_buffer_string_utf8_to_utf16_t (&ptr, target->name, target_name_len);
 
 		values_element_size += ep_write_buffer_uint32_t (&ptr, target->type_parameters_count);
 
@@ -3793,7 +3768,7 @@ fire_gc_event_bulk_root_static_var (
 	ep_write_buffer_uint64_t (&context->bulk_root_static_vars.data_current, (uint64_t)object);
 	ep_write_buffer_uint64_t (&context->bulk_root_static_vars.data_current, type_id);
 	ep_write_buffer_uint32_t (&context->bulk_root_static_vars.data_current, static_var_flags);
-	ep_write_buffer_string_utf8_to_utf16_t (&context->bulk_root_static_vars.data_current, static_var_name, GSIZE_TO_UINT32 (name_len));
+	write_buffer_string_utf8_to_utf16_t (&context->bulk_root_static_vars.data_current, static_var_name, GSIZE_TO_UINT32 (name_len));
 
 	context->bulk_root_static_vars.count++;
 }
