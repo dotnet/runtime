@@ -5573,19 +5573,23 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDSTR_TOKEN) {
+		MINT_IN_CASE(MINT_LDSTR_DYNAMIC) {
 			MonoString *s = NULL;
 			guint32 strtoken = (guint32)(gsize)frame->imethod->data_items [ip [2]];
 
 			MonoMethod *method = frame->imethod->method;
-			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
-				s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
-			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				// FIXME push/pop LMF
-				s = mono_string_new_wrapper_internal ((const char*)mono_method_get_wrapper_data (method, strtoken));
-			} else {
-				g_assert_not_reached ();
-			}
+			g_assert (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
+			s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
+			LOCAL_VAR (ip [1], gpointer) = s;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDSTR_CSTR) {
+			MonoString *s = NULL;
+			const char* cstr = (const char*)frame->imethod->data_items [ip [2]];
+
+			// FIXME push/pop LMF
+			s = mono_string_new_wrapper_internal (cstr);
 			LOCAL_VAR (ip [1], gpointer) = s;
 			ip += 3;
 			MINT_IN_BREAK;

@@ -769,9 +769,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Attributes/LCID/LCIDTest/*">
             <Issue>https://github.com/dotnet/runtimelab/issues/155: LCID marshalling</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Int128/Int128TestFieldLayout/*">
-            <Issue>https://github.com/dotnet/runtime/issues/74549</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/PInvoke/Array/MarshalArrayAsParam/AsLPArray/AsLPArrayTest/**">
             <Issue>https://github.com/dotnet/runtime/issues/81674</Issue>
         </ExcludeList>

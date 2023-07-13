@@ -6106,11 +6106,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_LDSTR);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, s);
-			} else {
-				/* defer allocation to execution-time */
-				interp_add_ins (td, MINT_LDSTR_TOKEN);
+			} else if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				/* token is an index into the MonoDynamicMethod:method.method_data
+				 * which comes from ReflectionMethodBuilder:refs.  See
+				 * reflection_methodbuilder_to_mono_method.
+				 *
+				 * the actual data item is a managed MonoString from the managed DynamicMethod
+				 */
+				interp_add_ins (td, MINT_LDSTR_DYNAMIC);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, GUINT_TO_POINTER (token));
+			} else {
+				/* the token is an index into MonoWrapperMethod:method_data that
+				 * stores a global or malloc'ed C string. defer MonoString
+				 * allocation to execution-time */
+				interp_add_ins (td, MINT_LDSTR_CSTR);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				const char *cstr = (const char*)mono_method_get_wrapper_data (method, token);
+				td->last_ins->data [0] = get_data_item_index (td, (void*)cstr);
 			}
 			td->ip += 5;
 			break;
