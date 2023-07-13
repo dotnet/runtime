@@ -874,6 +874,35 @@ namespace System
 
         public override int GetHashCode() => StringComparer.OrdinalIgnoreCase.GetHashCode(_id);
 
+        public static ReadOnlyCollection<TimeZoneInfo> GetSystemTimeZones(bool sorted)
+        {
+            if (sorted)
+                return GetSystemTimeZones();
+
+            CachedData cachedData = s_cachedData;
+
+            lock (cachedData)
+            {
+                if (cachedData._readOnlySystemTimeZones == null)
+                {
+                    PopulateAllSystemTimeZones(cachedData);
+                    cachedData._allSystemTimeZonesRead = true;
+
+                    if (cachedData._systemTimeZones != null)
+                    {
+                        List<TimeZoneInfo> unsortedSystemTimeZones = new List<TimeZoneInfo>(cachedData._systemTimeZones.Values);
+                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(unsortedSystemTimeZones);
+                    }
+                    else
+                    {
+                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
+                    }
+                }
+            }
+
+            return cachedData._readOnlySystemTimeZones;
+        }
+
         /// <summary>
         /// Returns a <see cref="ReadOnlyCollection{TimeZoneInfo}"/> containing all valid TimeZone's
         /// from the local machine. The entries in the collection are sorted by
