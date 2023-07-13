@@ -486,6 +486,9 @@ namespace System.Numerics
                 return false;
             }
 
+            // Make sure we slice the buffer to just the characters written
+            utf16Destination = utf16Destination.Slice(charsWritten);
+
             OperationStatus utf8DestinationStatus = Utf8.FromUtf16(utf16Destination, utf8Destination, out _, out bytesWritten, replaceInvalidSequences: false);
 
             if (utf16DestinationArray != null)
@@ -494,13 +497,18 @@ namespace System.Numerics
                 ArrayPool<char>.Shared.Return(utf16DestinationArray);
             }
 
-            if (utf8DestinationStatus != OperationStatus.Done)
+            if (utf8DestinationStatus == OperationStatus.Done)
             {
-                bytesWritten = 0;
-                return false;
+                return true;
             }
 
-            return true;
+            if (utf8DestinationStatus != OperationStatus.DestinationTooSmall)
+            {
+                ThrowHelper.ThrowInvalidOperationException_InvalidUtf8();
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
