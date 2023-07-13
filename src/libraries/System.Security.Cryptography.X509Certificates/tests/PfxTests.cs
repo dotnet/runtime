@@ -465,7 +465,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [ConditionalTheory]
         [MemberData(memberName: nameof(PfxIterationCountTests.GetCertsWith_IterationCountNotExceedingDefaultLimit_AndNullOrEmptyPassword_MemberData), MemberType = typeof(PfxIterationCountTests))]
-        public static void TestIterationCounter(string name, bool usesPbes2, byte[] blob, int iterationCount)
+        public static void TestIterationCounter(string name, bool usesPbes2, byte[] blob, int iterationCount, bool usesRC2)
         {
             _ = iterationCount;
 
@@ -475,6 +475,11 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             if (usesPbes2 && !Pkcs12PBES2Supported)
             {
                 throw new SkipTestException(name + " uses PBES2 which is not supported on this version.");
+            }
+
+            if (usesRC2 && !PlatformSupport.IsRC2Supported)
+            {
+                throw new SkipTestException(name + " uses RC2, which is not supported on this platform.");
             }
 
             try
