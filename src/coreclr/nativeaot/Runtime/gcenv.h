@@ -28,7 +28,6 @@
 #include "TargetPtrs.h"
 #include "MethodTable.h"
 #include "ObjectLayout.h"
-#include "rheventtrace.h"
 #include "PalRedhawkCommon.h"
 #include "PalRedhawk.h"
 #include "gcrhinterface.h"
@@ -58,6 +57,7 @@
 
     #include "clretwallmain.h"
     #include "eventtrace.h"
+    #include "eventtrace_etw.h"
 
 #else // FEATURE_EVENT_TRACE
 

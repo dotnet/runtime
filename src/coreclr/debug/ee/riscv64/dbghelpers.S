@@ -17,8 +17,8 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
     //       you change the prolog you will also need to update the personality routine.
 
     // push arg to the stack so our personality routine can find it
-    // push lr to get good stacktrace in debugger
-    PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, -32
+    // push ra to get good stacktrace in debugger
+    PROLOG_SAVE_REG_PAIR_INDEXED  fp, ra, 32
     sd  a0, 16(sp)
 
     // FuncEvalHijackWorker returns the address we should jump to.

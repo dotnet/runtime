@@ -5,15 +5,6 @@
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 // ===================================================================================================
 
-/*============================================================
-**
-**
-**
-** Purpose: Some floating-point math operations
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -25,6 +16,9 @@ using System.Runtime.Versioning;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static partial class Math
     {
         public const double E = 2.7182818284590452354;
@@ -994,6 +988,7 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MaxMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `maximumMagnitude` function
@@ -1143,6 +1138,7 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         public static double MinMagnitude(double x, double y)
         {
             // This matches the IEEE 754:2019 `minimumMagnitude` function

@@ -67,6 +67,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     ///   - LlvmObjectFile (if using LLVM)
     ///   - LlvmBitcodeFile (if using LLVM-only)
     ///   - ExportsFile (used in LibraryMode only)
+    ///   - MethodTokenFile (when using CollectCompiledMethods=true)
     /// </summary>
     [Output]
     public ITaskItem[]? CompiledAssemblies { get; set; }
@@ -153,6 +154,16 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     public bool UseDwarfDebug { get; set; }
 
     /// <summary>
+    /// Instructs the AOT compiler to print the list of aot compiled methods
+    /// </summary>
+    public bool CollectCompiledMethods { get; set; }
+
+    /// <summary>
+    /// Directory to store the aot output when using switch compiled-methods-outfile
+    /// </summary>
+    public string? CompiledMethodsOutputDirectory { get; set; }
+
+    /// <summary>
     /// File to use for profile-guided optimization, *only* the methods described in the file will be AOT compiled.
     /// </summary>
     public string[]? AotProfilePath { get; set; }
@@ -219,6 +230,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
     /// Prepends a prefix to the name of tools ran by the AOT compiler, i.e. 'as'/'ld'.
     /// </summary>
     public string? ToolPrefix { get; set; }
+
+    /// <summary>
+    /// Prepends a prefix to the name of the assembler (as) tool ran by the AOT compiler.
+    /// </summary>
+    public string? AsPrefix { get; set; }
 
     /// <summary>
     /// Path to the directory where msym artifacts are stored.
@@ -435,6 +451,17 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             string? fullPath = asmItem.GetMetadata("FullPath");
             if (!File.Exists(fullPath))
                 throw new LogAsErrorException($"Could not find {fullPath} to AOT");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+                throw new LogAsErrorException($"{nameof(CompiledMethodsOutputDirectory)} is empty. When {nameof(CollectCompiledMethods)} is set to true, the user needs to provide a directory for {nameof(CompiledMethodsOutputDirectory)}.");
+
+            if (!Directory.Exists(CompiledMethodsOutputDirectory))
+            {
+                Directory.CreateDirectory(CompiledMethodsOutputDirectory);
+            }
         }
 
         return !Log.HasLoggedErrors;
@@ -701,6 +728,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
             aotArgs.Add($"tool-prefix={ToolPrefix}");
         }
 
+        if (!string.IsNullOrEmpty(AsPrefix))
+        {
+            aotArgs.Add($"as-prefix={AsPrefix}");
+        }
+
         string assemblyFilename = Path.GetFileName(assembly);
 
         if (isDedup)
@@ -710,6 +742,23 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
         else if (!string.IsNullOrEmpty (DedupAssembly))
         {
             aotArgs.Add("dedup-skip");
+        }
+
+        if (CollectCompiledMethods)
+        {
+            string assemblyName = assemblyFilename.Replace(".", "_");
+            string outputFileName = assemblyName + "_compiled_methods.txt";
+            string outputFilePath;
+            if (string.IsNullOrEmpty(CompiledMethodsOutputDirectory))
+            {
+                outputFilePath = outputFileName;
+            }
+            else
+            {
+                outputFilePath = Path.Combine(CompiledMethodsOutputDirectory, outputFileName);
+            }
+            aotArgs.Add($"compiled-methods-outfile={outputFilePath}");
+            aotAssembly.SetMetadata("MethodTokenFile", outputFilePath);
         }
 
         // compute output mode and file names
@@ -806,7 +855,11 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 ProxyFile proxyFile = _cache.NewFile(llvmObjectFile);
                 proxyFiles.Add(proxyFile);
                 aotArgs.Add($"llvm-outfile={proxyFile.TempFile}");
-                aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+
+                if (UseStaticLinking)
+                {
+                    aotAssembly.SetMetadata("LlvmObjectFile", proxyFile.TargetFile);
+                }
             }
         }
 

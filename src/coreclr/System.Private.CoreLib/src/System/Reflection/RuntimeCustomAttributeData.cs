@@ -1241,9 +1241,9 @@ namespace System.Reflection
                                 }
                             }
 
-                            PropertyInfo? property = type is null ?
+                            RuntimePropertyInfo? property = (RuntimePropertyInfo?)(type is null ?
                                 attributeType.GetProperty(name) :
-                                attributeType.GetProperty(name, type, Type.EmptyTypes);
+                                attributeType.GetProperty(name, type, Type.EmptyTypes));
 
                             // Did we get a valid property reference?
                             if (property is null)
@@ -1251,7 +1251,7 @@ namespace System.Reflection
                                 throw new CustomAttributeFormatException(SR.Format(SR.RFLCT_InvalidPropFail, name));
                             }
 
-                            MethodInfo setMethod = property.GetSetMethod(true)!;
+                            RuntimeMethodInfo setMethod = property.GetSetMethod(true)!;
 
                             // Public properties may have non-public setter methods
                             if (!setMethod.IsPublic)
@@ -1259,7 +1259,7 @@ namespace System.Reflection
                                 continue;
                             }
 
-                            setMethod.Invoke(attribute, BindingFlags.Default, null, new object?[] { value }, null);
+                            setMethod.InvokeOneParameter(attribute, BindingFlags.Default, null, value, null);
                         }
                         else
                         {
