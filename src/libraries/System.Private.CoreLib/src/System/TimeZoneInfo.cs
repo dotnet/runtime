@@ -133,6 +133,7 @@ namespace System
             public ReadOnlyCollection<TimeZoneInfo>? _readOnlySystemTimeZones;
             public Dictionary<string, TimeZoneInfo>? _timeZonesUsingAlternativeIds;
             public bool _allSystemTimeZonesRead;
+            public bool _systemTimeZonesSorted;
         }
 
         // used by GetUtcOffsetFromUtc (DateTime.Now, DateTime.ToLocalTime) for max/min whole-day range checks
@@ -915,6 +916,12 @@ namespace System
 
             lock (cachedData)
             {
+                if (cachedData._systemTimeZonesSorted)
+                {
+                    Debug.Assert(cachedData._readOnlySystemTimeZones != null);
+                    return cachedData._readOnlySystemTimeZones;
+                }
+
                 if (cachedData._readOnlySystemTimeZones == null)
                 {
                     PopulateAllSystemTimeZones(cachedData);
@@ -934,6 +941,7 @@ namespace System
                         int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
                         return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
                     });
+                    cachedData._systemTimeZonesSorted = true;
 
                     cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
                 }
