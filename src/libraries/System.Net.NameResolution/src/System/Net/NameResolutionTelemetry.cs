@@ -85,7 +85,9 @@ namespace System.Net
         [NonEvent]
         public void AfterResolution(long? startingTimestamp, bool successful)
         {
-            if (startingTimestamp.HasValue && startingTimestamp != 0)
+            Debug.Assert(startingTimestamp.HasValue);
+
+            if (startingTimestamp != 0)
             {
                 Interlocked.Decrement(ref _currentLookups);
 
