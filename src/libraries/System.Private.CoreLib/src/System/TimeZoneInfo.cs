@@ -919,27 +919,27 @@ namespace System
                 {
                     PopulateAllSystemTimeZones(cachedData);
                     cachedData._allSystemTimeZonesRead = true;
+                }
 
-                    if (cachedData._systemTimeZones != null)
+                if (cachedData._systemTimeZones != null)
+                {
+                    // return a collection of the cached system time zones
+                    TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
+                    cachedData._systemTimeZones.Values.CopyTo(array, 0);
+
+                    // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
+                    Array.Sort(array, static (x, y) =>
                     {
-                        // return a collection of the cached system time zones
-                        TimeZoneInfo[] array = new TimeZoneInfo[cachedData._systemTimeZones.Count];
-                        cachedData._systemTimeZones.Values.CopyTo(array, 0);
+                        // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
+                        int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
+                        return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
+                    });
 
-                        // sort and copy the TimeZoneInfo's into a ReadOnlyCollection for the user
-                        Array.Sort(array, static (x, y) =>
-                        {
-                            // sort by BaseUtcOffset first and by DisplayName second - this is similar to the Windows Date/Time control panel
-                            int comparison = x.BaseUtcOffset.CompareTo(y.BaseUtcOffset);
-                            return comparison == 0 ? string.CompareOrdinal(x.DisplayName, y.DisplayName) : comparison;
-                        });
-
-                        cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
-                    }
-                    else
-                    {
-                        cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
-                    }
+                    cachedData._readOnlySystemTimeZones = new ReadOnlyCollection<TimeZoneInfo>(array);
+                }
+                else
+                {
+                    cachedData._readOnlySystemTimeZones = ReadOnlyCollection<TimeZoneInfo>.Empty;
                 }
             }
 
