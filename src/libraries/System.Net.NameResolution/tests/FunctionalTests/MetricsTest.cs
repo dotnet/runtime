@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;
 using System.Linq;
@@ -71,7 +72,7 @@ namespace System.Net.NameResolution.Tests
         private sealed class InstrumentRecorder<T> : IDisposable where T : struct
         {
             private readonly MeterListener _meterListener = new();
-            private readonly List<Measurement<T>> _values = new();
+            private readonly ConcurrentQueue<Measurement<T>> _values = new();
 
             public InstrumentRecorder(string instrumentName)
             {
@@ -86,7 +87,7 @@ namespace System.Net.NameResolution.Tests
                 _meterListener.Start();
             }
 
-            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) => _values.Add(new Measurement<T>(measurement, tags));
+            private void OnMeasurementRecorded(Instrument instrument, T measurement, ReadOnlySpan<KeyValuePair<string, object?>> tags, object? state) => _values.Enqueue(new Measurement<T>(measurement, tags));
             public IReadOnlyList<Measurement<T>> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
         }
