@@ -142,8 +142,8 @@ jobs:
       clean: true
       fetchDepth: $(checkoutFetchDepth)
 
-    - ${{ if eq(parameters.isOfficialBuild, true) }}:
-      - template: /eng/pipelines/common/restore-internal-tools.yml
+    #- ${{ if eq(parameters.isOfficialBuild, true) }}:
+    #  - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
       - task: DownloadPipelineArtifact@2
