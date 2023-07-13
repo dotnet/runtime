@@ -4,6 +4,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -21,17 +22,20 @@ internal static partial class Interop
             fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
 
             // Ensure our output buffer will be long enough (see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamew#remarks)
-            ValueStringBuilder vsb = new(stackalloc char[Interop.Kernel32.MAX_PATH]); //note: MAX_PATH is not a hard limit, but would only be exceeded by a long path
-            PathHelper.GetFullPathName(fileName, ref vsb);
+            int requiredBufferLength = (int)GetFullPathNameW(ref MemoryMarshal.GetReference<char>(fileName), 0, ref Unsafe.NullRef<char>(), 0);
+            if (requiredBufferLength == 0) Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error(), fileName);
+
+            // Allocate a value string builder
+            // note: MAX_PATH is not a hard limit, but would only be exceeded by a long path
+            ValueStringBuilder vsb = new(requiredBufferLength <= Interop.Kernel32.MAX_PATH ? stackalloc char[Interop.Kernel32.MAX_PATH] : default);
+            vsb.EnsureCapacity(requiredBufferLength);
 
             // Call the actual API
             fixed (char* lpszFileName = fileName)
             {
                 fixed (char* lpszVolumePathName = vsb.RawChars)
                 {
-                    // + 1 because \0 is not included in Length from GetFullPathName, but should exist
-                    Debug.Assert(vsb.Length + 1 <= vsb.Capacity);
-                    if (GetVolumePathName(lpszFileName, lpszVolumePathName, vsb.Length + 1))
+                    if (GetVolumePathName(lpszFileName, lpszVolumePathName, requiredBufferLength))
                     {
                         vsb.Length = vsb.RawChars.IndexOf('\0');
                         return vsb.ToString();
