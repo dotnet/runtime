@@ -464,6 +464,7 @@ namespace System.Net.Http.Functional.Tests
             foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
             {
                 Assert.Equal(7, connectionEstablished.Payload.Count);
+                Assert.Equal(new[] { "versionMajor", "versionMinor", "connectionId", "scheme", "host", "port", "remoteAddress" }, connectionEstablished.PayloadNames);
                 Assert.Equal(version.Major, (byte)connectionEstablished.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionEstablished.Payload[1]);
                 long connectionId = (long)connectionEstablished.Payload[2];
@@ -485,6 +486,7 @@ namespace System.Net.Http.Functional.Tests
             foreach (EventWrittenEventArgs connectionClosed in connectionsClosed)
             {
                 Assert.Equal(3, connectionClosed.Payload.Count);
+                Assert.Equal(new[] { "versionMajor", "versionMinor", "connectionId" }, connectionClosed.PayloadNames);
                 Assert.Equal(version.Major, (byte)connectionClosed.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionClosed.Payload[1]);
                 long connectionId = (long)connectionClosed.Payload[2];
@@ -501,6 +503,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 EventWrittenEventArgs e = r.Event;
                 Assert.Equal(1, e.Payload.Count);
+                Assert.Equal("connectionId", e.PayloadNames.Single());
                 Assert.Equal(connectionId, (long)e.Payload[0]);
             });
 
@@ -817,6 +820,7 @@ namespace System.Net.Http.Functional.Tests
                 EventWrittenEventArgs redirectEvent = events.Where(e => e.Event.EventName == "Redirect").Single().Event;
                 Assert.Equal(1, redirectEvent.Payload.Count);
                 Assert.Equal(expectedUri.ToString(), (string)redirectEvent.Payload[0]);
+                Assert.Equal("redirectUri", redirectEvent.PayloadNames[0]);
             }, UseVersion.ToString()).Dispose();
         }
 
@@ -908,7 +912,8 @@ namespace System.Net.Http.Functional.Tests
                 HashSet<long> connectionIds = new(Enumerable.Range(0, NumParallelRequests).Select(i => (long)i));
                 foreach (EventWrittenEventArgs e in requestHeadersStart)
                 {
-                    long connectionId = (long)e.Payload[0];
+                    long connectionId = (long)e.Payload.Single();
+                    Assert.Equal("connectionId", e.PayloadNames.Single());
                     Assert.True(connectionIds.Remove(connectionId), $"RequestHeadersStart has logged an unexpected connectionId={connectionId}.");
                 }
                 Assert.Empty(connectionIds);
