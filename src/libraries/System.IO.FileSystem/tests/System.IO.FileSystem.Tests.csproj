@@ -90,6 +90,7 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="Directory\Delete.Windows.cs" />
     <Compile Include="Directory\CreateDirectory_UnixFileMode.Windows.cs" />
+    <Compile Include="File\Copy.Windows.cs" />
     <Compile Include="File\EncryptDecrypt.Windows.cs" />
     <Compile Include="FileSystemTest.Windows.cs" />
     <Compile Include="FileStream\ctor_options.Windows.cs" />
@@ -100,8 +101,10 @@
     <Compile Include="RandomAccess\SectorAlignedMemory.Windows.cs" />
     <Compile Include="VirtualDriveSymbolicLinks.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOL.cs" Link="Common\Interop\Windows\Interop.BOOL.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs" Link="Common\Interop\Windows\Interop.BOOLEAN.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.CreateFile.cs" Link="Common\Interop\Windows\Interop.CreateFile.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" Link="Common\Interop\Windows\Interop.DeviceIoControl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_STANDARD_INFO.cs" Link="Common\Interop\Windows\Interop.FILE_STANDARD_INFO.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetFileInformationByHandleEx.cs" Link="Common\Interop\Windows\Interop.GetFileInformationByHandleEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_TIME.cs" Link="Common\Interop\Windows\Interop.FILE_TIME.cs" />
@@ -226,9 +229,6 @@
     <Compile Include="FileInfo\AppendText.cs" />
     <Compile Include="FileInfo\CopyTo.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.BOOLEAN.cs" Link="Interop\Windows\Interop.BOOLEAN.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs" Link="Interop\Windows\Interop.DeviceIoControl.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_SET_SPARSE_BUFFER.cs" Link="Interop\Windows\Interop.FILE_SET_SPARSE_BUFFER.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GenericOperations.cs" Link="Interop\Windows\Interop.GenericOperations.cs" />
     <Compile Include="$(CommonTestPath)System\Buffers\NativeMemoryManager.cs" Link="Common\System\Buffers\NativeMemoryManager.cs" />

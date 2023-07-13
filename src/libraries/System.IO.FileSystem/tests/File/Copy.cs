@@ -404,7 +404,7 @@ namespace System.IO.Tests
     /// Single tests that shouldn't be duplicated by inheritance.
     /// </summary>
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsFileLockingEnabled))]
-    public sealed class File_Copy_Single : FileSystemTest
+    public sealed partial class File_Copy_Single : FileSystemTest
     {
         [Fact]
         public void EnsureThrowWhenCopyToNonSharedFile()
@@ -465,34 +465,5 @@ namespace System.IO.Tests
             Test(sourceFile + ".link", destFile + stream2);
             Test(sourceFile + ".link", destFile + ".link");
         }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public unsafe void WindowsCheckSparseness()
-        {
-            string sourceFile = GetTestFilePath();
-            string destFile = GetTestFilePath();
-
-            File.WriteAllText(sourceFile, "abc");
-            File.WriteAllText(destFile, "def");
-
-            Assert.True((File.GetAttributes(sourceFile) & FileAttributes.SparseFile) == 0);
-            File.Copy(sourceFile, destFile, true);
-            Assert.True((File.GetAttributes(destFile) & FileAttributes.SparseFile) == 0);
-            Assert.Equal("abc", File.ReadAllText(sourceFile));
-
-            using (FileStream file = File.Open(sourceFile, FileMode.Open))
-            {
-                Assert.True(Interop.Kernel32.DeviceIoControl(file.SafeFileHandle, Interop.Kernel32.FSCTL_SET_SPARSE, null, 0, null, 0, out _, 0));
-            }
-            File.WriteAllText(destFile, "def");
-
-            Assert.True((File.GetAttributes(sourceFile) & FileAttributes.SparseFile) != 0);
-            File.Copy(sourceFile, destFile, true);
-            Assert.True((File.GetAttributes(destFile) & FileAttributes.SparseFile) != 0);
-            Assert.Equal("abc", File.ReadAllText(sourceFile));
-        }
-
-        // Todo: add a way to run all these on ReFS, and a test to check we actually cloned the reference, not just the data on ReFS.
     }
 }
