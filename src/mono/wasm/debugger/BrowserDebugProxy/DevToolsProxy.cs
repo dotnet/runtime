@@ -235,6 +235,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 ClientWebSocket browserSocket = new();
                 browserSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
+                var proxy = WebRequest.DefaultWebProxy;
+                if (proxy is not null && proxy.GetType().Name != "HttpNoProxy")
+                    browserSocket.Options.Proxy = new WebProxy(proxy.GetProxy(browserUri), true); //we always bypass the proxy for local addresses
                 await browserSocket.ConnectAsync(browserUri, cts.Token);
 
                 using var ideConn = new DevToolsDebuggerConnection(ideSocket, "ide", logger);
