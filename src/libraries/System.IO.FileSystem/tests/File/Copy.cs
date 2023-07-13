@@ -483,7 +483,7 @@ namespace System.IO.Tests
 
             using (FileStream file = File.Open(sourceFile, FileMode.Open))
             {
-                DeviceIoControl(file.SafeFileHandle.DangerousGetHandle(), /*FSCTL_SET_SPARSE*/ 0x000900c4, null, 0, null, 0, out _, 0);
+                Assert.True(Interop.Kernel32.DeviceIoControl(file.SafeFileHandle, Interop.Kernel32.FSCTL_SET_SPARSE, null, 0, null, 0, out _, 0));
             }
             File.WriteAllText(destFile, "def");
 
@@ -491,18 +491,6 @@ namespace System.IO.Tests
             File.Copy(sourceFile, destFile, true);
             Assert.True((File.GetAttributes(destFile) & FileAttributes.SparseFile) != 0);
             Assert.Equal("abc", File.ReadAllText(sourceFile));
-
-            [DllImport("kernel32.dll", EntryPoint = "DeviceIoControl", SetLastError = true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            static unsafe extern bool DeviceIoControl(
-                IntPtr hDevice,
-                uint dwIoControlCode,
-                void* lpInBuffer,
-                uint nInBufferSize,
-                void* lpOutBuffer,
-                uint nOutBufferSize,
-                out uint lpBytesReturned,
-                IntPtr lpOverlapped);
         }
 
         // Todo: add a way to run all these on ReFS, and a test to check we actually cloned the reference, not just the data on ReFS.
