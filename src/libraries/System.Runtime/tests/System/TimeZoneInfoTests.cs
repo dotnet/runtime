@@ -2446,6 +2446,16 @@ namespace System.Tests
             }
         }
 
+        [Fact]
+        public static void UtcAliases_AreEqualToUtc()
+        {
+            foreach (string alias in s_UtcAliases)
+            {
+                TimeZoneInfo actualUtc = TimeZoneInfo.FindSystemTimeZoneById(alias);
+                Assert.Equal(TimeZoneInfo.Utc, actualUtc);
+            }
+        }
+
         [ActiveIssue("https://github.com/dotnet/runtime/issues/19794", TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(SystemTimeZonesTestData))]
