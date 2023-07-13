@@ -14,7 +14,7 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetVolumeInformationByHandleW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        private static unsafe partial bool GetVolumeInformationByHandleW(
+        internal static unsafe partial bool GetVolumeInformationByHandle(
             SafeFileHandle hFile,
             char* volumeName,
             uint volumeNameBufLen,
@@ -23,28 +23,5 @@ internal static partial class Interop
             uint* fileSystemFlags,
             char* fileSystemName,
             uint fileSystemNameBufLen);
-
-        public static unsafe int GetVolumeInformationByHandle(
-            SafeFileHandle hFile,
-            uint* volSerialNumber,
-            uint* maxFileNameLen,
-            out uint fileSystemFlags,
-            char* fileSystemName,
-            uint fileSystemNameBufLen)
-        {
-            // Try to get the volume information.
-            fixed (uint* pFileSystemFlags = &fileSystemFlags)
-            {
-                if (GetVolumeInformationByHandleW(hFile, null, 0, volSerialNumber, maxFileNameLen, pFileSystemFlags, fileSystemName, fileSystemNameBufLen))
-                {
-                    return 0;
-                }
-            }
-
-            // Return the error.
-            int error = Marshal.GetLastWin32Error();
-            Debug.Assert(error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER);
-            return error;
-        }
     }
 }
