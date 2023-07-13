@@ -74,7 +74,7 @@ namespace Microsoft.Interop
                     baseSymbol?.ToDisplayString(),
                     syntax,
                     new ContainingSyntaxContext(syntax),
-                    new ContainingSyntax(syntax.Modifiers, syntax.Kind(), syntax.Identifier, syntax.TypeParameterList),
+                    new ContainingSyntax(syntax.Modifiers.StripTriviaFromTokens(), syntax.Kind(), syntax.Identifier.WithoutTrivia(), syntax.TypeParameterList),
                     guid ?? Guid.Empty,
                     interfaceAttributeData.Options,
                     syntax.Identifier.GetLocation()),
