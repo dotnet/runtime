@@ -171,8 +171,6 @@ mono_object_get_size
 mono_object_get_virtual_method
 mono_object_isinst
 mono_object_new
-mono_object_new_alloc_specific
-mono_object_new_specific
 mono_object_unbox
 mono_parse_default_optimizations
 mono_pmip
@@ -189,10 +187,7 @@ mono_property_get_get_method
 mono_raise_exception
 mono_reflection_get_custom_attrs_by_type
 mono_runtime_cleanup
-mono_runtime_delegate_invoke
-mono_runtime_exec_main
 mono_runtime_invoke
-mono_runtime_invoke_array
 mono_runtime_invoke_with_nested_object
 mono_runtime_is_shutting_down
 mono_runtime_object_init
@@ -205,7 +200,6 @@ mono_set_crash_chaining
 mono_set_defaults
 mono_set_dirs
 mono_set_find_plugin_callback
-mono_set_ignore_version_and_key_when_finding_assemblies_already_loaded
 mono_set_signal_chaining
 mono_signature_get_param_count
 mono_signature_get_params
@@ -218,7 +212,6 @@ mono_string_new_len
 mono_string_new_utf16
 mono_string_new_wrapper
 mono_string_to_utf8
-mono_stringify_assembly_name
 mono_thread_attach
 mono_thread_current
 mono_thread_detach
@@ -233,7 +226,6 @@ mono_threads_set_shutting_down
 mono_trace_set_level_string
 mono_trace_set_log_handler
 mono_trace_set_mask_string
-mono_type_get_attrs
 mono_type_get_class
 mono_type_get_generic_arg
 mono_type_get_name
@@ -249,7 +241,6 @@ mono_unity_array_object_header_size
 mono_unity_assembly_get_attribute
 mono_unity_assembly_mempool_chunk_foreach
 mono_unity_backtrace_from_context
-mono_unity_capture_memory_snapshot
 mono_unity_class_field_is_literal
 mono_unity_class_for_each
 mono_unity_class_get
@@ -266,7 +257,6 @@ mono_unity_domain_set_config
 mono_unity_domain_unload
 mono_unity_field_from_token_checked
 mono_unity_field_get_attribute
-mono_unity_free_captured_memory_snapshot
 mono_unity_g_free
 mono_unity_gc_disable
 mono_unity_gc_enable
