@@ -46,8 +46,8 @@
   <Target Name="ConfigureIlcPathsForiOSCrossCompilation" Condition="'$(PublishAotUsingRuntimePack)' != 'true'"
     BeforeTargets="SetupProperties">
       <PropertyGroup>
-        <IlcPath>$(CoreCLRArtifactsPath)</IlcPath>
-        <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+        <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
+        <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
         <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
         <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
         <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
