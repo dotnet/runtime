@@ -707,58 +707,58 @@ namespace System.Net.Http.Functional.Tests
     }
 
     // Make sure the instruments are working with the default Meter.
-    [Collection(nameof(DisableParallelization))]
     public class HttpMetricsTest_DefaultMeter : HttpMetricsTestBase
     {
         public HttpMetricsTest_DefaultMeter(ITestOutputHelper output) : base(output)
         {
         }
 
-        [Fact]
-        public Task CurrentRequests_Success_Recorded()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void CurrentRequests_Success_Recorded()
         {
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            RemoteExecutor.Invoke(static async Task () =>
             {
-                using HttpClient client = CreateHttpClient();
-                using InstrumentRecorder<long> recorder = new InstrumentRecorder<long>(InstrumentNames.CurrentRequests);
-                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using HttpMetricsTest_DefaultMeter test = new(null);
+                await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    using HttpClient client = test.CreateHttpClient();
+                    using InstrumentRecorder<long> recorder = new InstrumentRecorder<long>(InstrumentNames.CurrentRequests);
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
 
-                HttpResponseMessage response = await client.SendAsync(request);
-                response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
+                    HttpResponseMessage response = await client.SendAsync(request);
+                    response.Dispose(); // Make sure disposal doesn't interfere with recording by enforcing early disposal.
 
-                Assert.Collection(FilterMeasurments(recorder.GetMeasurements(), uri),
-                    m => VerifyCurrentRequest(m, 1, uri),
-                    m => VerifyCurrentRequest(m, -1, uri));
-            }, async server =>
-            {
-                await server.AcceptConnectionSendResponseAndCloseAsync();
-            });
+                    Assert.Collection(recorder.GetMeasurements(),
+                        m => VerifyCurrentRequest(m, 1, uri),
+                        m => VerifyCurrentRequest(m, -1, uri));
+                }, async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync();
+                });
+            }).Dispose();
         }
 
         [Fact]
-        public Task RequestDuration_Success_Recorded()
+        public void RequestDuration_Success_Recorded()
         {
-            return LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+            RemoteExecutor.Invoke(static async Task () =>
             {
-                using HttpClient client = CreateHttpClient();
-                using InstrumentRecorder<double> recorder = new InstrumentRecorder<double>(InstrumentNames.RequestDuration);
-                using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
+                using HttpMetricsTest_DefaultMeter test = new(null);
+                await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
+                {
+                    using HttpClient client = test.CreateHttpClient();
+                    using InstrumentRecorder<double> recorder = new InstrumentRecorder<double>(InstrumentNames.RequestDuration);
+                    using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
 
-                using HttpResponseMessage response = await client.SendAsync(request);
-
-                Measurement<double>[] measurments = FilterMeasurments(recorder.GetMeasurements(), uri).ToArray();
-                Assert.Equal(1, measurments.Length);
-                Measurement<double> m = measurments[0];
-                VerifyRequestDuration(m, uri, "HTTP/1.1", (int)HttpStatusCode.OK, "GET");
-            }, async server =>
-            {
-                await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
-            });
+                    using HttpResponseMessage response = await client.SendAsync(request);
+                    Measurement<double> m = recorder.GetMeasurements().Single();
+                    VerifyRequestDuration(m, uri, "HTTP/1.1", (int)HttpStatusCode.OK, "GET");
+                }, async server =>
+                {
+                    await server.AcceptConnectionSendResponseAndCloseAsync(HttpStatusCode.OK);
+                });
+            }).Dispose();
         }
-
-        // Make sure we don't record metrics from another test by filtering by the port used by the current test.
-        private static IEnumerable<Measurement<T>> FilterMeasurments<T>(IEnumerable<Measurement<T>> measurments, Uri uri) where T : struct =>
-            measurments.Where(m => m.Tags.ToArray().Any(t => t.Key == "port" && t.Value.Equals(uri.Port)));
     }
 
     public class HttpMetricsTest_General
