@@ -3147,3 +3147,18 @@ void InitDotNETRuntime(void)
     EventPipeEventGCLOHCompact = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,208,1,0,EP_EVENT_LEVEL_INFORMATIONAL,true);
     EventPipeEventGCFitBucketInfo = EventPipeAdapter::AddEvent(EventPipeProviderDotNETRuntime,209,1,0,EP_EVENT_LEVEL_VERBOSE,true);
 }
+
+bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    if (!EventPipeAdapter::Enabled())
+        return false;
+
+    EVENTPIPE_TRACE_CONTEXT& context = MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_DOTNET_Context.EventPipeProvider;
+    if (!context.IsEnabled)
+        return false;
+
+    if (level > context.Level)
+        return false;
+
+    return (keyword == (ULONGLONG)0) || (keyword & context.EnabledKeywordsBitmask) != 0;
+}

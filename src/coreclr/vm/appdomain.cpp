@@ -956,7 +956,6 @@ void SystemDomain::Attach()
 
     // Initialize stub managers
     PrecodeStubManager::Init();
-    DelegateInvokeStubManager::Init();
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();

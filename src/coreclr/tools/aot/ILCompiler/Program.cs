@@ -13,6 +13,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -237,6 +238,13 @@ namespace ILCompiler
                     }
                 }
 
+                string win32resourcesModule = Get(_command.Win32ResourceModuleName);
+                if (typeSystemContext.Target.IsWindows && !string.IsNullOrEmpty(win32resourcesModule))
+                {
+                    EcmaModule module = typeSystemContext.GetModuleForSimpleName(win32resourcesModule);
+                    compilationRoots.Add(new Win32ResourcesRootProvider(module));
+                }
+
                 foreach (var unmanagedEntryPointsAssembly in Get(_command.UnmanagedEntryPointsAssemblies))
                 {
                     if (typeSystemContext.InputFilePaths.ContainsKey(unmanagedEntryPointsAssembly))
@@ -327,17 +335,32 @@ namespace ILCompiler
             var logger = new Logger(Console.Out, ilProvider, Get(_command.IsVerbose), ProcessWarningCodes(Get(_command.SuppressedWarnings)),
                 Get(_command.SingleWarn), Get(_command.SingleWarnEnabledAssemblies), Get(_command.SingleWarnDisabledAssemblies), suppressedWarningCategories);
 
-            List<KeyValuePair<string, bool>> featureSwitches = new List<KeyValuePair<string, bool>>();
+            var featureSwitches = new Dictionary<string, bool>();
             foreach (var switchPair in Get(_command.FeatureSwitches))
             {
                 string[] switchAndValue = switchPair.Split('=');
                 if (switchAndValue.Length != 2
                     || !bool.TryParse(switchAndValue[1], out bool switchValue))
                     throw new CommandLineException($"Unexpected feature switch pair '{switchPair}'");
-                featureSwitches.Add(new KeyValuePair<string, bool>(switchAndValue[0], switchValue));
+                featureSwitches[switchAndValue[0]] = switchValue;
             }
 
-            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches);
+            BodyAndFieldSubstitutions substitutions = default;
+            IReadOnlyDictionary<ModuleDesc, IReadOnlySet<string>> resourceBlocks = default;
+            foreach (string substitutionFilePath in Get(_command.SubstitutionFilePaths))
+            {
+                using FileStream fs = File.OpenRead(substitutionFilePath);
+                substitutions.AppendFrom(BodySubstitutionsParser.GetSubstitutions(
+                    logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+
+                fs.Seek(0, SeekOrigin.Begin);
+
+                resourceBlocks = ManifestResourceBlockingPolicy.UnionBlockings(resourceBlocks,
+                    ManifestResourceBlockingPolicy.SubstitutionsReader.GetSubstitutions(
+                        logger, typeSystemContext, XmlReader.Create(fs), substitutionFilePath, featureSwitches));
+            }
+
+            ilProvider = new FeatureSwitchManager(ilProvider, logger, featureSwitches, substitutions);
 
             CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState(ilProvider, logger);
 
@@ -351,7 +374,7 @@ namespace ILCompiler
             {
                 mdBlockingPolicy = new NoMetadataBlockingPolicy();
 
-                resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches);
+                resBlockingPolicy = new ManifestResourceBlockingPolicy(logger, featureSwitches, resourceBlocks);
 
                 metadataGenerationOptions |= UsageBasedMetadataGenerationOptions.AnonymousTypeHeuristic;
                 if (Get(_command.CompleteTypesMetadata))

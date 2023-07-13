@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions } from "../types";
+import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot } from "./globals";
@@ -13,6 +13,7 @@ import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
+import { invokeLibraryInitializers } from "./libraryInitializers";
 
 
 const module = globalObjectsRoot.module;
@@ -276,10 +277,44 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     withStartupOptions(startupOptions: Partial<WebAssemblyStartOptions>): DotnetHostBuilder {
-        deep_merge_config(monoConfig, {
-            startupOptions
-        });
-        return this;
+        return this
+            .withApplicationEnvironment(startupOptions.environment)
+            .withApplicationCulture(startupOptions.applicationCulture)
+            .withResourceLoader(startupOptions.loadBootResource);
+    }
+
+    withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                applicationEnvironment,
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withApplicationCulture(applicationCulture?: string): DotnetHostBuilder {
+        try {
+            deep_merge_config(monoConfig, {
+                applicationCulture,
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder {
+        try {
+            loaderHelpers.loadBootResource = loadBootResource;
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
     }
 
     async create(): Promise<RuntimeAPI> {
@@ -409,11 +444,14 @@ async function createEmscriptenMain(): Promise<RuntimeAPI> {
     });
 
     init_globalization();
+
     // TODO call mono_download_assets(); here in parallel ?
     const es6Modules = await Promise.all(promises);
     initializeModules(es6Modules as any);
 
     await runtimeHelpers.dotnetReady.promise;
+
+    await invokeLibraryInitializers("onRuntimeReady", [globalObjectsRoot.api], "onRuntimeReady");
 
     return exportedRuntimeAPI;
 }

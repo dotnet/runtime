@@ -26240,7 +26240,7 @@ void gc_heap::save_post_plug_info (uint8_t* last_pinned_plug, uint8_t* last_obje
 }
 
 // enable on processors known to have a useful prefetch instruction
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64) || defined(TARGET_RISCV64)
 #define PREFETCH
 #endif
 

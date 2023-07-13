@@ -17,17 +17,23 @@
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <CMakeProjectReference Include="../NativeLibraryToLoad/CMakeLists.txt" />
   </ItemGroup>
+  <PropertyGroup>
+    <LibrarySubdirectory>$(OutputPath)/subdirectory</LibrarySubdirectory>
+    <FileNameSuffix>-in-subdirectory</FileNameSuffix>
+  </PropertyGroup>
 
-  <Target Name="SetUpSubdirectory" AfterTargets="CopyNativeProjectBinaries">
-    <PropertyGroup>
-      <NativeLibrarySubdirectory>$(OutDir)/subdirectory</NativeLibrarySubdirectory>
-      <FileNameSuffix>-in-subdirectory</FileNameSuffix>
-    </PropertyGroup>
+  <Target Name="SetUpSubdirectoryNative" AfterTargets="CopyNativeProjectBinaries">
     <ItemGroup>
       <AssembliesToCopy Include="$(OutDir)/libNativeLibrary.*" />
       <AssembliesToCopy Include="$(OutDir)/NativeLibrary.*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+  </Target>
+
+  <Target Name="SetUpSubdirectoryManaged" AfterTargets="Build">
+    <ItemGroup>
       <AssembliesToCopy Include="$(OutDir)/$(TargetName).dll" />
     </ItemGroup>
-    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(NativeLibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
+    <Copy SourceFiles="@(AssembliesToCopy)" DestinationFiles="@(AssembliesToCopy -> '$(LibrarySubdirectory)/%(Filename)$(FileNameSuffix)%(Extension)')" />
   </Target>
 </Project>

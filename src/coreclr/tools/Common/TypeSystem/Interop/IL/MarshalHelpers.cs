@@ -231,7 +231,8 @@ namespace Internal.TypeSystem.Interop
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
 
-            if (type.IsByRef)
+            bool isByRef = type.IsByRef;
+            if (isByRef)
             {
                 type = type.GetParameterType();
 
@@ -416,7 +417,7 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
                 }
 
-                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields)
+                if (!isField && ((DefType)type).IsInt128OrHasInt128Fields && !isByRef)
                 {
                     // Int128 types or structs that contain them cannot be passed by value
                     return MarshallerKind.Invalid;

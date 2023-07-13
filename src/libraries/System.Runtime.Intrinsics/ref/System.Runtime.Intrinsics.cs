@@ -6416,30 +6416,30 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> Splat(double value) { throw null; }
         public static Vector128<nint>   Splat(nint   value) { throw null; }
         public static Vector128<nuint>  Splat(nuint  value) { throw null; }
-        public static int    ExtractLane(Vector128<sbyte>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte index) { throw null; }    // takes ImmLaneIdx16
-        public static uint   ExtractLane(Vector128<byte>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte index) { throw null; }    // takes ImmLaneIdx16
-        public static int    ExtractLane(Vector128<short>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }    // takes ImmLaneIdx8
-        public static uint   ExtractLane(Vector128<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }    // takes ImmLaneIdx8
-        public static int    ExtractLane(Vector128<int>    value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }    // takes ImmLaneIdx4
-        public static uint   ExtractLane(Vector128<uint>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }    // takes ImmLaneIdx4
-        public static long   ExtractLane(Vector128<long>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }    // takes ImmLaneIdx2
-        public static ulong  ExtractLane(Vector128<ulong>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }    // takes ImmLaneIdx2
-        public static float  ExtractLane(Vector128<float>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }    // takes ImmLaneIdx4
-        public static double ExtractLane(Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }    // takes ImmLaneIdx2
-        public static nint   ExtractLane(Vector128<nint>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }
-        public static nuint  ExtractLane(Vector128<nuint>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }
-        public static Vector128<sbyte>  ReplaceLane(Vector128<sbyte>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte imm, int    value) { throw null; }   // takes ImmLaneIdx16
-        public static Vector128<byte>   ReplaceLane(Vector128<byte>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte imm, uint   value) { throw null; }   // takes ImmLaneIdx16
-        public static Vector128<short>  ReplaceLane(Vector128<short>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte imm, int    value) { throw null; }   // takes ImmLaneIdx8
-        public static Vector128<ushort> ReplaceLane(Vector128<ushort> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte imm, uint   value) { throw null; }   // takes ImmLaneIdx8
-        public static Vector128<int>    ReplaceLane(Vector128<int>    vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, int    value) { throw null; }   // takes ImmLaneIdx4
-        public static Vector128<int>    ReplaceLane(Vector128<uint>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, uint   value) { throw null; }   // takes ImmLaneIdx4
-        public static Vector128<long>   ReplaceLane(Vector128<long>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, long   value) { throw null; }   // takes ImmLaneIdx2
-        public static Vector128<ulong>  ReplaceLane(Vector128<ulong>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, ulong  value) { throw null; }   // takes ImmLaneIdx2
-        public static Vector128<float>  ReplaceLane(Vector128<float>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, float  value) { throw null; }   // takes ImmLaneIdx4
-        public static Vector128<double> ReplaceLane(Vector128<double> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, double value) { throw null; }   // takes ImmLaneIdx2
-        public static Vector128<nint>   ReplaceLane(Vector128<nint>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nint   value) { throw null; }
-        public static Vector128<nuint>  ReplaceLane(Vector128<nuint>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nuint  value) { throw null; }
+        public static int    ExtractScalar(Vector128<sbyte>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte index) { throw null; }    // takes ImmLaneIdx16
+        public static uint   ExtractScalar(Vector128<byte>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte index) { throw null; }    // takes ImmLaneIdx16
+        public static int    ExtractScalar(Vector128<short>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }    // takes ImmLaneIdx8
+        public static uint   ExtractScalar(Vector128<ushort> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte index) { throw null; }    // takes ImmLaneIdx8
+        public static int    ExtractScalar(Vector128<int>    value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }    // takes ImmLaneIdx4
+        public static uint   ExtractScalar(Vector128<uint>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }    // takes ImmLaneIdx4
+        public static long   ExtractScalar(Vector128<long>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }    // takes ImmLaneIdx2
+        public static ulong  ExtractScalar(Vector128<ulong>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }    // takes ImmLaneIdx2
+        public static float  ExtractScalar(Vector128<float>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }    // takes ImmLaneIdx4
+        public static double ExtractScalar(Vector128<double> value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte index) { throw null; }    // takes ImmLaneIdx2
+        public static nint   ExtractScalar(Vector128<nint>   value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }
+        public static nuint  ExtractScalar(Vector128<nuint>  value, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte index) { throw null; }
+        public static Vector128<sbyte>  ReplaceScalar(Vector128<sbyte>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte imm, int    value) { throw null; }   // takes ImmLaneIdx16
+        public static Vector128<byte>   ReplaceScalar(Vector128<byte>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(15))] byte imm, uint   value) { throw null; }   // takes ImmLaneIdx16
+        public static Vector128<short>  ReplaceScalar(Vector128<short>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte imm, int    value) { throw null; }   // takes ImmLaneIdx8
+        public static Vector128<ushort> ReplaceScalar(Vector128<ushort> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(7))] byte imm, uint   value) { throw null; }   // takes ImmLaneIdx8
+        public static Vector128<int>    ReplaceScalar(Vector128<int>    vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, int    value) { throw null; }   // takes ImmLaneIdx4
+        public static Vector128<int>    ReplaceScalar(Vector128<uint>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, uint   value) { throw null; }   // takes ImmLaneIdx4
+        public static Vector128<long>   ReplaceScalar(Vector128<long>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, long   value) { throw null; }   // takes ImmLaneIdx2
+        public static Vector128<ulong>  ReplaceScalar(Vector128<ulong>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, ulong  value) { throw null; }   // takes ImmLaneIdx2
+        public static Vector128<float>  ReplaceScalar(Vector128<float>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, float  value) { throw null; }   // takes ImmLaneIdx4
+        public static Vector128<double> ReplaceScalar(Vector128<double> vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(1))] byte imm, double value) { throw null; }   // takes ImmLaneIdx2
+        public static Vector128<nint>   ReplaceScalar(Vector128<nint>   vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nint   value) { throw null; }
+        public static Vector128<nuint>  ReplaceScalar(Vector128<nuint>  vector, [System.Diagnostics.CodeAnalysis.ConstantExpectedAttribute(Max = (byte)(3))] byte imm, nuint  value) { throw null; }
         public static Vector128<sbyte> Shuffle(Vector128<sbyte> lower, Vector128<sbyte> upper, Vector128<sbyte> indices) { throw null; }
         public static Vector128<byte>  Shuffle(Vector128<byte>  lower, Vector128<byte>  upper, Vector128<byte>  indices) { throw null; }
         public static Vector128<sbyte> Swizzle(Vector128<sbyte> vector, Vector128<sbyte> indices) { throw null; }
@@ -6845,7 +6845,13 @@ namespace System.Runtime.Intrinsics.Wasm
         public static Vector128<double> ConvertToDoubleLower(Vector128<uint>  value) { throw null; }
         public static Vector128<double> ConvertToDoubleLower(Vector128<float> value) { throw null; }
         public static Vector128<int>  ConvertToInt32Saturate(Vector128<float> value) { throw null; }
+        public static Vector128<uint> ConvertToUInt32Saturate(Vector128<float> value) { throw null; }
         public static Vector128<int>  ConvertToInt32Saturate(Vector128<double> value) { throw null; }
+        public static Vector128<uint> ConvertToUInt32Saturate(Vector128<double> value) { throw null; }
+        public static Vector128<sbyte>  ConvertNarrowingSaturateSigned(Vector128<short>   lower, Vector128<short> upper) { throw null; }
+        public static Vector128<short>  ConvertNarrowingSaturateSigned(Vector128<int>     lower, Vector128<int>   upper) { throw null; }
+        public static Vector128<byte>   ConvertNarrowingSaturateUnsigned(Vector128<short> lower, Vector128<short> upper) { throw null; }
+        public static Vector128<ushort> ConvertNarrowingSaturateUnsigned(Vector128<int>   lower, Vector128<int>   upper) { throw null; }
         public static Vector128<short>  SignExtendWideningLower(Vector128<sbyte>  value) { throw null; }
         public static Vector128<ushort> SignExtendWideningLower(Vector128<byte>   value) { throw null; }
         public static Vector128<int>    SignExtendWideningLower(Vector128<short>  value) { throw null; }

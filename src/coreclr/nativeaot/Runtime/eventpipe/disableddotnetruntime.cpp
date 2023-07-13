@@ -632,3 +632,8 @@ ULONG EventPipeWriteEventGCFitBucketInfo(
 {
     return 0;
 }
+
+bool DotNETRuntimeProvider_IsEnabled(unsigned char level, unsigned long long keyword)
+{
+    return false;
+}

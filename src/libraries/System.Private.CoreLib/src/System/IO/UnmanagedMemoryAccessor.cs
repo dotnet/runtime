@@ -1,26 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-** Purpose: Provides a fast, AV free, cross-language way of
-**          accessing unmanaged memory in a random fashion.
-**
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace System.IO
 {
-    /// Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
-    /// SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
-    /// this gives better throughput; benchmarks showed about 12-15% better.
+    /// <summary>
+    /// Provides random access to unmanaged blocks of memory from managed code.
+    /// </summary>
+    // Perf notes: ReadXXX, WriteXXX (for basic types) acquire and release the
+    // SafeBuffer pointer rather than relying on generic Read(T) from SafeBuffer because
+    // this gives better throughput; benchmarks showed about 12-15% better.
     public class UnmanagedMemoryAccessor : IDisposable
     {
         private SafeBuffer _buffer = null!; // initialized in helper called by ctor, but also not initialized by protected ctor

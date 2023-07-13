@@ -30,6 +30,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.cs" Link="Compiler\Win32Resources\ResourceData.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Reader.cs" Link="Compiler\Win32Resources\ResourceData.Reader.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" Link="Compiler\Win32Resources\ResourceData.ResourcesDataModel.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" Link="Compiler\Win32Resources\ResourceData.UpdateResourceDataModel.cs" />
+    <Compile Include="..\..\Common\Compiler\Win32Resources\ResourceData.Win32Structs.cs" Link="Compiler\Win32Resources\ResourceData.Win32Structs.cs" />
     <Compile Include="..\..\Common\TypeSystem\IL\DelegateInfo.cs">
       <Link>IL\DelegateInfo.cs</Link>
     </Compile>
@@ -605,6 +610,7 @@
     <Compile Include="Compiler\VectorOfTFieldLayoutAlgorithm.cs" />
     <Compile Include="Compiler\VirtualMethodCallHelper.cs" />
     <Compile Include="Compiler\VTableSliceProvider.cs" />
+    <Compile Include="Compiler\Win32ResourcesRootProvider.cs" />
     <Compile Include="Compiler\WindowsNodeMangler.cs" />
     <Compile Include="Compiler\Logger.cs" />
     <Compile Include="Compiler\ILogWriter.cs" />
