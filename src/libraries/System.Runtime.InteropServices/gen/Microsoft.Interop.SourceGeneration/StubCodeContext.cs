@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Interop
 {
@@ -125,7 +124,17 @@ namespace Microsoft.Interop
         /// <returns>Managed and native identifiers</returns>
         public virtual (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            return (info.InstanceIdentifier, $"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedNativeIdentifierSuffix}");
+            return ($"__{info.InstanceIdentifier}_managed", $"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedNativeIdentifierSuffix}");
+        }
+
+        public virtual (string local, string parameter) GetAssignInOutIdentifiers(TypePositionInfo info)
+        {
+            return Direction switch
+            {
+                MarshalDirection.ManagedToUnmanaged => (GetIdentifiers(info).managed, info.InstanceIdentifier),
+                MarshalDirection.UnmanagedToManaged => (GetIdentifiers(info).native, info.InstanceIdentifier),
+                _ => throw new NotImplementedException(),
+            };
         }
 
         /// <summary>

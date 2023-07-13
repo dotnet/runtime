@@ -293,12 +293,10 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
     }
 
-    internal interface ISpaceMarshallingStrategy : IMarshallingStagesGenerator { }
-
     /// <summary>
     /// Marshaller type that enables allocating space for marshalling a linear collection using a marshaller that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class StatelessLinearCollectionSpaceAllocator : ISpaceMarshallingStrategy
+    internal sealed class StatelessLinearCollectionSpaceAllocator : ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
         private readonly ManagedTypeInfo _unmanagedType;
@@ -450,6 +448,8 @@ namespace Microsoft.Interop
                             Argument(IdentifierName(numElementsIdentifier))
                         })))));
         }
+
+        public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
     }
 
     internal sealed class StatelessLinearCollectionSource : IElementsMarshallingCollectionSource
@@ -529,7 +529,7 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class StatelessLinearCollectionMarshalling : ICustomTypeMarshallingStrategy
     {
-        private readonly ISpaceMarshallingStrategy _spaceMarshallingStrategy;
+        private readonly ICustomTypeMarshallingStrategy _spaceMarshallingStrategy;
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
@@ -537,7 +537,7 @@ namespace Microsoft.Interop
         private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
-            ISpaceMarshallingStrategy spaceMarshallingStrategy,
+            ICustomTypeMarshallingStrategy spaceMarshallingStrategy,
             ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
             MarshallerShape shape,

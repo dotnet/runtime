@@ -50,10 +50,9 @@ namespace Microsoft.Interop
     {
         ManagedTypeInfo AsNativeType(TypePositionInfo info);
 
-        /// <summary>
-        /// Generate assignment statements to assign the parameter a new value
-        /// </summary>
-        IEnumerable<StatementSyntax> GenerateParameterOutAssignmentStatements(TypePositionInfo info, StubCodeContext context);
+        IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context);
+
+        IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context);
 
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
     }
