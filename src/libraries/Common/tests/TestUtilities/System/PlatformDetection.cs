@@ -252,8 +252,8 @@ namespace System
         public static bool IsDomainJoinedMachine => !Environment.MachineName.Equals(Environment.UserDomainName, StringComparison.OrdinalIgnoreCase);
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
-        public static bool IsOpenSslSupported => IsLinux || IsOSX || IsFreeBSD || Isillumos || IsSolaris;
-        public static bool IsOpenSslNotSupported => !IsOpenSslSupported;
+        public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+        public static bool OpenSslNotPresentOnSystem => !OpenSslPresentOnSystem;
 
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;

@@ -22,9 +22,9 @@ namespace System.Security.Cryptography.Tests
         private const string TpmTssEngineName = "tpm2tss";
 
         public static string TpmTssEngineEcDsaKeyHandle { get; } = Environment.GetEnvironmentVariable(TpmTssEngineEcDsaKeyHandleEnvVarName);
-        public static bool ShouldRunEngineTests { get;  } = PlatformDetection.IsOpenSslSupported && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
+        public static bool ShouldRunEngineTests { get;  } = PlatformDetection.OpenSslPresentOnSystem && StringToBool(Environment.GetEnvironmentVariable(TestEngineEnabledEnvVarName));
         public static bool ShouldFailTests { get; } = StringToBool(Environment.GetEnvironmentVariable(TestEngineEnsureFailingEnvVarName));
-        public static bool ShouldRunTpmTssTests => PlatformDetection.IsOpenSslSupported &&  !string.IsNullOrEmpty(TpmTssEngineEcDsaKeyHandle);
+        public static bool ShouldRunTpmTssTests => PlatformDetection.OpenSslPresentOnSystem &&  !string.IsNullOrEmpty(TpmTssEngineEcDsaKeyHandle);
 
         private static bool StringToBool(string? value)
             => "true".Equals(value, StringComparison.OrdinalIgnoreCase) || value == "1";
@@ -55,14 +55,14 @@ namespace System.Security.Cryptography.Tests
             "A5F29E03C5AC1888D93744D89638D83AC37774B339E4AFB349C714B12238B0F81A71380F051C585C" +
             "B27434FA544BDAC679E1E16581D0E90203010001").HexToByteArray();
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslNotSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslNotPresentOnSystem))]
         public static void NotSupported()
         {
             Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, TestEngineKeyId));
             Assert.Throws<PlatformNotSupportedException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, TestEngineKeyId));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void NullArguments()
         {
             Assert.Throws<ArgumentNullException>("engineName", () => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(null, TestEngineKeyId));
@@ -72,14 +72,14 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<ArgumentNullException>("keyId", () => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(TestEngineName, null));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void NonExistingEngine()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(NonExistingEngineName, TestEngineKeyId));
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPublicKeyFromEngine(NonExistingEngineName, TestEngineKeyId));
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsOpenSslSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.OpenSslPresentOnSystem))]
         public static void NonExistingKey()
         {
             Assert.ThrowsAny<CryptographicException>(() => SafeEvpPKeyHandle.OpenPrivateKeyFromEngine(TestEngineName, NonExistingEngineKeyName));
