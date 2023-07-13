@@ -66,7 +66,7 @@
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
-      <Link>ArrayBuilder.cs</Link>
+      <Link>System\Collections\Generic\ArrayBuilder.cs</Link>
     </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.cs</Link>
