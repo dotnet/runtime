@@ -1232,7 +1232,7 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 
 	// Record all info needed in sample events while runtime is suspended, must be async safe.
 	FOREACH_THREAD_SAFE_EXCLUDE (thread_info, MONO_THREAD_INFO_FLAGS_NO_GC | MONO_THREAD_INFO_FLAGS_NO_SAMPLE) {
-		if (!mono_thread_info_is_running (thread_info)) {
+		if (!mono_thread_info_is_running (thread_info) && thread_info->jit_data) {
 			MonoThreadUnwindState *thread_state = mono_thread_info_get_suspend_state (thread_info);
 			if (thread_state->valid) {
 				if (sampled_thread_count < _max_sampled_thread_count) {
@@ -3001,6 +3001,9 @@ static
 bool
 gc_heap_dump_mem_file_buffer_init (GCHeapDumpMemFileBuffer *file_buffer)
 {
+	// Called on GC thread so no need to call MONO_ENTER_GC_SAFE/MONO_EXIT_GC_SAFE
+	// around IO functions.
+
 	EP_ASSERT (file_buffer);
 
 	file_buffer->fd = g_file_open_tmp ("mono_gc_heap_dump_XXXXXX", &file_buffer->name, NULL);
@@ -3023,6 +3026,9 @@ static
 void
 gc_heap_dump_mem_file_buffer_fini (GCHeapDumpMemFileBuffer *file_buffer)
 {
+	// Called on GC thread so no need to call MONO_ENTER_GC_SAFE/MONO_EXIT_GC_SAFE
+	// around IO functions.
+
 	if (!file_buffer)
 		return;
 
@@ -3038,6 +3044,29 @@ gc_heap_dump_mem_file_buffer_fini (GCHeapDumpMemFileBuffer *file_buffer)
 
 static
 bool
+gc_heap_dump_mem_file_buffer_write_all (
+	int fd,
+	const uint8_t *buffer,
+	size_t len)
+{
+	// Called on GC thread (during GC) while holding GC locks,
+	// before/during/after STW so no need to MONO_ENTER_GC_SAFE/MONO_EXIT_GC_SAFE
+	// around async safe IO functions.
+
+	size_t offset = 0;
+	int nwritten;
+
+	do {
+		nwritten = g_write (fd, buffer + offset, GSIZE_TO_UINT32 (len - offset));
+		if (nwritten > 0)
+			offset += nwritten;
+	} while ((nwritten > 0 && offset < len) || (nwritten == -1 && errno == EINTR));
+
+	return nwritten == len;
+}
+
+static
+bool
 gc_heap_dump_mem_file_buffer_flush (GCHeapDumpMemFileBuffer *file_buffer)
 {
 	EP_ASSERT (file_buffer);
@@ -3047,8 +3076,8 @@ gc_heap_dump_mem_file_buffer_flush (GCHeapDumpMemFileBuffer *file_buffer)
 	bool result = true;
 	uint64_t size = (uint64_t)(file_buffer->current - file_buffer->start);
 
-	result &= g_write (file_buffer->fd, &size, sizeof (size)) == sizeof (size);
-	result &= g_write (file_buffer->fd, file_buffer->start, size) == size;
+	result &= gc_heap_dump_mem_file_buffer_write_all (file_buffer->fd, (const uint8_t *)&size, sizeof (size));
+	result &= gc_heap_dump_mem_file_buffer_write_all (file_buffer->fd, file_buffer->start, GUINT64_TO_SIZE (size));
 
 	file_buffer->current = file_buffer->start;
 
@@ -3067,6 +3096,10 @@ static
 bool
 gc_heap_dump_mem_file_buffer_reset_func (void *context)
 {
+	// Called on GC thread (during GC) while holding GC locks,
+	// but after STW so no need to MONO_ENTER_GC_SAFE/MONO_EXIT_GC_SAFE
+	// around async safe IO functions.
+
 	EP_ASSERT (context);
 
 	bool result = true;
@@ -3094,11 +3127,35 @@ gc_heap_dump_mem_file_buffer_alloc_func (
 		return NULL;
 
 	if (file_buffer->current + size >= file_buffer->end)
-		gc_heap_dump_mem_file_buffer_flush (file_buffer);
+		if (!gc_heap_dump_mem_file_buffer_flush (file_buffer))
+			return NULL;
 
 	uint8_t *result = file_buffer->current;
 	file_buffer->current = file_buffer->current + size;
 	return result;
+}
+
+static
+bool
+gc_heap_dump_mem_file_buffer_read (
+	int fd,
+	uint8_t *buffer,
+	size_t len)
+{
+	// Called on GC thread (during GC) while holding GC locks,
+	// but after STW so no need to MONO_ENTER_GC_SAFE/MONO_EXIT_GC_SAFE
+	// around async safe IO functions.
+
+	size_t offset = 0;
+	int nread;
+
+	do {
+		nread = g_read (fd, buffer + offset, GSIZE_TO_UINT32 (len - offset));
+		if (nread > 0)
+			offset += nread;
+	} while ((nread > 0 && offset < len) || (nread == -1 && errno == EINTR));
+
+	return nread == len;
 }
 
 static
@@ -3118,9 +3175,9 @@ gc_heap_dump_mem_file_buffer_get_next_buffer_func (
 
 	EP_ASSERT (file_buffer->fd != -1);
 
-	if (g_read (file_buffer->fd, &size, sizeof (size)) == sizeof (size))
+	if (gc_heap_dump_mem_file_buffer_read (file_buffer->fd, (uint8_t *)&size, sizeof (size)))
 		if (size <= max_size)
-			result = g_read (file_buffer->fd, file_buffer->start, size) == size;
+			result = gc_heap_dump_mem_file_buffer_read (file_buffer->fd, file_buffer->start, GUINT64_TO_SIZE (size));
 
 	file_buffer->current = file_buffer->start;
 	*next_buffer_size = GUINT64_TO_SIZE (size);
@@ -3348,7 +3405,9 @@ gc_roots_sort_compare_func (
 	GCRootData *root_b = *(GCRootData **)b;
 
 	EP_ASSERT (root_a && root_b);
-	return root_a->start - root_b->start;
+	if (root_a->start == root_b->start)
+		return 0;
+	return (root_a->start > root_b->start) ? 1 : -1;
 }
 
 static
@@ -3356,6 +3415,7 @@ void
 gc_heap_dump_context_build_roots (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	ep_rt_spin_lock_requires_lock_not_held (&_gc_lock);
 
@@ -3392,6 +3452,7 @@ gc_heap_dump_context_find_root (
 	uintptr_t root)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	const uint8_t *base = (const uint8_t *)dn_vector_ptr_data (context->gc_roots);
 	const uint8_t *p;
@@ -3406,7 +3467,7 @@ gc_heap_dump_context_find_root (
 		if (gc_root_data->start <= root && gc_root_data->end > root)
 			cmp = 0;
 		else
-			cmp = root - gc_root_data->start;
+			cmp = (root > gc_root_data->start) ? 1 : -1;
 
 		if (!cmp)
 			return *(GCRootData **)p;
@@ -3424,6 +3485,7 @@ void
 gc_heap_dump_context_clear_nodes (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 	gc_heap_dump_context_clear_bulk_data (&context->bulk_nodes);
 }
 
@@ -3432,6 +3494,7 @@ void
 gc_heap_dump_context_clear_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 	gc_heap_dump_context_clear_bulk_data (&context->bulk_edges);
 }
 
@@ -3440,6 +3503,7 @@ void
 gc_heap_dump_context_clear_root_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 	gc_heap_dump_context_clear_bulk_data (&context->bulk_root_edges);
 }
 
@@ -3448,6 +3512,7 @@ void
 gc_heap_dump_context_clear_root_cwt_elem_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 	gc_heap_dump_context_clear_bulk_data (&context->bulk_root_cwt_elem_edges);
 }
 
@@ -3456,6 +3521,7 @@ void
 gc_heap_dump_context_clear_root_static_vars (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 	gc_heap_dump_context_clear_bulk_data (&context->bulk_root_static_vars);
 }
 
@@ -3464,6 +3530,7 @@ void
 flush_gc_event_bulk_nodes (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (!context->bulk_nodes.count)
 		return;
@@ -3491,6 +3558,7 @@ fire_gc_event_bulk_node (
 	uint64_t edge_count)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	bool update_previous_bulk_node = (size == 0 && context->bulk_nodes.count != 0);
 
@@ -3533,6 +3601,7 @@ void
 flush_gc_event_bulk_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (!context->bulk_edges.count)
 		return;
@@ -3558,6 +3627,7 @@ fire_gc_event_bulk_edge (
 	uint32_t ref_field_id)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (context->bulk_edges.count == context->bulk_edges.max_count)
 		flush_gc_event_bulk_edges (context);
@@ -3577,6 +3647,7 @@ fire_gc_event_object_reference (
 	uint32_t payload_size)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	uintptr_t object_address;
 	uintptr_t object_type;
@@ -3633,12 +3704,14 @@ buffer_gc_event_object_reference_callback (
 		return 1;
 
 	GCHeapDumpContext *context = (GCHeapDumpContext *)data;
+
+	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
+
 	uintptr_t object_address = (uintptr_t)SGEN_POINTER_UNTAG_ALL (obj);
 	uintptr_t object_type = (uintptr_t)SGEN_POINTER_UNTAG_ALL (mono_object_get_vtable_internal (obj));
 	uint64_t object_size = (uint64_t)size;
 	uint64_t edge_count = (uint64_t)num;
-
-	EP_ASSERT (is_gc_heap_dump_enabled (context));
 
 	/* account for object alignment */
 	object_size += 7;
@@ -3688,6 +3761,7 @@ void
 flush_gc_event_bulk_root_static_vars (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (!context->bulk_root_static_vars.count)
 		return;
@@ -3714,6 +3788,7 @@ fire_gc_event_bulk_root_static_var (
 	uintptr_t object)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 	EP_ASSERT (root_data);
 	EP_ASSERT (root_data->source == MONO_ROOT_SOURCE_STATIC);
 
@@ -3778,6 +3853,7 @@ void
 flush_gc_event_bulk_root_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (!context->bulk_root_edges.count)
 		return;
@@ -3800,6 +3876,7 @@ void
 flush_gc_event_bulk_root_cwt_elem_edges (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (!context->bulk_root_cwt_elem_edges.count)
 		return;
@@ -3826,6 +3903,7 @@ fire_gc_event_bulk_root_cwt_elem_edge (
 	uintptr_t value)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (context->bulk_root_cwt_elem_edges.count == context->bulk_root_cwt_elem_edges.max_count)
 		flush_gc_event_bulk_root_cwt_elem_edges (context);
@@ -3846,6 +3924,7 @@ fire_gc_event_bulk_root_edge (
 	uintptr_t object)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (context->bulk_root_edges.count == context->bulk_root_edges.max_count)
 		flush_gc_event_bulk_root_edges (context);
@@ -3924,6 +4003,7 @@ fire_gc_event_roots (
 	uint32_t payload_size)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	uint64_t count;
 	uintptr_t address;
@@ -3961,6 +4041,7 @@ buffer_gc_event_roots_callback (
 		return;
 
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	BufferedGCEvent gc_event_data;
 	gc_event_data.type = BUFFERED_GC_EVENT_ROOTS;
@@ -3997,6 +4078,7 @@ void
 flush_gc_events (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	flush_gc_event_bulk_nodes (context);
 	flush_gc_event_bulk_edges (context);
@@ -4013,6 +4095,7 @@ void
 fire_buffered_gc_events (GCHeapDumpContext *context)
 {
 	EP_ASSERT (is_gc_heap_dump_enabled (context));
+	EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 
 	if (context->buffer) {
 		const uint8_t *buffer = NULL;
@@ -4091,26 +4174,30 @@ gc_event_callback (
 	switch (gc_event) {
 	case MONO_GC_EVENT_POST_STOP_WORLD:
 	{
-		GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
-		if (is_gc_heap_dump_enabled (heap_dump_context))
+		GCHeapDumpContext *context = gc_heap_dump_context_get ();
+		if (is_gc_heap_dump_enabled (context)) {
+			EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
 			mono_profiler_set_gc_roots_callback (_ep_rt_mono_default_profiler_provider, buffer_gc_event_roots_callback);
+		}
 		break;
 	}
 	case MONO_GC_EVENT_PRE_START_WORLD:
 	{
-		GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
-		if (is_gc_heap_dump_enabled (heap_dump_context)) {
-			mono_gc_walk_heap (0, buffer_gc_event_object_reference_callback, heap_dump_context);
+		GCHeapDumpContext *context = gc_heap_dump_context_get ();
+		if (is_gc_heap_dump_enabled (context)) {
+			EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
+			mono_gc_walk_heap (0, buffer_gc_event_object_reference_callback, context);
 			mono_profiler_set_gc_roots_callback (_ep_rt_mono_default_profiler_provider, NULL);
 		}
 		break;
 	}
 	case MONO_GC_EVENT_POST_START_WORLD:
 	{
-		GCHeapDumpContext *heap_dump_context = gc_heap_dump_context_get ();
-		if (is_gc_heap_dump_enabled (heap_dump_context)) {
-			gc_heap_dump_context_build_roots (heap_dump_context);
-			fire_buffered_gc_events (heap_dump_context);
+		GCHeapDumpContext *context = gc_heap_dump_context_get ();
+		if (is_gc_heap_dump_enabled (context)) {
+			EP_ASSERT (context->state == GC_HEAP_DUMP_CONTEXT_STATE_DUMP);
+			gc_heap_dump_context_build_roots (context);
+			fire_buffered_gc_events (context);
 		}
 		break;
 	}
