@@ -1657,6 +1657,18 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DeviceIoControl.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.DeviceIoControl.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FILE_SET_SPARSE_BUFFER.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FILE_SET_SPARSE_BUFFER.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FSCTL_GET_INTEGRITY_INFORMATION_BUFFER.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FSCTL_GET_INTEGRITY_INFORMATION_BUFFER.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.DUPLICATE_EXTENTS_DATA.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.DUPLICATE_EXTENTS_DATA.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.ExpandEnvironmentStrings.cs</Link>
     </Compile>
