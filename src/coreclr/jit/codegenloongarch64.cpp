@@ -1966,7 +1966,14 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* lclNode)
         }
         else // store into register (i.e move into register)
         {
-            if (dataReg != targetReg)
+            if (data->IsIconHandle(GTF_ICON_TLS_HDL))
+            {
+                assert(data->AsIntCon()->IconValue() == 0);
+                emitAttr attr = emitActualTypeSize(targetType);
+                // need to load the address from $tp.
+                emit->emitIns_R_R_I(INS_ori, attr, targetReg, REG_TP, 0);
+            }
+            else if (dataReg != targetReg)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
                 inst_Mov(targetType, targetReg, dataReg, true, emitActualTypeSize(targetType));

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Mono.Linker.Tests.Cases.Basic
+﻿namespace Mono.Linker.Tests.Cases.Basic
 {
 	class UnusedEnumGetsRemoved
 	{
