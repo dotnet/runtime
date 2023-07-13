@@ -37,6 +37,12 @@ if(CLR_CMAKE_HOST_WIN32)
 
 else(CLR_CMAKE_HOST_WIN32)
 
+    if(NOT DEFINED ENV{ROOTFS_DIR})
+      include_directories(SYSTEM /usr/local/include)
+    elseif (CLR_CMAKE_TARGET_FREEBSD)
+      include_directories(SYSTEM $ENV{ROOTFS_DIR}/usr/local/include)
+    endif()
+
     include(configure.cmake)
 
     # Set the RPATH of createdump so that it can find dependencies without needing to set LD_LIBRARY_PATH
