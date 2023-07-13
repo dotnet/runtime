@@ -17,31 +17,29 @@ internal static partial class Interop
 
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_set_sparse
         internal const int FSCTL_SET_SPARSE = 0x000900c4;
-        internal readonly struct FILE_SET_SPARSE_BUFFER
+        internal struct FILE_SET_SPARSE_BUFFER
         {
-            internal FILE_SET_SPARSE_BUFFER(byte setSparse) => SetSparse = setSparse;
-            internal readonly byte SetSparse;
+            internal BOOLEAN SetSparse;
         }
 
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_get_integrity_information
         internal const int FSCTL_GET_INTEGRITY_INFORMATION = 0x0009027C;
-        internal readonly struct FSCTL_GET_INTEGRITY_INFORMATION_BUFFER
+        internal struct FSCTL_GET_INTEGRITY_INFORMATION_BUFFER
         {
-            internal readonly ushort ChecksumAlgorithm;
-            internal readonly ushort Reserved;
-            internal readonly uint Flags;
-            internal readonly uint ChecksumChunkSizeInBytes;
-            internal readonly uint ClusterSizeInBytes;
+            internal ushort ChecksumAlgorithm;
+            internal ushort Reserved;
+            internal uint Flags;
+            internal uint ChecksumChunkSizeInBytes;
+            internal uint ClusterSizeInBytes;
         }
 
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_set_integrity_information
         internal const int FSCTL_SET_INTEGRITY_INFORMATION = 0x0009C280;
-        internal readonly struct FSCTL_SET_INTEGRITY_INFORMATION_BUFFER
+        internal struct FSCTL_SET_INTEGRITY_INFORMATION_BUFFER
         {
-            internal FSCTL_SET_INTEGRITY_INFORMATION_BUFFER(ushort checksumAlgorithm, ushort reserved, uint flags) => (ChecksumAlgorithm, Reserved, Flags) = (checksumAlgorithm, reserved, flags);
-            internal readonly ushort ChecksumAlgorithm;
-            internal readonly ushort Reserved;
-            internal readonly uint Flags;
+            internal ushort ChecksumAlgorithm;
+            internal ushort Reserved;
+            internal uint Flags;
         }
 
         // https://learn.microsoft.com/windows/win32/api/winioctl/ni-winioctl-fsctl_duplicate_extents_to_file

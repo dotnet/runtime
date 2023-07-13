@@ -328,7 +328,7 @@ namespace System.IO
                     }
 
                     // Clone file integrity settings from source to destination. Must be done while file is zero size.
-                    Interop.Kernel32.FSCTL_GET_INTEGRITY_INFORMATION_BUFFER getIntegrityInfo = default;
+                    Interop.Kernel32.FSCTL_GET_INTEGRITY_INFORMATION_BUFFER getIntegrityInfo;
                     if (!Interop.Kernel32.DeviceIoControl(
                         sourceHandle,
                         Interop.Kernel32.FSCTL_GET_INTEGRITY_INFORMATION,
@@ -344,8 +344,10 @@ namespace System.IO
                     }
                     if (!madeNew || getIntegrityInfo.ChecksumAlgorithm != 0 || getIntegrityInfo.Flags != 0)
                     {
-                        Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER setIntegrityInfo =
-                            new(checksumAlgorithm: getIntegrityInfo.ChecksumAlgorithm, reserved: getIntegrityInfo.Reserved, flags: getIntegrityInfo.Flags);
+                        Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION_BUFFER setIntegrityInfo;
+                        setIntegrityInfo.ChecksumAlgorithm = getIntegrityInfo.ChecksumAlgorithm;
+                        setIntegrityInfo.Reserved = getIntegrityInfo.Reserved;
+                        setIntegrityInfo.Flags = getIntegrityInfo.Flags;
                         if (!Interop.Kernel32.DeviceIoControl(
                                 destinationHandle,
                                 Interop.Kernel32.FSCTL_SET_INTEGRITY_INFORMATION,
@@ -362,7 +364,7 @@ namespace System.IO
                     }
 
                     // Set length of destination to same as source.
-                    Interop.Kernel32.FILE_END_OF_FILE_INFO eofInfo = default;
+                    Interop.Kernel32.FILE_END_OF_FILE_INFO eofInfo;
                     eofInfo.EndOfFile = sourceSize;
                     if (!Interop.Kernel32.SetFileInformationByHandle(destinationHandle, Interop.Kernel32.FileEndOfFileInfo, &eofInfo, (uint)sizeof(Interop.Kernel32.FILE_END_OF_FILE_INFO)))
                     {
@@ -371,7 +373,7 @@ namespace System.IO
                     }
 
                     // Copy all of the blocks.
-                    Interop.Kernel32.DUPLICATE_EXTENTS_DATA duplicateExtentsData = default;
+                    Interop.Kernel32.DUPLICATE_EXTENTS_DATA duplicateExtentsData;
                     duplicateExtentsData.FileHandle = sourceHandle.DangerousGetHandle();
                     // ReFS requires that cloned regions reside on a disk cluster boundary.
                     long clusterSizeMask = clusterSize - 1;
@@ -405,7 +407,8 @@ namespace System.IO
                     // Match source sparseness.
                     if ((sourceFileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_SPARSE_FILE) == 0)
                     {
-                        Interop.Kernel32.FILE_SET_SPARSE_BUFFER sparseBuffer = new(setSparse: 0);
+                        Interop.Kernel32.FILE_SET_SPARSE_BUFFER sparseBuffer;
+                        sparseBuffer.SetSparse = Interop.BOOLEAN.FALSE;
                         Interop.Kernel32.DeviceIoControl(destinationHandle, Interop.Kernel32.FSCTL_SET_SPARSE, &sparseBuffer, (uint)sizeof(Interop.Kernel32.FILE_SET_SPARSE_BUFFER), null, 0, out _, 0);
                     }
 
@@ -435,7 +438,8 @@ namespace System.IO
                     if (madeNew)
                     {
                         // Mark the file for deletion.
-                        Interop.Kernel32.FILE_DISPOSITION_INFO dispositionInfo = new(deleteFile: 1);
+                        Interop.Kernel32.FILE_DISPOSITION_INFO dispositionInfo;
+                        dispositionInfo.DeleteFile = Interop.BOOLEAN.TRUE;
                         if (!Interop.Kernel32.SetFileInformationByHandle(
                                 destinationHandle!,
                                 Interop.Kernel32.FileDispositionInfo,
