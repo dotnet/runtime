@@ -418,6 +418,7 @@ namespace Microsoft.Interop
                         comInterfaceAndMethods.DeclaredMethods
                             .Select(m => m.UnmanagedToManagedStub)
                             .OfType<GeneratedStubCodeContext>()
+                            .Where(context => context.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
                             .Select(context => context.Stub.Node)));
         }
 
@@ -437,7 +438,6 @@ namespace Microsoft.Interop
 
             const string vtableLocalName = "vtable";
             var interfaceType = interfaceMethods.Interface.Info.Type;
-            var interfaceMethodStubs = interfaceMethods.DeclaredMethods.Select(m => m.GenerationContext);
 
             // void** vtable = (void**)RuntimeHelpers.AllocateTypeAssociatedMemory(<interfaceType>, sizeof(void*) * <max(vtableIndex) + 1>);
             var vtableDeclarationStatement =
@@ -578,7 +578,11 @@ namespace Microsoft.Interop
                                         })))));
             }
 
-            var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(interfaceMethodStubs, vtableLocalName);
+            var vtableSlotAssignments = VirtualMethodPointerStubGenerator.GenerateVirtualMethodTableSlotAssignments(
+                interfaceMethods.DeclaredMethods
+                    .Where(context => context.UnmanagedToManagedStub.Diagnostics.All(diag => diag.Descriptor.DefaultSeverity != DiagnosticSeverity.Error))
+                    .Select(context => context.GenerationContext),
+                vtableLocalName);
 
             return ImplementationInterfaceTemplate
                 .AddMembers(
