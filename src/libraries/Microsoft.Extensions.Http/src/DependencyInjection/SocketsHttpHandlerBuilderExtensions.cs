@@ -11,8 +11,19 @@ using Microsoft.Extensions.Http;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Extension methods to configure <see cref="SocketsHttpHandler"/> for a named
+    /// <see cref="System.Net.Http.HttpClient"/> instances returned by <see cref="IHttpClientFactory"/>.
+    /// </summary>
     public static class SocketsHttpHandlerBuilderExtensions
     {
+        /// <summary>
+        /// Adds a delegate that will be used to configure the primary <see cref="SocketsHttpHandler"/> for a
+        /// named <see cref="HttpClient"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISocketsHttpHandlerBuilder"/>.</param>
+        /// <param name="configure">A delegate that is used to modify a <see cref="SocketsHttpHandler"/>.</param>
+        /// <returns>An <see cref="ISocketsHttpHandlerBuilder"/> that can be used to configure the handler.</returns>
         [UnsupportedOSPlatform("browser")]
         public static ISocketsHttpHandlerBuilder Configure(this ISocketsHttpHandlerBuilder builder, Action<SocketsHttpHandler, IServiceProvider> configure)
         {
@@ -32,6 +43,21 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        /// <summary>
+        /// Uses <see cref="IConfiguration"/> to configure the primary <see cref="SocketsHttpHandler"/> for a
+        /// named <see cref="HttpClient"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="ISocketsHttpHandlerBuilder"/>.</param>
+        /// <param name="configuration">Configuration containing properties of <see cref="SocketsHttpHandler"/>.</param>
+        /// <returns>An <see cref="ISocketsHttpHandlerBuilder"/> that can be used to configure the handler.</returns>
+        /// <remarks>
+        /// <para>
+        /// Only simple (of type `bool`, `int`, <see cref="Enum"/> or <see cref="TimeSpan"/>) properties of <see cref="SocketsHttpHandler"/> will be parsed.
+        /// </para>
+        /// <para>
+        /// All unmatched properties in <see cref="IConfiguration"/> will be ignored.
+        /// </para>
+        /// </remarks>
         [UnsupportedOSPlatform("browser")]
         public static ISocketsHttpHandlerBuilder Configure(this ISocketsHttpHandlerBuilder builder, IConfiguration configuration)
         {
