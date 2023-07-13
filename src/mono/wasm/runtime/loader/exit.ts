@@ -55,9 +55,9 @@ export function abort_startup(reason: any, should_exit: boolean, should_throw?: 
 export function mono_exit(exit_code: number, reason?: any): void {
     // make sure we have both reason and exit_code
     exit_code = (reason && typeof reason.status === "number") ? reason.status : exit_code;
-    reason = reason || runtimeHelpers.ExitStatus
+    reason = reason || (runtimeHelpers.ExitStatus
         ? new runtimeHelpers.ExitStatus(exit_code)
-        : new Error("Exit with code " + exit_code);
+        : new Error("Exit with code " + exit_code));
     reason.status = exit_code;
 
     if (!is_exited()) {
