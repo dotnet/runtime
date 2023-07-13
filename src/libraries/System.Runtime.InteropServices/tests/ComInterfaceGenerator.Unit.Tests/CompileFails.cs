@@ -68,32 +68,36 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             CodeSnippets codeSnippets = new(GetAttributeProvider(generator));
 
+            string safeHandleMarshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
+            string safeHandleMarshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
+            string safeHandleMarshallerDoesNotSupportBidirectional = string.Format(SR.BidirectionalMissingRequiredMarshaller, "global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>");
             // SafeHandles
             yield return new object[] { ID(), codeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle"), new[]
             {
-                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails).WithLocation(0).WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>' does not support it.", "Method"),
-                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(1).WithArguments("The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type 'global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>' does not support it.", "value"),
+                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails).WithLocation(0).WithArguments(safeHandleMarshallerDoesNotSupportManagedToUnmanaged, "Method"),
+                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(1).WithArguments(safeHandleMarshallerDoesNotSupportUnmanagedToManaged, "value"),
                 // /0/Test0.cs(13,151): error SYSLIB1051: The type 'Microsoft.Win32.SafeHandles.SafeFileHandle' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter 'inValue'.
-                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(2).WithArguments("The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type 'global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>' does not support it.", "inValue"),
+                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(2).WithArguments(safeHandleMarshallerDoesNotSupportUnmanagedToManaged, "inValue"),
                 // /0/Test0.cs(13,207): error SYSLIB1051: The type 'Microsoft.Win32.SafeHandles.SafeFileHandle' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter 'refValue'.
-                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(3).WithArguments("The specified parameter needs to be marshalled from managed to unmanaged and unmanaged to managed, but the marshaller type 'global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>' does not support it.", "refValue"),
+                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(3).WithArguments(safeHandleMarshallerDoesNotSupportBidirectional, "refValue"),
                 // /0/Test0.cs(13,264): error SYSLIB1051: The type 'Microsoft.Win32.SafeHandles.SafeFileHandle' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter 'outValue'.
-                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(4).WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::System.Runtime.InteropServices.Marshalling.SafeHandleMarshaller<global::Microsoft.Win32.SafeHandles.SafeFileHandle>' does not support it.", "outValue"),
+                VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails).WithLocation(4).WithArguments(safeHandleMarshallerDoesNotSupportManagedToUnmanaged, "outValue"),
             } };
 
 
             // Marshallers with only support for their expected places in the signatures in
             // ManagedToUnmanaged marshal modes.
-
+            string marshallerDoesNotSupportManagedToUnmanaged = string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::Marshaller");
+            string marshallerDoesNotSupportUnmanagedToManaged = string.Format(SR.UnmanagedToManagedMissingRequiredMarshaller, "global::Marshaller");
             DiagnosticResult invalidManagedToUnmanagedParameterDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
-                .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
+                .WithArguments(marshallerDoesNotSupportManagedToUnmanaged, "value");
             DiagnosticResult invalidUnmanagedToManagedParameterDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
-                .WithArguments("The specified parameter needs to be marshalled from unmanaged to managed, but the marshaller type 'global::Marshaller' does not support it.", "value");
+                .WithArguments(marshallerDoesNotSupportUnmanagedToManaged, "value");
             DiagnosticResult invalidReturnTypeDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                 .WithLocation(0)
-                .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "Method");
+                .WithArguments(marshallerDoesNotSupportManagedToUnmanaged, "Method");
             CustomStructMarshallingCodeSnippets customStructMarshallingCodeSnippets = new(new CodeSnippets.Bidirectional(GetAttributeProvider(generator)));
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.NativeToManagedOnlyOutParameter, new[] { invalidManagedToUnmanagedParameterDiagnostic } };
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.NativeToManagedOnlyReturnValue, new[] { invalidReturnTypeDiagnostic } };
@@ -105,9 +109,9 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static IEnumerable<object[]> StringMarshallingCodeSnippets(GeneratorKind generator)
         {
-            const string CustomStringMarshallingWithNoCustomTypeMessage = @"'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.";
-            const string CustomTypeSpecifiedWithNoStringMarshallingCustom = @"'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.";
-            const string StringMarshallingMustMatchBase = "The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' must match the base COM interface.";
+            string CustomStringMarshallingWithNoCustomTypeMessage = SR.InvalidStringMarshallingConfigurationMissingCustomType;
+            string CustomTypeSpecifiedWithNoStringMarshallingCustom = SR.InvalidStringMarshallingConfigurationNotCustom;
+            string StringMarshallingMustMatchBase = SR.GeneratedComInterfaceStringMarshallingMustMatchBase;
 
             CodeSnippets codeSnippets = new(GetAttributeProvider(generator));
             (StringMarshalling, Type?) utf8Marshalling = (StringMarshalling.Utf8, null);
@@ -368,7 +372,7 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             DiagnosticResult expectedDiagnostic = VerifyComInterfaceGenerator.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                 .WithLocation(0)
-                .WithArguments("The specified parameter needs to be marshalled from managed to unmanaged, but the marshaller type 'global::Marshaller' does not support it.", "value");
+                .WithArguments(string.Format(SR.ManagedToUnmanagedMissingRequiredMarshaller, "global::Marshaller"), "value");
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, expectedDiagnostic);
         }
 
@@ -537,6 +541,317 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             _ = id;
             await VerifyComInterfaceGenerator.VerifySourceGeneratorAsync(source, diagnostics);
+        }
+
+        public static IEnumerable<object[]> ByValueMarshalAttributeOnValueTypes()
+        {
+            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
+            const string inAttribute = "[{|#1:InAttribute|}]";
+            const string outAttribute = "[{|#2:OutAttribute|}]";
+            const string paramName = "p";
+            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
+            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
+
+
+            // [In] is default for all non-pinned marshalled types
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeIsDefaultDiagnostic,
+                //https://github.com/dotnet/runtime/issues/88540
+                inAttributeIsDefaultDiagnostic } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute, "byte", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeIsDefaultDiagnostic,
+                //https://github.com/dotnet/runtime/issues/88540
+                inAttributeIsDefaultDiagnostic } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U4)]", "bool", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeIsDefaultDiagnostic,
+                //https://github.com/dotnet/runtime/issues/88540
+                inAttributeIsDefaultDiagnostic } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U2)]", "char", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeIsDefaultDiagnostic,
+                //https://github.com/dotnet/runtime/issues/88540
+                inAttributeIsDefaultDiagnostic } };
+
+            // [Out] is not allowed on value types passed by value - there is no indirection for the callee to make visible modifications.
+            var outAttributeNotSupportedOnValueParameters = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, paramName);
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
+                outAttributeNotSupportedOnValueParameters,
+                //https://github.com/dotnet/runtime/issues/88540
+                outAttributeNotSupportedOnValueParameters } };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute, "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
+                new DiagnosticResult[] {
+                    outAttributeNotSupportedOnValueParameters,
+                    //https://github.com/dotnet/runtime/issues/88540
+                    outAttributeNotSupportedOnValueParameters,
+                } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute + "[MarshalAs(UnmanagedType.U4)]", "bool", paramNameWithLocation), new DiagnosticResult[] {
+                outAttributeNotSupportedOnValueParameters,
+                //https://github.com/dotnet/runtime/issues/88540
+                outAttributeNotSupportedOnValueParameters
+            } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute, "[MarshalAs(UnmanagedType.U2)] char", paramNameWithLocation), new DiagnosticResult[] {
+                outAttributeNotSupportedOnValueParameters,
+                //https://github.com/dotnet/runtime/issues/88540
+                outAttributeNotSupportedOnValueParameters
+            } };
+            // [In,Out] should only warn for Out attribute
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute+outAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
+                outAttributeNotSupportedOnValueParameters,
+                //https://github.com/dotnet/runtime/issues/88540
+                outAttributeNotSupportedOnValueParameters } };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute+outAttribute, "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
+                new DiagnosticResult[] {
+                    outAttributeNotSupportedOnValueParameters,
+                    //https://github.com/dotnet/runtime/issues/88540
+                    outAttributeNotSupportedOnValueParameters,
+                } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + "[MarshalAs(UnmanagedType.U4)]", "bool", paramNameWithLocation), new DiagnosticResult[] {
+                outAttributeNotSupportedOnValueParameters,
+                //https://github.com/dotnet/runtime/issues/88540
+                outAttributeNotSupportedOnValueParameters
+            } };
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute, "[MarshalAs(UnmanagedType.U2)] char", paramNameWithLocation), new DiagnosticResult[] {
+                outAttributeNotSupportedOnValueParameters,
+                //https://github.com/dotnet/runtime/issues/88540
+                outAttributeNotSupportedOnValueParameters
+            } };
+
+            // Any ref keyword is okay for value types
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("out", "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("out", "byte", paramNameWithLocation),
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("", "[MarshalAs(UnmanagedType.U2)] out char", paramNameWithLocation),
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("in", "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("in", "byte", paramNameWithLocation),
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("", "[MarshalAs(UnmanagedType.U2)] in char", paramNameWithLocation),
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("ref", "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("ref", "byte", paramNameWithLocation),
+                new DiagnosticResult[] {}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("", "[MarshalAs(UnmanagedType.U2)] ref char", paramNameWithLocation),
+                new DiagnosticResult[] {}
+            };
+        }
+
+        public static IEnumerable<object[]> ByValueMarshalAttributeOnReferenceTypes()
+        {
+            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
+            const string inAttribute = "[{|#1:InAttribute|}]";
+            const string outAttribute = "[{|#2:OutAttribute|}]";
+            const string paramName = "p";
+            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
+            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
+
+            // [In] is default
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute, "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic }
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute, "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic }
+            };
+
+            var outNotAllowedOnRefTypes = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                        .WithLocation(0)
+                        .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, paramName);
+
+            // [Out] is not allowed on strings
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute, "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
+                new DiagnosticResult[] { outNotAllowedOnRefTypes, outNotAllowedOnRefTypes }
+            };
+
+            // [Out] warns on by value reference types
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute, "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
+                new DiagnosticResult[] { outNotAllowedOnRefTypes, outNotAllowedOnRefTypes }
+            };
+
+            // [In,Out] is fine on classes
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute, "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
+                new DiagnosticResult[] { outNotAllowedOnRefTypes, outNotAllowedOnRefTypes }
+            };
+
+            // All refkinds are okay on classes and strings
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("in", "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
+                new DiagnosticResult[] { }
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("in", "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
+                new DiagnosticResult[] { }
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("out", "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
+                new DiagnosticResult[] { }
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("out", "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
+                new DiagnosticResult[] { }
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("ref", "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
+                new DiagnosticResult[] { }
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType("ref", "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
+                new DiagnosticResult[] { }
+            };
+        }
+
+        public static IEnumerable<object[]> ByValueMarshalAttributeOnPinnedMarshalledTypes()
+        {
+            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
+            const string inAttribute = "[{|#1:InAttribute|}]";
+            const string outAttribute = "[{|#2:OutAttribute|}]";
+            const string paramName = "p";
+            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
+            const string constElementCount = @"[MarshalUsing(ConstantElementCount = 10)]";
+            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
+            // Pinned arrays cannot be [In]
+            var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
+            var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeNotSupportedOnPinnedParameter,
+                //https://github.com/dotnet/runtime/issues/88540
+                inAttributeNotSupportedOnPinnedParameter
+            }};
+            // new issue before merge: char generated code doesn't seem to work well with [In, Out]
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                new DiagnosticResult[] { inAttributeNotSupportedOnPinnedParameter, inAttributeIsDefaultDiagnostic }
+            };
+
+            // bools that are marshalled into a new array are in by default
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(
+                    inAttribute + "[MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.U1, SizeConst = 10)]",
+                    "bool[]",
+                    paramNameWithLocation,
+                    (StringMarshalling.Utf16, null)),
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic}
+            };
+            // Overriding marshalling with a custom marshaller makes it not pinned
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute, "[MarshalUsing(typeof(IntMarshaller), ElementIndirectionDepth = 1), MarshalUsing(ConstantElementCount = 10)]int[]", paramNameWithLocation) + CodeSnippets.IntMarshaller,
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic}
+            };
+
+            // [In, Out] is default
+            var inOutAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithLocation(2)
+                    .WithArguments(SR.InOutAttributes, paramName, SR.PinnedMarshallingIsInOutByDefault);
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
+                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic, inOutAttributeIsDefaultDiagnostic}
+            };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                //https://github.com/dotnet/runtime/issues/88540
+                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+            };
+
+            // [Out] Should not warn
+            // https://github.com/dotnet/runtime/issues/88708
+            //yield return new object[] {
+            //    ID(),
+            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
+            //    new DiagnosticResult[] { }
+            //};
+
+            // https://github.com/dotnet/runtime/issues/88708
+            //yield return new object[] {
+            //    ID(),
+            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+            //    new DiagnosticResult[] { }
+            //};
+        }
+
+        [Theory]
+        [MemberData(nameof(ByValueMarshalAttributeOnValueTypes))]
+        [MemberData(nameof(ByValueMarshalAttributeOnReferenceTypes))]
+        [MemberData(nameof(ByValueMarshalAttributeOnPinnedMarshalledTypes))]
+        public async Task VerifyByValueMarshallingAttributeUsage(string id, string source, DiagnosticResult[] diagnostics)
+        {
+            _ = id;
+            VerifyComInterfaceGenerator.Test test = new(referenceAncillaryInterop: false)
+            {
+                TestCode = source,
+                TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+                // Our fallback mechanism for invalid code for unmanaged->managed stubs sometimes generates invalid code.
+                CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
+            };
+            test.ExpectedDiagnostics.AddRange(diagnostics);
+            await test.RunAsync();
         }
 
         [Fact]
