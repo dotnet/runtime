@@ -575,7 +575,7 @@ namespace Internal.Reflection.Execution
             KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
             if (ldFtnReverseLookup == null)
             {
-                ldFtnReverseLookupBuilder = new ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>();
+                var ldFtnReverseLookupBuilder = new ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>();
                 foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
                 {
                     ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module)));
