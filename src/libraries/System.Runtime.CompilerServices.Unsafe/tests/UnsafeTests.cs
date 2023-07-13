@@ -158,6 +158,30 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static unsafe void CopyToRefGenericStruct()
+        {
+            Int32Generic<string> destination = default;
+            Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
+
+            Unsafe.Copy(ref destination, Unsafe.AsPointer(ref value));
+
+            Assert.Equal(5, destination.Int32);
+            Assert.Equal("a", destination.Value);
+        }
+
+        [Fact]
+        public static unsafe void CopyToVoidPtrGenericStruct()
+        {
+            Int32Generic<string> destination = default;
+            Int32Generic<string> value = new() { Int32 = 5, Value = "a" };
+
+            Unsafe.Copy(Unsafe.AsPointer(ref destination), ref value);
+
+            Assert.Equal(5, destination.Int32);
+            Assert.Equal("a", destination.Value);
+        }
+
+        [Fact]
         public static unsafe void SizeOf()
         {
             Assert.Equal(1, Unsafe.SizeOf<sbyte>());
