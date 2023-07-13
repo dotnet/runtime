@@ -19,7 +19,17 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderTests
+    public abstract class ConfigurationBinderTestsBase
+    {
+        public ConfigurationBinderTestsBase()
+        {
+#if LAUNCH_DEBUGGER
+if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launch(); }
+#endif
+        }
+    }
+
+    public sealed partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
@@ -1869,6 +1879,26 @@ namespace Microsoft.Extensions
             configuration.Bind(obj);
             Assert.Equal(0, obj.Int32);
             Assert.False(obj.Boolean);
+        }
+
+        [Fact]
+        public void AllowsCaseInsensitiveMatch()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            GenericOptions<string> obj = new();
+            configuration.Bind(obj);
+            Assert.Equal("MyString", obj.Value);
+
+            GenericOptionsRecord<string> obj1 = configuration.Get<GenericOptionsRecord<string>>();
+            Assert.Equal("MyString", obj1.Value);
+
+            GenericOptionsWithParamCtor<string> obj2 = configuration.Get<GenericOptionsWithParamCtor<string>>();
+            Assert.Equal("MyString", obj2.Value);
         }
     }
 }

@@ -146,12 +146,16 @@ void EEClass::Destruct(MethodTable * pOwningMT)
 
         if (pDelegateEEClass->m_pStaticCallStub)
         {
+            // Collect data to remove stub entry from StubManager if
+            // stub is deleted.
+            BYTE* entry = (BYTE*)pDelegateEEClass->m_pStaticCallStub->GetEntryPoint();
+            UINT length = pDelegateEEClass->m_pStaticCallStub->GetNumCodeBytes();
+
             ExecutableWriterHolder<Stub> stubWriterHolder(pDelegateEEClass->m_pStaticCallStub, sizeof(Stub));
             BOOL fStubDeleted = stubWriterHolder.GetRW()->DecRef();
-
             if (fStubDeleted)
             {
-                DelegateInvokeStubManager::g_pManager->RemoveStub(pDelegateEEClass->m_pStaticCallStub);
+                StubLinkStubManager::g_pManager->RemoveStubRange(entry, length);
             }
         }
         if (pDelegateEEClass->m_pInstRetBuffCallStub)

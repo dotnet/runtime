@@ -204,4 +204,10 @@
   <data name="CantValidateStaticOrConstMemberTitle" xml:space="preserve">
     <value>Can't validate constants, static fields or properties.</value>
   </data>
+  <data name="InaccessibleValidationAttributeMessage" xml:space="preserve">
+    <value>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</value>
+  </data>
+  <data name="InaccessibleValidationAttributeTitle" xml:space="preserve">
+    <value>Validation attribute on the member is inaccessible from the validator type..</value>
+  </data>
 </root>
