@@ -131,6 +131,11 @@ namespace System.Security.Cryptography
             ArgumentException.ThrowIfNullOrEmpty(engineName);
             ArgumentException.ThrowIfNullOrEmpty(keyId);
 
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
+            }
+
             return Interop.Crypto.LoadPrivateKeyFromEngine(engineName, keyId);
         }
 
@@ -178,6 +183,11 @@ namespace System.Security.Cryptography
         {
             ArgumentException.ThrowIfNullOrEmpty(engineName);
             ArgumentException.ThrowIfNullOrEmpty(keyId);
+
+            if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
+            {
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_CryptographyOpenSSL);
+            }
 
             return Interop.Crypto.LoadPublicKeyFromEngine(engineName, keyId);
         }
