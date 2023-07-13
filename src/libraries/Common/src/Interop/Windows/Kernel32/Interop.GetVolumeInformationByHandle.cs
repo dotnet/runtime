@@ -43,7 +43,7 @@ internal static partial class Interop
 
             // Return the error.
             int error = Marshal.GetLastWin32Error();
-            Debug.Assert(error != Errors.ERROR_INSUFFICIENT_BUFFER);
+            Debug.Assert(error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER);
             return error;
         }
     }

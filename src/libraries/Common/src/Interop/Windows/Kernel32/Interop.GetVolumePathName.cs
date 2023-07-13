@@ -21,7 +21,7 @@ internal static partial class Interop
             fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
 
             // Ensure our output buffer will be long enough (see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamew#remarks)
-            ValueStringBuilder vsb = new(stackalloc char[MAX_PATH + 1]); //note: MAX_PATH is not a hard limit, but would only be exceeded by a long path
+            ValueStringBuilder vsb = new(stackalloc char[Interop.Kernel32.MAX_PATH]); //note: MAX_PATH is not a hard limit, but would only be exceeded by a long path
             PathHelper.GetFullPathName(fileName, ref vsb);
 
             // Call the actual API
@@ -30,16 +30,18 @@ internal static partial class Interop
                 fixed (char* lpszVolumePathName = vsb.RawChars)
                 {
                     // + 1 because \0 is not included in Length from GetFullPathName, but should exist
-                    if (_GetVolumePathName(lpszFileName, lpszVolumePathName, vsb.RawChars.Length + 1))
+                    Debug.Assert(vsb.Length + 1 <= vsb.Capacity);
+                    if (GetVolumePathName(lpszFileName, lpszVolumePathName, vsb.Length + 1))
                     {
-                        return new string(vsb.RawChars[..vsb.RawChars.IndexOf('\0')]);
+                        vsb.Length = vsb.RawChars.IndexOf('\0');
+                        return vsb.ToString();
                     }
                 }
             }
 
             // Deal with error
             int error = Marshal.GetLastWin32Error();
-            Debug.Assert(error != Errors.ERROR_INSUFFICIENT_BUFFER);
+            Debug.Assert(error != Interop.Errors.ERROR_INSUFFICIENT_BUFFER);
             throw Win32Marshal.GetExceptionForWin32Error(error, fileName);
         }
     }
