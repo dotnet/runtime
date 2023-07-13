@@ -135,7 +135,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         [InlineData("{ \"key\" : \"value\" }")]
         public void RoundtripJsonElement(string json)
         {
-            JsonElement jsonElement = JsonDocument.Parse(json).RootElement;
+            using JsonDocument jsonDocument = JsonDocument.Parse(json);
+            JsonElement jsonElement = jsonDocument.RootElement;
 
             string actualJson = JsonSerializer.Serialize(jsonElement, DefaultContext.JsonElement);
             JsonTestHelper.AssertJsonEqual(json, actualJson);
