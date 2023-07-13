@@ -99,23 +99,24 @@ namespace Microsoft.Interop
                 .Combine(interfaceContexts.Collect())
                 .SelectMany((data, ct) => GroupComContextsForInterfaceGeneration(data.Left, data.Right, ct));
 
-            // Generate the code for the managed-to-unmanaged stubs and the diagnostics from code-generation.
-            context.RegisterDiagnostics(interfaceAndMethodsContexts
-                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics)));
+            // Generate the code for the managed-to-unmanaged stubs.
             var managedToNativeInterfaceImplementations = interfaceAndMethodsContexts
                 .Select(GenerateImplementationInterface)
                 .WithTrackingName(StepNames.GenerateManagedToNativeInterfaceImplementation)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
 
-            // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
-            context.RegisterDiagnostics(interfaceAndMethodsContexts
-                .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.UnmanagedToManagedStub.Diagnostics)));
+            // Generate the code for the unmanaged-to-managed stubs.
             var nativeToManagedVtableMethods = interfaceAndMethodsContexts
                 .Select(GenerateImplementationVTableMethods)
                 .WithTrackingName(StepNames.GenerateNativeToManagedVTableMethods)
                 .WithComparer(SyntaxEquivalentComparer.Instance)
                 .SelectNormalized();
+
+            // Report diagnostics for managed-to-unmanaged and unmanaged-to-managed stubs, deduplicating diagnostics that are reported for both.
+            context.RegisterDiagnostics(
+                interfaceAndMethodsContexts
+                    .SelectMany((data, ct) => data.DeclaredMethods.SelectMany(m => m.ManagedToUnmanagedStub.Diagnostics).Union(data.DeclaredMethods.SelectMany(m => m.UnmanagedToManagedStub.Diagnostics))));
 
             // Generate the native interface metadata for each [GeneratedComInterface]-attributed interface.
             var nativeInterfaceInformation = interfaceContexts
