@@ -391,8 +391,8 @@ namespace SuperFileCheck
             var methodName = methodDeclInfo.FullyQualifiedName.Replace("*", "{{.*}}"); // Change wild-card to FileCheck wild-card syntax.
 
             // Create anchors from the first prefix.
-            var beginAnchorText = $"// {checkPrefixes[0]}-LABEL: BEGIN METHOD ANCHOR {methodName}";
-            var endAnchorText = $"// {checkPrefixes[0]}: END METHOD ANCHOR {methodName}";
+            var beginAnchorText = $"// {checkPrefixes[0]}-LABEL: BEGIN METHOD {methodName}";
+            var endAnchorText = $"// {checkPrefixes[0]}: END METHOD {methodName}";
 
             // Create temp source file based on the source text of the method.
             // Newlines are added to pad the text so FileCheck's error messages will correspond
