@@ -4889,23 +4889,15 @@ bool Compiler::gtMarkAddrMode(GenTree* addr, int* pCostEx, int* pCostSz, var_typ
     return false;
 }
 
-//------------------------------------------------------------------------
-// Given an address expression, compute its costs and addressing mode opportunities,
-// and mark addressing mode candidates as GTF_DONT_CSE.
+//------------------------------------------------------------------------------
+// gtGetFlagsForOperand : Get flags for an operation over the operant
 //
 // Arguments:
-//    addr   - The address expression
-//    costEx - The execution cost of this address expression (in/out arg to be updated)
-//    costEx - The size cost of this address expression (in/out arg to be updated)
-//    type   - The type of the value being referenced by the parent of this address expression.
+//    oper   - Performed operation
+//    op     - Operand
 //
 // Return Value:
-//    Returns true if it finds an addressing mode.
-//
-// Notes:
-//    TODO-Throughput - Consider actually instantiating these early, to avoid
-//    having to re-run the algorithm that looks for them (might also improve CQ).
-//
+//    Flags required by the operand
 GenTreeFlags Compiler::gtGetFlagsForOperand(genTreeOps oper, GenTree* op)
 {
     GenTreeFlags flags = GTF_EMPTY;
