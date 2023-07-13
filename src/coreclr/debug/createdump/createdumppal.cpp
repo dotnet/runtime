@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "createdump.h"
-#include "<time.h>"
-#include "<sys/time.h>"
+#include <time.h>
+#include <sys/time.h>
 
 #define INITGUID
 #include <guiddef.h>
