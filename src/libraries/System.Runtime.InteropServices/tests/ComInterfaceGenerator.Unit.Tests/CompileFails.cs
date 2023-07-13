@@ -822,6 +822,8 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
+                // https://github.com/dotnet/runtime/issues/88708
+                CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
             await test.RunAsync();
