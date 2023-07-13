@@ -2759,6 +2759,29 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 break;
             }
 
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReference:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+                CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
+                retNode                     = gtNewIconNode(eeIsValueClass(hClass) ? 0 : 1);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences:
+            {
+                assert(sig->sigInst.methInstCount == 1);
+                CORINFO_CLASS_HANDLE hClass = sig->sigInst.methInst[0];
+                retNode = gtNewIconNode(((info.compCompHnd->getClassAttribs(hClass) &
+                    (CORINFO_FLG_VALUECLASS | CORINFO_FLG_CONTAINS_GC_PTR)) == CORINFO_FLG_VALUECLASS) ? 0 : 1);
+                break;
+            }
+
+            case NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable:
+            {
+                retNode = gtNewMethodTableLookup(impPopStack().val);
+                break;
+            }
+
             case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
             {
                 assert(sig->numArgs == 1);
@@ -8947,6 +8970,18 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                         else if (strcmp(methodName, "IsKnownConstant") == 0)
                         {
                             result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+                        }
+                        else if (strcmp(methodName, "IsReference") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReference;
+                        }
+                        else if (strcmp(methodName, "IsReferenceOrContainsReferences") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsReferenceOrContainsReferences;
+                        }
+                        else if (strcmp(methodName, "GetMethodTable") == 0)
+                        {
+                            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_GetMethodTable;
                         }
                     }
                     else if (strcmp(className, "Unsafe") == 0)

@@ -99,6 +99,9 @@ namespace System.Runtime.CompilerServices
         [Intrinsic]
         public static unsafe ReadOnlySpan<T> CreateSpan<T>(RuntimeFieldHandle fldHandle) => new ReadOnlySpan<T>(GetSpanDataFrom(fldHandle, typeof(T).TypeHandle, out int length), length);
 
+        /// <returns>true if given type is reference type or value type that contains references</returns>
+        [Intrinsic]
+        public static bool IsReferenceOrContainsReferences<T>() => IsReferenceOrContainsReferences<T>();
 
         // The following intrinsics return true if input is a compile-time constant
         // Feel free to add more overloads on demand

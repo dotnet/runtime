@@ -188,15 +188,6 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern object AllocateUninitializedClone(object obj);
 
-        /// <returns>true if given type is reference type or value type that contains references</returns>
-        [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-        {
-            // The body of this function will be replaced by the EE with unsafe code!!!
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-            throw new InvalidOperationException();
-        }
-
         /// <returns>true if given type is bitwise equatable (memcmp can be used for equality checking)</returns>
         /// <remarks>
         /// Only use the result of this for Equals() comparison, not for CompareTo() comparison.
@@ -297,17 +288,11 @@ namespace System.Runtime.CompilerServices
         // ... work with pMT ...
         //
         // GC.KeepAlive(o);
-        //
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(object obj)
         {
-            // The body of this function will be replaced by the EE with unsafe code
-            // See getILIntrinsicImplementationForRuntimeHelpers for how this happens.
-
-            return (MethodTable *)Unsafe.Add(ref Unsafe.As<byte, IntPtr>(ref obj.GetRawData()), -1);
+            return GetMethodTable(obj);
         }
-
 
         [LibraryImport(QCall, EntryPoint = "MethodTable_AreTypesEquivalent")]
         [return: MarshalAs(UnmanagedType.Bool)]

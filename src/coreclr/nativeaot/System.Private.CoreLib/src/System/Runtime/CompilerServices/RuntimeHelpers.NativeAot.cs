@@ -187,17 +187,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>()
-        {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType || pEEType.ContainsGCPointers;
-        }
-
-        [Intrinsic]
         internal static bool IsReference<T>()
         {
-            var pEEType = EETypePtr.EETypePtrOf<T>();
-            return !pEEType.IsValueType;
+            return IsReference<T>();
         }
 
         [Intrinsic]
@@ -231,8 +223,9 @@ namespace System.Runtime.CompilerServices
             return array.GetMethodTable()->ComponentSize;
         }
 
+        [Intrinsic]
         internal static unsafe MethodTable* GetMethodTable(this object obj)
-            => obj.m_pEEType;
+            => GetMethodTable(obj);
 
         internal static unsafe ref MethodTable* GetMethodTableRef(this object obj)
             => ref obj.m_pEEType;

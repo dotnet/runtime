@@ -153,9 +153,6 @@ namespace System.Runtime.CompilerServices
         internal static ref byte GetRawData(this object obj) => ref obj.GetRawData();
 
         [Intrinsic]
-        public static bool IsReferenceOrContainsReferences<T>() => IsReferenceOrContainsReferences<T>();
-
-        [Intrinsic]
         internal static bool IsBitwiseEquatable<T>() => IsBitwiseEquatable<T>();
 
         [Intrinsic]
