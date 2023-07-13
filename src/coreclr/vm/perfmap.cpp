@@ -89,7 +89,7 @@ void PerfMap::Initialize()
     s_enabled = true;
 }
 
-// InternalConstructPath is guaranteed to return a non-null path with the path separator appended to the end
+// InternalConstructPath is guaranteed to return a non-null path
 // the function  uses the input buffer only whe PerfMapJitDumpPath environment variable is set
 const char * PerfMap::InternalConstructPath(char *tmpBuf, int lenBuf)
 {
