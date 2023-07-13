@@ -129,13 +129,15 @@ namespace System.Diagnostics.Metrics
             if (state != null)
             {
                 _beginInstrumentMeasurements(instrument);
-
-                if (_instruments.TryAdd(instrument, true))
+#pragma warning disable CA1864 // Prefer the 'IDictionary.TryAdd(TKey, TValue)' method. IDictionary.TryAdd() is not available in one of the builds
+                if (!_instruments.ContainsKey(instrument))
+#pragma warning restore CA1864
                 {
                     // This has side effects that prompt MeasurementsCompleted
                     // to be called if this is called multiple times on an
                     // instrument in a shared MetricsEventSource.
                     _listener.EnableMeasurementEvents(instrument, state);
+                    _instruments.Add(instrument, true);
                 }
             }
         }
