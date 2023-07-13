@@ -738,7 +738,7 @@ namespace System.Net.Http.Functional.Tests
             }).Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void RequestDuration_Success_Recorded()
         {
             RemoteExecutor.Invoke(static async Task () =>
