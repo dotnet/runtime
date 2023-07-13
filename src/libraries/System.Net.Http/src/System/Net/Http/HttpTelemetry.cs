@@ -169,6 +169,12 @@ namespace System.Net.Http
             WriteEvent(eventId: 15, exception);
         }
 
+        [Event(16, Level = EventLevel.Informational)]
+        public void Redirect(string redirectUri)
+        {
+            WriteEvent(eventId: 16, redirectUri);
+        }
+
         [NonEvent]
         public void Http11ConnectionEstablished(long connectionId, Uri uri, IPEndPoint? remoteEndPoint)
         {
