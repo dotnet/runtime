@@ -208,10 +208,14 @@ namespace System.IO
                     // Remove extended prefix
                     int skip = PathInternal.IsExtended(buffer) ? 4 : 0;
 
-                    return new string(
+                    string str = new string(
                         buffer,
                         skip,
                         (int)result - skip);
+
+                    ArrayPool<char>.Shared.Return(buffer);
+
+                    return str;
                 }
             }
             catch { }
