@@ -3,9 +3,9 @@
 /* this ALWAYS GENERATED file contains the definitions for the interfaces */
 
 
- /* File created by MIDL compiler version 8.01.0622 */
+ /* File created by MIDL compiler version 8.01.0628 */
 /* Compiler settings for cordebug.idl:
-    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0622 
+    Oicf, W1, Zp8, env=Win64 (32b run), target_arch=AMD64 8.01.0628 
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data 
     VC __declspec() decoration level: 
@@ -39,6 +39,14 @@
 
 #if defined(_MSC_VER) && (_MSC_VER >= 1020)
 #pragma once
+#endif
+
+#ifndef DECLSPEC_XFGVIRT
+#if defined(_CONTROL_FLOW_GUARD_XFG)
+#define DECLSPEC_XFGVIRT(base, func) __declspec(xfg_virtual(base, func))
+#else
+#define DECLSPEC_XFGVIRT(base, func)
+#endif
 #endif
 
 /* Forward Declarations */ 
@@ -1518,22 +1526,27 @@ EXTERN_C const IID IID_ICorDebugDataTarget;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugDataTarget * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugDataTarget * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDataTarget * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget, GetPlatform)
         HRESULT ( STDMETHODCALLTYPE *GetPlatform )( 
             ICorDebugDataTarget * This,
             /* [out] */ CorDebugPlatform *pTargetPlatform);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget, ReadVirtual)
         HRESULT ( STDMETHODCALLTYPE *ReadVirtual )( 
             ICorDebugDataTarget * This,
             /* [in] */ CORDB_ADDRESS address,
@@ -1541,6 +1554,7 @@ EXTERN_C const IID IID_ICorDebugDataTarget;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *pBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorDebugDataTarget * This,
             /* [in] */ DWORD dwThreadID,
@@ -1626,28 +1640,34 @@ EXTERN_C const IID IID_ICorDebugStaticFieldSymbol;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugStaticFieldSymbol * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugStaticFieldSymbol * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugStaticFieldSymbol * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStaticFieldSymbol, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugStaticFieldSymbol * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugStaticFieldSymbol, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugStaticFieldSymbol * This,
             /* [out] */ ULONG32 *pcbSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugStaticFieldSymbol, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugStaticFieldSymbol * This,
             /* [out] */ CORDB_ADDRESS *pRVA);
@@ -1730,28 +1750,34 @@ EXTERN_C const IID IID_ICorDebugInstanceFieldSymbol;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugInstanceFieldSymbol * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugInstanceFieldSymbol * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugInstanceFieldSymbol * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugInstanceFieldSymbol, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugInstanceFieldSymbol * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugInstanceFieldSymbol, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugInstanceFieldSymbol * This,
             /* [out] */ ULONG32 *pcbSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugInstanceFieldSymbol, GetOffset)
         HRESULT ( STDMETHODCALLTYPE *GetOffset )( 
             ICorDebugInstanceFieldSymbol * This,
             /* [out] */ ULONG32 *pcbOffset);
@@ -1850,28 +1876,34 @@ EXTERN_C const IID IID_ICorDebugVariableSymbol;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugVariableSymbol * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugVariableSymbol * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugVariableSymbol * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableSymbol, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugVariableSymbol * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableSymbol, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugVariableSymbol * This,
             /* [out] */ ULONG32 *pcbValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableSymbol, GetValue)
         HRESULT ( STDMETHODCALLTYPE *GetValue )( 
             ICorDebugVariableSymbol * This,
             /* [in] */ ULONG32 offset,
@@ -1881,6 +1913,7 @@ EXTERN_C const IID IID_ICorDebugVariableSymbol;
             /* [out] */ ULONG32 *pcbValue,
             /* [length_is][size_is][out] */ BYTE pValue[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableSymbol, SetValue)
         HRESULT ( STDMETHODCALLTYPE *SetValue )( 
             ICorDebugVariableSymbol * This,
             /* [in] */ ULONG32 offset,
@@ -1890,6 +1923,7 @@ EXTERN_C const IID IID_ICorDebugVariableSymbol;
             /* [in] */ ULONG32 cbValue,
             /* [size_is][in] */ BYTE pValue[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableSymbol, GetSlotIndex)
         HRESULT ( STDMETHODCALLTYPE *GetSlotIndex )( 
             ICorDebugVariableSymbol * This,
             /* [out] */ ULONG32 *pSlotIndex);
@@ -1973,22 +2007,27 @@ EXTERN_C const IID IID_ICorDebugMemoryBuffer;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugMemoryBuffer * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugMemoryBuffer * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugMemoryBuffer * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugMemoryBuffer, GetStartAddress)
         HRESULT ( STDMETHODCALLTYPE *GetStartAddress )( 
             ICorDebugMemoryBuffer * This,
             /* [out] */ LPCVOID *address);
         
+        DECLSPEC_XFGVIRT(ICorDebugMemoryBuffer, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugMemoryBuffer * This,
             /* [out] */ ULONG32 *pcbBufferLength);
@@ -2086,24 +2125,29 @@ EXTERN_C const IID IID_ICorDebugMergedAssemblyRecord;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugMergedAssemblyRecord * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugMergedAssemblyRecord * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugMergedAssemblyRecord, GetSimpleName)
         HRESULT ( STDMETHODCALLTYPE *GetSimpleName )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMergedAssemblyRecord, GetVersion)
         HRESULT ( STDMETHODCALLTYPE *GetVersion )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [out] */ USHORT *pMajor,
@@ -2111,24 +2155,28 @@ EXTERN_C const IID IID_ICorDebugMergedAssemblyRecord;
             /* [out] */ USHORT *pBuild,
             /* [out] */ USHORT *pRevision);
         
+        DECLSPEC_XFGVIRT(ICorDebugMergedAssemblyRecord, GetCulture)
         HRESULT ( STDMETHODCALLTYPE *GetCulture )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [in] */ ULONG32 cchCulture,
             /* [out] */ ULONG32 *pcchCulture,
             /* [length_is][size_is][out] */ WCHAR szCulture[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMergedAssemblyRecord, GetPublicKey)
         HRESULT ( STDMETHODCALLTYPE *GetPublicKey )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [in] */ ULONG32 cbPublicKey,
             /* [out] */ ULONG32 *pcbPublicKey,
             /* [length_is][size_is][out] */ BYTE pbPublicKey[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMergedAssemblyRecord, GetPublicKeyToken)
         HRESULT ( STDMETHODCALLTYPE *GetPublicKeyToken )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [in] */ ULONG32 cbPublicKeyToken,
             /* [out] */ ULONG32 *pcbPublicKeyToken,
             /* [length_is][size_is][out] */ BYTE pbPublicKeyToken[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMergedAssemblyRecord, GetIndex)
         HRESULT ( STDMETHODCALLTYPE *GetIndex )( 
             ICorDebugMergedAssemblyRecord * This,
             /* [out] */ ULONG32 *pIndex);
@@ -2272,18 +2320,22 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugSymbolProvider * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugSymbolProvider * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetStaticFieldSymbols)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldSymbols )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 cbSignature,
@@ -2292,6 +2344,7 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
             /* [out] */ ULONG32 *pcFetchedSymbols,
             /* [length_is][size_is][out] */ ICorDebugStaticFieldSymbol *pSymbols[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetInstanceFieldSymbols)
         HRESULT ( STDMETHODCALLTYPE *GetInstanceFieldSymbols )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 cbSignature,
@@ -2300,6 +2353,7 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
             /* [out] */ ULONG32 *pcFetchedSymbols,
             /* [length_is][size_is][out] */ ICorDebugInstanceFieldSymbol *pSymbols[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetMethodLocalSymbols)
         HRESULT ( STDMETHODCALLTYPE *GetMethodLocalSymbols )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 nativeRVA,
@@ -2307,6 +2361,7 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
             /* [out] */ ULONG32 *pcFetchedSymbols,
             /* [length_is][size_is][out] */ ICorDebugVariableSymbol *pSymbols[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetMethodParameterSymbols)
         HRESULT ( STDMETHODCALLTYPE *GetMethodParameterSymbols )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 nativeRVA,
@@ -2314,12 +2369,14 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
             /* [out] */ ULONG32 *pcFetchedSymbols,
             /* [length_is][size_is][out] */ ICorDebugVariableSymbol *pSymbols[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetMergedAssemblyRecords)
         HRESULT ( STDMETHODCALLTYPE *GetMergedAssemblyRecords )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 cRequestedRecords,
             /* [out] */ ULONG32 *pcFetchedRecords,
             /* [length_is][size_is][out] */ ICorDebugMergedAssemblyRecord *pRecords[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetMethodProps)
         HRESULT ( STDMETHODCALLTYPE *GetMethodProps )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 codeRva,
@@ -2329,6 +2386,7 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
             /* [out] */ ULONG32 *pcbSignature,
             /* [length_is][size_is][out] */ BYTE signature[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetTypeProps)
         HRESULT ( STDMETHODCALLTYPE *GetTypeProps )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 vtableRva,
@@ -2336,24 +2394,28 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider;
             /* [out] */ ULONG32 *pcbSignature,
             /* [length_is][size_is][out] */ BYTE signature[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetCodeRange)
         HRESULT ( STDMETHODCALLTYPE *GetCodeRange )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 codeRva,
             /* [out] */ ULONG32 *pCodeStartAddress,
             ULONG32 *pCodeSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetAssemblyImageBytes)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyImageBytes )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ CORDB_ADDRESS rva,
             /* [in] */ ULONG32 length,
             /* [out] */ ICorDebugMemoryBuffer **ppMemoryBuffer);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetObjectSize)
         HRESULT ( STDMETHODCALLTYPE *GetObjectSize )( 
             ICorDebugSymbolProvider * This,
             /* [in] */ ULONG32 cbSignature,
             /* [size_is][in] */ BYTE typeSig[  ],
             /* [out] */ ULONG32 *pObjectSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider, GetAssemblyImageMetadata)
         HRESULT ( STDMETHODCALLTYPE *GetAssemblyImageMetadata )( 
             ICorDebugSymbolProvider * This,
             /* [out] */ ICorDebugMemoryBuffer **ppMemoryBuffer);
@@ -2457,22 +2519,27 @@ EXTERN_C const IID IID_ICorDebugSymbolProvider2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugSymbolProvider2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugSymbolProvider2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugSymbolProvider2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider2, GetGenericDictionaryInfo)
         HRESULT ( STDMETHODCALLTYPE *GetGenericDictionaryInfo )( 
             ICorDebugSymbolProvider2 * This,
             /* [out] */ ICorDebugMemoryBuffer **ppMemoryBuffer);
         
+        DECLSPEC_XFGVIRT(ICorDebugSymbolProvider2, GetFrameProps)
         HRESULT ( STDMETHODCALLTYPE *GetFrameProps )( 
             ICorDebugSymbolProvider2 * This,
             /* [in] */ ULONG32 codeRva,
@@ -2551,18 +2618,22 @@ EXTERN_C const IID IID_ICorDebugVirtualUnwinder;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugVirtualUnwinder * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugVirtualUnwinder * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugVirtualUnwinder * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugVirtualUnwinder, GetContext)
         HRESULT ( STDMETHODCALLTYPE *GetContext )( 
             ICorDebugVirtualUnwinder * This,
             /* [in] */ ULONG32 contextFlags,
@@ -2570,6 +2641,7 @@ EXTERN_C const IID IID_ICorDebugVirtualUnwinder;
             /* [out] */ ULONG32 *contextSize,
             /* [size_is][out] */ BYTE contextBuf[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugVirtualUnwinder, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugVirtualUnwinder * This);
         
@@ -2664,24 +2736,29 @@ EXTERN_C const IID IID_ICorDebugDataTarget2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugDataTarget2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugDataTarget2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDataTarget2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget2, GetImageFromPointer)
         HRESULT ( STDMETHODCALLTYPE *GetImageFromPointer )( 
             ICorDebugDataTarget2 * This,
             /* [in] */ CORDB_ADDRESS addr,
             /* [out] */ CORDB_ADDRESS *pImageBase,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget2, GetImageLocation)
         HRESULT ( STDMETHODCALLTYPE *GetImageLocation )( 
             ICorDebugDataTarget2 * This,
             /* [in] */ CORDB_ADDRESS baseAddress,
@@ -2689,17 +2766,20 @@ EXTERN_C const IID IID_ICorDebugDataTarget2;
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget2, GetSymbolProviderForImage)
         HRESULT ( STDMETHODCALLTYPE *GetSymbolProviderForImage )( 
             ICorDebugDataTarget2 * This,
             /* [in] */ CORDB_ADDRESS imageBaseAddress,
             /* [out] */ ICorDebugSymbolProvider **ppSymProvider);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget2, EnumerateThreadIDs)
         HRESULT ( STDMETHODCALLTYPE *EnumerateThreadIDs )( 
             ICorDebugDataTarget2 * This,
             /* [in] */ ULONG32 cThreadIds,
             /* [out] */ ULONG32 *pcThreadIds,
             /* [length_is][size_is][out] */ ULONG32 pThreadIds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget2, CreateVirtualUnwinder)
         HRESULT ( STDMETHODCALLTYPE *CreateVirtualUnwinder )( 
             ICorDebugDataTarget2 * This,
             /* [in] */ DWORD nativeThreadID,
@@ -2792,28 +2872,34 @@ EXTERN_C const IID IID_ICorDebugLoadedModule;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugLoadedModule * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugLoadedModule * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugLoadedModule * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugLoadedModule, GetBaseAddress)
         HRESULT ( STDMETHODCALLTYPE *GetBaseAddress )( 
             ICorDebugLoadedModule * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugLoadedModule, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugLoadedModule * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugLoadedModule, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugLoadedModule * This,
             /* [out] */ ULONG32 *pcBytes);
@@ -2890,18 +2976,22 @@ EXTERN_C const IID IID_ICorDebugDataTarget3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugDataTarget3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugDataTarget3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDataTarget3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget3, GetLoadedModules)
         HRESULT ( STDMETHODCALLTYPE *GetLoadedModules )( 
             ICorDebugDataTarget3 * This,
             /* [in] */ ULONG32 cRequestedModules,
@@ -2974,18 +3064,22 @@ EXTERN_C const IID IID_ICorDebugDataTarget4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugDataTarget4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugDataTarget4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDataTarget4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget4, VirtualUnwind)
         HRESULT ( STDMETHODCALLTYPE *VirtualUnwind )( 
             ICorDebugDataTarget4 * This,
             /* [in] */ DWORD threadId,
@@ -3067,22 +3161,27 @@ EXTERN_C const IID IID_ICorDebugMutableDataTarget;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugMutableDataTarget * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugMutableDataTarget * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugMutableDataTarget * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget, GetPlatform)
         HRESULT ( STDMETHODCALLTYPE *GetPlatform )( 
             ICorDebugMutableDataTarget * This,
             /* [out] */ CorDebugPlatform *pTargetPlatform);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget, ReadVirtual)
         HRESULT ( STDMETHODCALLTYPE *ReadVirtual )( 
             ICorDebugMutableDataTarget * This,
             /* [in] */ CORDB_ADDRESS address,
@@ -3090,6 +3189,7 @@ EXTERN_C const IID IID_ICorDebugMutableDataTarget;
             /* [in] */ ULONG32 bytesRequested,
             /* [out] */ ULONG32 *pBytesRead);
         
+        DECLSPEC_XFGVIRT(ICorDebugDataTarget, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorDebugMutableDataTarget * This,
             /* [in] */ DWORD dwThreadID,
@@ -3097,18 +3197,21 @@ EXTERN_C const IID IID_ICorDebugMutableDataTarget;
             /* [in] */ ULONG32 contextSize,
             /* [size_is][out] */ BYTE *pContext);
         
+        DECLSPEC_XFGVIRT(ICorDebugMutableDataTarget, WriteVirtual)
         HRESULT ( STDMETHODCALLTYPE *WriteVirtual )( 
             ICorDebugMutableDataTarget * This,
             /* [in] */ CORDB_ADDRESS address,
             /* [size_is][in] */ const BYTE *pBuffer,
             /* [in] */ ULONG32 bytesRequested);
         
+        DECLSPEC_XFGVIRT(ICorDebugMutableDataTarget, SetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *SetThreadContext )( 
             ICorDebugMutableDataTarget * This,
             /* [in] */ DWORD dwThreadID,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][in] */ const BYTE *pContext);
         
+        DECLSPEC_XFGVIRT(ICorDebugMutableDataTarget, ContinueStatusChanged)
         HRESULT ( STDMETHODCALLTYPE *ContinueStatusChanged )( 
             ICorDebugMutableDataTarget * This,
             /* [in] */ DWORD dwThreadId,
@@ -3201,18 +3304,22 @@ EXTERN_C const IID IID_ICorDebugMetaDataLocator;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugMetaDataLocator * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugMetaDataLocator * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugMetaDataLocator * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugMetaDataLocator, GetMetaData)
         HRESULT ( STDMETHODCALLTYPE *GetMetaData )( 
             ICorDebugMetaDataLocator * This,
             /* [in] */ LPCWSTR wszImagePath,
@@ -3453,24 +3560,29 @@ EXTERN_C const IID IID_ICorDebugManagedCallback;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugManagedCallback * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugManagedCallback * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugManagedCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, Breakpoint)
         HRESULT ( STDMETHODCALLTYPE *Breakpoint )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *pThread,
             /* [in] */ ICorDebugBreakpoint *pBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, StepComplete)
         HRESULT ( STDMETHODCALLTYPE *StepComplete )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -3478,73 +3590,87 @@ EXTERN_C const IID IID_ICorDebugManagedCallback;
             /* [in] */ ICorDebugStepper *pStepper,
             /* [in] */ CorDebugStepReason reason);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, Break)
         HRESULT ( STDMETHODCALLTYPE *Break )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *thread);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, Exception)
         HRESULT ( STDMETHODCALLTYPE *Exception )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *pThread,
             /* [in] */ BOOL unhandled);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, EvalComplete)
         HRESULT ( STDMETHODCALLTYPE *EvalComplete )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *pThread,
             /* [in] */ ICorDebugEval *pEval);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, EvalException)
         HRESULT ( STDMETHODCALLTYPE *EvalException )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *pThread,
             /* [in] */ ICorDebugEval *pEval);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, CreateProcess)
         HRESULT ( STDMETHODCALLTYPE *CreateProcess )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugProcess *pProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, ExitProcess)
         HRESULT ( STDMETHODCALLTYPE *ExitProcess )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugProcess *pProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, CreateThread)
         HRESULT ( STDMETHODCALLTYPE *CreateThread )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *thread);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, ExitThread)
         HRESULT ( STDMETHODCALLTYPE *ExitThread )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *thread);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, LoadModule)
         HRESULT ( STDMETHODCALLTYPE *LoadModule )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugModule *pModule);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, UnloadModule)
         HRESULT ( STDMETHODCALLTYPE *UnloadModule )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugModule *pModule);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, LoadClass)
         HRESULT ( STDMETHODCALLTYPE *LoadClass )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugClass *c);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, UnloadClass)
         HRESULT ( STDMETHODCALLTYPE *UnloadClass )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugClass *c);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, DebuggerError)
         HRESULT ( STDMETHODCALLTYPE *DebuggerError )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugProcess *pProcess,
             /* [in] */ HRESULT errorHR,
             /* [in] */ DWORD errorCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, LogMessage)
         HRESULT ( STDMETHODCALLTYPE *LogMessage )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -3553,6 +3679,7 @@ EXTERN_C const IID IID_ICorDebugManagedCallback;
             /* [in] */ WCHAR *pLogSwitchName,
             /* [in] */ WCHAR *pMessage);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, LogSwitch)
         HRESULT ( STDMETHODCALLTYPE *LogSwitch )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -3562,41 +3689,49 @@ EXTERN_C const IID IID_ICorDebugManagedCallback;
             /* [in] */ WCHAR *pLogSwitchName,
             /* [in] */ WCHAR *pParentName);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, CreateAppDomain)
         HRESULT ( STDMETHODCALLTYPE *CreateAppDomain )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugProcess *pProcess,
             /* [in] */ ICorDebugAppDomain *pAppDomain);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, ExitAppDomain)
         HRESULT ( STDMETHODCALLTYPE *ExitAppDomain )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugProcess *pProcess,
             /* [in] */ ICorDebugAppDomain *pAppDomain);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, LoadAssembly)
         HRESULT ( STDMETHODCALLTYPE *LoadAssembly )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugAssembly *pAssembly);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, UnloadAssembly)
         HRESULT ( STDMETHODCALLTYPE *UnloadAssembly )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugAssembly *pAssembly);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, ControlCTrap)
         HRESULT ( STDMETHODCALLTYPE *ControlCTrap )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugProcess *pProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, NameChange)
         HRESULT ( STDMETHODCALLTYPE *NameChange )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *pThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, UpdateModuleSymbols)
         HRESULT ( STDMETHODCALLTYPE *UpdateModuleSymbols )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugModule *pModule,
             /* [in] */ IStream *pSymbolStream);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, EditAndContinueRemap)
         HRESULT ( STDMETHODCALLTYPE *EditAndContinueRemap )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -3604,6 +3739,7 @@ EXTERN_C const IID IID_ICorDebugManagedCallback;
             /* [in] */ ICorDebugFunction *pFunction,
             /* [in] */ BOOL fAccurate);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback, BreakpointSetError)
         HRESULT ( STDMETHODCALLTYPE *BreakpointSetError )( 
             ICorDebugManagedCallback * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -3761,18 +3897,22 @@ EXTERN_C const IID IID_ICorDebugManagedCallback3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugManagedCallback3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugManagedCallback3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugManagedCallback3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback3, CustomNotification)
         HRESULT ( STDMETHODCALLTYPE *CustomNotification )( 
             ICorDebugManagedCallback3 * This,
             /* [in] */ ICorDebugThread *pThread,
@@ -3851,26 +3991,32 @@ EXTERN_C const IID IID_ICorDebugManagedCallback4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugManagedCallback4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugManagedCallback4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugManagedCallback4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback4, BeforeGarbageCollection)
         HRESULT ( STDMETHODCALLTYPE *BeforeGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
             /* [in] */ ICorDebugProcess *pProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback4, AfterGarbageCollection)
         HRESULT ( STDMETHODCALLTYPE *AfterGarbageCollection )( 
             ICorDebugManagedCallback4 * This,
             /* [in] */ ICorDebugProcess *pProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback4, DataBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *DataBreakpoint )( 
             ICorDebugManagedCallback4 * This,
             /* [in] */ ICorDebugProcess *pProcess,
@@ -4021,18 +4167,22 @@ EXTERN_C const IID IID_ICorDebugManagedCallback2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugManagedCallback2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugManagedCallback2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, FunctionRemapOpportunity)
         HRESULT ( STDMETHODCALLTYPE *FunctionRemapOpportunity )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -4041,22 +4191,26 @@ EXTERN_C const IID IID_ICorDebugManagedCallback2;
             /* [in] */ ICorDebugFunction *pNewFunction,
             /* [in] */ ULONG32 oldILOffset);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, CreateConnection)
         HRESULT ( STDMETHODCALLTYPE *CreateConnection )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugProcess *pProcess,
             /* [in] */ CONNID dwConnectionId,
             /* [in] */ WCHAR *pConnName);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, ChangeConnection)
         HRESULT ( STDMETHODCALLTYPE *ChangeConnection )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugProcess *pProcess,
             /* [in] */ CONNID dwConnectionId);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, DestroyConnection)
         HRESULT ( STDMETHODCALLTYPE *DestroyConnection )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugProcess *pProcess,
             /* [in] */ CONNID dwConnectionId);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, Exception)
         HRESULT ( STDMETHODCALLTYPE *Exception )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -4066,6 +4220,7 @@ EXTERN_C const IID IID_ICorDebugManagedCallback2;
             /* [in] */ CorDebugExceptionCallbackType dwEventType,
             /* [in] */ DWORD dwFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, ExceptionUnwind)
         HRESULT ( STDMETHODCALLTYPE *ExceptionUnwind )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
@@ -4073,12 +4228,14 @@ EXTERN_C const IID IID_ICorDebugManagedCallback2;
             /* [in] */ CorDebugExceptionUnwindCallbackType dwEventType,
             /* [in] */ DWORD dwFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, FunctionRemapComplete)
         HRESULT ( STDMETHODCALLTYPE *FunctionRemapComplete )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugAppDomain *pAppDomain,
             /* [in] */ ICorDebugThread *pThread,
             /* [in] */ ICorDebugFunction *pFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugManagedCallback2, MDANotification)
         HRESULT ( STDMETHODCALLTYPE *MDANotification )( 
             ICorDebugManagedCallback2 * This,
             /* [in] */ ICorDebugController *pController,
@@ -4180,18 +4337,22 @@ EXTERN_C const IID IID_ICorDebugUnmanagedCallback;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugUnmanagedCallback * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugUnmanagedCallback * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugUnmanagedCallback * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugUnmanagedCallback, DebugEvent)
         HRESULT ( STDMETHODCALLTYPE *DebugEvent )( 
             ICorDebugUnmanagedCallback * This,
             /* [in] */ LPDEBUG_EVENT pDebugEvent,
@@ -4322,32 +4483,40 @@ EXTERN_C const IID IID_ICorDebug;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebug * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebug * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebug * This);
         
+        DECLSPEC_XFGVIRT(ICorDebug, Initialize)
         HRESULT ( STDMETHODCALLTYPE *Initialize )( 
             ICorDebug * This);
         
+        DECLSPEC_XFGVIRT(ICorDebug, Terminate)
         HRESULT ( STDMETHODCALLTYPE *Terminate )( 
             ICorDebug * This);
         
+        DECLSPEC_XFGVIRT(ICorDebug, SetManagedHandler)
         HRESULT ( STDMETHODCALLTYPE *SetManagedHandler )( 
             ICorDebug * This,
             /* [in] */ ICorDebugManagedCallback *pCallback);
         
+        DECLSPEC_XFGVIRT(ICorDebug, SetUnmanagedHandler)
         HRESULT ( STDMETHODCALLTYPE *SetUnmanagedHandler )( 
             ICorDebug * This,
             /* [in] */ ICorDebugUnmanagedCallback *pCallback);
         
+        DECLSPEC_XFGVIRT(ICorDebug, CreateProcess)
         HRESULT ( STDMETHODCALLTYPE *CreateProcess )( 
             ICorDebug * This,
             /* [in] */ LPCWSTR lpApplicationName,
@@ -4363,21 +4532,25 @@ EXTERN_C const IID IID_ICorDebug;
             /* [in] */ CorDebugCreateProcessFlags debuggingFlags,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebug, DebugActiveProcess)
         HRESULT ( STDMETHODCALLTYPE *DebugActiveProcess )( 
             ICorDebug * This,
             /* [in] */ DWORD id,
             /* [in] */ BOOL win32Attach,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebug, EnumerateProcesses)
         HRESULT ( STDMETHODCALLTYPE *EnumerateProcesses )( 
             ICorDebug * This,
             /* [out] */ ICorDebugProcessEnum **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebug, GetProcess)
         HRESULT ( STDMETHODCALLTYPE *GetProcess )( 
             ICorDebug * This,
             /* [in] */ DWORD dwProcessId,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebug, CanLaunchOrAttach)
         HRESULT ( STDMETHODCALLTYPE *CanLaunchOrAttach )( 
             ICorDebug * This,
             /* [in] */ DWORD dwProcessId,
@@ -4484,18 +4657,22 @@ EXTERN_C const IID IID_ICorDebugRemoteTarget;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugRemoteTarget * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugRemoteTarget * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugRemoteTarget * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugRemoteTarget, GetHostName)
         HRESULT ( STDMETHODCALLTYPE *GetHostName )( 
             ICorDebugRemoteTarget * This,
             /* [in] */ ULONG32 cchHostName,
@@ -4587,18 +4764,22 @@ EXTERN_C const IID IID_ICorDebugRemote;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugRemote * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugRemote * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugRemote * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugRemote, CreateProcessEx)
         HRESULT ( STDMETHODCALLTYPE *CreateProcessEx )( 
             ICorDebugRemote * This,
             /* [in] */ ICorDebugRemoteTarget *pRemoteTarget,
@@ -4616,6 +4797,7 @@ EXTERN_C const IID IID_ICorDebugRemote;
             /* [in] */ CorDebugCreateProcessFlags debuggingFlags,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugRemote, DebugActiveProcessEx)
         HRESULT ( STDMETHODCALLTYPE *DebugActiveProcessEx )( 
             ICorDebugRemote * This,
             /* [in] */ ICorDebugRemoteTarget *pRemoteTarget,
@@ -4793,15 +4975,18 @@ EXTERN_C const IID IID_ICorDebug2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebug2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebug2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebug2 * This);
         
@@ -4913,57 +5098,70 @@ EXTERN_C const IID IID_ICorDebugController;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugController * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugController * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugController * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Stop)
         HRESULT ( STDMETHODCALLTYPE *Stop )( 
             ICorDebugController * This,
             /* [in] */ DWORD dwTimeoutIgnored);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Continue)
         HRESULT ( STDMETHODCALLTYPE *Continue )( 
             ICorDebugController * This,
             /* [in] */ BOOL fIsOutOfBand);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, IsRunning)
         HRESULT ( STDMETHODCALLTYPE *IsRunning )( 
             ICorDebugController * This,
             /* [out] */ BOOL *pbRunning);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, HasQueuedCallbacks)
         HRESULT ( STDMETHODCALLTYPE *HasQueuedCallbacks )( 
             ICorDebugController * This,
             /* [in] */ ICorDebugThread *pThread,
             /* [out] */ BOOL *pbQueued);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, EnumerateThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumerateThreads )( 
             ICorDebugController * This,
             /* [out] */ ICorDebugThreadEnum **ppThreads);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, SetAllThreadsDebugState)
         HRESULT ( STDMETHODCALLTYPE *SetAllThreadsDebugState )( 
             ICorDebugController * This,
             /* [in] */ CorDebugThreadState state,
             /* [in] */ ICorDebugThread *pExceptThisThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Detach)
         HRESULT ( STDMETHODCALLTYPE *Detach )( 
             ICorDebugController * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Terminate)
         HRESULT ( STDMETHODCALLTYPE *Terminate )( 
             ICorDebugController * This,
             /* [in] */ UINT exitCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, CanCommitChanges)
         HRESULT ( STDMETHODCALLTYPE *CanCommitChanges )( 
             ICorDebugController * This,
             /* [in] */ ULONG cSnapshots,
             /* [size_is][in] */ ICorDebugEditAndContinueSnapshot *pSnapshots[  ],
             /* [out] */ ICorDebugErrorInfoEnum **pError);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, CommitChanges)
         HRESULT ( STDMETHODCALLTYPE *CommitChanges )( 
             ICorDebugController * This,
             /* [in] */ ULONG cSnapshots,
@@ -5100,101 +5298,124 @@ EXTERN_C const IID IID_ICorDebugAppDomain;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAppDomain * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAppDomain * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAppDomain * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Stop)
         HRESULT ( STDMETHODCALLTYPE *Stop )( 
             ICorDebugAppDomain * This,
             /* [in] */ DWORD dwTimeoutIgnored);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Continue)
         HRESULT ( STDMETHODCALLTYPE *Continue )( 
             ICorDebugAppDomain * This,
             /* [in] */ BOOL fIsOutOfBand);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, IsRunning)
         HRESULT ( STDMETHODCALLTYPE *IsRunning )( 
             ICorDebugAppDomain * This,
             /* [out] */ BOOL *pbRunning);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, HasQueuedCallbacks)
         HRESULT ( STDMETHODCALLTYPE *HasQueuedCallbacks )( 
             ICorDebugAppDomain * This,
             /* [in] */ ICorDebugThread *pThread,
             /* [out] */ BOOL *pbQueued);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, EnumerateThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumerateThreads )( 
             ICorDebugAppDomain * This,
             /* [out] */ ICorDebugThreadEnum **ppThreads);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, SetAllThreadsDebugState)
         HRESULT ( STDMETHODCALLTYPE *SetAllThreadsDebugState )( 
             ICorDebugAppDomain * This,
             /* [in] */ CorDebugThreadState state,
             /* [in] */ ICorDebugThread *pExceptThisThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Detach)
         HRESULT ( STDMETHODCALLTYPE *Detach )( 
             ICorDebugAppDomain * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Terminate)
         HRESULT ( STDMETHODCALLTYPE *Terminate )( 
             ICorDebugAppDomain * This,
             /* [in] */ UINT exitCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, CanCommitChanges)
         HRESULT ( STDMETHODCALLTYPE *CanCommitChanges )( 
             ICorDebugAppDomain * This,
             /* [in] */ ULONG cSnapshots,
             /* [size_is][in] */ ICorDebugEditAndContinueSnapshot *pSnapshots[  ],
             /* [out] */ ICorDebugErrorInfoEnum **pError);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, CommitChanges)
         HRESULT ( STDMETHODCALLTYPE *CommitChanges )( 
             ICorDebugAppDomain * This,
             /* [in] */ ULONG cSnapshots,
             /* [size_is][in] */ ICorDebugEditAndContinueSnapshot *pSnapshots[  ],
             /* [out] */ ICorDebugErrorInfoEnum **pError);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, GetProcess)
         HRESULT ( STDMETHODCALLTYPE *GetProcess )( 
             ICorDebugAppDomain * This,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, EnumerateAssemblies)
         HRESULT ( STDMETHODCALLTYPE *EnumerateAssemblies )( 
             ICorDebugAppDomain * This,
             /* [out] */ ICorDebugAssemblyEnum **ppAssemblies);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, GetModuleFromMetaDataInterface)
         HRESULT ( STDMETHODCALLTYPE *GetModuleFromMetaDataInterface )( 
             ICorDebugAppDomain * This,
             /* [in] */ IUnknown *pIMetaData,
             /* [out] */ ICorDebugModule **ppModule);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, EnumerateBreakpoints)
         HRESULT ( STDMETHODCALLTYPE *EnumerateBreakpoints )( 
             ICorDebugAppDomain * This,
             /* [out] */ ICorDebugBreakpointEnum **ppBreakpoints);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, EnumerateSteppers)
         HRESULT ( STDMETHODCALLTYPE *EnumerateSteppers )( 
             ICorDebugAppDomain * This,
             /* [out] */ ICorDebugStepperEnum **ppSteppers);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, IsAttached)
         HRESULT ( STDMETHODCALLTYPE *IsAttached )( 
             ICorDebugAppDomain * This,
             /* [out] */ BOOL *pbAttached);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugAppDomain * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, GetObject)
         HRESULT ( STDMETHODCALLTYPE *GetObject )( 
             ICorDebugAppDomain * This,
             /* [out] */ ICorDebugValue **ppObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, Attach)
         HRESULT ( STDMETHODCALLTYPE *Attach )( 
             ICorDebugAppDomain * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain, GetID)
         HRESULT ( STDMETHODCALLTYPE *GetID )( 
             ICorDebugAppDomain * This,
             /* [out] */ ULONG32 *pId);
@@ -5338,18 +5559,22 @@ EXTERN_C const IID IID_ICorDebugAppDomain2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAppDomain2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAppDomain2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAppDomain2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain2, GetArrayOrPointerType)
         HRESULT ( STDMETHODCALLTYPE *GetArrayOrPointerType )( 
             ICorDebugAppDomain2 * This,
             /* [in] */ CorElementType elementType,
@@ -5357,6 +5582,7 @@ EXTERN_C const IID IID_ICorDebugAppDomain2;
             /* [in] */ ICorDebugType *pTypeArg,
             /* [out] */ ICorDebugType **ppType);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain2, GetFunctionPointerType)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionPointerType )( 
             ICorDebugAppDomain2 * This,
             /* [in] */ ULONG32 nTypeArgs,
@@ -5438,29 +5664,36 @@ EXTERN_C const IID IID_ICorDebugEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugEnum * This,
             /* [out] */ ULONG *pcelt);
@@ -5540,33 +5773,41 @@ EXTERN_C const IID IID_ICorDebugGuidToTypeEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugGuidToTypeEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugGuidToTypeEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugGuidToTypeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugGuidToTypeEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugGuidToTypeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugGuidToTypeEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugGuidToTypeEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugGuidToTypeEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugGuidToTypeEnum * This,
             /* [in] */ ULONG celt,
@@ -5655,24 +5896,29 @@ EXTERN_C const IID IID_ICorDebugAppDomain3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAppDomain3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAppDomain3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAppDomain3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain3, GetCachedWinRTTypesForIIDs)
         HRESULT ( STDMETHODCALLTYPE *GetCachedWinRTTypesForIIDs )( 
             ICorDebugAppDomain3 * This,
             /* [in] */ ULONG32 cReqTypes,
             /* [size_is][in] */ GUID *iidsToResolve,
             /* [out] */ ICorDebugTypeEnum **ppTypesEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain3, GetCachedWinRTTypes)
         HRESULT ( STDMETHODCALLTYPE *GetCachedWinRTTypes )( 
             ICorDebugAppDomain3 * This,
             /* [out] */ ICorDebugGuidToTypeEnum **ppGuidToTypeEnum);
@@ -5745,18 +5991,22 @@ EXTERN_C const IID IID_ICorDebugAppDomain4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAppDomain4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAppDomain4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAppDomain4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomain4, GetObjectForCCW)
         HRESULT ( STDMETHODCALLTYPE *GetObjectForCCW )( 
             ICorDebugAppDomain4 * This,
             /* [in] */ CORDB_ADDRESS ccwPointer,
@@ -5852,36 +6102,44 @@ EXTERN_C const IID IID_ICorDebugAssembly;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAssembly * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAssembly * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAssembly * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly, GetProcess)
         HRESULT ( STDMETHODCALLTYPE *GetProcess )( 
             ICorDebugAssembly * This,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly, GetAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomain )( 
             ICorDebugAssembly * This,
             /* [out] */ ICorDebugAppDomain **ppAppDomain);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly, EnumerateModules)
         HRESULT ( STDMETHODCALLTYPE *EnumerateModules )( 
             ICorDebugAssembly * This,
             /* [out] */ ICorDebugModuleEnum **ppModules);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly, GetCodeBase)
         HRESULT ( STDMETHODCALLTYPE *GetCodeBase )( 
             ICorDebugAssembly * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugAssembly * This,
             /* [in] */ ULONG32 cchName,
@@ -5973,18 +6231,22 @@ EXTERN_C const IID IID_ICorDebugAssembly2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAssembly2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAssembly2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAssembly2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly2, IsFullyTrusted)
         HRESULT ( STDMETHODCALLTYPE *IsFullyTrusted )( 
             ICorDebugAssembly2 * This,
             /* [out] */ BOOL *pbFullyTrusted);
@@ -6056,22 +6318,27 @@ EXTERN_C const IID IID_ICorDebugAssembly3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAssembly3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAssembly3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAssembly3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly3, GetContainerAssembly)
         HRESULT ( STDMETHODCALLTYPE *GetContainerAssembly )( 
             ICorDebugAssembly3 * This,
             ICorDebugAssembly **ppAssembly);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssembly3, EnumerateContainedAssemblies)
         HRESULT ( STDMETHODCALLTYPE *EnumerateContainedAssemblies )( 
             ICorDebugAssembly3 * This,
             ICorDebugAssemblyEnum **ppAssemblies);
@@ -6169,33 +6436,41 @@ EXTERN_C const IID IID_ICorDebugHeapEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHeapEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHeapEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHeapEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugHeapEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugHeapEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugHeapEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugHeapEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugHeapEnum * This,
             /* [in] */ ULONG celt,
@@ -6323,33 +6598,41 @@ EXTERN_C const IID IID_ICorDebugHeapSegmentEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHeapSegmentEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHeapSegmentEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHeapSegmentEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugHeapSegmentEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugHeapSegmentEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugHeapSegmentEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugHeapSegmentEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapSegmentEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugHeapSegmentEnum * This,
             /* [in] */ ULONG celt,
@@ -6475,33 +6758,41 @@ EXTERN_C const IID IID_ICorDebugGCReferenceEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugGCReferenceEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugGCReferenceEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugGCReferenceEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugGCReferenceEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugGCReferenceEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugGCReferenceEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugGCReferenceEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugGCReferenceEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugGCReferenceEnum * This,
             /* [in] */ ULONG celt,
@@ -6697,102 +6988,124 @@ EXTERN_C const IID IID_ICorDebugProcess;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Stop)
         HRESULT ( STDMETHODCALLTYPE *Stop )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD dwTimeoutIgnored);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Continue)
         HRESULT ( STDMETHODCALLTYPE *Continue )( 
             ICorDebugProcess * This,
             /* [in] */ BOOL fIsOutOfBand);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, IsRunning)
         HRESULT ( STDMETHODCALLTYPE *IsRunning )( 
             ICorDebugProcess * This,
             /* [out] */ BOOL *pbRunning);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, HasQueuedCallbacks)
         HRESULT ( STDMETHODCALLTYPE *HasQueuedCallbacks )( 
             ICorDebugProcess * This,
             /* [in] */ ICorDebugThread *pThread,
             /* [out] */ BOOL *pbQueued);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, EnumerateThreads)
         HRESULT ( STDMETHODCALLTYPE *EnumerateThreads )( 
             ICorDebugProcess * This,
             /* [out] */ ICorDebugThreadEnum **ppThreads);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, SetAllThreadsDebugState)
         HRESULT ( STDMETHODCALLTYPE *SetAllThreadsDebugState )( 
             ICorDebugProcess * This,
             /* [in] */ CorDebugThreadState state,
             /* [in] */ ICorDebugThread *pExceptThisThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Detach)
         HRESULT ( STDMETHODCALLTYPE *Detach )( 
             ICorDebugProcess * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, Terminate)
         HRESULT ( STDMETHODCALLTYPE *Terminate )( 
             ICorDebugProcess * This,
             /* [in] */ UINT exitCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, CanCommitChanges)
         HRESULT ( STDMETHODCALLTYPE *CanCommitChanges )( 
             ICorDebugProcess * This,
             /* [in] */ ULONG cSnapshots,
             /* [size_is][in] */ ICorDebugEditAndContinueSnapshot *pSnapshots[  ],
             /* [out] */ ICorDebugErrorInfoEnum **pError);
         
+        DECLSPEC_XFGVIRT(ICorDebugController, CommitChanges)
         HRESULT ( STDMETHODCALLTYPE *CommitChanges )( 
             ICorDebugProcess * This,
             /* [in] */ ULONG cSnapshots,
             /* [size_is][in] */ ICorDebugEditAndContinueSnapshot *pSnapshots[  ],
             /* [out] */ ICorDebugErrorInfoEnum **pError);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, GetID)
         HRESULT ( STDMETHODCALLTYPE *GetID )( 
             ICorDebugProcess * This,
             /* [out] */ DWORD *pdwProcessId);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, GetHandle)
         HRESULT ( STDMETHODCALLTYPE *GetHandle )( 
             ICorDebugProcess * This,
             /* [out] */ HPROCESS *phProcessHandle);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, GetThread)
         HRESULT ( STDMETHODCALLTYPE *GetThread )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD dwThreadId,
             /* [out] */ ICorDebugThread **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, EnumerateObjects)
         HRESULT ( STDMETHODCALLTYPE *EnumerateObjects )( 
             ICorDebugProcess * This,
             /* [out] */ ICorDebugObjectEnum **ppObjects);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, IsTransitionStub)
         HRESULT ( STDMETHODCALLTYPE *IsTransitionStub )( 
             ICorDebugProcess * This,
             /* [in] */ CORDB_ADDRESS address,
             /* [out] */ BOOL *pbTransitionStub);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, IsOSSuspended)
         HRESULT ( STDMETHODCALLTYPE *IsOSSuspended )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD threadID,
             /* [out] */ BOOL *pbSuspended);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD threadID,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][length_is][out][in] */ BYTE context[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, SetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *SetThreadContext )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD threadID,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][length_is][in] */ BYTE context[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, ReadMemory)
         HRESULT ( STDMETHODCALLTYPE *ReadMemory )( 
             ICorDebugProcess * This,
             /* [in] */ CORDB_ADDRESS address,
@@ -6800,6 +7113,7 @@ EXTERN_C const IID IID_ICorDebugProcess;
             /* [length_is][size_is][out] */ BYTE buffer[  ],
             /* [out] */ SIZE_T *read);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, WriteMemory)
         HRESULT ( STDMETHODCALLTYPE *WriteMemory )( 
             ICorDebugProcess * This,
             /* [in] */ CORDB_ADDRESS address,
@@ -6807,33 +7121,40 @@ EXTERN_C const IID IID_ICorDebugProcess;
             /* [size_is][in] */ BYTE buffer[  ],
             /* [out] */ SIZE_T *written);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, ClearCurrentException)
         HRESULT ( STDMETHODCALLTYPE *ClearCurrentException )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD threadID);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, EnableLogMessages)
         HRESULT ( STDMETHODCALLTYPE *EnableLogMessages )( 
             ICorDebugProcess * This,
             /* [in] */ BOOL fOnOff);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, ModifyLogSwitch)
         HRESULT ( STDMETHODCALLTYPE *ModifyLogSwitch )( 
             ICorDebugProcess * This,
             /* [annotation][in] */ 
             _In_  WCHAR *pLogSwitchName,
             /* [in] */ LONG lLevel);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, EnumerateAppDomains)
         HRESULT ( STDMETHODCALLTYPE *EnumerateAppDomains )( 
             ICorDebugProcess * This,
             /* [out] */ ICorDebugAppDomainEnum **ppAppDomains);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, GetObject)
         HRESULT ( STDMETHODCALLTYPE *GetObject )( 
             ICorDebugProcess * This,
             /* [out] */ ICorDebugValue **ppObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, ThreadForFiberCookie)
         HRESULT ( STDMETHODCALLTYPE *ThreadForFiberCookie )( 
             ICorDebugProcess * This,
             /* [in] */ DWORD fiberCookie,
             /* [out] */ ICorDebugThread **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess, GetHelperThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetHelperThreadID )( 
             ICorDebugProcess * This,
             /* [out] */ DWORD *pThreadID);
@@ -7013,27 +7334,33 @@ EXTERN_C const IID IID_ICorDebugProcess2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, GetThreadForTaskID)
         HRESULT ( STDMETHODCALLTYPE *GetThreadForTaskID )( 
             ICorDebugProcess2 * This,
             /* [in] */ TASKID taskid,
             /* [out] */ ICorDebugThread2 **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, GetVersion)
         HRESULT ( STDMETHODCALLTYPE *GetVersion )( 
             ICorDebugProcess2 * This,
             /* [out] */ COR_VERSION *version);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, SetUnmanagedBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *SetUnmanagedBreakpoint )( 
             ICorDebugProcess2 * This,
             /* [in] */ CORDB_ADDRESS address,
@@ -7041,18 +7368,22 @@ EXTERN_C const IID IID_ICorDebugProcess2;
             /* [length_is][size_is][out] */ BYTE buffer[  ],
             /* [out] */ ULONG32 *bufLen);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, ClearUnmanagedBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *ClearUnmanagedBreakpoint )( 
             ICorDebugProcess2 * This,
             /* [in] */ CORDB_ADDRESS address);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, SetDesiredNGENCompilerFlags)
         HRESULT ( STDMETHODCALLTYPE *SetDesiredNGENCompilerFlags )( 
             ICorDebugProcess2 * This,
             /* [in] */ DWORD pdwFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, GetDesiredNGENCompilerFlags)
         HRESULT ( STDMETHODCALLTYPE *GetDesiredNGENCompilerFlags )( 
             ICorDebugProcess2 * This,
             /* [out] */ DWORD *pdwFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess2, GetReferenceValueFromGCHandle)
         HRESULT ( STDMETHODCALLTYPE *GetReferenceValueFromGCHandle )( 
             ICorDebugProcess2 * This,
             /* [in] */ UINT_PTR handle,
@@ -7141,18 +7472,22 @@ EXTERN_C const IID IID_ICorDebugProcess3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess3, SetEnableCustomNotification)
         HRESULT ( STDMETHODCALLTYPE *SetEnableCustomNotification )( 
             ICorDebugProcess3 * This,
             ICorDebugClass *pClass,
@@ -7265,65 +7600,79 @@ EXTERN_C const IID IID_ICorDebugProcess5;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess5 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess5 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess5 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetGCHeapInformation)
         HRESULT ( STDMETHODCALLTYPE *GetGCHeapInformation )( 
             ICorDebugProcess5 * This,
             /* [out] */ COR_HEAPINFO *pHeapInfo);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, EnumerateHeap)
         HRESULT ( STDMETHODCALLTYPE *EnumerateHeap )( 
             ICorDebugProcess5 * This,
             /* [out] */ ICorDebugHeapEnum **ppObjects);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, EnumerateHeapRegions)
         HRESULT ( STDMETHODCALLTYPE *EnumerateHeapRegions )( 
             ICorDebugProcess5 * This,
             /* [out] */ ICorDebugHeapSegmentEnum **ppRegions);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetObject)
         HRESULT ( STDMETHODCALLTYPE *GetObject )( 
             ICorDebugProcess5 * This,
             /* [in] */ CORDB_ADDRESS addr,
             /* [out] */ ICorDebugObjectValue **pObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, EnumerateGCReferences)
         HRESULT ( STDMETHODCALLTYPE *EnumerateGCReferences )( 
             ICorDebugProcess5 * This,
             /* [in] */ BOOL enumerateWeakReferences,
             /* [out] */ ICorDebugGCReferenceEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, EnumerateHandles)
         HRESULT ( STDMETHODCALLTYPE *EnumerateHandles )( 
             ICorDebugProcess5 * This,
             /* [in] */ CorGCReferenceType types,
             /* [out] */ ICorDebugGCReferenceEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetTypeID)
         HRESULT ( STDMETHODCALLTYPE *GetTypeID )( 
             ICorDebugProcess5 * This,
             /* [in] */ CORDB_ADDRESS obj,
             /* [out] */ COR_TYPEID *pId);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetTypeForTypeID)
         HRESULT ( STDMETHODCALLTYPE *GetTypeForTypeID )( 
             ICorDebugProcess5 * This,
             /* [in] */ COR_TYPEID id,
             /* [out] */ ICorDebugType **ppType);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetArrayLayout)
         HRESULT ( STDMETHODCALLTYPE *GetArrayLayout )( 
             ICorDebugProcess5 * This,
             /* [in] */ COR_TYPEID id,
             /* [out] */ COR_ARRAY_LAYOUT *pLayout);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetTypeLayout)
         HRESULT ( STDMETHODCALLTYPE *GetTypeLayout )( 
             ICorDebugProcess5 * This,
             /* [in] */ COR_TYPEID id,
             /* [out] */ COR_TYPE_LAYOUT *pLayout);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, GetTypeFields)
         HRESULT ( STDMETHODCALLTYPE *GetTypeFields )( 
             ICorDebugProcess5 * This,
             /* [in] */ COR_TYPEID id,
@@ -7331,6 +7680,7 @@ EXTERN_C const IID IID_ICorDebugProcess5;
             COR_FIELD fields[  ],
             ULONG32 *pceltNeeded);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess5, EnableNGENPolicy)
         HRESULT ( STDMETHODCALLTYPE *EnableNGENPolicy )( 
             ICorDebugProcess5 * This,
             /* [in] */ CorDebugNGENPolicy ePolicy);
@@ -7474,22 +7824,27 @@ EXTERN_C const IID IID_ICorDebugDebugEvent;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugDebugEvent * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugDebugEvent * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDebugEvent * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDebugEvent, GetEventKind)
         HRESULT ( STDMETHODCALLTYPE *GetEventKind )( 
             ICorDebugDebugEvent * This,
             /* [out] */ CorDebugDebugEventKind *pDebugEventKind);
         
+        DECLSPEC_XFGVIRT(ICorDebugDebugEvent, GetThread)
         HRESULT ( STDMETHODCALLTYPE *GetThread )( 
             ICorDebugDebugEvent * This,
             /* [out] */ ICorDebugThread **ppThread);
@@ -7609,18 +7964,22 @@ EXTERN_C const IID IID_ICorDebugProcess6;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess6 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess6 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess6 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess6, DecodeEvent)
         HRESULT ( STDMETHODCALLTYPE *DecodeEvent )( 
             ICorDebugProcess6 * This,
             /* [size_is][length_is][in] */ const BYTE pRecord[  ],
@@ -7630,23 +7989,28 @@ EXTERN_C const IID IID_ICorDebugProcess6;
             /* [in] */ DWORD dwThreadId,
             /* [out] */ ICorDebugDebugEvent **ppEvent);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess6, ProcessStateChanged)
         HRESULT ( STDMETHODCALLTYPE *ProcessStateChanged )( 
             ICorDebugProcess6 * This,
             /* [in] */ CorDebugStateChange change);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess6, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugProcess6 * This,
             /* [in] */ CORDB_ADDRESS codeAddress,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess6, EnableVirtualModuleSplitting)
         HRESULT ( STDMETHODCALLTYPE *EnableVirtualModuleSplitting )( 
             ICorDebugProcess6 * This,
             BOOL enableSplitting);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess6, MarkDebuggerAttached)
         HRESULT ( STDMETHODCALLTYPE *MarkDebuggerAttached )( 
             ICorDebugProcess6 * This,
             BOOL fIsAttached);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess6, GetExportStepInfo)
         HRESULT ( STDMETHODCALLTYPE *GetExportStepInfo )( 
             ICorDebugProcess6 * This,
             /* [in] */ LPCWSTR pszExportName,
@@ -7747,18 +8111,22 @@ EXTERN_C const IID IID_ICorDebugProcess7;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess7 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess7 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess7 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess7, SetWriteableMetadataUpdateMode)
         HRESULT ( STDMETHODCALLTYPE *SetWriteableMetadataUpdateMode )( 
             ICorDebugProcess7 * This,
             WriteableMetadataUpdateMode flags);
@@ -7827,18 +8195,22 @@ EXTERN_C const IID IID_ICorDebugProcess8;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess8 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess8 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess8 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess8, EnableExceptionCallbacksOutsideOfMyCode)
         HRESULT ( STDMETHODCALLTYPE *EnableExceptionCallbacksOutsideOfMyCode )( 
             ICorDebugProcess8 * This,
             /* [in] */ BOOL enableExceptionsOutsideOfJMC);
@@ -7907,18 +8279,22 @@ EXTERN_C const IID IID_ICorDebugProcess10;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess10 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess10 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess10 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess10, EnableGCNotificationEvents)
         HRESULT ( STDMETHODCALLTYPE *EnableGCNotificationEvents )( 
             ICorDebugProcess10 * This,
             BOOL fEnable);
@@ -8003,33 +8379,41 @@ EXTERN_C const IID IID_ICorDebugMemoryRangeEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugMemoryRangeEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugMemoryRangeEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugMemoryRangeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugMemoryRangeEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugMemoryRangeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugMemoryRangeEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugMemoryRangeEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugMemoryRangeEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugMemoryRangeEnum * This,
             /* [in] */ ULONG celt,
@@ -8113,18 +8497,22 @@ EXTERN_C const IID IID_ICorDebugProcess11;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcess11 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcess11 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcess11 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcess11, EnumerateLoaderHeapMemoryRegions)
         HRESULT ( STDMETHODCALLTYPE *EnumerateLoaderHeapMemoryRegions )( 
             ICorDebugProcess11 * This,
             /* [out] */ ICorDebugMemoryRangeEnum **ppRanges);
@@ -8193,26 +8581,32 @@ EXTERN_C const IID IID_ICorDebugModuleDebugEvent;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModuleDebugEvent * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModuleDebugEvent * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModuleDebugEvent * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDebugEvent, GetEventKind)
         HRESULT ( STDMETHODCALLTYPE *GetEventKind )( 
             ICorDebugModuleDebugEvent * This,
             /* [out] */ CorDebugDebugEventKind *pDebugEventKind);
         
+        DECLSPEC_XFGVIRT(ICorDebugDebugEvent, GetThread)
         HRESULT ( STDMETHODCALLTYPE *GetThread )( 
             ICorDebugModuleDebugEvent * This,
             /* [out] */ ICorDebugThread **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugModuleDebugEvent, GetModule)
         HRESULT ( STDMETHODCALLTYPE *GetModule )( 
             ICorDebugModuleDebugEvent * This,
             /* [out] */ ICorDebugModule **ppModule);
@@ -8294,34 +8688,42 @@ EXTERN_C const IID IID_ICorDebugExceptionDebugEvent;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugExceptionDebugEvent * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugExceptionDebugEvent * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugExceptionDebugEvent * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDebugEvent, GetEventKind)
         HRESULT ( STDMETHODCALLTYPE *GetEventKind )( 
             ICorDebugExceptionDebugEvent * This,
             /* [out] */ CorDebugDebugEventKind *pDebugEventKind);
         
+        DECLSPEC_XFGVIRT(ICorDebugDebugEvent, GetThread)
         HRESULT ( STDMETHODCALLTYPE *GetThread )( 
             ICorDebugExceptionDebugEvent * This,
             /* [out] */ ICorDebugThread **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugExceptionDebugEvent, GetStackPointer)
         HRESULT ( STDMETHODCALLTYPE *GetStackPointer )( 
             ICorDebugExceptionDebugEvent * This,
             /* [out] */ CORDB_ADDRESS *pStackPointer);
         
+        DECLSPEC_XFGVIRT(ICorDebugExceptionDebugEvent, GetNativeIP)
         HRESULT ( STDMETHODCALLTYPE *GetNativeIP )( 
             ICorDebugExceptionDebugEvent * This,
             /* [out] */ CORDB_ADDRESS *pIP);
         
+        DECLSPEC_XFGVIRT(ICorDebugExceptionDebugEvent, GetFlags)
         HRESULT ( STDMETHODCALLTYPE *GetFlags )( 
             ICorDebugExceptionDebugEvent * This,
             /* [out] */ CorDebugExceptionFlags *pdwFlags);
@@ -8406,22 +8808,27 @@ EXTERN_C const IID IID_ICorDebugBreakpoint;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugBreakpoint * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, Activate)
         HRESULT ( STDMETHODCALLTYPE *Activate )( 
             ICorDebugBreakpoint * This,
             /* [in] */ BOOL bActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, IsActive)
         HRESULT ( STDMETHODCALLTYPE *IsActive )( 
             ICorDebugBreakpoint * This,
             /* [out] */ BOOL *pbActive);
@@ -8496,30 +8903,37 @@ EXTERN_C const IID IID_ICorDebugFunctionBreakpoint;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFunctionBreakpoint * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFunctionBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFunctionBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, Activate)
         HRESULT ( STDMETHODCALLTYPE *Activate )( 
             ICorDebugFunctionBreakpoint * This,
             /* [in] */ BOOL bActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, IsActive)
         HRESULT ( STDMETHODCALLTYPE *IsActive )( 
             ICorDebugFunctionBreakpoint * This,
             /* [out] */ BOOL *pbActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunctionBreakpoint, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugFunctionBreakpoint * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunctionBreakpoint, GetOffset)
         HRESULT ( STDMETHODCALLTYPE *GetOffset )( 
             ICorDebugFunctionBreakpoint * This,
             /* [out] */ ULONG32 *pnOffset);
@@ -8598,26 +9012,32 @@ EXTERN_C const IID IID_ICorDebugModuleBreakpoint;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModuleBreakpoint * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModuleBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModuleBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, Activate)
         HRESULT ( STDMETHODCALLTYPE *Activate )( 
             ICorDebugModuleBreakpoint * This,
             /* [in] */ BOOL bActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, IsActive)
         HRESULT ( STDMETHODCALLTYPE *IsActive )( 
             ICorDebugModuleBreakpoint * This,
             /* [out] */ BOOL *pbActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugModuleBreakpoint, GetModule)
         HRESULT ( STDMETHODCALLTYPE *GetModule )( 
             ICorDebugModuleBreakpoint * This,
             /* [out] */ ICorDebugModule **ppModule);
@@ -8693,26 +9113,32 @@ EXTERN_C const IID IID_ICorDebugValueBreakpoint;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugValueBreakpoint * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugValueBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugValueBreakpoint * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, Activate)
         HRESULT ( STDMETHODCALLTYPE *Activate )( 
             ICorDebugValueBreakpoint * This,
             /* [in] */ BOOL bActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpoint, IsActive)
         HRESULT ( STDMETHODCALLTYPE *IsActive )( 
             ICorDebugValueBreakpoint * This,
             /* [out] */ BOOL *pbActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugValueBreakpoint, GetValue)
         HRESULT ( STDMETHODCALLTYPE *GetValue )( 
             ICorDebugValueBreakpoint * This,
             /* [out] */ ICorDebugValue **ppValue);
@@ -8839,46 +9265,57 @@ EXTERN_C const IID IID_ICorDebugStepper;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugStepper * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugStepper * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugStepper * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, IsActive)
         HRESULT ( STDMETHODCALLTYPE *IsActive )( 
             ICorDebugStepper * This,
             /* [out] */ BOOL *pbActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, Deactivate)
         HRESULT ( STDMETHODCALLTYPE *Deactivate )( 
             ICorDebugStepper * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, SetInterceptMask)
         HRESULT ( STDMETHODCALLTYPE *SetInterceptMask )( 
             ICorDebugStepper * This,
             /* [in] */ CorDebugIntercept mask);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, SetUnmappedStopMask)
         HRESULT ( STDMETHODCALLTYPE *SetUnmappedStopMask )( 
             ICorDebugStepper * This,
             /* [in] */ CorDebugUnmappedStop mask);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, Step)
         HRESULT ( STDMETHODCALLTYPE *Step )( 
             ICorDebugStepper * This,
             /* [in] */ BOOL bStepIn);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, StepRange)
         HRESULT ( STDMETHODCALLTYPE *StepRange )( 
             ICorDebugStepper * This,
             /* [in] */ BOOL bStepIn,
             /* [size_is][in] */ COR_DEBUG_STEP_RANGE ranges[  ],
             /* [in] */ ULONG32 cRangeCount);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, StepOut)
         HRESULT ( STDMETHODCALLTYPE *StepOut )( 
             ICorDebugStepper * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper, SetRangeIL)
         HRESULT ( STDMETHODCALLTYPE *SetRangeIL )( 
             ICorDebugStepper * This,
             /* [in] */ BOOL bIL);
@@ -8968,18 +9405,22 @@ EXTERN_C const IID IID_ICorDebugStepper2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugStepper2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugStepper2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugStepper2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepper2, SetJMC)
         HRESULT ( STDMETHODCALLTYPE *SetJMC )( 
             ICorDebugStepper2 * This,
             /* [in] */ BOOL fIsJMCStepper);
@@ -9304,39 +9745,47 @@ EXTERN_C const IID IID_ICorDebugRegisterSet;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugRegisterSet * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugRegisterSet * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugRegisterSet * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet, GetRegistersAvailable)
         HRESULT ( STDMETHODCALLTYPE *GetRegistersAvailable )( 
             ICorDebugRegisterSet * This,
             /* [out] */ ULONG64 *pAvailable);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet, GetRegisters)
         HRESULT ( STDMETHODCALLTYPE *GetRegisters )( 
             ICorDebugRegisterSet * This,
             /* [in] */ ULONG64 mask,
             /* [in] */ ULONG32 regCount,
             /* [length_is][size_is][out] */ CORDB_REGISTER regBuffer[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet, SetRegisters)
         HRESULT ( STDMETHODCALLTYPE *SetRegisters )( 
             ICorDebugRegisterSet * This,
             /* [in] */ ULONG64 mask,
             /* [in] */ ULONG32 regCount,
             /* [size_is][in] */ CORDB_REGISTER regBuffer[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet, GetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *GetThreadContext )( 
             ICorDebugRegisterSet * This,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][length_is][out][in] */ BYTE context[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet, SetThreadContext)
         HRESULT ( STDMETHODCALLTYPE *SetThreadContext )( 
             ICorDebugRegisterSet * This,
             /* [in] */ ULONG32 contextSize,
@@ -9431,23 +9880,28 @@ EXTERN_C const IID IID_ICorDebugRegisterSet2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugRegisterSet2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugRegisterSet2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugRegisterSet2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet2, GetRegistersAvailable)
         HRESULT ( STDMETHODCALLTYPE *GetRegistersAvailable )( 
             ICorDebugRegisterSet2 * This,
             /* [in] */ ULONG32 numChunks,
             /* [size_is][out] */ BYTE availableRegChunks[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet2, GetRegisters)
         HRESULT ( STDMETHODCALLTYPE *GetRegisters )( 
             ICorDebugRegisterSet2 * This,
             /* [in] */ ULONG32 maskCount,
@@ -9455,6 +9909,7 @@ EXTERN_C const IID IID_ICorDebugRegisterSet2;
             /* [in] */ ULONG32 regCount,
             /* [size_is][out] */ CORDB_REGISTER regBuffer[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugRegisterSet2, SetRegisters)
         HRESULT ( STDMETHODCALLTYPE *SetRegisters )( 
             ICorDebugRegisterSet2 * This,
             /* [in] */ ULONG32 maskCount,
@@ -9590,77 +10045,96 @@ EXTERN_C const IID IID_ICorDebugThread;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugThread * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugThread * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugThread * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetProcess)
         HRESULT ( STDMETHODCALLTYPE *GetProcess )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetID)
         HRESULT ( STDMETHODCALLTYPE *GetID )( 
             ICorDebugThread * This,
             /* [out] */ DWORD *pdwThreadId);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetHandle)
         HRESULT ( STDMETHODCALLTYPE *GetHandle )( 
             ICorDebugThread * This,
             /* [out] */ HTHREAD *phThreadHandle);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetAppDomain)
         HRESULT ( STDMETHODCALLTYPE *GetAppDomain )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugAppDomain **ppAppDomain);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, SetDebugState)
         HRESULT ( STDMETHODCALLTYPE *SetDebugState )( 
             ICorDebugThread * This,
             /* [in] */ CorDebugThreadState state);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetDebugState)
         HRESULT ( STDMETHODCALLTYPE *GetDebugState )( 
             ICorDebugThread * This,
             /* [out] */ CorDebugThreadState *pState);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetUserState)
         HRESULT ( STDMETHODCALLTYPE *GetUserState )( 
             ICorDebugThread * This,
             /* [out] */ CorDebugUserState *pState);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetCurrentException)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentException )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugValue **ppExceptionObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, ClearCurrentException)
         HRESULT ( STDMETHODCALLTYPE *ClearCurrentException )( 
             ICorDebugThread * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, CreateStepper)
         HRESULT ( STDMETHODCALLTYPE *CreateStepper )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugStepper **ppStepper);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, EnumerateChains)
         HRESULT ( STDMETHODCALLTYPE *EnumerateChains )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugChainEnum **ppChains);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetActiveChain)
         HRESULT ( STDMETHODCALLTYPE *GetActiveChain )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetActiveFrame)
         HRESULT ( STDMETHODCALLTYPE *GetActiveFrame )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetRegisterSet)
         HRESULT ( STDMETHODCALLTYPE *GetRegisterSet )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugRegisterSet **ppRegisters);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, CreateEval)
         HRESULT ( STDMETHODCALLTYPE *CreateEval )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugEval **ppEval);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread, GetObject)
         HRESULT ( STDMETHODCALLTYPE *GetObject )( 
             ICorDebugThread * This,
             /* [out] */ ICorDebugValue **ppObject);
@@ -9797,36 +10271,44 @@ EXTERN_C const IID IID_ICorDebugThread2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugThread2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugThread2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugThread2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread2, GetActiveFunctions)
         HRESULT ( STDMETHODCALLTYPE *GetActiveFunctions )( 
             ICorDebugThread2 * This,
             /* [in] */ ULONG32 cFunctions,
             /* [out] */ ULONG32 *pcFunctions,
             /* [length_is][size_is][out][in] */ COR_ACTIVE_FUNCTION pFunctions[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread2, GetConnectionID)
         HRESULT ( STDMETHODCALLTYPE *GetConnectionID )( 
             ICorDebugThread2 * This,
             /* [out] */ CONNID *pdwConnectionId);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread2, GetTaskID)
         HRESULT ( STDMETHODCALLTYPE *GetTaskID )( 
             ICorDebugThread2 * This,
             /* [out] */ TASKID *pTaskId);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread2, GetVolatileOSThreadID)
         HRESULT ( STDMETHODCALLTYPE *GetVolatileOSThreadID )( 
             ICorDebugThread2 * This,
             /* [out] */ DWORD *pdwTid);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread2, InterceptCurrentException)
         HRESULT ( STDMETHODCALLTYPE *InterceptCurrentException )( 
             ICorDebugThread2 * This,
             /* [in] */ ICorDebugFrame *pFrame);
@@ -9912,22 +10394,27 @@ EXTERN_C const IID IID_ICorDebugThread3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugThread3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugThread3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugThread3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread3, CreateStackWalk)
         HRESULT ( STDMETHODCALLTYPE *CreateStackWalk )( 
             ICorDebugThread3 * This,
             /* [out] */ ICorDebugStackWalk **ppStackWalk);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread3, GetActiveInternalFrames)
         HRESULT ( STDMETHODCALLTYPE *GetActiveInternalFrames )( 
             ICorDebugThread3 * This,
             /* [in] */ ULONG32 cInternalFrames,
@@ -10006,25 +10493,31 @@ EXTERN_C const IID IID_ICorDebugThread4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugThread4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugThread4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugThread4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread4, HasUnhandledException)
         HRESULT ( STDMETHODCALLTYPE *HasUnhandledException )( 
             ICorDebugThread4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread4, GetBlockingObjects)
         HRESULT ( STDMETHODCALLTYPE *GetBlockingObjects )( 
             ICorDebugThread4 * This,
             /* [out] */ ICorDebugBlockingObjectEnum **ppBlockingObjectEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread4, GetCurrentCustomDebuggerNotification)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentCustomDebuggerNotification )( 
             ICorDebugThread4 * This,
             /* [out] */ ICorDebugValue **ppNotificationObject);
@@ -10100,18 +10593,22 @@ EXTERN_C const IID IID_ICorDebugThread5;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugThread5 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugThread5 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugThread5 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugThread5, GetBytesAllocated)
         HRESULT ( STDMETHODCALLTYPE *GetBytesAllocated )( 
             ICorDebugThread5 * This,
             /* [out] */ ULONG64 *pSohAllocatedBytes,
@@ -10201,18 +10698,22 @@ EXTERN_C const IID IID_ICorDebugStackWalk;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugStackWalk * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugStackWalk * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugStackWalk * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStackWalk, GetContext)
         HRESULT ( STDMETHODCALLTYPE *GetContext )( 
             ICorDebugStackWalk * This,
             /* [in] */ ULONG32 contextFlags,
@@ -10220,15 +10721,18 @@ EXTERN_C const IID IID_ICorDebugStackWalk;
             /* [out] */ ULONG32 *contextSize,
             /* [size_is][out] */ BYTE contextBuf[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugStackWalk, SetContext)
         HRESULT ( STDMETHODCALLTYPE *SetContext )( 
             ICorDebugStackWalk * This,
             /* [in] */ CorDebugSetContextFlag flag,
             /* [in] */ ULONG32 contextSize,
             /* [size_is][in] */ BYTE context[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugStackWalk, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugStackWalk * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugStackWalk, GetFrame)
         HRESULT ( STDMETHODCALLTYPE *GetFrame )( 
             ICorDebugStackWalk * This,
             /* [out] */ ICorDebugFrame **pFrame);
@@ -10358,63 +10862,78 @@ EXTERN_C const IID IID_ICorDebugChain;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugChain * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugChain * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugChain * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetThread)
         HRESULT ( STDMETHODCALLTYPE *GetThread )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugThread **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetStackRange)
         HRESULT ( STDMETHODCALLTYPE *GetStackRange )( 
             ICorDebugChain * This,
             /* [out] */ CORDB_ADDRESS *pStart,
             /* [out] */ CORDB_ADDRESS *pEnd);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetContext)
         HRESULT ( STDMETHODCALLTYPE *GetContext )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugContext **ppContext);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetCaller)
         HRESULT ( STDMETHODCALLTYPE *GetCaller )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetCallee)
         HRESULT ( STDMETHODCALLTYPE *GetCallee )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetPrevious)
         HRESULT ( STDMETHODCALLTYPE *GetPrevious )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetNext)
         HRESULT ( STDMETHODCALLTYPE *GetNext )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, IsManaged)
         HRESULT ( STDMETHODCALLTYPE *IsManaged )( 
             ICorDebugChain * This,
             /* [out] */ BOOL *pManaged);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, EnumerateFrames)
         HRESULT ( STDMETHODCALLTYPE *EnumerateFrames )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugFrameEnum **ppFrames);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetActiveFrame)
         HRESULT ( STDMETHODCALLTYPE *GetActiveFrame )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetRegisterSet)
         HRESULT ( STDMETHODCALLTYPE *GetRegisterSet )( 
             ICorDebugChain * This,
             /* [out] */ ICorDebugRegisterSet **ppRegisters);
         
+        DECLSPEC_XFGVIRT(ICorDebugChain, GetReason)
         HRESULT ( STDMETHODCALLTYPE *GetReason )( 
             ICorDebugChain * This,
             /* [out] */ CorDebugChainReason *pReason);
@@ -10538,47 +11057,58 @@ EXTERN_C const IID IID_ICorDebugFrame;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFrame * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFrame * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFrame * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetChain)
         HRESULT ( STDMETHODCALLTYPE *GetChain )( 
             ICorDebugFrame * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugFrame * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugFrame * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunctionToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionToken )( 
             ICorDebugFrame * This,
             /* [out] */ mdMethodDef *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetStackRange)
         HRESULT ( STDMETHODCALLTYPE *GetStackRange )( 
             ICorDebugFrame * This,
             /* [out] */ CORDB_ADDRESS *pStart,
             /* [out] */ CORDB_ADDRESS *pEnd);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCaller)
         HRESULT ( STDMETHODCALLTYPE *GetCaller )( 
             ICorDebugFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCallee)
         HRESULT ( STDMETHODCALLTYPE *GetCallee )( 
             ICorDebugFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, CreateStepper)
         HRESULT ( STDMETHODCALLTYPE *CreateStepper )( 
             ICorDebugFrame * This,
             /* [out] */ ICorDebugStepper **ppStepper);
@@ -10684,51 +11214,63 @@ EXTERN_C const IID IID_ICorDebugInternalFrame;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugInternalFrame * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugInternalFrame * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugInternalFrame * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetChain)
         HRESULT ( STDMETHODCALLTYPE *GetChain )( 
             ICorDebugInternalFrame * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugInternalFrame * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugInternalFrame * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunctionToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionToken )( 
             ICorDebugInternalFrame * This,
             /* [out] */ mdMethodDef *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetStackRange)
         HRESULT ( STDMETHODCALLTYPE *GetStackRange )( 
             ICorDebugInternalFrame * This,
             /* [out] */ CORDB_ADDRESS *pStart,
             /* [out] */ CORDB_ADDRESS *pEnd);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCaller)
         HRESULT ( STDMETHODCALLTYPE *GetCaller )( 
             ICorDebugInternalFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCallee)
         HRESULT ( STDMETHODCALLTYPE *GetCallee )( 
             ICorDebugInternalFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, CreateStepper)
         HRESULT ( STDMETHODCALLTYPE *CreateStepper )( 
             ICorDebugInternalFrame * This,
             /* [out] */ ICorDebugStepper **ppStepper);
         
+        DECLSPEC_XFGVIRT(ICorDebugInternalFrame, GetFrameType)
         HRESULT ( STDMETHODCALLTYPE *GetFrameType )( 
             ICorDebugInternalFrame * This,
             /* [out] */ CorDebugInternalFrameType *pType);
@@ -10826,22 +11368,27 @@ EXTERN_C const IID IID_ICorDebugInternalFrame2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugInternalFrame2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugInternalFrame2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugInternalFrame2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugInternalFrame2, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugInternalFrame2 * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugInternalFrame2, IsCloserToLeaf)
         HRESULT ( STDMETHODCALLTYPE *IsCloserToLeaf )( 
             ICorDebugInternalFrame2 * This,
             /* [in] */ ICorDebugFrame *pFrameToCompare,
@@ -10953,87 +11500,107 @@ EXTERN_C const IID IID_ICorDebugILFrame;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugILFrame * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugILFrame * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugILFrame * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetChain)
         HRESULT ( STDMETHODCALLTYPE *GetChain )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunctionToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionToken )( 
             ICorDebugILFrame * This,
             /* [out] */ mdMethodDef *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetStackRange)
         HRESULT ( STDMETHODCALLTYPE *GetStackRange )( 
             ICorDebugILFrame * This,
             /* [out] */ CORDB_ADDRESS *pStart,
             /* [out] */ CORDB_ADDRESS *pEnd);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCaller)
         HRESULT ( STDMETHODCALLTYPE *GetCaller )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCallee)
         HRESULT ( STDMETHODCALLTYPE *GetCallee )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, CreateStepper)
         HRESULT ( STDMETHODCALLTYPE *CreateStepper )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugStepper **ppStepper);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, GetIP)
         HRESULT ( STDMETHODCALLTYPE *GetIP )( 
             ICorDebugILFrame * This,
             /* [out] */ ULONG32 *pnOffset,
             /* [out] */ CorDebugMappingResult *pMappingResult);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, SetIP)
         HRESULT ( STDMETHODCALLTYPE *SetIP )( 
             ICorDebugILFrame * This,
             /* [in] */ ULONG32 nOffset);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, EnumerateLocalVariables)
         HRESULT ( STDMETHODCALLTYPE *EnumerateLocalVariables )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugValueEnum **ppValueEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, GetLocalVariable)
         HRESULT ( STDMETHODCALLTYPE *GetLocalVariable )( 
             ICorDebugILFrame * This,
             /* [in] */ DWORD dwIndex,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, EnumerateArguments)
         HRESULT ( STDMETHODCALLTYPE *EnumerateArguments )( 
             ICorDebugILFrame * This,
             /* [out] */ ICorDebugValueEnum **ppValueEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, GetArgument)
         HRESULT ( STDMETHODCALLTYPE *GetArgument )( 
             ICorDebugILFrame * This,
             /* [in] */ DWORD dwIndex,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, GetStackDepth)
         HRESULT ( STDMETHODCALLTYPE *GetStackDepth )( 
             ICorDebugILFrame * This,
             /* [out] */ ULONG32 *pDepth);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, GetStackValue)
         HRESULT ( STDMETHODCALLTYPE *GetStackValue )( 
             ICorDebugILFrame * This,
             /* [in] */ DWORD dwIndex,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame, CanSetIP)
         HRESULT ( STDMETHODCALLTYPE *CanSetIP )( 
             ICorDebugILFrame * This,
             /* [in] */ ULONG32 nOffset);
@@ -11154,22 +11721,27 @@ EXTERN_C const IID IID_ICorDebugILFrame2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugILFrame2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugILFrame2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugILFrame2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame2, RemapFunction)
         HRESULT ( STDMETHODCALLTYPE *RemapFunction )( 
             ICorDebugILFrame2 * This,
             /* [in] */ ULONG32 newILOffset);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame2, EnumerateTypeParameters)
         HRESULT ( STDMETHODCALLTYPE *EnumerateTypeParameters )( 
             ICorDebugILFrame2 * This,
             /* [out] */ ICorDebugTypeEnum **ppTyParEnum);
@@ -11242,18 +11814,22 @@ EXTERN_C const IID IID_ICorDebugILFrame3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugILFrame3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugILFrame3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugILFrame3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame3, GetReturnValueForILOffset)
         HRESULT ( STDMETHODCALLTYPE *GetReturnValueForILOffset )( 
             ICorDebugILFrame3 * This,
             ULONG32 ILoffset,
@@ -11348,29 +11924,35 @@ EXTERN_C const IID IID_ICorDebugILFrame4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugILFrame4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugILFrame4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugILFrame4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame4, EnumerateLocalVariablesEx)
         HRESULT ( STDMETHODCALLTYPE *EnumerateLocalVariablesEx )( 
             ICorDebugILFrame4 * This,
             /* [in] */ ILCodeKind flags,
             /* [out] */ ICorDebugValueEnum **ppValueEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame4, GetLocalVariableEx)
         HRESULT ( STDMETHODCALLTYPE *GetLocalVariableEx )( 
             ICorDebugILFrame4 * This,
             /* [in] */ ILCodeKind flags,
             /* [in] */ DWORD dwIndex,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugILFrame4, GetCodeEx)
         HRESULT ( STDMETHODCALLTYPE *GetCodeEx )( 
             ICorDebugILFrame4 * This,
             /* [in] */ ILCodeKind flags,
@@ -11488,63 +12070,78 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugNativeFrame * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugNativeFrame * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugNativeFrame * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetChain)
         HRESULT ( STDMETHODCALLTYPE *GetChain )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunctionToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionToken )( 
             ICorDebugNativeFrame * This,
             /* [out] */ mdMethodDef *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetStackRange)
         HRESULT ( STDMETHODCALLTYPE *GetStackRange )( 
             ICorDebugNativeFrame * This,
             /* [out] */ CORDB_ADDRESS *pStart,
             /* [out] */ CORDB_ADDRESS *pEnd);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCaller)
         HRESULT ( STDMETHODCALLTYPE *GetCaller )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCallee)
         HRESULT ( STDMETHODCALLTYPE *GetCallee )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, CreateStepper)
         HRESULT ( STDMETHODCALLTYPE *CreateStepper )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugStepper **ppStepper);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetIP)
         HRESULT ( STDMETHODCALLTYPE *GetIP )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ULONG32 *pnOffset);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, SetIP)
         HRESULT ( STDMETHODCALLTYPE *SetIP )( 
             ICorDebugNativeFrame * This,
             /* [in] */ ULONG32 nOffset);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetRegisterSet)
         HRESULT ( STDMETHODCALLTYPE *GetRegisterSet )( 
             ICorDebugNativeFrame * This,
             /* [out] */ ICorDebugRegisterSet **ppRegisters);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetLocalRegisterValue)
         HRESULT ( STDMETHODCALLTYPE *GetLocalRegisterValue )( 
             ICorDebugNativeFrame * This,
             /* [in] */ CorDebugRegister reg,
@@ -11552,6 +12149,7 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
             /* [in] */ PCCOR_SIGNATURE pvSigBlob,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetLocalDoubleRegisterValue)
         HRESULT ( STDMETHODCALLTYPE *GetLocalDoubleRegisterValue )( 
             ICorDebugNativeFrame * This,
             /* [in] */ CorDebugRegister highWordReg,
@@ -11560,6 +12158,7 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
             /* [in] */ PCCOR_SIGNATURE pvSigBlob,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetLocalMemoryValue)
         HRESULT ( STDMETHODCALLTYPE *GetLocalMemoryValue )( 
             ICorDebugNativeFrame * This,
             /* [in] */ CORDB_ADDRESS address,
@@ -11567,6 +12166,7 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
             /* [in] */ PCCOR_SIGNATURE pvSigBlob,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetLocalRegisterMemoryValue)
         HRESULT ( STDMETHODCALLTYPE *GetLocalRegisterMemoryValue )( 
             ICorDebugNativeFrame * This,
             /* [in] */ CorDebugRegister highWordReg,
@@ -11575,6 +12175,7 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
             /* [in] */ PCCOR_SIGNATURE pvSigBlob,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, GetLocalMemoryRegisterValue)
         HRESULT ( STDMETHODCALLTYPE *GetLocalMemoryRegisterValue )( 
             ICorDebugNativeFrame * This,
             /* [in] */ CORDB_ADDRESS highWordAddress,
@@ -11583,6 +12184,7 @@ EXTERN_C const IID IID_ICorDebugNativeFrame;
             /* [in] */ PCCOR_SIGNATURE pvSigBlob,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame, CanSetIP)
         HRESULT ( STDMETHODCALLTYPE *CanSetIP )( 
             ICorDebugNativeFrame * This,
             /* [in] */ ULONG32 nOffset);
@@ -11717,27 +12319,33 @@ EXTERN_C const IID IID_ICorDebugNativeFrame2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugNativeFrame2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugNativeFrame2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugNativeFrame2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame2, IsChild)
         HRESULT ( STDMETHODCALLTYPE *IsChild )( 
             ICorDebugNativeFrame2 * This,
             /* [out] */ BOOL *pIsChild);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame2, IsMatchingParentFrame)
         HRESULT ( STDMETHODCALLTYPE *IsMatchingParentFrame )( 
             ICorDebugNativeFrame2 * This,
             /* [in] */ ICorDebugNativeFrame2 *pPotentialParentFrame,
             /* [out] */ BOOL *pIsParent);
         
+        DECLSPEC_XFGVIRT(ICorDebugNativeFrame2, GetStackParameterSize)
         HRESULT ( STDMETHODCALLTYPE *GetStackParameterSize )( 
             ICorDebugNativeFrame2 * This,
             /* [out] */ ULONG32 *pSize);
@@ -11813,18 +12421,22 @@ EXTERN_C const IID IID_ICorDebugModule3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModule3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModule3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModule3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule3, CreateReaderForInMemorySymbols)
         HRESULT ( STDMETHODCALLTYPE *CreateReaderForInMemorySymbols )( 
             ICorDebugModule3 * This,
             /* [in] */ REFIID riid,
@@ -11894,18 +12506,22 @@ EXTERN_C const IID IID_ICorDebugModule4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModule4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModule4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModule4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule4, IsMappedLayout)
         HRESULT ( STDMETHODCALLTYPE *IsMappedLayout )( 
             ICorDebugModule4 * This,
             /* [out] */ BOOL *pIsMapped);
@@ -11971,47 +12587,58 @@ EXTERN_C const IID IID_ICorDebugRuntimeUnwindableFrame;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugRuntimeUnwindableFrame * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugRuntimeUnwindableFrame * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetChain)
         HRESULT ( STDMETHODCALLTYPE *GetChain )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ ICorDebugChain **ppChain);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetFunctionToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionToken )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ mdMethodDef *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetStackRange)
         HRESULT ( STDMETHODCALLTYPE *GetStackRange )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ CORDB_ADDRESS *pStart,
             /* [out] */ CORDB_ADDRESS *pEnd);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCaller)
         HRESULT ( STDMETHODCALLTYPE *GetCaller )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, GetCallee)
         HRESULT ( STDMETHODCALLTYPE *GetCallee )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ ICorDebugFrame **ppFrame);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrame, CreateStepper)
         HRESULT ( STDMETHODCALLTYPE *CreateStepper )( 
             ICorDebugRuntimeUnwindableFrame * This,
             /* [out] */ ICorDebugStepper **ppStepper);
@@ -12158,90 +12785,110 @@ EXTERN_C const IID IID_ICorDebugModule;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModule * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModule * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModule * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetProcess)
         HRESULT ( STDMETHODCALLTYPE *GetProcess )( 
             ICorDebugModule * This,
             /* [out] */ ICorDebugProcess **ppProcess);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetBaseAddress)
         HRESULT ( STDMETHODCALLTYPE *GetBaseAddress )( 
             ICorDebugModule * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetAssembly)
         HRESULT ( STDMETHODCALLTYPE *GetAssembly )( 
             ICorDebugModule * This,
             /* [out] */ ICorDebugAssembly **ppAssembly);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugModule * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, EnableJITDebugging)
         HRESULT ( STDMETHODCALLTYPE *EnableJITDebugging )( 
             ICorDebugModule * This,
             /* [in] */ BOOL bTrackJITInfo,
             /* [in] */ BOOL bAllowJitOpts);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, EnableClassLoadCallbacks)
         HRESULT ( STDMETHODCALLTYPE *EnableClassLoadCallbacks )( 
             ICorDebugModule * This,
             /* [in] */ BOOL bClassLoadCallbacks);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetFunctionFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromToken )( 
             ICorDebugModule * This,
             /* [in] */ mdMethodDef methodDef,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetFunctionFromRVA)
         HRESULT ( STDMETHODCALLTYPE *GetFunctionFromRVA )( 
             ICorDebugModule * This,
             /* [in] */ CORDB_ADDRESS rva,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetClassFromToken)
         HRESULT ( STDMETHODCALLTYPE *GetClassFromToken )( 
             ICorDebugModule * This,
             /* [in] */ mdTypeDef typeDef,
             /* [out] */ ICorDebugClass **ppClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugModule * This,
             /* [out] */ ICorDebugModuleBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetEditAndContinueSnapshot)
         HRESULT ( STDMETHODCALLTYPE *GetEditAndContinueSnapshot )( 
             ICorDebugModule * This,
             /* [out] */ ICorDebugEditAndContinueSnapshot **ppEditAndContinueSnapshot);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetMetaDataInterface)
         HRESULT ( STDMETHODCALLTYPE *GetMetaDataInterface )( 
             ICorDebugModule * This,
             /* [in] */ REFIID riid,
             /* [out] */ IUnknown **ppObj);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetToken)
         HRESULT ( STDMETHODCALLTYPE *GetToken )( 
             ICorDebugModule * This,
             /* [out] */ mdModule *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, IsDynamic)
         HRESULT ( STDMETHODCALLTYPE *IsDynamic )( 
             ICorDebugModule * This,
             /* [out] */ BOOL *pDynamic);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetGlobalVariableValue)
         HRESULT ( STDMETHODCALLTYPE *GetGlobalVariableValue )( 
             ICorDebugModule * This,
             /* [in] */ mdFieldDef fieldDef,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugModule * This,
             /* [out] */ ULONG32 *pcBytes);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule, IsInMemory)
         HRESULT ( STDMETHODCALLTYPE *IsInMemory )( 
             ICorDebugModule * This,
             /* [out] */ BOOL *pInMemory);
@@ -12385,24 +13032,29 @@ EXTERN_C const IID IID_ICorDebugModule2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModule2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModule2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModule2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule2, SetJMCStatus)
         HRESULT ( STDMETHODCALLTYPE *SetJMCStatus )( 
             ICorDebugModule2 * This,
             /* [in] */ BOOL bIsJustMyCode,
             /* [in] */ ULONG32 cTokens,
             /* [size_is][in] */ mdToken pTokens[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule2, ApplyChanges)
         HRESULT ( STDMETHODCALLTYPE *ApplyChanges )( 
             ICorDebugModule2 * This,
             /* [in] */ ULONG cbMetadata,
@@ -12410,14 +13062,17 @@ EXTERN_C const IID IID_ICorDebugModule2;
             /* [in] */ ULONG cbIL,
             /* [size_is][in] */ BYTE pbIL[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule2, SetJITCompilerFlags)
         HRESULT ( STDMETHODCALLTYPE *SetJITCompilerFlags )( 
             ICorDebugModule2 * This,
             /* [in] */ DWORD dwFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule2, GetJITCompilerFlags)
         HRESULT ( STDMETHODCALLTYPE *GetJITCompilerFlags )( 
             ICorDebugModule2 * This,
             /* [out] */ DWORD *pdwFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugModule2, ResolveAssembly)
         HRESULT ( STDMETHODCALLTYPE *ResolveAssembly )( 
             ICorDebugModule2 * This,
             /* [in] */ mdToken tkAssemblyRef,
@@ -12520,46 +13175,57 @@ EXTERN_C const IID IID_ICorDebugFunction;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFunction * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFunction * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFunction * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetModule)
         HRESULT ( STDMETHODCALLTYPE *GetModule )( 
             ICorDebugFunction * This,
             /* [out] */ ICorDebugModule **ppModule);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetClass)
         HRESULT ( STDMETHODCALLTYPE *GetClass )( 
             ICorDebugFunction * This,
             /* [out] */ ICorDebugClass **ppClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetToken)
         HRESULT ( STDMETHODCALLTYPE *GetToken )( 
             ICorDebugFunction * This,
             /* [out] */ mdMethodDef *pMethodDef);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetILCode)
         HRESULT ( STDMETHODCALLTYPE *GetILCode )( 
             ICorDebugFunction * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetNativeCode)
         HRESULT ( STDMETHODCALLTYPE *GetNativeCode )( 
             ICorDebugFunction * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugFunction * This,
             /* [out] */ ICorDebugFunctionBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetLocalVarSigToken)
         HRESULT ( STDMETHODCALLTYPE *GetLocalVarSigToken )( 
             ICorDebugFunction * This,
             /* [out] */ mdSignature *pmdSig);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction, GetCurrentVersionNumber)
         HRESULT ( STDMETHODCALLTYPE *GetCurrentVersionNumber )( 
             ICorDebugFunction * This,
             /* [out] */ ULONG32 *pnCurrentVersion);
@@ -12658,30 +13324,37 @@ EXTERN_C const IID IID_ICorDebugFunction2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFunction2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFunction2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFunction2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction2, SetJMCStatus)
         HRESULT ( STDMETHODCALLTYPE *SetJMCStatus )( 
             ICorDebugFunction2 * This,
             /* [in] */ BOOL bIsJustMyCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction2, GetJMCStatus)
         HRESULT ( STDMETHODCALLTYPE *GetJMCStatus )( 
             ICorDebugFunction2 * This,
             /* [out] */ BOOL *pbIsJustMyCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction2, EnumerateNativeCode)
         HRESULT ( STDMETHODCALLTYPE *EnumerateNativeCode )( 
             ICorDebugFunction2 * This,
             /* [out] */ ICorDebugCodeEnum **ppCodeEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction2, GetVersionNumber)
         HRESULT ( STDMETHODCALLTYPE *GetVersionNumber )( 
             ICorDebugFunction2 * This,
             /* [out] */ ULONG32 *pnVersion);
@@ -12759,18 +13432,22 @@ EXTERN_C const IID IID_ICorDebugFunction3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFunction3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFunction3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFunction3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction3, GetActiveReJitRequestILCode)
         HRESULT ( STDMETHODCALLTYPE *GetActiveReJitRequestILCode )( 
             ICorDebugFunction3 * This,
             ICorDebugILCode **ppReJitedILCode);
@@ -12839,18 +13516,22 @@ EXTERN_C const IID IID_ICorDebugFunction4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFunction4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFunction4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFunction4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction4, CreateNativeBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateNativeBreakpoint )( 
             ICorDebugFunction4 * This,
             ICorDebugFunctionBreakpoint **ppBreakpoint);
@@ -12921,21 +13602,26 @@ EXTERN_C const IID IID_ICorDebugFunction5;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFunction5 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFunction5 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFunction5 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction5, DisableOptimizations)
         HRESULT ( STDMETHODCALLTYPE *DisableOptimizations )( 
             ICorDebugFunction5 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugFunction5, AreOptimizationsDisabled)
         HRESULT ( STDMETHODCALLTYPE *AreOptimizationsDisabled )( 
             ICorDebugFunction5 * This,
             BOOL *pOptimizationsDisabled);
@@ -13040,39 +13726,48 @@ EXTERN_C const IID IID_ICorDebugCode;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugCode * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugCode * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugCode * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, IsIL)
         HRESULT ( STDMETHODCALLTYPE *IsIL )( 
             ICorDebugCode * This,
             /* [out] */ BOOL *pbIL);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugCode * This,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugCode * This,
             /* [out] */ CORDB_ADDRESS *pStart);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugCode * This,
             /* [out] */ ULONG32 *pcBytes);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugCode * This,
             /* [in] */ ULONG32 offset,
             /* [out] */ ICorDebugFunctionBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugCode * This,
             /* [in] */ ULONG32 startOffset,
@@ -13081,16 +13776,19 @@ EXTERN_C const IID IID_ICorDebugCode;
             /* [length_is][size_is][out] */ BYTE buffer[  ],
             /* [out] */ ULONG32 *pcBufferSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetVersionNumber)
         HRESULT ( STDMETHODCALLTYPE *GetVersionNumber )( 
             ICorDebugCode * This,
             /* [out] */ ULONG32 *nVersion);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetILToNativeMapping)
         HRESULT ( STDMETHODCALLTYPE *GetILToNativeMapping )( 
             ICorDebugCode * This,
             /* [in] */ ULONG32 cMap,
             /* [out] */ ULONG32 *pcMap,
             /* [length_is][size_is][out] */ COR_DEBUG_IL_TO_NATIVE_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode, GetEnCRemapSequencePoints)
         HRESULT ( STDMETHODCALLTYPE *GetEnCRemapSequencePoints )( 
             ICorDebugCode * This,
             /* [in] */ ULONG32 cMap,
@@ -13196,24 +13894,29 @@ EXTERN_C const IID IID_ICorDebugCode2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugCode2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugCode2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugCode2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode2, GetCodeChunks)
         HRESULT ( STDMETHODCALLTYPE *GetCodeChunks )( 
             ICorDebugCode2 * This,
             /* [in] */ ULONG32 cbufSize,
             /* [out] */ ULONG32 *pcnumChunks,
             /* [length_is][size_is][out] */ CodeChunkInfo chunks[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode2, GetCompilerFlags)
         HRESULT ( STDMETHODCALLTYPE *GetCompilerFlags )( 
             ICorDebugCode2 * This,
             /* [out] */ DWORD *pdwFlags);
@@ -13288,18 +13991,22 @@ EXTERN_C const IID IID_ICorDebugCode3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugCode3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugCode3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugCode3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode3, GetReturnValueLiveOffset)
         HRESULT ( STDMETHODCALLTYPE *GetReturnValueLiveOffset )( 
             ICorDebugCode3 * This,
             /* [in] */ ULONG32 ILoffset,
@@ -13371,18 +14078,22 @@ EXTERN_C const IID IID_ICorDebugCode4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugCode4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugCode4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugCode4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugCode4, EnumerateVariableHomes)
         HRESULT ( STDMETHODCALLTYPE *EnumerateVariableHomes )( 
             ICorDebugCode4 * This,
             /* [out] */ ICorDebugVariableHomeEnum **ppEnum);
@@ -13464,18 +14175,22 @@ EXTERN_C const IID IID_ICorDebugILCode;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugILCode * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugILCode * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugILCode * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugILCode, GetEHClauses)
         HRESULT ( STDMETHODCALLTYPE *GetEHClauses )( 
             ICorDebugILCode * This,
             /* [in] */ ULONG32 cClauses,
@@ -13551,22 +14266,27 @@ EXTERN_C const IID IID_ICorDebugILCode2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugILCode2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugILCode2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugILCode2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugILCode2, GetLocalVarSigToken)
         HRESULT ( STDMETHODCALLTYPE *GetLocalVarSigToken )( 
             ICorDebugILCode2 * This,
             /* [out] */ mdSignature *pmdSig);
         
+        DECLSPEC_XFGVIRT(ICorDebugILCode2, GetInstrumentedILMap)
         HRESULT ( STDMETHODCALLTYPE *GetInstrumentedILMap )( 
             ICorDebugILCode2 * This,
             /* [in] */ ULONG32 cMap,
@@ -13648,26 +14368,32 @@ EXTERN_C const IID IID_ICorDebugClass;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugClass * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugClass * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugClass * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugClass, GetModule)
         HRESULT ( STDMETHODCALLTYPE *GetModule )( 
             ICorDebugClass * This,
             /* [out] */ ICorDebugModule **pModule);
         
+        DECLSPEC_XFGVIRT(ICorDebugClass, GetToken)
         HRESULT ( STDMETHODCALLTYPE *GetToken )( 
             ICorDebugClass * This,
             /* [out] */ mdTypeDef *pTypeDef);
         
+        DECLSPEC_XFGVIRT(ICorDebugClass, GetStaticFieldValue)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldValue )( 
             ICorDebugClass * This,
             /* [in] */ mdFieldDef fieldDef,
@@ -13750,18 +14476,22 @@ EXTERN_C const IID IID_ICorDebugClass2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugClass2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugClass2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugClass2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugClass2, GetParameterizedType)
         HRESULT ( STDMETHODCALLTYPE *GetParameterizedType )( 
             ICorDebugClass2 * This,
             /* [in] */ CorElementType elementType,
@@ -13769,6 +14499,7 @@ EXTERN_C const IID IID_ICorDebugClass2;
             /* [size_is][in] */ ICorDebugType *ppTypeArgs[  ],
             /* [out] */ ICorDebugType **ppType);
         
+        DECLSPEC_XFGVIRT(ICorDebugClass2, SetJMCStatus)
         HRESULT ( STDMETHODCALLTYPE *SetJMCStatus )( 
             ICorDebugClass2 * This,
             /* [in] */ BOOL bIsJustMyCode);
@@ -13876,38 +14607,46 @@ EXTERN_C const IID IID_ICorDebugEval;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugEval * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugEval * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugEval * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, CallFunction)
         HRESULT ( STDMETHODCALLTYPE *CallFunction )( 
             ICorDebugEval * This,
             /* [in] */ ICorDebugFunction *pFunction,
             /* [in] */ ULONG32 nArgs,
             /* [size_is][in] */ ICorDebugValue *ppArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, NewObject)
         HRESULT ( STDMETHODCALLTYPE *NewObject )( 
             ICorDebugEval * This,
             /* [in] */ ICorDebugFunction *pConstructor,
             /* [in] */ ULONG32 nArgs,
             /* [size_is][in] */ ICorDebugValue *ppArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, NewObjectNoConstructor)
         HRESULT ( STDMETHODCALLTYPE *NewObjectNoConstructor )( 
             ICorDebugEval * This,
             /* [in] */ ICorDebugClass *pClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, NewString)
         HRESULT ( STDMETHODCALLTYPE *NewString )( 
             ICorDebugEval * This,
             /* [in] */ LPCWSTR string);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, NewArray)
         HRESULT ( STDMETHODCALLTYPE *NewArray )( 
             ICorDebugEval * This,
             /* [in] */ CorElementType elementType,
@@ -13916,21 +14655,26 @@ EXTERN_C const IID IID_ICorDebugEval;
             /* [size_is][in] */ ULONG32 dims[  ],
             /* [size_is][in] */ ULONG32 lowBounds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, IsActive)
         HRESULT ( STDMETHODCALLTYPE *IsActive )( 
             ICorDebugEval * This,
             /* [out] */ BOOL *pbActive);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, Abort)
         HRESULT ( STDMETHODCALLTYPE *Abort )( 
             ICorDebugEval * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, GetResult)
         HRESULT ( STDMETHODCALLTYPE *GetResult )( 
             ICorDebugEval * This,
             /* [out] */ ICorDebugValue **ppResult);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, GetThread)
         HRESULT ( STDMETHODCALLTYPE *GetThread )( 
             ICorDebugEval * This,
             /* [out] */ ICorDebugThread **ppThread);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval, CreateValue)
         HRESULT ( STDMETHODCALLTYPE *CreateValue )( 
             ICorDebugEval * This,
             /* [in] */ CorElementType elementType,
@@ -14060,18 +14804,22 @@ EXTERN_C const IID IID_ICorDebugEval2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugEval2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugEval2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugEval2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, CallParameterizedFunction)
         HRESULT ( STDMETHODCALLTYPE *CallParameterizedFunction )( 
             ICorDebugEval2 * This,
             /* [in] */ ICorDebugFunction *pFunction,
@@ -14080,11 +14828,13 @@ EXTERN_C const IID IID_ICorDebugEval2;
             /* [in] */ ULONG32 nArgs,
             /* [size_is][in] */ ICorDebugValue *ppArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, CreateValueForType)
         HRESULT ( STDMETHODCALLTYPE *CreateValueForType )( 
             ICorDebugEval2 * This,
             /* [in] */ ICorDebugType *pType,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, NewParameterizedObject)
         HRESULT ( STDMETHODCALLTYPE *NewParameterizedObject )( 
             ICorDebugEval2 * This,
             /* [in] */ ICorDebugFunction *pConstructor,
@@ -14093,12 +14843,14 @@ EXTERN_C const IID IID_ICorDebugEval2;
             /* [in] */ ULONG32 nArgs,
             /* [size_is][in] */ ICorDebugValue *ppArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, NewParameterizedObjectNoConstructor)
         HRESULT ( STDMETHODCALLTYPE *NewParameterizedObjectNoConstructor )( 
             ICorDebugEval2 * This,
             /* [in] */ ICorDebugClass *pClass,
             /* [in] */ ULONG32 nTypeArgs,
             /* [size_is][in] */ ICorDebugType *ppTypeArgs[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, NewParameterizedArray)
         HRESULT ( STDMETHODCALLTYPE *NewParameterizedArray )( 
             ICorDebugEval2 * This,
             /* [in] */ ICorDebugType *pElementType,
@@ -14106,11 +14858,13 @@ EXTERN_C const IID IID_ICorDebugEval2;
             /* [size_is][in] */ ULONG32 dims[  ],
             /* [size_is][in] */ ULONG32 lowBounds[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, NewStringWithLength)
         HRESULT ( STDMETHODCALLTYPE *NewStringWithLength )( 
             ICorDebugEval2 * This,
             /* [in] */ LPCWSTR string,
             /* [in] */ UINT uiLength);
         
+        DECLSPEC_XFGVIRT(ICorDebugEval2, RudeAbort)
         HRESULT ( STDMETHODCALLTYPE *RudeAbort )( 
             ICorDebugEval2 * This);
         
@@ -14205,30 +14959,37 @@ EXTERN_C const IID IID_ICorDebugValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
@@ -14306,18 +15067,22 @@ EXTERN_C const IID IID_ICorDebugValue2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugValue2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugValue2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugValue2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue2, GetExactType)
         HRESULT ( STDMETHODCALLTYPE *GetExactType )( 
             ICorDebugValue2 * This,
             /* [out] */ ICorDebugType **ppType);
@@ -14386,18 +15151,22 @@ EXTERN_C const IID IID_ICorDebugValue3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugValue3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugValue3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugValue3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue3, GetSize64)
         HRESULT ( STDMETHODCALLTYPE *GetSize64 )( 
             ICorDebugValue3 * This,
             /* [out] */ ULONG64 *pSize);
@@ -14469,38 +15238,47 @@ EXTERN_C const IID IID_ICorDebugGenericValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugGenericValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugGenericValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugGenericValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugGenericValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugGenericValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugGenericValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugGenericValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugGenericValue, GetValue)
         HRESULT ( STDMETHODCALLTYPE *GetValue )( 
             ICorDebugGenericValue * This,
             /* [out] */ void *pTo);
         
+        DECLSPEC_XFGVIRT(ICorDebugGenericValue, SetValue)
         HRESULT ( STDMETHODCALLTYPE *SetValue )( 
             ICorDebugGenericValue * This,
             /* [in] */ void *pFrom);
@@ -14597,50 +15375,62 @@ EXTERN_C const IID IID_ICorDebugReferenceValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugReferenceValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugReferenceValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugReferenceValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugReferenceValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugReferenceValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugReferenceValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugReferenceValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, IsNull)
         HRESULT ( STDMETHODCALLTYPE *IsNull )( 
             ICorDebugReferenceValue * This,
             /* [out] */ BOOL *pbNull);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, GetValue)
         HRESULT ( STDMETHODCALLTYPE *GetValue )( 
             ICorDebugReferenceValue * This,
             /* [out] */ CORDB_ADDRESS *pValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, SetValue)
         HRESULT ( STDMETHODCALLTYPE *SetValue )( 
             ICorDebugReferenceValue * This,
             /* [in] */ CORDB_ADDRESS value);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, Dereference)
         HRESULT ( STDMETHODCALLTYPE *Dereference )( 
             ICorDebugReferenceValue * This,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, DereferenceStrong)
         HRESULT ( STDMETHODCALLTYPE *DereferenceStrong )( 
             ICorDebugReferenceValue * This,
             /* [out] */ ICorDebugValue **ppValue);
@@ -14737,38 +15527,47 @@ EXTERN_C const IID IID_ICorDebugHeapValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHeapValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHeapValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHeapValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugHeapValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugHeapValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugHeapValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugHeapValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, IsValid)
         HRESULT ( STDMETHODCALLTYPE *IsValid )( 
             ICorDebugHeapValue * This,
             /* [out] */ BOOL *pbValid);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, CreateRelocBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateRelocBreakpoint )( 
             ICorDebugHeapValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
@@ -14854,18 +15653,22 @@ EXTERN_C const IID IID_ICorDebugHeapValue2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHeapValue2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHeapValue2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHeapValue2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue2, CreateHandle)
         HRESULT ( STDMETHODCALLTYPE *CreateHandle )( 
             ICorDebugHeapValue2 * This,
             /* [in] */ CorDebugHandleType type,
@@ -14939,23 +15742,28 @@ EXTERN_C const IID IID_ICorDebugHeapValue3;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHeapValue3 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHeapValue3 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHeapValue3 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue3, GetThreadOwningMonitorLock)
         HRESULT ( STDMETHODCALLTYPE *GetThreadOwningMonitorLock )( 
             ICorDebugHeapValue3 * This,
             /* [out] */ ICorDebugThread **ppThread,
             /* [out] */ DWORD *pAcquisitionCount);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue3, GetMonitorEventWaitList)
         HRESULT ( STDMETHODCALLTYPE *GetMonitorEventWaitList )( 
             ICorDebugHeapValue3 * This,
             /* [out] */ ICorDebugThreadEnum **ppThreadEnum);
@@ -15027,18 +15835,22 @@ EXTERN_C const IID IID_ICorDebugHeapValue4;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHeapValue4 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHeapValue4 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHeapValue4 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue4, CreatePinnedHandle)
         HRESULT ( STDMETHODCALLTYPE *CreatePinnedHandle )( 
             ICorDebugHeapValue4 * This,
             /* [out] */ ICorDebugHandleValue **ppHandle);
@@ -15128,61 +15940,75 @@ EXTERN_C const IID IID_ICorDebugObjectValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugObjectValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugObjectValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugObjectValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugObjectValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugObjectValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugObjectValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugObjectValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetClass)
         HRESULT ( STDMETHODCALLTYPE *GetClass )( 
             ICorDebugObjectValue * This,
             /* [out] */ ICorDebugClass **ppClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetFieldValue)
         HRESULT ( STDMETHODCALLTYPE *GetFieldValue )( 
             ICorDebugObjectValue * This,
             /* [in] */ ICorDebugClass *pClass,
             /* [in] */ mdFieldDef fieldDef,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetVirtualMethod)
         HRESULT ( STDMETHODCALLTYPE *GetVirtualMethod )( 
             ICorDebugObjectValue * This,
             /* [in] */ mdMemberRef memberRef,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetContext)
         HRESULT ( STDMETHODCALLTYPE *GetContext )( 
             ICorDebugObjectValue * This,
             /* [out] */ ICorDebugContext **ppContext);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, IsValueClass)
         HRESULT ( STDMETHODCALLTYPE *IsValueClass )( 
             ICorDebugObjectValue * This,
             /* [out] */ BOOL *pbIsValueClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetManagedCopy)
         HRESULT ( STDMETHODCALLTYPE *GetManagedCopy )( 
             ICorDebugObjectValue * This,
             /* [out] */ IUnknown **ppObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, SetFromManagedCopy)
         HRESULT ( STDMETHODCALLTYPE *SetFromManagedCopy )( 
             ICorDebugObjectValue * This,
             /* [in] */ IUnknown *pObject);
@@ -15284,18 +16110,22 @@ EXTERN_C const IID IID_ICorDebugObjectValue2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugObjectValue2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugObjectValue2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugObjectValue2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue2, GetVirtualMethodAndType)
         HRESULT ( STDMETHODCALLTYPE *GetVirtualMethodAndType )( 
             ICorDebugObjectValue2 * This,
             /* [in] */ mdMemberRef memberRef,
@@ -15369,22 +16199,27 @@ EXTERN_C const IID IID_ICorDebugDelegateObjectValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugDelegateObjectValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugDelegateObjectValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugDelegateObjectValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugDelegateObjectValue, GetTarget)
         HRESULT ( STDMETHODCALLTYPE *GetTarget )( 
             ICorDebugDelegateObjectValue * This,
             /* [out] */ ICorDebugReferenceValue **ppObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugDelegateObjectValue, GetFunction)
         HRESULT ( STDMETHODCALLTYPE *GetFunction )( 
             ICorDebugDelegateObjectValue * This,
             /* [out] */ ICorDebugFunction **ppFunction);
@@ -15456,42 +16291,52 @@ EXTERN_C const IID IID_ICorDebugBoxValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugBoxValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugBoxValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugBoxValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugBoxValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugBoxValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugBoxValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugBoxValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, IsValid)
         HRESULT ( STDMETHODCALLTYPE *IsValid )( 
             ICorDebugBoxValue * This,
             /* [out] */ BOOL *pbValid);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, CreateRelocBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateRelocBreakpoint )( 
             ICorDebugBoxValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugBoxValue, GetObject)
         HRESULT ( STDMETHODCALLTYPE *GetObject )( 
             ICorDebugBoxValue * This,
             /* [out] */ ICorDebugObjectValue **ppObject);
@@ -15595,46 +16440,57 @@ EXTERN_C const IID IID_ICorDebugStringValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugStringValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugStringValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugStringValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugStringValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugStringValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugStringValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugStringValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, IsValid)
         HRESULT ( STDMETHODCALLTYPE *IsValid )( 
             ICorDebugStringValue * This,
             /* [out] */ BOOL *pbValid);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, CreateRelocBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateRelocBreakpoint )( 
             ICorDebugStringValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugStringValue, GetLength)
         HRESULT ( STDMETHODCALLTYPE *GetLength )( 
             ICorDebugStringValue * This,
             /* [out] */ ULONG32 *pcchString);
         
+        DECLSPEC_XFGVIRT(ICorDebugStringValue, GetString)
         HRESULT ( STDMETHODCALLTYPE *GetString )( 
             ICorDebugStringValue * This,
             /* [in] */ ULONG32 cchString,
@@ -15763,74 +16619,91 @@ EXTERN_C const IID IID_ICorDebugArrayValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugArrayValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugArrayValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugArrayValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugArrayValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugArrayValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugArrayValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugArrayValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, IsValid)
         HRESULT ( STDMETHODCALLTYPE *IsValid )( 
             ICorDebugArrayValue * This,
             /* [out] */ BOOL *pbValid);
         
+        DECLSPEC_XFGVIRT(ICorDebugHeapValue, CreateRelocBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateRelocBreakpoint )( 
             ICorDebugArrayValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetElementType)
         HRESULT ( STDMETHODCALLTYPE *GetElementType )( 
             ICorDebugArrayValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetRank)
         HRESULT ( STDMETHODCALLTYPE *GetRank )( 
             ICorDebugArrayValue * This,
             /* [out] */ ULONG32 *pnRank);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugArrayValue * This,
             /* [out] */ ULONG32 *pnCount);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetDimensions)
         HRESULT ( STDMETHODCALLTYPE *GetDimensions )( 
             ICorDebugArrayValue * This,
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][out] */ ULONG32 dims[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, HasBaseIndicies)
         HRESULT ( STDMETHODCALLTYPE *HasBaseIndicies )( 
             ICorDebugArrayValue * This,
             /* [out] */ BOOL *pbHasBaseIndicies);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetBaseIndicies)
         HRESULT ( STDMETHODCALLTYPE *GetBaseIndicies )( 
             ICorDebugArrayValue * This,
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][out] */ ULONG32 indices[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetElement)
         HRESULT ( STDMETHODCALLTYPE *GetElement )( 
             ICorDebugArrayValue * This,
             /* [in] */ ULONG32 cdim,
             /* [length_is][size_is][in] */ ULONG32 indices[  ],
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugArrayValue, GetElementAtPosition)
         HRESULT ( STDMETHODCALLTYPE *GetElementAtPosition )( 
             ICorDebugArrayValue * This,
             /* [in] */ ULONG32 nPosition,
@@ -15968,43 +16841,53 @@ EXTERN_C const IID IID_ICorDebugVariableHome;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugVariableHome * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugVariableHome * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugVariableHome * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetCode)
         HRESULT ( STDMETHODCALLTYPE *GetCode )( 
             ICorDebugVariableHome * This,
             /* [out] */ ICorDebugCode **ppCode);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetSlotIndex)
         HRESULT ( STDMETHODCALLTYPE *GetSlotIndex )( 
             ICorDebugVariableHome * This,
             /* [out] */ ULONG32 *pSlotIndex);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetArgumentIndex)
         HRESULT ( STDMETHODCALLTYPE *GetArgumentIndex )( 
             ICorDebugVariableHome * This,
             /* [out] */ ULONG32 *pArgumentIndex);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetLiveRange)
         HRESULT ( STDMETHODCALLTYPE *GetLiveRange )( 
             ICorDebugVariableHome * This,
             /* [out] */ ULONG32 *pStartOffset,
             /* [out] */ ULONG32 *pEndOffset);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetLocationType)
         HRESULT ( STDMETHODCALLTYPE *GetLocationType )( 
             ICorDebugVariableHome * This,
             /* [out] */ VariableLocationType *pLocationType);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetRegister)
         HRESULT ( STDMETHODCALLTYPE *GetRegister )( 
             ICorDebugVariableHome * This,
             /* [out] */ CorDebugRegister *pRegister);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHome, GetOffset)
         HRESULT ( STDMETHODCALLTYPE *GetOffset )( 
             ICorDebugVariableHome * This,
             /* [out] */ LONG *pOffset);
@@ -16093,58 +16976,72 @@ EXTERN_C const IID IID_ICorDebugHandleValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugHandleValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugHandleValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugHandleValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugHandleValue * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugHandleValue * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugHandleValue * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugHandleValue * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, IsNull)
         HRESULT ( STDMETHODCALLTYPE *IsNull )( 
             ICorDebugHandleValue * This,
             /* [out] */ BOOL *pbNull);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, GetValue)
         HRESULT ( STDMETHODCALLTYPE *GetValue )( 
             ICorDebugHandleValue * This,
             /* [out] */ CORDB_ADDRESS *pValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, SetValue)
         HRESULT ( STDMETHODCALLTYPE *SetValue )( 
             ICorDebugHandleValue * This,
             /* [in] */ CORDB_ADDRESS value);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, Dereference)
         HRESULT ( STDMETHODCALLTYPE *Dereference )( 
             ICorDebugHandleValue * This,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugReferenceValue, DereferenceStrong)
         HRESULT ( STDMETHODCALLTYPE *DereferenceStrong )( 
             ICorDebugHandleValue * This,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugHandleValue, GetHandleType)
         HRESULT ( STDMETHODCALLTYPE *GetHandleType )( 
             ICorDebugHandleValue * This,
             /* [out] */ CorDebugHandleType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugHandleValue, Dispose)
         HRESULT ( STDMETHODCALLTYPE *Dispose )( 
             ICorDebugHandleValue * This);
         
@@ -16241,61 +17138,75 @@ EXTERN_C const IID IID_ICorDebugContext;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugContext * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugContext * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugContext * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugContext * This,
             /* [out] */ CorElementType *pType);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetSize)
         HRESULT ( STDMETHODCALLTYPE *GetSize )( 
             ICorDebugContext * This,
             /* [out] */ ULONG32 *pSize);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, GetAddress)
         HRESULT ( STDMETHODCALLTYPE *GetAddress )( 
             ICorDebugContext * This,
             /* [out] */ CORDB_ADDRESS *pAddress);
         
+        DECLSPEC_XFGVIRT(ICorDebugValue, CreateBreakpoint)
         HRESULT ( STDMETHODCALLTYPE *CreateBreakpoint )( 
             ICorDebugContext * This,
             /* [out] */ ICorDebugValueBreakpoint **ppBreakpoint);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetClass)
         HRESULT ( STDMETHODCALLTYPE *GetClass )( 
             ICorDebugContext * This,
             /* [out] */ ICorDebugClass **ppClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetFieldValue)
         HRESULT ( STDMETHODCALLTYPE *GetFieldValue )( 
             ICorDebugContext * This,
             /* [in] */ ICorDebugClass *pClass,
             /* [in] */ mdFieldDef fieldDef,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetVirtualMethod)
         HRESULT ( STDMETHODCALLTYPE *GetVirtualMethod )( 
             ICorDebugContext * This,
             /* [in] */ mdMemberRef memberRef,
             /* [out] */ ICorDebugFunction **ppFunction);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetContext)
         HRESULT ( STDMETHODCALLTYPE *GetContext )( 
             ICorDebugContext * This,
             /* [out] */ ICorDebugContext **ppContext);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, IsValueClass)
         HRESULT ( STDMETHODCALLTYPE *IsValueClass )( 
             ICorDebugContext * This,
             /* [out] */ BOOL *pbIsValueClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, GetManagedCopy)
         HRESULT ( STDMETHODCALLTYPE *GetManagedCopy )( 
             ICorDebugContext * This,
             /* [out] */ IUnknown **ppObject);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectValue, SetFromManagedCopy)
         HRESULT ( STDMETHODCALLTYPE *SetFromManagedCopy )( 
             ICorDebugContext * This,
             /* [in] */ IUnknown *pObject);
@@ -16403,23 +17314,28 @@ EXTERN_C const IID IID_ICorDebugComObjectValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugComObjectValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugComObjectValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugComObjectValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugComObjectValue, GetCachedInterfaceTypes)
         HRESULT ( STDMETHODCALLTYPE *GetCachedInterfaceTypes )( 
             ICorDebugComObjectValue * This,
             /* [in] */ BOOL bIInspectableOnly,
             /* [out] */ ICorDebugTypeEnum **ppInterfacesEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugComObjectValue, GetCachedInterfacePointers)
         HRESULT ( STDMETHODCALLTYPE *GetCachedInterfacePointers )( 
             ICorDebugComObjectValue * This,
             /* [in] */ BOOL bIInspectableOnly,
@@ -16496,33 +17412,41 @@ EXTERN_C const IID IID_ICorDebugObjectEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugObjectEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugObjectEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugObjectEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugObjectEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugObjectEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugObjectEnum * This,
             /* [in] */ ULONG celt,
@@ -16608,33 +17532,41 @@ EXTERN_C const IID IID_ICorDebugBreakpointEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugBreakpointEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugBreakpointEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugBreakpointEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugBreakpointEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugBreakpointEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugBreakpointEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugBreakpointEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugBreakpointEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugBreakpointEnum * This,
             /* [in] */ ULONG celt,
@@ -16720,33 +17652,41 @@ EXTERN_C const IID IID_ICorDebugStepperEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugStepperEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugStepperEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugStepperEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugStepperEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugStepperEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugStepperEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugStepperEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugStepperEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugStepperEnum * This,
             /* [in] */ ULONG celt,
@@ -16832,33 +17772,41 @@ EXTERN_C const IID IID_ICorDebugProcessEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugProcessEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugProcessEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugProcessEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugProcessEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugProcessEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugProcessEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugProcessEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugProcessEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugProcessEnum * This,
             /* [in] */ ULONG celt,
@@ -16944,33 +17892,41 @@ EXTERN_C const IID IID_ICorDebugThreadEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugThreadEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugThreadEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugThreadEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugThreadEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugThreadEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugThreadEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugThreadEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugThreadEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugThreadEnum * This,
             /* [in] */ ULONG celt,
@@ -17056,33 +18012,41 @@ EXTERN_C const IID IID_ICorDebugFrameEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugFrameEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugFrameEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugFrameEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugFrameEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugFrameEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugFrameEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugFrameEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugFrameEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugFrameEnum * This,
             /* [in] */ ULONG celt,
@@ -17168,33 +18132,41 @@ EXTERN_C const IID IID_ICorDebugChainEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugChainEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugChainEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugChainEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugChainEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugChainEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugChainEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugChainEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugChainEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugChainEnum * This,
             /* [in] */ ULONG celt,
@@ -17280,33 +18252,41 @@ EXTERN_C const IID IID_ICorDebugModuleEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugModuleEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugModuleEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugModuleEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugModuleEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugModuleEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugModuleEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugModuleEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugModuleEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugModuleEnum * This,
             /* [in] */ ULONG celt,
@@ -17392,33 +18372,41 @@ EXTERN_C const IID IID_ICorDebugValueEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugValueEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugValueEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugValueEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugValueEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugValueEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugValueEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugValueEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugValueEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugValueEnum * This,
             /* [in] */ ULONG celt,
@@ -17504,33 +18492,41 @@ EXTERN_C const IID IID_ICorDebugVariableHomeEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugVariableHomeEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugVariableHomeEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugVariableHomeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugVariableHomeEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugVariableHomeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugVariableHomeEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugVariableHomeEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugVariableHomeEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugVariableHomeEnum * This,
             /* [in] */ ULONG celt,
@@ -17616,33 +18612,41 @@ EXTERN_C const IID IID_ICorDebugCodeEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugCodeEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugCodeEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugCodeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugCodeEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugCodeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugCodeEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugCodeEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugCodeEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugCodeEnum * This,
             /* [in] */ ULONG celt,
@@ -17728,33 +18732,41 @@ EXTERN_C const IID IID_ICorDebugTypeEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugTypeEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugTypeEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugTypeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugTypeEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugTypeEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugTypeEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugTypeEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugTypeEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugTypeEnum * This,
             /* [in] */ ULONG celt,
@@ -17858,44 +18870,54 @@ EXTERN_C const IID IID_ICorDebugType;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugType * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugType * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugType * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, GetType)
         HRESULT ( STDMETHODCALLTYPE *GetType )( 
             ICorDebugType * This,
             /* [out] */ CorElementType *ty);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, GetClass)
         HRESULT ( STDMETHODCALLTYPE *GetClass )( 
             ICorDebugType * This,
             /* [out] */ ICorDebugClass **ppClass);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, EnumerateTypeParameters)
         HRESULT ( STDMETHODCALLTYPE *EnumerateTypeParameters )( 
             ICorDebugType * This,
             /* [out] */ ICorDebugTypeEnum **ppTyParEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, GetFirstTypeParameter)
         HRESULT ( STDMETHODCALLTYPE *GetFirstTypeParameter )( 
             ICorDebugType * This,
             /* [out] */ ICorDebugType **value);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, GetBase)
         HRESULT ( STDMETHODCALLTYPE *GetBase )( 
             ICorDebugType * This,
             /* [out] */ ICorDebugType **pBase);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, GetStaticFieldValue)
         HRESULT ( STDMETHODCALLTYPE *GetStaticFieldValue )( 
             ICorDebugType * This,
             /* [in] */ mdFieldDef fieldDef,
             /* [in] */ ICorDebugFrame *pFrame,
             /* [out] */ ICorDebugValue **ppValue);
         
+        DECLSPEC_XFGVIRT(ICorDebugType, GetRank)
         HRESULT ( STDMETHODCALLTYPE *GetRank )( 
             ICorDebugType * This,
             /* [out] */ ULONG32 *pnRank);
@@ -17982,18 +19004,22 @@ EXTERN_C const IID IID_ICorDebugType2;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugType2 * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugType2 * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugType2 * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugType2, GetTypeID)
         HRESULT ( STDMETHODCALLTYPE *GetTypeID )( 
             ICorDebugType2 * This,
             /* [out] */ COR_TYPEID *id);
@@ -18064,33 +19090,41 @@ EXTERN_C const IID IID_ICorDebugErrorInfoEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugErrorInfoEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugErrorInfoEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugErrorInfoEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugErrorInfoEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugErrorInfoEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugErrorInfoEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugErrorInfoEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugErrorInfoEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugErrorInfoEnum * This,
             /* [in] */ ULONG celt,
@@ -18176,33 +19210,41 @@ EXTERN_C const IID IID_ICorDebugAppDomainEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAppDomainEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAppDomainEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAppDomainEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugAppDomainEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugAppDomainEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugAppDomainEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugAppDomainEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugAppDomainEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugAppDomainEnum * This,
             /* [in] */ ULONG celt,
@@ -18288,33 +19330,41 @@ EXTERN_C const IID IID_ICorDebugAssemblyEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugAssemblyEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugAssemblyEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugAssemblyEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugAssemblyEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugAssemblyEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugAssemblyEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugAssemblyEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugAssemblyEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugAssemblyEnum * This,
             /* [in] */ ULONG celt,
@@ -18400,33 +19450,41 @@ EXTERN_C const IID IID_ICorDebugBlockingObjectEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugBlockingObjectEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugBlockingObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugBlockingObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugBlockingObjectEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugBlockingObjectEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugBlockingObjectEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugBlockingObjectEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugBlockingObjectEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugBlockingObjectEnum * This,
             /* [in] */ ULONG celt,
@@ -18544,40 +19602,48 @@ EXTERN_C const IID IID_ICorDebugMDA;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugMDA * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugMDA * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugMDA * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugMDA, GetName)
         HRESULT ( STDMETHODCALLTYPE *GetName )( 
             ICorDebugMDA * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMDA, GetDescription)
         HRESULT ( STDMETHODCALLTYPE *GetDescription )( 
             ICorDebugMDA * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMDA, GetXML)
         HRESULT ( STDMETHODCALLTYPE *GetXML )( 
             ICorDebugMDA * This,
             /* [in] */ ULONG32 cchName,
             /* [out] */ ULONG32 *pcchName,
             /* [length_is][size_is][out] */ WCHAR szName[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugMDA, GetFlags)
         HRESULT ( STDMETHODCALLTYPE *GetFlags )( 
             ICorDebugMDA * This,
             /* [in] */ CorDebugMDAFlags *pFlags);
         
+        DECLSPEC_XFGVIRT(ICorDebugMDA, GetOSThreadId)
         HRESULT ( STDMETHODCALLTYPE *GetOSThreadId )( 
             ICorDebugMDA * This,
             /* [out] */ DWORD *pOsTid);
@@ -18680,30 +19746,37 @@ EXTERN_C const IID IID_ICorDebugEditAndContinueErrorInfo;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugEditAndContinueErrorInfo * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugEditAndContinueErrorInfo * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugEditAndContinueErrorInfo * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueErrorInfo, GetModule)
         HRESULT ( STDMETHODCALLTYPE *GetModule )( 
             ICorDebugEditAndContinueErrorInfo * This,
             /* [out] */ ICorDebugModule **ppModule);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueErrorInfo, GetToken)
         HRESULT ( STDMETHODCALLTYPE *GetToken )( 
             ICorDebugEditAndContinueErrorInfo * This,
             /* [out] */ mdToken *pToken);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueErrorInfo, GetErrorCode)
         HRESULT ( STDMETHODCALLTYPE *GetErrorCode )( 
             ICorDebugEditAndContinueErrorInfo * This,
             /* [out] */ HRESULT *pHr);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueErrorInfo, GetString)
         HRESULT ( STDMETHODCALLTYPE *GetString )( 
             ICorDebugEditAndContinueErrorInfo * This,
             /* [in] */ ULONG32 cchString,
@@ -18813,45 +19886,55 @@ EXTERN_C const IID IID_ICorDebugEditAndContinueSnapshot;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugEditAndContinueSnapshot * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugEditAndContinueSnapshot * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, CopyMetaData)
         HRESULT ( STDMETHODCALLTYPE *CopyMetaData )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [in] */ IStream *pIStream,
             /* [out] */ GUID *pMvid);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, GetMvid)
         HRESULT ( STDMETHODCALLTYPE *GetMvid )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [out] */ GUID *pMvid);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, GetRoDataRVA)
         HRESULT ( STDMETHODCALLTYPE *GetRoDataRVA )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [out] */ ULONG32 *pRoDataRVA);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, GetRwDataRVA)
         HRESULT ( STDMETHODCALLTYPE *GetRwDataRVA )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [out] */ ULONG32 *pRwDataRVA);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, SetPEBytes)
         HRESULT ( STDMETHODCALLTYPE *SetPEBytes )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [in] */ IStream *pIStream);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, SetILMap)
         HRESULT ( STDMETHODCALLTYPE *SetILMap )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [in] */ mdToken mdFunction,
             /* [in] */ ULONG cMapSize,
             /* [size_is][in] */ COR_IL_MAP map[  ]);
         
+        DECLSPEC_XFGVIRT(ICorDebugEditAndContinueSnapshot, SetPESymbolBytes)
         HRESULT ( STDMETHODCALLTYPE *SetPESymbolBytes )( 
             ICorDebugEditAndContinueSnapshot * This,
             /* [in] */ IStream *pIStream);
@@ -18940,33 +20023,41 @@ EXTERN_C const IID IID_ICorDebugExceptionObjectCallStackEnum;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugExceptionObjectCallStackEnum * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugExceptionObjectCallStackEnum * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugExceptionObjectCallStackEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Skip)
         HRESULT ( STDMETHODCALLTYPE *Skip )( 
             ICorDebugExceptionObjectCallStackEnum * This,
             /* [in] */ ULONG celt);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Reset)
         HRESULT ( STDMETHODCALLTYPE *Reset )( 
             ICorDebugExceptionObjectCallStackEnum * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, Clone)
         HRESULT ( STDMETHODCALLTYPE *Clone )( 
             ICorDebugExceptionObjectCallStackEnum * This,
             /* [out] */ ICorDebugEnum **ppEnum);
         
+        DECLSPEC_XFGVIRT(ICorDebugEnum, GetCount)
         HRESULT ( STDMETHODCALLTYPE *GetCount )( 
             ICorDebugExceptionObjectCallStackEnum * This,
             /* [out] */ ULONG *pcelt);
         
+        DECLSPEC_XFGVIRT(ICorDebugExceptionObjectCallStackEnum, Next)
         HRESULT ( STDMETHODCALLTYPE *Next )( 
             ICorDebugExceptionObjectCallStackEnum * This,
             /* [in] */ ULONG celt,
@@ -19050,18 +20141,22 @@ EXTERN_C const IID IID_ICorDebugExceptionObjectValue;
     {
         BEGIN_INTERFACE
         
+        DECLSPEC_XFGVIRT(IUnknown, QueryInterface)
         HRESULT ( STDMETHODCALLTYPE *QueryInterface )( 
             ICorDebugExceptionObjectValue * This,
             /* [in] */ REFIID riid,
             /* [annotation][iid_is][out] */ 
             _COM_Outptr_  void **ppvObject);
         
+        DECLSPEC_XFGVIRT(IUnknown, AddRef)
         ULONG ( STDMETHODCALLTYPE *AddRef )( 
             ICorDebugExceptionObjectValue * This);
         
+        DECLSPEC_XFGVIRT(IUnknown, Release)
         ULONG ( STDMETHODCALLTYPE *Release )( 
             ICorDebugExceptionObjectValue * This);
         
+        DECLSPEC_XFGVIRT(ICorDebugExceptionObjectValue, EnumerateExceptionCallStack)
         HRESULT ( STDMETHODCALLTYPE *EnumerateExceptionCallStack )( 
             ICorDebugExceptionObjectValue * This,
             /* [out] */ ICorDebugExceptionObjectCallStackEnum **ppCallStackEnum);
