@@ -2147,10 +2147,22 @@ namespace System
         public static Half CosPi(Half x) => (Half)float.CosPi((float)x);
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
-        public static Half DegreesToRadians(Half degrees) => (Half)float.DegreesToRadians((float)degrees);
+        public static Half DegreesToRadians(Half degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (Half)float.DegreesToRadians((float)degrees);
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
-        public static Half RadiansToDegrees(Half radians) => (Half)float.RadiansToDegrees((float)radians);
+        public static Half RadiansToDegrees(Half radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (Half)float.RadiansToDegrees((float)radians);
+        }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static Half Sin(Half x) => (Half)MathF.Sin((float)x);
