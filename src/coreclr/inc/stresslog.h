@@ -372,7 +372,9 @@ public:
     {
         size_t        headerSize;               // size of this header including size field and moduleImage
         uint32_t      magic;                    // must be 'STRL'
-        uint32_t      version;                  // must be 0x00010001
+        uint32_t      version;                  // must be >=0x00010001.
+                                                // 0x00010001 is the legacy short-offset format.
+                                                // 0x00010002 is the large-module-offset format introduced in .NET 8.
         uint8_t*      memoryBase;               // base address of the memory mapped file
         uint8_t*      memoryCur;                // highest address currently used
         uint8_t*      memoryLimit;              // limit that can be used
