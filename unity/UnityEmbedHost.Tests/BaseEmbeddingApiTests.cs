@@ -616,6 +616,28 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(actualFlat, Is.EquivalentTo(expectedFlat));
     }
 
+    [TestCase(typeof(Cat),                     typeof(Animal),                     true,   true)]
+    [TestCase(typeof(Cat),                     typeof(Animal),                     false,  true)]
+    [TestCase(typeof(Cat[]),                   typeof(Animal[]),                   false, false)]
+    [TestCase(typeof(Cat[]),                   typeof(Animal[]),                   true,  false)]
+    [TestCase(typeof(Cat[]),                   typeof(Animal),                     false, false)]
+    [TestCase(typeof(Animal),                  typeof(IAnimal),                    false, false)]
+    [TestCase(typeof(Animal),                  typeof(IAnimal),                    true,   true)]
+    [TestCase(typeof(Animal[]),                typeof(IAnimal[]),                  true,  false)]
+    [TestCase(typeof(IAnimal),                 typeof(Animal),                     true,  false)]
+    [TestCase(typeof(IAnimal),                 typeof(Animal),                     false, false)]
+    [TestCase(typeof(Animal),                  typeof(Cat),                        true,  false)]
+    [TestCase(typeof(Animal),                  typeof(Cat),                        false, false)]
+    [TestCase(typeof(GenericCat<, >),          typeof(GenericAnimal<, >),          true,  false)]
+    [TestCase(typeof(GenericCat<int, string>), typeof(GenericAnimal<int, string>), false,  true)]
+    [TestCase(typeof(GenericCat<int, string>), typeof(GenericAnimal<, >),          false, false)]
+    [TestCase(typeof(GenericCat<int, string>), typeof(GenericAnimal<bool, int>),   false, false)]
+    public void ClassIsSubclassOfReturnsProperValue(Type klass, Type parentClass, bool check_interfaces, bool expectedResult)
+    {
+        bool isSubclass = ClrHost.class_is_subclass_of(klass, parentClass, check_interfaces);
+        Assert.That(isSubclass, Is.EqualTo(expectedResult));
+    }
+
     [TestCase(typeof(Animal),                        false)]
     [TestCase(typeof(List<>),                         true)]
     [TestCase(typeof(GenericAnimal<, >),              true)]
@@ -636,7 +658,7 @@ public abstract class BaseEmbeddingApiTests
         bool isGeneric = ClrHost.class_is_generic(klass.MakeByRefType());
         Assert.That(isGeneric, Is.EqualTo(expectedResult));
     }
-  
+
     [TestCase(typeof(Classification),                    true)]
     [TestCase(typeof(Classification*),                  false)]
     [TestCase(typeof(Classification[]),                 false)]
