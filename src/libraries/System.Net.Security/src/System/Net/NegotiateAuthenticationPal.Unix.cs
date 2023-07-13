@@ -237,8 +237,8 @@ namespace System.Net
                     _ => 0
                 };
 
-                // NOTE: Historically serverOptions.Policy was ignore on Unix without an exception
-                // or error message. We continue to do so for compatibity reasons and because there
+                // NOTE: Historically serverOptions.Policy was ignored on Unix without an exception
+                // or error message. We continue to do so for compatibility reasons and because there
                 // are no direct equivalents in GSSAPI.
 
                 _isServer = true;
