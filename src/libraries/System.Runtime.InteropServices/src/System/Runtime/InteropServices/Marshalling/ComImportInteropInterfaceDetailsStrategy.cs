@@ -46,7 +46,8 @@ namespace System.Runtime.InteropServices.Marshalling
     ///
     /// We emit the <c>IgnoresAccessChecksToAttribute</c> to enable casting to internal <see cref="ComImportAttribute"/> types, which is a very common scenario (most <see cref="ComImportAttribute"/> types are internal).
     /// </remarks>
-    [RequiresDynamicCode("Enabling interop between source-generated and runtime-generated COM requires dynamic code generation.")]
+    [RequiresDynamicCode("Enabling interop between source-generated and built-in COM is not supported when trimming is enabled.")]
+    [RequiresUnreferencedCode("Enabling interop between source-generated and built-in COM requires dynamic code generation.")]
     internal sealed class ComImportInteropInterfaceDetailsStrategy : IIUnknownInterfaceDetailsStrategy
     {
         public static readonly IIUnknownInterfaceDetailsStrategy Instance = new ComImportInteropInterfaceDetailsStrategy();
@@ -56,10 +57,6 @@ namespace System.Runtime.InteropServices.Marshalling
         // TODO: Support exposing ComImport interfaces through StrategyBasedComWrappers?
         public IComExposedDetails? GetComExposedTypeDetails(RuntimeTypeHandle type) => DefaultIUnknownInterfaceDetailsStrategy.Instance.GetComExposedTypeDetails(type);
 
-        [UnconditionalSuppressMessage("Trimming", "IL2065", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
-        [UnconditionalSuppressMessage("Trimming", "IL2067", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
-        [UnconditionalSuppressMessage("Trimming", "IL2070", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
-        [UnconditionalSuppressMessage("Trimming", "IL2075", Justification = "Runtime-based COM interop is not supported with trimming enabled.")]
         public IIUnknownDerivedDetails? GetIUnknownDerivedDetails(RuntimeTypeHandle type)
         {
             Type runtimeType = Type.GetTypeFromHandle(type)!;
