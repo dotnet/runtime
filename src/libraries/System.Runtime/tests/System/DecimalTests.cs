@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Numerics;
+using System.Text;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
@@ -996,6 +997,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => decimal.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(decimal.TryParse(value.AsSpan(), style, provider, out decimal result));
+                Assert.Equal(0, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, decimal expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+
+            decimal result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            if ((style & ~NumberStyles.Number) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(decimal.TryParse(valueUtf8, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, decimal.Parse(valueUtf8));
+                }
+
+                Assert.Equal(expected, decimal.Parse(valueUtf8, provider: provider));
+            }
+
+            Assert.Equal(expected, decimal.Parse(valueUtf8, style, provider));
+
+            Assert.True(decimal.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+                Assert.Throws(exceptionType, () => decimal.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(decimal.TryParse(valueUtf8, style, provider, out decimal result));
                 Assert.Equal(0, result);
             }
         }

@@ -1505,16 +1505,20 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/77334")]
         public async Task JsImportTaskTypes()
         {
-            object a = new object();
-            Exception e = new Exception();
-            JSObject j = JSHost.GlobalThis;
-            Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
-            Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
-            Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
-            Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
+            for(int i=0;i<100;i++)
+            {
+                object a = new object();
+                Exception e = new Exception();
+                JSObject j = JSHost.GlobalThis;
+                Assert.Equal("test", await JavaScriptTestHelper.echopromise_String("test"));
+                Assert.Same(a, await JavaScriptTestHelper.echopromise_Object(a));
+                Assert.Same(e, await JavaScriptTestHelper.echopromise_Exception(e));
+                Assert.Same(j, await JavaScriptTestHelper.echopromise_JSObject(j));
+                GC.Collect();
+                await Task.Delay(10);
+            }
         }
 
         [Fact]

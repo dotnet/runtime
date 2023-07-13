@@ -668,21 +668,6 @@ namespace System.Text.RegularExpressions
                             break; // this break will only break out of the switch
                     }
                 }
-                else if (ch == '[')
-                {
-                    // This is code for Posix style properties - [:Ll:] or [:IsTibetan:].
-                    // It currently doesn't do anything other than skip the whole thing!
-                    if (_pos < _pattern.Length && _pattern[_pos] == ':' && !inRange)
-                    {
-                        int savePos = _pos;
-
-                        _pos++;
-                        if (_pos + 1 >= _pattern.Length || _pattern[_pos++] != ':' || _pattern[_pos++] != ']')
-                        {
-                            _pos = savePos;
-                        }
-                    }
-                }
 
                 if (inRange)
                 {

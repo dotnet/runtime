@@ -2504,7 +2504,11 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	if (!sig->hasthis && sig->param_count != invoke_sig->param_count) {
 		/* Closed delegate */
-		g_assert (sig->param_count == invoke_sig->param_count + 1);
+		if (sig->param_count != invoke_sig->param_count + 1) {
+			g_warning ("Closed delegate has incorrect number of arguments: %s.", mono_method_full_name (method, TRUE));
+			g_assert_not_reached ();
+		}
+
 		closed = TRUE;
 		/* Use a new signature without the first argument */
 		sig = mono_metadata_signature_dup (sig);
