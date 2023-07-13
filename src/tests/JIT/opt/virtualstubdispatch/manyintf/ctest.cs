@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 namespace VirtFunc
 {
-    class CTest : ITest1, ITest2, ITest3, ITest4, ITest5, ITest6, ITest7, ITest8, ITest9, ITest10
+    public class CTest : ITest1, ITest2, ITest3, ITest4, ITest5, ITest6, ITest7, ITest8, ITest9, ITest10
     {
         public int f1a() { return 1; }
         public int f1b(int a) { return 1 + a; }
@@ -46,7 +47,8 @@ namespace VirtFunc
         public int f10b(int a) { return 10 + a; }
         public decimal f10c() { return 10; }
         public string f10d() { return "10"; }
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             CTest c = new CTest();
 

@@ -242,7 +242,26 @@ namespace System.IO.Tests
 
             sw.Write(sb.ToString());
 
-            await sw.FlushAsync(); // I think this is a noop in this case
+            await sw.FlushAsync();
+
+            Assert.Equal(sb.ToString(), sw.GetStringBuilder().ToString());
+        }
+
+        [Fact]
+        public static async Task FlushAsyncWorks_Cancellation()
+        {
+            StringBuilder sb = getSb();
+            StringWriter sw = new StringWriter(sb);
+
+            sw.Write(sb.ToString());
+
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
+            Task t = sw.FlushAsync(cts.Token);
+            Assert.Equal(TaskStatus.Canceled, t.Status);
+            Assert.Equal(cts.Token, (await Assert.ThrowsAnyAsync<OperationCanceledException>(() => t)).CancellationToken);
+
+            await sw.FlushAsync(new CancellationTokenSource().Token);
 
             Assert.Equal(sb.ToString(), sw.GetStringBuilder().ToString());
         }

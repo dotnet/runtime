@@ -323,20 +323,6 @@ namespace
 
         trace::verbose(_X("Showing error dialog for application: '%s' - error code: 0x%x - url: '%s' - details: %s"), executable_name, error_code, url.c_str(), details.c_str());
 
-        HMODULE user32 = ::LoadLibraryExW(L"user32.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-        if (user32 != nullptr)
-        {
-            using set_thread_dpi = DPI_AWARENESS_CONTEXT(WINAPI*)(DPI_AWARENESS_CONTEXT context);
-            set_thread_dpi set_thread_dpi_func = (set_thread_dpi)::GetProcAddress(user32, "SetThreadDpiAwarenessContext");
-
-            // Since this is only for errors shown when the process is about to exit, we
-            // skip resetting to the previous context to minimize impact on apphost size
-            if (set_thread_dpi_func != nullptr)
-                (void) set_thread_dpi_func(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-    
-            ::FreeLibrary(user32);
-        }
-
         if (enable_visual_styles())
         {
             // Task dialog requires enabling visual styles

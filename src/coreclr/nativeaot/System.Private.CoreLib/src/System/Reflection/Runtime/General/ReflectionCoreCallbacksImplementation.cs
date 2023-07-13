@@ -325,15 +325,6 @@ namespace System.Reflection.Runtime.General
             return null;
         }
 
-#if FEATURE_COMINTEROP
-        public sealed override Type GetTypeFromCLSID(Guid clsid, string server, bool throwOnError)
-        {
-            // Note: "throwOnError" is a vacuous parameter. Any errors due to the CLSID not being registered or the server not being found will happen
-            // on the Activator.CreateInstance() call. GetTypeFromCLSID() merely wraps the data in a Type object without any validation.
-            return RuntimeCLSIDTypeInfo.GetRuntimeCLSIDTypeInfo(clsid, server);
-        }
-#endif
-
         public sealed override IntPtr GetFunctionPointer(RuntimeMethodHandle runtimeMethodHandle, RuntimeTypeHandle declaringTypeHandle)
         {
             MethodBase method = GetMethodFromHandle(runtimeMethodHandle, declaringTypeHandle);
@@ -413,22 +404,21 @@ namespace System.Reflection.Runtime.General
             return info;
         }
 
-        private class EnumUnderlyingTypeComparer : IComparer<object>
+        private sealed class EnumUnderlyingTypeComparer : IComparer<object>
         {
             public static readonly EnumUnderlyingTypeComparer Instance = new EnumUnderlyingTypeComparer();
 
             public int Compare(object? x, object? y)
-                => x switch
+            {
+                Debug.Assert(x is byte or ushort or uint or ulong);
+                return x switch
                 {
-                    int i => i.CompareTo((int)y!),
-                    uint ui => ui.CompareTo((uint)y!),
                     byte b => b.CompareTo((byte)y!),
                     ushort us => us.CompareTo((ushort)y!),
-                    short s => s.CompareTo((short)y!),
-                    sbyte sb => sb.CompareTo((sbyte)y!),
-                    long l => l.CompareTo((long)y!),
+                    uint ui => ui.CompareTo((uint)y!),
                     _ => ((ulong)x!).CompareTo((ulong)y!),
                 };
+            }
         }
 
         public sealed override DynamicInvokeInfo GetDelegateDynamicInvokeInfo(Type type)

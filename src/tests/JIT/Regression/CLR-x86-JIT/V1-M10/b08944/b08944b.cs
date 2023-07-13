@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 //
 
+using Xunit;
 namespace X
 {
     //@BEGINRENAME; Verify this renames
@@ -28,13 +29,14 @@ namespace X
         }
         */
 
-        public static void bomb()
+        internal static void bomb()
         {
             char[] p = null;
             p[0] = (char)0;
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             UInt32 ec, ec1;
 

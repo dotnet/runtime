@@ -22,8 +22,8 @@ namespace ILCompiler.Dataflow
 
         internal TrimAnalysisAssignmentPattern(MultiValue source, MultiValue target, MessageOrigin origin, string reason)
         {
-            Source = source.Clone();
-            Target = target.Clone();
+            Source = source.DeepCopy();
+            Target = target.DeepCopy();
             Origin = origin;
             Reason = reason;
         }
@@ -52,16 +52,6 @@ namespace ILCompiler.Dataflow
             {
                 foreach (var targetValue in Target)
                 {
-                    if (targetValue is FieldValue fieldValue)
-                    {
-                        // Once this is removed, please also cleanup ReflectionMethodBodyScanner.HandleStoreValueWithDynamicallyAccessedMembers
-                        // which has to special case FieldValue right now, should not be needed after removal of this
-                        ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, fieldValue.Field, DiagnosticUtilities.RequiresUnreferencedCodeAttribute);
-                        ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, fieldValue.Field, DiagnosticUtilities.RequiresDynamicCodeAttribute);
-                        // ?? Should this be enabled (was not so far)
-                        //ReflectionMethodBodyScanner.CheckAndReportRequires(diagnosticContext, fieldValue.Field, DiagnosticUtilities.RequiresAssemblyFilesAttribute);
-                    }
-
                     if (targetValue is not ValueWithDynamicallyAccessedMembers targetWithDynamicallyAccessedMembers)
                         throw new NotImplementedException();
 

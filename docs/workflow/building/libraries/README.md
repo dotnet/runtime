@@ -12,11 +12,11 @@ git pull upstream main & git push origin main
 build.cmd clr+libs -rc Release
 :: Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-:: If you use Visual Studio, you might open System.Text.RegularExpressions.sln here.
-build.cmd -vs System.Text.RegularExpressions
+:: If you use Visual Studio, you might open System.Collections.Concurrent.sln here.
+build.cmd -vs System.Collections.Concurrent
 
-:: Switch to working on a given library (RegularExpressions in this case)
-cd src\libraries\System.Text.RegularExpressions
+:: Switch to working on a given library (System.Collections.Concurrent in this case)
+cd src\libraries\System.Collections.Concurrent
 
 :: Change to test directory
 cd tests
@@ -33,19 +33,19 @@ Instructions for Unix-like operating systems are essentially the same:
 
 # From root:
 git clean -xdf
-git pull upstream main & git push origin main
+git pull upstream main; git push origin main
 # Build Debug libraries on top of Release runtime:
 ./build.sh clr+libs -rc Release
 # Performing the above is usually only needed once in a day, or when you pull down significant new changes.
 
-# Switch to working on a given library (RegularExpressions in this case)
-cd src/libraries/System.Text.RegularExpressions
+# Switch to working on a given library (System.Collections.Concurrent in this case)
+cd src/libraries/System.Collections.Concurrent
 
 # Change to test directory
 cd tests
 
 # Then inner loop build / test:
-pushd ../src & dotnet build & popd & dotnet build /t:test
+pushd ../src; dotnet build; popd; dotnet build /t:test
 ```
 
 The steps above may be all you need to know to make a change. Want more details about what this means? Read on.
@@ -105,7 +105,7 @@ By default the `build` script only builds the product libraries and none of the 
 
 For Windows, replace `./build.sh` with `build.cmd`.
 
-### How to building native components only
+### How to build native components only
 
 The libraries build contains some native code. This includes shims over libc, openssl, gssapi, and zlib. The build system uses CMake to generate Makefiles using clang. The build also uses git for generating some version information.
 
@@ -238,11 +238,11 @@ To build a library's package, simply invoke `dotnet pack` on the src project aft
 
 ```cmd
 build libs
-dotnet pack src\libraries\System.Text.Json\src\
+dotnet.cmd pack src\libraries\System.Text.Json\src\
 ```
 
 Same as for `dotnet build` or `dotnet publish`, you can specify the desired configuration via the `-c` flag:
 
 ```cmd
-dotnet pack src\libraries\System.Text.Json\src\ -c Release
+dotnet.cmd pack src\libraries\System.Text.Json\src\ -c Release
 ```

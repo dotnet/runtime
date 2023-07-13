@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_CnsLng1
 {
     const int Pass = 100;
@@ -13,7 +14,8 @@ public class BringUpTest_CnsLng1
     [MethodImplAttribute(MethodImplOptions.NoInlining)]
     public static long CnsLng1() { return 1; }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         long y = CnsLng1();
         if (y == 1) return Pass;

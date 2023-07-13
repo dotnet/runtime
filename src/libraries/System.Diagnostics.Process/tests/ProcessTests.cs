@@ -244,7 +244,7 @@ namespace System.Diagnostics.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.HasWindowsShell))]
         [OuterLoop("Launches File Explorer")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_OnWindows_OpenMissingFile_Throws()
         {
             string fileToOpen = Path.Combine(Environment.CurrentDirectory, "_no_such_file.TXT");
@@ -257,7 +257,7 @@ namespace System.Diagnostics.Tests
         [InlineData(true)]
         [InlineData(false)]
         [OuterLoop("Launches File Explorer")]
-        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "Not supported on iOS and tvOS.")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void ProcessStart_UseShellExecute_OnWindows_DoesNotThrow(bool isFolder)
         {
             string fileToOpen;
@@ -769,7 +769,25 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
-            AssertNonZeroAllZeroDarwin(_process.PeakWorkingSet64);
+            if (OperatingSystem.IsMacOS())
+            {
+                Assert.Equal(0, _process.PeakWorkingSet64);
+                return;
+            }
+
+            // On recent Linux kernels (6.2+) working set can be zero just after the process started.
+            ExecuteWithRetryOnLinux(() =>
+            {
+                try
+                {
+                    Assert.NotEqual(0, _process.PeakWorkingSet64);
+                }
+                catch
+                {
+                    _process.Refresh();
+                    throw;
+                }
+            });
         }
 
         [Fact]
@@ -822,7 +840,19 @@ namespace System.Diagnostics.Tests
                 return;
             }
 
-            Assert.InRange(_process.WorkingSet64, 1, long.MaxValue);
+            // On recent Linux kernels (6.2+) working set can be zero just after the process started.
+            ExecuteWithRetryOnLinux(() =>
+            {
+                try
+                {
+                    Assert.InRange(_process.WorkingSet64, 1, long.MaxValue);
+                }
+                catch
+                {
+                    _process.Refresh();
+                    throw;
+                }
+            });
         }
 
         [Fact]
@@ -877,7 +907,20 @@ namespace System.Diagnostics.Tests
 
             double cpuUsage = cpuTimeDiff / (timeDiff * Environment.ProcessorCount);
 
-            Assert.InRange(cpuUsage, 0, 1);
+            try
+            {
+                Assert.InRange(cpuUsage, 0, 1); // InRange is an inclusive test
+            }
+            catch (InRangeException)
+            {
+                string msg = $"Assertion failed. {cpuUsage} is not in range [0,1]. " +
+                             $"proc time before:{processorTimeBeforeSpin.TotalMilliseconds} " +
+                             $"proc time after:{processorTimeAfterSpin.TotalMilliseconds} " +
+                             $"timeDiff:{timeDiff} " +
+                             $"cpuTimeDiff:{cpuTimeDiff} " +
+                             $"Environment.ProcessorCount:{Environment.ProcessorCount}";
+                throw new XunitException(msg);
+            }
         }
 
         [Fact]
@@ -2014,9 +2057,29 @@ namespace System.Diagnostics.Tests
         {
             CreateDefaultProcess();
 
+            if (OperatingSystem.IsMacOS())
+            {
 #pragma warning disable 0618
-            AssertNonZeroAllZeroDarwin(_process.PeakWorkingSet);
+                Assert.Equal(0, _process.PeakWorkingSet);
 #pragma warning restore 0618
+                return;
+            }
+
+            // On recent Linux kernels (6.2+) working set can be zero just after the process started.
+            ExecuteWithRetryOnLinux(() =>
+            {
+                try
+                {
+#pragma warning disable 0618
+                    Assert.NotEqual(0, _process.PeakWorkingSet);
+#pragma warning restore 0618
+                }
+                catch
+                {
+                    _process.Refresh();
+                    throw;
+                }
+            });
         }
 
         [Fact]
@@ -2080,9 +2143,21 @@ namespace System.Diagnostics.Tests
                 return;
             }
 
+            // On recent Linux kernels (6.2+) working set can be zero just after the process started.
+            ExecuteWithRetryOnLinux(() =>
+            {
+                try
+                {
 #pragma warning disable 0618
-            Assert.InRange(_process.WorkingSet, 1, int.MaxValue);
+                    Assert.InRange(_process.WorkingSet, 1, int.MaxValue);
 #pragma warning restore 0618
+                }
+                catch
+                {
+                    _process.Refresh();
+                    throw;
+                }
+            });
         }
 
         [Fact]
@@ -2676,6 +2751,18 @@ namespace System.Diagnostics.Tests
             }
 
             return secureString;
+        }
+
+        private static void ExecuteWithRetryOnLinux(Action test)
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                RetryHelper.Execute(test, retryWhen: ex => ex is XunitException);
+            }
+            else
+            {
+                test();
+            }
         }
     }
 }

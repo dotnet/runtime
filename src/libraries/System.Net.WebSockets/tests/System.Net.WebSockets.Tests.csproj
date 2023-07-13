@@ -6,6 +6,7 @@
     <RdXmlFile Include="default.rd.xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="WebSocketCloseTests.cs" />
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="WebSocketExceptionTests.cs" />
     <Compile Include="WebSocketReceiveResultTests.cs" />

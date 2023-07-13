@@ -55,6 +55,7 @@ namespace System.Security.Cryptography.Tests
         [InlineData(64, 64, false)]
         public static void Roundtrip(int inputBlockSize, int outputBlockSize, bool canTransformMultipleBlocks)
         {
+            const string ExpectedString = LoremText + LoremText + LoremText + LoremText + LoremText;
             ICryptoTransform encryptor = new IdentityTransform(inputBlockSize, outputBlockSize, canTransformMultipleBlocks);
             ICryptoTransform decryptor = new IdentityTransform(inputBlockSize, outputBlockSize, canTransformMultipleBlocks);
 
@@ -88,6 +89,10 @@ namespace System.Security.Cryptography.Tests
                 encryptStream.WriteAsync(toWrite, 0, toWrite.Length).GetAwaiter().GetResult();
                 Assert.False(encryptStream.HasFlushedFinalBlock);
 
+                // Write span
+                encryptStream.Write(toWrite.AsSpan());
+                Assert.False(encryptStream.HasFlushedFinalBlock);
+
                 // Flush (nops)
                 encryptStream.Flush();
                 encryptStream.FlushAsync().GetAwaiter().GetResult();
@@ -110,9 +115,7 @@ namespace System.Security.Cryptography.Tests
 
                 using (StreamReader reader = new StreamReader(decryptStream))
                 {
-                    Assert.Equal(
-                        LoremText + LoremText + LoremText + LoremText,
-                        reader.ReadToEnd());
+                    Assert.Equal(ExpectedString, reader.ReadToEnd());
                 }
             }
 
@@ -121,9 +124,7 @@ namespace System.Security.Cryptography.Tests
             using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
             using (StreamReader reader = new StreamReader(decryptStream))
             {
-                Assert.Equal(
-                    LoremText + LoremText + LoremText + LoremText,
-                    reader.ReadToEndAsync().GetAwaiter().GetResult());
+                Assert.Equal(ExpectedString, reader.ReadToEndAsync().GetAwaiter().GetResult());
             }
 
             // Read/decrypt using a small buffer to force multiple calls to Read
@@ -131,17 +132,14 @@ namespace System.Security.Cryptography.Tests
             using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
             using (StreamReader reader = new StreamReader(decryptStream, Encoding.UTF8, true, bufferSize: 10))
             {
-                Assert.Equal(
-                    LoremText + LoremText + LoremText + LoremText,
-                    reader.ReadToEndAsync().GetAwaiter().GetResult());
+                Assert.Equal(ExpectedString, reader.ReadToEndAsync().GetAwaiter().GetResult());
             }
 
             // Read/decrypt one byte at a time with ReadByte
             stream = new MemoryStream(stream.ToArray()); // CryptoStream.Dispose disposes the stream
             using (CryptoStream decryptStream = new CryptoStream(stream, decryptor, CryptoStreamMode.Read))
             {
-                string expectedStr = LoremText + LoremText + LoremText + LoremText;
-                foreach (char c in expectedStr)
+                foreach (char c in ExpectedString)
                 {
                     Assert.Equal(c, decryptStream.ReadByte()); // relies on LoremText being ASCII
                 }

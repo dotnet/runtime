@@ -62,5 +62,16 @@
     <TestConsoleAppSourceFiles Include="StackOrQueueNotRootedTest.cs" />
   </ItemGroup>
 
+  <!-- All tests declared above rely on JsonSerializerIsReflectionEnabledByDefault behavior.-->
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Update="@(TestConsoleAppSourceFiles)" EnabledProperties="JsonSerializerIsReflectionEnabledByDefault" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TestConsoleAppSourceFiles Include="IsReflectionEnabledByDefaultFalse.cs">
+      <DisabledProperties>JsonSerializerIsReflectionEnabledByDefault</DisabledProperties>
+    </TestConsoleAppSourceFiles>
+  </ItemGroup>
+
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
 </Project>

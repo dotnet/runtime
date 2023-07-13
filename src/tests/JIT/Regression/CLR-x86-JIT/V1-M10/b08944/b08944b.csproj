@@ -2,7 +2,6 @@
   <PropertyGroup>
     <!-- Needed for GCStressIncompatible -->
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
-    <OutputType>Exe</OutputType>
     <!-- This test is disabled until #12224 is fixed -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

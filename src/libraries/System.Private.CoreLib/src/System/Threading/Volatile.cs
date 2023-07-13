@@ -10,8 +10,8 @@ namespace System.Threading
     /// <summary>Methods for accessing memory with volatile semantics.</summary>
     public static unsafe class Volatile
     {
-        // The VM may replace these implementations with more efficient ones in some cases.
-        // In coreclr, for example, see getILIntrinsicImplementationForVolatile() in jitinterface.cpp.
+        // The runtime may replace these implementations with more efficient ones in some cases.
+        // In coreclr, for example, see importercalls.cpp.
 
         #region Boolean
         private struct VolatileBoolean { public volatile bool Value; }
@@ -47,13 +47,13 @@ namespace System.Threading
         public static double Read(ref double location)
         {
             long result = Read(ref Unsafe.As<double, long>(ref location));
-            return *(double*)&result;
+            return BitConverter.Int64BitsToDouble(result);
         }
 
         [Intrinsic]
         [NonVersionable]
         public static void Write(ref double location, double value) =>
-            Write(ref Unsafe.As<double, long>(ref location), *(long*)&value);
+            Write(ref Unsafe.As<double, long>(ref location), BitConverter.DoubleToInt64Bits(value));
         #endregion
 
         #region Int16

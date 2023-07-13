@@ -39,7 +39,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             state.Current.JsonPropertyInfo = state.Current.JsonTypeInfo.ElementTypeInfo!.PropertyInfoForTypeInfo;
-            if (_elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element))
+            if (_elementConverter.TryRead(ref reader, typeof(TElement), options, ref state, out TElement? element, out _))
             {
                 value = _optionConstructor(element);
                 return true;

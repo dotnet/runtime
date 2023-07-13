@@ -126,11 +126,9 @@ namespace Internal.IL.Stubs
                     codeStream.Emit(ILOpcode.call,
                         _emitter.NewToken(eetypeType.GetKnownMethod("get_RelatedParameterType", null)));
 
-                    // if (TypeCast.AreTypesEquivalent(expectedElementType, actualElementType))
+                    // if (expectedElementType != actualElementType)
                     //     ThrowHelpers.ThrowArrayTypeMismatchException();
-                    codeStream.Emit(ILOpcode.call, _emitter.NewToken(
-                        context.SystemModule.GetKnownType("System.Runtime", "TypeCast").GetKnownMethod("AreTypesEquivalent", null)));
-                    codeStream.Emit(ILOpcode.brfalse, typeMismatchExceptionLabel);
+                    codeStream.Emit(ILOpcode.bne_un, typeMismatchExceptionLabel);
 
                     codeStream.EmitLabel(typeCheckPassedLabel);
                 }

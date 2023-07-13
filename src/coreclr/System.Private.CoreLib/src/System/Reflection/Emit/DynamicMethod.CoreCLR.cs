@@ -150,8 +150,8 @@ namespace System.Reflection.Emit
                 {
                     Debug.Assert(parameters != null);
                     StackAllocedArguments argStorage = default;
-                    Span<object?> copyOfParameters = new(ref argStorage._arg0, argCount);
-                    Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, argCount);
+                    Span<object?> copyOfParameters = argStorage._args.AsSpan(argCount);
+                    Span<ParameterCopyBackAction> shouldCopyBackParameters = argStorage._copyBacks.AsSpan(argCount);
 
                     StackAllocatedByRefs byrefStorage = default;
 #pragma warning disable CS8500

@@ -1,15 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*=============================================================================
-**
-**
-**
-** Purpose: Class for creating and managing a threadpool
-**
-**
-=============================================================================*/
-
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -22,6 +13,9 @@ using System.Threading.Tasks;
 
 namespace System.Threading
 {
+    /// <summary>
+    /// Class for creating and managing a threadpool.
+    /// </summary>
     internal sealed partial class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
@@ -935,7 +929,7 @@ namespace System.Threading
                 // us to return the thread to the pool or not.
                 //
                 int currentTickCount = Environment.TickCount;
-                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject, currentTickCount))
+                if (!ThreadPool.NotifyWorkItemComplete(threadLocalCompletionCountObject!, currentTickCount))
                 {
                     // This thread is being parked and may remain inactive for a while. Transfer any thread-local work items
                     // to ensure that they would not be heavily delayed. Tell the caller that this thread was requested to stop
@@ -1375,7 +1369,7 @@ namespace System.Threading
         internal static bool EnableWorkerTracking => IsWorkerTrackingEnabledInConfig && EventSource.IsSupported;
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
@@ -1392,7 +1386,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         [CLSCompliant(false)]
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
@@ -1409,7 +1403,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1424,7 +1418,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
              WaitHandle waitObject,
@@ -1439,7 +1433,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
             WaitHandle waitObject,
@@ -1455,7 +1449,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
             WaitHandle waitObject,
@@ -1471,7 +1465,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle RegisterWaitForSingleObject(
                           WaitHandle waitObject,
@@ -1490,7 +1484,7 @@ namespace System.Threading
         }
 
 #if !FEATURE_WASM_THREADS
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
+        [UnsupportedOSPlatform("browser")]
 #endif
         public static RegisteredWaitHandle UnsafeRegisterWaitForSingleObject(
                           WaitHandle waitObject,

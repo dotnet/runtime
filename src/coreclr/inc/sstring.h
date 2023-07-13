@@ -619,11 +619,11 @@ public:
 #endif  // CHECK_INVARIANTS
 
     // Helpers for CRT function equivalance.
-    static int __cdecl _stricmp(const CHAR *buffer1, const CHAR *buffer2);
-    static int __cdecl _strnicmp(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count);
+    static int _stricmp(const CHAR *buffer1, const CHAR *buffer2);
+    static int _strnicmp(const CHAR *buffer1, const CHAR *buffer2, COUNT_T count);
 
-    static int __cdecl _wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2);
-    static int __cdecl _wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count);
+    static int _wcsicmp(const WCHAR *buffer1, const WCHAR *buffer2);
+    static int _wcsnicmp(const WCHAR *buffer1, const WCHAR *buffer2, COUNT_T count);
 
     // C++ convenience overloads
     static int _tstricmp(const CHAR *buffer1, const CHAR *buffer2);

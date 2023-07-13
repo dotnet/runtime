@@ -1,4 +1,5 @@
 set(MONO_COMPONENT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../component")
+set(SHARED_CONTAINERS_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/containers/")
 set(SHARED_EVENTPIPE_SOURCE_PATH "${CLR_SRC_NATIVE_DIR}/eventpipe/")
 set(MONO_EVENTPIPE_SHIM_SOURCE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../eventpipe/")
 set(MONO_EVENTPIPE_GEN_INCLUDE_PATH "${CMAKE_CURRENT_BINARY_DIR}/eventpipe")
@@ -59,7 +60,7 @@ list(APPEND components
   ${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}
 )
 
-include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/CMakeLists.txt)
+include(${MONO_EVENTPIPE_SHIM_SOURCE_PATH}/eventpipe.cmake)
 
 include_directories(
   ${MONO_EVENTPIPE_SHIM_SOURCE_PATH}
@@ -67,6 +68,7 @@ include_directories(
 )
 
 set(${MONO_DIAGNOSTICS_TRACING_COMPONENT_NAME}-sources
+  ${container_sources}
   ${eventpipe_sources}
   ${diagnostic_server_sources}
   ${MONO_COMPONENT_PATH}/event_pipe.c
@@ -190,7 +192,7 @@ if(NOT DISABLE_COMPONENTS AND NOT STATIC_COMPONENTS)
       target_link_libraries("mono-component-${component}" PRIVATE monosgen-shared)
     endif()
     target_link_libraries("mono-component-${component}" PRIVATE ${OS_LIBS})
-    install(TARGETS "mono-component-${component}" LIBRARY)
+    install_with_stripped_symbols("mono-component-${component}" TARGETS lib)
   endforeach()
 
   #define a library for each component and component stub

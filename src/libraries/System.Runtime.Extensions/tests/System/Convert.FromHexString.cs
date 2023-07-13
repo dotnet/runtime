@@ -102,5 +102,25 @@ namespace System.Tests
         {
             Assert.Same(Array.Empty<byte>(), Convert.FromHexString(string.Empty));
         }
+
+        [Fact]
+        public static void ToHexFromHexRoundtrip()
+        {
+            for (int i = 1; i < 50; i++)
+            {
+                byte[] data = System.Security.Cryptography.RandomNumberGenerator.GetBytes(i);
+                string hex = Convert.ToHexString(data);
+                Assert.Equal(data, Convert.FromHexString(hex.ToLowerInvariant()));
+                Assert.Equal(data, Convert.FromHexString(hex.ToUpperInvariant()));
+                string mixedCase1 = hex.Substring(0, hex.Length / 2).ToUpperInvariant() +
+                                    hex.Substring(hex.Length / 2).ToLowerInvariant();
+                string mixedCase2 = hex.Substring(0, hex.Length / 2).ToLowerInvariant() +
+                                    hex.Substring(hex.Length / 2).ToUpperInvariant();
+                Assert.Equal(data, Convert.FromHexString(mixedCase1));
+                Assert.Equal(data, Convert.FromHexString(mixedCase2));
+                Assert.Throws<FormatException>(() => Convert.FromHexString(hex + "  "));
+                Assert.Throws<FormatException>(() => Convert.FromHexString("\uAAAA" + hex));
+            }
+        }
     }
 }

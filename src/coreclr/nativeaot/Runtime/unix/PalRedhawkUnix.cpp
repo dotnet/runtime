@@ -344,8 +344,6 @@ void ConfigureSignals()
     signal(SIGPIPE, SIG_IGN);
 }
 
-extern bool GetCpuLimit(uint32_t* val);
-
 void InitializeCurrentProcessCpuCount()
 {
     uint32_t count;
@@ -354,9 +352,9 @@ void InitializeCurrentProcessCpuCount()
     // process affinity and CPU quota limit.
 
     const unsigned int MAX_PROCESSOR_COUNT = 0xffff;
-    uint32_t configValue;
+    uint64_t configValue;
 
-    if (g_pRhConfig->ReadConfigValue(_T("PROCESSOR_COUNT"), &configValue, true /* decimal */) &&
+    if (g_pRhConfig->ReadConfigValue("PROCESSOR_COUNT", &configValue, true /* decimal */) &&
         0 < configValue && configValue <= MAX_PROCESSOR_COUNT)
     {
         count = configValue;
@@ -615,7 +613,7 @@ extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
+REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
 {
     UnixEvent event = UnixEvent(manualReset, initialState);
     if (!event.Initialize())
@@ -738,6 +736,13 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     // write() has __attribute__((warn_unused_result)) in glibc, for which gcc 11+ issue `-Wunused-result` even with `(void)write(..)`,
     // so we use additional NOT(!) operator to force unused-result suppression.
     (void)!write(STDERR_FILENO, message, strlen(message));
+}
+
+REDHAWK_PALEXPORT char* PalCopyTCharAsChar(const TCHAR* toCopy)
+{
+    NewArrayHolder<char> copy {new (nothrow) char[strlen(toCopy) + 1]};
+    strcpy(copy, toCopy);
+    return copy.Extract();
 }
 
 static int W32toUnixAccessControl(uint32_t flProtect)
@@ -887,12 +892,6 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
 #endif
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
-}
-
 extern "C" HANDLE GetCurrentProcess()
 {
     return (HANDLE)-1;
@@ -1033,7 +1032,7 @@ static void ActivationHandler(int code, siginfo_t* siginfo, void* context)
 #endif
         ))
     {
-        // Make sure that errno is not modified 
+        // Make sure that errno is not modified
         int savedErrNo = errno;
         g_pHijackCallback((NATIVE_CONTEXT*)context, NULL);
         errno = savedErrNo;
@@ -1258,7 +1257,7 @@ extern "C" uint64_t PalQueryPerformanceFrequency()
     return GCToOSInterface::QueryPerformanceFrequency();
 }
 
-extern "C" uint64_t PalGetCurrentThreadIdForLogging()
+extern "C" uint64_t PalGetCurrentOSThreadId()
 {
 #if defined(__linux__)
     return (uint64_t)syscall(SYS_gettid);
@@ -1277,12 +1276,16 @@ extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 }
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
+// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
+// We define matching signatures for use on Unix platforms.
+//
+// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
 
 #if !__has_builtin(__cpuid)
 REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
 
     __asm("  cpuid\n" \
         : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
@@ -1295,7 +1298,7 @@ REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
+    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
 
     __asm("  cpuid\n" \
         : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
@@ -1316,8 +1319,26 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
     return ((eax & 0x06) == 0x06) ? 1 : 0;
 }
 
+#ifndef XSTATE_MASK_AVX512
+#define XSTATE_MASK_AVX512 (0xE0) /* 0b1110_0000 */
+#endif // XSTATE_MASK_AVX512
+
 REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI avx512StateSupport()
 {
+#if defined(TARGET_APPLE)
+    // MacOS has specialized behavior where it reports AVX512 support but doesnt
+    // actually enable AVX512 until the first instruction is executed and does so
+    // on a per thread basis. It does this by catching the faulting instruction and
+    // checking for the EVEX encoding. The kmov instructions, despite being part
+    // of the AVX512 instruction set are VEX encoded and dont trigger the enablement
+    //
+    // See https://github.com/apple/darwin-xnu/blob/main/osfmk/i386/fpu.c#L174
+
+    // TODO-AVX512: Enabling this for OSX requires ensuring threads explicitly trigger
+    // the AVX-512 enablement so that arbitrary usage doesn't cause downstream problems
+
+    return false;
+#else
     DWORD eax;
     __asm("  xgetbv\n" \
         : "=a"(eax) /*output in eax*/\
@@ -1326,6 +1347,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI avx512StateSupport()
       );
     // check OS has enabled XMM, YMM and ZMM state support
     return ((eax & 0xE6) == 0x0E6) ? 1 : 0;
+#endif
 }
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
@@ -1418,7 +1440,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-        *flags |= ARM64IntrinsicConstants_AdvSimd;
+        *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif
 #ifdef HWCAP_ASIMDRDM
     if (hwCap & HWCAP_ASIMDRDM)
@@ -1517,7 +1539,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif // HAVE_AUXV_HWCAP_H
 }
 #endif

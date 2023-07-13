@@ -20,7 +20,6 @@ namespace System.Reflection.Runtime.MethodInfos
     //
     // Abstract base class for RuntimeNamedMethodInfo, RuntimeConstructedGenericMethodInfo.
     //
-    [DebuggerDisplay("{_debugName}")]
     internal abstract partial class RuntimeMethodInfo : MethodInfo
     {
         protected RuntimeMethodInfo()
@@ -326,8 +325,10 @@ namespace System.Reflection.Runtime.MethodInfos
                 return null;
             }
 
+#pragma warning disable CA1859 // Use concrete types when possible for improved performance https://github.com/dotnet/roslyn-analyzers/issues/6751
             IList<ParameterInfo> delegateParameters = invokeMethod.GetParametersNoCopy();
             IList<ParameterInfo> targetParameters = this.GetParametersNoCopy();
+#pragma warning restore CA1859
             IEnumerator<ParameterInfo> delegateParameterEnumerator = delegateParameters.GetEnumerator();
             IEnumerator<ParameterInfo> targetParameterEnumerator = targetParameters.GetEnumerator();
 
@@ -447,21 +448,18 @@ namespace System.Reflection.Runtime.MethodInfos
 
         protected RuntimeMethodInfo WithDebugName()
         {
-            bool populateDebugNames = DeveloperExperienceState.DeveloperExperienceModeEnabled;
 #if DEBUG
-            populateDebugNames = true;
-#endif
-            if (!populateDebugNames)
-                return this;
-
             if (_debugName == null)
             {
                 _debugName = "Constructing..."; // Protect against any inadvertent reentrancy.
                 _debugName = RuntimeName;
             }
+#endif
             return this;
         }
 
+#if DEBUG
         private string _debugName;
+#endif
     }
 }

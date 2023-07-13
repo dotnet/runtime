@@ -10,7 +10,7 @@
 .assembly extern mscorlib
 {
 }
-.assembly format// as "format"
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

@@ -38,9 +38,9 @@ namespace System.Threading
         private volatile int _state;
         /// <summary>Whether this <see cref="CancellationTokenSource"/> has been disposed.</summary>
         private bool _disposed;
-        /// <summary>TimerQueueTimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
-        private volatile TimerQueueTimer? _timer;
-        /// <summary><see cref="System.Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
+        /// <summary>ITimer used by CancelAfter and Timer-related ctors. Used instead of Timer to avoid extra allocations and because the rooted behavior is desired.</summary>
+        private volatile ITimer? _timer;
+        /// <summary><see cref="Threading.WaitHandle"/> lazily initialized and returned from <see cref="WaitHandle"/>.</summary>
         private volatile ManualResetEvent? _kernelEvent;
         /// <summary>Registration state for the source.</summary>
         /// <remarks>Lazily-initialized, also serving as the lock to protect its contained state.</remarks>
@@ -137,15 +137,31 @@ namespace System.Threading
         /// canceled already.
         /// </para>
         /// </remarks>
-        public CancellationTokenSource(TimeSpan delay)
+        public CancellationTokenSource(TimeSpan delay) : this(delay, TimeProvider.System)
         {
+        }
+
+        /// <summary>Initializes a new instance of the <see cref="CancellationTokenSource"/> class that will be canceled after the specified <see cref="TimeSpan"/>.</summary>
+        /// <param name="delay">The time interval to wait before canceling this <see cref="CancellationTokenSource"/>.</param>
+        /// <param name="timeProvider">The <see cref="TimeProvider"/> with which to interpret the <paramref name="delay"/>.</param>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="delay"/>'s <see cref="TimeSpan.TotalMilliseconds"/> is less than -1 or greater than <see cref="uint.MaxValue"/> - 1.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="timeProvider"/> is null.</exception>
+        /// <remarks>
+        /// The countdown for the delay starts during the call to the constructor.  When the delay expires,
+        /// the constructed <see cref="CancellationTokenSource"/> is canceled, if it has
+        /// not been canceled already. Subsequent calls to CancelAfter will reset the delay for the constructed
+        /// <see cref="CancellationTokenSource"/>, if it has not been canceled already.
+        /// </remarks>
+        public CancellationTokenSource(TimeSpan delay, TimeProvider timeProvider)
+        {
+            ArgumentNullException.ThrowIfNull(timeProvider);
             long totalMilliseconds = (long)delay.TotalMilliseconds;
             if (totalMilliseconds < -1 || totalMilliseconds > Timer.MaxSupportedTimeout)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.delay);
             }
 
-            InitializeWithTimer((uint)totalMilliseconds);
+            InitializeWithTimer(delay, timeProvider);
         }
 
         /// <summary>
@@ -174,23 +190,32 @@ namespace System.Threading
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.millisecondsDelay);
             }
 
-            InitializeWithTimer((uint)millisecondsDelay);
+            InitializeWithTimer(TimeSpan.FromMilliseconds(millisecondsDelay), TimeProvider.System);
         }
 
         /// <summary>
         /// Common initialization logic when constructing a CTS with a delay parameter.
         /// A zero delay will result in immediate cancellation.
         /// </summary>
-        private void InitializeWithTimer(uint millisecondsDelay)
+        private void InitializeWithTimer(TimeSpan millisecondsDelay, TimeProvider timeProvider)
         {
-            if (millisecondsDelay == 0)
+            if (millisecondsDelay == TimeSpan.Zero)
             {
                 _state = NotifyingCompleteState;
             }
             else
             {
-                _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
-
+                if (timeProvider == TimeProvider.System)
+                {
+                    _timer = new TimerQueueTimer(s_timerCallback, this, millisecondsDelay, Timeout.InfiniteTimeSpan, flowExecutionContext: false);
+                }
+                else
+                {
+                    using (ExecutionContext.SuppressFlow())
+                    {
+                        _timer = timeProvider.CreateTimer(s_timerCallback, this, millisecondsDelay, Timeout.InfiniteTimeSpan);
+                    }
+                }
                 // The timer roots this CTS instance while it's scheduled.  That is by design, so
                 // that code like:
                 //     new CancellationTokenSource(timeout).Token.Register(() => ...);
@@ -404,7 +429,7 @@ namespace System.Threading
             // expired and Disposed itself).  But this would be considered bad behavior, as
             // Dispose() is not thread-safe and should not be called concurrently with CancelAfter().
 
-            TimerQueueTimer? timer = _timer;
+            ITimer? timer = _timer;
             if (timer == null)
             {
                 // Lazily initialize the timer in a thread-safe fashion.
@@ -412,16 +437,18 @@ namespace System.Threading
                 // chance on a timer "losing" the initialization and then
                 // cancelling the token before it (the timer) can be disposed.
                 timer = new TimerQueueTimer(s_timerCallback, this, Timeout.UnsignedInfinite, Timeout.UnsignedInfinite, flowExecutionContext: false);
-                TimerQueueTimer? currentTimer = Interlocked.CompareExchange(ref _timer, timer, null);
+                ITimer? currentTimer = Interlocked.CompareExchange(ref _timer, timer, null);
                 if (currentTimer != null)
                 {
                     // We did not initialize the timer.  Dispose the new timer.
-                    timer.Close();
+                    timer.Dispose();
                     timer = currentTimer;
                 }
             }
 
-            timer.Change(millisecondsDelay, Timeout.UnsignedInfinite, throwIfDisposed: false);
+            timer.Change(
+                millisecondsDelay == Timeout.UnsignedInfinite ? Timeout.InfiniteTimeSpan : TimeSpan.FromMilliseconds(millisecondsDelay),
+                Timeout.InfiniteTimeSpan);
         }
 
         /// <summary>
@@ -455,9 +482,8 @@ namespace System.Threading
                 // to reset it to be infinite so that it won't fire, and then recognize that it could have already
                 // fired by the time we successfully changed it, and so check to see whether that's possibly the case.
                 // If we successfully reset it and it never fired, then we can be sure it won't trigger cancellation.
-                bool reset =
-                    _timer is not TimerQueueTimer timer ||
-                    (timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite, throwIfDisposed: false) && !timer._everQueued);
+                bool reset = _timer is null ||
+                    (_timer is TimerQueueTimer timer && timer.Change(Timeout.UnsignedInfinite, Timeout.UnsignedInfinite) && !timer._everQueued);
 
                 if (reset)
                 {
@@ -509,11 +535,11 @@ namespace System.Threading
                 // internal source of cancellation, then Disposes of that linked source, which could
                 // happen at the same time the external entity is requesting cancellation).
 
-                TimerQueueTimer? timer = _timer;
+                ITimer? timer = _timer;
                 if (timer != null)
                 {
                     _timer = null;
-                    timer.Close(); // TimerQueueTimer.Close is thread-safe
+                    timer.Dispose(); // ITimer.Dispose is thread-safe
                 }
 
                 _registrations = null; // allow the GC to clean up registrations
@@ -676,12 +702,12 @@ namespace System.Threading
             if (!IsCancellationRequested &&
                 Interlocked.CompareExchange(ref _state, NotifyingState, NotCanceledState) == NotCanceledState)
             {
-                // Dispose of the timer, if any.  Dispose may be running concurrently here, but TimerQueueTimer.Close is thread-safe.
-                TimerQueueTimer? timer = _timer;
+                // Dispose of the timer, if any.  Dispose may be running concurrently here, but ITimer.Dispose is thread-safe.
+                ITimer? timer = _timer;
                 if (timer != null)
                 {
                     _timer = null;
-                    timer.Close();
+                    timer.Dispose();
                 }
 
                 // Set the event if it's been lazily initialized and hasn't yet been disposed of.  Dispose may
@@ -834,7 +860,7 @@ namespace System.Threading
         /// </summary>
         /// <param name="tokens">The <see cref="CancellationToken">CancellationToken</see> instances to observe.</param>
         /// <returns>A <see cref="CancellationTokenSource"/> that is linked to the source tokens.</returns>
-        /// <exception cref="System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="tokens"/> is null.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
             ArgumentNullException.ThrowIfNull(tokens);
@@ -1108,28 +1134,16 @@ namespace System.Threading
             /// It is ok to call this method if the callback has already finished.
             /// Calling this method before the target callback has been selected for execution would be an error.
             /// </summary>
-            public ValueTask WaitForCallbackToCompleteAsync(long id)
+            public async ValueTask WaitForCallbackToCompleteAsync(long id)
             {
-                // If the currently executing callback is not the target one, then the target one has already
-                // completed and we can simply return.  This should be the most common case, as the caller
-                // calls if we're currently canceling but doesn't know what callback is running, if any.
-                if (Volatile.Read(ref ExecutingCallbackId) != id)
+                // Employ an async loop that'll poll for the currently executing callback to complete. While such polling isn't
+                // ideal, we expect this to be a rare case (disposing while the associated callback is running), and brief when
+                // it happens (so the polling will be minimal), and making this work with a callback mechanism will add additional
+                // cost to other more common cases.
+                while (Volatile.Read(ref ExecutingCallbackId) == id)
                 {
-                    return default;
+                    await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
                 }
-
-                // The specified callback is actually running: queue an async loop that'll poll for the currently executing
-                // callback to complete. While such polling isn't ideal, we expect this to be a rare case (disposing while
-                // the associated callback is running), and brief when it happens (so the polling will be minimal), and making
-                // this work with a callback mechanism will add additional cost to other more common cases.
-                return new ValueTask(Task.Factory.StartNew(static async s =>
-                {
-                    var state = (TupleSlim<Registrations, long>)s!;
-                    while (Volatile.Read(ref state.Item1.ExecutingCallbackId) == state.Item2)
-                    {
-                        await Task.Yield();
-                    }
-                }, new TupleSlim<Registrations, long>(this, id), CancellationToken.None, TaskCreationOptions.None, TaskScheduler.Default).Unwrap());
             }
 
             /// <summary>Enters the lock for this instance.  The current thread must not be holding the lock, but that is not validated.</summary>

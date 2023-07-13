@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 
 using Point = System.Numerics.Vector2;
+using Xunit;
 
 namespace GitHub_21546
 {
@@ -64,7 +65,8 @@ namespace GitHub_21546
             );
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             returnVal     = 100;
             Random random = new Random(Seed);

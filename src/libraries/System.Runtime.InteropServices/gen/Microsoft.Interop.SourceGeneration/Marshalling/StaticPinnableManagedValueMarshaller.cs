@@ -62,7 +62,7 @@ namespace Microsoft.Interop
             return _innerMarshallingGenerator.Generate(info, context);
         }
 
-        public bool SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context)
         {
             return _innerMarshallingGenerator.SupportsByValueMarshalKind(marshalKind, context);
         }
@@ -78,7 +78,7 @@ namespace Microsoft.Interop
         }
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
         {
-            return context.SingleFrameSpansNativeContext && !info.IsByRef && !info.IsManagedReturnPosition;
+            return context.SingleFrameSpansNativeContext && !info.IsByRef && !context.IsInStubReturnPosition(info);
         }
 
         private IEnumerable<StatementSyntax> GeneratePinningPath(TypePositionInfo info, StubCodeContext context)

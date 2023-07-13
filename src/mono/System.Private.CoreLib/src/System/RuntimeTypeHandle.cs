@@ -31,6 +31,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -39,7 +40,6 @@ using System.Threading;
 
 namespace System
 {
-    [Serializable]
     public struct RuntimeTypeHandle : IEquatable<RuntimeTypeHandle>, ISerializable
     {
         private readonly IntPtr value;
@@ -54,11 +54,6 @@ namespace System
         {
         }
 
-        private RuntimeTypeHandle(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
         public IntPtr Value
         {
             get
@@ -67,6 +62,8 @@ namespace System
             }
         }
 
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             throw new PlatformNotSupportedException();
@@ -383,7 +380,7 @@ namespace System
                                    ref stackMark,
                                    ObjectHandleOnStack.Create (ref t), throwOnError, ignoreCase);
                 if (throwOnError && t == null)
-                    throw new TypeLoadException("Error loading '" + typeName + "'");
+                    throw new TypeLoadException(SR.Arg_TypeLoadException);
             }
             return t;
         }

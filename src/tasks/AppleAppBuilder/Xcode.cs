@@ -174,6 +174,7 @@ internal sealed class Xcode
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
         IEnumerable<string> extraLinkerArgs,
+        IEnumerable<string> excludes,
         string workspace,
         string binDir,
         string monoInclude,
@@ -182,6 +183,7 @@ internal sealed class Xcode
         bool forceAOT,
         bool forceInterpreter,
         bool invariantGlobalization,
+        bool hybridGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
         bool enableAppSandbox,
@@ -190,7 +192,7 @@ internal sealed class Xcode
         string? nativeMainSource = null,
         bool useNativeAOTRuntime = false)
     {
-        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
+        var cmakeDirectoryPath = GenerateCMake(projectName, entryPointLib, asmFiles, asmDataFiles, asmLinkFiles, extraLinkerArgs, excludes, workspace, binDir, monoInclude, preferDylibs, useConsoleUiTemplate, forceAOT, forceInterpreter, invariantGlobalization, hybridGlobalization, optimized, enableRuntimeLogging, enableAppSandbox, diagnosticPorts, runtimeComponents, nativeMainSource, useNativeAOTRuntime);
         CreateXcodeProject(projectName, cmakeDirectoryPath);
         return Path.Combine(binDir, projectName, projectName + ".xcodeproj");
     }
@@ -235,6 +237,7 @@ internal sealed class Xcode
         IEnumerable<string> asmDataFiles,
         IEnumerable<string> asmLinkFiles,
         IEnumerable<string> extraLinkerArgs,
+        IEnumerable<string> excludes,
         string workspace,
         string binDir,
         string monoInclude,
@@ -243,6 +246,7 @@ internal sealed class Xcode
         bool forceAOT,
         bool forceInterpreter,
         bool invariantGlobalization,
+        bool hybridGlobalization,
         bool optimized,
         bool enableRuntimeLogging,
         bool enableAppSandbox,
@@ -252,18 +256,20 @@ internal sealed class Xcode
         bool useNativeAOTRuntime = false)
     {
         // bundle everything as resources excluding native files
-        var excludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib" };
+        var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt*" };
+        predefinedExcludes = predefinedExcludes.Concat(excludes).ToList();
         if (!preferDylibs)
         {
-            excludes.Add(".dylib");
+            predefinedExcludes.Add(".dylib");
         }
         if (optimized)
         {
-            excludes.Add(".pdb");
+            predefinedExcludes.Add(".pdb");
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
-            .Where(f => !excludes.Any(e => f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)))
+            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
+            !(hybridGlobalization ? Path.GetFileName(f) == "icudt_hybrid.dat" : Path.GetFileName(f) == "icudt.dat"))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -400,14 +406,18 @@ internal sealed class Xcode
             toLink += $"    {asmLinkFile}{Environment.NewLine}";
         }
 
-        string appLinkerArgs = "";
-        foreach(string linkerArg in extraLinkerArgs)
+        string frameworks = "";
+        if ((Target == TargetNames.iOS) || (Target == TargetNames.iOSsim) || (Target == TargetNames.MacCatalyst))
         {
-            appLinkerArgs += $"    \"{linkerArg}\"{Environment.NewLine}";
+            frameworks = "\"-framework GSS\"";
         }
 
+        string appLinkLibraries = $"    {frameworks}{Environment.NewLine}";
+        string extraLinkerArgsConcat = $"\"{string.Join('\n', extraLinkerArgs)}\"";
+
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
-        cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
+        cmakeLists = cmakeLists.Replace("%APP_LINK_LIBRARIES%", appLinkLibraries);
+        cmakeLists = cmakeLists.Replace("%EXTRA_LINKER_ARGS%", extraLinkerArgsConcat);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");
@@ -426,6 +436,11 @@ internal sealed class Xcode
         if (invariantGlobalization)
         {
             defines.AppendLine("add_definitions(-DINVARIANT_GLOBALIZATION=1)");
+        }
+
+        if (hybridGlobalization)
+        {
+            defines.AppendLine("add_definitions(-DHYBRID_GLOBALIZATION=1)");
         }
 
         if (enableRuntimeLogging)

@@ -24,7 +24,9 @@ namespace System
             _watsonBuckets = (byte[]?)info.GetValueNoThrow("WatsonBuckets", typeof(byte[])); // Do not rename (binary serialization)
 
             // If we are constructing a new exception after a cross-appdomain call...
+#pragma warning disable SYSLIB0050 // StreamingContextStates is obsolete
             if (context.State == StreamingContextStates.CrossAppDomain)
+#pragma warning restore SYSLIB0050
             {
                 // ...this new exception may get thrown.  It is logically a re-throw, but
                 //  physically a brand-new exception.  Since the stack trace is cleared

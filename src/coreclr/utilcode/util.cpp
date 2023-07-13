@@ -182,7 +182,7 @@ namespace
         if (phmodDll != nullptr)
             *phmodDll = nullptr;
 
-        bool fIsDllPathPrefix = (wszDllPath != nullptr) && (wcslen(wszDllPath) > 0) && (wszDllPath[wcslen(wszDllPath) - 1] == W('\\'));
+        bool fIsDllPathPrefix = (wszDllPath != nullptr) && (u16_strlen(wszDllPath) > 0) && (wszDllPath[u16_strlen(wszDllPath) - 1] == W('\\'));
 
         // - An empty string will be treated as NULL.
         // - A string ending will a backslash will be treated as a prefix for where to look for the DLL
@@ -369,7 +369,12 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     {
         NOTHROW;
         PRECONDITION(dwSize != 0);
+
+#ifdef HOST_UNIX
+        PRECONDITION(flAllocationType == (MEM_RESERVE | MEM_RESERVE_EXECUTABLE));
+#else
         PRECONDITION(flAllocationType == MEM_RESERVE);
+#endif
     }
     CONTRACTL_END;
 
@@ -449,7 +454,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
             (mbInfo.RegionSize >= (SIZE_T) dwSize || mbInfo.RegionSize == 0))
         {
             // Try reserving the memory using VirtualAlloc now
-            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, MEM_RESERVE, flProtect);
+            pResult = (BYTE*)ClrVirtualAlloc(tryAddr, dwSize, flAllocationType, flProtect);
 
             // Normally this will be successful
             //
@@ -561,7 +566,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
 /*static*/ CPU_Group_Info *CPUGroupInfo::m_CPUGroupInfoArray = NULL;
 /*static*/ LONG CPUGroupInfo::m_initialization = 0;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
 // Calculate greatest common divisor
 DWORD GCD(DWORD u, DWORD v)
 {
@@ -591,7 +596,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     BYTE *bBuffer = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pSLPIEx = NULL;
     SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *pRecord = NULL;
@@ -672,7 +677,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     USHORT groupCount = 0;
 
     // On Windows 11+ and Windows Server 2022+, a process is no longer restricted to a single processor group by default.
@@ -758,7 +763,7 @@ DWORD LCM(DWORD u, DWORD v)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     WORD bTemp = 0;
     WORD bDiff = processor_number - bTemp;
 
@@ -789,7 +794,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if !defined(FEATURE_NATIVEAOT) && (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups);
 
     PROCESSOR_NUMBER proc_no;
@@ -838,7 +843,7 @@ DWORD LCM(DWORD u, DWORD v)
     }
     CONTRACTL_END;
 
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     WORD i, minGroup = 0;
     DWORD minWeight = 0;
 
@@ -880,7 +885,7 @@ found:
 /*static*/ void CPUGroupInfo::ClearCPUGroupAffinity(GROUP_AFFINITY *gf)
 {
     LIMITED_METHOD_CONTRACT;
-#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+#if (defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64))
     _ASSERTE(m_enableGCCPUGroups && m_threadUseAllCpuGroups && m_threadAssignCpuGroups);
 
     WORD group = gf->Group;
@@ -2759,7 +2764,7 @@ namespace Reg
                 // terminating NULL is not a legitimate scenario for REG_SZ - this must
                 // be done using REG_MULTI_SZ - however this was tolerated in the
                 // past and so it would be a breaking change to stop doing so.
-                _ASSERTE(wcslen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
+                _ASSERTE(u16_strlen(wszValueBuf) <= (size / sizeof(WCHAR)) - 1);
                 ssValue.CloseBuffer((COUNT_T)wcsnlen(wszValueBuf, (size_t)size));
             }
             else

@@ -3,27 +3,14 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
     public const byte Value = 0x50;
 
-    public static int Main()
-    {
-        int testCount = 0;
-        foreach (MethodInfo mi in typeof(Program)
-            .GetMethods()
-            .Where(m => m.Name.StartsWith("Test")))
-        {
-            mi.Invoke(null, null);
-            testCount++;
-        }
-
-        return testCount;
-    }
-
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test0()
     {
@@ -32,6 +19,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(0));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test1()
     {
@@ -40,6 +28,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(1));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test2()
     {
@@ -48,6 +37,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(2));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test3()
     {
@@ -56,6 +46,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(3));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test4()
     {
@@ -64,6 +55,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(4));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test5()
     {
@@ -72,6 +64,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(5));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test6()
     {
@@ -80,6 +73,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(6));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test7()
     {
@@ -88,6 +82,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(7));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test8()
     {
@@ -96,6 +91,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(8));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test9()
     {
@@ -104,6 +100,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(9));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test10()
     {
@@ -112,6 +109,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(10));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test11()
     {
@@ -120,6 +118,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(11));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test12()
     {
@@ -128,6 +127,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(12));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test13()
     {
@@ -136,6 +136,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(13));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test14()
     {
@@ -144,6 +145,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(14));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test15()
     {
@@ -152,6 +154,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(15));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test16()
     {
@@ -160,6 +163,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(16));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test17()
     {
@@ -168,6 +172,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(17));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test18()
     {
@@ -176,6 +181,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(18));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test19()
     {
@@ -184,6 +190,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(19));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test20()
     {
@@ -192,6 +199,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(20));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test21()
     {
@@ -200,6 +208,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(21));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test22()
     {
@@ -208,6 +217,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(22));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test23()
     {
@@ -216,6 +226,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(23));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test24()
     {
@@ -224,6 +235,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(24));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test25()
     {
@@ -232,6 +244,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(25));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test26()
     {
@@ -240,6 +253,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(26));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test27()
     {
@@ -248,6 +262,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(27));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test28()
     {
@@ -256,6 +271,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(28));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test29()
     {
@@ -264,6 +280,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(29));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test30()
     {
@@ -272,6 +289,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(30));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test31()
     {
@@ -280,6 +298,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(31));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test32()
     {
@@ -288,6 +307,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(32));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test33()
     {
@@ -296,6 +316,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(33));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test34()
     {
@@ -304,6 +325,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(34));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test35()
     {
@@ -312,6 +334,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(35));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test36()
     {
@@ -320,6 +343,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(36));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test37()
     {
@@ -328,6 +352,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(37));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test38()
     {
@@ -336,6 +361,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(38));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test39()
     {
@@ -344,6 +370,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(39));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test40()
     {
@@ -352,6 +379,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(40));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test41()
     {
@@ -360,6 +388,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(41));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test42()
     {
@@ -368,6 +397,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(42));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test43()
     {
@@ -376,6 +406,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(43));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test44()
     {
@@ -384,6 +415,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(44));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test45()
     {
@@ -392,6 +424,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(45));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test46()
     {
@@ -400,6 +433,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(46));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test47()
     {
@@ -408,6 +442,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(47));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test48()
     {
@@ -416,6 +451,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(48));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test49()
     {
@@ -424,6 +460,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(49));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test50()
     {
@@ -432,6 +469,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(50));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test51()
     {
@@ -440,6 +478,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(51));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test52()
     {
@@ -448,6 +487,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(52));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test53()
     {
@@ -456,6 +496,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(53));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test54()
     {
@@ -464,6 +505,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(54));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test55()
     {
@@ -472,6 +514,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(55));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test56()
     {
@@ -480,6 +523,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(56));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test57()
     {
@@ -488,6 +532,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(57));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test58()
     {
@@ -496,6 +541,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(58));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test59()
     {
@@ -504,6 +550,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(59));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test60()
     {
@@ -512,6 +559,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(60));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test61()
     {
@@ -520,6 +568,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(61));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test62()
     {
@@ -528,6 +577,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(62));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test63()
     {
@@ -536,6 +586,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(63));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test64()
     {
@@ -544,6 +595,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(64));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test65()
     {
@@ -552,6 +604,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(65));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test66()
     {
@@ -560,6 +613,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(66));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test67()
     {
@@ -568,6 +622,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(67));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test68()
     {
@@ -576,6 +631,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(68));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test69()
     {
@@ -584,6 +640,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(69));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test70()
     {
@@ -592,6 +649,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(70));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test71()
     {
@@ -600,6 +658,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(71));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test72()
     {
@@ -608,6 +667,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(72));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test73()
     {
@@ -616,6 +676,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(73));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test74()
     {
@@ -624,6 +685,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(74));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test75()
     {
@@ -632,6 +694,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(75));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test76()
     {
@@ -640,6 +703,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(76));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test77()
     {
@@ -648,6 +712,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(77));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test78()
     {
@@ -656,6 +721,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(78));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test79()
     {
@@ -664,6 +730,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(79));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test80()
     {
@@ -672,6 +739,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(80));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test81()
     {
@@ -680,6 +748,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(81));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test82()
     {
@@ -688,6 +757,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(82));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test83()
     {
@@ -696,6 +766,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(83));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test84()
     {
@@ -704,6 +775,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(84));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test85()
     {
@@ -712,6 +784,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(85));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test86()
     {
@@ -720,6 +793,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(86));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test87()
     {
@@ -728,6 +802,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(87));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test88()
     {
@@ -736,6 +811,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(88));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test89()
     {
@@ -744,6 +820,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(89));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test90()
     {
@@ -752,6 +829,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(90));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test91()
     {
@@ -760,6 +838,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(91));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test92()
     {
@@ -768,6 +847,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(92));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test93()
     {
@@ -776,6 +856,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(93));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test94()
     {
@@ -784,6 +865,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(94));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test95()
     {
@@ -792,6 +874,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(95));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test96()
     {
@@ -800,6 +883,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(96));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test97()
     {
@@ -808,6 +892,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(97));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test98()
     {
@@ -816,6 +901,7 @@ public class Program
         AssertEquals(BitConverter.ToString(bytes), NonUnrolledVersion(98));
     }
 
+    [Fact]
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static void Test99()
     {

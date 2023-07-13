@@ -14,7 +14,7 @@
                           Exclude="@(NetCoreAppLibrary->'%(Identity)\ref\%(Identity).csproj')" />
     <ProjectReference Include="@(AnyProject)"
                       Exclude="@(NonNetCoreAppProject);
-                               @(NetCoreAppLibraryNoReference->'%(Identity)\ref\%(Identity).csproj')" />
+                               System.Private.CoreLib\ref\System.Private.CoreLib.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.IL">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <!-- Needed for CLRTestTargetUnsupported -->
+    <RequiresProcessIsolation>true</RequiresProcessIsolation>
     <RestorePackages>true</RestorePackages>
     <CLRTestPriority>1</CLRTestPriority>
     <!-- Test unsupported outside of windows -->

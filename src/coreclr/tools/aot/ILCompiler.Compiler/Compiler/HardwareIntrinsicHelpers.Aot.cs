@@ -109,6 +109,12 @@ namespace ILCompiler
             public const int Avx512cd_vl = 0x100000;
             public const int Avx512dq = 0x200000;
             public const int Avx512dq_vl = 0x400000;
+            public const int Avx512Vbmi = 0x800000;
+            public const int Avx512Vbmi_vl = 0x1000000;
+            public const int Serialize = 0x2000000;
+            public const int VectorT128 = 0x4000000;
+            public const int VectorT256 = 0x8000000;
+            public const int VectorT512 = 0x10000000;
 
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
@@ -118,6 +124,7 @@ namespace ILCompiler
 
                 return instructionSet switch
                 {
+                    // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.X64_AES => Aes,
                     InstructionSet.X64_AES_X64 => Aes,
                     InstructionSet.X64_PCLMULQDQ => Pclmulqdq,
@@ -164,8 +171,14 @@ namespace ILCompiler
                     InstructionSet.X64_AVX512DQ_X64 => Avx512dq,
                     InstructionSet.X64_AVX512DQ_VL => Avx512dq_vl,
                     InstructionSet.X64_AVX512DQ_VL_X64 => Avx512dq_vl,
+                    InstructionSet.X64_AVX512VBMI => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_X64 => Avx512Vbmi,
+                    InstructionSet.X64_AVX512VBMI_VL => Avx512Vbmi_vl,
+                    InstructionSet.X64_AVX512VBMI_VL_X64 => Avx512Vbmi_vl,
+                    InstructionSet.X64_X86Serialize => Serialize,
+                    InstructionSet.X64_X86Serialize_X64 => Serialize,
 
-                    // SSE and SSE2 are baseline ISAs - they're always available
+                    // Baseline ISAs - they're always available
                     InstructionSet.X64_SSE => 0,
                     InstructionSet.X64_SSE_X64 => 0,
                     InstructionSet.X64_SSE2 => 0,
@@ -173,6 +186,11 @@ namespace ILCompiler
 
                     InstructionSet.X64_X86Base => 0,
                     InstructionSet.X64_X86Base_X64 => 0,
+
+                    // Vector<T> Sizes
+                    InstructionSet.X64_VectorT128 => VectorT128,
+                    InstructionSet.X64_VectorT256 => VectorT256,
+                    InstructionSet.X64_VectorT512 => VectorT512,
 
                     _ => throw new NotSupportedException(((InstructionSet_X64)instructionSet).ToString())
                 };
@@ -190,13 +208,20 @@ namespace ILCompiler
             public const int Sha256 = 0x0040;
             public const int Atomics = 0x0080;
             public const int Rcpc = 0x0100;
+            public const int VectorT128 = 0x0200;
 
             public static int FromInstructionSet(InstructionSet instructionSet)
             {
                 return instructionSet switch
                 {
+
+                    // Baseline ISAs - they're always available
+                    InstructionSet.ARM64_ArmBase => 0,
+                    InstructionSet.ARM64_ArmBase_Arm64 => 0,
                     InstructionSet.ARM64_AdvSimd => AdvSimd,
                     InstructionSet.ARM64_AdvSimd_Arm64 => AdvSimd,
+
+                    // Optional ISAs - only available via opt-in or opportunistic light-up
                     InstructionSet.ARM64_Aes => Aes,
                     InstructionSet.ARM64_Aes_Arm64 => Aes,
                     InstructionSet.ARM64_Crc32 => Crc32,
@@ -212,8 +237,8 @@ namespace ILCompiler
                     InstructionSet.ARM64_Atomics => Atomics,
                     InstructionSet.ARM64_Rcpc => Rcpc,
 
-                    InstructionSet.ARM64_ArmBase => 0,
-                    InstructionSet.ARM64_ArmBase_Arm64 => 0,
+                    // Vector<T> Sizes
+                    InstructionSet.ARM64_VectorT128 => VectorT128,
 
                     _ => throw new NotSupportedException(((InstructionSet_ARM64)instructionSet).ToString())
                 };

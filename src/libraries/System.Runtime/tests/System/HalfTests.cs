@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Globalization;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -882,6 +883,51 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, float expectedFloat)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+
+            Half result;
+            Half expected = (Half)expectedFloat;
+
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(Half.TryParse(valueUtf8, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, Half.Parse(valueUtf8));
+                }
+
+                Assert.Equal(expected, Half.Parse(valueUtf8, provider: provider));
+            }
+
+            Assert.True(expected.Equals(Half.Parse(valueUtf8, style, provider)) || (Half.IsNaN(expected) && Half.IsNaN(Half.Parse(value.AsSpan(offset, count), style, provider))));
+
+            Assert.True(Half.TryParse(valueUtf8, style, provider, out result));
+            Assert.True(expected.Equals(result) || (Half.IsNaN(expected) && Half.IsNaN(result)));
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+                Assert.Throws(exceptionType, () => float.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(float.TryParse(valueUtf8, style, provider, out float result));
+                Assert.Equal(0, result);
+            }
+        }
+
         public static IEnumerable<object[]> ToString_TestData()
         {
             yield return new object[] { -4570.0f, "G", null, "-4570" };
@@ -1001,28 +1047,7 @@ namespace System.Tests
 
                     try
                     {
-                        char[] actual;
-                        int charsWritten;
-
-                        // Just right
-                        actual = new char[localExpected.Length];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual));
-
-                        // Longer than needed
-                        actual = new char[localExpected.Length + 1];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
-
-                        // Too short
-                        if (localExpected.Length > 0)
-                        {
-                            actual = new char[localExpected.Length - 1];
-                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(0, charsWritten);
-                        }
+                        NumberFormatTestHelper.TryFormatNumberTest(localI, localFormat, localProvider, localExpected, formatCasingMatchesOutput: false);
                     }
                     catch (Exception exc)
                     {

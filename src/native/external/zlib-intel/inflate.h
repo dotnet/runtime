@@ -138,7 +138,7 @@ static inline void inf_crc_copy(z_streamp strm, unsigned char FAR *const dst,
     struct inflate_state *const state = (struct inflate_state *const)strm->state;
 
 #if !defined(NO_GZIP) && defined(USE_PCLMUL_CRC)
-    if ((state->wrap & 2) && x86_cpu_has_pclmul) {
+    if (state->flags > 0 && x86_cpu_has_pclmul) {
         crc_fold_copy(state->crc, dst, src, len);
         return;
     }
@@ -147,11 +147,11 @@ static inline void inf_crc_copy(z_streamp strm, unsigned char FAR *const dst,
     zmemcpy(dst, src, len);
 
 #if !defined(NO_GZIP)
-    if ((state->wrap & 2))
+    if (state->flags > 0)
         strm->adler = state->check = crc32(state->check, dst, len);
     else
 #endif
-    if ((state->wrap & 1))
+    if (state->flags == 0)
         strm->adler = state->check = adler32(state->check, dst, len);
 }
 

@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ru" original="../Strings.resx">
+    <body>
+      <trans-unit id="CollectionNotSupported">
+        <source>The collection type is not supported: '{0}'.</source>
+        <target state="translated">Тип коллекции не поддерживается: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
+        <target state="translated">Логика привязки не была создана для вызова модуля привязки. К неподдерживаемым шаблонам ввода относятся универсальные вызовы и передача упакованных объектов.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">Не удалось определить целевой тип для вызова модуля привязки</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DictionaryKeyNotSupported">
+        <source>The dictionary key type is not supported: '{0}'.</source>
+        <target state="translated">Тип ключа словаря не поддерживается: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypeNotSupported">
+        <source>The collection element type is not supported: '{0}'.</source>
+        <target state="translated">Тип элемента коллекции не поддерживается: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 11'.</source>
+        <target state="translated">Версия языка проекта должна быть не ниже "C# 11".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LanguageVersionIsNotSupportedTitle">
+        <source>Language version is required to be at least C# 11</source>
+        <target state="translated">Версия языка должна быть не ниже C# 11</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Не удается создать экземпляр типа "{0}", так как в нем отсутствует конструктор общедоступных экземпляров.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultiDimArraysNotSupported">
+        <source>Multidimensional arrays are not supported: '{0}'.</source>
+        <target state="translated">Многомерные массивы не поддерживаются: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Не удается создать экземпляр типа "{0}", так как он содержит несколько общедоступных параметров конструкторов.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullableUnderlyingTypeNotSupported">
+        <source>Nullable underlying type is not supported: '{0}'.</source>
+        <target state="translated">Базовый тип, допускающий значение NULL, не поддерживается: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedMessageFormat">
+        <source>Property '{0}' on type '{1}' is not supported.</source>
+        <target state="translated">Свойство "{0}" типа "{1}" не поддерживается.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedTitle">
+        <source>Did not generate binding logic for a property on a type</source>
+        <target state="translated">Не создана логика привязки для свойства типа</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupported">
+        <source>The type is not supported: '{0}'.</source>
+        <target state="translated">Тип не поддерживается: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate binding logic for a type</source>
+        <target state="translated">Не создана логика привязки для типа</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">Логика привязки не была создана для вызова модуля привязки с типом "{0}". Типы значений являются недопустимыми входными данными для методов "Bind" конфигурации.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">Типы значений являются недопустимыми входными данными для методов "Bind" конфигурации</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

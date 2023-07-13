@@ -8,7 +8,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
 {
     public sealed partial class BinaryFormatter : IFormatter
     {
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresDynamicCode(IFormatter.RequiresDynamicCodeMessage)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public object Deserialize(Stream serializationStream)
@@ -58,7 +57,6 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        [Obsolete(Obsoletions.BinaryFormatterMessage, DiagnosticId = Obsoletions.BinaryFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         [RequiresUnreferencedCode(IFormatter.RequiresUnreferencedCodeMessage)]
         public void Serialize(Stream serializationStream, object graph)
         {

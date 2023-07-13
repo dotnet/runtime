@@ -7,9 +7,7 @@
 // before the jump, but if this statement has unconditional throw call, then
 // it tries to remove the jump during its optimization. 
 
-.assembly extern System.Runtime
-{
-}
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Runtime.Extensions
 {
 }

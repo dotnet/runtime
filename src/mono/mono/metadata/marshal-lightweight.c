@@ -523,7 +523,7 @@ emit_runtime_invoke_body_ilgen (MonoMethodBuilder *mb, const char **param_names,
 	emit_thread_force_interrupt_checkpoint (mb);
 	emit_invoke_call (mb, method, sig, callsig, loc_res, virtual_, need_direct_wrapper);
 
-	mono_mb_emit_ldloc (mb, 0);
+	mono_mb_emit_ldloc (mb, loc_res);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
@@ -1989,8 +1989,10 @@ emit_delegate_end_invoke_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig)
 		mono_mb_emit_restore_result (mb, sig->ret);
 }
 
+#define MONO_TYPE_IS_PRIMITIVE(t) ((!m_type_is_byref ((t)) && ((((t)->type >= MONO_TYPE_BOOLEAN && (t)->type <= MONO_TYPE_R8) || ((t)->type >= MONO_TYPE_I && (t)->type <= MONO_TYPE_U)))))
+
 static void
-emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoClass *target_class, MonoGenericContext *ctx, MonoGenericContainer *container)
+emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethodSignature *invoke_sig, MonoMethodSignature *target_method_sig, gboolean static_method_with_first_arg_bound, gboolean callvirt, gboolean closed_over_null, MonoMethod *method, MonoMethod *target_method, MonoGenericContext *ctx, MonoGenericContainer *container)
 {
 	int local_i, local_len, local_delegates, local_d, local_target, local_res = 0;
 	int pos0, pos1, pos2;
@@ -2088,19 +2090,18 @@ emit_delegate_invoke_internal_ilgen (MonoMethodBuilder *mb, MonoMethodSignature 
 
 	if (callvirt) {
 		if (!closed_over_null) {
-			/* if target_method is not really virtual, turn it into a direct call */
-			if (!(target_method->flags & METHOD_ATTRIBUTE_VIRTUAL) || m_class_is_valuetype (target_class)) {
-				mono_mb_emit_ldarg (mb, 1);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALL, target_method);
-			} else {
-				mono_mb_emit_ldarg (mb, 1);
-				mono_mb_emit_op (mb, CEE_CASTCLASS, target_class);
-				for (i = 1; i < sig->param_count; ++i)
-					mono_mb_emit_ldarg (mb, i + 1);
-				mono_mb_emit_op (mb, CEE_CALLVIRT, target_method);
+			for (i = 1; i <= sig->param_count; ++i) {
+				mono_mb_emit_ldarg (mb, i);
+				if (i == 1 && (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0])))
+					mono_mb_emit_op (mb, CEE_BOX, mono_class_from_mono_type_internal (sig->params [0]));
 			}
+			if (MONO_TYPE_ISSTRUCT (sig->params [0]) || MONO_TYPE_IS_PRIMITIVE (sig->params [0]))
+				mono_mb_emit_ldarg_addr (mb, 1);
+			else
+				mono_mb_emit_ldarg (mb, 1);
+			mono_mb_emit_ldarg (mb, 0);
+			mono_mb_emit_icall (mb, mono_get_addr_compiled_method);
+			mono_mb_emit_op (mb, CEE_CALLI, target_method_sig);
 		} else {
 			mono_mb_emit_byte (mb, CEE_LDNULL);
 			for (i = 0; i < sig->param_count; ++i)
@@ -2503,7 +2504,11 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 
 	if (!sig->hasthis && sig->param_count != invoke_sig->param_count) {
 		/* Closed delegate */
-		g_assert (sig->param_count == invoke_sig->param_count + 1);
+		if (sig->param_count != invoke_sig->param_count + 1) {
+			g_warning ("Closed delegate has incorrect number of arguments: %s.", mono_method_full_name (method, TRUE));
+			g_assert_not_reached ();
+		}
+
 		closed = TRUE;
 		/* Use a new signature without the first argument */
 		sig = mono_metadata_signature_dup (sig);

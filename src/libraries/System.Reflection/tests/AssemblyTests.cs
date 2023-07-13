@@ -402,7 +402,7 @@ namespace System.Reflection.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void LoadFile_ValidPEBadIL_ThrowsBadImageFormatExceptionWithPath()
         {
-            string path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "kernelbase.dll");
+            string path = Path.Combine(Environment.SystemDirectory, "kernelbase.dll");
             if (!File.Exists(path))
                 return;
 
@@ -696,7 +696,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67569", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69919", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetSatelliteAssemblyNeg()
         {
             Assert.Throws<ArgumentNullException>(() => (typeof(AssemblyTests).Assembly.GetSatelliteAssembly(null)));

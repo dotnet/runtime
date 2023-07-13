@@ -3,6 +3,7 @@
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <OutputType>exe</OutputType>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <JitOptimizationSensitive>true</JitOptimizationSensitive>
     <!-- This test provides no value for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
   </PropertyGroup>

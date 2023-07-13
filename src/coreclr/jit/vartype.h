@@ -20,6 +20,14 @@ enum var_types_classification
     VTF_VEC = 0x0080, // is a vector type
 };
 
+enum var_types_register
+{
+    VTR_UNKNOWN = 0,
+    VTR_INT     = 1,
+    VTR_FLOAT   = 2,
+    VTR_MASK    = 3,
+};
+
 #include "vartypesdef.h"
 
 /*****************************************************************************
@@ -45,6 +53,7 @@ enum var_types_classification
 /*****************************************************************************/
 
 const extern BYTE varTypeClassification[TYP_COUNT];
+const extern BYTE varTypeRegister[TYP_COUNT];
 
 // make any class with a TypeGet member also have a function TypeGet() that does the same thing
 template <class T>
@@ -70,7 +79,17 @@ inline bool varTypeIsSIMD(T vt)
 #else
     // Always return false if FEATURE_SIMD is not enabled
     return false;
-#endif // !FEATURE_SIMD
+#endif
+}
+
+template <class T>
+inline bool varTypeIsMask(T vt)
+{
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+    return (TypeGet(vt) == TYP_MASK);
+#else // FEATURE_SIMD
+    return false;
+#endif
 }
 
 template <class T>
@@ -272,11 +291,14 @@ inline bool varTypeIsComposite(T vt)
 template <class T>
 inline bool varTypeIsPromotable(T vt)
 {
-    return (varTypeIsStruct(vt) || (TypeGet(vt) == TYP_BLK)
-#if !defined(TARGET_64BIT)
-            || varTypeIsLong(vt)
-#endif // !defined(TARGET_64BIT)
-                );
+#ifndef TARGET_64BIT
+    if (varTypeIsLong(vt))
+    {
+        return true;
+    }
+#endif
+
+    return varTypeIsStruct(vt);
 }
 
 template <class T>
@@ -285,12 +307,28 @@ inline bool varTypeIsStruct(T vt)
     return ((varTypeClassification[TypeGet(vt)] & VTF_S) != 0);
 }
 
+template <class T, class U>
+inline bool varTypeUsesSameRegType(T vt, U vu)
+{
+    return varTypeRegister[TypeGet(vt)] == varTypeRegister[TypeGet(vu)];
+}
+
+template <class T>
+inline bool varTypeUsesIntReg(T vt)
+{
+    return varTypeRegister[TypeGet(vt)] == VTR_INT;
+}
+
 template <class T>
 inline bool varTypeUsesFloatReg(T vt)
 {
-    // Note that not all targets support SIMD, but if they don't, varTypeIsSIMD will
-    // always return false.
-    return varTypeIsFloating(vt) || varTypeIsSIMD(vt);
+    return varTypeRegister[TypeGet(vt)] == VTR_FLOAT;
+}
+
+template <class T>
+inline bool varTypeUsesMaskReg(T vt)
+{
+    return varTypeRegister[TypeGet(vt)] == VTR_MASK;
 }
 
 template <class T>

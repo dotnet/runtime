@@ -138,5 +138,24 @@ namespace Microsoft.Interop
         {
             return $"{GetIdentifiers(info).native}__{name}";
         }
+
+        /// <summary>
+        /// Compute if the provided element is the return element for the stub that is being generated (not any inner call).
+        /// </summary>
+        /// <param name="info">The element information</param>
+        /// <returns><c>true</c> if the element is in the return position for this stub; otherwise, false.</returns>
+        public bool IsInStubReturnPosition(TypePositionInfo info)
+        {
+            if (Direction == MarshalDirection.ManagedToUnmanaged)
+            {
+                return info.IsManagedReturnPosition;
+            }
+            else if (Direction == MarshalDirection.UnmanagedToManaged)
+            {
+                return info.IsNativeReturnPosition;
+            }
+
+            throw new InvalidOperationException("Stub contexts should not be bidirectional");
+        }
     }
 }

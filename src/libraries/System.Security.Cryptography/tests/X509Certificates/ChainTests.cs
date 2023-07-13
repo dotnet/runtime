@@ -953,7 +953,6 @@ tHP28fj0LUop/QFojSZPsaPAW6JvoQ0t4hd6WoyX6z7FsA==
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/82837", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoInterpreter))]
         public static void BuildInvalidSignatureTwice()
         {
             byte[] bytes = (byte[])TestData.MsCertificate.Clone();
@@ -1251,6 +1250,22 @@ LjCvFGJ+RiZCbxIZfUZEuJ5vAH5WOa2S0tYoEAeyfzuLMIqY9xK74nlZ/vzz1cY=");
 
                 // Should not throw, don't care about the validity of the chain.
                 chain.Build(cert);
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.SupportsSha3))]
+        [SkipOnPlatform(~TestPlatforms.Linux, "Only Linux SHA3 supports chain building.")]
+        public static void BuildChainForSelfSignedSha3Certificate()
+        {
+            using (ChainHolder chainHolder = new ChainHolder())
+            using (X509Certificate2 cert = new X509Certificate2(TestData.RsaSha3_256SignedCertificate))
+            {
+                X509Chain chain = chainHolder.Chain;
+                chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                chain.ChainPolicy.VerificationTime = cert.NotBefore.AddHours(2);
+                chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                chain.ChainPolicy.CustomTrustStore.Add(cert);
+                Assert.True(chain.Build(cert), AllStatusFlags(chain).ToString());
             }
         }
 

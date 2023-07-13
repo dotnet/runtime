@@ -19,7 +19,7 @@ namespace System
             [NotNull]
 #endif
             object? argument,
-            [CallerArgumentExpression("argument")] string? paramName = null)
+            [CallerArgumentExpression(nameof(argument))] string? paramName = null)
         {
             if (argument is null)
             {
@@ -31,6 +31,46 @@ namespace System
         [DoesNotReturn]
 #endif
         private static void Throw(string? paramName) => throw new ArgumentNullException(paramName);
+
+        /// <summary>
+        /// Throws either an <see cref="System.ArgumentNullException"/> or an <see cref="System.ArgumentException"/>
+        /// if the specified string is <see langword="null"/> or whitespace respectively.
+        /// </summary>
+        /// <param name="argument">String to be checked for <see langword="null"/> or whitespace.</param>
+        /// <param name="paramName">The name of the parameter being checked.</param>
+        /// <returns>The original value of <paramref name="argument"/>.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+#if NETCOREAPP3_0_OR_GREATER
+        [return: NotNull]
+#endif
+        public static string IfNullOrWhitespace(
+#if NETCOREAPP3_0_OR_GREATER
+            [NotNull]
+#endif
+            string? argument,
+            [CallerArgumentExpression(nameof(argument))] string paramName = "")
+        {
+#if !NETCOREAPP3_1_OR_GREATER
+            if (argument == null)
+            {
+                throw new ArgumentNullException(paramName);
+            }
+#endif
+
+            if (string.IsNullOrWhiteSpace(argument))
+            {
+                if (argument == null)
+                {
+                    throw new ArgumentNullException(paramName);
+                }
+                else
+                {
+                    throw new ArgumentException(paramName, "Argument is whitespace");
+                }
+            }
+
+            return argument;
+        }
     }
 }
 

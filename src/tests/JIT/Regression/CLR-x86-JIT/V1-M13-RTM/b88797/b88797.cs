@@ -3,11 +3,13 @@
 //
 
 using System;
+using Xunit;
 
 public class CC
 {
     public static bool Method2() { return true; }
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {
@@ -19,7 +21,7 @@ public class CC
             return 100;
         }
     }
-    public static void Main1()
+    internal static void Main1()
     {
         bool a = false;
         try

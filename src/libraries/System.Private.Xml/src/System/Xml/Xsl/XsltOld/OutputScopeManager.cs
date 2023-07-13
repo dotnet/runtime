@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(nspace != null);
             CurrentElementScope.AddNamespace(prefix, nspace, _defaultNS);
 
-            if (prefix == null || prefix.Length == 0)
+            if (string.IsNullOrEmpty(prefix))
             {
                 _defaultNS = nspace;
             }
@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(prefix != null);
             thisScope = true;
 
-            if (prefix == null || prefix.Length == 0)
+            if (string.IsNullOrEmpty(prefix))
             {
                 return _defaultNS;
             }

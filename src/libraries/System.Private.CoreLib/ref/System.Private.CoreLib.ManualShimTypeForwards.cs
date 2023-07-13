@@ -25,6 +25,7 @@ namespace System
         public override int GetHashCode() { throw null; }
         public override int GetHashCode(string obj) { throw null; }
     }
+    [System.ObsoleteAttribute("Formatter-based serialization is obsolete and should not be used.", DiagnosticId = "SYSLIB0050", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
     public sealed partial class UnitySerializationHolder : System.Runtime.Serialization.IObjectReference, System.Runtime.Serialization.ISerializable
     {
         public UnitySerializationHolder(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -90,6 +91,8 @@ namespace System.Collections.Generic
     }
     public partial class NonRandomizedStringEqualityComparer : System.Collections.Generic.IEqualityComparer<string?>, System.Runtime.Serialization.ISerializable
     {
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected NonRandomizedStringEqualityComparer(System.Runtime.Serialization.SerializationInfo information, System.Runtime.Serialization.StreamingContext context) { }
         public virtual bool Equals(string? x, string? y) { throw null; }
         public virtual int GetHashCode(string? obj) { throw null; }
@@ -139,6 +142,8 @@ namespace System.Diagnostics.Contracts
         public string Failure { get { throw null; } }
         public System.Diagnostics.Contracts.ContractFailureKind Kind { get { throw null; } }
         public string? UserMessage { get { throw null; } }
+        [System.ObsoleteAttribute("This API supports obsolete formatter-based serialization. It should not be called or extended by application code.", DiagnosticId = "SYSLIB0051", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         public override void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
     }
 }

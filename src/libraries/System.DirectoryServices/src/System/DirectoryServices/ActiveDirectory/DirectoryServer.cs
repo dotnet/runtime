@@ -279,6 +279,10 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal DirectoryContext Context => context;
 
+        private static readonly string[] s_name = new string[] { "name" };
+        private static readonly string[] s_cn = new string[] { "cn" };
+        private static readonly string[] s_objectClassCn = new string[] { "objectClass", "cn" };
+
         internal unsafe void CheckConsistencyHelper(IntPtr dsHandle, SafeLibraryHandle libHandle)
         {
             // call DsReplicaConsistencyCheck
@@ -356,7 +360,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry verifyEntry = DirectoryEntryManager.GetDirectoryEntry(this.context, partition);
                         try
                         {
-                            verifyEntry.RefreshCache(new string[] { "name" });
+                            verifyEntry.RefreshCache(s_name);
                         }
                         catch (COMException e)
                         {
@@ -626,14 +630,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal unsafe void SyncReplicaAllHelper(IntPtr handle, SyncReplicaFromAllServersCallback syncAllCallback, string partition, SyncFromAllServersOptions option, SyncUpdateCallback? callback, SafeLibraryHandle libHandle)
         {
-            IntPtr errorInfo = (IntPtr)0;
+            void* pErrors = null;
 
             if (!Partitions.Contains(partition))
                 throw new ArgumentException(SR.ServerNotAReplica, nameof(partition));
 
             // we want to return the dn instead of DNS guid
             // call DsReplicaSyncAllW
-            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, IntPtr*, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
+            var dsReplicaSyncAllW = (delegate* unmanaged<IntPtr, char*, int, IntPtr, IntPtr, void**, int>)global::Interop.Kernel32.GetProcAddress(libHandle, "DsReplicaSyncAllW");
             if (dsReplicaSyncAllW == null)
             {
                 throw ExceptionHelper.GetExceptionFromErrorCode(Marshal.GetLastPInvokeError());
@@ -643,16 +647,16 @@ namespace System.DirectoryServices.ActiveDirectory
             fixed (char* partitionPtr = partition)
             {
                 IntPtr syncAllFunctionPointer = Marshal.GetFunctionPointerForDelegate(syncAllCallback);
-                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &errorInfo);
+                result = dsReplicaSyncAllW(handle, partitionPtr, (int)option | DS_REPSYNCALL_ID_SERVERS_BY_DN, syncAllFunctionPointer, (IntPtr)0, &pErrors);
                 GC.KeepAlive(syncAllCallback);
             }
 
             try
             {
                 // error happens during the synchronization
-                if (errorInfo != (IntPtr)0)
+                if (pErrors is not null)
                 {
-                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
+                    SyncFromAllServersOperationException? e = ExceptionHelper.CreateSyncAllException((IntPtr)pErrors, false);
                     if (e == null)
                         return;
                     else
@@ -668,8 +672,8 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // release the memory
-                if (errorInfo != (IntPtr)0)
-                    global::Interop.Kernel32.LocalFree(errorInfo);
+                if (pErrors is not null)
+                    global::Interop.Kernel32.LocalFree(pErrors);
             }
         }
 
@@ -769,7 +773,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 ADSearcher adSearcher = new ADSearcher(de,
                                                       "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection))",
-                                                      new string[] { "cn" },
+                                                      s_cn,
                                                       SearchScope.OneLevel);
                 SearchResultCollection? srchResults = null;
 
@@ -808,7 +812,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 string serverName = (this is DomainController) ? ((DomainController)this).ServerObjectName : ((AdamInstance)this).ServerObjectName;
                 ADSearcher adSearcher = new ADSearcher(de,
                                                                "(&(objectClass=nTDSConnection)(objectCategory=nTDSConnection)(fromServer=CN=NTDS Settings," + serverName + "))",
-                                                               new string[] { "objectClass", "cn" },
+                                                               s_objectClassCn,
                                                                SearchScope.Subtree);
 
                 SearchResultCollection? results = null;

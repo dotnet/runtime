@@ -1,8 +1,5 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
-using Mono.Linker.Tests.Cases.Expectations.Helpers;
-using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.DynamicDependencies
 {
@@ -203,7 +200,7 @@ namespace Mono.Linker.Tests.Cases.DynamicDependencies
 		[KeptMember (".ctor()")]
 		private abstract class AbstractMethods
 		{
-			[Kept (By = Tool.Trimmer)] // NativeAOT test infra doesn't check reflection-only methods (without entry point) yet
+			[Kept]
 			[DynamicDependency (nameof (TargetMethod))]
 			public abstract void SourceAbstractViaReflection ();
 

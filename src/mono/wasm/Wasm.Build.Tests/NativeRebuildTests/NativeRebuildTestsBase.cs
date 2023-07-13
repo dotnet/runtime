@@ -164,8 +164,8 @@ namespace Wasm.Build.NativeRebuild.Tests
                 Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
                 Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
 
-                Path.Combine(paths.BundleDir, "dotnet.wasm"),
-                Path.Combine(paths.BundleDir, "dotnet.js")
+                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
+                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
             };
 
             if (buildArgs.AOT)
@@ -184,15 +184,13 @@ namespace Wasm.Build.NativeRebuild.Tests
             foreach (var file in files)
                 dict[Path.GetFileName(file)] = (file, unchanged);
 
-            return dict;
-        }
+            // those files do not change on re-link
+            dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js"), true);
+            dict["dotnet.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js.map"), true);
+            dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
+            dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js.map"), true);
 
-        protected void AssertSubstring(string substring, string full, bool contains)
-        {
-            if (contains)
-                Assert.Contains(substring, full);
-            else
-                Assert.DoesNotContain(substring, full);
+            return dict;
         }
     }
 }

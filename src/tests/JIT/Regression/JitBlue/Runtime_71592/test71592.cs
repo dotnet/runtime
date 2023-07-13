@@ -3,6 +3,7 @@
 
 using System;
 using System.Threading.Tasks;
+using Xunit;
 
 public class Test
 {
@@ -23,7 +24,8 @@ public class Test
         return t1.foo == t2.foo;
     }
 
-    public static int Main () {
+    [Fact]
+    public static int TestEntryPoint() {
         var t1 = new Test () { foo = 1 };
         var t2 = new Test () { foo = 2 };
         if (t1 == t2)

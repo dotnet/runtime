@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Xunit;
 
 namespace GcHole1
 {
@@ -50,7 +51,8 @@ namespace GcHole1
         }
 
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string result;
             IEnumerable<string> sequence;

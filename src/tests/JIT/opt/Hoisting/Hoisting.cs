@@ -6,10 +6,12 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Runtime.Intrinsics.Arm;
+using Xunit;
 
-unsafe class Hoisting
+public unsafe class Hoisting
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         var p = stackalloc int[4];
         p[0] = 1;

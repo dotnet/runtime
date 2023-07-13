@@ -1891,7 +1891,6 @@ UINT StubLinker::GetStackFrameSize()
     return m_cbStackSpace + (2 + m_cCalleeSavedRegs + m_cIntRegArgs + m_cVecRegArgs)*sizeof(void*);
 }
 
-
 #endif // ifdef TARGET_ARM, elif defined(TARGET_ARM64)
 
 #endif // #ifndef DACCESS_COMPILE
@@ -2232,6 +2231,8 @@ void Stub::SetupStub(int numCodeBytes, DWORD flags
             m_numCodeBytesAndFlags |= EXTERNAL_ENTRY_BIT;
         if ((flags & NEWSTUB_FL_INSTANTIATING_METHOD) != 0)
             m_numCodeBytesAndFlags |= INSTANTIATING_STUB_BIT;
+        if ((flags & NEWSTUB_FL_THUNK) != 0)
+            m_numCodeBytesAndFlags |= THUNK_BIT;
     }
 
 #ifdef STUBLINKER_GENERATES_UNWIND_INFO

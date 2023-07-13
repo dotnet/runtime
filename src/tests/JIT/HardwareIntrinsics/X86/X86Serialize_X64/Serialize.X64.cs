@@ -7,15 +7,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using Xunit;
 
 namespace IntelHardwareIntrinsicTest
 {
-    class Program
+    public class Program
     {
         const int Pass = 100;
         const int Fail = 0;
 
-        static unsafe int Main()
+        [Fact]
+        public static unsafe int TestEntryPoint()
         {
             int testResult = X86Serialize.X64.IsSupported ? Pass : Fail;
 

@@ -518,6 +518,12 @@ namespace Internal.NativeFormat
             MDArrayTypeSignature sig = new MDArrayTypeSignature(elementType, rank, bounds, lowerBounds);
             return Unify(sig);
         }
+
+        public Vertex GetFunctionPointerTypeSignature(Vertex methodSignature)
+        {
+            FunctionPointerTypeSignature sig = new FunctionPointerTypeSignature(methodSignature);
+            return Unify(sig);
+        }
     }
 
     internal sealed class PlacedVertex : Vertex
@@ -1459,6 +1465,37 @@ namespace Internal.NativeFormat
             }
 
             return true;
+        }
+    }
+
+#if NATIVEFORMAT_PUBLICWRITER
+    public
+#else
+    internal
+#endif
+    class FunctionPointerTypeSignature : Vertex
+    {
+        private Vertex _methodSignature;
+
+        public FunctionPointerTypeSignature(Vertex methodSignature)
+        {
+            _methodSignature = methodSignature;
+        }
+
+        internal override void Save(NativeWriter writer)
+        {
+            writer.WriteUnsigned((uint)TypeSignatureKind.FunctionPointer);
+            _methodSignature.Save(writer);
+        }
+
+        public override int GetHashCode()
+        {
+            return _methodSignature.GetHashCode();
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is FunctionPointerTypeSignature fnptrSig && _methodSignature.Equals(fnptrSig._methodSignature);
         }
     }
 

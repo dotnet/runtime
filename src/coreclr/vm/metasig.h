@@ -172,7 +172,7 @@
 
 // static methods:
 DEFINE_METASIG_T(SM(Int_IntPtr_Obj_RetException, i I j, C(EXCEPTION)))
-DEFINE_METASIG_T(SM(Type_ArrType_IntPtr_int_RetType, C(TYPE) a(C(TYPE)) I i, C(TYPE) ))
+DEFINE_METASIG_T(SM(Type_CharPtr_RuntimeAssembly_Bool_Bool_RetRuntimeType, P(u) C(ASSEMBLY) F F, C(CLASS)))
 DEFINE_METASIG_T(SM(Type_RetIntPtr, C(TYPE), I))
 DEFINE_METASIG(SM(RefIntPtr_IntPtr_IntPtr_Int_RetObj, r(I) I I i, j))
 DEFINE_METASIG(SM(Obj_IntPtr_RetIntPtr, j I, I))
@@ -338,6 +338,7 @@ DEFINE_METASIG(SM(IntPtr_Bool_RetVoid, I F, v))
 DEFINE_METASIG(SM(IntPtr_UInt_IntPtr_RetVoid, I K I, v))
 DEFINE_METASIG(SM(IntPtr_RetUInt, I, K))
 DEFINE_METASIG(SM(PtrChar_RetInt, P(u), i))
+DEFINE_METASIG(SM(PtrChar_RetVoid, P(u), v))
 DEFINE_METASIG(SM(IntPtr_IntPtr_RetIntPtr, I I, I))
 DEFINE_METASIG(SM(IntPtr_IntPtr_Int_RetIntPtr, I I i, I))
 DEFINE_METASIG(SM(PtrVoid_PtrVoid_RetVoid, P(v) P(v), v))

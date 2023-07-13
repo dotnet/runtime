@@ -10,7 +10,6 @@ trigger:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -28,7 +27,6 @@ pr:
   paths:
     include:
     - '*'
-    - docs/manpages/*
     exclude:
     - '**.md'
     - eng/Version.Details.xml
@@ -38,14 +36,6 @@ pr:
     - LICENSE.TXT
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
-
-resources:
-  containers:
-  # Define auxilary containers used by the installer jobs
-  - container: debpkg
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:ubuntu-18.04-debpkg
-  - container: rpmpkg
-    image: mcr.microsoft.com/dotnet-buildtools/prereqs:centos-7-rpmpkg
 
 variables:
   - template: /eng/pipelines/common/variables.yml

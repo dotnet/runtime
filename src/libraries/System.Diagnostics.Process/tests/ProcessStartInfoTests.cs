@@ -465,6 +465,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
         public void TestUserCredentialsPropertiesOnWindows()
         {
             using Process longRunning = CreateProcessLong();
@@ -1060,6 +1061,7 @@ namespace System.Diagnostics.Tests
         [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void StartInfo_NotepadWithContent(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".txt";
@@ -1093,6 +1095,7 @@ namespace System.Diagnostics.Tests
                                                     nameof(PlatformDetection.IsNotWindows8x))] // https://github.com/dotnet/runtime/issues/22007
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void StartInfo_TextFile_ShellExecute()
         {
             // create a new extension that nobody else should be using
@@ -1257,21 +1260,40 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        public void InitializeWithArgumentList()
+        public void InitializeWithArgumentList_Add()
         {
             ProcessStartInfo psi = new ProcessStartInfo("filename");
-            psi.ArgumentList.Add("arg1");
-            psi.ArgumentList.Add("arg2");
 
-            Assert.Equal(2, psi.ArgumentList.Count);
-            Assert.Equal("arg1", psi.ArgumentList[0]);
-            Assert.Equal("arg2", psi.ArgumentList[1]);
+            string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
+            foreach (string arg in args)
+            {
+                psi.ArgumentList.Add(arg);
+            }
+
+            Assert.Equal(args, psi.ArgumentList);
+        }
+
+        [Fact]
+        public void InitializeWithArgumentList_Enumerable()
+        {
+            string[] args = new[] { "arg1", "arg2", " arg3", "arg4 ", "arg 5", $"arg{Environment.NewLine}6" };
+            ProcessStartInfo psi = new ProcessStartInfo("filename", args);
+
+            Assert.Equal(args, psi.ArgumentList);
+        }
+
+        [Fact]
+        public void InitializeWithArgumentList_ThrowsArgumentNullException()
+        {
+            Assert.Throws<ArgumentNullException>("fileName", () => new ProcessStartInfo(null, new[] { "a", "b" }));
+            Assert.Throws<ArgumentNullException>("arguments", () => new ProcessStartInfo("a", (IEnumerable<string>)null));
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // No Notepad on Nano
         [MemberData(nameof(UseShellExecute))]
         [OuterLoop("Launches notepad")]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestRuntimes.Mono)]
         public void StartInfo_NotepadWithContent_withArgumentList(bool useShellExecute)
         {
             string tempFile = GetTestFilePath() + ".txt";

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) || defined(TARGET_WASI)
 #include <stdatomic.h>
 #elif defined(TARGET_WINDOWS)
 #include "windows.h"
@@ -13,7 +13,7 @@
 // The args passed in should match InterlockedCompareExchangePointer Windows API
 static int pal_atomic_cas_ptr(void* volatile* dest, void* exchange, void* comparand)
 {
-#if defined(TARGET_UNIX)
+#if defined(TARGET_UNIX) || defined(TARGET_WASI)
     return __atomic_compare_exchange_n(dest, &comparand, exchange, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST);
 #elif defined(TARGET_WINDOWS)
     return InterlockedCompareExchangePointer(dest, exchange, comparand) == comparand;

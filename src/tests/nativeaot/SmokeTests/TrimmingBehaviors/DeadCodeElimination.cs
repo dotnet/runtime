@@ -320,26 +320,41 @@ class DeadCodeElimination
             Console.WriteLine(s_type == typeof(Never));
 
 #if !DEBUG
-            ThrowIfPresent(typeof(TestTypeEquals), nameof(Never));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestTypeEquals), nameof(Never));
 #endif
         }
     }
 
     class TestBranchesInGenericCodeRemoval
     {
+        class ClassWithUnusedVirtual
+        {
+            public virtual string MyUnusedVirtualMethod() => typeof(UnusedFromVirtual).ToString();
+            public virtual string MyUsedVirtualMethod() => typeof(UsedFromVirtual).ToString();
+        }
+
+        class UnusedFromVirtual { }
+        class UsedFromVirtual { }
+
         struct Unused { public byte Val; }
         struct Used { public byte Val; }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        static T Cast<T>(byte o)
+        static T Cast<T>(byte o, ClassWithUnusedVirtual inst)
         {
             if (typeof(T) == typeof(Unused))
             {
+                // Expect this not to be scanned. The virtual slot should not be created.
+                inst.MyUnusedVirtualMethod();
+
                 Unused result = new Unused { Val = o };
                 return (T)(object)result;
             }
             else if (typeof(T) == typeof(Used))
             {
+                // This will introduce a virtual slot.
+                inst.MyUsedVirtualMethod();
+
                 Used result = new Used { Val = o };
                 return (T)(object)result;
             }
@@ -350,13 +365,16 @@ class DeadCodeElimination
         {
             Console.WriteLine("Testing dead branches guarded by typeof in generic code removal");
 
-            Cast<Used>(12);
+            Cast<Used>(12, new ClassWithUnusedVirtual());
 
             // We only expect to be able to get rid of it when optimizing
 #if !DEBUG
-            ThrowIfPresentWithTypeHandle(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
+            ThrowIfPresentWithUsableMethodTable(typeof(TestBranchesInGenericCodeRemoval), nameof(Unused));
 #endif
             ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(Used));
+
+            ThrowIfPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UnusedFromVirtual));
+            ThrowIfNotPresent(typeof(TestBranchesInGenericCodeRemoval), nameof(UsedFromVirtual));
         }
     }
 
@@ -372,28 +390,20 @@ class DeadCodeElimination
         }
     }
 
-    private static void ThrowIfPresentWithTypeHandle(Type testType, string typeName)
+    private static void ThrowIfPresentWithUsableMethodTable(Type testType, string typeName)
     {
         Type t = GetTypeSecretly(testType, typeName);
         if (t == null)
-        {
-            throw new Exception("Not found " + typeName);
-        }
+            return;
 
-        bool thrown = false;
         try
         {
-            _ = t.TypeHandle;
-        }
-        catch (NotSupportedException)
-        {
-            thrown = true;
-        }
+            RuntimeHelpers.GetUninitializedObject(t);
 
-        if (!thrown)
-        {
-            throw new Exception(typeName + " has type handle");
+            // Should have thrown NotSupported above.
+            throw new Exception();
         }
+        catch (NotSupportedException) { }
     }
 
     private static void ThrowIfNotPresent(Type testType, string typeName)

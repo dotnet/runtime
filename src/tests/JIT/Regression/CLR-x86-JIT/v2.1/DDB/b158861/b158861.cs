@@ -6,6 +6,7 @@
 //Test expects Foo() to catch the exception thrown by Bar(). 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class My
 {
@@ -30,7 +31,8 @@ public class My
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

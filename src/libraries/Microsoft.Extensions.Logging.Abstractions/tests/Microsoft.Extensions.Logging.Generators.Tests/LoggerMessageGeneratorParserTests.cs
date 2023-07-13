@@ -877,6 +877,40 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
             Assert.Empty(diagnostics);
         }
 
+        [Fact]
+        public static void SyntaxListWithManyItems()
+        {
+            const int nItems = 200000;
+            var builder = new System.Text.StringBuilder();
+            builder.AppendLine(
+                """
+                using Microsoft.Extensions.Logging;
+                class Program
+                {
+                    [LoggerMessage(EventId = 1, Level = LogLevel.Debug, Message = "M1")]
+                    static partial void M1(ILogger logger)
+                    {
+                """);
+            builder.AppendLine("    int[] values = new[] { ");
+            for (int i = 0; i < nItems; i++)
+            {
+                builder.Append("0, ");
+            }
+            builder.AppendLine("};");
+            builder.AppendLine("}");
+            builder.AppendLine("}");
+
+            string source = builder.ToString();
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+            LoggerMessageGenerator generator = new LoggerMessageGenerator();
+
+            (ImmutableArray<Diagnostic> diagnostics, _) =
+                RoslynTestUtils.RunGenerator(compilation, generator);
+
+            Assert.Single(diagnostics);
+            Assert.Equal(DiagnosticDescriptors.LoggingMethodHasBody.Id, diagnostics[0].Id);
+        }
+
         private static async Task<IReadOnlyList<Diagnostic>> RunGenerator(
             string code,
             bool wrap = true,

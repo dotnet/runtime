@@ -1,18 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: Identifies which SKU and version of the .NET
-**   Framework that a particular library was compiled against.
-**   Emitted by VS, and can help catch deployment problems.
-**
-===========================================================*/
-
 namespace System.Runtime.Versioning
 {
+    /// <summary>
+    /// Identifies the version of .NET that a particular assembly was compiled against.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = false, Inherited = false)]
     public sealed class TargetFrameworkAttribute : Attribute
     {

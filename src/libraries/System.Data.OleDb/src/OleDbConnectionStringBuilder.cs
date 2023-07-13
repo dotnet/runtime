@@ -629,7 +629,7 @@ namespace System.Data.OleDb
                         if (svalue.IndexOf(',') != -1)
                         {
                             int convertedValue = 0;
-                            string[] values = svalue.Split(new char[] { ',' });
+                            string[] values = svalue.Split(OleDbConnectionInternal.s_comma);
                             foreach (string v in values)
                             {
                                 convertedValue |= (int)Enum.Parse<OleDbServiceValues>(v, true);

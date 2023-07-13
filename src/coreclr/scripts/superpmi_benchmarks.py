@@ -8,8 +8,9 @@
 #
 # Notes:
 #
-# Script to perform the superpmi collection while executing the Microbenchmarks present
-# in https://github.com/dotnet/performance/tree/master/src/benchmarks/micro.
+# Script to perform the superpmi collection while executing the Microbenchmarks in 
+# https://github.com/dotnet/performance/tree/master/src/benchmarks/micro and real-world in
+# in https://github.com/dotnet/performance/tree/master/src/benchmarks/real-world
 
 import argparse
 import re
@@ -34,7 +35,10 @@ parser.add_argument("-log_file", help="Name of the log file")
 parser.add_argument("-partition_count", help="Total number of partitions")
 parser.add_argument("-partition_index", help="Partition index to do the collection for")
 parser.add_argument("-arch", help="Architecture")
-
+parser.add_argument("-benchmark_path", help="Benchmark's csproj path in dotnet/performance repo")
+parser.add_argument("-benchmark_binary", help="Benchmark binary to execute")
+parser.add_argument("--tiered_compilation", action="store_true", help="Sets DOTNET_TieredCompilation=1 when doing collections.")
+parser.add_argument("--tiered_pgo", action="store_true", help="Sets DOTNET_TieredCompilation=1 and DOTNET_TieredPGO=1 when doing collections.")
 
 def setup_args(args):
     """ Setup the args for SuperPMI to use.
@@ -89,6 +93,26 @@ def setup_args(args):
                         lambda arch: arch.lower() in ["x86", "x64", "arm", "arm64"],
                         "Unable to set arch")
 
+    coreclr_args.verify(args,
+                        "benchmark_path",
+                        lambda unused: True,
+                        "Unable to set benchmark_path")
+
+    coreclr_args.verify(args,
+                        "benchmark_binary",
+                        lambda unused: True,
+                        "Unable to set benchmark_binary")
+
+    coreclr_args.verify(args,
+                        "tiered_compilation",
+                        lambda unused: True,
+                        "Unable to set tiered_compilation")
+
+    coreclr_args.verify(args,
+                        "tiered_pgo",
+                        lambda unused: True,
+                        "Unable to set tiered_pgo")
+
     return coreclr_args
 
 
@@ -112,9 +136,8 @@ def make_executable(file_name):
              (stat.S_IROTH | stat.S_IXOTH))
     run_command(["ls", "-l", file_name])
 
-
 def build_and_run(coreclr_args, output_mch_name):
-    """Build the microbenchmarks and run them under "superpmi collect"
+    """Build the microbenchmarks/real-world and run them under "superpmi collect"
 
     Args:
         coreclr_args (CoreClrArguments): Arguments use to drive
@@ -128,13 +151,15 @@ def build_and_run(coreclr_args, output_mch_name):
     log_file = coreclr_args.log_file
     partition_count = coreclr_args.partition_count
     partition_index = coreclr_args.partition_index
+    benchmark_path = coreclr_args.benchmark_path
+    benchmark_binary = coreclr_args.benchmark_binary
     dotnet_directory = os.path.join(performance_directory, "tools", "dotnet", arch)
     dotnet_exe = os.path.join(dotnet_directory, "dotnet")
 
     artifacts_directory = os.path.join(performance_directory, "artifacts")
     artifacts_packages_directory = os.path.join(artifacts_directory, "packages")
-    project_file = os.path.join(performance_directory, "src", "benchmarks", "micro", "MicroBenchmarks.csproj")
-    benchmarks_dll = os.path.join(artifacts_directory, "MicroBenchmarks.dll")
+    project_file = os.path.join(performance_directory, benchmark_path)
+    benchmarks_dll = os.path.join(artifacts_directory, benchmark_binary)
 
     # Workaround https://github.com/dotnet/sdk/issues/23430
     project_file = os.path.realpath(project_file)
@@ -142,11 +167,11 @@ def build_and_run(coreclr_args, output_mch_name):
     if is_windows:
         shim_name = "%JitName%"
         corerun_exe = "CoreRun.exe"
-        script_name = "run_microbenchmarks.bat"
+        script_name = "run_benchmarks.bat"
     else:
         shim_name = "$JitName"
         corerun_exe = "corerun"
-        script_name = "run_microbenchmarks.sh"
+        script_name = "run_benchmarks.sh"
 
     make_executable(dotnet_exe)
 
@@ -181,11 +206,33 @@ def build_and_run(coreclr_args, output_mch_name):
          "--framework", "net8.0", "--no-restore", "/p:NuGetPackageRoot=" + artifacts_packages_directory,
          "-o", artifacts_directory], _exit_on_fail=True)
 
+    # common BDN prefix
+    collection_command = f"{dotnet_exe} {benchmarks_dll} --corerun {os.path.join(core_root, corerun_exe)} "
+
+    # test specific filters
+    if benchmark_binary.lower().startswith("microbenchmarks"):
+        collection_command += f"--filter \"*\" --partition-count {partition_count} --partition-index {partition_index} "
+    elif benchmark_binary.lower().startswith("demobenchmarks"):
+        collection_command += "-f *CollisionBatcherTaskBenchmarks.* *GroupedCollisionTesterBenchmarks.* *GatherScatterBenchmarks.* " \
+                              " *OneBodyConstraintBenchmarks.* *TwoBodyConstraintBenchmarks.* *ThreeBodyConstraintBenchmarks.* *FourBodyConstraintBenchmarks.* " \
+                              " *SweepBenchmarks.* *ShapeRayBenchmarks.* *ShapePileBenchmark.* *RagdollTubeBenchmark.* "
+    else:
+        collection_command += "--filter \"*\" "
+
+    # common BDN arguments
+    collection_command += "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput "
+
+    # common BDN environment var settings
     # Disable ReadyToRun so we always JIT R2R methods and collect them
-    collection_command = f"{dotnet_exe} {benchmarks_dll}  --filter \"*\" --corerun {os.path.join(core_root, corerun_exe)} --partition-count {partition_count} " \
-                         f"--partition-index {partition_index} --envVars DOTNET_JitName:{shim_name} " \
-                         " DOTNET_ZapDisable:1  DOTNET_ReadyToRun:0 " \
-                         "--iterationCount 1 --warmupCount 0 --invocationCount 1 --unrollFactor 1 --strategy ColdStart --logBuildOutput"
+    collection_command += f"--envVars DOTNET_JitName:{shim_name} DOTNET_ZapDisable:1 DOTNET_ReadyToRun:0 "
+
+    # custom BDN environment var settings
+    if coreclr_args.tiered_pgo:
+        collection_command += "DOTNET_TieredCompilation:1 DOTNET_TieredPGO:1"
+    elif coreclr_args.tiered_compilation:
+        collection_command += "DOTNET_TieredCompilation:1 DOTNET_TieredPGO:0"
+    else:
+        collection_command += "DOTNET_TieredCompilation:0"
 
     # Generate the execution script in Temp location
     with TempDir() as temp_location:
@@ -193,13 +240,18 @@ def build_and_run(coreclr_args, output_mch_name):
 
         contents = []
         # Unset the JitName so dotnet process will not fail
+        # Unset TieredCompilation and TieredPGO so the parent BDN process is just running with defaults
         if is_windows:
             contents.append("set JitName=%DOTNET_JitName%")
             contents.append("set DOTNET_JitName=")
+            contents.append("set DOTNET_TieredCompilation=")
+            contents.append("set DOTNET_TieredPGO=")
         else:
             contents.append("#!/bin/bash")
             contents.append("export JitName=$DOTNET_JitName")
             contents.append("unset DOTNET_JitName")
+            contents.append("unset DOTNET_TieredCompilation")
+            contents.append("unset DOTNET_TieredPGO")
         contents.append(f"pushd {performance_directory}")
         contents.append(collection_command)
 
@@ -214,10 +266,18 @@ def build_and_run(coreclr_args, output_mch_name):
 
         make_executable(script_name)
 
-        run_command([
-            python_path, os.path.join(superpmi_directory, "superpmi.py"), "collect", "--clean", "-core_root", core_root,
-            "-output_mch_path", output_mch_name, "-log_file", log_file, "-log_level", "debug",
-            script_name], _exit_on_fail=True)
+        script_args = [python_path,
+                       os.path.join(superpmi_directory, "superpmi.py"),
+                       "collect",
+                       "--clean",
+                       "-core_root", core_root,
+                       "-log_file", log_file,
+                       "-output_mch_path", output_mch_name,
+                       "-log_level", "debug"]
+
+        script_args.append(script_name)
+
+        run_command(script_args, _exit_on_fail=True)
 
 
 def strip_unrelated_mc(coreclr_args, old_mch_filename, new_mch_filename):
@@ -279,6 +339,9 @@ def main(main_args):
         main_args ([type]): Arguments to the script
     """
     coreclr_args = setup_args(main_args)
+
+    if coreclr_args.tiered_compilation and coreclr_args.tiered_pgo:
+        raise RuntimeError("Pass only one tiering option.")
 
     all_output_mch_name = os.path.join(coreclr_args.output_mch_path + "_all.mch")
     build_and_run(coreclr_args, all_output_mch_name)

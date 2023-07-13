@@ -241,6 +241,10 @@ mono_ios_runtime_init (void)
     setenv ("DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1", TRUE);
 #endif
 
+#if HYBRID_GLOBALIZATION
+    setenv ("DOTNET_SYSTEM_GLOBALIZATION_HYBRID", "1", TRUE);
+#endif
+
 #if ENABLE_RUNTIME_LOGGING
     setenv ("MONO_LOG_LEVEL", "debug", TRUE);
     setenv ("MONO_LOG_MASK", "all", TRUE);
@@ -263,8 +267,11 @@ mono_ios_runtime_init (void)
 
     char icu_dat_path [1024];
     int res;
-
+#if defined(HYBRID_GLOBALIZATION)
+    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt_hybrid.dat");
+#else
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
+#endif
     assert (res > 0);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES

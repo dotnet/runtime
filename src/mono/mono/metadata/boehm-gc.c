@@ -206,12 +206,6 @@ mono_gc_base_init (void)
 }
 
 void
-mono_gc_base_cleanup (void)
-{
-	GC_set_finalizer_notifier (NULL);
-}
-
-void
 mono_gc_init_icalls (void)
 {
 }
@@ -891,16 +885,6 @@ mono_gc_wbarrier_object_copy_internal (MonoObject* obj, MonoObject *src)
 	/* do not copy the sync state */
 	mono_gc_memmove_aligned (mono_object_get_data (obj), (char*)src + MONO_ABI_SIZEOF (MonoObject),
 				m_class_get_instance_size (mono_object_class (obj)) - MONO_ABI_SIZEOF (MonoObject));
-}
-
-void
-mono_gc_clear_domain (MonoDomain *domain)
-{
-}
-
-void
-mono_gc_suspend_finalizers (void)
-{
 }
 
 int

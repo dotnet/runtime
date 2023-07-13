@@ -3,16 +3,13 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Test_FastTailCallInlining
 {
-   public static int Main()
-   {
-       A(2);
-       return 100;
-   }
-      
-   public static void A(int i)
+    [Theory]
+    [InlineData(2)]
+    public static void A(int i)
    {
        if (i > 0)
        {
@@ -21,13 +18,13 @@ public class Test_FastTailCallInlining
    }  
 
    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-   public static void B(int i)
+   internal static void B(int i)
    {
        C(i);
        A(--i);
    }
 
-   public static void C(int i)
+    internal static void C(int i)
    {
        Console.WriteLine("In C");
        if (i==0)

@@ -273,6 +273,12 @@ namespace ILCompiler
             public override DefType[] ExplicitlyImplementedInterfaces => Array.Empty<DefType>();
             public override TypeSystemContext Context => ValueTypeRepresented.Context;
 
+            public override int GetInlineArrayLength()
+            {
+                Debug.Fail("if this can be an inline array, implement GetInlineArrayLength");
+                throw new InvalidOperationException();
+            }
+
             public BoxedValueType(ModuleDesc owningModule, MetadataType valuetype)
             {
                 // BoxedValueType has the same genericness as the valuetype it's wrapping.

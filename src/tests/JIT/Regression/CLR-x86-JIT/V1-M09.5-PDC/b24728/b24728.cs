@@ -17,11 +17,13 @@
 // <Code> 
 
 using System;
+using Xunit;
 
 public class MyClass
 {
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
 
         float test1 = 2.0f;

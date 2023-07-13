@@ -79,7 +79,7 @@ static int mem_validate_pipe[2] = {-1, -1};
 static inline void
 do_pipe2 (int pipefd[2])
 {
-  pipe2 (pipefd, O_CLOEXEC | O_NONBLOCK);
+  int result UNUSED = pipe2 (pipefd, O_CLOEXEC | O_NONBLOCK);
 }
 #else
 static inline void

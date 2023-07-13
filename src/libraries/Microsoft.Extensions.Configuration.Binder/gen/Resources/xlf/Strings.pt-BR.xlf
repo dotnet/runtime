@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="pt-BR" original="../Strings.resx">
+    <body>
+      <trans-unit id="CollectionNotSupported">
+        <source>The collection type is not supported: '{0}'.</source>
+        <target state="translated">O tipo de coleção não é compatível: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
+        <target state="translated">A lógica de associação não foi gerada para uma chamada de associador. Os padrões de entrada sem suporte incluem chamadas genéricas e passagem de objetos em caixa.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">Não foi possível determinar o tipo de destino de uma chamada de associador</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="DictionaryKeyNotSupported">
+        <source>The dictionary key type is not supported: '{0}'.</source>
+        <target state="translated">O tipo de chave do dicionário não é suportado: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ElementTypeNotSupported">
+        <source>The collection element type is not supported: '{0}'.</source>
+        <target state="translated">O tipo de elemento da coleção não é suportado: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="Language VersionIsNotSupportedMessageFormat">
+        <source>The project's language version has to be at least 'C# 11'.</source>
+        <target state="translated">A versão do idioma do projeto deve ser no mínimo 'C# 11'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LanguageVersionIsNotSupportedTitle">
+        <source>Language version is required to be at least C# 11</source>
+        <target state="translated">A versão do idioma deve ser pelo menos C# 11</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Não é possível criar instância do tipo ''{0}'' porque falta um construtor de instância pública.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultiDimArraysNotSupported">
+        <source>Multidimensional arrays are not supported: '{0}'.</source>
+        <target state="translated">Matrizes multidimensionais não são suportadas: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Não é possível criar instância do tipo ''{0}'' porque ela tem vários construtores parametrizados públicos.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NullableUnderlyingTypeNotSupported">
+        <source>Nullable underlying type is not supported: '{0}'.</source>
+        <target state="translated">O tipo subjacente anulável não é suportado: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedMessageFormat">
+        <source>Property '{0}' on type '{1}' is not supported.</source>
+        <target state="translated">Não há suporte para a propriedade '{0}' no tipo '{1}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="PropertyNotSupportedTitle">
+        <source>Did not generate binding logic for a property on a type</source>
+        <target state="translated">Não gerou lógica de ligação para uma propriedade em um tipo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupported">
+        <source>The type is not supported: '{0}'.</source>
+        <target state="translated">O tipo não é suportado: '{0}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Did not generate binding logic for a type</source>
+        <target state="translated">Não gerou lógica de ligação para um tipo</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">A lógica de associação não foi gerada para uma chamada de associador com o tipo de destino "{0}". Tipos de valor são entradas inválidas para métodos de configuração 'Bind'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">Tipos de valor são entradas inválidas para métodos de configuração "Associar"</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

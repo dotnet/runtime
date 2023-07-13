@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
                 GetDataContract(DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, declaredType));
             if (this.IsGetOnlyCollection && dataContract.UnderlyingType != declaredType)
             {
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser, DataContract.GetClrTypeFullName(declaredType))));
+                throw new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser, DataContract.GetClrTypeFullName(declaredType)));
             }
             ReadAttributes(xmlReader);
             string objectId = GetObjectId();
@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization
                     memberType = memberType.GetElementType()!;
                 memberType = DataContractSurrogateCaller.GetDataContractType(_serializationSurrogateProvider, memberType);
                 if (!DataContract.IsTypeSerializable(memberType))
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.TypeNotSerializable, memberType)));
+                    throw new InvalidDataContractException(SR.Format(SR.TypeNotSerializable, memberType));
                 return;
             }
 
@@ -108,8 +108,8 @@ namespace System.Runtime.Serialization
                 Type surrogateType = DataContractSerializer.GetSurrogatedType(_serializationSurrogateProvider, type);
                 if (this.IsGetOnlyCollection && surrogateType != type)
                 {
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser,
-                        DataContract.GetClrTypeFullName(type))));
+                    throw new InvalidDataContractException(SR.Format(SR.SurrogatesWithGetOnlyCollectionsNotSupportedSerDeser,
+                        DataContract.GetClrTypeFullName(type)));
                 }
                 else
                 {

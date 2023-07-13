@@ -99,7 +99,7 @@ namespace System.Reflection
         public sealed override string GetEnumName(object value) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override string[] GetEnumNames() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Type GetEnumUnderlyingType() => throw new NotSupportedException(SR.NotSupported_SignatureType);
-        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use the GetEnumValues<TEnum> overload or the GetEnumValuesAsUnderlyingType method instead.")]
+        [RequiresDynamicCode("It might not be possible to create an array of the enum type at runtime. Use Enum.GetValues<T> or the GetEnumValuesAsUnderlyingType method instead.")]
         public sealed override Array GetEnumValues() => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override Guid GUID => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override TypeCode GetTypeCodeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);
@@ -195,6 +195,7 @@ namespace System.Reflection
         public sealed override bool IsSecurityCritical => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSecuritySafeCritical => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSecurityTransparent => throw new NotSupportedException(SR.NotSupported_SignatureType);
+        [Obsolete(Obsoletions.LegacyFormatterMessage, DiagnosticId = Obsoletions.LegacyFormatterDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public sealed override bool IsSerializable => throw new NotSupportedException(SR.NotSupported_SignatureType);
         public sealed override bool IsSubclassOf(Type c) => throw new NotSupportedException(SR.NotSupported_SignatureType);
         protected sealed override bool IsValueTypeImpl() => throw new NotSupportedException(SR.NotSupported_SignatureType);

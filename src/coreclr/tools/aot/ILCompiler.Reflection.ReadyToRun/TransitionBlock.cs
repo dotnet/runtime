@@ -15,19 +15,24 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         public static TransitionBlock FromReader(ReadyToRunReader reader)
         {
-            switch (reader.Architecture)
+            switch (reader.Machine)
             {
-                case Architecture.X86:
+                case Machine.I386:
                     return X86TransitionBlock.Instance;
 
-                case Architecture.X64:
+                case Machine.Amd64:
                     return reader.OperatingSystem == OperatingSystem.Windows ? X64WindowsTransitionBlock.Instance : X64UnixTransitionBlock.Instance;
 
-                case Architecture.Arm:
+                case Machine.Arm:
+                case Machine.Thumb:
+                case Machine.ArmThumb2:
                     return ArmTransitionBlock.Instance;
 
-                case Architecture.Arm64:
+                case Machine.Arm64:
                     return Arm64TransitionBlock.Instance;
+
+                case Machine.LoongArch64:
+                    return LoongArch64TransitionBlock.Instance;
 
                 default:
                     throw new NotImplementedException();
@@ -161,8 +166,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             public override int NumCalleeSavedRegisters => 12;
             // Callee-saves, padding, argument registers
             public override int SizeOfTransitionBlock => SizeOfCalleeSavedRegisters + SizeOfArgumentRegisters;
-            public override int OffsetOfArgumentRegisters => SizeOfCalleeSavedRegisters;
-            public override int OffsetOfFirstGCRefMapSlot => OffsetOfArgumentRegisters;
+            public override int OffsetOfFirstGCRefMapSlot => SizeOfCalleeSavedRegisters;
+            public override int OffsetOfArgumentRegisters => OffsetOfFirstGCRefMapSlot;
         }
     }
 }

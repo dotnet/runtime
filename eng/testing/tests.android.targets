@@ -4,18 +4,18 @@
   </PropertyGroup>
 
   <Import Project="$(MonoProjectRoot)\msbuild\common\LibraryBuilder.props" /> 
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.props" />
-  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidApp.InTree.targets" />
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\android\build\AndroidBuild.InTree.targets" />
 
   <PropertyGroup>
-    <AndroidBuildAppDependsOn>PrepareForAndroidBuildApp;$(AndroidBuildAppDependsOn);_CopyTestArchive</AndroidBuildAppDependsOn>
-    <BundleTestAndroidAppDependsOn>AndroidBuildApp</BundleTestAndroidAppDependsOn>
+    <AndroidBuildDependsOn>PrepareForAndroidBuild;$(AndroidBuildDependsOn);_CopyTestArchive</AndroidBuildDependsOn>
+    <BundleTestAndroidAppDependsOn>AndroidBuild</BundleTestAndroidAppDependsOn>
   </PropertyGroup>
 
   <!-- Target that kicks off the whole test build and run flow -->
   <Target Name="BundleTestAndroidApp" DependsOnTargets="$(BundleTestAndroidAppDependsOn)" />
 
-  <Target Name="PrepareForAndroidBuildApp">
+  <Target Name="PrepareForAndroidBuild">
     <Error Condition="!Exists('$(MicrosoftNetCoreAppRuntimePackRidDir)')" Text="MicrosoftNetCoreAppRuntimePackRidDir=$(MicrosoftNetCoreAppRuntimePackRidDir) doesn't exist" />
 
     <WriteLinesToFile File="$(PublishDir)xunit-excludes.txt" Lines="$(XunitExcludesTxtFileContent)" Overwrite="true" />
@@ -23,8 +23,8 @@
     <PropertyGroup>
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == ''">AndroidTestRunner.dll</MainLibraryFileName>
     
-      <AndroidAppDir>$(PublishDir)</AndroidAppDir>
-      <AndroidAppBundleDir>$(BundleDir)</AndroidAppBundleDir>
+      <AndroidBuildDir>$(PublishDir)</AndroidBuildDir>
+      <AndroidBundleDir>$(BundleDir)</AndroidBundleDir>
     </PropertyGroup>
 
     <ItemGroup>
@@ -69,6 +69,8 @@
           DestinationFolder="$(TestArchiveTestsDir)"
           SkipUnchangedFiles="true"
           Condition="'$(ArchiveTests)' == 'true' and '$(IgnoreForCI)' != 'true'" />
+
+    <RemoveDir Condition="'$(ArchiveTests)' == 'true' and '$(AndroidGenerateAppBundle)' == 'true'" Directories="$(OutDir)" />
   </Target>
 
 </Project>

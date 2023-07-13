@@ -337,7 +337,7 @@ namespace System.Runtime.Serialization
                     break;
 
                 default:
-                    Fx.Assert("ExtensionDataReader in invalid state");
+                    Debug.Fail("ExtensionDataReader in invalid state");
                     throw new SerializationException(SR.InvalidStateInExtensionDataReader);
             }
             _readState = ReadState.Interactive;
@@ -352,7 +352,7 @@ namespace System.Runtime.Serialization
                 {
                     return _xmlNodeReader.Name;
                 }
-                Fx.Assert("ExtensionDataReader Name property should only be called for IXmlSerializable");
+                Debug.Fail("ExtensionDataReader Name property should only be called for IXmlSerializable");
                 return string.Empty;
             }
         }
@@ -365,7 +365,7 @@ namespace System.Runtime.Serialization
                 {
                     return _xmlNodeReader.HasValue;
                 }
-                Fx.Assert("ExtensionDataReader HasValue property should only be called for IXmlSerializable");
+                Debug.Fail("ExtensionDataReader HasValue property should only be called for IXmlSerializable");
                 return false;
             }
         }
@@ -378,7 +378,7 @@ namespace System.Runtime.Serialization
                 {
                     return _xmlNodeReader.BaseURI;
                 }
-                Fx.Assert("ExtensionDataReader BaseURI property should only be called for IXmlSerializable");
+                Debug.Fail("ExtensionDataReader BaseURI property should only be called for IXmlSerializable");
                 return string.Empty;
             }
         }
@@ -391,7 +391,7 @@ namespace System.Runtime.Serialization
                 {
                     return _xmlNodeReader.NameTable;
                 }
-                Fx.Assert("ExtensionDataReader NameTable property should only be called for IXmlSerializable");
+                Debug.Fail("ExtensionDataReader NameTable property should only be called for IXmlSerializable");
                 return null;
             }
         }
@@ -402,7 +402,7 @@ namespace System.Runtime.Serialization
             {
                 return _xmlNodeReader.GetAttribute(name);
             }
-            Fx.Assert("ExtensionDataReader GetAttribute method should only be called for IXmlSerializable");
+            Debug.Fail("ExtensionDataReader GetAttribute method should only be called for IXmlSerializable");
             return null;
         }
 
@@ -412,7 +412,7 @@ namespace System.Runtime.Serialization
             {
                 return _xmlNodeReader.GetAttribute(i);
             }
-            Fx.Assert("ExtensionDataReader GetAttribute method should only be called for IXmlSerializable");
+            Debug.Fail("ExtensionDataReader GetAttribute method should only be called for IXmlSerializable");
             return null;
         }
 
@@ -422,7 +422,7 @@ namespace System.Runtime.Serialization
             {
                 return _xmlNodeReader.MoveToAttribute(name);
             }
-            Fx.Assert("ExtensionDataReader MoveToAttribute method should only be called for IXmlSerializable");
+            Debug.Fail("ExtensionDataReader MoveToAttribute method should only be called for IXmlSerializable");
             return false;
         }
 
@@ -434,7 +434,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                Fx.Assert("ExtensionDataReader ResolveEntity method should only be called for IXmlSerializable");
+                Debug.Fail("ExtensionDataReader ResolveEntity method should only be called for IXmlSerializable");
             }
         }
 
@@ -444,7 +444,7 @@ namespace System.Runtime.Serialization
             {
                 return _xmlNodeReader.ReadAttributeValue();
             }
-            Fx.Assert("ExtensionDataReader ReadAttributeValue method should only be called for IXmlSerializable");
+            Debug.Fail("ExtensionDataReader ReadAttributeValue method should only be called for IXmlSerializable");
             return false;
         }
 
@@ -471,8 +471,8 @@ namespace System.Runtime.Serialization
                         MoveToDeserializedObject(dataNode!);
                     else
                     {
-                        Fx.Assert("Encountered invalid data node when deserializing unknown data");
-                        throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new SerializationException(SR.Format(SR.InvalidStateInExtensionDataReader)));
+                        Debug.Fail("Encountered invalid data node when deserializing unknown data");
+                        throw new SerializationException(SR.Format(SR.InvalidStateInExtensionDataReader));
                     }
                     break;
             }
@@ -534,7 +534,7 @@ namespace System.Runtime.Serialization
         private void MoveNextInClass(ClassDataNode dataNode)
         {
             // Two frames above here in Read(), _element is asserted not null.
-            Fx.Assert(_element != null, "");
+            Debug.Assert(_element != null);
             if (dataNode.Members != null && _element.childElementIndex < dataNode.Members.Count)
             {
                 if (_element.childElementIndex == 0)
@@ -553,7 +553,7 @@ namespace System.Runtime.Serialization
         private void MoveNextInCollection(CollectionDataNode dataNode)
         {
             // Two frames above here in Read(), _element is asserted not null.
-            Fx.Assert(_element != null, "");
+            Debug.Assert(_element != null);
             if (dataNode.Items != null && _element.childElementIndex < dataNode.Items.Count)
             {
                 if (_element.childElementIndex == 0)
@@ -572,7 +572,7 @@ namespace System.Runtime.Serialization
         private void MoveNextInISerializable(ISerializableDataNode dataNode)
         {
             // Two frames above here in Read(), _element is asserted not null.
-            Fx.Assert(_element != null, "");
+            Debug.Assert(_element != null);
             if (dataNode.Members != null && _element.childElementIndex < dataNode.Members.Count)
             {
                 if (_element.childElementIndex == 0)
@@ -649,14 +649,14 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.Format(SR.InvalidDataNode, DataContract.GetClrTypeFullName(type))));
+                    throw new XmlException(SR.Format(SR.InvalidDataNode, DataContract.GetClrTypeFullName(type)));
                 }
             }
         }
 
         private bool MoveToText(Type type, IDataNode dataNode, bool isTypedNode)
         {
-            Fx.Assert(dataNode.Value != null, "");
+            Debug.Assert(dataNode.Value != null);
 
             bool handled = true;
             switch (Type.GetTypeCode(type))

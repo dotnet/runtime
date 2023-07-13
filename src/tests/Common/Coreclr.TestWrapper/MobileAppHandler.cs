@@ -22,17 +22,17 @@ namespace CoreclrTestLib
         // 91 - ADB_FAILURE
         private static readonly int[] _knownExitCodes = new int[] { 78, 81, 82, 83, 84, 86, 88, 89, 90, 91 };
 
-        public int InstallMobileApp(string platform, string category, string testBinaryBase, string reportBase)
+        public int InstallMobileApp(string platform, string category, string testBinaryBase, string reportBase, string targetOS)
         {
-            return HandleMobileApp("install", platform, category, testBinaryBase, reportBase);
+            return HandleMobileApp("install", platform, category, testBinaryBase, reportBase, targetOS);
         }
 
-        public int UninstallMobileApp(string platform, string category, string testBinaryBase, string reportBase)
+        public int UninstallMobileApp(string platform, string category, string testBinaryBase, string reportBase, string targetOS)
         {
-            return HandleMobileApp("uninstall", platform, category, testBinaryBase, reportBase);
+            return HandleMobileApp("uninstall", platform, category, testBinaryBase, reportBase, targetOS);
         }
 
-        private static int HandleMobileApp(string action, string platform, string category, string testBinaryBase, string reportBase)
+        private static int HandleMobileApp(string action, string platform, string category, string testBinaryBase, string reportBase, string targetOS)
         {
             int exitCode = -100;
 
@@ -82,7 +82,24 @@ namespace CoreclrTestLib
                     }
                     else // platform is apple
                     {
-                        cmdStr += $" --output-directory={reportBase}/{action} --target=ios-simulator-64"; //To Do: target should be either emulator or device
+                        string targetString = "";
+
+                        switch (targetOS) {
+                            case "ios":
+                                targetString = "ios-device";
+                                break;
+                            case "iossimulator":
+                                targetString = "ios-simulator-64";
+                                break;
+                            case "tvos":
+                                targetString = "tvos-device";
+                                break;
+                            case "tvossimulator":
+                                targetString = "tvos-simulator";
+                                break;
+                        }
+
+                        cmdStr += $" --output-directory={reportBase}/{action} --target={targetString}";
 
                         if (action == "install")
                         {

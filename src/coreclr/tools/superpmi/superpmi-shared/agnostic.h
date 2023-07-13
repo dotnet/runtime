@@ -204,6 +204,25 @@ struct Agnostic_GetStaticFieldCurrentClass
     bool      isSpeculative;
 };
 
+struct Agnostic_CORINFO_TYPE_LAYOUT_NODE
+{
+    DWORDLONG simdTypeHnd;
+    DWORDLONG diagFieldHnd;
+    DWORD parent;
+    DWORD offset;
+    DWORD size;
+    DWORD numFields;
+    BYTE type;
+    bool hasSignificantPadding;
+};
+
+struct Agnostic_GetTypeLayoutResult
+{
+    DWORD result;
+    DWORD nodesBuffer;
+    DWORD numNodes;
+};
+
 struct Agnostic_CORINFO_RESOLVED_TOKEN
 {
     Agnostic_CORINFO_RESOLVED_TOKENin inValue;
@@ -249,7 +268,6 @@ struct Agnostic_CORINFO_RUNTIME_LOOKUP
     DWORD     helper;
     DWORD     indirections;
     DWORD     testForNull;
-    DWORD     testForFixup;
     WORD      sizeOffset;
     DWORDLONG offsets[CORINFO_MAXINDIRECTIONS];
     DWORD     indirectFirstOffset;
@@ -319,8 +337,6 @@ struct Agnostic_CORINFO_CALL_INFO
     DWORD                         methodFlags;
     DWORD                         classFlags;
     Agnostic_CORINFO_SIG_INFO     sig;
-    DWORD                         verMethodFlags;
-    Agnostic_CORINFO_SIG_INFO     verSig;
     DWORD                         accessAllowed;
     Agnostic_CORINFO_HELPER_DESC  callsiteCalloutHelper;
     DWORD                         thisTransform;
@@ -464,12 +480,17 @@ struct Agnostic_GetClassModuleIdForStatics
     DWORDLONG result;
 };
 
-struct Agnostic_IsCompatibleDelegate
+struct Agnostic_GetIsClassInitedFlagAddress
 {
-    DWORDLONG objCls;
-    DWORDLONG methodParentCls;
-    DWORDLONG method;
-    DWORDLONG delegateCls;
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    DWORD                         offset;
+    DWORD                         result;
+};
+
+struct Agnostic_GetStaticBaseAddress
+{
+    Agnostic_CORINFO_CONST_LOOKUP addr;
+    DWORD                         result;
 };
 
 struct Agnostic_PgoInstrumentationSchema
@@ -504,6 +525,23 @@ struct Agnostic_GetProfilingHandle
     DWORD     bHookFunction;
     DWORDLONG ProfilerHandle;
     DWORD     bIndirectedHandles;
+};
+
+struct Agnostic_GetThreadLocalStaticBlocksInfo
+{
+    Agnostic_CORINFO_CONST_LOOKUP tlsIndex;
+    DWORDLONG                     tlsGetAddrFtnPtr;
+    DWORDLONG                     tlsIndexObject;
+    DWORDLONG                     threadVarsSection;
+    DWORD                         offsetOfThreadLocalStoragePointer;
+    DWORD                         offsetOfMaxThreadStaticBlocks;
+    DWORD                         offsetOfThreadStaticBlocks;
+    DWORD                         offsetOfGCDataPointer;
+};
+
+struct Agnostic_GetThreadLocalFieldInfo
+{
+    DWORD staticBlockIndex;
 };
 
 struct Agnostic_GetTailCallHelpers
@@ -586,12 +624,6 @@ struct ResolveTokenValue
     DWORD                              exceptionCode;
 };
 
-struct TryResolveTokenValue
-{
-    Agnostic_CORINFO_RESOLVED_TOKENout tokenOut;
-    DWORD                              success;
-};
-
 struct GetTokenTypeAsHandleValue
 {
     DWORDLONG hMethod;
@@ -651,7 +683,6 @@ struct Agnostic_RecordRelocation
     DWORDLONG location;
     DWORDLONG target;
     DWORD     fRelocType;
-    DWORD     slotNum;
     DWORD     addlDelta;
 };
 

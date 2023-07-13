@@ -177,7 +177,7 @@ namespace Internal.Runtime.CompilerHelpers
                 pCurrent < (pInitializers + length);
                 pCurrent += MethodTable.SupportsRelativePointers ? sizeof(int) : sizeof(nint))
             {
-                var initializer = MethodTable.SupportsRelativePointers ? (delegate*<void>)ReadRelPtr32(pCurrent) : (delegate*<void>)pCurrent;
+                var initializer = MethodTable.SupportsRelativePointers ? (delegate*<void>)ReadRelPtr32(pCurrent) : *(delegate*<void>*)pCurrent;
                 initializer();
             }
 

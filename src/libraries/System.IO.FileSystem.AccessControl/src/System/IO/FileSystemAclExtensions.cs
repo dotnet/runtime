@@ -279,7 +279,7 @@ namespace System.IO
             {
                 fixed (byte* pSecurityDescriptor = security.GetSecurityDescriptorBinaryForm())
                 {
-                    secAttrs.lpSecurityDescriptor = (IntPtr)pSecurityDescriptor;
+                    secAttrs.lpSecurityDescriptor = pSecurityDescriptor;
                     handle = CreateFileHandleInternal(fullPath, mode, rights, share, flagsAndAttributes, &secAttrs);
                 }
             }

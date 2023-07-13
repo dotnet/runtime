@@ -160,7 +160,7 @@ namespace System
                 //    ULONG sign:1;
                 // } SNGSTRUCT;
 
-                return (byte)(*(uint*)&f >> 23);
+                return (byte)(BitConverter.SingleToUInt32Bits(f) >> 23);
             }
 
             private static unsafe uint GetExponent(double d)
@@ -171,7 +171,7 @@ namespace System
                 //   DWORDLONG signexp:12;
                 // } DBLSTRUCT;
 
-                return (uint)(*(ulong*)&d >> 52) & 0x7FFu;
+                return (uint)(BitConverter.DoubleToUInt64Bits(d) >> 52) & 0x7FFu;
             }
 
             private static ulong UInt32x32To64(uint a, uint b)
@@ -196,7 +196,7 @@ namespace System
                     high++;
 
                 if (high > uint.MaxValue)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
                 result.Low64 = low;
                 result.High = (uint)high;
             }
@@ -681,7 +681,7 @@ PosRem:
                 return scale;
 
 ThrowOverflow:
-                Number.ThrowOverflowException(TypeCode.Decimal);
+                Number.ThrowOverflowException(SR.Overflow_Decimal);
                 return 0;
             }
 
@@ -725,7 +725,7 @@ ThrowOverflow:
             private static int OverflowUnscale(ref Buf12 bufQuo, int scale, bool sticky)
             {
                 if (--scale < 0)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 Debug.Assert(bufQuo.U2 == 0);
 
@@ -837,7 +837,7 @@ ThrowOverflow:
                 // positive if it isn't already.
                 //
                 if (curScale + scale < 0)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 return curScale;
             }
@@ -1107,7 +1107,7 @@ AlignedScale:
                     // Divide the value by 10, dropping the scale factor.
                     //
                     if ((flags & ScaleMask) == 0)
-                        Number.ThrowOverflowException(TypeCode.Decimal);
+                        Number.ThrowOverflowException(SR.Overflow_Decimal);
                     flags -= 1 << ScaleShift;
 
                     const uint den = 10;
@@ -1534,7 +1534,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (exp > 96)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -1701,7 +1701,7 @@ ReturnZero:
                     return; // result should be zeroed out
 
                 if (exp > 96)
-                    Number.ThrowOverflowException(TypeCode.Decimal);
+                    Number.ThrowOverflowException(SR.Overflow_Decimal);
 
                 uint flags = 0;
                 if (input < 0)
@@ -2170,7 +2170,7 @@ RoundUp:
                 }
 
 ThrowOverflow:
-                Number.ThrowOverflowException(TypeCode.Decimal);
+                Number.ThrowOverflowException(SR.Overflow_Decimal);
             }
 
             /// <summary>

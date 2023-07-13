@@ -218,7 +218,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return $"{FieldType} {name}";
+            return $"{FieldType.FormatTypeName ()} {name}";
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -275,7 +275,7 @@ namespace System.Reflection
         {
             Type? declaringType = DeclaringType;
             if (declaringType != null && declaringType.ContainsGenericParameters)
-                throw new InvalidOperationException("Late bound operations cannot be performed on fields with types for which Type.ContainsGenericParameters is true.");
+                throw new InvalidOperationException(SR.Arg_UnboundGenField);
         }
 
         public sealed override bool HasSameMetadataDefinitionAs(MemberInfo other) => HasSameMetadataDefinitionAsCore<RuntimeFieldInfo>(other);

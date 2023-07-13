@@ -1,5 +1,6 @@
 using System;
 using System.Numerics;
+using Xunit;
 
 // In this test case, we have a struct S that contains a single Vector2 field (Vector),
 // with an implicit conversion from an array of float to S.
@@ -40,7 +41,8 @@ namespace Repro
 	        }
 	        public static implicit operator S(float[] numbers) => new S(numbers);
 	    }
-	    public static int Main()
+	    [Fact]
+	    public static int TestEntryPoint()
 	    {
 	        S s = new float[] { 1.0f, 2.0f };
 	        Console.WriteLine(s.Vector);

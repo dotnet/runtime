@@ -265,7 +265,7 @@ if (stackerror)                                 \
     return -UNW_EINVAL;                         \
   }
 
-// Removed the parentheses on the asignment
+// Removed the parentheses on the assignment
 // to allow the extra stack error check
 // when x is evaluated
 # define push(x)                                \
@@ -578,7 +578,8 @@ if (stackerror)                                 \
 
         case DW_OP_neg:
           Debug (15, "OP_neg\n");
-          push (~pop () + 1);
+          tmp1 = pop ();
+          push (~tmp1 + 1);
           break;
 
         case DW_OP_not:

@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -269,7 +269,12 @@ namespace System.Tests
                 yield return new object[] { (nuint)4567, "D", defaultFormat, "4567" };
                 yield return new object[] { (nuint)4567, "D18", defaultFormat, "000000000000004567" };
 
+                yield return new object[] { (nuint)0, "x", defaultFormat, "0" };
                 yield return new object[] { (nuint)0x2468, "x", defaultFormat, "2468" };
+
+                yield return new object[] { (nuint)0, "b", defaultFormat, "0" };
+                yield return new object[] { (nuint)0x2468, "b", defaultFormat, "10010001101000" };
+
                 yield return new object[] { (nuint)2468, "N", defaultFormat, string.Format("{0:N}", 2468.00) };
             }
 
@@ -344,24 +349,36 @@ namespace System.Tests
             // All lengths decimal
             {
                 string s = "";
-                uint result = 0;
-                for (int i = 1; i <= 10; i++)
+                nuint result = 0;
+                for (nuint i = 1; i <= (nuint)(IntPtr.Size == 8 ? 20 : 10); i++)
                 {
-                    result = (uint)(result * 10 + (i % 10));
+                    result = result * 10 + (i % 10);
                     s += (i % 10).ToString();
-                    yield return new object[] { s, NumberStyles.Integer, null, (nuint)result };
+                    yield return new object[] { s, NumberStyles.Integer, null, result };
                 }
             }
 
             // All lengths hexadecimal
             {
                 string s = "";
-                uint result = 0;
-                for (uint i = 1; i <= 8; i++)
+                nuint result = 0;
+                for (nuint i = 1; i <= (nuint)(IntPtr.Size * 2); i++)
                 {
                     result = ((result * 16) + (i % 16));
                     s += (i % 16).ToString("X");
                     yield return new object[] { s, NumberStyles.HexNumber, null, result };
+                }
+            }
+
+            // All lengths binary
+            {
+                string s = "";
+                nuint result = 0;
+                for (nuint i = 1; i <= (nuint)(IntPtr.Size * 8); i++)
+                {
+                    result = ((result * 2) + (i % 2));
+                    s += (i % 2).ToString("b");
+                    yield return new object[] { s, NumberStyles.BinaryNumber, null, result };
                 }
             }
 
@@ -371,6 +388,8 @@ namespace System.Tests
             yield return new object[] { Is64Bit ? "  +18446744073709551615  " : "  +4294967295  ", NumberStyles.Integer, null, nuint.MaxValue };
             yield return new object[] { Is64Bit ? "FFFFFFFFFFFFFFFF" : "FFFFFFFF", NumberStyles.HexNumber, null, nuint.MaxValue };
             yield return new object[] { Is64Bit ? "  FFFFFFFFFFFFFFFF  " : "  FFFFFFFF  ", NumberStyles.HexNumber, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "1111111111111111111111111111111111111111111111111111111111111111" : "11111111111111111111111111111111", NumberStyles.BinaryNumber, null, nuint.MaxValue };
+            yield return new object[] { Is64Bit ? "  1111111111111111111111111111111111111111111111111111111111111111  " : "  11111111111111111111111111111111  ", NumberStyles.BinaryNumber, null, nuint.MaxValue };
         }
 
         [Theory]
@@ -414,7 +433,8 @@ namespace System.Tests
         {
             // > max value
             yield return new object[] { "18446744073709551616", NumberStyles.Integer, null, typeof(OverflowException) };
-            yield return new object[] { "10000000000000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { IntPtr.Size == 8 ? "10000000000000000" : "100000000", NumberStyles.HexNumber, null, typeof(OverflowException) };
+            yield return new object[] { IntPtr.Size == 8 ? "10000000000000000000000000000000000000000000000000000000000000000" : "100000000000000000000000000000000", NumberStyles.BinaryNumber, null, typeof(OverflowException) };
         }
 
         [Theory]
@@ -455,16 +475,18 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses, null)]
-        [InlineData(unchecked((NumberStyles)0xFFFFFC00), "style")]
-        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style, string paramName)
+        [InlineData(NumberStyles.HexNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.BinaryNumber | NumberStyles.AllowParentheses)]
+        [InlineData(NumberStyles.HexNumber | NumberStyles.BinaryNumber)]
+        [InlineData(unchecked((NumberStyles)0xFFFFFC00))]
+        public static void TryParse_InvalidNumberStyle_ThrowsArgumentException(NumberStyles style)
         {
             nuint result = 0;
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.TryParse("1", style, null, out result));
+            AssertExtensions.Throws<ArgumentException>("style", () => nuint.TryParse("1", style, null, out result));
             Assert.Equal(default(nuint), result);
 
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.Parse("1", style));
-            AssertExtensions.Throws<ArgumentException>(paramName, () => nuint.Parse("1", style, null));
+            AssertExtensions.Throws<ArgumentException>("style", () => nuint.Parse("1", style));
+            AssertExtensions.Throws<ArgumentException>("style", () => nuint.Parse("1", style, null));
         }
 
         public static IEnumerable<object[]> Parse_ValidWithOffsetCount_TestData()
@@ -480,6 +502,8 @@ namespace System.Tests
             yield return new object[] { "4294967295", 9, 1, NumberStyles.Integer, null, (nuint)5 };
             yield return new object[] { "12", 0, 1, NumberStyles.HexNumber, null, (nuint)0x1 };
             yield return new object[] { "12", 1, 1, NumberStyles.HexNumber, null, (nuint)0x2 };
+            yield return new object[] { "01", 0, 1, NumberStyles.BinaryNumber, null, (nuint)0b0 };
+            yield return new object[] { "01", 1, 1, NumberStyles.BinaryNumber, null, (nuint)0b1 };
             yield return new object[] { "$1,000", 1, 3, NumberStyles.Currency, new NumberFormatInfo() { CurrencySymbol = "$" }, (nuint)10 };
         }
 
@@ -525,46 +549,51 @@ namespace System.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ToString_TestData))]
-        public static void TryFormat(nuint i, string format, IFormatProvider provider, string expected)
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, nuint expected)
         {
-            char[] actual;
-            int charsWritten;
+            nuint result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
 
-            // Just right
-            actual = new char[expected.Length];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual));
-
-            // Longer than needed
-            actual = new char[expected.Length + 1];
-            Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-            Assert.Equal(expected.Length, charsWritten);
-            Assert.Equal(expected, new string(actual, 0, charsWritten));
-
-            // Too short
-            if (expected.Length > 0)
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
             {
-                actual = new char[expected.Length - 1];
-                Assert.False(i.TryFormat(actual.AsSpan(), out charsWritten, format, provider));
-                Assert.Equal(0, charsWritten);
+                Assert.True(nuint.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
             }
 
-            if (format != null)
-            {
-                // Upper format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToUpperInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToUpperInvariant(), new string(actual));
+            Assert.Equal(expected, nuint.Parse(valueUtf8, style, provider));
 
-                // Lower format
-                actual = new char[expected.Length];
-                Assert.True(i.TryFormat(actual.AsSpan(), out charsWritten, format.ToLowerInvariant(), provider));
-                Assert.Equal(expected.Length, charsWritten);
-                Assert.Equal(expected.ToLowerInvariant(), new string(actual));
+            Assert.True(nuint.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                nuint result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(nuint.TryParse(valueUtf8, out result));
+                    Assert.Equal(default, result);
+                }
+
+                Assert.Throws(exceptionType, () => nuint.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(nuint.TryParse(valueUtf8, style, provider, out result));
+                Assert.Equal(default, result);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(ToString_TestData))]
+        public static void TryFormat(nuint i, string format, IFormatProvider provider, string expected) =>
+            NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);
     }
 }

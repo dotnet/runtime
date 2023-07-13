@@ -113,7 +113,7 @@ namespace System.Numerics
             // This implementation is based on the DirectX Math Library XMVector4NotEqual method
             // https://github.com/microsoft/DirectXMath/blob/master/Inc/DirectXMathVector.inl
 
-            if (AdvSimd.IsSupported)
+            if (AdvSimd.Arm64.IsSupported)
             {
                 Vector128<uint> vResult = AdvSimd.CompareEqual(vector1, vector2).AsUInt32();
 
