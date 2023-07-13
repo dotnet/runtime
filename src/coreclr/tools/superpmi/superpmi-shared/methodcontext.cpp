@@ -1015,12 +1015,6 @@ CorInfoInitClassResult MethodContext::repInitClass(CORINFO_FIELD_HANDLE   field,
     key.method  = CastHandle(method);
     key.context = CastHandle(context);
 
-    if ((InitClass == nullptr) || (InitClass->GetIndex(key) == -1))
-    {
-        // We could try additional inlines with stress modes, just reject them.
-        return CORINFO_INITCLASS_DONT_INLINE;
-    }
-
     DWORD value = InitClass->Get(key);
     DEBUG_REP(dmpInitClass(key, value));
     CorInfoInitClassResult result = (CorInfoInitClassResult)value;
