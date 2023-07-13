@@ -163,7 +163,6 @@ namespace System.Text
                     bytesWritten = written;
                     return true;
                 }
-
                 bytesWritten = 0;
                 return false;
             }
@@ -172,20 +171,13 @@ namespace System.Text
             [Intrinsic] // Can be unrolled by JIT if input points to a constant string (with constant inputLength).
             internal static unsafe int ReadUtf8(ref char input, int inputLength, ref byte output, int outputLength)
             {
-                if (inputLength == 0)
-                {
-                    return 0;
-                }
-
-                if (outputLength == 0)
-                {
-                    return -1;
-                }
-
                 fixed (char* pInput = &input)
                 fixed (byte* pOutput = &output)
                 {
-                    return ((UTF8EncodingSealed)UTF8).GetBytesCommon(pInput, inputLength, pOutput, outputLength, throwForDestinationOverflow: false);
+                    return s_default.GetBytesCommon(
+                        pInput, inputLength,
+                        pOutput, outputLength,
+                        throwForDestinationOverflow: false);
                 }
             }
         }
