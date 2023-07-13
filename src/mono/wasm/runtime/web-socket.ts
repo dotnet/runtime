@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { createPromiseController } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController } from "./globals";
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
@@ -27,6 +27,15 @@ const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr, onClosed: (code: number, reason: string) => void): WebSocketExtension {
+    if (ENVIRONMENT_IS_SHELL) {
+        throw new Error("WebSockets are not supported in shell JS engine.");
+    }
+    if (typeof globalThis.WebSocket !== "function") {
+        const message = ENVIRONMENT_IS_NODE
+            ? "Please install WebSocket package to enable networking support."
+            : "This browser doesn't support WebSocket API. Please use a modern browser.";
+        throw new Error(message);
+    }
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
 
     const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
