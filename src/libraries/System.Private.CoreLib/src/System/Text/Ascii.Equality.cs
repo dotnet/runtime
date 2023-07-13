@@ -536,17 +536,6 @@ namespace System.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<ushort> Load512(ref byte ptr)
             {
-                // This is done here for performance gain.
-                // A similar implementation would be as below:
-                //
-                //      (Vector256<ushort> lower, Vector256<ushort> upper) = Vector256.Widen(Vector256.LoadUnsafe(ref ptr));
-                //      return Vector512.Create(lower, upper);
-                //
-                // This is similar to what is done for Load256 here. But
-                // for Vector512, this implementation is low performance
-                // since a load and widen on Vector256 followed by a
-                // create on Vector512 is leading to a performance lower
-                // than that of similar implementationfor Vector256.
                 (Vector512<ushort> lower, Vector512<ushort> _) = Vector512.Widen(Vector256.LoadUnsafe(ref ptr).ToVector512());
                 return lower;
             }
