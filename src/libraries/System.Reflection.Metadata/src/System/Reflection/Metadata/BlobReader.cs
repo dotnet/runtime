@@ -636,7 +636,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="typeCode"/> is not a valid <see cref="ConstantTypeCode"/>.</exception>
         /// <returns>
         /// Boxed constant value. To avoid allocating the object use Read* methods directly.
-        /// Constants of type <see cref="ConstantTypeCode.String"/> are encoded as UTF16 strings, use <see cref="ReadUTF-16(int)"/> to read them.
+        /// Constants of type <see cref="ConstantTypeCode.String"/> are encoded as UTF16 strings, use <see cref="ReadUTF16(int)"/> to read them.
         /// </returns>
         public object? ReadConstant(ConstantTypeCode typeCode)
         {
