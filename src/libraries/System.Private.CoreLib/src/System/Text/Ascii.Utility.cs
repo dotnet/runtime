@@ -151,10 +151,9 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % Vector512.Size == 0, "Vector read should be aligned.");
-                        ulong msbMask = Vector512.LoadAligned(pBuffer).ExtractMostSignificantBits();
-                        if (msbMask != 0)
+                        if (Vector512.LoadAligned(pBuffer).ExtractMostSignificantBits() != 0)
                         {
-                            return (nuint)pBuffer - (nuint)pOriginalBuffer + (nuint)BitOperations.TrailingZeroCount(msbMask); // found non-ASCII data
+                            break; // found non-ASCII data
                         }
 
                         pBuffer += Vector512.Size;
@@ -189,10 +188,9 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % Vector256.Size == 0, "Vector read should be aligned.");
-                        uint msbMask = Vector256.LoadAligned(pBuffer).ExtractMostSignificantBits();
-                        if (msbMask != 0)
+                        if (Vector256.LoadAligned(pBuffer).ExtractMostSignificantBits() != 0)
                         {
-                            return (nuint)pBuffer - (nuint)pOriginalBuffer + (nuint)BitOperations.TrailingZeroCount(msbMask); // found non-ASCII data
+                            break; // found non-ASCII data
                         }
 
                         pBuffer += Vector256.Size;
