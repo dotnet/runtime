@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Metrics
 {
-    internal sealed class ConnectionMetricsInfo
+    internal sealed class ConnectionMetrics
     {
         private readonly SocketsHttpHandlerMetrics _metrics;
         private readonly bool _currentConnectionsEnabled;
@@ -16,7 +16,7 @@ namespace System.Net.Http.Metrics
         private readonly object? _portTag;
         private bool _currentlyIdle;
 
-        public ConnectionMetricsInfo(SocketsHttpHandlerMetrics metrics, string protocol, string scheme, string host, int? port)
+        public ConnectionMetrics(SocketsHttpHandlerMetrics metrics, string protocol, string scheme, string host, int? port)
         {
             _metrics = metrics;
             _currentConnectionsEnabled = _metrics.CurrentConnections.Enabled;
@@ -27,6 +27,7 @@ namespace System.Net.Http.Metrics
             _portTag = port;
         }
 
+        // TagList is a huge struct, so we avoid storing it in a field to reduce the amount we allocate on the heap.
         private TagList GetTags()
         {
             TagList tags = default;
@@ -41,18 +42,6 @@ namespace System.Net.Http.Metrics
             }
 
             return tags;
-        }
-
-        public static ConnectionMetricsInfo? TryCreate(SocketsHttpHandlerMetrics metrics, string protocol, string scheme, string host, int? port)
-        {
-            if (metrics.CurrentConnections.Enabled ||
-                metrics.IdleConnections.Enabled ||
-                metrics.ConnectionDuration.Enabled)
-            {
-                return new ConnectionMetricsInfo(metrics, protocol, scheme, host, port);
-            }
-
-            return null;
         }
 
         public void ConnectionEstablished()

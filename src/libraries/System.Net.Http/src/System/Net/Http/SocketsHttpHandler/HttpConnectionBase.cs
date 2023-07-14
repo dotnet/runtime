@@ -16,7 +16,11 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
-        private readonly ConnectionMetricsInfo? _connectionMetricsInfo;
+        // May be null if none of the counters were enabled when the connection was established.
+        private readonly ConnectionMetrics? _connectionMetrics;
+
+        // Indicates whether we've counted this connection as established, so that we can
+        // avoid decrementing the counter once it's closed in case telemetry was enabled in between.
         private readonly bool _httpTelemetryMarkedConnectionAsOpened;
 
         private readonly long _creationTickCount = Environment.TickCount64;
@@ -32,24 +36,31 @@ namespace System.Net.Http
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool.Settings._metrics is not null);
 
-            string protocol =
-                this is HttpConnection ? "HTTP/1.1" :
-                this is Http2Connection ? "HTTP/2" :
-                "HTTP/3";
+            SocketsHttpHandlerMetrics metrics = pool.Settings._metrics;
 
-            int port = pool.OriginAuthority.Port;
-            int defaultPort = pool.IsSecure ? HttpConnectionPool.DefaultHttpsPort : HttpConnectionPool.DefaultHttpPort;
+            if (metrics.CurrentConnections.Enabled ||
+                metrics.IdleConnections.Enabled ||
+                metrics.ConnectionDuration.Enabled)
+            {
+                string protocol =
+                    this is HttpConnection ? "HTTP/1.1" :
+                    this is Http2Connection ? "HTTP/2" :
+                    "HTTP/3";
 
-            _connectionMetricsInfo = ConnectionMetricsInfo.TryCreate(
-                pool.Settings._metrics,
-                protocol,
-                pool.IsSecure ? "https" : "http",
-                pool.OriginAuthority.HostValue,
-                port == defaultPort ? null : port);
+                int port = pool.OriginAuthority.Port;
+                int defaultPort = pool.IsSecure ? HttpConnectionPool.DefaultHttpsPort : HttpConnectionPool.DefaultHttpPort;
 
-            _connectionMetricsInfo?.ConnectionEstablished();
+                _connectionMetrics = new ConnectionMetrics(
+                    metrics,
+                    protocol,
+                    pool.IsSecure ? "https" : "http",
+                    pool.OriginAuthority.HostValue,
+                    port == defaultPort ? null : port);
 
-            MarkConnectionAsIdle();
+                _connectionMetrics.ConnectionEstablished();
+
+                MarkConnectionAsIdle();
+            }
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -63,7 +74,7 @@ namespace System.Net.Http
 
         public void MarkConnectionAsClosed()
         {
-            _connectionMetricsInfo?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
+            _connectionMetrics?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
 
             if (HttpTelemetry.Log.IsEnabled())
             {
@@ -81,12 +92,12 @@ namespace System.Net.Http
         {
             _idleSinceTickCount = Environment.TickCount64;
 
-            _connectionMetricsInfo?.MarkAsIdle();
+            _connectionMetrics?.MarkAsIdle();
         }
 
         public void MarkConnectionAsNotIdle()
         {
-            _connectionMetricsInfo?.MarkAsNotIdle();
+            _connectionMetrics?.MarkAsNotIdle();
         }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
