@@ -461,7 +461,7 @@ write_buffer_string_utf8_to_utf16_t (
 		uint32_t len_utf16 = 0;
 		ep_char16_t *str_utf16 = (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, (glong *)&len_utf16, NULL));
 		if (str_utf16 && len_utf16 != 0) {
-			num_bytes_utf16_str = len_utf16 * sizeof (ep_char16_t);
+			num_bytes_utf16_str = MIN (len_utf16, len) * sizeof (ep_char16_t);
 			memcpy (*buf, str_utf16, num_bytes_utf16_str);
 		}
 		g_free (str_utf16);
@@ -1377,14 +1377,15 @@ bulk_type_get_byte_count_in_event (BulkTypeValue *bulk_type_value)
 		? GSIZE_TO_INT (strlen (bulk_type_value->name))
 		: 0;
 
-	return sizeof (bulk_type_value->fixed_sized_data.type_id) + // Fixed Sized Data
+	// NOTE, must match manifest BulkType value type.
+	return sizeof (bulk_type_value->fixed_sized_data.type_id) +
 		sizeof (bulk_type_value->fixed_sized_data.module_id) +
 		sizeof (bulk_type_value->fixed_sized_data.type_name_id) +
 		sizeof (bulk_type_value->fixed_sized_data.flags) +
 		sizeof (bulk_type_value->fixed_sized_data.cor_element_type) +
-		sizeof (bulk_type_value->type_parameters_count) + // Type parameters
-		(name_len + 1) * sizeof (ep_char8_t) + // Size of name, including null terminator
-		bulk_type_value->type_parameters_count * sizeof (uint64_t); // Type parameters
+		(name_len + 1) * sizeof (ep_char16_t) +
+		sizeof (bulk_type_value->type_parameters_count) +
+		bulk_type_value->type_parameters_count * sizeof (uint64_t);
 }
 
 static
@@ -1433,6 +1434,7 @@ bulk_type_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
 
 	uint8_t *ptr = type_logger->bulk_type_event_buffer;
 
+	// NOTE, must match manifest BulkType value type.
 	for (uint32_t type_value_index = 0; type_value_index < type_logger->bulk_type_value_count; type_value_index++) {
 		BulkTypeValue *target = &type_logger->bulk_type_values [type_value_index];
 
@@ -3824,7 +3826,7 @@ fire_gc_event_bulk_root_static_var (
 		? strlen (static_var_name)
 		: 0;
 
-	size_t event_size = BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE + (name_len * sizeof (ep_char16_t));
+	size_t event_size = BULK_ROOT_STATIC_VAR_EVENT_TYPE_SIZE + ((name_len +1) * sizeof (ep_char16_t));
 
 	if (context->bulk_root_static_vars.data_end <=  context->bulk_root_static_vars.data_current + event_size)
 		flush_gc_event_bulk_root_static_vars (context);
