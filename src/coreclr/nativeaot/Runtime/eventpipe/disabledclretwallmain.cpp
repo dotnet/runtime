@@ -5,20 +5,24 @@
 // @TODO: Use genEventing.py to generate this file. Update script to handle
 //        nativeaot runtime and allow generating separate declaration and
 //        implementation files
-// FireEtw* functions handle both EventPipe and ETW. The naming matches the
-// generated output of genEventing.py used in shared code and other runtimes.
-#ifndef CLR_ETW_ALL_MAIN_H
-#define CLR_ETW_ALL_MAIN_H
 
-BOOL EventEnabledDestroyGCHandle(void);
+#include <CommonTypes.h>
+#include <CommonMacros.h>
+
+#ifndef ERROR_SUCCESS
+#define ERROR_SUCCESS 0L
+#endif
+
+BOOL EventEnabledDestroyGCHandle(void) { return 0; }
 ULONG FireEtwDestroyGCHandle(
     void*  HandleID,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledExceptionThrown_V1(void);
+BOOL EventEnabledExceptionThrown_V1(void) { return 0; }
 ULONG FireEtwExceptionThrown_V1(
     const WCHAR* ExceptionType,
     const WCHAR* ExceptionMessage,
@@ -28,9 +32,10 @@ ULONG FireEtwExceptionThrown_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkEdge(void);
+BOOL EventEnabledGCBulkEdge(void) { return 0; }
 ULONG FireEtwGCBulkEdge(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -39,9 +44,10 @@ ULONG FireEtwGCBulkEdge(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkMovedObjectRanges(void);
+BOOL EventEnabledGCBulkMovedObjectRanges(void) { return 0; }
 ULONG FireEtwGCBulkMovedObjectRanges(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -50,9 +56,10 @@ ULONG FireEtwGCBulkMovedObjectRanges(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkNode(void);
+BOOL EventEnabledGCBulkNode(void) { return 0; }
 ULONG FireEtwGCBulkNode(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -61,9 +68,10 @@ ULONG FireEtwGCBulkNode(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkRCW(void);
+BOOL EventEnabledGCBulkRCW(void) { return 0; }
 ULONG FireEtwGCBulkRCW(
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
@@ -71,9 +79,10 @@ ULONG FireEtwGCBulkRCW(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkRootCCW(void);
+BOOL EventEnabledGCBulkRootCCW(void) { return 0; }
 ULONG FireEtwGCBulkRootCCW(
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
@@ -81,9 +90,10 @@ ULONG FireEtwGCBulkRootCCW(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkRootConditionalWeakTableElementEdge(void);
+BOOL EventEnabledGCBulkRootConditionalWeakTableElementEdge(void) { return 0; }
 ULONG FireEtwGCBulkRootConditionalWeakTableElementEdge(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -92,9 +102,10 @@ ULONG FireEtwGCBulkRootConditionalWeakTableElementEdge(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkRootEdge(void);
+BOOL EventEnabledGCBulkRootEdge(void) { return 0; }
 ULONG FireEtwGCBulkRootEdge(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -103,9 +114,10 @@ ULONG FireEtwGCBulkRootEdge(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkSurvivingObjectRanges(void);
+BOOL EventEnabledGCBulkSurvivingObjectRanges(void) { return 0; }
 ULONG FireEtwGCBulkSurvivingObjectRanges(
     const unsigned int  Index,
     const unsigned int  Count,
@@ -114,16 +126,18 @@ ULONG FireEtwGCBulkSurvivingObjectRanges(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCCreateConcurrentThread_V1(void);
+BOOL EventEnabledGCCreateConcurrentThread_V1(void) { return 0; }
 ULONG FireEtwGCCreateConcurrentThread_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCCreateSegment_V1(void);
+BOOL EventEnabledGCCreateSegment_V1(void) { return 0; }
 ULONG FireEtwGCCreateSegment_V1(
     const unsigned __int64  Address,
     const unsigned __int64  Size,
@@ -131,26 +145,29 @@ ULONG FireEtwGCCreateSegment_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCEnd_V1(void);
+BOOL EventEnabledGCEnd_V1(void) { return 0; }
 ULONG FireEtwGCEnd_V1(
     const unsigned int  Count,
     const unsigned int  Depth,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCFreeSegment_V1(void);
+BOOL EventEnabledGCFreeSegment_V1(void) { return 0; }
 ULONG FireEtwGCFreeSegment_V1(
     const unsigned __int64  Address,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCGenerationRange(void);
+BOOL EventEnabledGCGenerationRange(void) { return 0; }
 ULONG FireEtwGCGenerationRange(
     const unsigned char  Generation,
     void*  RangeStart,
@@ -159,9 +176,10 @@ ULONG FireEtwGCGenerationRange(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCHeapStats_V1(void);
+BOOL EventEnabledGCHeapStats_V1(void) { return 0; }
 ULONG FireEtwGCHeapStats_V1(
     const unsigned __int64  GenerationSize0,
     const unsigned __int64  TotalPromotedSize0,
@@ -179,9 +197,10 @@ ULONG FireEtwGCHeapStats_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCJoin_V2(void);
+BOOL EventEnabledGCJoin_V2(void) { return 0; }
 ULONG FireEtwGCJoin_V2(
     const unsigned int  Heap,
     const unsigned int  JoinTime,
@@ -190,41 +209,46 @@ ULONG FireEtwGCJoin_V2(
     const unsigned int  JoinID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCMarkFinalizeQueueRoots(void);
+BOOL EventEnabledGCMarkFinalizeQueueRoots(void) { return 0; }
 ULONG FireEtwGCMarkFinalizeQueueRoots(
     const unsigned int  HeapNum,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCMarkHandles(void);
+BOOL EventEnabledGCMarkHandles(void) { return 0; }
 ULONG FireEtwGCMarkHandles(
     const unsigned int  HeapNum,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCMarkOlderGenerationRoots(void);
+BOOL EventEnabledGCMarkOlderGenerationRoots(void) { return 0; }
 ULONG FireEtwGCMarkOlderGenerationRoots(
     const unsigned int  HeapNum,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCMarkStackRoots(void);
+BOOL EventEnabledGCMarkStackRoots(void) { return 0; }
 ULONG FireEtwGCMarkStackRoots(
     const unsigned int  HeapNum,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCMarkWithType(void);
+BOOL EventEnabledGCMarkWithType(void) { return 0; }
 ULONG FireEtwGCMarkWithType(
     const unsigned int  HeapNum,
     const unsigned short  ClrInstanceID,
@@ -232,9 +256,10 @@ ULONG FireEtwGCMarkWithType(
     const unsigned __int64  Bytes,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCPerHeapHistory_V3(void);
+BOOL EventEnabledGCPerHeapHistory_V3(void) { return 0; }
 ULONG FireEtwGCPerHeapHistory_V3(
     const unsigned short  ClrInstanceID,
     void*  FreeListAllocated,
@@ -255,24 +280,27 @@ ULONG FireEtwGCPerHeapHistory_V3(
     void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCTerminateConcurrentThread_V1(void);
+BOOL EventEnabledGCTerminateConcurrentThread_V1(void) { return 0; }
 ULONG FireEtwGCTerminateConcurrentThread_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCTriggered(void);
+BOOL EventEnabledGCTriggered(void) { return 0; }
 ULONG FireEtwGCTriggered(
     const unsigned int  Reason,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledModuleLoad_V2(void);
+BOOL EventEnabledModuleLoad_V2(void) { return 0; }
 ULONG FireEtwModuleLoad_V2(
     const unsigned __int64  ModuleID,
     const unsigned __int64  AssemblyID,
@@ -289,9 +317,10 @@ ULONG FireEtwModuleLoad_V2(
     const WCHAR*  NativePdbBuildPath,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledSetGCHandle(void);
+BOOL EventEnabledSetGCHandle(void) { return 0; }
 ULONG FireEtwSetGCHandle(
     void*  HandleID,
     void*  ObjectID,
@@ -301,9 +330,10 @@ ULONG FireEtwSetGCHandle(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCStart_V2(void);
+BOOL EventEnabledGCStart_V2(void) { return 0; }
 ULONG FireEtwGCStart_V2(
     const unsigned int  Count,
     const unsigned int  Depth,
@@ -313,72 +343,81 @@ ULONG FireEtwGCStart_V2(
     const unsigned __int64  ClientSequenceNumber,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 
-BOOL EventEnabledGCRestartEEEnd_V1(void);
+BOOL EventEnabledGCRestartEEEnd_V1(void) { return 0; }
 ULONG FireEtwGCRestartEEEnd_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCRestartEEBegin_V1(void);
+BOOL EventEnabledGCRestartEEBegin_V1(void) { return 0; }
 ULONG FireEtwGCRestartEEBegin_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCSuspendEEEnd_V1(void);
+BOOL EventEnabledGCSuspendEEEnd_V1(void) { return 0; }
 ULONG FireEtwGCSuspendEEEnd_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCSuspendEEBegin_V1(void);
+BOOL EventEnabledGCSuspendEEBegin_V1(void) { return 0; }
 ULONG FireEtwGCSuspendEEBegin_V1(
     const unsigned int  Reason,
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledDecreaseMemoryPressure(void);
+BOOL EventEnabledDecreaseMemoryPressure(void) { return 0; }
 ULONG FireEtwDecreaseMemoryPressure(
     const unsigned __int64  BytesFreed,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledFinalizeObject(void);
+BOOL EventEnabledFinalizeObject(void) { return 0; }
 ULONG FireEtwFinalizeObject(
     const void*  TypeID,
     const void*  ObjectID,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCFinalizersBegin_V1(void);
+BOOL EventEnabledGCFinalizersBegin_V1(void) { return 0; }
 ULONG FireEtwGCFinalizersBegin_V1(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCFinalizersEnd_V1(void);
+BOOL EventEnabledGCFinalizersEnd_V1(void) { return 0; }
 ULONG FireEtwGCFinalizersEnd_V1(
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledContentionStart_V2(void);
+BOOL EventEnabledContentionStart_V2(void) { return 0; }
 ULONG FireEtwContentionStart_V2(
     const unsigned char  ContentionFlags,
     const unsigned short  ClrInstanceID,
@@ -387,34 +426,38 @@ ULONG FireEtwContentionStart_V2(
     const unsigned __int64  LockOwnerThreadID,
     const GUID *  ActivityId = nullptr,
     const GUID *  RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledContentionStop_V1(void);
+BOOL EventEnabledContentionStop_V1(void) { return 0; }
 ULONG FireEtwContentionStop_V1(
     const unsigned char  ContentionFlags,
     const unsigned short  ClrInstanceID,
     const double  DurationNs,
     const GUID *  ActivityId = nullptr,
     const GUID *  RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledContentionLockCreated(void);
+BOOL EventEnabledContentionLockCreated(void) { return 0; }
 ULONG FireEtwContentionLockCreated(
     const void*  LockID,
     const void*  AssociatedObjectID,
     const unsigned short  ClrInstanceID,
     const GUID *  ActivityId = nullptr,
     const GUID *  RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolWorkerThreadStart(void);
+BOOL EventEnabledThreadPoolWorkerThreadStart(void) { return 0; }
 uint32_t FireEtwThreadPoolWorkerThreadStart(
     const unsigned int  ActiveWorkerThreadCount,
     const unsigned int  RetiredWorkerThreadCount,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 uint32_t FireEtwThreadPoolWorkerThreadStop(
     const unsigned int  ActiveWorkerThreadCount,
@@ -422,7 +465,8 @@ uint32_t FireEtwThreadPoolWorkerThreadStop(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 uint32_t FireEtwThreadPoolWorkerThreadWait(
     const unsigned int  ActiveWorkerThreadCount,
@@ -430,9 +474,10 @@ uint32_t FireEtwThreadPoolWorkerThreadWait(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolMinMaxThreads(void);
+BOOL EventEnabledThreadPoolMinMaxThreads(void) { return 0; }
 uint32_t FireEtwThreadPoolMinMaxThreads(
     const unsigned short  MinWorkerThreads,
     const unsigned short  MaxWorkerThreads,
@@ -441,17 +486,19 @@ uint32_t FireEtwThreadPoolMinMaxThreads(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolWorkerThreadAdjustmentSample(void);
+BOOL EventEnabledThreadPoolWorkerThreadAdjustmentSample(void) { return 0; }
 uint32_t FireEtwThreadPoolWorkerThreadAdjustmentSample(
     const double  Throughput,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void);
+BOOL EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void) { return 0; }
 uint32_t FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
     const double  AverageThroughput,
     const unsigned int  NewWorkerThreadCount,
@@ -459,9 +506,10 @@ uint32_t FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolWorkerThreadAdjustmentStats(void);
+BOOL EventEnabledThreadPoolWorkerThreadAdjustmentStats(void) { return 0; }
 uint32_t FireEtwThreadPoolWorkerThreadAdjustmentStats(
     const double  Duration,
     const double  Throughput,
@@ -476,9 +524,10 @@ uint32_t FireEtwThreadPoolWorkerThreadAdjustmentStats(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolIOEnqueue(void);
+BOOL EventEnabledThreadPoolIOEnqueue(void) { return 0; }
 uint32_t FireEtwThreadPoolIOEnqueue(
     const void*  NativeOverlapped,
     const void*  Overlapped,
@@ -486,35 +535,39 @@ uint32_t FireEtwThreadPoolIOEnqueue(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolIODequeue(void);
+BOOL EventEnabledThreadPoolIODequeue(void) { return 0; }
 uint32_t FireEtwThreadPoolIODequeue(
     const void*  NativeOverlapped,
     const void*  Overlapped,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolWorkingThreadCount(void);
+BOOL EventEnabledThreadPoolWorkingThreadCount(void) { return 0; }
 uint32_t FireEtwThreadPoolWorkingThreadCount(
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledThreadPoolIOPack(void);
+BOOL EventEnabledThreadPoolIOPack(void) { return 0; }
 uint32_t FireEtwThreadPoolIOPack(
     const void*  NativeOverlapped,
     const void*  Overlapped,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCAllocationTick_V4(void);
+BOOL EventEnabledGCAllocationTick_V4(void) { return 0; }
 ULONG FireEtwGCAllocationTick_V4(
     const unsigned int  AllocationAmount,
     const unsigned int  AllocationKind,
@@ -527,9 +580,10 @@ ULONG FireEtwGCAllocationTick_V4(
     const unsigned __int64  ObjectSize,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCHeapStats_V2(void);
+BOOL EventEnabledGCHeapStats_V2(void) { return 0; }
 ULONG FireEtwGCHeapStats_V2(
     const unsigned __int64  GenerationSize0,
     const unsigned __int64  TotalPromotedSize0,
@@ -549,9 +603,10 @@ ULONG FireEtwGCHeapStats_V2(
     const unsigned __int64  TotalPromotedSize4,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCSampledObjectAllocationHigh(void);
+BOOL EventEnabledGCSampledObjectAllocationHigh(void) { return 0; }
 ULONG FireEtwGCSampledObjectAllocationHigh(
     const void*  Address,
     const void*  TypeID,
@@ -560,9 +615,10 @@ ULONG FireEtwGCSampledObjectAllocationHigh(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCSampledObjectAllocationLow(void);
+BOOL EventEnabledGCSampledObjectAllocationLow(void) { return 0; }
 ULONG FireEtwGCSampledObjectAllocationLow(
     const void*  Address,
     const void*  TypeID,
@@ -571,9 +627,10 @@ ULONG FireEtwGCSampledObjectAllocationLow(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledPinObjectAtGCTime(void);
+BOOL EventEnabledPinObjectAtGCTime(void) { return 0; }
 ULONG FireEtwPinObjectAtGCTime(
     const void*  HandleID,
     const void*  ObjectID,
@@ -582,9 +639,10 @@ ULONG FireEtwPinObjectAtGCTime(
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCBulkRootStaticVar(void);
+BOOL EventEnabledGCBulkRootStaticVar(void) { return 0; }
 ULONG FireEtwGCBulkRootStaticVar(
     const unsigned int  Count,
     const unsigned __int64  AppDomainID,
@@ -593,17 +651,19 @@ ULONG FireEtwGCBulkRootStaticVar(
     const void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledIncreaseMemoryPressure(void);
+BOOL EventEnabledIncreaseMemoryPressure(void) { return 0; }
 ULONG FireEtwIncreaseMemoryPressure(
     const unsigned __int64  BytesAllocated,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCGlobalHeapHistory_V4(void);
+BOOL EventEnabledGCGlobalHeapHistory_V4(void) { return 0; }
 ULONG FireEtwGCGlobalHeapHistory_V4(
     const unsigned __int64  FinalYoungestDesired,
     const signed int  NumHeaps,
@@ -621,25 +681,28 @@ ULONG FireEtwGCGlobalHeapHistory_V4(
     const void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGenAwareBegin(void);
+BOOL EventEnabledGenAwareBegin(void) { return 0; }
 ULONG FireEtwGenAwareBegin(
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGenAwareEnd(void);
+BOOL EventEnabledGenAwareEnd(void) { return 0; }
 ULONG FireEtwGenAwareEnd(
     const unsigned int  Count,
     const unsigned short  ClrInstanceID,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCLOHCompact(void);
+BOOL EventEnabledGCLOHCompact(void) { return 0; }
 ULONG FireEtwGCLOHCompact(
     const unsigned short  ClrInstanceID,
     const unsigned short  Count,
@@ -647,9 +710,10 @@ ULONG FireEtwGCLOHCompact(
     const void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
-BOOL EventEnabledGCFitBucketInfo(void);
+BOOL EventEnabledGCFitBucketInfo(void) { return 0; }
 ULONG FireEtwGCFitBucketInfo(
     const unsigned short  ClrInstanceID,
     const unsigned short  BucketKind,
@@ -659,7 +723,8 @@ ULONG FireEtwGCFitBucketInfo(
     const void* Values,
     const GUID * ActivityId = nullptr,
     const GUID * RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 #ifdef FEATURE_ETW
 
@@ -673,7 +738,8 @@ ULONG FireEtwGCSettings(
     const BOOL  ServerGC,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwPinPlugAtGCTime(
     const void*  PlugStart,
@@ -682,56 +748,65 @@ ULONG FireEtwPinPlugAtGCTime(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGCBegin(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGC1stNonConEnd(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGC1stConEnd(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGC2ndNonConBegin(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGC2ndNonConEnd(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGC2ndConBegin(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGC2ndConEnd(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGCDrainMark(
     const unsigned __int64  Objects,
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGCRevisit(
     const unsigned __int64  Pages,
@@ -740,7 +815,8 @@ ULONG FireEtwBGCRevisit(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGCOverflow(
     const unsigned __int64  Min,
@@ -750,21 +826,24 @@ ULONG FireEtwBGCOverflow(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGCAllocWaitBegin(
     const unsigned int  Reason,
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwBGCAllocWaitEnd(
     const unsigned int  Reason,
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwGCFullNotify_V1(
     const unsigned int  GenNumber,
@@ -772,7 +851,8 @@ ULONG FireEtwGCFullNotify_V1(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwPrvSetGCHandle(
     const void*  HandleID,
@@ -783,35 +863,15 @@ ULONG FireEtwPrvSetGCHandle(
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
+)
+{ return ERROR_SUCCESS; }
 
 ULONG FireEtwPrvDestroyGCHandle(
     const void*  HandleID,
     const unsigned short  ClrInstanceID,
     const GUID* ActivityId = nullptr,
     const GUID* RelatedActivityId = nullptr
-);
-
-#else
-
-#define FireEtwBGC1stConEnd(ClrInstanceID)
-#define FireEtwBGC1stNonConEnd(ClrInstanceID)
-#define FireEtwBGC2ndConBegin(ClrInstanceID)
-#define FireEtwBGC2ndConEnd(ClrInstanceID)
-#define FireEtwBGC2ndNonConBegin(ClrInstanceID)
-#define FireEtwBGC2ndNonConEnd(ClrInstanceID)
-#define FireEtwBGCAllocWaitBegin(Reason, ClrInstanceID)
-#define FireEtwBGCAllocWaitEnd(Reason, ClrInstanceID)
-#define FireEtwBGCBegin(ClrInstanceID)
-#define FireEtwBGCDrainMark(Objects, ClrInstanceID)
-#define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID)
-#define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID)
-#define FireEtwGCFullNotify_V1(GenNumber, IsAlloc, ClrInstanceID)
-#define FireEtwGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC)
-#define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID)
-#define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID)
-#define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID)
+)
+{ return ERROR_SUCCESS; }
 
 #endif // FEATURE_ETW
-
-#endif // __CLR_ETW_ALL_MAIN_H__
