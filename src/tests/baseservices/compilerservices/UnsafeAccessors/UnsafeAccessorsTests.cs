@@ -393,9 +393,6 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : UserDataClass.MethodPointerName,
             () => CallPointerMethod(null, null));
 
-        Assert.Throws<AmbiguousMatchException>(
-            () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
-
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=DoesNotExist)]
         extern static void MethodNotFound(UserDataClass d);
 
@@ -417,6 +414,17 @@ static unsafe class UnsafeAccessorsTests
         // Pointers generally degrade to `void*`, but that isn't true for UnsafeAccessor signature validation.
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.MethodPointerName)]
         extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall]<void> fptr);
+
+    }
+
+
+    [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    public static void Verify_InvalidTargetUnsafeAccessorAmbiguousMatch()
+    {
+        Assert.Throws<AmbiguousMatchException>(
+            () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
+
 
         // This is an ambiguous match since there are two methods each with two custom modifiers.
         // Therefore the default "ignore custom modifiers" logic fails. The fallback is for a
