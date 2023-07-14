@@ -451,6 +451,29 @@ public abstract class BaseEmbeddingApiTests
     }
 
     [TestCase(typeof(object))]
+    [TestCase(typeof(Bacon))]
+    [TestCase(typeof(Mammal))]
+    [TestCase(typeof(Cat))]
+    [TestCase(typeof(Rock))]
+    [TestCase(typeof(CatOnlyInterface))]
+    public unsafe void FieldGet(Type type)
+    {
+        // Test only methods on the type itself to ensure they belong to the same module
+        var typeFields = type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static);
+        foreach (var f in typeFields)
+        {
+            var token = f.MetadataToken;
+            var expectedFieldHandle = f.FieldHandle;
+            Type expectedType = f.FieldType;
+            IntPtr actualTypeHandleIntPtr = IntPtr.Zero;
+            var actual = ClrHost.unity_field_from_token_checked(ClrHost.class_get_image(type), (uint)token,  new IntPtr(&actualTypeHandleIntPtr));
+            Assert.NotNull(actual);
+            Assert.AreEqual(expectedFieldHandle, actual);
+            Assert.AreEqual(expectedType, actualTypeHandleIntPtr.TypeFromHandleIntPtr());
+        }
+    }
+
+    [TestCase(typeof(object))]
     [TestCase(typeof(Mammal))]
     [TestCase(typeof(Socket))]
     public void ClassGetImage(Type type)
