@@ -74,21 +74,19 @@ internal static partial class Interop
             // Register callback that tries to load other libraries when the default library "libldap-2.5.so.0" not found
             AssemblyLoadContext.GetLoadContext(currentAssembly).ResolvingUnmanagedDll += (assembly, ldapName) =>
             {
-                IntPtr handle = IntPtr.Zero;
-
                 if (assembly != currentAssembly || ldapName != Libraries.OpenLdap)
                 {
-                    return handle;
+                    return IntPtr.Zero;
                 }
 
                 // Try loading previous (libldap-2.4.so.2) and next (libldap-2.6.so.0) versions
-                if (NativeLibrary.TryLoad("libldap-2.4.so.2", out handle) ||
+                if (NativeLibrary.TryLoad("libldap-2.4.so.2", out IntPtr handle) ||
                     NativeLibrary.TryLoad("libldap-2.6.so.0", out handle))
                 {
                     return handle;
                 }
 
-                throw new DllNotFoundException(SR.Format(SR.LDAP_LIBRARY_NOT_FOUND, ldapName));
+                return IntPtr.Zero;
             };
 
             // OpenLdap must be initialized on a single thread, once this is done it allows concurrent calls
