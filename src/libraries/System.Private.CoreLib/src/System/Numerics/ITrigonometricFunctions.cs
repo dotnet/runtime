@@ -70,7 +70,7 @@ namespace System.Numerics
             // if we decide that should be handled in the future it needs
             // to be more explicit around how its done.
             //
-            // Floating-point operations are natural imprecise due to
+            // Floating-point operations are naturally imprecise due to
             // rounding required to fit the "infinitely-precise result"
             // into the limits of the underlying representation. Because
             // of this, every operation can introduce some amount of rounding
