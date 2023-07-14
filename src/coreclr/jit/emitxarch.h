@@ -857,6 +857,10 @@ bool emitIsLastInsCall();
 void emitOutputPreEpilogNOP();
 #endif // TARGET_AMD64
 
+#if defined(FEATURE_SIMD)
+void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, GenTree* data);
+#endif // FEATURE_SIMD
+
 /*****************************************************************************
  *
  *  Given a jump, return true if it's a conditional jump.

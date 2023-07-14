@@ -1651,12 +1651,22 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // TARGET_X86
 
 #if defined(FEATURE_SIMD)
-            // Note that we need to check the field type, not the type of the node. This is because the
-            // field type will be TYP_SIMD12 whereas the node type might be TYP_SIMD16 for lclVar, where
-            // we "round up" to 16.
-            if ((fieldType == TYP_SIMD12) && (simdTemp == nullptr))
+            if (fieldType == TYP_SIMD12)
             {
-                simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
+                // Note that we need to check the field type, not the type of the node. This is because the
+                // field type will be TYP_SIMD12 whereas the node type might be TYP_SIMD16 for lclVar, where
+                // we "round up" to 16.
+                if (simdTemp == nullptr)
+                {
+                    simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
+                }
+
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // To store SIMD12 without SSE4.1 (extractps) we will need
+                    // a temp xmm reg to do the shuffle.
+                    buildInternalFloatRegisterDefForNode(use.GetNode());
+                }
             }
 #endif // defined(FEATURE_SIMD)
 
