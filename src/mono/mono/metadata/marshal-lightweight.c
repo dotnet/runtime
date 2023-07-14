@@ -2354,6 +2354,10 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("UnsafeAccessorKind does not match expected static modifier on field '%s' in '%s'", member_name, m_class_get_name (target_class)));
 		return;
 	}
+	if (is_field_static && m_field_get_parent (target_field) != target_class) {
+		// don't look up static fields using the inheritance hierarchy
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("Field '%s' not found in '%s'", member_name, m_class_get_name (target_class)));
+	}
 
 	if (kind == MONO_UNSAFE_ACCESSOR_FIELD)
 		mono_mb_emit_ldarg (mb, 0);
@@ -2427,7 +2431,8 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 {
 	// TODO: support coreCLR's weird "you can call the .ctor as a normal instance member" method
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
-	if (!member_name)
+	// null or empty string member name is ok for a constructor
+	if (!member_name || member_name[0] == '\0')
 		member_name = ".ctor";
 	if (strcmp (member_name, ".ctor") != 0) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid UnsafeAccessorAttribute for constructor.");
@@ -2479,6 +2484,11 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 
 	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
 
+	if (hasthis && m_class_is_valuetype (target_class) && !m_type_is_byref (target_type)) {
+		// If the non-static method access is for a value type, the instance must be byref.
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+	}
+
 	ERROR_DECL(find_method_error);
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
 	MonoMethod *target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
@@ -2489,7 +2499,11 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 		return;
 	}
 	g_assert (target_method);
-	g_assert (target_method->klass == target_class);
+	if (!hasthis && target_method->klass != target_class) {
+		emit_missing_method_error (mb, find_method_error, member_name);
+		return;
+	}
+	g_assert (target_method->klass == target_class); // are instance methods allowed to be looked up using inheritance?
 
 	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
 
