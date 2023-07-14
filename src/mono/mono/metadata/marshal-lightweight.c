@@ -2429,7 +2429,6 @@ emit_missing_method_error (MonoMethodBuilder *mb, MonoError *failure, const char
 static void
 emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
-	// TODO: support coreCLR's weird "you can call the .ctor as a normal instance member" method
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
 	// null or empty string member name is ok for a constructor
 	if (!member_name || member_name[0] == '\0')
@@ -2473,6 +2472,9 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
 	g_assert (member_name != NULL);
 
+	// We explicitly allow calling a constructor as if it was an instance method, but we need some hacks in a couple of places
+	gboolean ctor_as_method = !strcmp (member_name, ".ctor");
+
 	if (sig->param_count < 1 || sig->params[0] == NULL || unsafe_accessor_target_type_forbidden (sig->params[0])) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
@@ -2491,7 +2493,11 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 
 	ERROR_DECL(find_method_error);
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
-	MonoMethod *target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
+	MonoMethod *target_method = NULL;
+	if (!ctor_as_method)
+		target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
+	else
+		target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
 		// g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
 		emit_missing_method_error (mb, find_method_error, member_name);
