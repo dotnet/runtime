@@ -171,6 +171,8 @@ set(metadata_common_sources
     abi-details.h
     abi.c
     memory-manager.c
+    unsafe-accessor.h
+    unsafe-accessor.c
     icall-table.h
     ${icall_table_sources})
 

@@ -247,6 +247,11 @@ namespace System.Reflection.Emit
                 {
                     AddMarshalling(fieldHandle, field._marshallingData.SerializeMarshallingData());
                 }
+
+                if (field._defaultValue != DBNull.Value)
+                {
+                    AddDefaultValue(fieldHandle, field._defaultValue);
+                }
             }
         }
 
@@ -325,8 +330,8 @@ namespace System.Reflection.Emit
             }
         }
 
-        private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>
-            _metadataBuilder.AddConstant(parent: parameterHandle, value: defaultValue);
+        private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue) =>
+            _metadataBuilder.AddConstant(parent: parentHandle, value: defaultValue);
 
         private FieldDefinitionHandle AddFieldDefinition(FieldBuilderImpl field, BlobBuilder fieldSignature) =>
             _metadataBuilder.AddFieldDefinition(
@@ -407,6 +412,11 @@ namespace System.Reflection.Emit
                 return tb._handle;
             }
 
+            if (type is EnumBuilderImpl eb && Equals(eb.Module))
+            {
+                return eb._typeBuilder._handle;
+            }
+
             return GetTypeReference(type);
         }
 
@@ -429,11 +439,19 @@ namespace System.Reflection.Emit
         public override int GetStringMetadataToken(string stringConstant) => throw new NotImplementedException();
         public override int GetTypeMetadataToken(Type type) => throw new NotImplementedException();
         protected override void CreateGlobalFunctionsCore() => throw new NotImplementedException();
-        protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType) => throw new NotImplementedException();
+
+        protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
+        {
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+            EnumBuilderImpl enumBuilder = new EnumBuilderImpl(name, underlyingType, visibility, this, typeHandle);
+            _typeDefinitions.Add(enumBuilder._typeBuilder);
+            return enumBuilder;
+        }
         protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers) => throw new NotImplementedException();
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
+
         protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
@@ -442,6 +460,7 @@ namespace System.Reflection.Emit
             _typeDefinitions.Add(_type);
             return _type;
         }
+
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)

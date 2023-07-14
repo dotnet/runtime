@@ -157,10 +157,7 @@ namespace System.Xml.Schema
             XmlSchemaInfo? si = o.Annotation<XmlSchemaInfo>();
             if (si != null)
             {
-                if (!schemaInfos.ContainsKey(si))
-                {
-                    schemaInfos.Add(si, si);
-                }
+                schemaInfos.TryAdd(si, si);
                 o.RemoveAnnotations<XmlSchemaInfo>();
             }
             if (!schemaInfos.TryGetValue(schemaInfo, out si))

@@ -533,12 +533,28 @@ namespace System
         {
             ulong bits = BitConverter.DoubleToUInt64Bits(value);
 
-            ushort biasedExponent = ExtractBiasedExponentFromBits(bits);;
+            if ((long)bits <= 0)
+            {
+                // Zero and negative values cannot be powers of 2
+                return false;
+            }
+
+            ushort biasedExponent = ExtractBiasedExponentFromBits(bits);
             ulong trailingSignificand = ExtractTrailingSignificandFromBits(bits);
 
-            return (value > 0)
-                && (biasedExponent != MinBiasedExponent) && (biasedExponent != MaxBiasedExponent)
-                && (trailingSignificand == MinTrailingSignificand);
+            if (biasedExponent == MinBiasedExponent)
+            {
+                // Subnormal values have 1 bit set when they're powers of 2
+                return ulong.PopCount(trailingSignificand) == 1;
+            }
+            else if (biasedExponent == MaxBiasedExponent)
+            {
+                // NaN and Infinite values cannot be powers of 2
+                return false;
+            }
+
+            // Normal values have 0 bits set when they're powers of 2
+            return trailingSignificand == MinTrailingSignificand;
         }
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
@@ -1869,6 +1885,24 @@ namespace System
             }
 
             return result;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static double DegreesToRadians(double degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (degrees * Pi) / 180.0;
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static double RadiansToDegrees(double radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return (radians * 180.0) / Pi;
         }
 
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />

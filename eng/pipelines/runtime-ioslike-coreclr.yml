@@ -1,0 +1,19 @@
+# This is a wrapper yml for `runtime-extra-platforms-ioslike.yml`, which runs Native AOT iOS/tvOS runtime tests.
+
+trigger: none
+
+variables:
+  - template: /eng/pipelines/common/variables.yml
+
+extends:
+  template:  /eng/pipelines/common/templates/pipeline-with-resources.yml
+  parameters:
+    stages:
+    - stage: Build
+      jobs:
+      - template: /eng/pipelines/extra-platforms/runtime-extra-platforms-ioslike.yml
+        parameters:
+          isExtraPlatformsBuild: ${{ variables.isExtraPlatformsBuild }}
+          isiOSLikeOnlyBuild: ${{ variables.isiOSLikeOnlyBuild }}
+          isRollingBuild: ${{ variables.isRollingBuild }}
+          isCoreclrOnlyBuild: true

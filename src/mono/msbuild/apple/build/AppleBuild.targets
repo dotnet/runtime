@@ -251,7 +251,7 @@
       <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraAppLinkerArgs Include="@(LinkerArg)" />
-      <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
+      <NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
     </ItemGroup>
 
     <ItemGroup>
@@ -261,7 +261,7 @@
 
     <AppleAppBuilderTask
       UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
-      NativeDependencies="@(_NativeDependencies)"
+      NativeDependencies="$(NativeDependencies)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
