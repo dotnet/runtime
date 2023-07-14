@@ -128,7 +128,7 @@
       <MonoIncludeFiles Include="$(MonoArtifactsPath)\include\**\*.*" />
     </ItemGroup>
 
-    <Error Condition="'@(RuntimeFiles)' == '' and !('$(RuntimeFlavor)' == 'CoreCLR' and '$(TargetsAppleMobile)' == 'true')" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
+    <Error Condition="'@(RuntimeFiles)' == ''" Text="The '$(RuntimeFlavor)' subset must be built before building this project." />
   </Target>
 
   <Target Name="EnsureLocalArtifactsExist">
