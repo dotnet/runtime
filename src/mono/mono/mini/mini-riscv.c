@@ -1736,6 +1736,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_FSUB:
 	case OP_ISUB_IMM:
 	case OP_LSUB_IMM:
+	case OP_ISUB_OVF:
 	case OP_INEG:
 	case OP_LAND:
 	case OP_LOR:
@@ -2434,7 +2435,11 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				temp->dreg = offset_reg;
 				temp->inst_c0 = ins->inst_offset;
 
+#ifdef TARGET_RISCV64
+				NEW_INS_BEFORE (cfg, ins, temp, OP_LADD);
+#else
 				NEW_INS_BEFORE (cfg, ins, temp, OP_IADD);
+#endif
 				temp->dreg = offset_reg;
 				temp->sreg1 = ins->inst_destbasereg;
 				temp->sreg2 = offset_reg;
@@ -2734,6 +2739,40 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			// convert OP_{I|L}SUB_IMM to their corresponding ADD_IMM
 			ins->opcode -= 1;
 			goto loop_start;
+		case OP_ISUBCC:
+			/**
+			 * sub rd, rs1, rs2
+			 * slti t1, x0, rs2
+			 * slt t2, rd, rs1
+			 * bne t1, t2, overflow
+			*/
+			ins->opcode = OP_ISUB;
+			MonoInst *branch_ins = ins->next;
+			if (branch_ins) {
+				if (ins->next->opcode == OP_COND_EXC_IOV){
+					// bne t1, t2, overflow
+					branch_ins->opcode = OP_RISCV_EXC_BNE;
+					branch_ins->sreg1 = mono_alloc_ireg (cfg);
+					branch_ins->sreg2 = mono_alloc_ireg (cfg);
+
+					// slt t1, x0, rs2
+					NEW_INS_BEFORE (cfg, branch_ins, temp, OP_RISCV_SLT);
+					temp->dreg = branch_ins->sreg1;
+					temp->sreg1 = RISCV_ZERO;
+					temp->sreg2 = ins->sreg2;
+
+					// slt t2, rd, rs1
+					NEW_INS_BEFORE (cfg, branch_ins, temp, OP_RISCV_SLT);
+					temp->dreg = branch_ins->sreg2;
+					temp->sreg1 = ins->dreg;
+					temp->sreg2 = ins->sreg1;
+				}
+				else{
+					mono_print_ins (branch_ins);
+					g_assert_not_reached ();
+				}
+			}
+			break;
 		// Inst ADDI use I-type Imm
 		case OP_ADD_IMM:
 		case OP_IADD_IMM:
@@ -2753,7 +2792,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 			ins->opcode = OP_IADD;
 			MonoInst *branch_ins = ins->next;
 			if (branch_ins) {
-				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_IOV || OP_COND_EXC_OV) {
+				if (branch_ins->opcode == OP_COND_EXC_C || branch_ins->opcode == OP_COND_EXC_OV || branch_ins->opcode == OP_COND_EXC_IOV) {
 					// bne t3, t4, overflow
 					branch_ins->opcode = OP_RISCV_EXC_BNE;
 					branch_ins->sreg1 = mono_alloc_ireg (cfg);
@@ -3986,6 +4025,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			code = mono_riscv_emit_imm (code, ins->dreg, ins->inst_c0);
 			break;
 		case OP_IADD:
+#ifdef TARGET_RISCV64
+			riscv_addw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+#endif
 		case OP_LADD:
 			riscv_add (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
@@ -4004,6 +4047,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			}
 			break;
 		case OP_ISUB:
+#ifdef TARGET_RISCV64
+			riscv_subw (code, ins->dreg, ins->sreg1, ins->sreg2);
+			break;
+#endif
 		case OP_LSUB:
 			riscv_sub (code, ins->dreg, ins->sreg1, ins->sreg2);
 			break;
