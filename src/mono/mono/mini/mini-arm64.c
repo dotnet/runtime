@@ -5787,11 +5787,11 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_addx_imm (code, cfg->arch.args_reg, ARMREG_FP, cfg->stack_offset);
 	}
 
-	// code = emit_imm (code, ARMREG_R0, AOT_INIT_METHOD);
+	code = emit_imm (code, ARMREG_R0, cfg->method_index);
 	// code = emit_aotconst (cfg, code, ARMREG_R1, MONO_PATCH_INFO_INIT_BITSET, aot_module);
 	// code = emit_imm (code, ARMREG_R2, token);
 	// code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD, mono_aot_get_mono_inited(aot_module), token, aot_module, method));
-	code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD, token, method));
+	code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
 
 
 	/* Save return area addr received in R8 */

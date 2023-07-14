@@ -4449,16 +4449,16 @@ add_jit_icall_wrapper (MonoAotCompile *acfg, MonoJitICallInfo *callinfo)
 	add_method (acfg, mono_marshal_get_icall_wrapper (callinfo, TRUE));
 }
 
-#if ENABLE_LLVM
+// #if ENABLE_LLVM
 
 static void
 add_lazy_init_wrappers (MonoAotCompile *acfg)
 {
 	for (int i = 0; i < AOT_INIT_METHOD_NUM; ++i)
-		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i, 0, NULL));
+		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i));
 }
 
-#endif
+// #endif
 
 static MonoMethod*
 get_runtime_invoke_sig (MonoMethodSignature *sig)
@@ -15094,10 +15094,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 			flags = (LLVMModuleFlags)(flags | LLVM_MODULE_FLAG_INTERP);
 		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, acfg->nshared_got_entries, flags);
 
-		add_lazy_init_wrappers (acfg);
 		add_method (acfg, mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL));
 	}
 #endif
+	add_lazy_init_wrappers (acfg);
 
 	if (mono_aot_mode_is_interp (&acfg->aot_opts) && mono_is_corlib_image (acfg->image->assembly->image)) {
 		MonoMethod *wrapper = mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline);

@@ -6694,7 +6694,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 		 * FIXME: Optimize this
 		 */
 		g_assert (!cfg->gshared);
-		wrapper = mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD, 0, NULL);
+		wrapper = mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD);
 		/* Emit this into the entry bb so it comes before the GC safe point which depends on an inited GOT */
 		cfg->cbb = cfg->bb_entry;
 		idx = mono_aot_get_method_index (cfg->method);
