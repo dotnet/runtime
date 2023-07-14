@@ -33,7 +33,9 @@ switch (testCase) {
                     return fetch(defaultUri, { integrity: integrity, cache: 'no-cache' });
 
                 hasFetchFailed = true;
-                throw new Error("Simulating a failed fetch");
+                const error = new Error("Simulating a failed fetch");
+                error.silent = true;
+                throw error;
             });
         }
         dotnet.withModuleConfig({
