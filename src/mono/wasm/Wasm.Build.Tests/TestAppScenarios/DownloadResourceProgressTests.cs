@@ -36,7 +36,7 @@ public class DownloadResourceProgressTests : AppTestBase
         ));
         Assert.Collection(
             result.TestOutput,
-            m => Assert.Equal("DownloadResourceProgress: Finished", m),
+            m => Assert.Equal("DownloadResourceProgress: Finished", m)
         );
     }
 }
