@@ -160,7 +160,7 @@ void ThreadLocalBlock::EnsureModuleIndex(ModuleIndex index)
     }
 
     if (pOldModuleSlots != NULL)
-        delete pOldModuleSlots;
+        delete[] pOldModuleSlots;
 }
 
 #endif

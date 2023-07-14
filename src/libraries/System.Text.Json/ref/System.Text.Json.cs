@@ -1045,12 +1045,24 @@ namespace System.Text.Json.Serialization
     public sealed partial class JsonSourceGenerationOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonSourceGenerationOptionsAttribute() { }
+        public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowTrailingCommas { get { throw null; } set { } }
+        public System.Type[]? Converters { get { throw null; } set { } }
+        public int DefaultBufferSize { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonKnownNamingPolicy DictionaryKeyPolicy { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public int MaxDepth { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonObjectCreationHandling PreferredObjectCreationHandling { get { throw null; } set { } }
+        public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
+        public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
     }
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Applications should use the generic JsonStringEnumConverter<TEnum> instead.")]

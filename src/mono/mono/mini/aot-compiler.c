@@ -3841,6 +3841,14 @@ encode_method_ref (MonoAotCompile *acfg, MonoMethod *method, guint8 *buf, guint8
 				encode_method_ref (acfg, info->d.synchronized_inner.method, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR)
 				encode_method_ref (acfg, info->d.array_accessor.method, p, &p);
+			else if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR) {
+				encode_method_ref (acfg, info->d.unsafe_accessor.method, p, &p);
+				encode_value (info->d.unsafe_accessor.kind, p, &p);
+				/* WISH: is there some kind of string heap token we could use here? */
+				uint32_t len = (uint32_t) strlen (info->d.unsafe_accessor.member_name);
+				encode_value (len, p, &p);
+				encode_string (info->d.unsafe_accessor.member_name, p, &p);
+			}
 			else if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
 				encode_signature (acfg, info->d.interp_in.sig, p, &p);
 			else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG)
@@ -5236,6 +5244,25 @@ add_full_aot_wrappers (MonoAotCompile *acfg)
 			add_method (acfg, mono_marshal_get_ptr_to_struct (klass));
 		}
 	}
+
+	/* unsafe accessor wrappers */
+	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
+	for (int i = 0; i < rows; ++i) {
+		ERROR_DECL (error);
+		token = MONO_TOKEN_METHOD_DEF | (i + 1);
+		method = mono_get_method_checked (acfg->image, token, NULL, NULL, error);
+		report_loader_error (acfg, error, TRUE, "Failed to load method token 0x%x due to %s\n", i, mono_error_get_message (error));
+
+		if (G_LIKELY (mono_method_metadata_has_header (method)))
+			continue;
+
+		char *member_name = NULL;
+		int accessor_kind = -1;
+		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+			add_extra_method (acfg, mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name));
+		}
+	}
+
 }
 
 static void
@@ -10154,6 +10181,9 @@ append_mangled_wrapper_subtype (GString *s, WrapperSubtype subtype)
 	case WRAPPER_SUBTYPE_ARRAY_ACCESSOR:
 		label = "array_acc";
 		break;
+	case WRAPPER_SUBTYPE_UNSAFE_ACCESSOR:
+		label = "unsafe_acc";
+		break;
 	case WRAPPER_SUBTYPE_GENERIC_ARRAY_HELPER:
 		label = "generic_arry_help";
 		break;
@@ -10320,6 +10350,8 @@ append_mangled_wrapper (GString *s, MonoMethod *method)
 			success = success && append_mangled_method (s, info->d.synchronized_inner.method);
 		else if (info->subtype == WRAPPER_SUBTYPE_ARRAY_ACCESSOR)
 			success = success && append_mangled_method (s, info->d.array_accessor.method);
+		else if (info->subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR)
+			success = success && append_mangled_method (s, info->d.unsafe_accessor.method);
 		else if (info->subtype == WRAPPER_SUBTYPE_INTERP_IN)
 			append_mangled_signature (s, info->d.interp_in.sig);
 		else if (info->subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN_SIG) {

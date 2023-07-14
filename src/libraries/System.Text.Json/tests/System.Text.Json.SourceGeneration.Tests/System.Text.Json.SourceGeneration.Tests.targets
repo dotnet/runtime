@@ -113,6 +113,7 @@
     <Compile Include="Serialization\CollectionTests.cs" />
     <Compile Include="Serialization\ConstructorTests.cs" />
     <Compile Include="Serialization\ExtensionDataTests.cs" />
+    <Compile Include="JsonSourceGenerationOptionsTests.cs" />
     <Compile Include="Serialization\JsonCreationHandlingTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.cs" />
     <Compile Include="Serialization\ReferenceHandlerTests.IgnoreCycles.cs" />

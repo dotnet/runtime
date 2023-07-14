@@ -74,8 +74,6 @@ class AllocHeap
     bool _UpdateMemPtrs(uint8_t* pNextFree);
     bool _UseAccessManager() { return m_rwProtectType != m_roProtectType; }
 
-    static const uintptr_t s_minBlockSize = OS_PAGE_SIZE;
-
     typedef rh::util::MemRange Block;
     typedef DPTR(Block) PTR_Block;
     struct BlockListElem : public Block

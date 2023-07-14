@@ -7317,7 +7317,7 @@ bool gc_heap::virtual_decommit (void* address, size_t size, int bucket, int h_nu
     assert(0 <= bucket && bucket < recorded_committed_bucket_counts);
     assert(bucket < total_oh_count || h_number == -1);
 
-    bool decommit_succeeded_p = GCToOSInterface::VirtualDecommit (address, size);
+    bool decommit_succeeded_p = ((bucket != recorded_committed_bookkeeping_bucket) && use_large_pages_p) ? true : GCToOSInterface::VirtualDecommit (address, size);
 
     dprintf(3, ("commit-accounting:  decommit in %d [%p, %p) for heap %d", bucket, address, ((uint8_t*)address + size), h_number));
 
@@ -43607,32 +43607,31 @@ bool gc_heap::decommit_step (uint64_t step_milliseconds)
 size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
 {
     uint8_t* page_start = align_lower_page (get_region_start (region));
-    uint8_t* end = use_large_pages_p ? heap_segment_used (region) : heap_segment_committed (region);
-    size_t size = end - page_start;
-    bool decommit_succeeded_p = false;
-    if (!use_large_pages_p)
-    {
-        decommit_succeeded_p = virtual_decommit (page_start, size, bucket, h_number);
-    }
+    uint8_t* decommit_end = heap_segment_committed (region);
+    size_t decommit_size = decommit_end - page_start;
+    bool decommit_succeeded_p = virtual_decommit (page_start, decommit_size, bucket, h_number);
+    bool require_clearing_memory_p = !decommit_succeeded_p || use_large_pages_p;
     dprintf (REGIONS_LOG, ("decommitted region %p(%p-%p) (%zu bytes) - success: %d",
         region,
         page_start,
-        end,
-        size,
+        decommit_end,
+        decommit_size,
         decommit_succeeded_p));
-    if (decommit_succeeded_p)
+    if (require_clearing_memory_p)
     {
-        heap_segment_committed (region) = heap_segment_mem (region);
-    }
-    else
-    {
-        memclr (page_start, size);
+        uint8_t* clear_end = use_large_pages_p ? heap_segment_used (region) : heap_segment_committed (region);
+        size_t clear_size = clear_end - page_start;
+        memclr (page_start, clear_size);
         heap_segment_used (region) = heap_segment_mem (region);
         dprintf(REGIONS_LOG, ("cleared region %p(%p-%p) (%zu bytes)",
             region,
             page_start,
-            end,
-            size));
+            clear_end,
+            clear_size));
+    }
+    else
+    {
+        heap_segment_committed (region) = heap_segment_mem (region);
     }
 
     // Under USE_REGIONS, mark array is never partially committed. So we are only checking for this
@@ -43661,7 +43660,7 @@ size_t gc_heap::decommit_region (heap_segment* region, int bucket, int h_number)
     assert ((region->flags & heap_segment_flags_ma_committed) == 0);
     global_region_allocator.delete_region (get_region_start (region));
 
-    return size;
+    return decommit_size;
 }
 #endif //USE_REGIONS
 
@@ -47180,7 +47179,6 @@ void gc_heap::verify_regions (bool can_verify_gen_num, bool concurrent_p)
             dprintf(3, ("commit-accounting:  checkpoint for %d for heap %d", oh, heap_number));
             total_committed = 0;
         }
-
     }
 #endif //USE_REGIONS
 }
@@ -51916,6 +51914,7 @@ bool GCHeap::IsConcurrentGCEnabled()
 
 void PopulateDacVars(GcDacVars *gcDacVars)
 {
+    bool v2 = gcDacVars->minor_version_number >= 2;
 
 #define DEFINE_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
 #define DEFINE_DPTR_FIELD(field_name, field_type) offsetof(CLASS_NAME, field_name),
@@ -51927,10 +51926,7 @@ void PopulateDacVars(GcDacVars *gcDacVars)
 #define CLASS_NAME gc_heap
 #include "dac_gcheap_fields.h"
 #undef CLASS_NAME
-
-        offsetof(gc_heap, generation_table)
     };
-    static_assert(sizeof(gc_heap_field_offsets) == (GENERATION_TABLE_FIELD_INDEX + 1) * sizeof(int), "GENERATION_TABLE_INDEX mismatch");
 #endif //MULTIPLE_HEAPS
     static int generation_field_offsets[] = {
 
@@ -51945,7 +51941,6 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     };
 
     assert(gcDacVars != nullptr);
-    *gcDacVars = {};
     // Note: These version numbers do not need to be checked in the .Net dac/SOS because
     // we always match the compiled dac and GC to the version used.  NativeAOT's SOS may
     // work differently than .Net SOS.  When making breaking changes here you may need to
@@ -51984,8 +51979,11 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->mark_array = &gc_heap::mark_array;
     gcDacVars->background_saved_lowest_address = &gc_heap::background_saved_lowest_address;
     gcDacVars->background_saved_highest_address = &gc_heap::background_saved_highest_address;
-    gcDacVars->freeable_soh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_soh_segment);
-    gcDacVars->freeable_uoh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_uoh_segment);
+    if (v2)
+    {
+        gcDacVars->freeable_soh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_soh_segment);
+        gcDacVars->freeable_uoh_segment = reinterpret_cast<dac_heap_segment**>(&gc_heap::freeable_uoh_segment);
+    }
     gcDacVars->next_sweep_obj = &gc_heap::next_sweep_obj;
 #ifdef USE_REGIONS
     gcDacVars->saved_sweep_ephemeral_seg = 0;
@@ -52026,7 +52024,10 @@ void PopulateDacVars(GcDacVars *gcDacVars)
     gcDacVars->gc_heap_field_offsets = reinterpret_cast<int**>(&gc_heap_field_offsets);
 #endif // MULTIPLE_HEAPS
     gcDacVars->generation_field_offsets = reinterpret_cast<int**>(&generation_field_offsets);
-    gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
+    if (v2)
+    {
+        gcDacVars->bookkeeping_start = &gc_heap::bookkeeping_start;
+    }
 }
 
 int GCHeap::RefreshMemoryLimit()

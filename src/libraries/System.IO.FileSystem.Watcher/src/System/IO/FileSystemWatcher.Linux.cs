@@ -829,7 +829,7 @@ namespace System.IO
             }
 
             /// <summary>
-            /// Reads a UTF8 string from _buffer starting at the specified position and up to
+            /// Reads a UTF-8 string from _buffer starting at the specified position and up to
             /// the specified length.  Null termination is trimmed off (the length may include
             /// many null bytes, not just one, or it may include none).
             /// </summary>
