@@ -1643,6 +1643,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IADD:
 	case OP_IADD_IMM:
 	case OP_IADD_OVF:
+	case OP_FADD:
 	case OP_ISUB:
 	case OP_LSUB:
 	case OP_FSUB:
@@ -1732,6 +1733,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 	case OP_IREM_UN_IMM:
 
 	case OP_ICONV_TO_OVF_U2:
+	case OP_LCONV_TO_OVF_I:
 	case OP_LCONV_TO_OVF_U:
 	case OP_LCONV_TO_OVF_I4_UN:
 	case OP_LCONV_TO_OVF_U4_UN:
@@ -2106,6 +2108,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 
 		/* Float Ext */
 		case OP_R8CONST:
+		case OP_FADD:
 		case OP_FNEG:
 		case OP_ICONV_TO_R8:
 		case OP_RCONV_TO_R8:
@@ -2366,6 +2369,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				ins->sreg1 = temp->dreg;
 				ins->inst_imm = 0;
 			}
+			// TODO: Move This to Optimisation
 			if ((ins->next) && (ins->next->opcode >= OP_ZEXT_I1 && ins->next->opcode <= OP_ZEXT_I4)) {
 				switch (ins->opcode) {
 				case OP_LOADI1_MEMBASE:
@@ -2390,6 +2394,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					NULLIFY_INS (ins->next);
 					break;
 				case OP_LOAD_MEMBASE:
+				case OP_LOADI8_MEMBASE:
 					break;
 				default:
 					g_print (mono_inst_name (ins->opcode));
@@ -3891,6 +3896,15 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_IADD_IMM:
 		case OP_LADD_IMM:
 			riscv_addi (code, ins->dreg, ins->sreg1, ins->inst_imm);
+			break;
+		case OP_FADD:
+			g_assert (riscv_stdext_f || riscv_stdext_d);
+			if (riscv_stdext_d)
+				riscv_fadd_d (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			else {
+				NOT_IMPLEMENTED;
+				riscv_fadd_s (code, RISCV_ROUND_DY, ins->dreg, ins->sreg1, ins->sreg2);
+			}
 			break;
 		case OP_ISUB:
 		case OP_LSUB:
