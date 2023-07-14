@@ -176,8 +176,10 @@
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <PlatformManifestFileEntry Include="Microsoft.DiaSymReader.Native.arm64.dll" IsNative="true" FallbackFileVersion="$(MicrosoftDiaSymReaderNativeFileVersion)" />
     <!-- NativeAOT specific files -->
-    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapper.a" IsNative="true" /> <!-- The bootstrapper lib used to be a static library, now it's an object file. -->
     <PlatformManifestFileEntry Include="libbootstrapperdll.a" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapper.o" IsNative="true" />
+    <PlatformManifestFileEntry Include="libbootstrapperdll.o" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-disabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libeventpipe-enabled.a" IsNative="true" />
     <PlatformManifestFileEntry Include="libRuntime.ServerGC.a" IsNative="true" />
