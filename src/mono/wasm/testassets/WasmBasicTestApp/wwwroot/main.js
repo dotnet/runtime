@@ -10,6 +10,10 @@ if (testCase == null) {
     exit(2, new Error("Missing test scenario. Supply query argument 'test'."));
 }
 
+function testOutput(msg) {
+    console.log(`TestOutput -> ${msg}}`);
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -20,6 +24,16 @@ dotnet
 switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        break;
+    case "DownloadResourceProgressTest":
+        dotnet.witModuleConfig({
+            onDownloadResourceProgress: (loaded, total) => {
+                console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
+                if (loaded === total && loaded !== 0) {
+                    testOutput("DownloadResourceProgress: Finished");
+                }
+            }
+        });
         break;
 }
 
