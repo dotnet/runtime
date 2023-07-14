@@ -155,7 +155,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldClass)}");
@@ -180,7 +179,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticFieldValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldValue)}");
@@ -192,7 +190,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessFieldValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessFieldValue)}");
@@ -390,6 +387,16 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : DoesNotExist,
             () => FieldNotFound(null));
         AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
+            isNativeAot ? null : UserDataClass.StaticFieldName,
+            () => 
+            {
+                UserDataValue value = default;
+                FieldNotFoundStaticMismatch1(ref value);
+            });
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
+            isNativeAot ? null : UserDataValue.FieldName,
+            () => FieldNotFoundStaticMismatch2(default));
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
             isNativeAot ? null : DoesNotExist,
             () => StaticFieldNotFound(null));
 
@@ -408,6 +415,12 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=DoesNotExist)]
         extern static ref string FieldNotFound(UserDataClass d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.StaticFieldName)]
+        extern static ref string FieldNotFoundStaticMismatch1(ref UserDataValue d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataValue.FieldName)]
+        extern static ref string FieldNotFoundStaticMismatch2(UserDataValue d);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=DoesNotExist)]
         extern static ref string StaticFieldNotFound(UserDataClass d);
