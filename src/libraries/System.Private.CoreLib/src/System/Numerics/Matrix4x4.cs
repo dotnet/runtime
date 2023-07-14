@@ -448,6 +448,24 @@ namespace System.Numerics
         public static Matrix4x4 CreateTranslation(float xPosition, float yPosition, float zPosition)
             => Impl.CreateTranslation(xPosition, yPosition, zPosition).AsM4x4();
 
+        /// <summary>Creates a viewport matrix from the specified parameters.</summary>
+        /// <param name="x">X coordinate of the viewport upper left corner.</param>
+        /// <param name="y">Y coordinate of the viewport upper left corner.</param>
+        /// <param name="width">Viewport width.</param>
+        /// <param name="height">Viewport height.</param>
+        /// <param name="minDepth">Viewport minimum depth.</param>
+        /// <param name="maxDepth">Viewport maximum depth.</param>
+        /// <returns>The viewport matrix.</returns>
+        /// <remarks>
+        /// Viewport matrix
+        /// |   width / 2   |        0       |          0          | 0 |
+        /// |       0       |   -height / 2  |          0          | 0 |
+        /// |       0       |        0       | maxDepth - minDepth | 0 |
+        /// | x + width / 2 | y + height / 2 |       minDepth      | 1 |
+        /// </remarks>
+        public static Matrix4x4 CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+            => Impl.CreateViewport(x, y, width, height, minDepth, maxDepth).AsM4x4();
+
         /// <summary>Creates a world matrix with the specified parameters.</summary>
         /// <param name="position">The position of the object.</param>
         /// <param name="forward">The forward direction of the object.</param>

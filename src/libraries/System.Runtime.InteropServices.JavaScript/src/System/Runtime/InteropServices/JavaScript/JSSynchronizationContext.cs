@@ -3,43 +3,51 @@
 
 #if FEATURE_WASM_THREADS
 
-using System;
 using System.Threading;
 using System.Threading.Channels;
-using System.Runtime;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
-using QueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
+using WorkItemQueueType = System.Threading.Channels.Channel<System.Runtime.InteropServices.JavaScript.JSSynchronizationContext.WorkItem>;
 
-namespace System.Runtime.InteropServices.JavaScript {
+namespace System.Runtime.InteropServices.JavaScript
+{
     /// <summary>
     /// Provides a thread-safe default SynchronizationContext for the browser that will automatically
-    ///  route callbacks to the main browser thread where they can interact with the DOM and other
+    ///  route callbacks to the original browser thread where they can interact with the DOM and other
     ///  thread-affinity-having APIs like WebSockets, fetch, WebGL, etc.
     /// Callbacks are processed during event loop turns via the runtime's background job system.
+    /// See also https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads
     /// </summary>
-    internal sealed unsafe class JSSynchronizationContext : SynchronizationContext {
-        public readonly Thread MainThread;
+    internal sealed class JSSynchronizationContext : SynchronizationContext
+    {
+        private readonly Action _DataIsAvailable;// don't allocate Action on each call to UnsafeOnCompleted
+        public readonly Thread TargetThread;
+        public readonly IntPtr TargetThreadId;
+        private readonly WorkItemQueueType Queue;
 
-        internal readonly struct WorkItem {
+        internal static JSSynchronizationContext? MainJSSynchronizationContext;
+
+        [ThreadStatic]
+        internal static JSSynchronizationContext? CurrentJSSynchronizationContext;
+        internal SynchronizationContext? previousSynchronizationContext;
+        internal bool isDisposed;
+
+        internal readonly struct WorkItem
+        {
             public readonly SendOrPostCallback Callback;
             public readonly object? Data;
             public readonly ManualResetEventSlim? Signal;
 
-            public WorkItem (SendOrPostCallback callback, object? data, ManualResetEventSlim? signal) {
+            public WorkItem(SendOrPostCallback callback, object? data, ManualResetEventSlim? signal)
+            {
                 Callback = callback;
                 Data = data;
                 Signal = signal;
             }
         }
 
-        private static JSSynchronizationContext? MainThreadSynchronizationContext;
-        private readonly QueueType Queue;
-        private readonly Action _DataIsAvailable;
-
-        private JSSynchronizationContext (Thread mainThread)
-            : this (
-                mainThread,
+        internal JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId)
+            : this(
+                targetThread, targetThreadId,
                 Channel.CreateUnbounded<WorkItem>(
                     new UnboundedChannelOptions { SingleWriter = false, SingleReader = true, AllowSynchronousContinuations = true }
                 )
@@ -47,19 +55,26 @@ namespace System.Runtime.InteropServices.JavaScript {
         {
         }
 
-        private JSSynchronizationContext (Thread mainThread, QueueType queue) {
-            MainThread = mainThread;
+        private JSSynchronizationContext(Thread targetThread, IntPtr targetThreadId, WorkItemQueueType queue)
+        {
+            TargetThread = targetThread;
+            TargetThreadId = targetThreadId;
             Queue = queue;
             _DataIsAvailable = DataIsAvailable;
         }
 
-        public override SynchronizationContext CreateCopy () {
-            return new JSSynchronizationContext(MainThread, Queue);
+        public override SynchronizationContext CreateCopy()
+        {
+            return new JSSynchronizationContext(TargetThread, TargetThreadId, Queue);
         }
 
-        private void AwaitNewData () {
+        internal void AwaitNewData()
+        {
+            ObjectDisposedException.ThrowIf(isDisposed, this);
+
             var vt = Queue.Reader.WaitToReadAsync();
-            if (vt.IsCompleted) {
+            if (vt.IsCompleted)
+            {
                 DataIsAvailable();
                 return;
             }
@@ -72,28 +87,37 @@ namespace System.Runtime.InteropServices.JavaScript {
             awaiter.UnsafeOnCompleted(_DataIsAvailable);
         }
 
-        private void DataIsAvailable () {
+        private unsafe void DataIsAvailable()
+        {
             // While we COULD pump here, we don't want to. We want the pump to happen on the next event loop turn.
             // Otherwise we could get a chain where a pump generates a new work item and that makes us pump again, forever.
-            ScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
+            TargetThreadScheduleBackgroundJob(TargetThreadId, (void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
         }
 
-        public override void Post (SendOrPostCallback d, object? state) {
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            ObjectDisposedException.ThrowIf(isDisposed, this);
+
             var workItem = new WorkItem(d, state, null);
             if (!Queue.Writer.TryWrite(workItem))
                 throw new Exception("Internal error");
         }
 
         // This path can only run when threading is enabled
-        #pragma warning disable CA1416
+#pragma warning disable CA1416
 
-        public override void Send (SendOrPostCallback d, object? state) {
-            if (Thread.CurrentThread == MainThread) {
+        public override void Send(SendOrPostCallback d, object? state)
+        {
+            ObjectDisposedException.ThrowIf(isDisposed, this);
+
+            if (Thread.CurrentThread == TargetThread)
+            {
                 d(state);
                 return;
             }
 
-            using (var signal = new ManualResetEventSlim(false)) {
+            using (var signal = new ManualResetEventSlim(false))
+            {
                 var workItem = new WorkItem(d, state, signal);
                 if (!Queue.Writer.TryWrite(workItem))
                     throw new Exception("Internal error");
@@ -102,42 +126,50 @@ namespace System.Runtime.InteropServices.JavaScript {
             }
         }
 
-        internal static void Install () {
-            MainThreadSynchronizationContext ??= new JSSynchronizationContext(Thread.CurrentThread);
-
-            SynchronizationContext.SetSynchronizationContext(MainThreadSynchronizationContext);
-            MainThreadSynchronizationContext.AwaitNewData();
-        }
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe void ScheduleBackgroundJob(void* callback);
+        internal static extern unsafe void TargetThreadScheduleBackgroundJob(IntPtr targetThread, void* callback);
 
 #pragma warning disable CS3016 // Arrays as attribute arguments is not CLS-compliant
         [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-        private static unsafe void BackgroundJobHandler () {
-            MainThreadSynchronizationContext!.Pump();
+#pragma warning restore CS3016
+        // this callback will arrive on the target thread, called from mono_background_exec
+        private static void BackgroundJobHandler()
+        {
+            CurrentJSSynchronizationContext!.Pump();
         }
 
-        [UnmanagedCallersOnly(CallConvs = new[] { typeof(CallConvCdecl) })]
-        private static unsafe void RequestPumpCallback () {
-            ScheduleBackgroundJob((void*)(delegate* unmanaged[Cdecl]<void>)&BackgroundJobHandler);
-        }
-
-        private void Pump () {
-            try {
-                while (Queue.Reader.TryRead(out var item)) {
-                    try {
+        private void Pump()
+        {
+            if (isDisposed)
+            {
+                // FIXME: there could be abandoned work, but here we have no way how to propagate the failure
+                return;
+            }
+            try
+            {
+                while (Queue.Reader.TryRead(out var item))
+                {
+                    try
+                    {
                         item.Callback(item.Data);
                         // While we would ideally have a catch block here and do something to dispatch/forward unhandled
                         //  exceptions, the standard threadpool (and thus standard synchronizationcontext) have zero
                         //  error handling, so for consistency with them we do nothing. Don't throw in SyncContext callbacks.
-                    } finally {
+                    }
+                    finally
+                    {
                         item.Signal?.Set();
                     }
                 }
-            } finally {
+            }
+            catch (Exception e)
+            {
+                Environment.FailFast("JSSynchronizationContext.BackgroundJobHandler failed", e);
+            }
+            finally
+            {
                 // If an item throws, we want to ensure that the next pump gets scheduled appropriately regardless.
-                AwaitNewData();
+                if(!isDisposed) AwaitNewData();
             }
         }
     }

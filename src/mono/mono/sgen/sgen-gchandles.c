@@ -13,7 +13,7 @@
 #include "mono/sgen/sgen-gc.h"
 #include "mono/sgen/sgen-client.h"
 #include "mono/sgen/sgen-array-list.h"
-#include "mono/utils/mono-membar.h"
+#include "mono/utils/mono-memory-model.h"
 
 #ifdef HEAVY_STATISTICS
 static volatile guint32 stat_gc_handles_allocated = 0;

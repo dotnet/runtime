@@ -155,6 +155,31 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Computes the leading ordinal case-insensitive substring in <paramref name="node"/>.</summary>
+        public static string? FindPrefixOrdinalCaseInsensitive(RegexNode node)
+        {
+            while (true)
+            {
+                // Search down the left side of the tree looking for a concatenation.  If we find one,
+                // ask it for any ordinal case-insensitive prefix it has.
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Atomic:
+                    case RegexNodeKind.Capture:
+                    case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                        node = node.Child(0);
+                        continue;
+
+                    case RegexNodeKind.Concatenate:
+                        node.TryGetOrdinalCaseInsensitiveString(0, node.ChildCount(), out _, out string? caseInsensitiveString);
+                        return caseInsensitiveString;
+
+                    default:
+                        return null;
+                }
+            }
+        }
+
         /// <summary>Finds sets at fixed-offsets from the beginning of the pattern/</summary>
         /// <param name="root">The RegexNode tree root.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>

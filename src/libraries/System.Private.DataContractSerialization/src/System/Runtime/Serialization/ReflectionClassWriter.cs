@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
             return true;
         }
 
-        private void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
+        private static void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnSerializing(obj, context, classContract.BaseClassContract);
@@ -138,7 +138,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
+        private static void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
             if (classContract.BaseClassContract != null)
                 InvokeOnSerialized(obj, context, classContract.BaseClassContract);

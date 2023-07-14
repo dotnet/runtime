@@ -1013,7 +1013,7 @@ namespace System.Xml
             Debug.Assert(_parserContext != null);
             Debug.Assert(_coreReaderImpl.DtdInfo == null);
 
-            if (_parserContext.DocTypeName == null || _parserContext.DocTypeName.Length == 0)
+            if (string.IsNullOrEmpty(_parserContext.DocTypeName))
             {
                 return;
             }

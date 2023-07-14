@@ -245,13 +245,14 @@ const pal::char_t* get_arch_name(pal::architecture arch)
 
 const pal::char_t* get_current_arch_name()
 {
-    return get_arch_name(get_current_arch());
+    assert(pal::strcmp(get_arch_name(get_current_arch()), _STRINGIFY(CURRENT_ARCH_NAME)) == 0);
+    return _STRINGIFY(CURRENT_ARCH_NAME);
 }
 
 pal::string_t get_current_runtime_id(bool use_fallback)
 {
     pal::string_t rid;
-    if (pal::getenv(_X("DOTNET_RUNTIME_ID"), &rid))
+    if (try_get_runtime_id_from_env(rid))
         return rid;
 
     rid = pal::get_current_os_rid_platform();
@@ -265,6 +266,11 @@ pal::string_t get_current_runtime_id(bool use_fallback)
     }
 
     return rid;
+}
+
+bool try_get_runtime_id_from_env(pal::string_t& out_rid)
+{
+    return pal::getenv(_X("DOTNET_RUNTIME_ID"), &out_rid);
 }
 
 /**

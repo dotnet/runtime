@@ -133,7 +133,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt16(object ptr, int ofs, short val)
         {
-            WriteValueSlow(ptr, ofs, val, Marshal.WriteInt16);
+            WriteValueSlow(ptr, ofs, val, WriteInt16);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -141,7 +141,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt32(object ptr, int ofs, int val)
         {
-            WriteValueSlow(ptr, ofs, val, Marshal.WriteInt32);
+            WriteValueSlow(ptr, ofs, val, WriteInt32);
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -149,7 +149,7 @@ namespace System.Runtime.InteropServices
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
         public static void WriteInt64(object ptr, int ofs, long val)
         {
-            WriteValueSlow(ptr, ofs, val, Marshal.WriteInt64);
+            WriteValueSlow(ptr, ofs, val, WriteInt64);
         }
 
         /// <summary>

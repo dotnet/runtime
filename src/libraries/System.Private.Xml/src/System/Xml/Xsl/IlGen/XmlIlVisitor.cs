@@ -4920,7 +4920,7 @@ namespace System.Xml.Xsl.IlGen
         /// Returns true if the specified QilExpression node type is *guaranteed* to cache its results in an XmlQuerySequence,
         /// where items in the cache are stored using the default storage type.
         /// </summary>
-        private bool CachesResult(QilNode nd)
+        private static bool CachesResult(QilNode nd)
         {
             OptimizerPatterns patt;
 

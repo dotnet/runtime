@@ -166,6 +166,7 @@ if(CLR_CMAKE_HOST_WIN32)
         oleaut32.lib
         uuid.lib
         user32.lib
+        coreclrminipal
         ${STATIC_MT_CRT_LIB}
         ${STATIC_MT_VCRT_LIB}
     )
@@ -175,6 +176,7 @@ else(CLR_CMAKE_HOST_WIN32)
         ${START_WHOLE_ARCHIVE} # force all PAL objects to be included so all exports are available
         coreclrpal
         palrt
+        coreclrminipal
         ${END_WHOLE_ARCHIVE}
     )
 endif(CLR_CMAKE_HOST_WIN32)

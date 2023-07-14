@@ -82,24 +82,17 @@ internal static class DataSetUtil
         return InvalidEnumerationValue(typeof(LoadOption), (int)value);
     }
 
-    // only StackOverflowException & ThreadAbortException are sealed classes
-    private static readonly Type s_stackOverflowType = typeof(StackOverflowException);
-    private static readonly Type s_outOfMemoryType = typeof(OutOfMemoryException);
-    private static readonly Type s_threadAbortType = typeof(System.Threading.ThreadAbortException);
-    private static readonly Type s_nullReferenceType = typeof(NullReferenceException);
-    private static readonly Type s_accessViolationType = typeof(AccessViolationException);
-    private static readonly Type s_securityType = typeof(System.Security.SecurityException);
 
     internal static bool IsCatchableExceptionType(Exception e)
     {
         // a 'catchable' exception is defined by what it is not.
-        Type type = e.GetType();
+        // only StackOverflowException & ThreadAbortException are sealed classes
 
-        return ((type != s_stackOverflowType) &&
-                 (type != s_outOfMemoryType) &&
-                 (type != s_threadAbortType) &&
-                 (type != s_nullReferenceType) &&
-                 (type != s_accessViolationType) &&
-                 !s_securityType.IsAssignableFrom(type));
+        return ((e.GetType() != typeof(StackOverflowException)) &&
+                 (e.GetType() != typeof(OutOfMemoryException)) &&
+                 (e.GetType() != typeof(System.Threading.ThreadAbortException)) &&
+                 (e.GetType() != typeof(NullReferenceException)) &&
+                 (e.GetType() != typeof(System.Security.SecurityException)) &&
+                 !typeof(System.Security.SecurityException).IsAssignableFrom(e.GetType()));
     }
 }

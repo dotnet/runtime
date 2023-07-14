@@ -45,8 +45,15 @@ steps:
           $availableFiles | %{ cp $_.FullName $targetDir -v }
         }
 
-        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildMuslDacRootFolderPath) -TargetDir '$(buildMuslDacStagingPath)/${{ parameters.hostArchType }}'
-        CopyAndVerifyCrossOsAssets -CrossDacDir $(buildLinuxDacRootFolderPath) -TargetDir '$(buildLinuxDacStagingPath)/${{ parameters.hostArchType }}'
+        $buildMuslDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/alpine.${{ parameters.archType }}.$(buildConfigUpper)"
+        $buildMuslStagingPath = "$(crossDacArtifactPath)/Linux_musl.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
+        
+        $buildLinuxDacRootFolderPath = "$(Build.SourcesDirectory)/artifacts/bin/coreclr/Linux.${{ parameters.archType }}.$(buildConfigUpper)"
+        $buildLinuxDacStagingPath = "$(crossDacArtifactPath)/Linux.${{ parameters.archType }}.$(buildConfigUpper)/${{ parameters.hostArchType }}"
+        
+        
+        CopyAndVerifyCrossOsAssets -CrossDacDir $buildMuslDacRootFolderPath -TargetDir $buildMuslStagingPath
+        CopyAndVerifyCrossOsAssets -CrossDacDir $buildLinuxDacRootFolderPath -TargetDir $buildLinuxDacStagingPath
 
         Write-Host "Final directory contents:"
         ls -R $(crossDacArtifactPath)

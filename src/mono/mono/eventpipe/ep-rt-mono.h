@@ -1979,6 +1979,26 @@ ep_rt_write_event_threadpool_io_pack (
 	intptr_t overlapped,
 	uint16_t clr_instance_id);
 
+bool
+ep_rt_write_event_contention_lock_created (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_contention_start (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id);
+
+bool
+ep_rt_write_event_contention_stop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns);
+
 /*
 * EventPipe provider callbacks.
 */

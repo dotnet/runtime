@@ -454,7 +454,7 @@ namespace System.Reflection
                     for (int iCopy = 0; iCopy < methodInstantiation.Length; iCopy++)
                         methodInstantiationCopy[iCopy] = methodInstantiation[iCopy];
                     methodInstantiation = methodInstantiationCopy;
-                    return System.Reflection.Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
+                    return Emit.MethodBuilderInstantiation.MakeGenericMethod(this, methodInstantiation);
                 }
 
                 methodInstantionRuntimeType[i] = rtMethodInstantiationElem;

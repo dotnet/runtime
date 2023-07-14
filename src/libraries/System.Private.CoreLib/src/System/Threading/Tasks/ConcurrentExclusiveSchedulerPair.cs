@@ -24,7 +24,7 @@ namespace System.Threading.Tasks
     /// tasks while ensuring that concurrent tasks may run concurrently and exclusive tasks never do.
     /// </summary>
     [DebuggerDisplay("Concurrent={ConcurrentTaskCountForDebugger}, Exclusive={ExclusiveTaskCountForDebugger}, Mode={ModeForDebugger}")]
-    [DebuggerTypeProxy(typeof(ConcurrentExclusiveSchedulerPair.DebugView))]
+    [DebuggerTypeProxy(typeof(DebugView))]
     public class ConcurrentExclusiveSchedulerPair
     {
         /// <summary>A processing mode to denote what kinds of tasks are currently being processed on this thread.</summary>
@@ -140,7 +140,7 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Gets a <see cref="System.Threading.Tasks.Task"/> that will complete when the scheduler has completed processing.</summary>
+        /// <summary>Gets a <see cref="Task"/> that will complete when the scheduler has completed processing.</summary>
         public Task Completion => EnsureCompletionStateInitialized();
 
         /// <summary>Gets the lazily-initialized completion state.</summary>
@@ -561,7 +561,7 @@ namespace System.Threading.Tasks
             internal void ExecuteTask(Task task)
             {
                 Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
-                base.TryExecuteTask(task);
+                TryExecuteTask(task);
             }
 
             /// <summary>Tries to execute the task synchronously on this scheduler.</summary>
@@ -582,7 +582,7 @@ namespace System.Threading.Tasks
 
                 // We know the implementation of the default scheduler and how it will behave.
                 // As it's the most common underlying scheduler, we optimize for it.
-                bool isDefaultScheduler = m_pair.m_underlyingTaskScheduler == TaskScheduler.Default;
+                bool isDefaultScheduler = m_pair.m_underlyingTaskScheduler == Default;
 
                 // If we're targeting the default scheduler and taskWasPreviouslyQueued is true,
                 // we know that the default scheduler will only allow it to be inlined

@@ -274,19 +274,11 @@ namespace System.Reflection
 
         internal const int MaxStackAllocArgCount = 4;
 
-#if CORECLR
         [InlineArray(MaxStackAllocArgCount)]
-#endif
         private protected struct ArgumentData<T>
         {
             private T _arg0;
-#if !CORECLR
-#pragma warning disable CA1823, CS0169, IDE0051, IDE0044 // accessed via 'CheckArguments' ref arithmetic
-            private T _arg1;
-            private T _arg2;
-            private T _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051, IDE0044
-#endif
+
             [UnscopedRef]
             public Span<T> AsSpan(int length)
             {
@@ -308,19 +300,10 @@ namespace System.Reflection
         }
 
         // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
-#if CORECLR
         [InlineArray(MaxStackAllocArgCount)]
-#endif
         private protected ref struct StackAllocatedByRefs
         {
             internal ref byte _arg0;
-#if !CORECLR
-#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private ref byte _arg1;
-            private ref byte _arg2;
-            private ref byte _arg3;
-#pragma warning restore CA1823, CS0169, IDE0051
-#endif
         }
 #endif
         }

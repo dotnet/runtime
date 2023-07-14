@@ -17,6 +17,13 @@ MONO_HWCAP_VAR(arm_has_thumb2)
 
 #elif defined (TARGET_ARM64)
 
+MONO_HWCAP_VAR(arm64_has_crc32)
+MONO_HWCAP_VAR(arm64_has_dot)
+MONO_HWCAP_VAR(arm64_has_rdm)
+MONO_HWCAP_VAR(arm64_has_sha1)
+MONO_HWCAP_VAR(arm64_has_sha256)
+MONO_HWCAP_VAR(arm64_has_aes)
+
 // Nothing here yet.
 
 #elif defined (TARGET_POWERPC) || defined (TARGET_POWERPC64)

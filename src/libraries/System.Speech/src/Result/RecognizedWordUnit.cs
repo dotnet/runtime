@@ -25,7 +25,7 @@ namespace System.Speech.Recognition
                 throw new ArgumentOutOfRangeException(SR.Get(SRID.InvalidConfidence));
             }
 
-            _text = text == null || text.Length == 0 ? null : text;
+            _text = string.IsNullOrEmpty(text) ? null : text;
             _confidence = confidence;
             _pronunciation = pronunciation == null || pronunciation.Length == 0 ? null : pronunciation;
             _lexicalForm = lexicalForm;

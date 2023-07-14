@@ -167,11 +167,6 @@
         <target state="translated">Nie można wywołać wyniku błędnego dopasowania.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">Zamiany wyrażeń regularnych z podstawieniami grup nie są obsługiwane w przypadku metody RegexOptions.NonBacktracking.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Kolekcja jest tylko do odczytu.</target>

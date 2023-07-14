@@ -24,8 +24,12 @@ namespace Internal.TypeSystem
 
         public override TypeDesc GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(Instantiation typeInstantiation, Instantiation methodInstantiation)
         {
-            Debug.Assert(false);
-            return this;
+            var sigBuilder = new MethodSignatureBuilder(_signature);
+            sigBuilder.ReturnType = _signature.ReturnType.GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+            for (int i = 0; i < _signature.Length; i++)
+                sigBuilder[i] = _signature[i].GetNonRuntimeDeterminedTypeFromRuntimeDeterminedSubtypeViaSubstitution(typeInstantiation, methodInstantiation);
+            MethodSignature newSig = sigBuilder.ToSignature();
+            return newSig == _signature ? this : Context.GetFunctionPointerType(newSig);
         }
     }
 }

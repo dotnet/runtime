@@ -515,6 +515,8 @@ set(GC_HEADERS_WKS
 if(FEATURE_EVENT_TRACE)
     list(APPEND VM_SOURCES_WKS
         eventtrace.cpp
+        eventtrace_bulktype.cpp
+        eventtrace_gcheap.cpp
         )
     list(APPEND VM_HEADERS_WKS
         eventtracepriv.h
@@ -578,7 +580,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dwreport.cpp
         eventreporter.cpp
         rtlfunctions.cpp
-        stacksampler.cpp
     )
 
     list(APPEND VM_HEADERS_WKS
@@ -587,7 +588,6 @@ if(CLR_CMAKE_TARGET_WIN32)
         dwreport.h
         eventreporter.h
         rtlfunctions.h
-        stacksampler.h
     )
 
     # COM interop scenarios
@@ -669,19 +669,6 @@ elseif(CLR_CMAKE_TARGET_ARCH_I386)
         ${ARCH_SOURCES_DIR}/asmhelpers.asm
         ${ARCH_SOURCES_DIR}/gmsasm.asm
         ${ARCH_SOURCES_DIR}/jithelp.asm
-        ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
-        ${ARCH_SOURCES_DIR}/thunktemplates.asm
-    )
-
-    set(VM_HEADERS_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmconstants.h
-    )
-elseif(CLR_CMAKE_TARGET_ARCH_ARM)
-    set(VM_SOURCES_WKS_ARCH_ASM
-        ${ARCH_SOURCES_DIR}/asmhelpers.asm
-        ${ARCH_SOURCES_DIR}/CrtHelpers.asm
-        ${ARCH_SOURCES_DIR}/ehhelpers.asm
-        ${ARCH_SOURCES_DIR}/patchedcode.asm
         ${ARCH_SOURCES_DIR}/PInvokeStubs.asm
         ${ARCH_SOURCES_DIR}/thunktemplates.asm
     )

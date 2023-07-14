@@ -12,7 +12,7 @@ namespace Wasm.Build.Tests;
 public class ConfigSrcTests : BuildTestBase
 {
     public ConfigSrcTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext) : base(output, buildContext)
-    {}
+    { }
 
     // NOTE: port number determinizes dynamically, so could not generate absolute URI
     [Theory]
@@ -30,7 +30,7 @@ public class ConfigSrcTests : BuildTestBase
 
         string binDir = GetBinDir(baseDir: _projectDir!, config: buildArgs.Config);
         string bundleDir = Path.Combine(binDir, "AppBundle");
-        string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "mono-config.json"));
+        string configSrc = Path.GetFullPath(Path.Combine(bundleDir, "_framework", "blazor.boot.json"));
 
         RunAndTestWasmApp(buildArgs, expectedExitCode: 42, host: host, id: id, extraXHarnessMonoArgs: $"--config-src={configSrc}");
     }

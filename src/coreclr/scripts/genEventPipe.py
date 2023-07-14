@@ -510,7 +510,7 @@ bool WriteToBuffer(const BYTE *src, size_t len, BYTE *&buffer, size_t& offset, s
 bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer)
 {
     if (!str) return true;
-    size_t byteCount = (wcslen(str) + 1) * sizeof(*str);
+    size_t byteCount = (u16_strlen(str) + 1) * sizeof(*str);
 
     if (offset + byteCount > size)
     {
@@ -757,10 +757,6 @@ def generateEventPipeHelperFile(etwmanifest, eventpipe_directory, target_cpp, ru
 def getCoreCLREventPipeImplFilePrefix():
     return """#include <common.h>
 #include "eventpipeadapter.h"
-
-#if defined(TARGET_UNIX)
-#define wcslen PAL_wcslen
-#endif
 
 bool ResizeBuffer(BYTE *&buffer, size_t& size, size_t currLen, size_t newSize, bool &fixedBuffer);
 bool WriteToBuffer(PCWSTR str, BYTE *&buffer, size_t& offset, size_t& size, bool &fixedBuffer);

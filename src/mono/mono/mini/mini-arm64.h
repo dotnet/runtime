@@ -222,11 +222,13 @@ typedef enum {
 	ArgOnStackR4,
 	/*
 	 * Vtype passed in consecutive int registers.
-	 * ainfo->reg is the firs register,
+	 * ainfo->reg is the first register,
 	 * ainfo->nregs is the number of registers,
 	 * ainfo->size is the size of the structure.
 	 */
 	ArgVtypeInIRegs,
+	/* SIMD arg in NEON register */
+	ArgInSIMDReg,
 	ArgVtypeByRef,
 	ArgVtypeByRefOnStack,
 	ArgVtypeOnStack,

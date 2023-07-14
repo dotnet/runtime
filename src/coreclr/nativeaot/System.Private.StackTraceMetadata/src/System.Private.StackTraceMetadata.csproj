@@ -21,8 +21,5 @@
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\MetadataBlob.cs">
       <Link>Internal\Runtime\MetadataBlob.cs</Link>
     </Compile>
-    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
 </Project>

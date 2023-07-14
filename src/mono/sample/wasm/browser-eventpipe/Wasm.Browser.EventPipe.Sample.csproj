@@ -1,19 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Import Project="..\DefaultBrowserSample.targets" />
   <PropertyGroup>
     <WasmBuildNative>true</WasmBuildNative>
     <FeatureWasmPerfTracing>true</FeatureWasmPerfTracing>
+    <WasmEnableThreads>true</WasmEnableThreads>
     <WasmEnablePerfTracing>true</WasmEnablePerfTracing>
-    <!-- <FeatureWasmThreads>true</FeatureWasmThreads> -->
     <NoWarn>$(NoWarn);CA2007</NoWarn> <!-- consider ConfigureAwait() -->
-  </PropertyGroup>
-
-  <PropertyGroup>
     <MonoDiagnosticsMock Condition="('$(MonoDiagnosticsMock)' == '') and ('$(Configuration)' == 'Debug' or '$(ArchiveTests)' == 'true')">true</MonoDiagnosticsMock>
   </PropertyGroup>
+  <Import Project="..\DefaultBrowserSample.targets" />
 
   <ItemGroup>
     <WasmExtraFilesToDeploy Include="index.html" />
+    <WasmExtraFilesToDeploy Include="main.js" />
     <WasmExtraFilesToDeploy Include="mock.js" Condition="'$(MonoDiagnosticsMock)' == 'true'"/>
     <!-- this option requires running dotnet-dsrouter and a real dotnet-trace client -->
     <WasmExtraConfig Condition="'$(MonoDiagnosticsMock)' != 'true'" Include="environmentVariables" Value='

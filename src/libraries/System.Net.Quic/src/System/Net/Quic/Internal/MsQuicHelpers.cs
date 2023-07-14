@@ -42,13 +42,13 @@ internal static class MsQuicHelpers
         return new Internals.SocketAddress(addressFamilyOverride ?? SocketAddressPal.GetAddressFamily(addressBytes), addressBytes).GetIPEndPoint();
     }
 
-    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint iPEndPoint)
+    internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint ipEndPoint)
     {
         // TODO: is the layout same for SocketAddress.Buffer and QuicAddr on all platforms?
         QuicAddr result = default;
         Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
 
-        Internals.SocketAddress address = IPEndPointExtensions.Serialize(iPEndPoint);
+        Internals.SocketAddress address = IPEndPointExtensions.Serialize(ipEndPoint);
         Debug.Assert(address.Size <= rawAddress.Length);
 
         address.Buffer.AsSpan(0, address.Size).CopyTo(rawAddress);

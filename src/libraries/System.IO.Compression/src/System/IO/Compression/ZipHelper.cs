@@ -22,7 +22,7 @@ namespace System.IO.Compression
 
         internal static Encoding GetEncoding(string text)
         {
-            if (text.AsSpan().IndexOfAnyExceptInRange((char)32, (char)126) >= 0)
+            if (text.AsSpan().ContainsAnyExceptInRange((char)32, (char)126))
             {
                 // The Zip Format uses code page 437 when the Unicode bit is not set. This format
                 // is the same as ASCII for characters 32-126 but differs otherwise. If we can fit

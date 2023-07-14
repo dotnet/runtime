@@ -99,6 +99,7 @@
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/components.h>
 #include <mono/mini/debugger-agent-external.h>
+#include <mono/metadata/bundled-resources-internals.h>
 
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
@@ -4451,11 +4452,9 @@ user_break_cb (StackFrameInfo *frame, MonoContext *ctx, gpointer user_data)
 {
 	UserBreakCbData *data = (UserBreakCbData*)user_data;
 
-	if (frame->type == FRAME_TYPE_INTERP_TO_MANAGED || frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
-		data->found = TRUE;
-		return TRUE;
-	}
-	if (frame->managed) {
+	if (frame->managed ||
+			frame->type == FRAME_TYPE_INTERP_TO_MANAGED ||
+			frame->type == FRAME_TYPE_INTERP_TO_MANAGED_WITH_CTX) {
 		data->found = TRUE;
 		*data->ctx = *ctx;
 
@@ -4724,10 +4723,11 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 				frame = tls->frames [0];
 		}
 
-		if (ss_req->size == STEP_SIZE_LINE) {
+		if (ss_req->size == STEP_SIZE_LINE_COLUMN) {
 			if (frame) {
 				ss_req->last_method = frame->de.method;
 				ss_req->last_line = -1;
+				ss_req->last_column = -1;
 
 				minfo = mono_debug_lookup_method (frame->de.method);
 				if (minfo && frame->il_offset != -1) {
@@ -4735,6 +4735,7 @@ mono_ss_create_init_args (SingleStepReq *ss_req, SingleStepArgs *args)
 
 					if (loc) {
 						ss_req->last_line = loc->row;
+						ss_req->last_column = loc->column;
 						g_free (loc);
 					}
 				}
@@ -6907,6 +6908,126 @@ static void add_error_string (Buffer *buf, const char *str)
 		buffer_add_string (buf, str);
 }
 
+static void
+create_file_to_check_memory_address (void)
+{
+	if (file_check_valid_memory != -1)
+		return;
+	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", mono_process_current_pid ());
+	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
+	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
+	g_free (file_name);
+}
+
+static gboolean
+valid_memory_address (gpointer addr, gint size)
+{
+#ifndef _MSC_VER
+	gboolean ret = TRUE;
+	create_file_to_check_memory_address ();
+	if(file_check_valid_memory < 0) {
+		return TRUE;
+	}
+	write (file_check_valid_memory,  (gpointer)addr, 1);
+	if (errno == EFAULT) {
+		ret = FALSE;
+	}
+#else
+	int i = 0;
+	gboolean ret = FALSE;
+	__try {
+		for (i = 0; i < size; i++)
+			*((volatile char*)addr+i);
+		ret = TRUE;
+	} __except(1) {
+		return ret;
+	}
+#endif
+	return ret;
+}
+
+static MonoAssembly*
+find_assembly_by_name (char* assembly_name)
+{
+	//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
+	char *lookup_name = g_strdup (assembly_name);
+	for (int i = ((int)strlen (lookup_name) - 1); i >= 0; --i) {
+		if (lookup_name [i] == '.') {
+			lookup_name [i] = 0;
+			break;
+		}
+	}
+
+	//resolve the assembly
+	MonoImageOpenStatus status;
+	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
+	g_free (lookup_name);	
+	if (!aname) {
+		PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+		return NULL;
+	}
+
+	MonoAssemblyByNameRequest byname_req;
+	mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
+	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
+	if (!assembly) {
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		for (guint i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
+			if (!strcmp(assemblyOnALC->aname.name, aname->name)) {
+				assembly = assemblyOnALC;
+				break;
+			}
+		}
+		g_ptr_array_free (assemblies, TRUE);
+		if (!assembly) {
+			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+			goto exit;
+		}
+	}
+exit:
+	mono_assembly_name_free_internal (aname);
+	return assembly;
+}
+
+static void
+send_debug_information (MonoAssembly *ass, Buffer *buf)
+{
+	guint8 pe_guid [16];
+	gint32 pe_age;
+	gint32 pe_timestamp;
+	guint8 *ppdb_data = NULL;
+	int ppdb_size = 0, ppdb_compressed_size = 0;
+	char *ppdb_path;
+	GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
+	GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
+	gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+	if (!has_debug_info || ppdb_size > 0)
+	{
+		buffer_add_byte (buf, 0);
+		g_array_free (pdb_checksum_hash_type, TRUE);
+		g_array_free (pdb_checksum, TRUE);
+		return;
+	}
+	buffer_add_byte (buf, 1);
+	buffer_add_int (buf, pe_age);
+	buffer_add_byte_array (buf, pe_guid, 16);
+	buffer_add_string (buf, ppdb_path);
+	buffer_add_int (buf, pdb_checksum_hash_type->len);
+	for (int i = 0 ; i < pdb_checksum_hash_type->len; ++i) {
+		char* checksum_hash_type =  g_array_index (pdb_checksum_hash_type, char*, i);
+		buffer_add_string (buf, checksum_hash_type);
+		if (!strcmp (checksum_hash_type, "SHA256"))
+			buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 32);
+		else if (!strcmp (checksum_hash_type, "SHA384"))
+			buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 48);
+		else if (!strcmp (checksum_hash_type, "SHA512"))
+			buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 64);
+	}
+	g_array_free (pdb_checksum_hash_type, TRUE);
+	g_array_free (pdb_checksum, TRUE);
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7252,6 +7373,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	case MDBGPROT_CMD_VM_READ_MEMORY: {
 		guint8* memory = (guint8*)GINT_TO_POINTER (decode_long (p, &p, end));
 		int size = decode_int (p, &p, end);
+		if (!valid_memory_address(memory, size))
+			return ERR_INVALID_ARGUMENT;		
 		PRINT_DEBUG_MSG (1, "MDBGPROT_CMD_VM_READ_MEMORY - [%p] - size - %d\n", memory, size);
 		buffer_add_byte_array (buf, memory, size);
 		break;
@@ -7263,45 +7386,9 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME: {
 		char* assembly_name = decode_string (p, &p, end);
-		//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
-		char *lookup_name = g_strdup (assembly_name);
-		for (int i = ((int)strlen (lookup_name) - 1); i >= 0; --i) {
-			if (lookup_name [i] == '.') {
-				lookup_name [i] = 0;
-				break;
-			}
-		}
-
-		//resolve the assembly
-		MonoImageOpenStatus status;
-		MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
-		if (!aname) {
-			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-			buffer_add_int(buf, -1);
-			break;
-		}
-		MonoAssemblyByNameRequest byname_req;
-		mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
-		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
-		g_free (lookup_name);
-		if (!assembly) {
-			GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
-			for (guint i = 0; i < assemblies->len; ++i) {
-				MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
-				if (!strcmp(assemblyOnALC->aname.name, aname->name)) {
-					assembly = assemblyOnALC;
-					break;
-				}
-			}
-			g_ptr_array_free (assemblies, TRUE);
-			if (!assembly) {
-				PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-				buffer_add_int(buf, -1);
-				mono_assembly_name_free_internal (aname);
-				break;
-			}
-		}
-		mono_assembly_name_free_internal (aname);
+		MonoAssembly* assembly = find_assembly_by_name (assembly_name);
+		if (!assembly)
+			buffer_add_int (buf, -1);
 		buffer_add_assemblyid (buf, mono_get_root_domain (), assembly);
 		break;
 	}
@@ -7376,6 +7463,55 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
+		break;
+	}
+	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm
+#ifdef HOST_WASM
+		char* assembly_name = m_dbgprot_decode_string (p, &p, end);
+		if (assembly_name == NULL)
+		{
+			m_dbgprot_buffer_add_int (buf, 0);
+			m_dbgprot_buffer_add_int (buf, 0);
+			m_dbgprot_buffer_add_int (buf, 0);
+		}
+		else
+		{
+			int ppdb_size = 0;
+			const unsigned char* assembly_bytes = NULL;
+			unsigned int assembly_size = 0;
+			const unsigned char* pdb_bytes = NULL;
+			unsigned int symfile_size = 0;
+			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
+			MonoAssembly* assembly = find_assembly_by_name (assembly_name);
+			assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
+			assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
+			if (symfile_size == 0) //try to send embedded pdb data
+			{
+				guint8 pe_guid [16];
+				gint32 pe_age;
+				gint32 pe_timestamp;
+				guint8 *ppdb_data = NULL;
+				int ppdb_compressed_size = 0;
+				char *ppdb_path;
+				mono_get_pe_debug_info_full (assembly->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, NULL, NULL);
+				if (ppdb_compressed_size > 0)
+				{
+					symfile_size = ppdb_compressed_size;
+					pdb_bytes = ppdb_data;
+				}
+			}
+			m_dbgprot_buffer_init (buf, assembly_size + symfile_size + 1024);
+			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) assembly_bytes, assembly_size);
+			m_dbgprot_buffer_add_int (buf, ppdb_size);
+			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) pdb_bytes, symfile_size);
+			if (assembly)
+				send_debug_information (assembly, buf);
+		}
+#else
+		m_dbgprot_buffer_add_int (buf, 0);
+		m_dbgprot_buffer_add_int (buf, 0);
+		m_dbgprot_buffer_add_int (buf, 0);
+#endif
 		break;
 	}
 	default:
@@ -8002,39 +8138,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         break;
 	}
 	case MDBGPROT_CMD_ASSEMBLY_GET_DEBUG_INFORMATION: {
-		guint8 pe_guid [16];
-		gint32 pe_age;
-		gint32 pe_timestamp;
-		guint8 *ppdb_data = NULL;
-		int ppdb_size = 0, ppdb_compressed_size = 0;
-		char *ppdb_path;
-		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
-		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
-		gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
-		if (!has_debug_info || ppdb_size > 0)
-		{
-			buffer_add_byte (buf, 0);
-			g_array_free (pdb_checksum_hash_type, TRUE);
-			g_array_free (pdb_checksum, TRUE);
-			return ERR_NONE;
-		}
-		buffer_add_byte (buf, 1);
-		buffer_add_int (buf, pe_age);
-		buffer_add_byte_array (buf, pe_guid, 16);
-		buffer_add_string (buf, ppdb_path);
-		buffer_add_int (buf, pdb_checksum_hash_type->len);
-		for (int i = 0 ; i < pdb_checksum_hash_type->len; ++i) {
-			char* checksum_hash_type =  g_array_index (pdb_checksum_hash_type, char*, i);
-			buffer_add_string (buf, checksum_hash_type);
-			if (!strcmp (checksum_hash_type, "SHA256"))
-				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 32);
-			else if (!strcmp (checksum_hash_type, "SHA384"))
-				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 48);
-			else if (!strcmp (checksum_hash_type, "SHA512"))
-				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 64);
-		}
-		g_array_free (pdb_checksum_hash_type, TRUE);
-		g_array_free (pdb_checksum, TRUE);
+		send_debug_information (ass, buf);
 		break;
 	}
 	case MDBGPROT_CMD_ASSEMBLY_HAS_DEBUG_INFO_LOADED: {
@@ -8805,6 +8909,7 @@ set_value:
 	case MDBGPROT_CMD_TYPE_ELEMENT_TYPE: 
 	{
 		buffer_add_int (buf, m_class_get_byval_arg (klass)->type);
+		buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (klass)));
 		break;
 	}
 	case MDBGPROT_CMD_TYPE_RANK: 
@@ -9840,6 +9945,7 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		return cmd_stack_frame_get_this (frame, sig, buf, jit);
 		break;
 	}
+	case MDBGPROT_CMD_STACK_FRAME_SET_VALUES_2:
 	case CMD_STACK_FRAME_SET_VALUES: {
 		guint8 *val_buf;
 		MonoType *t;
@@ -9852,8 +9958,9 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		for (i = 0; i < len; ++i) {
 			pos = decode_int (p, &p, end);
-
 			if (pos < 0) {
+				if (command == MDBGPROT_CMD_STACK_FRAME_SET_VALUES_2 && sig->hasthis) //0 == this
+					pos++;
 				pos = - pos - 1;
 
 				g_assert (pos >= 0 && GINT_TO_UINT32(pos) < jit->num_params);
@@ -9941,6 +10048,19 @@ frame_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case MDBGPROT_CMD_STACK_FRAME_GET_ADDRESS: {
 		buffer_add_long (buf, (gssize)frame->frame_addr);
+		break;
+	}
+	case MDBGPROT_CMD_STACK_FRAME_GET_COUNT: {
+		MonoDebugLocalsInfo *locals;
+		locals = mono_debug_lookup_locals (frame->de.method);
+		if (locals)
+			buffer_add_int (buf, locals->num_locals);
+		else
+			buffer_add_int (buf, 0);
+		break;
+	}
+	case MDBGPROT_CMD_STACK_FRAME_GET_PARAMETERS_COUNT: {
+		buffer_add_int (buf, jit->num_params + (sig->hasthis ? 1 : 0));
 		break;
 	}
 	default:
@@ -10083,44 +10203,6 @@ string_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 	}
 
 	return ERR_NONE;
-}
-
-static void
-create_file_to_check_memory_address (void)
-{
-	if (file_check_valid_memory != -1)
-		return;
-	char *file_name = g_strdup_printf ("debugger_check_valid_memory.%d", mono_process_current_pid ());
-	filename_check_valid_memory = g_build_filename (g_get_tmp_dir (), file_name, (const char*)NULL);
-	file_check_valid_memory = open(filename_check_valid_memory, O_CREAT | O_WRONLY | O_APPEND, S_IWUSR);
-	g_free (file_name);
-}
-
-static gboolean
-valid_memory_address (gpointer addr, gint size)
-{
-#ifndef _MSC_VER
-	gboolean ret = TRUE;
-	create_file_to_check_memory_address ();
-	if(file_check_valid_memory < 0) {
-		return TRUE;
-	}
-	write (file_check_valid_memory,  (gpointer)addr, 1);
-	if (errno == EFAULT) {
-		ret = FALSE;
-	}
-#else
-	int i = 0;
-	gboolean ret = FALSE;
-	__try {
-		for (i = 0; i < size; i++)
-			*((volatile char*)addr+i);
-		ret = TRUE;
-	} __except(1) {
-		return ret;
-	}
-#endif
-	return ret;
 }
 
 static ErrorCode
@@ -10273,11 +10355,12 @@ get_field_value:
 		len = decode_int (p, &p, end);
 		i = 0;
 		int field_token =  decode_int (p, &p, end);
-		gpointer iter = NULL;
-
-		while ((f = mono_class_get_fields_internal (obj_type, &iter))) {
-			if (mono_class_get_field_token (f) == field_token)
-				goto set_field_value;
+		for (k = obj_type; k; k = m_class_get_parent (k)) {
+			gpointer iter = NULL;
+			while ((f = mono_class_get_fields_internal (k, &iter))) {
+				if (mono_class_get_field_token (f) == field_token)
+					goto set_field_value;
+			}
 		}
 		goto invalid_fieldid;
 	case CMD_OBJECT_REF_SET_VALUES:

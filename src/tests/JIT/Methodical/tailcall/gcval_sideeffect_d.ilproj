@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <DebugType>Full</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="gcval_sideeffect_d.il" />
+    <Compile Include="gcval_sideeffect.il" />
+  </ItemGroup>
+</Project>

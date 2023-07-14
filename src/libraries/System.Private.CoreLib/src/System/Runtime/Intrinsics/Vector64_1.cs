@@ -29,7 +29,6 @@ namespace System.Runtime.Intrinsics
     [DebuggerTypeProxy(typeof(Vector64DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector64.Size)]
     public readonly struct Vector64<T> : IEquatable<Vector64<T>>
-        where T : struct
     {
         // This field allows the debug view to work https://github.com/dotnet/runtime/issues/9495)
         internal readonly ulong _00;
@@ -51,6 +50,7 @@ namespace System.Runtime.Intrinsics
             }
         }
 
+#pragma warning disable CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
         /// <summary>Gets the number of <typeparamref name="T" /> that are in a <see cref="Vector64{T}" />.</summary>
         /// <exception cref="NotSupportedException">The type of the vector (<typeparamref name="T" />) is not supported.</exception>
         public static unsafe int Count
@@ -60,11 +60,10 @@ namespace System.Runtime.Intrinsics
             get
             {
                 ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
-#pragma warning disable 8500 // sizeof of managed types
                 return Vector64.Size / sizeof(T);
-#pragma warning restore 8500
             }
         }
+#pragma warning restore CS8500 // This takes the address of, gets the size of, or declares a pointer to a managed type ('T')
 
         /// <summary>Gets <c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</summary>
         /// <returns><c>true</c> if <typeparamref name="T" /> is supported; otherwise, <c>false</c>.</returns>

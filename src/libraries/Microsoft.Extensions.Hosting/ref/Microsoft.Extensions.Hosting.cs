@@ -4,13 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace Microsoft.Extensions.DependencyInjection
-{
-    public static partial class OptionsBuilderExtensions
-    {
-        public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> ValidateOnStart<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder) where TOptions : class { throw null; }
-    }
-}
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions))]
+
 namespace Microsoft.Extensions.Hosting
 {
     public enum BackgroundServiceExceptionBehavior
@@ -32,7 +27,7 @@ namespace Microsoft.Extensions.Hosting
         public static Microsoft.Extensions.Hosting.IHostBuilder CreateDefaultBuilder(string[]? args) { throw null; }
         public static Microsoft.Extensions.Hosting.HostApplicationBuilder CreateEmptyApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings? settings) { throw null; }
     }
-    public sealed partial class HostApplicationBuilder
+    public sealed partial class HostApplicationBuilder : Microsoft.Extensions.Hosting.IHostApplicationBuilder
     {
         public HostApplicationBuilder() { }
         public HostApplicationBuilder(Microsoft.Extensions.Hosting.HostApplicationBuilderSettings? settings) { }
@@ -40,6 +35,8 @@ namespace Microsoft.Extensions.Hosting
         public Microsoft.Extensions.Configuration.ConfigurationManager Configuration { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHostEnvironment Environment { get { throw null; } }
         public Microsoft.Extensions.Logging.ILoggingBuilder Logging { get { throw null; } }
+        Microsoft.Extensions.Configuration.IConfigurationManager Microsoft.Extensions.Hosting.IHostApplicationBuilder.Configuration { get { throw null; } }
+        System.Collections.Generic.IDictionary<object, object> Microsoft.Extensions.Hosting.IHostApplicationBuilder.Properties { get { throw null; } }
         public Microsoft.Extensions.DependencyInjection.IServiceCollection Services { get { throw null; } }
         public Microsoft.Extensions.Hosting.IHost Build() { throw null; }
         public void ConfigureContainer<TContainerBuilder>(Microsoft.Extensions.DependencyInjection.IServiceProviderFactory<TContainerBuilder> factory, System.Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull { }
@@ -108,6 +105,7 @@ namespace Microsoft.Extensions.Hosting
         public bool ServicesStartConcurrently { get { throw null; } set { } }
         public bool ServicesStopConcurrently { get { throw null; } set { } }
         public System.TimeSpan ShutdownTimeout { get { throw null; } set { } }
+        public System.TimeSpan StartupTimeout { get { throw null; } set { } }
     }
 }
 namespace Microsoft.Extensions.Hosting.Internal

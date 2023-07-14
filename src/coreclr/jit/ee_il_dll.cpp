@@ -295,9 +295,12 @@ void CILJit::getVersionIdentifier(GUID* versionIdentifier)
 
 #ifdef TARGET_OS_RUNTIMEDETERMINED
 bool TargetOS::OSSettingConfigured = false;
-bool TargetOS::IsWindows           = false;
-bool TargetOS::IsUnix              = false;
-bool TargetOS::IsMacOS             = false;
+#ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
+                                         // runtimedetermined
+bool TargetOS::IsWindows = false;
+bool TargetOS::IsUnix    = false;
+#endif
+bool TargetOS::IsMacOS = false;
 #endif
 
 /*****************************************************************************
@@ -307,46 +310,14 @@ bool TargetOS::IsMacOS             = false;
 void CILJit::setTargetOS(CORINFO_OS os)
 {
 #ifdef TARGET_OS_RUNTIMEDETERMINED
-    TargetOS::IsMacOS             = os == CORINFO_MACOS;
-    TargetOS::IsUnix              = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
-    TargetOS::IsWindows           = os == CORINFO_WINNT;
+    TargetOS::IsMacOS = os == CORINFO_MACOS;
+#ifndef TARGET_UNIX_OS_RUNTIMEDETERMINED // This define is only set if ONLY the different unix variants are
+                                         // runtimedetermined
+    TargetOS::IsUnix    = (os == CORINFO_UNIX) || (os == CORINFO_MACOS);
+    TargetOS::IsWindows = os == CORINFO_WINNT;
+#endif
     TargetOS::OSSettingConfigured = true;
 #endif
-}
-
-/*****************************************************************************
- * Determine the maximum length of SIMD vector supported by this JIT.
- */
-
-unsigned CILJit::getMaxIntrinsicSIMDVectorLength(CORJIT_FLAGS cpuCompileFlags)
-{
-    JitFlags jitFlags;
-    jitFlags.SetFromFlags(cpuCompileFlags);
-
-#ifdef FEATURE_SIMD
-#if defined(TARGET_XARCH)
-    if (!jitFlags.IsSet(JitFlags::JIT_FLAG_PREJIT) &&
-        jitFlags.GetInstructionSetFlags().HasInstructionSet(InstructionSet_AVX2))
-    {
-        if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-        {
-            JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 32\n");
-        }
-        return 32;
-    }
-#endif // defined(TARGET_XARCH)
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-    {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 16\n");
-    }
-    return 16;
-#else  // !FEATURE_SIMD
-    if (GetJitTls() != nullptr && JitTls::GetCompiler() != nullptr)
-    {
-        JITDUMP("getMaxIntrinsicSIMDVectorLength: returning 0\n");
-    }
-    return 0;
-#endif // !FEATURE_SIMD
 }
 
 //------------------------------------------------------------------------
@@ -1395,11 +1366,6 @@ void Compiler::eeGetSystemVAmd64PassStructInRegisterDescriptor(
 }
 
 #endif // UNIX_AMD64_ABI
-
-bool Compiler::eeTryResolveToken(CORINFO_RESOLVED_TOKEN* resolvedToken)
-{
-    return info.compCompHnd->tryResolveToken(resolvedToken);
-}
 
 bool Compiler::eeRunWithErrorTrapImp(void (*function)(void*), void* param)
 {

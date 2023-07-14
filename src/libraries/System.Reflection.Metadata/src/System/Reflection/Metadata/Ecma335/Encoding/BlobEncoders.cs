@@ -885,10 +885,20 @@ namespace System.Reflection.Metadata.Ecma335
         }
     }
 
+    /// <summary>
+    /// Encodes a type in a signature.
+    /// </summary>
     public readonly struct SignatureTypeEncoder
     {
+        /// <summary>
+        /// The <see cref="BlobBuilder"/> where the signature is written to.
+        /// </summary>
         public BlobBuilder Builder { get; }
 
+        /// <summary>
+        /// Creates a <see cref="SignatureTypeEncoder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="BlobBuilder"/> where the signature will be written.</param>
         public SignatureTypeEncoder(BlobBuilder builder)
         {
             Builder = builder;
@@ -904,27 +914,79 @@ namespace System.Reflection.Metadata.Ecma335
             Builder.WriteByte(isValueType ? (byte)SignatureTypeKind.ValueType : (byte)SignatureTypeKind.Class);
         }
 
+        /// <summary>
+        /// Encodes <see cref="bool"/>.
+        /// </summary>
         public void Boolean() => WriteTypeCode(SignatureTypeCode.Boolean);
+        /// <summary>
+        /// Encodes <see cref="char"/>.
+        /// </summary>
         public void Char() => WriteTypeCode(SignatureTypeCode.Char);
+        /// <summary>
+        /// Encodes <see cref="sbyte"/>.
+        /// </summary>
         public void SByte() => WriteTypeCode(SignatureTypeCode.SByte);
+        /// <summary>
+        /// Encodes <see cref="byte"/>.
+        /// </summary>
         public void Byte() => WriteTypeCode(SignatureTypeCode.Byte);
+        /// <summary>
+        /// Encodes <see cref="short"/>.
+        /// </summary>
         public void Int16() => WriteTypeCode(SignatureTypeCode.Int16);
+        /// <summary>
+        /// Encodes <see cref="ushort"/>.
+        /// </summary>
         public void UInt16() => WriteTypeCode(SignatureTypeCode.UInt16);
+        /// <summary>
+        /// Encodes <see cref="int"/>.
+        /// </summary>
         public void Int32() => WriteTypeCode(SignatureTypeCode.Int32);
+        /// <summary>
+        /// Encodes <see cref="uint"/>.
+        /// </summary>
         public void UInt32() => WriteTypeCode(SignatureTypeCode.UInt32);
+        /// <summary>
+        /// Encodes <see cref="long"/>.
+        /// </summary>
         public void Int64() => WriteTypeCode(SignatureTypeCode.Int64);
+        /// <summary>
+        /// Encodes <see cref="ulong"/>.
+        /// </summary>
         public void UInt64() => WriteTypeCode(SignatureTypeCode.UInt64);
+        /// <summary>
+        /// Encodes <see cref="float"/>.
+        /// </summary>
         public void Single() => WriteTypeCode(SignatureTypeCode.Single);
+        /// <summary>
+        /// Encodes <see cref="double"/>.
+        /// </summary>
         public void Double() => WriteTypeCode(SignatureTypeCode.Double);
+        /// <summary>
+        /// Encodes <see cref="string"/>.
+        /// </summary>
         public void String() => WriteTypeCode(SignatureTypeCode.String);
+        /// <summary>
+        /// Encodes <see cref="System.TypedReference"/>.
+        /// </summary>
+        public void TypedReference() => WriteTypeCode(SignatureTypeCode.TypedReference);
+        /// <summary>
+        /// Encodes <see cref="System.IntPtr"/>.
+        /// </summary>
         public void IntPtr() => WriteTypeCode(SignatureTypeCode.IntPtr);
+        /// <summary>
+        /// Encodes <see cref="System.UIntPtr"/>.
+        /// </summary>
         public void UIntPtr() => WriteTypeCode(SignatureTypeCode.UIntPtr);
+        /// <summary>
+        /// Encodes <see cref="object"/>.
+        /// </summary>
         public void Object() => WriteTypeCode(SignatureTypeCode.Object);
 
         /// <summary>
-        /// Writes primitive type code.
+        /// Encodes a primitive type.
         /// </summary>
-        /// <param name="type">Any primitive type code except for <see cref="PrimitiveTypeCode.TypedReference"/> and <see cref="PrimitiveTypeCode.Void"/>.</param>
+        /// <param name="type">Any primitive type code except for <see cref="PrimitiveTypeCode.Void"/>.</param>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="type"/> is not valid in this context.</exception>
         public void PrimitiveType(PrimitiveTypeCode type)
         {
@@ -942,6 +1004,7 @@ namespace System.Reflection.Metadata.Ecma335
                 case PrimitiveTypeCode.UInt64:
                 case PrimitiveTypeCode.Single:
                 case PrimitiveTypeCode.Double:
+                case PrimitiveTypeCode.TypedReference:
                 case PrimitiveTypeCode.IntPtr:
                 case PrimitiveTypeCode.UIntPtr:
                 case PrimitiveTypeCode.String:
@@ -949,7 +1012,6 @@ namespace System.Reflection.Metadata.Ecma335
                     Builder.WriteByte((byte)type);
                     return;
 
-                case PrimitiveTypeCode.TypedReference:
                 case PrimitiveTypeCode.Void:
                 default:
                     Throw.ArgumentOutOfRange(nameof(type));
@@ -958,7 +1020,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Encodes an array type.
+        /// Starts encoding an array type.
         /// Returns a pair of encoders that must be used in the order they appear in the parameter list.
         /// </summary>
         /// <param name="elementType">Use first, to encode the type of the element.</param>
@@ -1011,7 +1073,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Starts a function pointer signature.
+        /// Starts encoding a function pointer signature.
         /// </summary>
         /// <param name="convention">Calling convention.</param>
         /// <param name="attributes">Function pointer attributes.</param>
@@ -1051,7 +1113,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Starts a generic instantiation signature.
+        /// Starts encoding a generic instantiation signature.
         /// </summary>
         /// <param name="genericType"><see cref="TypeDefinitionHandle"/> or <see cref="TypeReferenceHandle"/>.</param>
         /// <param name="genericArgumentCount">Generic argument count.</param>
@@ -1109,7 +1171,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Starts pointer signature.
+        /// Starts encoding a pointer signature.
         /// </summary>
         public SignatureTypeEncoder Pointer()
         {
@@ -1127,7 +1189,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Starts SZ array (vector) signature.
+        /// Starts encoding an SZ array (vector) signature.
         /// </summary>
         public SignatureTypeEncoder SZArray()
         {
@@ -1136,7 +1198,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Starts a signature of a type with custom modifiers.
+        /// Starts encoding a signature of a type with custom modifiers.
         /// </summary>
         public CustomModifiersEncoder CustomModifiers()
         {

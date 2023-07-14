@@ -510,7 +510,7 @@ namespace System.DirectoryServices
             if (_adsObject == null)
             {
                 string pathToUse = Path;
-                if (pathToUse == null || pathToUse.Length == 0)
+                if (string.IsNullOrEmpty(pathToUse))
                 {
                     // get the default naming context. This should be the default root for the search.
                     DirectoryEntry rootDSE = new DirectoryEntry("LDAP://RootDSE", true, null, null, AuthenticationTypes.Secure);

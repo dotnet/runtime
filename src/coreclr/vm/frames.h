@@ -2233,7 +2233,7 @@ public:
         // So we need to pretent that unresolved default interface methods are like any other interface
         // methods and don't have an instantiation argument.
         //
-        // See code:CEEInfo::getMethodSigInternal
+        // See code:getMethodSigInternal
         //
         assert(GetFunction()->GetMethodTable()->IsInterface());
         return TRUE;

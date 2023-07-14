@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.Json.Serialization.Tests;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.Tests
@@ -255,6 +254,60 @@ namespace System.Text.Json.SourceGeneration.Tests
 
             obj = JsonSerializer.Deserialize<ClassWithCustomConverterProperty>(ExpectedJson);
             Assert.Equal(42, obj.Property.Value);
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomConverterNullableProperty()
+        {
+            const string Json = "{\"TimeSpan\":42}";
+
+            var obj = new ClassWithCustomConverterNullableProperty
+            {
+                TimeSpan = TimeSpan.FromSeconds(42)
+            };
+
+            // Types with properties in custom converters do not support fast path serialization.
+            Assert.True(DefaultContext.ClassWithCustomConverterNullableProperty.SerializeHandler is null);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterNullableProperty));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterNullableProperty);
+                Assert.Equal(Json, json);
+
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterNullableProperty);
+                Assert.Equal(42, obj.TimeSpan.Value.TotalSeconds);
+            }
+        }
+
+        [Fact]
+        public virtual void RoundTripWithCustomConverterFactoryNullableProperty()
+        {
+            const string Json = "{\"MyEnum\":\"Two\"}";
+
+            var obj = new ClassWithCustomConverterFactoryNullableProperty
+            {
+                MyEnum = SourceGenSampleEnum.Two
+            };
+
+            // Types with properties in custom converters do not support fast path serialization.
+            Assert.True(DefaultContext.ClassWithCustomConverterFactoryNullableProperty.SerializeHandler is null);
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryNullableProperty));
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(obj, DefaultContext.ClassWithCustomConverterFactoryNullableProperty);
+                Assert.Equal(Json, json);
+
+                obj = JsonSerializer.Deserialize(Json, DefaultContext.ClassWithCustomConverterFactoryNullableProperty);
+                Assert.Equal(SourceGenSampleEnum.Two, obj.MyEnum.Value);
+            }
         }
 
         [Fact]
@@ -1042,6 +1095,19 @@ namespace System.Text.Json.SourceGeneration.Tests
                 PolymorphicClass.DerivedClass derivedResult = Assert.IsType<PolymorphicClass.DerivedClass>(result);
                 Assert.Equal(42, derivedResult.Number);
                 Assert.True(derivedResult.Boolean);
+            }
+        }
+
+        [Fact]
+        public void NumberHandlingHonoredOnPoco()
+        {
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
+            }
+            else
+            {
+                JsonTestHelper.AssertJsonEqual(@"{""Id"":""0""}", JsonSerializer.Serialize(new PocoWithNumberHandlingAttr(), DefaultContext.PocoWithNumberHandlingAttr));
             }
         }
     }

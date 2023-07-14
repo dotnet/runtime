@@ -64,7 +64,6 @@
     <Compile Include="System\DirectoryServices\AccountManagement\ExtensionCache.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\ExtensionHelper.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AdvancedFilters.cs" />
-    <Compile Include="System\DirectoryServices\AccountManagement\GlobalSuppressions.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\QBEMatchType.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\SidList.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\ADDNConstraintLinkedAttrSet.cs" />

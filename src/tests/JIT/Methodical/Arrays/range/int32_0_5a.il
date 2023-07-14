@@ -20,7 +20,7 @@
            
   
 }
-.assembly 'int32_0_5a'
+.assembly ASSEMBLY_NAME
 {
 }
 .assembly extern xunit.core {}

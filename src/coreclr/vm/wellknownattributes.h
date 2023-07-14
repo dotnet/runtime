@@ -37,6 +37,7 @@ enum class WellKnownAttribute : DWORD
     PreserveBaseOverridesAttribute,
     ObjectiveCTrackedTypeAttribute,
     InlineArrayAttribute,
+    UnsafeAccessorAttribute,
 
     CountOfWellKnownAttributes
 };
@@ -107,6 +108,8 @@ inline const char *GetWellKnownAttributeName(WellKnownAttribute attribute)
             return "System.Runtime.InteropServices.ObjectiveC.ObjectiveCTrackedTypeAttribute";
         case WellKnownAttribute::InlineArrayAttribute:
             return "System.Runtime.CompilerServices.InlineArrayAttribute";
+        case WellKnownAttribute::UnsafeAccessorAttribute:
+            return "System.Runtime.CompilerServices.UnsafeAccessorAttribute";
         case WellKnownAttribute::CountOfWellKnownAttributes:
         default:
             break; // Silence compiler warnings

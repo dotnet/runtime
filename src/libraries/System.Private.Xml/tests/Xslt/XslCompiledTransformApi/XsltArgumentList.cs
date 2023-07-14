@@ -1051,11 +1051,11 @@ namespace System.Xml.XslCompiledTransformApiTests
             {
                 m_xsltArg.AddParam(szEmpty, szEmpty, "Test1");
             }
-            catch (System.ArgumentNullException)
+            catch (System.ArgumentException)
             {
                 return;
             }
-            _output.WriteLine("System.ArgumentNullException not thrown for param name empty string");
+            _output.WriteLine("System.ArgumentException not thrown for param name empty string");
             Assert.True(false);
         }
 

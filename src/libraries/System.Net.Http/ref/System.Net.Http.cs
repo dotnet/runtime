@@ -135,6 +135,8 @@ namespace System.Net.Http
         public long MaxRequestContentBufferSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
@@ -277,8 +279,10 @@ namespace System.Net.Http
         public string Key { get { throw null; } }
     }
 
-    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>
+    public sealed class HttpRequestOptions : System.Collections.Generic.IDictionary<string, object?>, System.Collections.Generic.IReadOnlyDictionary<string, object?>
     {
+        bool System.Collections.Generic.IReadOnlyDictionary<string, object?>.ContainsKey(string key) { throw null; }
+        int System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, object?>>.Count { get { throw null; } }
         void System.Collections.Generic.IDictionary<string, object?>.Add(string key, object? value) { throw null; }
         System.Collections.Generic.ICollection<string> System.Collections.Generic.IDictionary<string, object?>.Keys { get { throw null; } }
         System.Collections.Generic.ICollection<object?> System.Collections.Generic.IDictionary<string, object?>.Values { get { throw null; } }
@@ -297,6 +301,10 @@ namespace System.Net.Http
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { throw null; }
         public bool TryGetValue<TValue>(HttpRequestOptionsKey<TValue> key, [MaybeNullWhen(false)] out TValue value) { throw null; }
         public void Set<TValue>(HttpRequestOptionsKey<TValue> key, TValue value) { throw null; }
+        bool System.Collections.Generic.IReadOnlyDictionary<string, object?>.TryGetValue(string key, out object? value) { throw null; }
+        object? System.Collections.Generic.IReadOnlyDictionary<string, object?>.this[string key] { get { throw null; } }
+        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<string, object?>.Keys { get { throw null; } }
+        System.Collections.Generic.IEnumerable<object?> System.Collections.Generic.IReadOnlyDictionary<string, object?>.Values { get { throw null; } }
     }
 
     public partial class HttpResponseMessage : System.IDisposable
@@ -391,6 +399,8 @@ namespace System.Net.Http
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionIdleTimeout { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
         public bool PreAuthenticate { get { throw null; } set { } }
@@ -893,5 +903,17 @@ namespace System.Net.Http.Headers
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.WarningHeaderValue? parsedValue) { throw null; }
+    }
+}
+namespace System.Net.Http.Metrics
+{
+    public sealed class HttpMetricsEnrichmentContext
+    {
+        internal HttpMetricsEnrichmentContext() { }
+        public System.Net.Http.HttpRequestMessage Request { get { throw null; } }
+        public System.Net.Http.HttpResponseMessage? Response { get { throw null; } }
+        public System.Exception? Exception { get { throw null; } }
+        public void AddCustomTag(string name, object? value) { throw null; }
+        public static void AddCallback(System.Net.Http.HttpRequestMessage request, System.Action<System.Net.Http.Metrics.HttpMetricsEnrichmentContext> callback) { throw null; }
     }
 }

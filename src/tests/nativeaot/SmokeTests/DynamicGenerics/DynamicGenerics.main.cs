@@ -144,6 +144,7 @@ new CoreFXTestLibrary.Internal.TestInfo("PartialUniversalGen.Test.TestCornerCase
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testIntMDArrayWithPointerLikeValues", () => global::B282745.testIntMDArrayWithPointerLikeValues(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testLongMDArrayWithPointerLikeValues", () => global::B282745.testLongMDArrayWithPointerLikeValues(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfKnownStructType", () => global::B282745.testMDArrayWithPointerLikeValuesOfKnownStructType(), null),
+new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType", () => global::B282745.testMDArrayWithPointerLikeValuesOfKnownStructTypeLargerType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructReferenceType", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructReferenceType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType", () => global::B282745.testMDArrayWithPointerLikeValuesOfUnknownStructPrimitiveType(), null),
 new CoreFXTestLibrary.Internal.TestInfo("B282745.testMDArrayWith3Dimensions", () => global::B282745.testMDArrayWith3Dimensions(), null),

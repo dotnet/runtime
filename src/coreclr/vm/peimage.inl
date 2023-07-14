@@ -313,7 +313,7 @@ inline PTR_PEImage PEImage::FindByPath(LPCWSTR pPath, BOOL isInBundle /* = TRUE 
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
     DWORD dwHash=path.Hash();
 #else
-    DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) wcslen(pPath));
+    DWORD dwHash = CaseHashHelper(pPath, (COUNT_T) u16_strlen(pPath));
 #endif
     return (PEImage *) s_Images->LookupValue(dwHash, &locator);
 }

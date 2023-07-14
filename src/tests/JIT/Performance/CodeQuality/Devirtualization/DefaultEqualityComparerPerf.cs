@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Performance tests for optimizations related to EqualityComparer<T>.Default
 
@@ -109,7 +110,8 @@ namespace Devirtualization
             BLUE = 2
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             var valueTupleFixture = new EqualityComparerFixture<ValueTuple<byte, E, int>>();
             var v0 = new ValueTuple<byte, E, int>(3, E.RED, 11);

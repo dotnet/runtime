@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
@@ -67,6 +68,15 @@ internal sealed unsafe partial class MsQuicApi
     {
         bool loaded = false;
         IntPtr msQuicHandle;
+
+
+        // MsQuic is using DualMode sockets and that will fail even for IPv4 if AF_INET6 is not available.
+        if (!Socket.OSSupportsIPv6)
+        {
+            NetEventSource.Info(null, "OS does not support dual mode sockets");
+            return;
+        }
+
         if (OperatingSystem.IsWindows())
         {
             // Windows ships msquic in the assembly directory.
@@ -130,7 +140,7 @@ internal sealed unsafe partial class MsQuicApi
             }
             string? gitHash = Marshal.PtrToStringUTF8((IntPtr)libGitHash);
 
-            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} version={version} commit={gitHash}";
+            MsQuicLibraryVersion = $"{Interop.Libraries.MsQuic} {version} ({gitHash})";
 
             if (version < s_minMsQuicVersion)
             {
@@ -143,7 +153,7 @@ internal sealed unsafe partial class MsQuicApi
 
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(null, $"Loaded MsQuic library version '{version}', commit '{gitHash}'.");
+                NetEventSource.Info(null, $"Loaded MsQuic library '{MsQuicLibraryVersion}'.");
             }
 
             // Assume SChannel is being used on windows and query for the actual provider from the library if querying is supported

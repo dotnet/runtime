@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class Program
 {
@@ -10,7 +11,8 @@ public class Program
     public static int s_58;
     public static uint s_66;
     public static byte[] s_126 = new byte[] { 0 };
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         CollectibleALC alc = new CollectibleALC();
         System.Reflection.Assembly asm = alc.LoadFromAssemblyPath(System.Reflection.Assembly.GetExecutingAssembly().Location);
@@ -33,7 +35,7 @@ public class Program
         return s_rt.Count;
     }
 
-    public static void M59(byte arg2, bool arg3, ref uint arg4)
+    internal static void M59(byte arg2, bool arg3, ref uint arg4)
     {
         for (int var0 = 0; var0 < 2; var0++)
         {

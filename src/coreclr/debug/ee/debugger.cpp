@@ -2529,7 +2529,7 @@ void Debugger::JITComplete(NativeCodeVersion nativeCodeVersion, TADDR newAddress
             goto Exit;
         }
 
-        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:0x%p (%s::%s), address:%p. Created dji:%p\n",
+        LOG((LF_CORDB, LL_INFO1000000, "D::JITComplete: md:%p (%s::%s), address:%p. Created dji:%p\n",
             fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName, newAddress, dji));
 
         // Bind any IL patches to the newly jitted native code.
@@ -3070,7 +3070,7 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
 
     if (dji && dji->m_addrOfCode)
     {
-        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: simple case: CodeRegionInfo* 0x%p\n", &dji->m_codeRegionInfo));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: simple case: CodeRegionInfo* %p\n", &dji->m_codeRegionInfo));
         return dji->m_codeRegionInfo;
     }
     else
@@ -3096,7 +3096,7 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
                      (addr == dac_cast<PTR_CORDB_ADDRESS_TYPE>(g_pEEInterface->GetFunctionAddress(md))));
         }
 
-        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: Initializing CodeRegionInfo from 0x%p, md=0x%p\n", addr, md));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: Initializing CodeRegionInfo from %p, md=%p\n", addr, md));
         if (addr)
         {
             PCODE pCode = PINSTRToPCODE(dac_cast<TADDR>(addr));
@@ -3130,7 +3130,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
 
     if (dmi != NULL)
     {
-        LOG((LF_CORDB,LL_INFO10000,"De::NGB: Got dmi 0x%x\n",dmi));
+        LOG((LF_CORDB,LL_INFO10000,"De::NGB: Got dmi %p\n",dmi));
 
 #if defined(FEATURE_ISYM_READER)
         // Note: we need to make sure to enable preemptive GC here just in case we block in the symbol reader.
@@ -3161,7 +3161,7 @@ void Debugger::getBoundariesHelper(MethodDesc * md,
 
 
                 LOG((LF_CORDB, LL_INFO100000,
-                     "D::NGB: Reader seq pt count is %d\n", n));
+                     "D::NGB: Reader seq pt count is %u\n", n));
 
                 ULONG32 *p;
 
@@ -10442,6 +10442,60 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
             break;
         }
 
+    case DB_IPCE_DISABLE_OPTS:
+        {
+            Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
+            mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
+            _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
+
+            HRESULT hr = E_INVALIDARG;
+            EX_TRY
+            {
+                hr = DeoptimizeMethod(pModule, methodDef);
+            }
+            EX_CATCH_HRESULT(hr);
+            
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_DISABLE_OPTS_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
+
+            pIPCResult->hr = hr;
+
+            m_pRCThread->SendIPCReply();
+        }
+        break;
+
+    case DB_IPCE_IS_OPTS_DISABLED:
+        {
+            Module *pModule = pEvent->DisableOptData.pModule.GetRawPtr();
+            mdToken methodDef = pEvent->DisableOptData.funcMetadataToken;
+            _ASSERTE(TypeFromToken(methodDef) == mdtMethodDef);
+
+            HRESULT hr = E_INVALIDARG;
+            BOOL deoptimized = FALSE; 
+            EX_TRY
+            {
+                hr = IsMethodDeoptimized(pModule, methodDef, &deoptimized);
+            }
+            EX_CATCH_HRESULT(hr);
+            
+            DebuggerIPCEvent * pIPCResult = m_pRCThread->GetIPCEventReceiveBuffer();
+
+            InitIPCEvent(pIPCResult,
+                         DB_IPCE_IS_OPTS_DISABLED_RESULT,
+                         g_pEEInterface->GetThread(),
+                         pEvent->vmAppDomain);
+
+            pIPCResult->IsOptsDisabledData.value = deoptimized;
+            pIPCResult->hr = hr;
+
+            m_pRCThread->SendIPCReply();
+        }
+        break;
+
     case DB_IPCE_BREAKPOINT_ADD:
         {
 
@@ -12211,6 +12265,151 @@ HRESULT Debugger::ReleaseRemoteBuffer(void *pBuffer, bool removeFromBlobList)
     return S_OK;
 }
 
+#ifndef DACCESS_COMPILE
+HRESULT Debugger::DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        CAN_TAKE_LOCK;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(!CodeVersionManager::IsLockOwnedByCurrentThread());
+    HRESULT hr = S_OK;
+    ILCodeVersion ilCodeVersion;
+    CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
+
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        if (FAILED(hr = pCodeVersionManager->AddILCodeVersion(pModule, methodDef, &ilCodeVersion, TRUE)))
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "TieredCompilationManager::DeOptimizeMethodHelper Module=0x%x Method=0x%x, AddILCodeVersion returned hr 0x%x\n",
+                pModule, methodDef,
+                hr));
+            return hr;
+        }
+
+        // We are using the profiler ReJIT infrastructure to trigger a new jit. We don't want to modify the IL or
+        // call back in to anything so set it all here to match the original IL and debug codegen flags
+        ilCodeVersion.SetIL(ILCodeVersion(pModule, methodDef).GetIL());
+        ilCodeVersion.SetJitFlags(COR_PRF_CODEGEN_DISABLE_ALL_OPTIMIZATIONS | COR_PRF_CODEGEN_DEBUG_INFO);
+        ilCodeVersion.SetRejitState(ILCodeVersion::kStateActive);
+        ilCodeVersion.SetEnableReJITCallback(false);
+    }
+
+    _ASSERTE(!ilCodeVersion.IsNull());
+    {
+        if (FAILED(hr = pCodeVersionManager->SetActiveILCodeVersions(&ilCodeVersion, 1, NULL)))
+        {
+            LOG((LF_TIEREDCOMPILATION, LL_INFO100, "TieredCompilationManager::DeOptimizeMethodHelper Module=0x%x Method=0x%x, SetActiveILCodeVersions returned hr 0x%x\n",
+                pModule, methodDef,
+                hr));
+            return hr;
+        }
+    }
+
+    return hr;
+}
+
+HRESULT Debugger::DeoptimizeMethod(Module* pModule, mdMethodDef methodDef)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    // First deoptimize the method itself
+    HRESULT hr = DeoptimizeMethodHelper(pModule, methodDef);
+    if (FAILED(hr))
+    {
+        LOG((LF_TIEREDCOMPILATION, LL_INFO100, "TieredCompilationManager::DeOptimizeMethod Module=0x%x Method=0x%x,, initial ReJIT returned hr 0x%x, aborting\n",
+            pModule, methodDef, hr));
+        return hr;
+    }
+
+    // Now deoptimize anything that has inlined it in a R2R method
+    AppDomain::AssemblyIterator domainAssemblyIterator = SystemDomain::System()->DefaultDomain()->IterateAssembliesEx((AssemblyIterationFlags) (kIncludeLoaded | kIncludeExecution));
+    CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
+    NativeImageInliningIterator inlinerIter;
+    while (domainAssemblyIterator.Next(pDomainAssembly.This()))
+    {
+        Module *pCandidateModule = pDomainAssembly->GetModule();
+        if (pCandidateModule->HasReadyToRunInlineTrackingMap())
+        {
+            inlinerIter.Reset(pCandidateModule, MethodInModule(pModule, methodDef));
+
+            while (inlinerIter.Next())
+            {
+                MethodInModule inliner = inlinerIter.GetMethod();
+                _ASSERTE(TypeFromToken(inliner.m_methodDef) == mdtMethodDef);
+                DeoptimizeMethodHelper(inliner.m_module, inliner.m_methodDef);
+            }
+        }
+    }
+
+    // Next any JIT methods
+    MethodDesc *pMethodDesc = pModule->LookupMethodDef(methodDef);
+    if (pMethodDesc != NULL && pModule->HasJitInlineTrackingMap())
+    {
+        InlineSArray<MethodDesc *, 10> inliners;
+        auto lambda = [&inliners](MethodDesc *inliner, MethodDesc *inlinee)
+        {
+            _ASSERTE(!inliner->IsNoMetadata());
+
+            if (inliner->IsIL())
+            {
+                inliners.Append(inliner);
+            }
+         
+            // Keep going
+            return true;
+        };
+
+        JITInlineTrackingMap *pMap = pModule->GetJitInlineTrackingMap();
+        pMap->VisitInliners(pMethodDesc, lambda);
+        
+        for (auto it = inliners.Begin(); it != inliners.End(); ++it)
+        {
+            Module *inlinerModule = (*it)->GetModule();
+            mdMethodDef inlinerMethodDef = (*it)->GetMemberDef();
+            _ASSERTE(TypeFromToken(inlinerMethodDef) == mdtMethodDef);
+            DeoptimizeMethodHelper(inlinerModule, inlinerMethodDef);
+        }
+    }
+
+    return hr;
+}
+#endif //DACCESS_COMPILE
+
+HRESULT Debugger::IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        CAN_TAKE_LOCK;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+
+    if (pModule == NULL || pResult == NULL || TypeFromToken(methodDef) != mdtMethodDef)
+    {
+        return E_INVALIDARG;
+    }
+
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
+        ILCodeVersion activeILVersion = pCodeVersionManager->GetActiveILCodeVersion(pModule, methodDef);
+        *pResult = activeILVersion.IsDeoptimized(); 
+    }
+
+    return S_OK;
+}
+
 //
 // UnrecoverableError causes the Left Side to enter a state where no more
 // debugging can occur and we leave around enough information for the
@@ -13922,7 +14121,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     }
     else
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "AddMethodInfo being called in D:IAHOL\n"));
+        LOG((LF_CORDB, LL_EVERYTHING, "D:IAHOL: AddMethodInfo called\n"));
         hr = m_pMethodInfos->AddMethodInfo(dmi->m_module,
                                          dmi->m_token,
                                          dmi);

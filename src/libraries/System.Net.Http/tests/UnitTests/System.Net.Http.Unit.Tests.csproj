@@ -285,6 +285,7 @@
     <Compile Include="Headers\HttpHeadersTest.cs" />
     <Compile Include="Headers\HttpHeaderValueCollectionTest.cs" />
     <Compile Include="Headers\HttpRequestHeadersTest.cs" />
+    <Compile Include="Headers\HttpRequestOptionsTest.cs" />
     <Compile Include="Headers\HttpResponseHeadersTest.cs" />
     <Compile Include="Headers\Int32NumberHeaderParserTest.cs" />
     <Compile Include="Headers\Int64NumberHeaderParserTest.cs" />

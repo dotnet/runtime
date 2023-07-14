@@ -15,7 +15,7 @@
 /*****************************************************************************/
 
 // clang-format off
-enum instruction : unsigned
+enum instruction : uint32_t
 {
 #if defined(TARGET_XARCH)
     #define INST0(id, nm, um, mr,                 tt, flags) INS_##id,
@@ -146,8 +146,7 @@ enum insFlags : uint64_t
     // Avx
     INS_Flags_IsDstDstSrcAVXInstruction = 1ULL << 26,
     INS_Flags_IsDstSrcSrcAVXInstruction = 1ULL << 27,
-    INS_Flags_IsMskSrcSrcEvexInstruction = 1ULL << 28,
-    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction | INS_Flags_IsMskSrcSrcEvexInstruction),
+    INS_Flags_Is3OperandInstructionMask = (INS_Flags_IsDstDstSrcAVXInstruction | INS_Flags_IsDstSrcSrcAVXInstruction),
 
     // w and s bits
     INS_FLAGS_Has_Wbit = 1ULL << 29,
@@ -180,8 +179,18 @@ enum insFlags : uint64_t
 
     KInstruction = 1ULL << 41,
 
+    // EVEX feature: embedded broadcast
+    INS_Flags_EmbeddedBroadcastSupported = 1ULL << 42,
+
     //  TODO-Cleanup:  Remove this flag and its usage from TARGET_XARCH
     INS_FLAGS_DONT_CARE = 0x00ULL,
+};
+
+enum insOpts: unsigned
+{
+    INS_OPTS_NONE,
+
+    INS_OPTS_EVEX_b
 };
 
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -350,7 +359,7 @@ enum insOpts : unsigned
     INS_OPTS_JALR,   // see ::emitIns_J_R().
     INS_OPTS_J,      // see ::emitIns_J().
     INS_OPTS_J_cond, // see ::emitIns_J_cond_la().
-    INS_OPTS_I,      // see ::emitIns_I_la().
+    INS_OPTS_I,      // see ::emitLoadImmediate().
     INS_OPTS_C,      // see ::emitIns_Call().
     INS_OPTS_RELOC,  // see ::emitIns_R_AI().
 };
@@ -366,24 +375,24 @@ enum insBarrier : unsigned
 // Represents tupletype attribute of instruction.
 // This is used in determining factor N while calculating compressed displacement in EVEX encoding
 // Reference: Section 2.6.5 in Intel 64 and ia-32 architectures software developer's manual volume 2.
-enum insTupleType : uint32_t
+enum insTupleType : uint16_t
 {
-    INS_TT_NONE             = 0x00000,
-    INS_TT_FULL             = 0x00001,
-    INS_TT_HALF             = 0x00002,
-    INS_TT_IS_BROADCAST     = 0x00003,
-    INS_TT_FULL_MEM         = 0x00010,
-    INS_TT_TUPLE1_SCALAR    = 0x00020,
-    INS_TT_TUPLE1_FIXED     = 0x00040,
-    INS_TT_TUPLE2           = 0x00080,
-    INS_TT_TUPLE4           = 0x00100,
-    INS_TT_TUPLE8           = 0x00200,
-    INS_TT_HALF_MEM         = 0x00400,
-    INS_TT_QUARTER_MEM      = 0x00800,
-    INS_TT_EIGHTH_MEM       = 0x01000,
-    INS_TT_MEM128           = 0x02000,
-    INS_TT_MOVDDUP          = 0x04000,
-    INS_TT_IS_NON_BROADCAST = 0x7FFFC
+    INS_TT_NONE             = 0x0000,
+    INS_TT_FULL             = 0x0001,
+    INS_TT_HALF             = 0x0002,
+    INS_TT_IS_BROADCAST     = static_cast<uint16_t>(INS_TT_FULL | INS_TT_HALF),
+    INS_TT_FULL_MEM         = 0x0010,
+    INS_TT_TUPLE1_SCALAR    = 0x0020,
+    INS_TT_TUPLE1_FIXED     = 0x0040,
+    INS_TT_TUPLE2           = 0x0080,
+    INS_TT_TUPLE4           = 0x0100,
+    INS_TT_TUPLE8           = 0x0200,
+    INS_TT_HALF_MEM         = 0x0400,
+    INS_TT_QUARTER_MEM      = 0x0800,
+    INS_TT_EIGHTH_MEM       = 0x1000,
+    INS_TT_MEM128           = 0x2000,
+    INS_TT_MOVDDUP          = 0x4000,
+    INS_TT_IS_NON_BROADCAST = static_cast<uint16_t>(~INS_TT_IS_BROADCAST),
 };
 #endif
 

@@ -602,7 +602,7 @@ class MetaSig
 
         //------------------------------------------------------------------------
         // Returns # of arguments. Does not count the return value.
-        // Does not count the "this" argument (which is not reflected om the
+        // Does not count the "this" argument (which is not reflected on the
         // sig.) 64-bit arguments are counted as one argument.
         //------------------------------------------------------------------------
         UINT NumFixedArgs()
@@ -759,8 +759,8 @@ class MetaSig
         }
 
         //------------------------------------------------------------------
-        // Like NextArg, but return only normalized type (enums flattned to
-        // underlying type ...
+        // Like NextArg, but return only normalized type (enums flattened to
+        // the underlying type ...
         //------------------------------------------------------------------
         CorElementType
         NextArgNormalized(TypeHandle * pthValueType = NULL)
@@ -944,6 +944,26 @@ class MetaSig
         //------------------------------------------------------------------
         CorElementType GetByRefType(TypeHandle* pTy) const;
 
+        // Struct used to capture in/out state during the comparison
+        // of element types.
+        struct CompareState
+        {
+            // List of tokens that are currently being compared.
+            // See TokenPairList for more use details.
+            TokenPairList*  Visited;
+
+            // Boolean indicating if custom modifiers should
+            // be compared.
+            bool IgnoreCustomModifiers;
+
+            CompareState() = default;
+
+            CompareState(TokenPairList* list)
+                : Visited{ list }
+                , IgnoreCustomModifiers{ false }
+            { }
+        };
+
         //------------------------------------------------------------------
         // Compare types in two signatures, first applying
         // - optional substitutions pSubst1 and pSubst2
@@ -958,7 +978,7 @@ class MetaSig
             ModuleBase *         pModule2,
             const Substitution * pSubst1,
             const Substitution * pSubst2,
-            TokenPairList *      pVisited = NULL);
+            CompareState *       state = NULL);
 
 
 

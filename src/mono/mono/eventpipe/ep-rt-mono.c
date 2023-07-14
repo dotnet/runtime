@@ -4493,6 +4493,52 @@ ep_rt_write_event_threadpool_io_pack (
 		NULL) == 0 ? true : false;
 }
 
+bool
+ep_rt_write_event_contention_lock_created (
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint16_t clr_instance_id)
+{
+	return FireEtwContentionLockCreated (
+		(const void *)lock_id,
+		(const void *)associated_object_id,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_contention_start (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	intptr_t lock_id,
+	intptr_t associated_object_id,
+	uint64_t lock_owner_thread_id)
+{
+	return FireEtwContentionStart_V2 (
+		contention_flags,
+		clr_instance_id,
+		(const void *)lock_id,
+		(const void *)associated_object_id,
+		lock_owner_thread_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_contention_stop (
+	uint8_t contention_flags,
+	uint16_t clr_instance_id,
+	double duration_ns)
+{
+	return FireEtwContentionStop_V1 (
+		contention_flags,
+		clr_instance_id,
+		duration_ns,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
 static
 void
 runtime_profiler_jit_begin (

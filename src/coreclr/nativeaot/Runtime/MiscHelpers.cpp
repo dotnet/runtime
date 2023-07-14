@@ -38,6 +38,7 @@
 #include "GCMemoryHelpers.h"
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
+#include "RhConfig.h"
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -118,16 +119,6 @@ COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromPointer, (PTR_VOID pPointerVal))
         return (HANDLE)pCodeManager->GetOsModuleHandle();
 
     return NULL;
-}
-
-COOP_PINVOKE_HELPER(HANDLE, RhGetOSModuleFromEEType, (MethodTable * pEEType))
-{
-    return pEEType->GetTypeManagerPtr()->AsTypeManager()->GetOsModuleHandle();
-}
-
-COOP_PINVOKE_HELPER(TypeManagerHandle, RhGetModuleFromEEType, (MethodTable * pEEType))
-{
-    return *pEEType->GetTypeManagerPtr();
 }
 
 COOP_PINVOKE_HELPER(FC_BOOL_RET, RhFindBlob, (TypeManagerHandle *pTypeManagerHandle, uint32_t blobId, uint8_t ** ppbBlob, uint32_t * pcbBlob))
@@ -349,18 +340,6 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCodeTarget, (uint8_t * pCodeOrg))
     return pCodeOrg;
 }
 
-// Get the universal transition thunk. If the universal transition stub is called through
-// the normal PE static linkage model, a jump stub would be used which may interfere with
-// the custom calling convention of the universal transition thunk. So instead, a special
-// api just for getting the thunk address is needed.
-// TODO: On ARM this may still result in a jump stub that trashes R12. Determine if anything
-//       needs to be done about that when we implement the stub for ARM.
-extern "C" void RhpUniversalTransition();
-COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
-{
-    return (void*)RhpUniversalTransition;
-}
-
 extern CrstStatic g_ThunkPoolLock;
 
 EXTERN_C NATIVEAOT_API void __cdecl RhpAcquireThunkPoolLock()
@@ -420,6 +399,13 @@ COOP_PINVOKE_HELPER(void, RhSetThreadExitCallback, (void * pCallback))
 COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 {
     return PalGetProcessCpuCount();
+}
+
+COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** pResultValues))
+{
+    *pResultKeys = g_pRhConfig->GetKnobNames();
+    *pResultValues = g_pRhConfig->GetKnobValues();
+    return g_pRhConfig->GetKnobCount();
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)

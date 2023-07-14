@@ -436,6 +436,7 @@ static void InitializeVariableMaxAndTopPointers(char* symbolVersion)
 #if defined(TARGET_OSX) || defined(TARGET_ANDROID)
     // OSX and Android always run against ICU version which has ucol_setMaxVariable.
     // We shouldn't come here.
+    (void)symbolVersion;
     assert(false);
 #elif defined(TARGET_WINDOWS)
     char symbolName[SYMBOL_NAME_SIZE];

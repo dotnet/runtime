@@ -23,7 +23,6 @@ set(COMMON_RUNTIME_SOURCES
     TypeManager.cpp
     ObjectLayout.cpp
     portable.cpp
-    profheapwalkhelper.cpp
     RestrictedCallouts.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
@@ -111,8 +110,6 @@ if (WIN32)
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
-    eventtrace.cpp
-    rheventtrace.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
@@ -196,7 +193,6 @@ endif (CLR_CMAKE_TARGET_ARCH_AMD64 AND CLR_CMAKE_TARGET_WIN32)
 
 list(APPEND RUNTIME_SOURCES_ARCH_ASM
   ${ARCH_SOURCES_DIR}/AllocFast.${ASM_SUFFIX}
-  ${ARCH_SOURCES_DIR}/CallDescrWorker.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/ExceptionHandling.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/GcProbe.${ASM_SUFFIX}
   ${ARCH_SOURCES_DIR}/Interlocked.${ASM_SUFFIX}
@@ -214,10 +210,15 @@ include_directories(${ARCH_SOURCES_DIR})
 
 if(NOT CLR_CMAKE_TARGET_ARCH_WASM)
   set(FEATURE_PERFTRACING 1)
+  set(FEATURE_EVENT_TRACE 1)
 endif()
 
 if(FEATURE_PERFTRACING)
   add_definitions(-DFEATURE_PERFTRACING)
+endif()
+
+if(FEATURE_EVENT_TRACE)
+  add_definitions(-DFEATURE_EVENT_TRACE)
 endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)
@@ -238,8 +239,8 @@ add_definitions(-D_LIB)
 # add_definitions(-DSTRESS_HEAP)
 
 if(WIN32)
+  set(FEATURE_ETW 1)
   add_definitions(-DFEATURE_ETW)
-  add_definitions(-DFEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)
 else()

@@ -32,18 +32,15 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void GetCSOwnedObjectByJSHandleRef(nint jsHandle, int shouldAddInflight, out JSObject? result)
         {
-            lock (JSHostImplementation.s_csOwnedObjects)
+            if (JSHostImplementation.ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference))
             {
-                if (JSHostImplementation.s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference))
+                reference.TryGetTarget(out JSObject? jsObject);
+                if (shouldAddInflight != 0)
                 {
-                    reference.TryGetTarget(out JSObject? jsObject);
-                    if (shouldAddInflight != 0)
-                    {
-                        jsObject?.AddInFlight();
-                    }
-                    result = jsObject;
-                    return;
+                    jsObject?.AddInFlight();
                 }
+                result = jsObject;
+                return;
             }
             result = null;
         }
@@ -77,14 +74,12 @@ namespace System.Runtime.InteropServices.JavaScript
 
             JSObject? res = null;
 
-            lock (JSHostImplementation.s_csOwnedObjects)
+            if (!JSHostImplementation.ThreadCsOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
+                !reference.TryGetTarget(out res) ||
+                res.IsDisposed)
             {
-                if (!JSHostImplementation.s_csOwnedObjects.TryGetValue((int)jsHandle, out WeakReference<JSObject>? reference) ||
-                    !reference.TryGetTarget(out res) ||
-                    res.IsDisposed)
-                {
 #pragma warning disable CS0612 // Type or member is obsolete
-                    res = mappedType switch
+                res = mappedType switch
                     {
                         LegacyHostImplementation.MappedType.JSObject => new JSObject(jsHandle),
                         LegacyHostImplementation.MappedType.Array => new Array(jsHandle),
@@ -95,8 +90,7 @@ namespace System.Runtime.InteropServices.JavaScript
                         _ => throw new ArgumentOutOfRangeException(nameof(mappedType))
                     };
 #pragma warning restore CS0612 // Type or member is obsolete
-                    JSHostImplementation.s_csOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
-                }
+                JSHostImplementation.ThreadCsOwnedObjects[(int)jsHandle] = new WeakReference<JSObject>(res, trackResurrection: true);
             }
             if (shouldAddInflight != 0)
             {

@@ -4,13 +4,13 @@
 //
 // Run runtime tests under a JS shell or a browser
 //
-"use strict";
+import { dotnet, exit } from './_framework/dotnet.js';
 
 
 /*****************************************************************************
  * Please don't use this as template for startup code.
  * There are simpler and better samples like src\mono\sample\wasm\browser\main.js
- * This one is not ES6 nor CJS, doesn't use top level await and has edge case polyfills.
+ * It has edge case polyfills.
  * It handles strange things which happen with XHarness.
  ****************************************************************************/
 
@@ -99,7 +99,7 @@ function initRunArgs(runArgs) {
     runArgs.enableGC = runArgs.enableGC === undefined ? true : runArgs.enableGC;
     runArgs.diagnosticTracing = runArgs.diagnosticTracing === undefined ? false : runArgs.diagnosticTracing;
     runArgs.debugging = runArgs.debugging === undefined ? false : runArgs.debugging;
-    runArgs.configSrc = runArgs.configSrc === undefined ? './mono-config.json' : runArgs.configSrc;
+    runArgs.configSrc = runArgs.configSrc === undefined ? './_framework/blazor.boot.json' : runArgs.configSrc;
     // default'ing to true for tests, unless debugging
     runArgs.forwardConsole = runArgs.forwardConsole === undefined ? !runArgs.debugging : runArgs.forwardConsole;
     runArgs.memorySnapshot = runArgs.memorySnapshot === undefined ? true : runArgs.memorySnapshot;
@@ -204,10 +204,6 @@ let mono_exit = (code, reason) => {
     console.log(`test-main failed early ${code} ${reason}`);
 };
 
-async function loadDotnet(file) {
-    return await import(file);
-}
-
 const App = {
     /** Runs a particular test in legacy interop tests
      * @type {(method_name: string, args: any[]=, signature: any=) => return number}
@@ -217,7 +213,7 @@ const App = {
         if ((arguments.length > 2) && (typeof (signature) !== "string"))
             throw new Error("Invalid number of arguments for call_test_method");
 
-        const fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.UnitTests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
+        const fqn = "[System.Runtime.InteropServices.JavaScript.Legacy.Tests]System.Runtime.InteropServices.JavaScript.Tests.HelperMarshal:" + method_name;
         try {
             const method = App.runtime.BINDING.bind_static_method(fqn, signature);
             return method.apply(null, args || []);
@@ -255,14 +251,17 @@ const App = {
 };
 globalThis.App = App; // Necessary as System.Runtime.InteropServices.JavaScript.Tests.MarshalTests (among others) call the App.call_test_method directly
 
-function configureRuntime(dotnet, runArgs, INTERNAL) {
+function configureRuntime(dotnet, runArgs) {
     dotnet
         .withVirtualWorkingDirectory(runArgs.workingDirectory)
         .withEnvironmentVariables(runArgs.environmentVariables)
         .withDiagnosticTracing(runArgs.diagnosticTracing)
         .withExitOnUnhandledError()
         .withExitCodeLogging()
-        .withElementOnExit();
+        .withElementOnExit()
+        .withConfig({
+            loadAllSatelliteResources: true
+        });
 
     if (is_node) {
         dotnet
@@ -272,7 +271,7 @@ function configureRuntime(dotnet, runArgs, INTERNAL) {
         const modulesToLoad = runArgs.environmentVariables["NPM_MODULES"];
         if (modulesToLoad) {
             dotnet.withModuleConfig({
-                onConfigLoaded: (config) => {
+                onConfigLoaded: (config, { INTERNAL }) => {
                     loadNodeModules(config, INTERNAL.require, modulesToLoad)
                 }
             })
@@ -300,9 +299,8 @@ async function dry_run(runArgs) {
     try {
         console.log("Silently starting separate runtime instance as another ES6 module to populate caches...");
         // this separate instance of the ES6 module, in which we just populate the caches
-        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js?dry_run=true');
-        mono_exit = exit;
-        configureRuntime(dotnet, runArgs, INTERNAL);
+        const { dotnet } = await import('./_framework/dotnet.js?dry_run=true');
+        configureRuntime(dotnet, runArgs);
         // silent minimal startup
         await dotnet.withConfig({
             forwardConsoleLogsToWS: false,
@@ -314,12 +312,14 @@ async function dry_run(runArgs) {
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true
         }).create();
+        console.log("Separate runtime instance finished loading.");
     } catch (err) {
-        if (err && err.status !== 0) {
-            return false;
+        if (err && err.status === 0) {
+            return true;
         }
+        console.log("Separate runtime instance failed loading.", err);
+        return false;
     }
-    console.log("Separate runtime instance finished loading.");
     return true;
 }
 
@@ -338,7 +338,6 @@ async function run() {
 
         // this is subsequent run with the actual tests. It will use whatever was cached in the previous run. 
         // This way, we are testing that the cached version works.
-        const { dotnet, exit, INTERNAL } = await loadDotnet('./dotnet.js');
         mono_exit = exit;
 
         if (runArgs.applicationArguments.length == 0) {
@@ -346,7 +345,7 @@ async function run() {
             return;
         }
 
-        configureRuntime(dotnet, runArgs, INTERNAL);
+        configureRuntime(dotnet, runArgs);
 
         App.runtime = await dotnet.create();
         App.runArgs = runArgs
@@ -402,4 +401,4 @@ async function run() {
     }
 }
 
-run();
+await run();

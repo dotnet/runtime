@@ -85,9 +85,11 @@ def getManifestsToGenerate(runtimeFlavor):
 
 def generateEvent(eventNode, providerNode, outputFile, stringTable):
 
-    # ThreadPool events are defined manually in NativeRuntimeEventSource.PortableThreadPool.cs
+    # ThreadPool and Contention events are defined manually in NativeRuntimeEventSource.Threading.cs
     symbol = eventNode.getAttribute("symbol")
     if "ThreadPool" in symbol:
+        return
+    if "Contention" in symbol:
         return
 
     evtLevel = eventNode.getAttribute("level")[4:]

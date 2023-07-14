@@ -14,7 +14,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void Ctor_ContentDispositionNull_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("dispositionType", () => { new ContentDispositionHeaderValue(null); });
+            AssertExtensions.Throws<ArgumentNullException>("dispositionType", () => { new ContentDispositionHeaderValue(null); });
         }
 
         [Fact]

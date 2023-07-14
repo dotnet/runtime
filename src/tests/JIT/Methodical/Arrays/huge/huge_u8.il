@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'huge_u8'
+.assembly ASSEMBLY_NAME
 {
 
 

@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
-using System.Reflection;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -37,16 +35,28 @@ namespace System.ComponentModel.Tests
 
         public override IEnumerable<ConvertTest> ConvertToTestData()
         {
+            CultureInfo egyptCulture = new CultureInfo("ar-EG");
             CultureInfo polandCulture = new CultureInfo("pl-PL");
             DateTimeFormatInfo formatInfo = CultureInfo.CurrentCulture.DateTimeFormat;
             TimeOnly timeOnly = new TimeOnly(10, 30, 50);
+            TimeOnly timeOnlyWithMultipleRepresentation = new TimeOnly(13, 14, 15);
 
             yield return ConvertTest.Valid(timeOnly, timeOnly.ToString(formatInfo.ShortTimePattern));
 
             yield return ConvertTest.Valid(timeOnly, timeOnly.ToString(polandCulture.DateTimeFormat.ShortTimePattern, polandCulture.DateTimeFormat))
                 .WithRemoteInvokeCulture(polandCulture);
 
+            yield return ConvertTest.Valid(timeOnly, timeOnly.ToString(polandCulture.DateTimeFormat.ShortTimePattern, polandCulture.DateTimeFormat), polandCulture)
+                .WithRemoteInvokeCulture(egyptCulture);
+
             yield return ConvertTest.Valid(timeOnly, "10:30", CultureInfo.InvariantCulture);
+
+
+            yield return ConvertTest.Valid(timeOnlyWithMultipleRepresentation, timeOnlyWithMultipleRepresentation.ToString(egyptCulture.DateTimeFormat.ShortTimePattern, egyptCulture.DateTimeFormat), egyptCulture)
+                .WithRemoteInvokeCulture(egyptCulture);
+
+            yield return ConvertTest.Valid(timeOnlyWithMultipleRepresentation, timeOnlyWithMultipleRepresentation.ToString(egyptCulture.DateTimeFormat.ShortTimePattern, egyptCulture.DateTimeFormat), egyptCulture)
+                .WithRemoteInvokeCulture(polandCulture);
 
 
             yield return ConvertTest.Valid(TimeOnly.MinValue, string.Empty);

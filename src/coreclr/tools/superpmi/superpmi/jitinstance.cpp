@@ -35,7 +35,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     const WCHAR* altJitFlag = jit->getForceOption(W("AltJit"));
     if (altJitFlag != nullptr)
     {
-        if (wcscmp(altJitFlag, W("")) == 0)
+        if (u16_strcmp(altJitFlag, W("")) == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -47,7 +47,7 @@ JitInstance* JitInstance::InitJit(char*                         nameOfJit,
     const WCHAR* altJitNgenFlag = jit->getForceOption(W("AltJitNgen"));
     if (altJitNgenFlag != nullptr)
     {
-        if (wcscmp(altJitNgenFlag, W("")) == 0)
+        if (u16_strcmp(altJitNgenFlag, W("")) == 0)
         {
             jit->forceClearAltJitFlag = true;
         }
@@ -532,7 +532,7 @@ const WCHAR* JitInstance::getOption(const WCHAR* key, LightWeightMap<DWORD, DWOR
         return nullptr;
     }
 
-    size_t keyLenInBytes = sizeof(WCHAR) * (wcslen(key) + 1);
+    size_t keyLenInBytes = sizeof(WCHAR) * (u16_strlen(key) + 1);
     int    keyIndex      = options->Contains((unsigned char*)key, (unsigned int)keyLenInBytes);
     if (keyIndex == -1)
     {

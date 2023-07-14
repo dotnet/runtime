@@ -885,10 +885,10 @@ ExecuteCodes:
         }
 
         //
-        // save_freg (11011100|0xxxzzzz|zzzzzzzz): save reg f(24+#X) at [sp+#Z*8], offset <= 32767
+        // save_freg (1101110x|xxxxzzzz|zzzzzzzz): save reg f(8+#X) at [sp+#Z*8], offset <= 32767
         //
 
-        else if (CurCode == 0xdc) {
+        else if ((CurCode & 0xdc) == 0xdc) {
             if (AccumulatedSaveNexts != 0) {
                 return STATUS_UNWIND_INVALID_SEQUENCE;
             }
@@ -899,7 +899,7 @@ ExecuteCodes:
             Status = RtlpUnwindRestoreFpRegisterRange(
                         ContextRecord,
                         8 * (((NextCode & 0xf) << 8) + NextCode1),
-                        24 + (NextCode >> 4),
+                        8 + (NextCode >> 4) + ((CurCode & 0x1) << 4),
                         1,
                         UnwindParams);
         }

@@ -61,7 +61,7 @@ namespace
     {
         if (FAILED(::CLSIDFromString(clsid_str.c_str(), clsid)))
         {
-            std::cout << "Invalid CLSID: " << clsid_str.c_str() << std::endl;
+            std::wcout << _X("Invalid CLSID: ") << clsid_str.c_str() << std::endl;
             return false;
         }
 

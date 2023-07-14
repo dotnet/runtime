@@ -51,6 +51,13 @@ namespace ILCompiler.DependencyAnalysis
                 GenericArgumentDataFlow.ProcessGenericArgumentDataFlow(ref dependencies, factory, new MessageOrigin(_field), ecmaField.FieldType, ecmaField.OwningType);
             }
 
+            if (_field.HasEmbeddedSignatureData)
+            {
+                foreach (var sigData in _field.GetEmbeddedSignatureData())
+                    if (sigData.type != null)
+                        TypeMetadataNode.GetMetadataDependencies(ref dependencies, factory, sigData.type, "Modifier in a field signature");
+            }
+
             return dependencies;
         }
         protected override string GetName(NodeFactory factory)

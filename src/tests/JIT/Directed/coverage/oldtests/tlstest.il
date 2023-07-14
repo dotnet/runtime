@@ -12,7 +12,7 @@
 .assembly extern mscorlib {}
 .assembly extern tls1 {}
 .assembly extern tls2 {}
-.assembly tlstest {}
+.assembly ASSEMBLY_NAME {}
 .namespace 'tls'
 {
   .class public auto ansi beforefieldinit tlstest

@@ -8,9 +8,6 @@ parameters:
   liveLibrariesBuildConfig: ''
 
 steps:
-# Can't run arm/arm64 tests on x64 build machines
-- ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
-
   # Build coreclr native test output and send to helix
   - template: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
     parameters:
@@ -25,7 +22,10 @@ steps:
       helixQueues: ${{ parameters.helixQueues }}
       liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
 
-  # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
-  - ${{ if eq(parameters.buildConfig, 'release') }}:
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) $(crossArg) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
-      displayName: Run NativeAot Library Tests
+  # Can't run arm/arm64 tests on x64 build machines
+  - ${{ if and(ne(parameters.archType, 'arm'), ne(parameters.archType, 'arm64')) }}:
+
+    # Publishing tooling doesn't support different configs between runtime and libs, so only run tests in Release config
+    - ${{ if eq(parameters.buildConfig, 'release') }}:
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) -s libs.tests -c $(_BuildConfig) $(crossArg) /p:TestAssemblies=false /p:RunNativeAotTestApps=true $(_officialBuildParameter) /bl:$(Build.SourcesDirectory)/artifacts/log/$(buildConfigUpper)/NativeAotTests.binlog ${{ parameters.extraTestArgs }}
+        displayName: Run NativeAot Library Tests

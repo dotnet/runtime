@@ -1052,18 +1052,6 @@ public:
         SetFlag(enum_flag_IsIntrinsicType);
     }
 
-    // See the comment in code:MethodTable.DoFullyLoad for detailed description.
-    inline BOOL DependsOnEquivalentOrForwardedStructs()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return GetFlag(enum_flag_DependsOnEquivalentOrForwardedStructs);
-    }
-
-    inline void SetDependsOnEquivalentOrForwardedStructs()
-    {
-        SetFlag(enum_flag_DependsOnEquivalentOrForwardedStructs);
-    }
-
     // Is this a method table for a generic type instantiation, e.g. List<string>?
     inline BOOL HasInstantiation();
 
@@ -1333,8 +1321,6 @@ public:
 
     VtableIndirectionSlotIterator IterateVtableIndirectionSlots();
     VtableIndirectionSlotIterator IterateVtableIndirectionSlotsFrom(DWORD index);
-
-    static BOOL CanShareVtableChunksFrom(MethodTable *pTargetMT, Module *pCurrentLoaderModule);
 
     inline BOOL HasNonVirtualSlots()
     {
@@ -2233,7 +2219,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL allowVariance, ClassLoadLevel level);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);
@@ -2285,6 +2271,7 @@ public:
     inline PTR_BYTE GetGCStaticsBasePointer();
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer();
     inline PTR_BYTE GetGCThreadStaticsBasePointer();
+    inline PTR_BYTE GetGCThreadStaticsBaseHandle();
 #endif //!DACCESS_COMPILE
 
     inline PTR_BYTE GetNonGCThreadStaticsBasePointer(PTR_Thread pThread);
@@ -3490,8 +3477,7 @@ private:
 
         enum_flag_HasSingleNonVirtualSlot   = 0x4000,
 
-        enum_flag_DependsOnEquivalentOrForwardedStructs= 0x8000, // Declares methods that have type equivalent or type forwarded structures in their signature
-
+        // unused                           = 0x8000,
     };  // enum WFLAGS2_ENUM
 
     __forceinline void ClearFlag(WFLAGS_LOW_ENUM flag)

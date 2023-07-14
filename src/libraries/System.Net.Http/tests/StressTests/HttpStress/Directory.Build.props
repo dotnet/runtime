@@ -5,7 +5,8 @@
 
         <!-- Stress projects have their own global.json, the directory above that also has it is the repository root. -->
         <RepositoryRoot>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory)../, global.json))/</RepositoryRoot>
-        
+
+        <MsQuicInteropIncludes Condition="'$(MsQuicInteropIncludes)' == ''">$(RepositoryRoot)src/libraries/System.Net.Quic/src/System/Net/Quic/Interop/*.cs</MsQuicInteropIncludes>
         <TargetingPacksTargetsLocation Condition="'$(TargetingPacksTargetsLocation)' == ''">$(RepositoryRoot)eng/targetingpacks.targets</TargetingPacksTargetsLocation>
         <ProductVersion>8.0.0</ProductVersion>
         <NetCoreAppCurrent>net8.0</NetCoreAppCurrent>

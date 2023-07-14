@@ -1,12 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { mono_assert } from "./types";
+import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./imports";
-import { WasmOpcode } from "./jiterpreter-opcodes";
+import { Module, runtimeHelpers } from "./globals";
+import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
+import { mono_log_error, mono_log_info } from "./logging";
+import { localHeapViewU8, localHeapViewU32 } from "./memory";
+import { utf8ToString } from "./strings";
 
 export const maxFailures = 2,
     maxMemsetSize = 64,
@@ -118,11 +121,10 @@ type ImportedFunctionInfo = {
     typeIndex: number;
     module: string;
     name: string;
-    assumeUsed: boolean;
-    func: Function;
+    func?: Function;
 }
 
-const compressedNameCache : { [number: number] : string } = {};
+const compressedNameCache: { [number: number]: string } = {};
 
 export class WasmBuilder {
     cfg: Cfg;
@@ -134,20 +136,20 @@ export class WasmBuilder {
     locals = new Map<string, number>();
 
     permanentFunctionTypeCount = 0;
-    permanentFunctionTypes: { [name: string] : FunctionType } = {};
-    permanentFunctionTypesByShape: { [shape: string] : FunctionTypeIndex } = {};
-    permanentFunctionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+    permanentFunctionTypes: { [name: string]: FunctionType } = {};
+    permanentFunctionTypesByShape: { [shape: string]: FunctionTypeIndex } = {};
+    permanentFunctionTypesByIndex: { [index: number]: FunctionTypeByIndex } = {};
 
     functionTypeCount!: number;
-    functionTypes!: { [name: string] : FunctionType };
-    functionTypesByShape!: { [shape: string] : FunctionTypeIndex };
-    functionTypesByIndex: { [index: number] : FunctionTypeByIndex } = {};
+    functionTypes!: { [name: string]: FunctionType };
+    functionTypesByShape!: { [shape: string]: FunctionTypeIndex };
+    functionTypesByIndex: { [index: number]: FunctionTypeByIndex } = {};
 
     permanentImportedFunctionCount = 0;
-    permanentImportedFunctions: { [name: string] : ImportedFunctionInfo } = {};
+    permanentImportedFunctions: { [name: string]: ImportedFunctionInfo } = {};
 
     importedFunctionCount!: number;
-    importedFunctions!: { [name: string] : ImportedFunctionInfo };
+    importedFunctions!: { [name: string]: ImportedFunctionInfo };
     nextImportIndex = 0;
 
     functions: Array<FunctionInfo> = [];
@@ -166,18 +168,20 @@ export class WasmBuilder {
     nextConstantSlot = 0;
 
     compressImportNames = false;
+    lockImports = false;
 
-    constructor (constantSlotCount: number) {
+    constructor(constantSlotCount: number) {
         this.stack = [new BlobBuilder()];
         this.clear(constantSlotCount);
         this.cfg = new Cfg(this);
     }
 
-    clear (constantSlotCount: number) {
+    clear(constantSlotCount: number) {
         this.options = getOptions();
         this.stackSize = 1;
         this.inSection = false;
         this.inFunction = false;
+        this.lockImports = false;
         this.locals.clear();
 
         this.functionTypeCount = this.permanentFunctionTypeCount;
@@ -186,13 +190,12 @@ export class WasmBuilder {
         this.functionTypesByIndex = Object.create(this.permanentFunctionTypesByIndex);
 
         this.nextImportIndex = 0;
-        this.importedFunctionCount = this.permanentImportedFunctionCount;
+        this.importedFunctionCount = 0;
         this.importedFunctions = Object.create(this.permanentImportedFunctions);
 
         for (const k in this.importedFunctions) {
             const f = this.importedFunctions[k];
-            if (!f.assumeUsed)
-                f.index = undefined;
+            f.index = undefined;
         }
 
         this.functions.length = 0;
@@ -213,14 +216,14 @@ export class WasmBuilder {
         this.allowNullCheckOptimization = this.options.eliminateNullChecks;
     }
 
-    _push () {
+    _push() {
         this.stackSize++;
         if (this.stackSize >= this.stack.length)
             this.stack.push(new BlobBuilder());
         this.current.clear();
     }
 
-    _pop (writeToOutput: boolean) {
+    _pop(writeToOutput: boolean) {
         if (this.stackSize <= 1)
             throw new Error("Stack empty");
 
@@ -235,15 +238,45 @@ export class WasmBuilder {
             return current.getArrayView(false).slice(0, current.size);
     }
 
+    getWasmImports(): WebAssembly.Imports {
+        const result: any = {
+            c: <any>this.getConstants(),
+            m: { h: (<any>Module).asm.memory },
+            // f: { f: getWasmFunctionTable() },
+        };
+
+        const importsToEmit = this.getImportsToEmit();
+
+        for (let i = 0; i < importsToEmit.length; i++) {
+            const ifi = importsToEmit[i];
+            if (typeof (ifi.func) !== "function")
+                throw new Error(`Import '${ifi.name}' not found or not a function`);
+
+            const mangledName = this.getCompressedName(ifi);
+            let subTable = result[ifi.module];
+            if (!subTable) {
+                subTable = result[ifi.module] = {};
+            }
+            subTable[mangledName] = ifi.func;
+        }
+
+        return result;
+    }
+
     // HACK: Approximate amount of space we need to generate the full module at present
     // FIXME: This does not take into account any other functions already generated if they weren't
     //  emitted into the module immediately
-    get bytesGeneratedSoFar () {
+    get bytesGeneratedSoFar() {
+        const importSize = this.compressImportNames
+            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
+            ? 8
+            // we keep the uncompressed import names somewhat short, generally, so +12 bytes is about right
+            : 20;
+
         return this.stack[0].size +
             // HACK: A random constant for section headers and padding
             32 +
-            // mod (2 bytes) name (2-3 bytes) type (1 byte) typeidx (1-2 bytes)
-            (this.importedFunctionCount * 8) +
+            (this.importedFunctionCount * importSize) +
             // type index for each function
             (this.functions.length * 2) +
             // export entry for each export
@@ -258,59 +291,66 @@ export class WasmBuilder {
         return this.current.size;
     }
 
-    appendU8 (value: number | WasmOpcode) {
+    appendU8(value: number | WasmOpcode) {
         if ((value != value >>> 0) || (value > 255))
             throw new Error(`Byte out of range: ${value}`);
         return this.current.appendU8(value);
     }
 
-    appendU32 (value: number) {
+    appendSimd(value: WasmSimdOpcode, allowLoad?: boolean) {
+        this.current.appendU8(WasmOpcode.PREFIX_simd);
+        // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
+        mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
+        return this.current.appendULeb(value);
+    }
+
+    appendU32(value: number) {
         return this.current.appendU32(value);
     }
 
-    appendF32 (value: number) {
+    appendF32(value: number) {
         return this.current.appendF32(value);
     }
 
-    appendF64 (value: number) {
+    appendF64(value: number) {
         return this.current.appendF64(value);
     }
 
-    appendBoundaryValue (bits: number, sign: number) {
+    appendBoundaryValue(bits: number, sign: number) {
         return this.current.appendBoundaryValue(bits, sign);
     }
 
-    appendULeb (value: number | MintOpcodePtr) {
+    appendULeb(value: number | MintOpcodePtr) {
         return this.current.appendULeb(<any>value);
     }
 
-    appendLeb (value: number) {
+    appendLeb(value: number) {
         return this.current.appendLeb(value);
     }
 
-    appendLebRef (sourceAddress: VoidPtr, signed: boolean) {
+    appendLebRef(sourceAddress: VoidPtr, signed: boolean) {
         return this.current.appendLebRef(sourceAddress, signed);
     }
 
-    appendBytes (bytes: Uint8Array) {
+    appendBytes(bytes: Uint8Array) {
         return this.current.appendBytes(bytes);
     }
 
-    appendName (text: string) {
+    appendName(text: string) {
         return this.current.appendName(text);
     }
 
-    ret (ip: MintOpcodePtr) {
+    ret(ip: MintOpcodePtr) {
         this.ip_const(ip);
         this.appendU8(WasmOpcode.return_);
     }
 
-    i32_const (value: number | ManagedPointer | NativePointer) {
+    i32_const(value: number | ManagedPointer | NativePointer) {
         this.appendU8(WasmOpcode.i32_const);
         this.appendLeb(<any>value);
     }
 
-    ptr_const (pointer: number | ManagedPointer | NativePointer) {
+    ptr_const(pointer: number | ManagedPointer | NativePointer) {
         let idx = this.options.useConstants ? this.constantSlots.indexOf(<any>pointer) : -1;
         if (
             this.options.useConstants &&
@@ -324,22 +364,51 @@ export class WasmBuilder {
             this.appendU8(WasmOpcode.get_global);
             this.appendLeb(idx);
         } else {
-            // console.log(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
+            // mono_log_info(`Warning: no constant slot for ${pointer} (${this.nextConstantSlot} slots used)`);
             this.i32_const(pointer);
         }
     }
 
-    ip_const (value: MintOpcodePtr) {
+    ip_const(value: MintOpcodePtr) {
         this.appendU8(WasmOpcode.i32_const);
         this.appendLeb(<any>value - <any>this.base);
     }
 
-    i52_const (value: number) {
+    i52_const(value: number) {
         this.appendU8(WasmOpcode.i64_const);
         this.appendLeb(value);
     }
 
-    defineType (
+    v128_const(value: 0 | Uint8Array) {
+        if (value === 0) {
+            // This encoding is much smaller than a v128_const
+            // But v8 doesn't optimize it :-((((((
+            /*
+                this.i52_const(0);
+                this.appendSimd(WasmSimdOpcode.i64x2_splat);
+            */
+            this.local("v128_zero");
+        } else if (typeof (value) === "object") {
+            mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
+            let isZero = true;
+            for (let i = 0; i < 16; i++) {
+                if (value[i] !== 0)
+                    isZero = false;
+            }
+
+            if (isZero) {
+                // mono_log_info("Detected that literal v128_const was zero");
+                this.local("v128_zero");
+            } else {
+                this.appendSimd(WasmSimdOpcode.v128_const);
+                this.appendBytes(value);
+            }
+        } else {
+            throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
+        }
+    }
+
+    defineType(
         name: string, parameters: { [name: string]: WasmValtype }, returnType: WasmValtype,
         permanent: boolean
     ) {
@@ -376,7 +445,7 @@ export class WasmBuilder {
             }
         }
 
-        const tup : FunctionType = [
+        const tup: FunctionType = [
             index, parameters, returnType,
             `(${JSON.stringify(parameters)}) -> ${returnType}`, permanent
         ];
@@ -388,12 +457,12 @@ export class WasmBuilder {
         return index;
     }
 
-    generateTypeSection () {
+    generateTypeSection() {
         this.beginSection(1);
         this.appendULeb(this.functionTypeCount);
         /*
         if (trace > 1)
-            console.log(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
+            mono_log_info(`Generated ${this.functionTypeCount} wasm type(s) from ${Object.keys(this.functionTypes).length} named function types`);
         */
         for (let i = 0; i < this.functionTypeCount; i++) {
             const parameters = this.functionTypesByIndex[i][0],
@@ -414,8 +483,8 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    getImportedFunctionTable () : any {
-        const imports : any = {};
+    getImportedFunctionTable(): any {
+        const imports: any = {};
         for (const k in this.importedFunctions) {
             const f = this.importedFunctions[k];
             const name = this.getCompressedName(f);
@@ -424,8 +493,8 @@ export class WasmBuilder {
         return imports;
     }
 
-    getCompressedName (ifi: ImportedFunctionInfo) {
-        if (!this.compressImportNames || typeof(ifi.index) !== "number")
+    getCompressedName(ifi: ImportedFunctionInfo) {
+        if (!this.compressImportNames || typeof (ifi.index) !== "number")
             return ifi.name;
 
         let result = compressedNameCache[ifi.index!];
@@ -434,23 +503,37 @@ export class WasmBuilder {
         return result;
     }
 
-    _generateImportSection () {
-        const importsToEmit = [];
+    getImportsToEmit() {
+        const result = [];
         for (const k in this.importedFunctions) {
-            const f = this.importedFunctions[k];
-            if (f.index !== undefined)
-                importsToEmit.push(f);
+            const v = this.importedFunctions[k];
+            if (typeof (v.index) !== "number")
+                continue;
+            result.push(v);
         }
-        importsToEmit.sort((lhs, rhs) => lhs.index! - rhs.index!);
+        result.sort((lhs, rhs) => lhs.index! - rhs.index!);
+        // mono_log_info("result=[" + result.map(f => `#${f.index} ${f.module}.${f.name}`) + "]");
+        return result;
+    }
+
+    _generateImportSection(includeFunctionTable?: boolean) {
+        const importsToEmit = this.getImportsToEmit();
+        this.lockImports = true;
+
+        if (includeFunctionTable !== false)
+            throw new Error("function table imports are disabled");
 
         // Import section
         this.beginSection(2);
-        this.appendULeb(1 + importsToEmit.length + this.constantSlots.length);
+        this.appendULeb(
+            1 + importsToEmit.length + this.constantSlots.length +
+            ((includeFunctionTable !== false) ? 1 : 0)
+        );
 
-        // console.log(`referenced ${importsToEmit.length}/${allImports.length} import(s)`);
+        // mono_log_info(`referenced ${importsToEmit.length} import(s)`);
         for (let i = 0; i < importsToEmit.length; i++) {
             const ifi = importsToEmit[i];
-            // console.log(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.friendlyName}`);
+            // mono_log_info(`  #${ifi.index} ${ifi.module}.${ifi.name} = ${ifi.func}. typeIndex=${ifi.typeIndex}`);
             this.appendName(ifi.module);
             this.appendName(this.getCompressedName(ifi));
             this.appendU8(0x0); // function
@@ -472,14 +555,28 @@ export class WasmBuilder {
         this.appendU8(0x00);
         // Minimum size is in 64k pages, not bytes
         this.appendULeb(0x01);
+
+        if (includeFunctionTable !== false) {
+            this.appendName("f");
+            this.appendName("f");
+            // tabletype
+            this.appendU8(0x01);
+            // funcref
+            this.appendU8(0x70);
+            // limits = { min=0x01, max=infinity }
+            this.appendU8(0x00);
+            this.appendULeb(0x01);
+        }
     }
 
-    defineImportedFunction (
+    defineImportedFunction(
         module: string, name: string, functionTypeName: string,
-        assumeUsed: boolean, permanent: boolean, func: Function | number
-    ) : ImportedFunctionInfo {
-        if (permanent && (this.importedFunctionCount > this.permanentImportedFunctionCount))
-            throw new Error("New permanent imports cannot be defined after non-permanent ones");
+        permanent: boolean, func?: Function | number
+    ): ImportedFunctionInfo {
+        if (this.lockImports)
+            throw new Error("Import section already generated");
+        if (permanent && (this.importedFunctionCount > 0))
+            throw new Error("New permanent imports cannot be defined after any indexes have been assigned");
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
@@ -487,29 +584,29 @@ export class WasmBuilder {
             throw new Error("A permanent import must have a permanent function type");
         const typeIndex = type[0];
         const table = permanent ? this.permanentImportedFunctions : this.importedFunctions;
-        const index = assumeUsed
-            ? (
-                permanent
-                    ? this.permanentImportedFunctionCount++
-                    : this.importedFunctionCount++
-            )
-            : undefined;
         if (typeof (func) === "number")
             func = getWasmFunctionTable().get(func);
-        if (typeof (func) !== "function")
-            throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer`);
+        if ((typeof (func) !== "function") && (typeof (func) !== "undefined"))
+            throw new Error(`Value passed for imported function ${name} was not a function or valid function pointer or undefined`);
         const result = table[name] = {
-            index,
+            index: undefined,
             typeIndex,
             module,
             name,
-            assumeUsed,
             func
         };
         return result;
     }
 
-    defineFunction (
+    markImportAsUsed(name: string) {
+        const func = this.importedFunctions[name];
+        if (!func)
+            throw new Error("No imported function named " + name);
+        if (typeof (func.index) !== "number")
+            func.index = this.importedFunctionCount++;
+    }
+
+    defineFunction(
         options: {
             type: string,
             name: string,
@@ -517,7 +614,7 @@ export class WasmBuilder {
             locals: { [name: string]: WasmValtype },
         }, generator: Function
     ) {
-        const rec : FunctionInfo = {
+        const rec: FunctionInfo = {
             index: this.functions.length,
             name: options.name,
             typeName: options.type,
@@ -534,7 +631,7 @@ export class WasmBuilder {
         return rec;
     }
 
-    emitImportsAndFunctions () {
+    emitImportsAndFunctions(includeFunctionTable?: boolean) {
         let exportCount = 0;
         for (let i = 0; i < this.functions.length; i++) {
             const func = this.functions[i];
@@ -542,12 +639,24 @@ export class WasmBuilder {
                 exportCount++;
 
             this.beginFunction(func.typeName, func.locals);
-            func.blob = func.generator();
-            if (!func.blob)
-                func.blob = this.endFunction(false);
+            try {
+                func.blob = func.generator();
+            } finally {
+                // If func.generator failed due to an error or didn't return a blob, we want
+                //  to call endFunction to pop the stack and create the blob automatically.
+                // We may be in the middle of handling an exception so don't let this automatic
+                //  logic throw and suppress the original exception being handled
+                try {
+                    if (!func.blob)
+                        func.blob = this.endFunction(false);
+                } catch {
+                    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                    ;
+                }
+            }
         }
 
-        this._generateImportSection();
+        this._generateImportSection(includeFunctionTable);
 
         // Function section
         this.beginSection(3);
@@ -581,17 +690,33 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    callImport (name: string) {
+    call_indirect(/* functionTypeName: string, tableIndex: number */) {
+        throw new Error("call_indirect unavailable");
+        /*
+        const type = this.functionTypes[functionTypeName];
+        if (!type)
+            throw new Error("No function type named " + functionTypeName);
+        const typeIndex = type[0];
+        this.appendU8(WasmOpcode.call_indirect);
+        this.appendULeb(typeIndex);
+        this.appendULeb(tableIndex);
+        */
+    }
+
+    callImport(name: string) {
         const func = this.importedFunctions[name];
         if (!func)
             throw new Error("No imported function named " + name);
-        if (func.index === undefined)
+        if (typeof (func.index) !== "number") {
+            if (this.lockImports)
+                throw new Error("Import section was emitted before assigning an index to import named " + name);
             func.index = this.importedFunctionCount++;
+        }
         this.appendU8(WasmOpcode.call);
         this.appendULeb(func.index);
     }
 
-    beginSection (type: number) {
+    beginSection(type: number) {
         if (this.inSection)
             this._pop(true);
         this.appendU8(type);
@@ -599,7 +724,7 @@ export class WasmBuilder {
         this.inSection = true;
     }
 
-    endSection () {
+    endSection() {
         if (!this.inSection)
             throw new Error("Not in section");
         if (this.inFunction)
@@ -608,24 +733,25 @@ export class WasmBuilder {
         this.inSection = false;
     }
 
-    _assignParameterIndices = (parms: {[name: string] : WasmValtype}) => {
+    _assignParameterIndices = (parms: { [name: string]: WasmValtype }) => {
         let result = 0;
         for (const k in parms) {
             this.locals.set(k, result);
-            // console.log(`parm ${k} -> ${result}`);
+            // mono_log_info(`parm ${k} -> ${result}`);
             result++;
         }
         return result;
     };
 
-    _assignLocalIndices (
-        counts: any, locals: {[name: string] : WasmValtype},
+    _assignLocalIndices(
+        counts: any, locals: { [name: string]: WasmValtype },
         base: number, localGroupCount: number
     ) {
         counts[WasmValtype.i32] = 0;
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
@@ -637,43 +763,48 @@ export class WasmBuilder {
         const offi32 = 0,
             offi64 = counts[WasmValtype.i32],
             offf32 = offi64 + counts[WasmValtype.i64],
-            offf64 = offf32 + counts[WasmValtype.f32];
+            offf64 = offf32 + counts[WasmValtype.f32],
+            offv128 = offf64 + counts[WasmValtype.f64];
 
         counts[WasmValtype.i32] = 0;
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
-            let idx = 0;
+            let idx = 0, offset;
             switch (ty) {
                 case WasmValtype.i32:
-                    idx = (counts[ty]++) + offi32 + base;
-                    this.locals.set(k, idx);
+                    offset = offi32;
                     break;
                 case WasmValtype.i64:
-                    idx = (counts[ty]++) + offi64 + base;
-                    this.locals.set(k, idx);
+                    offset = offi64;
                     break;
                 case WasmValtype.f32:
-                    idx = (counts[ty]++) + offf32 + base;
-                    this.locals.set(k, idx);
+                    offset = offf32;
                     break;
                 case WasmValtype.f64:
-                    idx = (counts[ty]++) + offf64 + base;
-                    this.locals.set(k, idx);
+                    offset = offf64;
                     break;
+                case WasmValtype.v128:
+                    offset = offv128;
+                    break;
+                default:
+                    throw new Error(`Unimplemented valtype: ${ty}`);
             }
-            // console.log(`local ${k} ${locals[k]} -> ${idx}`);
+            idx = (counts[ty]++) + offset + base;
+            this.locals.set(k, idx);
+            // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
         return localGroupCount;
     }
 
-    beginFunction (
+    beginFunction(
         type: string,
-        locals?: {[name: string]: WasmValtype}
+        locals?: { [name: string]: WasmValtype }
     ) {
         if (this.inFunction)
             throw new Error("Already in function");
@@ -683,7 +814,7 @@ export class WasmBuilder {
         this.locals.clear();
         this.branchTargets.clear();
         let counts: any = {};
-        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
+        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64, WasmValtype.v128];
 
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
@@ -707,7 +838,7 @@ export class WasmBuilder {
             const c = counts[k];
             if (!c)
                 continue;
-            // console.log(`${k} x${c}`);
+            // mono_log_info(`${k} x${c}`);
             this.appendULeb(c);
             this.appendU8(<any>k);
         }
@@ -715,7 +846,7 @@ export class WasmBuilder {
         this.inFunction = true;
     }
 
-    endFunction (writeToOutput: boolean) {
+    endFunction(writeToOutput: boolean) {
         if (!this.inFunction)
             throw new Error("Not in function");
         if (this.activeBlocks > 0)
@@ -725,7 +856,7 @@ export class WasmBuilder {
         return result;
     }
 
-    block (type?: WasmValtype, opcode?: WasmOpcode) {
+    block(type?: WasmValtype, opcode?: WasmOpcode) {
         const result = this.appendU8(opcode || WasmOpcode.block);
         if (type)
             this.appendU8(type);
@@ -735,15 +866,15 @@ export class WasmBuilder {
         return result;
     }
 
-    endBlock () {
+    endBlock() {
         if (this.activeBlocks <= 0)
             throw new Error("No blocks active");
         this.activeBlocks--;
         this.appendU8(WasmOpcode.end);
     }
 
-    arg (name: string | number, opcode?: WasmOpcode) {
-        const index = typeof(name) === "string"
+    arg(name: string | number, opcode?: WasmOpcode) {
+        const index = typeof (name) === "string"
             ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name;
         if (typeof (index) !== "number")
@@ -753,8 +884,8 @@ export class WasmBuilder {
         this.appendULeb(index);
     }
 
-    local (name: string | number, opcode?: WasmOpcode) {
-        const index = typeof(name) === "string"
+    local(name: string | number, opcode?: WasmOpcode) {
+        const index = typeof (name) === "string"
             ? (this.locals.has(name) ? this.locals.get(name)! : undefined)
             : name + this.argumentCount;
         if (typeof (index) !== "number")
@@ -766,7 +897,7 @@ export class WasmBuilder {
         this.appendULeb(index);
     }
 
-    appendMemarg (offset: number, alignPower: number) {
+    appendMemarg(offset: number, alignPower: number) {
         this.appendULeb(alignPower);
         this.appendULeb(offset);
     }
@@ -774,7 +905,7 @@ export class WasmBuilder {
     /*
         generates either (u32)get_local(ptr) + offset or (u32)ptr1 + offset
     */
-    lea (ptr1: string | number, offset: number) {
+    lea(ptr1: string | number, offset: number) {
         if (typeof (ptr1) === "string")
             this.local(ptr1);
         else
@@ -785,14 +916,14 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.i32_add);
     }
 
-    getArrayView (fullCapacity?: boolean) {
+    getArrayView(fullCapacity?: boolean) {
         if (this.stackSize > 1)
             throw new Error("Jiterpreter block stack not empty");
         return this.stack[0].getArrayView(fullCapacity);
     }
 
-    getConstants () {
-        const result : { [key: string]: number } = {};
+    getConstants() {
+        const result: { [key: string]: number } = {};
         for (let i = 0; i < this.constantSlots.length; i++)
             result[i.toString(shortNameBase)] = this.constantSlots[i];
         return result;
@@ -806,58 +937,58 @@ export class BlobBuilder {
     encoder?: TextEncoder;
     textBuf = new Uint8Array(1024);
 
-    constructor () {
+    constructor() {
         this.capacity = 16 * 1024;
         this.buffer = <any>Module._malloc(this.capacity);
-        Module.HEAPU8.fill(0, this.buffer, this.buffer + this.capacity);
+        localHeapViewU8().fill(0, this.buffer, this.buffer + this.capacity);
         this.size = 0;
         this.clear();
         if (typeof (TextEncoder) === "function")
             this.encoder = new TextEncoder();
     }
 
-    clear () {
+    clear() {
         this.size = 0;
     }
 
-    appendU8 (value: number | WasmOpcode) {
+    appendU8(value: number | WasmOpcode) {
         if (this.size >= this.capacity)
             throw new Error("Buffer full");
 
         const result = this.size;
-        Module.HEAPU8[this.buffer + (this.size++)] = value;
+        localHeapViewU8()[this.buffer + (this.size++)] = value;
         return result;
     }
 
-    appendU32 (value: number) {
+    appendU32(value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.U32);
         this.size += 4;
         return result;
     }
 
-    appendI32 (value: number) {
+    appendI32(value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.I32);
         this.size += 4;
         return result;
     }
 
-    appendF32 (value: number) {
+    appendF32(value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F32);
         this.size += 4;
         return result;
     }
 
-    appendF64 (value: number) {
+    appendF64(value: number) {
         const result = this.size;
         cwraps.mono_jiterp_write_number_unaligned(<any>this.buffer + this.size, value, JiterpNumberMode.F64);
         this.size += 8;
         return result;
     }
 
-    appendBoundaryValue (bits: number, sign: number) {
+    appendBoundaryValue(bits: number, sign: number) {
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -868,7 +999,8 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendULeb (value: number) {
+    appendULeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendULeb expected number but got ${value}`);
         mono_assert(value >= 0, "cannot pass negative value to appendULeb");
         if (value < 0x7F) {
             if (this.size + 1 >= this.capacity)
@@ -888,7 +1020,8 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendLeb (value: number) {
+    appendLeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendLeb expected number but got ${value}`);
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -899,7 +1032,7 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    appendLebRef (sourceAddress: VoidPtr, signed: boolean) {
+    appendLebRef(sourceAddress: VoidPtr, signed: boolean) {
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -910,20 +1043,21 @@ export class BlobBuilder {
         return bytesWritten;
     }
 
-    copyTo (destination: BlobBuilder, count?: number) {
+    copyTo(destination: BlobBuilder, count?: number) {
         if (typeof (count) !== "number")
             count = this.size;
 
-        Module.HEAPU8.copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
+        localHeapViewU8().copyWithin(destination.buffer + destination.size, this.buffer, this.buffer + count);
         destination.size += count;
     }
 
-    appendBytes (bytes: Uint8Array, count?: number) {
+    appendBytes(bytes: Uint8Array, count?: number) {
         const result = this.size;
-        if (bytes.buffer === Module.HEAPU8.buffer) {
+        const heapU8 = localHeapViewU8();
+        if (bytes.buffer === heapU8.buffer) {
             if (typeof (count) !== "number")
                 count = bytes.length;
-            Module.HEAPU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
+            heapU8.copyWithin(this.buffer + result, bytes.byteOffset, bytes.byteOffset + count);
             this.size += count;
         } else {
             if (typeof (count) === "number")
@@ -937,7 +1071,7 @@ export class BlobBuilder {
         return result;
     }
 
-    appendName (text: string) {
+    appendName(text: string) {
         let count = text.length;
         // TextEncoder overhead is significant for short strings, and lots of our strings
         //  are single-character import names, so add a fast path for single characters
@@ -972,8 +1106,8 @@ export class BlobBuilder {
             this.appendBytes(this.textBuf, count);
     }
 
-    getArrayView (fullCapacity?: boolean) {
-        return new Uint8Array(Module.HEAPU8.buffer, this.buffer, fullCapacity ? this.capacity : this.size);
+    getArrayView(fullCapacity?: boolean) {
+        return new Uint8Array(localHeapViewU8().buffer, this.buffer, fullCapacity ? this.capacity : this.size);
     }
 }
 
@@ -995,10 +1129,17 @@ type CfgBranch = {
     from: MintOpcodePtr;
     target: MintOpcodePtr;
     isBackward: boolean; // FIXME: This should be inferred automatically
-    isConditional: boolean;
+    branchType: CfgBranchType;
 }
 
 type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+
+export const enum CfgBranchType {
+    Unconditional,
+    Conditional,
+    SafepointUnconditional,
+    SafepointConditional,
+}
 
 class Cfg {
     builder: WasmBuilder;
@@ -1019,11 +1160,11 @@ class Cfg {
     observedBranchTargets = new Set<MintOpcodePtr>();
     trace = 0;
 
-    constructor (builder: WasmBuilder) {
+    constructor(builder: WasmBuilder) {
         this.builder = builder;
     }
 
-    initialize (startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: number) {
+    initialize(startOfBody: MintOpcodePtr, backBranchTargets: Uint16Array | null, trace: number) {
         this.segments.length = 0;
         this.blockStack.length = 0;
         this.startOfBody = startOfBody;
@@ -1039,7 +1180,7 @@ class Cfg {
     }
 
     // We have a header containing the table of locals and we need to preserve it
-    entry (ip: MintOpcodePtr) {
+    entry(ip: MintOpcodePtr) {
         this.entryIp = ip;
         this.appendBlob();
         mono_assert(this.segments.length === 1, "expected 1 segment");
@@ -1053,7 +1194,7 @@ class Cfg {
         }
     }
 
-    appendBlob () {
+    appendBlob() {
         if (this.builder.current.size === this.lastSegmentEnd)
             return;
 
@@ -1069,7 +1210,7 @@ class Cfg {
         this.overheadBytes += 2;
     }
 
-    startBranchBlock (ip: MintOpcodePtr, isBackBranchTarget: boolean) {
+    startBranchBlock(ip: MintOpcodePtr, isBackBranchTarget: boolean) {
         this.appendBlob();
         this.segments.push({
             type: "branch-block-header",
@@ -1079,7 +1220,7 @@ class Cfg {
         this.overheadBytes += 1; // each branch block just costs us an end
     }
 
-    branch (target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+    branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
         this.observedBranchTargets.add(target);
         this.appendBlob();
         this.segments.push({
@@ -1087,7 +1228,7 @@ class Cfg {
             from: this.ip,
             target,
             isBackward,
-            isConditional,
+            branchType: branchType,
         });
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
@@ -1100,15 +1241,23 @@ class Cfg {
             // set_local <disp>
             this.overheadBytes += 11;
         }
+
+        // Account for the size of the safepoint
+        if (
+            (branchType === CfgBranchType.SafepointConditional) ||
+            (branchType === CfgBranchType.SafepointUnconditional)
+        ) {
+            this.overheadBytes += 17;
+        }
     }
 
-    emitBlob (segment: CfgBlob, source: Uint8Array) {
-        // console.log(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
+    emitBlob(segment: CfgBlob, source: Uint8Array) {
+        // mono_log_info(`segment @${(<any>segment.ip).toString(16)} ${segment.start}-${segment.start + segment.length}`);
         const view = source.subarray(segment.start, segment.start + segment.length);
         this.builder.appendBytes(view);
     }
 
-    generate (): Uint8Array {
+    generate(): Uint8Array {
         // HACK: Make sure any remaining bytes are inserted into a trailing segment
         this.appendBlob();
 
@@ -1167,13 +1316,13 @@ class Cfg {
 
             if (this.backDispatchOffsets.length === 0) {
                 if (this.trace > 0)
-                    console.log("No back branch targets were reachable after filtering");
+                    mono_log_info("No back branch targets were reachable after filtering");
             } else if (this.backDispatchOffsets.length === 1) {
                 if (this.trace > 0) {
                     if (this.backDispatchOffsets[0] === this.entryIp)
-                        console.log(`Exactly one back dispatch offset and it was the entry point 0x${(<any>this.entryIp).toString(16)}`);
+                        mono_log_info(`Exactly one back dispatch offset and it was the entry point 0x${(<any>this.entryIp).toString(16)}`);
                     else
-                        console.log(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
+                        mono_log_info(`Exactly one back dispatch offset and it was 0x${(<any>this.backDispatchOffsets[0]).toString(16)}`);
                 }
 
                 // if (disp) goto back_branch_target else fallthrough
@@ -1213,7 +1362,7 @@ class Cfg {
         }
 
         if (this.trace > 1)
-            console.log(`blockStack=${this.blockStack}`);
+            mono_log_info(`blockStack=${this.blockStack}`);
 
         for (let i = 0; i < this.segments.length; i++) {
             const segment = this.segments[i];
@@ -1244,7 +1393,7 @@ class Cfg {
                         if (this.dispatchTable.has(segment.target)) {
                             const disp = this.dispatchTable.get(segment.target)!;
                             if (this.trace > 1)
-                                console.log(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
+                                mono_log_info(`backward br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)}: disp=${disp}`);
 
                             // Set the back branch taken flag local so it will get flushed on monitoring exit
                             this.builder.i32_const(1);
@@ -1256,27 +1405,56 @@ class Cfg {
                             successfulBackBranch = true;
                         } else {
                             if (this.trace > 0)
-                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
+                                mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed: back branch target not in dispatch table`);
                             indexInStack = -1;
                         }
                     }
 
                     if ((indexInStack >= 0) || successfulBackBranch) {
-                        // Conditional branches are nested in an extra block, so the depth is +1
-                        const offset = segment.isConditional ? 1 : 0;
-                        this.builder.appendU8(WasmOpcode.br);
+                        let offset = 0;
+                        switch (segment.branchType) {
+                            case CfgBranchType.SafepointUnconditional:
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.SafepointConditional:
+                                // Wrap the safepoint + branch in an if
+                                this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                offset = 1;
+                                break;
+                            case CfgBranchType.Unconditional:
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.Conditional:
+                                this.builder.appendU8(WasmOpcode.br_if);
+                                break;
+                            default:
+                                throw new Error("Unimplemented branch type");
+                        }
+
                         this.builder.appendULeb(offset + indexInStack);
+                        if (offset) // close the if
+                            this.builder.endBlock();
                         if (this.trace > 1)
-                            console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
+                            mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
                         if (this.trace > 0) {
                             const base = <any>this.base;
                             if ((segment.target >= base) && (segment.target < this.exitIp))
-                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
+                                mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (inside of trace!)`);
                             else if (this.trace > 1)
-                                console.log(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
+                                mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
                         }
+
+                        const isConditional = (segment.branchType === CfgBranchType.Conditional) ||
+                            (segment.branchType === CfgBranchType.SafepointConditional);
+                        if (isConditional)
+                            this.builder.block(WasmValtype.void, WasmOpcode.if_);
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
+                        if (isConditional)
+                            this.builder.endBlock();
                     }
                     break;
                 }
@@ -1314,15 +1492,19 @@ export const enum WasmValtype {
     i64 = 0x7E,
     f32 = 0x7D,
     f64 = 0x7C,
+    v128 = 0x7B,
 }
 
-let wasmTable : WebAssembly.Table | undefined;
+let wasmTable: WebAssembly.Table | undefined;
 let wasmNextFunctionIndex = -1, wasmFunctionIndicesFree = 0;
 
 // eslint-disable-next-line prefer-const
 export const elapsedTimes = {
     generation: 0,
     compilation: 0
+};
+
+export const simdFallbackCounters: { [name: string]: number } = {
 };
 
 export const counters = {
@@ -1334,17 +1516,33 @@ export const counters = {
     failures: 0,
     bytesGenerated: 0,
     nullChecksEliminated: 0,
+    nullChecksFused: 0,
     backBranchesEmitted: 0,
     backBranchesNotEmitted: 0,
+    simdFallback: simdFallbackCounters,
 };
 
 export const _now = (globalThis.performance && globalThis.performance.now)
     ? globalThis.performance.now.bind(globalThis.performance)
     : Date.now;
 
-let scratchBuffer : NativePointer = <any>0;
+let scratchBuffer: NativePointer = <any>0;
 
-export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
+export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+    // Check whether a safepoint is required
+    builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(0, 2);
+    // If the polling flag is set we call mono_jiterp_do_safepoint()
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+    builder.local("frame");
+    // Not ip_const, because we can't pass relative IP to do_safepoint
+    builder.i32_const(ip);
+    builder.callImport("safepoint");
+    builder.endBlock();
+}
+
+export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
     if (builder.options.countBailouts) {
         builder.i32_const(builder.base);
@@ -1355,7 +1553,7 @@ export function append_bailout (builder: WasmBuilder, ip: MintOpcodePtr, reason:
 }
 
 // generate a bailout that is recorded for the monitoring phase as a possible early exit.
-export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
+export function append_exit(builder: WasmBuilder, ip: MintOpcodePtr, opcodeCounter: number, reason: BailoutReason) {
     if (opcodeCounter <= (builder.options.monitoringLongDistance + 2)) {
         builder.local("cinfo");
         builder.i32_const(opcodeCounter);
@@ -1379,17 +1577,17 @@ export function append_exit (builder: WasmBuilder, ip: MintOpcodePtr, opcodeCoun
     builder.appendU8(WasmOpcode.return_);
 }
 
-export function copyIntoScratchBuffer (src: NativePointer, size: number) : NativePointer {
+export function copyIntoScratchBuffer(src: NativePointer, size: number): NativePointer {
     if (!scratchBuffer)
         scratchBuffer = Module._malloc(64);
     if (size > 64)
         throw new Error("Scratch buffer size is 64");
 
-    Module.HEAPU8.copyWithin(<any>scratchBuffer, <any>src, <any>src + size);
+    localHeapViewU8().copyWithin(<any>scratchBuffer, <any>src, <any>src + size);
     return scratchBuffer;
 }
 
-export function getWasmFunctionTable () {
+export function getWasmFunctionTable() {
     if (!wasmTable)
         wasmTable = (<any>Module)["asm"]["__indirect_function_table"];
     if (!wasmTable)
@@ -1397,8 +1595,8 @@ export function getWasmFunctionTable () {
     return wasmTable;
 }
 
-export function addWasmFunctionPointer (f: Function) {
-    mono_assert(f,"Attempting to set null function into table");
+export function addWasmFunctionPointer(f: Function) {
+    mono_assert(f, "Attempting to set null function into table");
     mono_assert(!runtimeHelpers.storeMemorySnapshotPending, "Attempting to set function into table during creation of memory snapshot");
 
     const table = getWasmFunctionTable();
@@ -1414,7 +1612,7 @@ export function addWasmFunctionPointer (f: Function) {
     return index;
 }
 
-export function try_append_memset_fast (builder: WasmBuilder, localOffset: number, value: number, count: number, destOnStack: boolean) {
+export function try_append_memset_fast(builder: WasmBuilder, localOffset: number, value: number, count: number, destOnStack: boolean) {
     if (count <= 0) {
         if (destOnStack)
             builder.appendU8(WasmOpcode.drop);
@@ -1424,11 +1622,28 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
     if (count >= maxMemsetSize)
         return false;
 
-    const destLocal = destOnStack ? "math_lhs32" : "pLocals";
+    // FIXME
+    if (value !== 0)
+        return false;
+
+    const destLocal = destOnStack ? "memop_dest" : "pLocals";
     if (destOnStack)
-        builder.local("math_lhs32", WasmOpcode.set_local);
+        builder.local(destLocal, WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
+
+    if (builder.options.enableSimd) {
+        const sizeofV128 = 16;
+        while (count >= sizeofV128) {
+            builder.local(destLocal);
+            builder.v128_const(0);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(offset, 0);
+            offset += sizeofV128;
+            count -= sizeofV128;
+        }
+    }
+
     // Do blocks of 8-byte sets first for smaller/faster code
     while (count >= 8) {
         builder.local(destLocal);
@@ -1468,7 +1683,7 @@ export function try_append_memset_fast (builder: WasmBuilder, localOffset: numbe
     return true;
 }
 
-export function append_memset_dest (builder: WasmBuilder, value: number, count: number) {
+export function append_memset_dest(builder: WasmBuilder, value: number, count: number) {
     // spec: pop n, pop val, pop d, fill from d[0] to d[n] with value val
     if (try_append_memset_fast(builder, 0, value, count, true))
         return;
@@ -1480,7 +1695,7 @@ export function append_memset_dest (builder: WasmBuilder, value: number, count: 
     builder.appendU8(0);
 }
 
-export function try_append_memmove_fast (
+export function try_append_memmove_fast(
     builder: WasmBuilder, destLocalOffset: number, srcLocalOffset: number,
     count: number, addressesOnStack: boolean, destLocal?: string, srcLocal?: string
 ) {
@@ -1496,8 +1711,9 @@ export function try_append_memmove_fast (
         return false;
 
     if (addressesOnStack) {
-        destLocal = destLocal || "math_lhs32";
-        srcLocal = srcLocal || "math_rhs32";
+        destLocal = destLocal || "memop_dest";
+        srcLocal = srcLocal || "memop_src";
+        // Stack layout is [..., dest, src]
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
     } else if (!destLocal || !srcLocal) {
@@ -1508,6 +1724,21 @@ export function try_append_memmove_fast (
 
     let destOffset = addressesOnStack ? 0 : destLocalOffset,
         srcOffset = addressesOnStack ? 0 : srcLocalOffset;
+
+    if (builder.options.enableSimd) {
+        const sizeofV128 = 16;
+        while (count >= sizeofV128) {
+            builder.local(destLocal);
+            builder.local(srcLocal);
+            builder.appendSimd(WasmSimdOpcode.v128_load, true);
+            builder.appendMemarg(srcOffset, 0);
+            builder.appendSimd(WasmSimdOpcode.v128_store);
+            builder.appendMemarg(destOffset, 0);
+            destOffset += sizeofV128;
+            srcOffset += sizeofV128;
+            count -= sizeofV128;
+        }
+    }
 
     // Do blocks of 8-byte copies first for smaller/faster code
     while (count >= 8) {
@@ -1524,7 +1755,7 @@ export function try_append_memmove_fast (
 
     // Then copy the remaining 0-7 bytes
     while (count >= 1) {
-        let loadOp : WasmOpcode, storeOp : WasmOpcode;
+        let loadOp: WasmOpcode, storeOp: WasmOpcode;
         let localCount = count % 4;
         switch (localCount) {
             case 0:
@@ -1564,7 +1795,7 @@ export function try_append_memmove_fast (
 }
 
 // expects dest then source to have been pushed onto wasm stack
-export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
+export function append_memmove_dest_src(builder: WasmBuilder, count: number) {
     if (try_append_memmove_fast(builder, 0, 0, count, true))
         return true;
 
@@ -1578,10 +1809,10 @@ export function append_memmove_dest_src (builder: WasmBuilder, count: number) {
     return true;
 }
 
-export function recordFailure () : void {
+export function recordFailure(): void {
     counters.failures++;
     if (counters.failures >= maxFailures) {
-        console.log(`MONO_WASM: Disabling jiterpreter after ${counters.failures} failures`);
+        mono_log_info(`Disabling jiterpreter after ${counters.failures} failures`);
         applyOptions(<any>{
             enableTraces: false,
             enableInterpEntry: false,
@@ -1604,11 +1835,17 @@ export const enum JiterpMember {
     BackwardBranchOffsets = 10,
     BackwardBranchOffsetsCount = 11,
     ClauseDataOffsets = 12,
+    ParamsCount = 13,
+    VTable = 14,
+    VTableKlass = 15,
+    ClassRank = 16,
+    ClassElementClass = 17,
+    BoxedValueData = 18,
 }
 
-const memberOffsets : { [index: number] : number } = {};
+const memberOffsets: { [index: number]: number } = {};
 
-export function getMemberOffset (member: JiterpMember) {
+export function getMemberOffset(member: JiterpMember) {
     const cached = memberOffsets[member];
     if (cached === undefined)
         return memberOffsets[member] = cwraps.mono_jiterp_get_member_offset(<any>member);
@@ -1616,24 +1853,64 @@ export function getMemberOffset (member: JiterpMember) {
         return cached;
 }
 
-export function getRawCwrap (name: string): Function {
+export function getRawCwrap(name: string): Function {
     const result = (<any>Module)["asm"][name];
     if (typeof (result) !== "function")
         throw new Error(`raw cwrap ${name} not found`);
     return result;
 }
 
-const opcodeTableCache : { [opcode: number] : number } = {};
+const opcodeTableCache: { [opcode: number]: number } = {};
 
-export function getOpcodeTableValue (opcode: MintOpcode) {
+export function getOpcodeTableValue(opcode: MintOpcode) {
     let result = opcodeTableCache[opcode];
     if (typeof (result) !== "number")
         result = opcodeTableCache[opcode] = cwraps.mono_jiterp_get_opcode_value_table_entry(<any>opcode);
     return result;
 }
 
-export function importDef (name: string, fn: Function): [string, string, Function] {
+export function importDef(name: string, fn: Function): [string, string, Function] {
     return [name, name, fn];
+}
+
+export function bytesFromHex(hex: string): Uint8Array {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2)
+        bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16);
+    return bytes;
+}
+
+let observedTaintedZeroPage : boolean | undefined;
+
+export function isZeroPageReserved(): boolean {
+    // FIXME: This check will always return true on worker threads.
+    // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
+    if (MonoWasmThreads)
+        return false;
+
+    if (!cwraps.mono_wasm_is_zero_page_reserved())
+        return false;
+
+    // If we ever saw garbage written to the zero page, never use it
+    if (observedTaintedZeroPage === true)
+        return false;
+
+    // Determine whether emscripten's stack checker or some other troublemaker has
+    //  written junk at the start of memory. The previous cwraps call will have
+    //  checked whether the stack starts at zero or not (on the main thread).
+    // We can't do this in the C helper because emcc/asan might be checking pointers.
+    const heapU32 = localHeapViewU32();
+    for (let i = 0; i < 8; i++) {
+        if (heapU32[i] !== 0) {
+            if (observedTaintedZeroPage === false)
+                mono_log_error(`Zero page optimizations are enabled but garbage appeared in memory at address ${i * 4}: ${heapU32[i]}`);
+            observedTaintedZeroPage = true;
+            return false;
+        }
+    }
+
+    observedTaintedZeroPage = false;
+    return true;
 }
 
 export type JiterpreterOptions = {
@@ -1644,6 +1921,8 @@ export type JiterpreterOptions = {
     enableBackwardBranches: boolean;
     enableCallResume: boolean;
     enableWasmEh: boolean;
+    enableSimd: boolean;
+    zeroPageOptimization: boolean;
     // For locations where the jiterpreter heuristic says we will be unable to generate
     //  a trace, insert an entry point opcode anyway. This enables collecting accurate
     //  stats for options like estimateHeat, but raises overhead.
@@ -1678,13 +1957,15 @@ export type JiterpreterOptions = {
     wasmBytesLimit: number;
 }
 
-const optionNames : { [jsName: string] : string } = {
+const optionNames: { [jsName: string]: string } = {
     "enableTraces": "jiterpreter-traces-enabled",
     "enableInterpEntry": "jiterpreter-interp-entry-enabled",
     "enableJitCall": "jiterpreter-jit-call-enabled",
     "enableBackwardBranches": "jiterpreter-backward-branch-entries-enabled",
     "enableCallResume": "jiterpreter-call-resume-enabled",
     "enableWasmEh": "jiterpreter-wasm-eh-enabled",
+    "enableSimd": "jiterpreter-simd-enabled",
+    "zeroPageOptimization": "jiterpreter-zero-page-optimization",
     "enableStats": "jiterpreter-stats-enabled",
     "disableHeuristic": "jiterpreter-disable-heuristic",
     "estimateHeat": "jiterpreter-estimate-heat",
@@ -1709,14 +1990,14 @@ const optionNames : { [jsName: string] : string } = {
 };
 
 let optionsVersion = -1;
-let optionTable : JiterpreterOptions = <any>{};
+let optionTable: JiterpreterOptions = <any>{};
 
 // applies one or more jiterpreter options to change the current jiterpreter configuration.
-export function applyOptions (options: JiterpreterOptions) {
+export function applyOptions(options: JiterpreterOptions) {
     for (const k in options) {
         const info = optionNames[k];
         if (!info) {
-            console.error(`Unrecognized jiterpreter option: ${k}`);
+            mono_log_error(`Unrecognized jiterpreter option: ${k}`);
             continue;
         }
 
@@ -1726,12 +2007,12 @@ export function applyOptions (options: JiterpreterOptions) {
         else if (typeof (v) === "number")
             cwraps.mono_jiterp_parse_option(`--${info}=${v}`);
         else
-            console.error(`Jiterpreter option must be a boolean or a number but was ${typeof(v)} '${v}'`);
+            mono_log_error(`Jiterpreter option must be a boolean or a number but was ${typeof (v)} '${v}'`);
     }
 }
 
 // returns the current jiterpreter configuration. do not mutate the return value!
-export function getOptions () {
+export function getOptions() {
     const currentVersion = cwraps.mono_jiterp_get_options_version();
     if (currentVersion !== optionsVersion) {
         updateOptions();
@@ -1740,9 +2021,9 @@ export function getOptions () {
     return optionTable;
 }
 
-function updateOptions () {
+function updateOptions() {
     const pJson = cwraps.mono_jiterp_get_options_as_json();
-    const json = Module.UTF8ToString(<any>pJson);
+    const json = utf8ToString(<any>pJson);
     Module._free(<any>pJson);
     const blob = JSON.parse(json);
 

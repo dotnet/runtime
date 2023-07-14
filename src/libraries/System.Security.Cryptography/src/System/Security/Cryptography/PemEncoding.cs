@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Text;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
@@ -233,63 +234,23 @@ namespace System.Security.Cryptography
             out int base64End,
             out int base64DecodedSize)
         {
-            base64Start = 0;
-            base64End = str.Length;
+            // Trim starting and ending allowed white space characters
+            int start = 0;
+            int end = str.Length - 1;
+            for (; start < str.Length && IsWhiteSpaceCharacter(str[start]); start++);
+            for (; end > start && IsWhiteSpaceCharacter(str[end]); end--);
 
-            if (str.IsEmpty)
+            // Validate that the remaining characters are valid base-64 encoded data.
+            if (Base64.IsValid(str.Slice(start, end + 1 - start), out base64DecodedSize))
             {
-                base64DecodedSize = 0;
+                base64Start = start;
+                base64End = end + 1;
                 return true;
             }
 
-            int significantCharacters = 0;
-            int paddingCharacters = 0;
-
-            for (int i = 0; i < str.Length; i++)
-            {
-                char ch = str[i];
-
-                if (IsWhiteSpaceCharacter(ch))
-                {
-                    if (significantCharacters == 0)
-                    {
-                        base64Start++;
-                    }
-                    else
-                    {
-                        base64End--;
-                    }
-
-                    continue;
-                }
-
-                base64End = str.Length;
-
-                if (ch == '=')
-                {
-                    paddingCharacters++;
-                }
-                else if (paddingCharacters == 0 && IsBase64Character(ch))
-                {
-                    significantCharacters++;
-                }
-                else
-                {
-                    base64DecodedSize = 0;
-                    return false;
-                }
-            }
-
-            int totalChars = paddingCharacters + significantCharacters;
-
-            if (paddingCharacters > 2 || (totalChars & 0b11) != 0)
-            {
-                base64DecodedSize = 0;
-                return false;
-            }
-
-            base64DecodedSize = (totalChars >> 2) * 3 - paddingCharacters;
-            return true;
+            base64Start = 0;
+            base64End = 0;
+            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -29,8 +29,6 @@ public:
 
     virtual PhaseStatus DoPhase() override;
 
-    static void RewriteAssignmentIntoStoreLcl(GenTreeOp* assignment);
-
 private:
     inline LIR::Range& BlockRange() const
     {
@@ -48,9 +46,6 @@ private:
                            GenTree* arg2 = nullptr);
 
     void RewriteIntrinsicAsUserCall(GenTree** use, Compiler::GenTreeStack& parents);
-
-    // Other transformations
-    void RewriteAssignment(LIR::Use& use);
 
 #ifdef TARGET_ARM64
     void RewriteSubLshDiv(GenTree** use);
