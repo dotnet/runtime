@@ -2146,7 +2146,6 @@ namespace System.Tests
 
         public static IEnumerable<object[]> DegreesToRadians_TestData()
         {
-            yield return new object[] { Half.PositiveInfinity,  Half.NaN,              Half.Zero };
             yield return new object[] { Half.NaN,               Half.NaN,              Half.Zero };
             yield return new object[] { Half.Zero,              Half.Zero,             Half.Zero };
             yield return new object[] { (Half)(0.3184f),        (Half)(0.005554f),     CrossPlatformMachineEpsilon };       // value:  (1 / pi)
@@ -2182,7 +2181,6 @@ namespace System.Tests
 
         public static IEnumerable<object[]> RadiansToDegrees_TestData()
         {
-            yield return new object[] { Half.NaN,              Half.PositiveInfinity, Half.Zero };
             yield return new object[] { Half.NaN,              Half.NaN,              Half.Zero };
             yield return new object[] { Half.Zero,             Half.Zero,             Half.Zero };
             yield return new object[] { (Half)(0.005554f),     (Half)(0.3184f),       CrossPlatformMachineEpsilon };       // value:  (1 / pi)
