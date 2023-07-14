@@ -312,13 +312,13 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
             innerSrcType           = varTypeToUnsigned(innerSrcType);
 
             // Check if we are going from ulong->double->float
-            if (innerSrcType == TYP_ULONG && innerDstType == TYP_DOUBLE && dstType == TYP_FLOAT)
+            if ((innerSrcType == TYP_ULONG) && (innerDstType == TYP_DOUBLE) && (dstType == TYP_FLOAT))
             {
                 if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // One optimized (combined) cast here
-                    tree         = gtNewCastNode(TYP_ULONG, innerOper, true, TYP_FLOAT);
-                    tree->gtType = TYP_FLOAT;
+                    tree         = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
+                    //tree->gtType = TYP_FLOAT;
                     return fgMorphTree(tree);
                 }
             }
