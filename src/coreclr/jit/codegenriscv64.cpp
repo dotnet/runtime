@@ -6520,7 +6520,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     loadType = varDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
                 }
                 else
+                {
                     loadType = varDsc->GetLayout()->GetGCPtrType(0);
+                }
             }
             else
             {
@@ -6547,7 +6549,9 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                     loadType = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
                 }
                 else
+                {
                     loadType = varDsc->GetLayout()->GetGCPtrType(1);
+                }
 
                 loadSize = emitActualTypeSize(loadType);
                 int offs = loadSize == EA_4BYTE ? 4 : 8;
