@@ -30,6 +30,9 @@
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
     {AdditionalProperties}
 
+    <!-- Needed for PublishTrimmed -->
+    <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
+
     <!-- Needed for PublishAot -->
     <IlcToolsPath>{IlcToolsPath}</IlcToolsPath>
     <IlcBuildTasksPath>{IlcBuildTasksPath}</IlcBuildTasksPath>
@@ -50,15 +53,6 @@
 
   <ItemGroup>
     {AdditionalProjectReferences}
-  </ItemGroup>
-
-  <!-- Logic to override the default IlLink tasks that come from the SDK and use the one
-  we use in dotnet/runtime repo -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.ILLink.Tasks"
-                      Version="{MicrosoftNETILLinkTasksVersion}"
-                      PrivateAssets="all"
-                      IsImplicitlyDefined="true" />
   </ItemGroup>
 
   <Target Name="LocateNativeCompiler"
