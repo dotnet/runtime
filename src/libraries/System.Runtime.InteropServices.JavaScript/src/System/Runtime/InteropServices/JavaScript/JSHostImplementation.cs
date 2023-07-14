@@ -79,16 +79,20 @@ namespace System.Runtime.InteropServices.JavaScript
         public static IntPtr GetJSOwnedObjectGCHandle(object obj, GCHandleType handleType = GCHandleType.Normal)
         {
             if (obj == null)
+            {
                 return IntPtr.Zero;
+            }
 
-                IntPtr gcHandle;
+            IntPtr gcHandle;
             if (ThreadJsOwnedObjects.TryGetValue(obj, out gcHandle))
-                    return gcHandle;
+            {
+                return gcHandle;
+            }
 
             IntPtr result = (IntPtr)GCHandle.Alloc(obj, handleType);
             ThreadJsOwnedObjects[obj] = result;
-                return result;
-            }
+            return result;
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeMethodHandle GetMethodHandleFromIntPtr(IntPtr ptr)
@@ -262,40 +266,47 @@ namespace System.Runtime.InteropServices.JavaScript
             var uninstallJSSynchronizationContext = ctx != null;
             if (uninstallJSSynchronizationContext)
             {
-                foreach (var jsObjectWeak in ThreadCsOwnedObjects.Values)
+                try
                 {
-                    if (jsObjectWeak.TryGetTarget(out var jso))
+                    foreach (var jsObjectWeak in ThreadCsOwnedObjects.Values)
                     {
-                        jso.Dispose();
-                    }
-                }
-                foreach (var gch in ThreadJsOwnedObjects.Values)
-                {
-                    GCHandle gcHandle = (GCHandle)gch;
-
-                    // if this is pending promise we reject it
-                    if (gcHandle.Target is TaskCallback holder)
-                    {
-                        unsafe
+                        if (jsObjectWeak.TryGetTarget(out var jso))
                         {
-                            holder.Callback!.Invoke(null);
+                            jso.Dispose();
                         }
                     }
-                    gcHandle.Free();
+                    foreach (var gch in ThreadJsOwnedObjects.Values)
+                    {
+                        GCHandle gcHandle = (GCHandle)gch;
+
+                        // if this is pending promise we reject it
+                        if (gcHandle.Target is TaskCallback holder)
+                        {
+                            unsafe
+                            {
+                                holder.Callback!.Invoke(null);
+                            }
+                        }
+                        gcHandle.Free();
+                    }
+                    SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
+                    JSSynchronizationContext.CurrentJSSynchronizationContext = null;
+                    ctx.isDisposed = true;
                 }
-                SynchronizationContext.SetSynchronizationContext(ctx!.previousSynchronizationContext);
-                JSSynchronizationContext.CurrentJSSynchronizationContext = null;
-                ctx.isDisposed = true;
+                catch(Exception ex)
+                {
+                    Environment.FailFast($"Unexpected error in UninstallWebWorkerInterop, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}. " + ex);
+                }
             }
             else
             {
                 if (ThreadCsOwnedObjects.Count > 0)
                 {
-                    throw new InvalidOperationException($"There should be no JSObjects on this thread");
+                    Environment.FailFast($"There should be no JSObjects proxies on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
                 }
                 if (ThreadJsOwnedObjects.Count > 0)
                 {
-                    throw new InvalidOperationException($"There should be no JSObjects on this thread");
+                    Environment.FailFast($"There should be no JS proxies of managed objects on this thread, ManagedThreadId: {Thread.CurrentThread.ManagedThreadId}");
                 }
             }
             ThreadCsOwnedObjects.Clear();
