@@ -95,6 +95,7 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 const ep_char8_t *
 ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
 {
+    // We are (intentionally for now) using the module name rather than entry assembly
     // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
     static const ep_char8_t * entrypoint_assembly_name = nullptr;
     if (entrypoint_assembly_name == nullptr) {
@@ -114,22 +115,27 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
             if (process_name_const != NULL) {
                 process_name_const++;
             }
+            else {
+                process_name_const = reinterpret_cast<const wchar_t *>(wszModuleFileName);
+            }
             size_t len = -1;
             const wchar_t* extension = wcsrchr(process_name_const, '.');
             if (extension != NULL) {
                 len = extension - process_name_const;
             }
-            const ep_char16_t* process_name = reinterpret_cast<const ep_char16_t *>(process_name_const);
-            entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(process_name, len);
+            entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(process_name_const), len);
 #else
             const ep_char8_t* process_name_const = strrchr(wszModuleFileName, DIRECTORY_SEPARATOR_CHAR);
             if (process_name_const != NULL) {
                 process_name_const++;
             }
+            else {
+                process_name_const = reinterpret_cast<const ep_char8_t *>(wszModuleFileName);
+            }
             size_t len = strlen(process_name_const);
             const ep_char8_t *extension = strrchr(process_name_const, '.');
             if (extension != NULL) {
-                len = len - strlen(extension);
+                len = extension - process_name_const;
             }
             ep_char8_t* process_name = reinterpret_cast<ep_char8_t *>(malloc(len + 1));
             if (process_name == NULL) {
@@ -145,7 +151,7 @@ ep_rt_aot_entrypoint_assembly_name_get_utf8 (void)
             free(entrypoint_assembly_name_local);
     }
 
-    return reinterpret_cast<const char*>(entrypoint_assembly_name);
+    return entrypoint_assembly_name;
 }
 
 const ep_char8_t *
