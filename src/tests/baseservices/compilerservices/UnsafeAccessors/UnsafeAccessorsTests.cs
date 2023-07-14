@@ -421,7 +421,6 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
-
         // This is an ambiguous match since there are two methods each with two custom modifiers.
         // Therefore the default "ignore custom modifiers" logic fails. The fallback is for a
         // precise match and that also fails because the custom modifiers don't match precisely.
