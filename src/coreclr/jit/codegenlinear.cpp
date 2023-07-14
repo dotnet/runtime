@@ -1870,7 +1870,7 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 
 #if defined(FEATURE_SIMD)
         // storing of TYP_SIMD12 (i.e. Vector3) argument.
-        if (type == TYP_SIMD12 && ISMETHOD("Foo"))
+        if (type == TYP_SIMD12)
         {
 // Need an additional integer register to extract upper 4 bytes from data.
 #if defined(TARGET_ARM64)
