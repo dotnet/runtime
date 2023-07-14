@@ -25,9 +25,6 @@
   <Target Name="_AppleCoreBuild" BeforeTargets="AppleBuild" DependsOnTargets="$(AppleBuildDependsOn)" />
 
   <Target Name="_InitializeCommonProperties">
-    <PropertyGroup>
-      <DevTeamProvisioning Condition="'$(DevTeamProvisioning)' == ''">-</DevTeamProvisioning>
-    </PropertyGroup>
     <Error Condition="'$(IntermediateOutputPath)' == ''" Text="%24(IntermediateOutputPath) property needs to be set" />
     <Error Condition="('$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'maccatalyst') and '$(DevTeamProvisioning)' == ''"
            Text="'DevTeamProvisioning' needs to be set for device builds. Set it to 'adhoc' to sign with an adhoc key, or '-' to skip signing all together.." />
@@ -244,10 +241,6 @@
     </ItemGroup>
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
-
-    <PropertyGroup>
-      <RuntimeComponents Condition="'$(UseRuntimeComponents)' == 'true'">diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-    </PropertyGroup>
 
     <AppleAppBuilderTask
       AppDir="$(AppleBuildDir)"

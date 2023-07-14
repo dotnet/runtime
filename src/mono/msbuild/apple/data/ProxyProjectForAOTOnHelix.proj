@@ -30,9 +30,12 @@
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
 
       <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(CustomMain)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
-      <MonoForceInterpreter Condition="'$(CustomMain)' == 'true'">true</MonoForceInterpreter>
-      <UseMonoJustInterp Condition="'$(CustomMain)' == 'true'">true</UseMonoJustInterp>
       <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
 
     <ItemGroup>

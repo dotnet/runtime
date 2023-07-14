@@ -16,19 +16,17 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <BuildTestsOnHelix>true</BuildTestsOnHelix>
-    <ArchiveTests>true</ArchiveTests>
-
     <PublishTestAsSelfContainedDependsOn>BuildiOSApp</PublishTestAsSelfContainedDependsOn>
     <PublishTestAsSelfContainedAfterTargets>BuildiOSApp</PublishTestAsSelfContainedAfterTargets>
     <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
+
     <CustomMain>true</CustomMain>
   </PropertyGroup>
   <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
 
-  <Target Name="_SetCustomRunScriptOutputPath" BeforeTargets="GenerateRunScript">
+  <Target Name="_SetRunScriptOutputDirectory" Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono' and '$(CustomMain)' == 'true'" BeforeTargets="GenerateRunScript">
     <PropertyGroup>
-      <CustomRunScriptOutputPath>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/$(TestProjectName)/AppBundle</CustomRunScriptOutputPath>
+      <RunScriptOutputDirectory>$(ArtifactsDir)/tests/coreclr/obj/$(TargetOS).$(Platform).$(Configuration)/Managed/build/iOSApps/$(TestProjectName)/AppBundle</RunScriptOutputDirectory>
     </PropertyGroup>
   </Target>
 
