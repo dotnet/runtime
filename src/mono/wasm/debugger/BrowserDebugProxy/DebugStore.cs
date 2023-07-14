@@ -897,12 +897,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             return new AssemblyInfo(logger);
         }
 
-        public static AssemblyInfo WithoutDebugInfo(string name, ILogger logger)
-        {
-            var ret = new AssemblyInfo(logger);
-            ret.Name = name;
-            return ret;
-        }
+        public static AssemblyInfo WithoutDebugInfo(string name, ILogger logger) => new AssemblyInfo(logger) { Name = name };
 
         private AssemblyInfo(ILogger logger)
         {
@@ -919,15 +914,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (assemblyAndPdbData.PdbUncompressedSize > 0)
                 {
                     byte[] decompressedBuffer;
-                    using (var compressedStream = new MemoryStream(assemblyAndPdbData.PdbBytes, writable: false))
-                    using (var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true))
-                    {
-                        decompressedBuffer = GC.AllocateUninitializedArray<byte>(assemblyAndPdbData.PdbUncompressedSize);
-                        using (var decompressedStream = new MemoryStream(decompressedBuffer, writable: true))
-                        {
-                            deflateStream.CopyTo(decompressedStream);
-                        }
-                    }
+                    using var compressedStream = new MemoryStream(assemblyAndPdbData.PdbBytes, writable: false);
+                    using var deflateStream = new System.IO.Compression.DeflateStream(compressedStream, System.IO.Compression.CompressionMode.Decompress, leaveOpen: true);
+                    decompressedBuffer = GC.AllocateUninitializedArray<byte>(assemblyAndPdbData.PdbUncompressedSize);
+                    using var decompressedStream = new MemoryStream(decompressedBuffer, writable: true);
+                    deflateStream.CopyTo(decompressedStream);
                     this.pdbMetadataReader = MetadataReaderProvider.FromPortablePdbStream(new MemoryStream(decompressedBuffer, writable: false)).GetMetadataReader();
                 }
                 else
@@ -1554,8 +1545,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         private sealed class DebugItem
         {
             public string Url { get; set; }
-            public Task<AssemblyAndPdbData> Data { get; set; }
-            public Task<byte[][]> ByteArray { get; set; }
+            public Task<AssemblyAndPdbData> DataTask { get; set; }
+            public Task<byte[][]> ByteArrayTask { get; set; }
         }
 
         public static IEnumerable<MethodInfo> EnC(MonoSDBHelper sdbAgent, AssemblyInfo asm, byte[] meta_data, byte[] pdb_data)
@@ -1629,7 +1620,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = url,
-                                ByteArray = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null)),
+                                ByteArrayTask = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null)),
                             });
                     }
                     catch (Exception e)
@@ -1651,7 +1642,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             new DebugItem
                             {
                                 Url = file_name,
-                                Data = context.SdbAgent.GetDataFromAssemblyAndPdbAsync(Path.GetFileName(unescapedFileName), false, token)
+                                DataTask = context.SdbAgent.GetDataFromAssemblyAndPdbAsync(Path.GetFileName(unescapedFileName), false, token)
                             });
                     }
                     catch (Exception e)
@@ -1666,15 +1657,15 @@ namespace Microsoft.WebAssembly.Diagnostics
                 AssemblyInfo assembly = null;
                 try
                 {
-                    AssemblyAndPdbData assemblyAndPdbData = null;
-                    if (step.ByteArray != null)
+                    AssemblyAndPdbData assemblyAndPdbData;
+                    if (step.ByteArrayTask != null)
                     {
-                        byte[][] byteArray = await step.ByteArray.ConfigureAwait(false);
+                        byte[][] byteArray = await step.ByteArrayTask.ConfigureAwait(false);
                         assemblyAndPdbData = new AssemblyAndPdbData(byteArray[0], byteArray[1]);
                     }
                     else
                     {
-                        assemblyAndPdbData = await step.Data.ConfigureAwait(false);
+                        assemblyAndPdbData = await step.DataTask.ConfigureAwait(false);
                     }
                     if (assemblyAndPdbData == null || assemblyAndPdbData.AsmBytes == null)
                     {
@@ -1708,7 +1699,16 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
-        public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => Path.GetFileNameWithoutExtension(a.Name).Equals(Path.GetFileNameWithoutExtension(name), StringComparison.InvariantCultureIgnoreCase));
+        public AssemblyInfo GetAssemblyByName(string name)
+        {
+            var nameOnly = Path.GetFileNameWithoutExtension(name.AsSpan());
+            foreach (var asm in assemblies)
+            {
+                if (MemoryExtensions.Equals(nameOnly, Path.GetFileNameWithoutExtension(asm.Name.AsSpan()), StringComparison.InvariantCultureIgnoreCase))
+                    return asm;
+            }
+            return null;
+        }
 
         /*
         V8 uses zero based indexing for both line and column.

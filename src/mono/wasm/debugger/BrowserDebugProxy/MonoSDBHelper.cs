@@ -910,7 +910,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (asm.asmMetadataReader is null && proxy.JustMyCode) //load on demand
                 {
                     var assemblyAndPdbData = await GetDataFromAssemblyAndPdbAsync(asm.Name, true, token);
-                    asm.LoadInfoFromBytes(proxy, sessionId, assemblyAndPdbData, token);
+                    if (assemblyAndPdbData is not null)
+                        asm.LoadInfoFromBytes(proxy, sessionId, assemblyAndPdbData, token);
                 }
             }
             asm.SetDebugId(assemblyId);
@@ -2521,8 +2522,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<AssemblyAndPdbData> GetDataFromAssemblyAndPdbAsync(string assemblyName, bool ignoreJMC, CancellationToken token)
         {
-            if (!assemblyName.StartsWith("System.Private.CoreLib") && !ignoreJMC && proxy.JustMyCode && !(await HasDebugInfoLoadedByRuntimeAsync(assemblyName, token)))
-                return null;
+            if (!ignoreJMC && proxy.JustMyCode && !assemblyName.StartsWith("System.Private.CoreLib", StringComparison.Ordinal) && !(await HasDebugInfoLoadedByRuntimeAsync(assemblyName, token)))
+                return null; //only load symbols if JustMyCode is disabled, or it's corelib or has debug info loaded by runtime which mean it's an user assembly
             using var commandParamsWriter = new MonoBinaryWriter();
             byte[] assembly_buf = null;
             byte[] pdb_buf = null;
@@ -2539,30 +2540,30 @@ namespace Microsoft.WebAssembly.Diagnostics
             int pdb_size = retDebuggerCmdReader.ReadInt32();
             if (pdb_size > 0)
                 pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
-            AssemblyAndPdbData ret = new(assembly_buf, pdb_buf);
 
-            if (!(MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2))
-                return ret;
-            ret = new();
-            ret.AsmBytes = assembly_buf;
-            ret.PdbBytes = pdb_buf;
-            ret.HasDebugInfo = retDebuggerCmdReader.ReadBoolean();
-            ret.PdbUncompressedSize = pdbUncompressedSize;
-            if (!ret.HasDebugInfo)
-                return ret;
+            if (!(MajorVersion == 2 && MinorVersion >= 64 || MajorVersion >= 2)) //versions older than 2.64 do not support this new format of GetAssemblyAndPdbBytes
+                return new(assembly_buf, pdb_buf);
 
-            ret.PdbAge = retDebuggerCmdReader.ReadInt32();
+            AssemblyAndPdbData data = new();
+            data.AsmBytes = assembly_buf;
+            data.PdbBytes = pdb_buf;
+            data.HasDebugInfo = retDebuggerCmdReader.ReadBoolean();
+            data.PdbUncompressedSize = pdbUncompressedSize;
+            if (!data.HasDebugInfo)
+                return data;
+
+            data.PdbAge = retDebuggerCmdReader.ReadInt32();
             var pdbGuidSize = retDebuggerCmdReader.ReadInt32();
-            ret.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));
-            ret.PdbPath = retDebuggerCmdReader.ReadString();
+            data.PdbGuid = new Guid(retDebuggerCmdReader.ReadBytes(pdbGuidSize));
+            data.PdbPath = retDebuggerCmdReader.ReadString();
             var pdbChecksumCount = retDebuggerCmdReader.ReadInt32();
             for (int i = 0; i < pdbChecksumCount; i++)
             {
                 var algorithmName = retDebuggerCmdReader.ReadString();
                 var pdbChecksumSize = retDebuggerCmdReader.ReadInt32();
-                ret.PdbChecksums.Add(new PdbChecksum(algorithmName, retDebuggerCmdReader.ReadBytes(pdbChecksumSize)));
+                data.PdbChecksums.Add(new PdbChecksum(algorithmName, retDebuggerCmdReader.ReadBytes(pdbChecksumSize)));
             }
-            return ret;
+            return data;
         }
         private static readonly string[] s_primitiveTypeNames = new[]
             {
