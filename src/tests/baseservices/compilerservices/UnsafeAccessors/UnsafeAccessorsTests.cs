@@ -91,7 +91,6 @@ static unsafe class UnsafeAccessorsTests
     extern static UserDataValue CallPrivateConstructorValue(string a);
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_CallDefaultCtorClass()
     {
         Console.WriteLine($"Running {nameof(Verify_CallDefaultCtorClass)}");
@@ -101,7 +100,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_CallCtorClass()
     {
         Console.WriteLine($"Running {nameof(Verify_CallCtorClass)}");
@@ -112,7 +110,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_CallCtorValue()
     {
         Console.WriteLine($"Running {nameof(Verify_CallCtorValue)}");
@@ -166,7 +163,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessFieldClass)}");
@@ -202,7 +198,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticMethodClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticMethodClass)}");
@@ -216,7 +211,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessMethodClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessMethodClass)}");
@@ -238,7 +232,6 @@ static unsafe class UnsafeAccessorsTests
     extern static void _mvv(UserDataClass d);
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticMethodVoidClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticMethodVoidClass)}");
@@ -251,7 +244,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessMethodVoidClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessMethodVoidClass)}");
@@ -265,7 +257,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticMethodValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticMethodValue)}");
@@ -279,7 +270,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessMethodValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessMethodValue)}");
@@ -315,7 +305,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_PreciseMatchCustomModifier()
     {
         Console.WriteLine($"Running {nameof(Verify_PreciseMatchCustomModifier)}");
