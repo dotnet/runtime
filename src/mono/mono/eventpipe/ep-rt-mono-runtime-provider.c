@@ -458,10 +458,10 @@ write_buffer_string_utf8_to_utf16_t (
 {
 	uint32_t num_bytes_utf16_str = 0;
 	if (str && len != 0) {
-		uint32_t len_utf16 = 0;
-		ep_char16_t *str_utf16 = (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, (glong *)&len_utf16, NULL));
+		glong len_utf16 = 0;
+		ep_char16_t *str_utf16 = (ep_char16_t *)(g_utf8_to_utf16le ((const gchar *)str, (glong)len, NULL, &len_utf16, NULL));
 		if (str_utf16 && len_utf16 != 0) {
-			num_bytes_utf16_str = MIN (len_utf16, len) * sizeof (ep_char16_t);
+			num_bytes_utf16_str = MIN (GLONG_TO_UINT32 (len_utf16), len) * sizeof (ep_char16_t);
 			memcpy (*buf, str_utf16, num_bytes_utf16_str);
 		}
 		g_free (str_utf16);

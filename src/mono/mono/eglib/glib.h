@@ -1635,6 +1635,7 @@ __CAST_UTYPE_TO_STYPE(gunichar, gchar, CHAR_MIN, CHAR_MAX)
 
 #define GLONG_TO_ULONG(v)        G_CAST_TYPE_TO_TYPE(glong, gulong, v)
 #define GULONG_TO_LONG(v)        G_CAST_TYPE_TO_TYPE(gulong, glong, v)
+#define GLONG_TO_UINT32(v)       G_CAST_TYPE_TO_TYPE(glong, guint32, v)
 
 #define GDOUBLE_TO_INT64(v)      G_CAST_TYPE_TO_TYPE(gdouble, gint64, v)
 #define GDOUBLE_TO_UINT64(v)     G_CAST_TYPE_TO_TYPE(gdouble, guint64, v)
