@@ -232,6 +232,13 @@ namespace System.Text.Json.SourceGeneration
             return member is IFieldSymbol fs ? fs.Type : ((IPropertySymbol)member).Type;
         }
 
+        public static bool IsOverriddenOrShadowedBy(this ISymbol member, ISymbol otherMember)
+        {
+            Debug.Assert(member is IFieldSymbol or IPropertySymbol);
+            Debug.Assert(otherMember is IFieldSymbol or IPropertySymbol);
+            return member.Name == otherMember.Name && member.ContainingType.IsAssignableFrom(otherMember.ContainingType);
+        }
+
         public static bool MemberNameNeedsAtSign(this ISymbol symbol)
             => SyntaxFacts.GetKeywordKind(symbol.Name) != SyntaxKind.None || SyntaxFacts.GetContextualKeywordKind(symbol.Name) != SyntaxKind.None;
 
