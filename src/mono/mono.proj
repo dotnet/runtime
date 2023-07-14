@@ -553,12 +553,6 @@
       <_MonoCXXFLAGS Include="-Wl,--build-id=sha1" />
       <_MonoCXXFLAGS Condition="'$(Platform)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
-    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
-      <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
-      <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
-      <_MonoAOTCXXFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
-    </ItemGroup>
 
     <!-- Devloop features -->
     <ItemGroup Condition="'$(MonoMsCorDbi)' == 'true'">
@@ -708,6 +702,12 @@
       <_MonoAOTCXXFLAGS Include="-L$(MonoLLVMDir)\$(_MonoLLVMTargetArchitecture)\lib" />
       <_MonoAOTCXXFLAGS Include="-stdlib=libc++" />
       <MonoAOTCMakeArgs Include="-DMONO_SET_RPATH_ORIGIN=true" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(AotHostOS)' == 'linux'">
+      <_MonoAOTCFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
+      <_MonoAOTCXXFLAGS Include="-Wl,--build-id=sha1" />
+      <_MonoAOTCXXFLAGS Condition="'$(AotHostArchitecture)' == 'arm'" Include="-march=armv7-a" />
     </ItemGroup>
 
     <!-- macOS host specific options -->
