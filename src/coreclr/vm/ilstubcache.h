@@ -79,6 +79,12 @@ public:
 
     MethodTable* GetOrCreateStubMethodTable(Module* pLoaderModule);
 
+    MethodDesc* LookupStubMethodDesc(ILStubHashBlob* pHashBlob);
+
+    // Insert a stub MethodDesc into the cache
+    // If one is already present at a matching hash blob, return the already present one, otherwise, return pMD
+    MethodDesc* InsertStubMethodDesc(MethodDesc* pMD, ILStubHashBlob* pHashBlob);
+
 private: // static
     static MethodDesc* CreateNewMethodDesc(
         LoaderHeap* pCreationHeap,

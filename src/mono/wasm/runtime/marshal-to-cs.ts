@@ -20,11 +20,12 @@ import { stringToMonoStringRoot } from "./strings";
 import { GCHandle, GCHandleNull, JSMarshalerArgument, JSMarshalerArguments, JSMarshalerType, MarshalerToCs, MarshalerToJs, BoundMarshalerToCs, MarshalerType } from "./types/internal";
 import { TypedArray } from "./types/emscripten";
 import { addUnsettledPromise, settleUnsettledPromise } from "./pthreads/shared/eventloop";
+import { mono_log_warn } from "./logging";
 
 
 export function initialize_marshalers_to_cs(): void {
     if (js_to_cs_marshalers.size == 0) {
-        js_to_cs_marshalers.set(MarshalerType.Array, _marshal_array_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.Array, marshal_array_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Span, _marshal_span_to_cs);
         js_to_cs_marshalers.set(MarshalerType.ArraySegment, _marshal_array_segment_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Boolean, _marshal_bool_to_cs);
@@ -42,7 +43,7 @@ export function initialize_marshalers_to_cs(): void {
         js_to_cs_marshalers.set(MarshalerType.String, _marshal_string_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Exception, marshal_exception_to_cs);
         js_to_cs_marshalers.set(MarshalerType.JSException, marshal_exception_to_cs);
-        js_to_cs_marshalers.set(MarshalerType.JSObject, _marshal_js_object_to_cs);
+        js_to_cs_marshalers.set(MarshalerType.JSObject, marshal_js_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Object, _marshal_cs_object_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Task, _marshal_task_to_cs);
         js_to_cs_marshalers.set(MarshalerType.Action, _marshal_function_to_cs);
@@ -313,15 +314,25 @@ function _marshal_task_to_cs(arg: JSMarshalerArgument, value: Promise<any>, _?: 
         addUnsettledPromise();
 
     value.then(data => {
-        if (MonoWasmThreads)
-            settleUnsettledPromise();
-        runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
-        teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+        try {
+            if (MonoWasmThreads)
+                settleUnsettledPromise();
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, null, data, res_converter || _marshal_cs_object_to_cs);
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed, (holding promise instead would not work)
+        }
+        catch (ex) {
+            mono_log_warn("Exception marshalling result of JS promise to CS: ", ex);
+        }
     }).catch(reason => {
-        if (MonoWasmThreads)
-            settleUnsettledPromise();
-        runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
-        teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
+        try {
+            if (MonoWasmThreads)
+                settleUnsettledPromise();
+            runtimeHelpers.javaScriptExports.complete_task(gc_handle, reason, null, undefined);
+            teardown_managed_proxy(holder, gc_handle); // this holds holder alive for finalizer, until the promise is freed
+        }
+        catch (ex) {
+            mono_log_warn("Exception marshalling error of JS promise to CS: ", ex);
+        }
     });
 }
 
@@ -352,7 +363,7 @@ export function marshal_exception_to_cs(arg: JSMarshalerArgument, value: any): v
     }
 }
 
-function _marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
+export function marshal_js_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     if (value === undefined || value === null) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -453,12 +464,12 @@ function _marshal_cs_object_to_cs(arg: JSMarshalerArgument, value: any): void {
     }
 }
 
-function _marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray, element_type?: MarshalerType): void {
+export function marshal_array_to_cs(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type?: MarshalerType): void {
     mono_assert(!!element_type, "Expected valid element_type parameter");
     marshal_array_to_cs_impl(arg, value, element_type);
 }
 
-export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined, element_type: MarshalerType): void {
+export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<any> | TypedArray | undefined | null, element_type: MarshalerType): void {
     if (value === null || value === undefined) {
         set_arg_type(arg, MarshalerType.None);
     }
@@ -491,7 +502,7 @@ export function marshal_array_to_cs_impl(arg: JSMarshalerArgument, value: Array<
             _zero_region(buffer_ptr, buffer_length);
             for (let index = 0; index < length; index++) {
                 const element_arg = get_arg(buffer_ptr, index);
-                _marshal_js_object_to_cs(element_arg, value[index]);
+                marshal_js_object_to_cs(element_arg, value[index]);
             }
         }
         else if (element_type == MarshalerType.Byte) {

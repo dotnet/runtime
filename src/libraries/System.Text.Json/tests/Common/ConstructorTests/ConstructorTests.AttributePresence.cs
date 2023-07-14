@@ -8,24 +8,35 @@ namespace System.Text.Json.Serialization.Tests
 {
     public abstract partial class ConstructorTests
     {
-        [Fact]
-        public async Task NonPublicCtors_NotSupported()
+        [Theory]
+        [InlineData(typeof(PrivateParameterlessCtor))]
+        [InlineData(typeof(InternalParameterlessCtor))]
+        [InlineData(typeof(ProtectedParameterlessCtor))]
+        [InlineData(typeof(PrivateParameterizedCtor))]
+        [InlineData(typeof(InternalParameterizedCtor))]
+        [InlineData(typeof(ProtectedParameterizedCtor))]
+        public async Task NonPublicCtors_NotSupported(Type type)
         {
-            async Task RunTestAsync<T>()
+            NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
+            Assert.Contains("JsonConstructorAttribute", ex.ToString());
+        }
+
+        [Theory]
+        [InlineData(typeof(PrivateParameterizedCtor_WithAttribute), false)]
+        [InlineData(typeof(InternalParameterizedCtor_WithAttribute), true)]
+        [InlineData(typeof(ProtectedParameterizedCtor_WithAttribute), false)]
+        public async Task NonPublicCtors_WithJsonConstructorAttribute_WorksAsExpected(Type type, bool isAccessibleBySourceGen)
+        {
+            if (!Serializer.IsSourceGeneratedSerializer || isAccessibleBySourceGen)
             {
-                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper<T>("{}"));
+                object? result = await Serializer.DeserializeWrapper("{}", type);
+                Assert.IsType(type, result);
+            }
+            else
+            {
+                NotSupportedException ex = await Assert.ThrowsAsync<NotSupportedException>(() => Serializer.DeserializeWrapper("{}", type));
                 Assert.Contains("JsonConstructorAttribute", ex.ToString());
             }
-
-            await RunTestAsync<PrivateParameterlessCtor>();
-            await RunTestAsync<InternalParameterlessCtor>();
-            await RunTestAsync<ProtectedParameterlessCtor>();
-            await RunTestAsync<PrivateParameterizedCtor>();
-            await RunTestAsync<InternalParameterizedCtor>();
-            await RunTestAsync<ProtectedParameterizedCtor>();
-            await RunTestAsync<PrivateParameterizedCtor_WithAttribute>();
-            await RunTestAsync<InternalParameterizedCtor_WithAttribute>();
-            await RunTestAsync<ProtectedParameterizedCtor_WithAttribute>();
         }
 
         [Fact]

@@ -64,9 +64,9 @@ namespace Microsoft.Interop
 
                 return ResolvedGenerator.NotSupported(
                     new GeneratorDiagnostic.NotSupported(info, context)
-                {
-                    NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
-                    DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
+                    {
+                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
+                        DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
                     });
             }
 
@@ -99,34 +99,34 @@ namespace Microsoft.Interop
                 case ConstSizeCountInfo(int size):
                     return new(GetConstSizeExpression(size));
                 case SizeAndParamIndexInfo(SizeAndParamIndexInfo.UnspecifiedConstSize, TypePositionInfo param):
-                {
+                    {
                         return GetExpressionForParam(param, out bool isIntType) switch
                         {
                             (ExpressionSyntax expr, null) => new(isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr)),
                             (null, GeneratorDiagnostic.NotSupported notSupported) => new(notSupported),
                             (not null, not null) => throw new UnreachableException()
                         };
-                }
+                    }
                 case SizeAndParamIndexInfo(int size, TypePositionInfo param):
                     return GetExpressionForParam(param, out bool _) switch
                     {
                         (ExpressionSyntax expr, null) => new(
                             CheckedExpression(SyntaxKind.CheckedExpression,
-                        BinaryExpression(SyntaxKind.AddExpression,
-                            GetConstSizeExpression(size),
+                                BinaryExpression(SyntaxKind.AddExpression,
+                                    GetConstSizeExpression(size),
                                     expr))),
                         (null, GeneratorDiagnostic.NotSupported notSupported) => new(notSupported),
                         (not null, not null) => throw new UnreachableException()
                     };
                 case CountElementCountInfo(TypePositionInfo elementInfo):
-                {
+                    {
                         return GetExpressionForParam(elementInfo, out bool isIntType) switch
                         {
                             (ExpressionSyntax expr, null) => new(isIntType ? expr : CheckedExpression(SyntaxKind.CheckedExpression, expr)),
                             (null, GeneratorDiagnostic.NotSupported notSupported) => new(notSupported),
                             (not null, not null) => throw new UnreachableException()
                         };
-                }
+                    }
                 default:
                     return new(new GeneratorDiagnostic.NotSupported(info, context)
                     {
@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.Default, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -334,7 +334,7 @@ namespace Microsoft.Interop
                 if (numElementsExpressionResult is (_, GeneratorDiagnostic.NotSupported notSupportedDiagnostic))
                 {
                     return ResolvedGenerator.NotSupported(notSupportedDiagnostic);
-            }
+                }
                 numElementsExpression = numElementsExpressionResult.Expression;
             }
 
@@ -369,7 +369,7 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatefulCallerAllocatedBufferMarshalling(marshallingStrategy, marshallerTypeSyntax, bufferElementTypeSyntax);
                 }
 
-                FreeStrategy freeStrategy = GetFreeStrategy(info, context);
+                var freeStrategy = GetFreeStrategy(info, context);
                 IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
                 ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
@@ -394,7 +394,7 @@ namespace Microsoft.Interop
             {
                 marshallingStrategy = new StatelessLinearCollectionSpaceAllocator(marshallerTypeSyntax, nativeType, marshallerData.Shape, numElementsExpression);
 
-                FreeStrategy freeStrategy = GetFreeStrategy(info, context);
+                var freeStrategy = GetFreeStrategy(info, context);
 
                 IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
                 if (freeStrategy == FreeStrategy.FreeOriginal)
@@ -404,7 +404,7 @@ namespace Microsoft.Interop
 
                 ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
-                marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape, freeStrategy != FreeStrategy.NoFree);
+                marshallingStrategy = new StatelessLinearCollectionMarshalling(marshallingStrategy, elementsMarshalling, nativeType, marshallerData.Shape, numElementsExpression, freeStrategy != FreeStrategy.NoFree);
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.CallerAllocatedBuffer))
                 {
@@ -426,16 +426,31 @@ namespace Microsoft.Interop
                 }
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(
-                marshallingStrategy,
-                enableByValueContentsMarshalling: info.ManagedType is SzArrayType && (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo)));
+            ByValueMarshalKindSupportDescriptor byValueMarshalKindSupport;
+            if (info.ManagedType is not SzArrayType)
+            {
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.Default;
+            }
+            else if (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo))
+            {
+                // If the type is not blittable or is sometimes not blittable, we will generate different code when the attributes are provided.
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.ArrayParameter;
+            }
+            else
+            {
+                // If the type is always blittable, we'll generate the same code regardless of the attributes,
+                // but we'll allow them to make it easier to transition to source-generated code and allow users to be clear about expectations
+                // for values in pre-allocated buffers.
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.PinnedParameter;
+            }
 
             // Elements in the collection must be blittable to use the pinnable marshaller.
-            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable)
+            bool isPinned = marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable;
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, byValueMarshalKindSupport, isPinned);
+            if (isPinned)
             {
                 marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
             }
-
             return ResolvedGenerator.Resolved(marshallingGenerator);
         }
 

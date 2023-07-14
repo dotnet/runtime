@@ -7,6 +7,8 @@ using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<str
 
 namespace Microsoft.NET.Sdk.WebAssembly;
 
+#nullable disable
+
 /// <summary>
 /// Defines the structure of a Blazor boot JSON file
 /// </summary>
@@ -40,6 +42,11 @@ public class BootJsonData
     public bool debugBuild { get; set; }
 
     /// <summary>
+    /// Gets a value that determines what level of debugging is configured.
+    /// </summary>
+    public int debugLevel { get; set; }
+
+    /// <summary>
     /// Gets a value that determines if the linker is enabled.
     /// </summary>
     public bool linkerEnabled { get; set; }
@@ -68,10 +75,30 @@ public class BootJsonData
     /// Gets or sets configuration extensions.
     /// </summary>
     public Dictionary<string, Dictionary<string, object>> extensions { get; set; }
+
+    /// <summary>
+    /// Gets or sets environment variables.
+    /// </summary>
+    public object environmentVariables { get; set; }
+
+    /// <summary>
+    /// Gets or sets diagnostic tracing.
+    /// </summary>
+    public object diagnosticTracing { get; set; }
+
+    /// <summary>
+    /// Gets or sets pthread pool size.
+    /// </summary>
+    public int? pthreadPoolSize { get; set; }
 }
 
 public class ResourcesData
 {
+    /// <summary>
+    /// Gets a hash of all resources
+    /// </summary>
+    public string hash { get; set; }
+
     /// <summary>
     /// .NET Wasm runtime resources (dotnet.wasm, dotnet.js) etc.
     /// </summary>
@@ -102,9 +129,17 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
+    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
+
+    /// <summary>
+    /// JavaScript module initializers that runtime will be in charge of loading.
+    /// Used in .NET >= 8
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public TypedLibraryStartupModules libraryStartupModules { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)
@@ -119,6 +154,21 @@ public class ResourcesData
     [DataMember(EmitDefaultValue = false)]
     public Dictionary<string, AdditionalAsset> runtimeAssets { get; set; }
 
+    [DataMember(EmitDefaultValue = false)]
+    public Dictionary<string, ResourceHashesByNameDictionary> vfs { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public List<string> remoteSources { get; set; }
+}
+
+[DataContract]
+public class TypedLibraryStartupModules
+{
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary onRuntimeConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary onRuntimeReady { get; set; }
 }
 
 public enum ICUDataMode : int
@@ -155,8 +205,8 @@ public enum ICUDataMode : int
 public class AdditionalAsset
 {
     [DataMember(Name = "hash")]
-    public string Hash { get; set; }
+    public string hash { get; set; }
 
     [DataMember(Name = "behavior")]
-    public string Behavior { get; set; }
+    public string behavior { get; set; }
 }

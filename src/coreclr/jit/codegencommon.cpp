@@ -1713,7 +1713,7 @@ void CodeGen::genGenerateMachineCode()
         const char* fullName = compiler->eeGetMethodFullName(compiler->info.compMethodHnd);
 #endif
 
-        printf("; Assembly listing for method %s\n", fullName);
+        printf("; Assembly listing for method %s (%s)\n", fullName, compiler->compGetTieringName(true));
 
         printf("; Emitting ");
 
@@ -1785,13 +1785,11 @@ void CodeGen::genGenerateMachineCode()
 
         printf("\n");
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0))
+        printf("; %s code\n", compiler->compGetTieringName(false));
+
+        if (compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
-            printf("; Tier-0 compilation\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER1))
-        {
-            printf("; Tier-1 compilation\n");
+            printf("; NativeAOT compilation\n");
         }
         else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_READYTORUN))
         {
@@ -1815,20 +1813,8 @@ void CodeGen::genGenerateMachineCode()
         {
             printf("; debuggable code\n");
         }
-        else if (compiler->opts.MinOpts())
-        {
-            printf("; MinOpts code\n");
-        }
-        else
-        {
-            printf("; unknown optimization flags\n");
-        }
 
-        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR))
-        {
-            printf("; instrumented for collecting profile data\n");
-        }
-        else if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
+        if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBOPT) && compiler->fgHaveProfileWeights())
         {
             printf("; optimized using %s\n", compiler->compGetPgoSourceName());
         }
@@ -1980,6 +1966,11 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
+    if (compiler->opts.disAsm)
+    {
+        printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
+
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
                                             &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
@@ -1999,6 +1990,11 @@ void CodeGen::genEmitMachineCode()
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
 
+    if (compiler->opts.disAsm)
+    {
+        printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
+
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
     {
@@ -2014,7 +2010,8 @@ void CodeGen::genEmitMachineCode()
         }
 #endif // TRACK_LSRA_STATS
 
-        printf(" (MethodHash=%08x) for method %s\n", compiler->info.compMethodHash(), compiler->info.compFullName);
+        printf(" (MethodHash=%08x) for method %s (%s)\n", compiler->info.compMethodHash(), compiler->info.compFullName,
+               compiler->compGetTieringName(true));
 
         printf("; ============================================================\n\n");
         printf(""); // in our logic this causes a flush
@@ -3017,7 +3014,20 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
 #if defined(UNIX_AMD64_ABI)
         if (varTypeIsStruct(varDsc))
         {
-            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetLayout()->GetClassHandle();
+            CORINFO_CLASS_HANDLE typeHnd;
+            if (varDsc->lvIsStructField)
+            {
+                // The only case we currently permit is a wrapped SIMD field,
+                // where we won't have the class handle available, so get it
+                // from the parent struct -- they will agree on ABI details.
+                LclVarDsc* parentDsc = compiler->lvaGetDesc(varDsc->lvParentLcl);
+                assert(varTypeIsSIMD(varDsc) && (parentDsc->lvFieldCnt == 1));
+                typeHnd = parentDsc->GetLayout()->GetClassHandle();
+            }
+            else
+            {
+                typeHnd = varDsc->GetLayout()->GetClassHandle();
+            }
             assert(typeHnd != nullptr);
             SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
             compiler->eeGetSystemVAmd64PassStructInRegisterDescriptor(typeHnd, &structDesc);
@@ -3114,7 +3124,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 }
             }
 #if FEATURE_MULTIREG_ARGS
-            else if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+            else if (varDsc->lvIsMultiRegArg)
             {
                 if (varDsc->lvIsHfaRegArg())
                 {
@@ -3323,7 +3333,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
                 {
                     // This must be a SIMD type that's fully enregistered, but is passed as an HFA.
                     // Each field will be inserted into the same destination register.
-                    assert(varTypeIsSIMD(varDsc) && !compiler->isOpaqueSIMDType(varDsc->GetLayout()));
+                    assert(varTypeIsSIMD(varDsc));
                     assert(regArgTab[argNum].slot <= (int)varDsc->lvHfaSlots());
                     assert(argNum > 0);
                     assert(regArgTab[argNum - 1].varNum == varNum);
@@ -5774,17 +5784,13 @@ void CodeGen::genFnProlog()
     {
         initReg = REG_IP1;
     }
-#elif defined(TARGET_LOONGARCH64)
-    // For loongarch64 OSR root frames, we may need a scratch register for large
-    // offset addresses. Use a register that won't be allocated.
-    //
-    if (isRoot && compiler->opts.IsOSR())
-    {
-        initReg = REG_SCRATCH;
-    }
 #endif
 
+#ifndef TARGET_LOONGARCH64
+    // For LoongArch64's OSR root frames, we may need a scratch register for large
+    // offset addresses. But this does not conflict with the REG_PINVOKE_FRAME.
     noway_assert(!compiler->compMethodRequiresPInvokeFrame() || (initReg != REG_PINVOKE_FRAME));
+#endif
 
 #if defined(TARGET_AMD64)
     // If we are a varargs call, in order to set up the arguments correctly this

@@ -27,8 +27,7 @@
           AfterTargets="Build"
           Condition="'$(RefOnly)' != 'true'">
     <ItemGroup>
-      <DocumentationFileToCopy Include="@(SharedFrameworkAssembly->Metadata('DocFileItem'))"
-                               Condition="!$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+      <DocumentationFileToCopy Include="@(SharedFrameworkAssembly->WithMetadataValue('IsPrivateAssembly', 'false')->Metadata('DocFileItem'))" />
     </ItemGroup>
 
     <Copy SourceFiles="@(DocumentationFileToCopy)"

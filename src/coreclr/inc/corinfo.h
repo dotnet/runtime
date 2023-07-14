@@ -633,6 +633,7 @@ enum CorInfoHelpFunc
     CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED,      // throw PlatformNotSupportedException
     CORINFO_HELP_THROW_TYPE_NOT_SUPPORTED,          // throw TypeNotSupportedException
     CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION, // throw AmbiguousResolutionException for failed static virtual method resolution
+    CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION, // throw EntryPointNotFoundException for failed static virtual method resolution
 
     CORINFO_HELP_JIT_PINVOKE_BEGIN, // Transition to preemptive mode before a P/Invoke, frame is the first argument
     CORINFO_HELP_JIT_PINVOKE_END,   // Transition to cooperative mode after a P/Invoke, frame is the first argument
@@ -857,8 +858,6 @@ enum CorInfoFlag
     CORINFO_FLG_ARRAY                 = 0x00080000, // class is an array class (initialized differently)
     CORINFO_FLG_OVERLAPPING_FIELDS    = 0x00100000, // struct or class has fields that overlap (aka union)
     CORINFO_FLG_INTERFACE             = 0x00200000, // it is an interface
-    CORINFO_FLG_DONT_DIG_FIELDS       = 0x00400000, // don't ask field info (used for types outside of AOT compilation version bubble)
-    CORINFO_FLG_CUSTOMLAYOUT          = 0x00800000, // does this struct have custom layout?
     CORINFO_FLG_CONTAINS_GC_PTR       = 0x01000000, // does the class contain a gc ptr ?
     CORINFO_FLG_DELEGATE              = 0x02000000, // is this a subclass of delegate or multicast delegate ?
     CORINFO_FLG_INDEXABLE_FIELDS      = 0x04000000, // struct fields may be accessed via indexing (used for inline arrays)
@@ -1636,6 +1635,7 @@ enum CORINFO_DEVIRTUALIZATION_DETAIL
     CORINFO_DEVIRTUALIZATION_FAILED_BUBBLE_IMPL_NOT_REFERENCEABLE, // object class cannot be referenced from R2R code due to missing tokens
     CORINFO_DEVIRTUALIZATION_FAILED_DUPLICATE_INTERFACE,           // crossgen2 virtual method algorithm and runtime algorithm differ in the presence of duplicate interface implementations
     CORINFO_DEVIRTUALIZATION_FAILED_DECL_NOT_REPRESENTABLE,        // Decl method cannot be represented in R2R image
+    CORINFO_DEVIRTUALIZATION_FAILED_TYPE_EQUIVALENCE,              // Support for type equivalence in devirtualization is not yet implemented in crossgen2
     CORINFO_DEVIRTUALIZATION_COUNT,                                // sentinel for maximum value
 };
 
@@ -1728,8 +1728,11 @@ struct CORINFO_FIELD_INFO
 
 struct CORINFO_THREAD_STATIC_BLOCKS_INFO
 {
-    CORINFO_CONST_LOOKUP tlsIndex;
-    uint32_t offsetOfThreadLocalStoragePointer;
+    CORINFO_CONST_LOOKUP tlsIndex;              // windows specific
+    void* tlsGetAddrFtnPtr;                     // linux/x64 specific - address of __tls_get_addr() function
+    void* tlsIndexObject;                       // linux/x64 specific - address of tls_index object
+    void* threadVarsSection;                    // osx x64/arm64 specific - address of __thread_vars section of `t_ThreadStatics`
+    uint32_t offsetOfThreadLocalStoragePointer; // windows specific
     uint32_t offsetOfMaxThreadStaticBlocks;
     uint32_t offsetOfThreadStaticBlocks;
     uint32_t offsetOfGCDataPointer;
@@ -1934,6 +1937,46 @@ struct CORINFO_VarArgInfo
                                             // (The CORINFO_VARARGS_HANDLE counts as an arg)
 };
 
+struct CORINFO_TYPE_LAYOUT_NODE
+{
+    // Type handle if this is a SIMD type, i.e. for intrinsic types in
+    // System.Numerics and System.Runtime.Intrinsics namespaces. This handle
+    // should be used for SIMD type recognition ONLY. During prejitting the
+    // returned handle cannot safely be used for arbitrary JIT-EE calls. The
+    // safe operations on this handle are:
+    // - getClassNameFromMetadata
+    // - getClassSize
+    // - getHfaType
+    // - getTypeInstantiationArgument, but only under the assumption that the returned type handle
+    //   is used for primitive type recognition via getTypeForPrimitiveNumericClass
+    CORINFO_CLASS_HANDLE simdTypeHnd;
+    // Field handle that should only be used for diagnostic purposes. During
+    // prejit we cannot allow arbitrary JIT-EE calls with this field handle, but it can be used
+    // for diagnostic purposes (e.g. to obtain the field name).
+    CORINFO_FIELD_HANDLE diagFieldHnd;
+    // Index of parent node in the tree
+    unsigned parent;
+    // Offset into the root type of the field
+    unsigned offset;
+    // Size of the type.
+    unsigned size;
+    // Number of fields for type == CORINFO_TYPE_VALUECLASS. This is the number of nodes added.
+    unsigned numFields;
+    // Type of the field.
+    CorInfoType type;
+    // For type == CORINFO_TYPE_VALUECLASS indicates whether the type has significant padding.
+    // That is, whether or not the JIT always needs to preserve data stored in
+    // the parts that are not covered by fields.
+    bool hasSignificantPadding;
+};
+
+enum class GetTypeLayoutResult
+{
+    Success,
+    Partial,
+    Failure,
+};
+
 #define SIZEOF__CORINFO_Object                            TARGET_POINTER_SIZE /* methTable */
 
 #define CORINFO_Array_MaxLength                           0x7FFFFFC7
@@ -2040,7 +2083,8 @@ public:
     //      This method is used to fetch data needed to inline functions
     virtual bool getMethodInfo (
             CORINFO_METHOD_HANDLE   ftn,            /* IN  */
-            CORINFO_METHOD_INFO*    info            /* OUT */
+            CORINFO_METHOD_INFO*    info,           /* OUT */
+            CORINFO_CONTEXT_HANDLE  context = NULL  /* IN  */
             ) = 0;
 
     // Decides if you have any limitations for inlining. If everything's OK, it will return
@@ -2402,6 +2446,45 @@ public:
             CORINFO_CLASS_HANDLE        clsHnd,
             int32_t                     num
             ) = 0;
+
+    //------------------------------------------------------------------------------
+    // getTypeLayout: Obtain a tree describing the layout of a type.
+    //
+    // Parameters:
+    //   typeHnd            - Handle of the type.
+    //   treeNodes          - [in, out] Pointer to tree node entries to write.
+    //   numTreeNodes       - [in, out] Size of 'treeNodes' on entry. Updated to contain
+    //                         the number of entries written in 'treeNodes'.
+    //
+    // Returns:
+    //   A result indicating whether the type layout was successfully
+    //   retrieved and whether the result is partial or not.
+    //
+    // Remarks:
+    //   The type layout should be stored in preorder in 'treeNodes': the root
+    //   node is always at index 0, and the first child of any node is at its
+    //   own index + 1. The fields returned are NOT guaranteed to be ordered
+    //   by offset.
+    //
+    //   SIMD and HW SIMD types are returned as a single entry without any
+    //   children. For those, CORINFO_TYPE_LAYOUT_NODE::simdTypeHnd is set, but
+    //   can only be used in a very restricted capacity, see
+    //   CORINFO_TYPE_LAYOUT_NODE. Note that this special treatment is only for
+    //   fields; if typeHnd itself is a SIMD type this function will treat it
+    //   like a normal struct type and expand its fields.
+    //
+    //   IMPORTANT: except for GC pointers the fields returned to the JIT by
+    //   this function should be considered as a hint only. The JIT CANNOT make
+    //   assumptions in its codegen that the specified fields are actually part
+    //   of the type when the code finally runs. This means the JIT should not
+    //   make optimizations based on the field information returned by this
+    //   function that would break if those fields were removed or shifted
+    //   around.
+    //
+    virtual GetTypeLayoutResult getTypeLayout(
+            CORINFO_CLASS_HANDLE typeHnd,
+            CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+            size_t* numTreeNodes) = 0;
 
     virtual bool checkMethodModifier(
             CORINFO_METHOD_HANDLE       hMethod,
