@@ -117,7 +117,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
-        loaderHelpers.config = module.config = <any>{ message: errMessage, error: err, isError: true };
+        loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });
         loaderHelpers.abort_startup(errMessage, true);
         throw err;
     }

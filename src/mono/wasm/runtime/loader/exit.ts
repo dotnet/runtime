@@ -20,17 +20,26 @@ export function assert_runtime_running() {
     mono_assert(!loaderHelpers.assertAfterExit || !is_exited(), () => `mono runtime already exited with ${loaderHelpers.exitCode}`);
 }
 
+function unifyReason(exit_code: number, reason?: any) {
+    exit_code = (typeof reason === "object" && typeof reason.status === "number") ? reason.status : 1;
+    const message = (typeof reason === "object" && typeof reason.message === "number")
+        ? reason.message
+        : "" + reason;
+    reason = (typeof reason === "object")
+        ? reason
+        : (runtimeHelpers.ExitStatus
+            ? new runtimeHelpers.ExitStatus(exit_code)
+            : new Error("Exit with code " + exit_code + " " + message));
+    reason.status = exit_code;
+    if (!reason.message) reason.message = message;
+    return reason;
+}
+
 export function abort_startup(reason: any, should_exit: boolean, should_throw?: boolean): void {
     if (loaderHelpers.isAborted) return;
-
-    const exit_code = (reason && typeof reason.status === "number") ? reason.status : 1;
-    reason = reason || (runtimeHelpers.ExitStatus
-        ? new runtimeHelpers.ExitStatus(exit_code)
-        : new Error("Exit with code " + exit_code));
-    reason.status = exit_code;
-
+    reason = unifyReason(1, reason);
     loaderHelpers.isAborted = true;
-    loaderHelpers.exitCode = exit_code;
+    const exit_code = loaderHelpers.exitCode = reason.status || 1;
     mono_log_debug("abort_startup, reason: " + reason);
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);
@@ -47,7 +56,15 @@ export function abort_startup(reason: any, should_exit: boolean, should_throw?: 
         runtimeHelpers.afterOnRuntimeInitialized.promise_control.reject(reason);
         runtimeHelpers.afterPostRun.promise_control.reject(reason);
     }
-    if (typeof reason !== "object" || reason.silent !== true) {
+    if (reason.silent !== true) {
+        try {
+            logErrorOnExit(exit_code, reason);
+            appendElementOnExit(exit_code);
+        }
+        catch {
+            // ignore any failures
+        }
+        reason.silent = true;
         if (should_exit || ENVIRONMENT_IS_SHELL || ENVIRONMENT_IS_NODE) {
             mono_exit(1, reason);
         }
@@ -59,12 +76,8 @@ export function abort_startup(reason: any, should_exit: boolean, should_throw?: 
 
 // this will also call mono_wasm_exit if available, which will call exitJS -> _proc_exit -> terminateAllThreads
 export function mono_exit(exit_code: number, reason?: any): void {
-    // make sure we have both reason and exit_code
-    exit_code = (reason && typeof reason.status === "number") ? reason.status : exit_code;
-    reason = reason || (runtimeHelpers.ExitStatus
-        ? new runtimeHelpers.ExitStatus(exit_code)
-        : new Error("Exit with code " + exit_code));
-    reason.status = exit_code;
+    reason = unifyReason(exit_code, reason);
+    exit_code = reason.status || 1;
 
     if (!is_exited()) {
         try {
@@ -152,8 +165,13 @@ function appendElementOnExit(exit_code: number) {
 
 function logErrorOnExit(exit_code: number, reason: any) {
     if (exit_code !== 0 && reason) {
-        if (reason instanceof Error && runtimeHelpers.stringify_as_error_with_stack)
-            mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
+        if (reason instanceof Error) {
+            if (runtimeHelpers.stringify_as_error_with_stack) {
+                mono_log_error(runtimeHelpers.stringify_as_error_with_stack(reason));
+            } else {
+                mono_log_error(reason.message + "\n" + reason.stack);
+            }
+        }
         else if (typeof reason == "string")
             mono_log_error(reason);
         else

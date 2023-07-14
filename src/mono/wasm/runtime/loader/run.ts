@@ -37,6 +37,19 @@ export class HostBuilder implements DotnetHostBuilder {
     }
 
     // internal
+    withOnConfigLoaded(onConfigLoaded: (config: MonoConfig) => void | Promise<void>): DotnetHostBuilder {
+        try {
+            deep_merge_module(module, {
+                onConfigLoaded
+            });
+            return this;
+        } catch (err) {
+            mono_exit(1, err);
+            throw err;
+        }
+    }
+
+    // internal
     withConsoleForwarding(): DotnetHostBuilder {
         try {
             deep_merge_config(monoConfig, {
