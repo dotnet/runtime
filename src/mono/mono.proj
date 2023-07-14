@@ -652,7 +652,7 @@
     <!-- If you don't specify the AOT host, assume it's the build machine -->
     <PropertyGroup>
       <AotHostArchitecture Condition="'$(AotHostArchitecture)' == ''">$(BuildArchitecture)</AotHostArchitecture>
-      <AotHostOS Condition="'$(AotHostOS)' == ''">$(_portableHostOS)</AotHostOS>
+      <AotHostOS Condition="'$(AotHostOS)' == ''">$(HostOS)</AotHostOS>
     </PropertyGroup>
 
     <!-- iOS/tvOS specific options -->
@@ -920,7 +920,7 @@
     <!-- If you don't specify the AOT host, assume it's the build machine -->
     <PropertyGroup>
       <AotHostArchitecture Condition="'$(AotHostArchitecture)' == ''">$(BuildArchitecture)</AotHostArchitecture>
-      <AotHostOS Condition="'$(AotHostOS)' == ''">$(OS)</AotHostOS>
+      <AotHostOS Condition="'$(AotHostOS)' == ''">$(HostOS)</AotHostOS>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(BuildMonoAOTCrossCompilerOnly)' != 'true'">
