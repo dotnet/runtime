@@ -2247,6 +2247,7 @@ namespace System
         public static double CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static double CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static double CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static double DegreesToRadians(double degrees) { throw null; }
         public bool Equals(double obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static double Exp(double x) { throw null; }
@@ -2307,6 +2308,7 @@ namespace System
         public static double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static double Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static double Pow(double x, double y) { throw null; }
+        public static double RadiansToDegrees(double radians) { throw null; }
         public static double ReciprocalEstimate(double x) { throw null; }
         public static double ReciprocalSqrtEstimate(double x) { throw null; }
         public static double RootN(double x, int n) { throw null; }
@@ -2871,6 +2873,7 @@ namespace System
         public static System.Half CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Half CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Half CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Half DegreesToRadians(System.Half degrees) { throw null; }
         public bool Equals(System.Half other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public static System.Half Exp(System.Half x) { throw null; }
@@ -2999,6 +3002,7 @@ namespace System
         public static System.Half Parse(string s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.AllowDecimalPoint | System.Globalization.NumberStyles.AllowExponent | System.Globalization.NumberStyles.AllowLeadingSign | System.Globalization.NumberStyles.AllowLeadingWhite | System.Globalization.NumberStyles.AllowThousands | System.Globalization.NumberStyles.AllowTrailingWhite, System.IFormatProvider? provider = null) { throw null; }
         public static System.Half Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Half Pow(System.Half x, System.Half y) { throw null; }
+        public static System.Half RadiansToDegrees(System.Half radians) { throw null; }
         public static System.Half ReciprocalEstimate(System.Half x) { throw null; }
         public static System.Half ReciprocalSqrtEstimate(System.Half x) { throw null; }
         public static System.Half RootN(System.Half x, int n) { throw null; }
@@ -4985,6 +4989,7 @@ namespace System
         public static float CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static float CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static float CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static float DegreesToRadians(float degrees) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(float obj) { throw null; }
         public static float Exp(float x) { throw null; }
@@ -5045,6 +5050,7 @@ namespace System
         public static float Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static float Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static float Pow(float x, float y) { throw null; }
+        public static float RadiansToDegrees(float radians) { throw null; }
         public static float ReciprocalEstimate(float x) { throw null; }
         public static float ReciprocalSqrtEstimate(float x) { throw null; }
         public static float RootN(float x, int n) { throw null; }
@@ -10912,6 +10918,8 @@ namespace System.Numerics
         static abstract TSelf AtanPi(TSelf x);
         static abstract TSelf Cos(TSelf x);
         static abstract TSelf CosPi(TSelf x);
+        static virtual TSelf DegreesToRadians(TSelf degrees) { throw null; }
+        static virtual TSelf RadiansToDegrees(TSelf radians) { throw null; }
         static abstract TSelf Sin(TSelf x);
         static abstract (TSelf Sin, TSelf Cos) SinCos(TSelf x);
         static abstract (TSelf SinPi, TSelf CosPi) SinCosPi(TSelf x);
