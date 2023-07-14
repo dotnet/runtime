@@ -11,7 +11,7 @@ if (testCase == null) {
 }
 
 function testOutput(msg) {
-    console.log(`TestOutput -> ${msg}}`);
+    console.log(`TestOutput -> ${msg}`);
 }
 
 // Prepare base runtime parameters
@@ -28,7 +28,7 @@ switch (testCase) {
     case "DownloadResourceProgressTest":
         if (params.get("fetchFailure") === "true") {
             let hasFetchFailed = false;
-            dotnet.withLoadBootResource((type, name, defaultUri, integrity) => {
+            dotnet.withResourceLoader((type, name, defaultUri, integrity) => {
                 if (hasFetchFailed || type !== "assembly")
                     return fetch(defaultUri, { integrity: integrity, cache: 'no-cache' });
 
@@ -36,7 +36,7 @@ switch (testCase) {
                 throw new Error("Simulating a failed fetch");
             });
         }
-        dotnet.witModuleConfig({
+        dotnet.withModuleConfig({
             onDownloadResourceProgress: (loaded, total) => {
                 console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
                 if (loaded === total && loaded !== 0) {
@@ -71,6 +71,13 @@ try {
         case "AppSettingsTest":
             exports.AppSettingsTest.Run();
             exit(0);
+            break;
+        case "DownloadResourceProgressTest":
+            exit(0);
+            break;
+        default:
+            console.error(`Unknown test case: ${testCase}`);
+            exit(3);
             break;
     }
 } catch (e) {

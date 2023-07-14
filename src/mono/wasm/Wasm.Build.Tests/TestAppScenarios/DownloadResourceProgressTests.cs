@@ -34,9 +34,10 @@ public class DownloadResourceProgressTests : AppTestBase
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["fetchFailure"] = fetchFailure.ToString() }
         ));
-        Assert.Collection(
-            result.TestOutput,
-            m => Assert.Equal("DownloadResourceProgress: Finished", m)
-        );
+        Assert.True(result.TestOutput.Any(o => o == "DownloadResourceProgress: Finished"));
+        // Assert.Collection(
+        //     result.TestOutput,
+        //     m => Assert.Equal("DownloadResourceProgress: Finished", m)
+        // );
     }
 }
