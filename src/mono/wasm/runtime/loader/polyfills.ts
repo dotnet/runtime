@@ -4,6 +4,15 @@ import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENV
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;
+const URLPolyfill = class URL {
+    private url;
+    constructor(url: string) {
+        this.url = url;
+    }
+    toString() {
+        return this.url;
+    }
+};
 
 export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
 
@@ -15,6 +24,10 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     loaderHelpers.scriptUrl = normalizeFileUrl(scriptUrlQuery);
     loaderHelpers.scriptDirectory = normalizeDirectoryUrl(loaderHelpers.scriptUrl);
     loaderHelpers.locateFile = (path) => {
+        if ("URL" in globalThis && globalThis.URL !== (URLPolyfill as any)) {
+            return new URL(path, loaderHelpers.scriptDirectory).toString();
+        }
+
         if (isPathAbsolute(path)) return path;
         return loaderHelpers.scriptDirectory + path;
     };
@@ -47,15 +60,7 @@ export async function detect_features_and_polyfill(module: DotnetModuleInternal)
     }
 
     if (typeof globalThis.URL === "undefined") {
-        globalThis.URL = class URL {
-            private url;
-            constructor(url: string) {
-                this.url = url;
-            }
-            toString() {
-                return this.url;
-            }
-        } as any;
+        globalThis.URL = URLPolyfill as any;
     }
 }
 

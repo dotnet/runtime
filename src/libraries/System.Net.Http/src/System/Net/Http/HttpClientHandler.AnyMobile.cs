@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Metrics;
 using System.Globalization;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -21,36 +21,27 @@ namespace System.Net.Http
     public partial class HttpClientHandler : HttpMessageHandler
     {
         private readonly SocketsHttpHandler? _socketHandler;
-        private readonly DiagnosticsHandler? _diagnosticsHandler;
-
         private readonly HttpMessageHandler? _nativeHandler;
+        private MetricsHandler? _metricsHandler;
 
         private static readonly ConcurrentDictionary<string, MethodInfo?> s_cachedMethods =
             new ConcurrentDictionary<string, MethodInfo?>();
 
+        private IMeterFactory? _meterFactory;
         private ClientCertificateOption _clientCertificateOptions;
 
         private volatile bool _disposed;
 
         public HttpClientHandler()
         {
-            HttpMessageHandler handler;
-
             if (IsNativeHandlerEnabled)
             {
                 _nativeHandler = CreateNativeHandler();
-                handler = _nativeHandler;
             }
             else
             {
                 _socketHandler = new SocketsHttpHandler();
-                handler = _socketHandler;
                 ClientCertificateOptions = ClientCertificateOption.Manual;
-            }
-
-            if (DiagnosticsHandler.IsGloballyEnabled())
-            {
-                _diagnosticsHandler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
             }
         }
 
@@ -71,6 +62,21 @@ namespace System.Net.Http
             }
 
             base.Dispose(disposing);
+        }
+
+        [CLSCompliant(false)]
+        public IMeterFactory? MeterFactory
+        {
+            get => _meterFactory;
+            set
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                if (_metricsHandler != null)
+                {
+                    throw new InvalidOperationException(SR.net_http_operation_started);
+                }
+                _meterFactory = value;
+            }
         }
 
         [UnsupportedOSPlatform("browser")]
@@ -713,19 +719,9 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (DiagnosticsHandler.IsGloballyEnabled() && _diagnosticsHandler != null)
-            {
-                return _diagnosticsHandler!.SendAsync(request, cancellationToken);
-            }
-
-            if (IsNativeHandlerEnabled)
-            {
-                return _nativeHandler!.SendAsync(request, cancellationToken);
-            }
-            else
-            {
-                return _socketHandler!.SendAsync(request, cancellationToken);
-            }
+            ArgumentNullException.ThrowIfNull(request);
+            MetricsHandler handler = _metricsHandler ?? SetupHandlerChain();
+            return handler.SendAsync(request, cancellationToken);
         }
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
@@ -739,6 +735,23 @@ namespace System.Net.Http
                 Interlocked.CompareExchange(ref s_dangerousAcceptAnyServerCertificateValidator, delegate { return true; }, null) ??
                 s_dangerousAcceptAnyServerCertificateValidator;
             }
+        }
+
+        private MetricsHandler SetupHandlerChain()
+        {
+            HttpMessageHandler handler = IsNativeHandlerEnabled ? _nativeHandler! : _socketHandler!;
+            if (DiagnosticsHandler.IsGloballyEnabled())
+            {
+                handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
+            }
+            MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
+
+            // Ensure a single handler is used for all requests.
+            if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
+            {
+                handler.Dispose();
+            }
+            return _metricsHandler;
         }
 
         private void ThrowForModifiedManagedSslOptionsIfStarted()

@@ -5094,6 +5094,96 @@ mono_marshal_get_array_accessor_wrapper (MonoMethod *method)
 	return res;
 }
 
+/*
+ * mono_marshal_get_unsafe_accessor_wrapper:
+ *
+ *   Return a wrapper for an extern [UnsafeAccessor] method that accesses a member of some class.
+ *
+ *   member_name can be NULL in which case the name of the member is the same as the name of the accessor method
+ *
+ *   If the kind is Field or StaticField the accessor_method must have a signature like:
+ *       ref FieldType AccessorMethod (TargetClassOrStruct @this);
+ *   or
+ *       ref FieldType AccessorMethod (ref TargetStruct @this);
+ *
+ *   If the kind is Method or StaticMethod, the accessor_method must have a signature like:
+ *       ReturnType AccessorMethod (TargetClassOrStruct @this[, FirstArg arg1[, SecondArg arg2[, ...]]])
+ *
+ *   where the member method is
+ *
+ *       class TargetClassOrStruct {
+ *           ReturnType MemberName ([FirstArg arg1[, SecondArg arg2[, ...]]]);
+ *       }
+ *
+ *
+ *  or
+ *       ReturnType AccessorMethod (ref TargetStruct @this[, FirstArg arg1[, SecondArg arg2[, ...]]])
+ *
+ *   where the member method is
+ *
+ *       struct TargetStruct {
+ *           ReturnType MemberName ([FirstArg arg1[, SecondArg arg2[, ...]]]);
+ *       }
+ *
+ *
+ *  If the kind is Constructor, the accessor_method must have a signature like:
+ *       TargetClass AccessorMethod ([FirstArg arg1[, SecondArg arg2[, ...]]]);
+ */
+MonoMethod *
+mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	MonoMethodSignature *sig;
+	MonoMethodBuilder *mb;
+	MonoMethod *res;
+	GHashTable *cache;
+	MonoGenericContext *ctx = NULL;
+	MonoMethod *orig_method = NULL;
+	WrapperInfo *info;
+
+	if (member_name == NULL)
+		member_name = accessor_method->name;
+	
+	/*
+	 * Check cache
+	 */
+	if (ctx) {
+		cache = NULL;
+		g_assert_not_reached ();
+	} else {
+		cache = get_cache (&mono_method_get_wrapper_cache (accessor_method)->unsafe_accessor_cache, mono_aligned_addr_hash, NULL);
+		if ((res = mono_marshal_find_in_cache (cache, accessor_method)))
+			return res;
+	}
+
+	sig = mono_metadata_signature_dup_full (get_method_image (accessor_method), mono_method_signature_internal (accessor_method));
+	sig->pinvoke = 0;
+
+	mb = mono_mb_new (accessor_method->klass, accessor_method->name, MONO_WRAPPER_OTHER);
+
+	get_marshal_cb ()->mb_skip_visibility (mb);
+
+	get_marshal_cb ()->emit_unsafe_accessor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
+
+	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_UNSAFE_ACCESSOR);
+	info->d.unsafe_accessor.method = accessor_method;
+	info->d.unsafe_accessor.kind = kind;
+	info->d.unsafe_accessor.member_name = member_name;
+
+	if (ctx) {
+		MonoMethod *def;
+		def = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
+		res = cache_generic_wrapper (cache, orig_method, def, ctx, orig_method);
+	} else {
+		res = mono_mb_create_and_cache_full (cache, accessor_method, mb, sig, sig->param_count + 16, info, NULL);
+	}
+	mono_mb_free (mb);
+
+	// TODO: remove before merging
+	mono_method_print_code (res);
+
+	return res;
+}
+
 #ifdef HOST_WIN32
 
 static void*
@@ -6398,4 +6488,5 @@ mono_wrapper_caches_free (MonoWrapperCaches *cache)
 	free_hash (cache->cominterop_invoke_cache);
 	free_hash (cache->cominterop_wrapper_cache);
 	free_hash (cache->thunk_invoke_cache);
+	free_hash (cache->unsafe_accessor_cache);
 }

@@ -344,6 +344,8 @@ HRESULT GCHeapUtilities::LoadAndInitialize()
     g_gc_load_status = GC_LOAD_STATUS_START;
 
     LPCWSTR standaloneGcLocation = Configuration::GetKnobStringValue(W("System.GC.Name"), CLRConfig::EXTERNAL_GCName);
+    g_gc_dac_vars.major_version_number = GC_INTERFACE_MAJOR_VERSION;
+    g_gc_dac_vars.minor_version_number = GC_INTERFACE_MINOR_VERSION;
     if (!standaloneGcLocation)
     {
         return InitializeDefaultGC();

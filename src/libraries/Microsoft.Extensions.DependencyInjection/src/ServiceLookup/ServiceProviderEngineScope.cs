@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                 ThrowHelper.ThrowObjectDisposedException();
             }
 
-            return RootProvider.GetService(serviceType, this);
+            return RootProvider.GetService(ServiceIdentifier.FromServiceType(serviceType), this);
         }
 
         public IServiceProvider ServiceProvider => this;

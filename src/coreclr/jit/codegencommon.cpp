@@ -1966,6 +1966,11 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
+    if (compiler->opts.disAsm)
+    {
+        printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
+
     codeSize = GetEmitter()->emitEndCodeGen(compiler, trackedStackPtrsContig, GetInterruptible(),
                                             IsFullPtrRegMapRequired(), compiler->compHndBBtabCount, &prologSize,
                                             &epilogSize, codePtr, &coldCodePtr, &consPtr DEBUGARG(&instrCount));
@@ -1984,6 +1989,11 @@ void CodeGen::genEmitMachineCode()
     compiler->info.compPerfScore +=
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
+
+    if (compiler->opts.disAsm)
+    {
+        printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
+    }
 
 #ifdef DEBUG
     if (compiler->opts.disAsm || verbose)
