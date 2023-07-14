@@ -266,7 +266,7 @@ void StressLog::Initialize(unsigned facilities, unsigned level, unsigned maxByte
             StressLogHeader* hdr = (StressLogHeader*)(uint8_t*)(void*)theLog.hMapView;
             hdr->headerSize = sizeof(StressLogHeader);
             hdr->magic = *(uint32_t*)"LRTS";
-            hdr->version = 0x00010001;
+            hdr->version = 0x00010002;
             hdr->memoryBase = (uint8_t*)hdr;
             hdr->memoryCur = hdr->memoryBase + sizeof(StressLogHeader);
             hdr->memoryLimit = hdr->memoryBase + maxBytesTotal;
