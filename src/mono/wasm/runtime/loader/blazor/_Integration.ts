@@ -30,7 +30,7 @@ export async function initializeBootConfig(bootConfigResult: BootConfigResult, m
 }
 
 let resourcesLoaded = 0;
-let totalResources = 0;
+const totalResources = new Set<string>();
 
 const behaviorByName = (name: string): AssetBehaviours | "other" => {
     return name === "dotnet.native.wasm" ? "dotnetwasm"
@@ -61,13 +61,12 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         const type = monoToBlazorAssetTypeMap[asset.behavior];
         if (type !== undefined) {
             const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
-            asset.pendingDownload = res;
 
-            totalResources++;
+            totalResources.add(asset.name!);
             res.response.then(() => {
                 resourcesLoaded++;
                 if (module.onDownloadResourceProgress)
-                    module.onDownloadResourceProgress(resourcesLoaded, totalResources);
+                    module.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
             });
 
             return res;
