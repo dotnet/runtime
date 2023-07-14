@@ -19,11 +19,13 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.ServiceProvider BuildServiceProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, Microsoft.Extensions.DependencyInjection.ServiceProviderOptions options) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.ServiceProvider BuildServiceProvider(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, bool validateScopes) { throw null; }
     }
-    public sealed partial class ServiceProvider : System.IAsyncDisposable, System.IDisposable, System.IServiceProvider
+    public sealed partial class ServiceProvider : Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider, System.IAsyncDisposable, System.IDisposable, System.IServiceProvider
     {
         internal ServiceProvider() { }
         public void Dispose() { }
         public System.Threading.Tasks.ValueTask DisposeAsync() { throw null; }
+        public object? GetKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
+        public object GetRequiredKeyedService(System.Type serviceType, object? serviceKey) { throw null; }
         public object? GetService(System.Type serviceType) { throw null; }
     }
     public partial class ServiceProviderOptions

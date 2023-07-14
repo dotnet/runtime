@@ -11,13 +11,17 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         public Dictionary<MethodsToGen_ConfigurationBinder, HashSet<TypeSpec>> TypesForGen_ConfigurationBinder_BindMethods { get; } = new();
 
         public HashSet<ParsableFromStringSpec> PrimitivesForHelperGen { get; } = new();
-        public HashSet<string> TypeNamespaces { get; } = new() { "Microsoft.Extensions.Configuration", "System.Globalization" };
+        public HashSet<string> TypeNamespaces { get; } = new()
+        {
+            "System",
+            "System.CodeDom.Compiler",
+            "System.Globalization",
+            "Microsoft.Extensions.Configuration",
+        };
 
         public MethodsToGen_CoreBindingHelper MethodsToGen_CoreBindingHelper { get; set; }
         public MethodsToGen_ConfigurationBinder MethodsToGen_ConfigurationBinder { get; set; }
         public MethodsToGen_Extensions_OptionsBuilder MethodsToGen_OptionsBuilderExt { get; set; }
         public MethodsToGen_Extensions_ServiceCollection MethodsToGen_ServiceCollectionExt { get; set; }
-
-        public bool ShouldEmitHasChildren { get; set; }
     }
 }
