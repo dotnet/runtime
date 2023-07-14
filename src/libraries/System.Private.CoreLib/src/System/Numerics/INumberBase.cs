@@ -487,7 +487,7 @@ namespace System.Numerics
             }
 
             // Make sure we slice the buffer to just the characters written
-            utf16Destination = utf16Destination.Slice(charsWritten);
+            utf16Destination = utf16Destination.Slice(0, charsWritten);
 
             OperationStatus utf8DestinationStatus = Utf8.FromUtf16(utf16Destination, utf8Destination, out _, out bytesWritten, replaceInvalidSequences: false);
 
