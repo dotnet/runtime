@@ -115,8 +115,6 @@ namespace Wasm.Build.Tests
                 string msg = $"[{_label}] {e.Data}";
                 output.Add(msg);
                 _testOutput.WriteLine(msg);
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine(msg);
                 ErrorDataReceived?.Invoke(s, e);
             };
 
@@ -128,8 +126,6 @@ namespace Wasm.Build.Tests
                 string msg = $"[{_label}] {e.Data}";
                 output.Add(msg);
                 _testOutput.WriteLine(msg);
-                if (EnvironmentVariables.ShowBuildOutput)
-                    Console.WriteLine(msg);
                 OutputDataReceived?.Invoke(s, e);
             };
 

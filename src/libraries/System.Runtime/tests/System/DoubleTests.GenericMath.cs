@@ -108,7 +108,7 @@ namespace System.Tests
             Assert.False(BinaryNumberHelper<double>.IsPow2(-0.0));
             Assert.False(BinaryNumberHelper<double>.IsPow2(double.NaN));
             Assert.False(BinaryNumberHelper<double>.IsPow2(0.0));
-            Assert.False(BinaryNumberHelper<double>.IsPow2(double.Epsilon));
+            Assert.True(BinaryNumberHelper<double>.IsPow2(double.Epsilon));
             Assert.False(BinaryNumberHelper<double>.IsPow2(MaxSubnormal));
             Assert.True(BinaryNumberHelper<double>.IsPow2(MinNormal));
             Assert.True(BinaryNumberHelper<double>.IsPow2(1.0));
@@ -1291,7 +1291,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateCheckedFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1580,7 +1579,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateSaturatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -1869,7 +1867,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69795", TestRuntimes.Mono)]
         public static void CreateTruncatingFromUIntPtrTest()
         {
             if (Environment.Is64BitProcess)

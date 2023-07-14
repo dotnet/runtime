@@ -51,6 +51,60 @@ namespace ComInterfaceGenerator.Unit.Tests
 
         public static readonly string DisableRuntimeMarshalling = "[assembly:System.Runtime.CompilerServices.DisableRuntimeMarshalling]";
         public static readonly string UsingSystemRuntimeInteropServicesMarshalling = "using System.Runtime.InteropServices.Marshalling;";
+        public const string IntMarshaller = """
+            [CustomMarshaller(typeof(int), MarshalMode.Default, typeof(IntMarshaller))]
+            internal static class IntMarshaller
+            {
+                public struct IntNative
+                {
+                    public int i;
+                }
+                public static IntNative ConvertToUnmanaged(int managed) => new IntNative() { i = managed };
+                public static int ConvertToManaged(IntNative unmanaged) => unmanaged.i;
+            }
+            """;
+        public const string IntClassAndMarshaller = """
+            [NativeMarshalling(typeof(IntClassMarshaller))]
+            internal class IntClass
+            {
+                public int Field;
+            }
+            [CustomMarshaller(typeof(IntClass), MarshalMode.Default, typeof(IntClassMarshaller))]
+            internal static class IntClassMarshaller
+            {
+                public static IntClass ConvertToManaged(nint unmanaged) => default;
+
+                public static nint ConvertToUnmanaged(IntClass managed) => (nint)0;
+            }
+            """;
+
+        public const string IntStructAndMarshaller = IntStructDefinition + IntStructMarshallerDefinition;
+        public const string IntStructDefinition = """
+            internal struct IntStruct
+            {
+                public int Field;
+            }
+            """;
+        public const string IntStructMarshallerDefinition = """
+            [CustomMarshaller(typeof(IntStruct), MarshalMode.Default, typeof(IntStructMarshaller))]
+            internal static class IntStructMarshaller
+            {
+                public static nint ConvertToUnmanaged(int managed) => (nint)0;
+                public static IntStruct ConvertToManaged(nint unmanaged) => default;
+            }
+            """;
+
+        public string ByValueMarshallingOfType(string preTypeModifierOrAttribute, string parameterType, string parameterName, (StringMarshalling? StringMarshalling, Type? StringMarshallingCustomType)? stringMarshalling = null) => $$"""
+            using System.Runtime.InteropServices;
+            using System.Runtime.InteropServices.Marshalling;
+
+            {{GeneratedComInterface(stringMarshalling?.StringMarshalling, stringMarshalling?.StringMarshallingCustomType)}}
+            partial interface INativeAPI
+            {
+                {{VirtualMethodIndex(0)}}
+                void Method({{preTypeModifierOrAttribute}} {{parameterType}} {{parameterName}});
+            }
+            """;
 
         public string SpecifiedMethodIndexNoExplicitParameters => $$"""
             using System.Runtime.InteropServices;
@@ -205,8 +259,8 @@ namespace ComInterfaceGenerator.Unit.Tests
                     int pSize,
                     [MarshalUsing(CountElementName = "pInSize")] in {{collectionType}} pIn,
                     in int pInSize,
-                    int pRefSize,
                     [MarshalUsing(CountElementName = "pRefSize")] ref {{collectionType}} pRef,
+                    int pRefSize,
                     [MarshalUsing(CountElementName = "pOutSize")] out {{collectionType}} pOut,
                     out int pOutSize);
             }

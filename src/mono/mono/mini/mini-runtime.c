@@ -2649,6 +2649,22 @@ compile_special (MonoMethod *method, MonoError *error)
 		}
 	}
 
+	gboolean has_header = mono_method_metadata_has_header (method);
+	if (G_UNLIKELY (!has_header)) {
+		char *member_name = NULL;
+		int accessor_kind = -1;
+		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+			MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+			gpointer compiled_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+			return_val_if_nok (error, NULL);
+			code = mono_get_addr_from_ftnptr (compiled_wrapper);
+			jinfo = mini_jit_info_table_find (code);
+			if (jinfo)
+				MONO_PROFILER_RAISE (jit_done, (method, jinfo));
+			return code;
+		}
+	}
+
 	return NULL;
 }
 

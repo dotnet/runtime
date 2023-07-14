@@ -4,6 +4,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 
@@ -11,7 +12,7 @@ namespace System.Dynamic.Utils
 {
     internal static class DelegateHelpers
     {
-        // This can be flipped to true using feature switches at publishing time
+        // This can be flipped to false using feature switches at publishing time
         internal static bool CanEmitObjectArrayDelegate => true;
 
         // Separate class so that the it can be trimmed away and doesn't get conflated
@@ -21,12 +22,21 @@ namespace System.Dynamic.Utils
             public static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegate { get; }
                 = CreateObjectArrayDelegateInternal();
 
-            [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
-                Justification = "Works around https://github.com/dotnet/linker/issues/2392")]
             private static Func<Type, Func<object?[], object?>, Delegate> CreateObjectArrayDelegateInternal()
                 => Type.GetType("Internal.Runtime.Augments.DynamicDelegateAugments")!
                     .GetMethod("CreateObjectArrayDelegate")!
                     .CreateDelegate<Func<Type, Func<object?[], object?>, Delegate>>();
+        }
+
+        private static class ForceAllowDynamicCodeLightup
+        {
+            public static Func<IDisposable>? ForceAllowDynamicCodeDelegate { get; }
+                = ForceAllowDynamicCodeDelegateInternal();
+
+            private static Func<IDisposable>? ForceAllowDynamicCodeDelegateInternal()
+                => typeof(AssemblyBuilder)
+                    .GetMethod("ForceAllowDynamicCode", BindingFlags.NonPublic | BindingFlags.Static)
+                    ?.CreateDelegate<Func<IDisposable>>();
         }
 
         internal static Delegate CreateObjectArrayDelegate(Type delegateType, Func<object?[], object?> handler)
@@ -186,6 +196,23 @@ namespace System.Dynamic.Utils
 
                 if (thunkMethod == null)
                 {
+                    static IDisposable? CreateForceAllowDynamicCodeScope()
+                    {
+                        if (!RuntimeFeature.IsDynamicCodeSupported)
+                        {
+                            // Force 'new DynamicMethod' to not throw even though RuntimeFeature.IsDynamicCodeSupported is false.
+                            // If we are running on a runtime that supports dynamic code, even though the feature switch is off,
+                            // for example when running on CoreClr with PublishAot=true, this will allow IL to be emitted.
+                            // If we are running on a runtime that really doesn't support dynamic code, like NativeAOT,
+                            // CanEmitObjectArrayDelegate will be flipped to 'false', and this method won't be invoked.
+                            return ForceAllowDynamicCodeLightup.ForceAllowDynamicCodeDelegate?.Invoke();
+                        }
+
+                        return null;
+                    }
+
+                    using IDisposable? forceAllowDynamicCodeScope = CreateForceAllowDynamicCodeScope();
+
                     int thunkIndex = Interlocked.Increment(ref s_ThunksCreated);
                     Type[] paramTypes = new Type[parameters.Length + 1];
                     paramTypes[0] = typeof(Func<object[], object>);
@@ -270,8 +297,8 @@ namespace System.Dynamic.Utils
                         ilgen.BeginFinallyBlock();
                         for (int i = 0; i < parameters.Length; i++)
                         {
-                           if (parameters[i].ParameterType.IsByRef)
-                           {
+                            if (parameters[i].ParameterType.IsByRef)
+                            {
                                 Type byrefToType = parameters[i].ParameterType.GetElementType()!;
 
                                 // update parameter
