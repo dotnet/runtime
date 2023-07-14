@@ -5140,7 +5140,7 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	MonoMethod *orig_method = NULL;
 	WrapperInfo *info;
 
-	if (member_name == NULL)
+	if (member_name == NULL && kind != MONO_UNSAFE_ACCESSOR_CTOR)
 		member_name = accessor_method->name;
 	
 	/*
