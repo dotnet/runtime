@@ -2398,6 +2398,30 @@ emit_unsafe_accessor_ldargs (MonoMethodBuilder *mb, MonoMethodSignature *accesso
 		mono_mb_emit_ldarg (mb, i);
 }
 
+static gboolean
+unsafe_accessor_target_type_forbidden (MonoType *target_type)
+{
+	switch (target_type->type)
+	{
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static void
+emit_missing_method_error (MonoMethodBuilder *mb, MonoError *failure, const char *display_member_name)
+{
+	if (!is_ok (failure)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingMethodException", g_strdup_printf ("Could not find %s due to: %s", display_member_name, mono_error_get_message (failure)));
+	} else {
+		mono_mb_emit_exception_full (mb, "System", "MissingMethodException", g_strdup_printf ("Could not find %s", display_member_name));
+	}
+}
+
 static void
 emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
@@ -2411,7 +2435,7 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	}
 
 	MonoType *target_type = sig->ret; // for constructors the return type is the target type
-	if (target_type == NULL || target_type->type == MONO_TYPE_VOID || m_type_is_byref (target_type)) {
+	if (target_type == NULL || m_type_is_byref (target_type) || unsafe_accessor_target_type_forbidden (target_type)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
@@ -2424,18 +2448,12 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
-		if (!is_ok (find_method_error)) {
-			// FIXME: emit_exception_for_error doesn't like MissingMethod errors
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", g_strdup_printf ("Could not find constructor due to: %s", mono_error_get_message (find_method_error)));
-		} else {
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find constructor");
-		}
+		// g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
+		emit_missing_method_error (mb, find_method_error, "constructor");
+		mono_error_cleanup (find_method_error);
 		return;
 	}
-	// TODO: verify this gets the target method from a generic instance not the gtd
 	g_assert (target_method);
-
 	g_assert (target_method->klass == target_class);
 
 	emit_unsafe_accessor_ldargs (mb, sig, 0);
@@ -2450,12 +2468,12 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
 	g_assert (member_name != NULL);
 
-	if (sig->param_count < 1 || sig->params[0] == NULL) {
+	if (sig->param_count < 1 || sig->params[0] == NULL || unsafe_accessor_target_type_forbidden (sig->params[0])) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
 	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
-	MonoType *target_type = sig->params[0]; // for constructors the return type is the target type
+	MonoType *target_type = sig->params[0];
 
 	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
 
@@ -2465,17 +2483,12 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
 	MonoMethod *target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
-		if (!is_ok (find_method_error)) {
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", g_strdup_printf ("Could not find method due to: %s", mono_error_get_message (find_method_error)));
-		} else {
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find method");
-		}
+		// g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
+		emit_missing_method_error (mb, find_method_error, member_name);
+		mono_error_cleanup (find_method_error);
 		return;
 	}
-	// TODO: verify this gets the target method from a generic instance not the gtd
 	g_assert (target_method);
-
 	g_assert (target_method->klass == target_class);
 
 	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
@@ -2487,8 +2500,8 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 static void
 emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
-	if (accessor_method->is_generic) {
-		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
+	if (accessor_method->is_inflated || accessor_method->is_generic || mono_class_is_ginst (accessor_method->klass) || ctx != NULL) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
 		return;
 	}
 

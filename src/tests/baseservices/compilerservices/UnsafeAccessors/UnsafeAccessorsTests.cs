@@ -358,7 +358,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidTargetUnsafeAccessor()
     {
         Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessor)}");
@@ -449,7 +448,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidUseUnsafeAccessor()
     {
         Console.WriteLine($"Running {nameof(Verify_InvalidUseUnsafeAccessor)}");
