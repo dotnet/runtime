@@ -13,3 +13,4 @@
 
 ## Got Error:
  - [console-webapiclient](https://github.com/dotnet/samples/tree/main/csharp/getting-started/console-webapiclient): Crashed because Multi Thread
+ - [AsyncStreams](https://github.com/dotnet/samples/tree/main/csharp/tutorials/AsyncStreams)
