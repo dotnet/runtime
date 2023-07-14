@@ -30,3 +30,4 @@ Wasm.Build.Tests.WasmTemplateTests
 Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
 Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
 Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests
+Wasm.Build.Tests.TestAppScenarios.DownloadResourceProgressTests
