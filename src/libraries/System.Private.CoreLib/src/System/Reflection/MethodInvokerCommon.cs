@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using static System.Reflection.InvokerEmitUtil;
-using System.Runtime.CompilerServices;
-using static System.Reflection.MethodBase;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using static System.Reflection.InvokerEmitUtil;
+using static System.Reflection.MethodBase;
 
 namespace System.Reflection
 {
@@ -87,9 +87,22 @@ namespace System.Reflection
             }
         }
 
-        internal static void DetermineInvokeStrategy_ObjSpanArgs(ref InvokerStrategy strategy, ref InvokeFunc_ObjSpanArgs? invokeFunc_ObjSpanArgs, MethodBase method, bool backwardsCompat)
+        internal static void DetermineStrategy_ObjSpanArgs(
+            ref InvokerStrategy strategy,
+            ref InvokeFunc_ObjSpanArgs?
+            invokeFunc_ObjSpanArgs,
+            MethodBase method,
+            bool needsByRefStrategy,
+            bool backwardsCompat)
         {
-            if ((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0)
+            Debug.Assert((strategy &= InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0);
+
+            if (needsByRefStrategy)
+            {
+                // If ByRefs are used, we can't use this strategy.
+                strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
+            }
+            else if ((strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0)
             {
                 // The first time, ignoring race conditions, use the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_ObjSpanArgs;
@@ -106,9 +119,21 @@ namespace System.Reflection
             }
         }
 
-        internal static void DetermineInvokeStrategy_Obj4Args(ref InvokerStrategy strategy, ref InvokeFunc_Obj4Args? invokeFunc_Obj4Args, MethodBase method, bool backwardsCompat)
+        internal static void DetermineStrategy_Obj4Args(
+            ref InvokerStrategy strategy,
+            ref InvokeFunc_Obj4Args? invokeFunc_Obj4Args,
+            MethodBase method,
+            bool needsByRefStrategy,
+            bool backwardsCompat)
         {
-            if ((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0)
+            Debug.Assert((strategy &= InvokerStrategy.StrategyDetermined_Obj4Args) == 0);
+
+            if (needsByRefStrategy)
+            {
+                // If ByRefs are used, we can't use this strategy.
+                strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
+            }
+            else if ((strategy & InvokerStrategy.HasBeenInvoked_Obj4Args) == 0)
             {
                 // The first time, ignoring race conditions, use the slow path.
                 strategy |= InvokerStrategy.HasBeenInvoked_Obj4Args;
@@ -125,8 +150,14 @@ namespace System.Reflection
             }
         }
 
-        internal static void DetermineInvokeStrategy_RefArgs(ref InvokerStrategy strategy, ref InvokeFunc_RefArgs? invokeFunc_RefArgs, MethodBase method, bool backwardsCompat)
+        internal static void DetermineStrategy_RefArgs(
+            ref InvokerStrategy strategy,
+            ref InvokeFunc_RefArgs? invokeFunc_RefArgs,
+            MethodBase method,
+            bool backwardsCompat)
         {
+            Debug.Assert((strategy &= InvokerStrategy.StrategyDetermined_RefArgs) == 0);
+
             if ((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0)
             {
                 // The first time, ignoring race conditions, use the slow path.

@@ -1,27 +1,35 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Loader;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-#pragma warning disable 0414, IDE0044
+    [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct GCFrameRegistration
     {
-        private nuint m_reserved1;
-        private nuint m_reserved2;
-        private void** m_pObjRefs;
-        private uint m_numObjRefs;
-        private int m_MaybeInterior;
+        private nuint _reserved1;
+        private nuint _reserved2;
+        private void** _pObjRefs;
+        private uint _numObjRefs;
+        private int _maybeInterior;
 
         public GCFrameRegistration(void** allocation, uint elemCount, bool areByRefs = true)
         {
-            m_reserved1 = 0;
-            m_reserved2 = 0;
-            m_pObjRefs = allocation;
-            m_numObjRefs = elemCount;
-            m_MaybeInterior = areByRefs ? 1 : 0;
+            _reserved1 = 0;
+            _reserved2 = 0;
+            _pObjRefs = allocation;
+            _numObjRefs = elemCount;
+            _maybeInterior = areByRefs ? 1 : 0;
         }
+
+#if CORECLR
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration);
+#endif
     }
-#pragma warning restore 0414, IDE0044
 }

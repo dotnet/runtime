@@ -85,7 +85,7 @@ namespace System.Reflection.Emit
             return new RuntimeMethodHandle(_methodHandle!);
         }
 
-        internal MethodBaseInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get

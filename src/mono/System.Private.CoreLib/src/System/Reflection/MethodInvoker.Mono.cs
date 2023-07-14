@@ -7,21 +7,22 @@ namespace System.Reflection
 {
     public partial class MethodInvoker
     {
-        internal unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
+        private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.ArgumentTypes)
         {
+            _invokeFunc_RefArgs = InterpretedInvoke_Method;
             _invocationFlags = method.ComputeAndUpdateInvocationFlags();
-            _invokeFunc_RefArgs = InterpretedInvoke_Method;
         }
 
-        internal unsafe MethodInvoker(DynamicMethod method) : this(method.GetRuntimeMethodInfo(), method.ArgumentTypes)
+        private unsafe MethodInvoker(DynamicMethod method) : this(method.GetRuntimeMethodInfo(), method.ArgumentTypes)
         {
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            // No _invocationFlags for DynamicMethod.
         }
 
-        internal unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
+        private unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.ArgumentTypes)
         {
-            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
             _invokeFunc_RefArgs = InterpretedInvoke_Constructor;
+            _invocationFlags = constructor.ComputeAndUpdateInvocationFlags();
         }
 
         private unsafe object? InterpretedInvoke_Method(object? obj, IntPtr *args)

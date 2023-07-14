@@ -9,20 +9,21 @@ namespace System.Reflection
     {
         private readonly Signature? _signature;
 
-        internal unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
+        private unsafe MethodInvoker(RuntimeMethodInfo method) : this(method, method.Signature.Arguments)
         {
             _signature = method.Signature;
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
             _invocationFlags = method.ComputeAndUpdateInvocationFlags();
         }
 
-        internal unsafe MethodInvoker(DynamicMethod method) : this(method, method.Signature.Arguments)
+        private unsafe MethodInvoker(DynamicMethod method) : this(method, method.Signature.Arguments)
         {
             _signature = method.Signature;
             _invokeFunc_RefArgs = InterpretedInvoke_Method;
+            // No _invocationFlags for DynamicMethod.
         }
 
-        internal unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
+        private unsafe MethodInvoker(RuntimeConstructorInfo constructor) : this(constructor, constructor.Signature.Arguments)
         {
             _signature = constructor.Signature;
             _invokeFunc_RefArgs = InterpretedInvoke_Constructor;

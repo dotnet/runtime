@@ -14,13 +14,9 @@ namespace System.Runtime
         {
         }
 #pragma warning restore IDE0060
-    }
 
-    internal static partial class RuntimeImports
-    {
         [Conditional("unnecessary")]
         internal static unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
-
         [Conditional("unnecessary")]
         internal static unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
     }

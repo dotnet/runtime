@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System.Globalization;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -34,8 +33,8 @@ namespace System.Reflection
 
             try
             {
-                RuntimeImports.RegisterForGCReporting(&regArgStorage);
-                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
+                GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+                GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
 
                 CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
@@ -63,8 +62,8 @@ namespace System.Reflection
             }
             finally
             {
-                RuntimeImports.UnregisterForGCReporting(&regByRefStorage);
-                RuntimeImports.UnregisterForGCReporting(&regArgStorage);
+                GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
+                GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
             }
         }
 

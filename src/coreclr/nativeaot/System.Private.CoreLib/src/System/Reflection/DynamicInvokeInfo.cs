@@ -189,14 +189,7 @@ namespace System.Reflection
             int argCount = parameters?.Length ?? 0;
             if (argCount != _argumentCount)
             {
-                if (_argumentCount < 0)
-                {
-                    if (_argumentCount == ArgumentCount_NotSupported_ByRefLike)
-                        throw new NotSupportedException(SR.NotSupported_ByRefLike);
-                    throw new NotSupportedException();
-                }
-
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                ThrowForArgCountMismatch();
             }
 
             object? returnObject = null;
@@ -264,14 +257,7 @@ namespace System.Reflection
             int argCount = parameters.Length;
             if (argCount != _argumentCount)
             {
-                if (_argumentCount < 0)
-                {
-                    if (_argumentCount == ArgumentCount_NotSupported_ByRefLike)
-                        throw new NotSupportedException(SR.NotSupported_ByRefLike);
-                    throw new NotSupportedException();
-                }
-
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                ThrowForArgCountMismatch();
             }
 
             object? returnObject = null;
@@ -335,14 +321,7 @@ namespace System.Reflection
 
             if (argCount != _argumentCount)
             {
-                if (_argumentCount < 0)
-                {
-                    if (_argumentCount == ArgumentCount_NotSupported_ByRefLike)
-                        throw new NotSupportedException(SR.NotSupported_ByRefLike);
-                    throw new NotSupportedException();
-                }
-
-                throw new TargetParameterCountException(SR.Arg_ParmCnt);
+                ThrowForArgCountMismatch();
             }
 
             Debug.Assert(_argumentCount <= MaxStackAllocArgCount);
@@ -403,6 +382,19 @@ namespace System.Reflection
 
             return ((_returnTransform & (Transform.Nullable | Transform.Pointer | Transform.FunctionPointer | Transform.ByRef)) != 0) ?
                 ReturnTransform(ref ret, wrapInTargetInvocationException: false) : returnObject;
+        }
+
+        private void ThrowForArgCountMismatch()
+        {
+            if (_argumentCount < 0)
+            {
+                if (_argumentCount == ArgumentCount_NotSupported_ByRefLike)
+                    throw new NotSupportedException(SR.NotSupported_ByRefLike);
+
+                throw new NotSupportedException();
+            }
+
+            throw new TargetParameterCountException(SR.Arg_ParmCnt);
         }
 
         private unsafe ref byte InvokeWithManyArguments(

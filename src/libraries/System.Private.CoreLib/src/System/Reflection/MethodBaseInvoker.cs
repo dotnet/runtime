@@ -3,12 +3,13 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime;
 using static System.Reflection.InvokerEmitUtil;
 using static System.Reflection.MethodBase;
-using System.Globalization;
+using static System.Reflection.MethodInvokerCommon;
 
 namespace System.Reflection
 {
@@ -32,7 +33,7 @@ namespace System.Reflection
             _argTypes = argumentTypes;
             _argCount = _argTypes.Length;
 
-            MethodInvokerCommon.Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
+            Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
 
         [DoesNotReturn]
@@ -42,14 +43,13 @@ namespace System.Reflection
         }
 
 
-        #region MethodBase APIs
         internal unsafe object? InvokeWithNoArgs(object? obj, BindingFlags invokeAttr)
         {
             Debug.Assert(_argCount == 0);
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                MethodInvokerCommon.DetermineInvokeStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
             }
 
             try
@@ -83,27 +83,24 @@ namespace System.Reflection
             CheckArguments(parametersSpan, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             object? ret;
-            if (!_needsByRefStrategy)
+            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+            }
+
+            if (_invokeFunc_ObjSpanArgs is not null)
+            {
+                try
                 {
-                    MethodInvokerCommon.DetermineInvokeStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, backwardsCompat: true);
+                    ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                }
+                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                {
+                    throw new TargetInvocationException(e);
                 }
 
-                if (_invokeFunc_ObjSpanArgs is not null)
-                {
-                    try
-                    {
-                        ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
-                    }
-                    catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-
-                    CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                    return ret;
-                }
+                CopyBack(parameters, copyOfArgs, shouldCopyBack);
+                return ret;
             }
 
             ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
@@ -127,27 +124,24 @@ namespace System.Reflection
             CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
 
             object? ret;
-            if (!_needsByRefStrategy)
+            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
+            }
+
+            if (_invokeFunc_ObjSpanArgs is not null)
+            {
+                try
                 {
-                    MethodInvokerCommon.DetermineInvokeStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, backwardsCompat: true);
+                    ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                }
+                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                {
+                    throw new TargetInvocationException(e);
                 }
 
-                if (_invokeFunc_ObjSpanArgs is not null)
-                {
-                    try
-                    {
-                        ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
-                    }
-                    catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                    {
-                        throw new TargetInvocationException(e);
-                    }
-
-                    CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                    return ret;
-                }
+                CopyBack(parameters, copyOfArgs, shouldCopyBack);
+                return ret;
             }
 
             ret = InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
@@ -161,7 +155,7 @@ namespace System.Reflection
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                MethodInvokerCommon.DetermineInvokeStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
             }
 
             StackAllocatedByRefs byrefs = default;
@@ -202,92 +196,91 @@ namespace System.Reflection
             GCFrameRegistration regArgStorage;
             Span<bool> shouldCopyBack;
 
-            if (!_needsByRefStrategy)
+            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
-                {
-                    MethodInvokerCommon.DetermineInvokeStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, backwardsCompat: true);
-                }
-
-                if (_invokeFunc_ObjSpanArgs is not null)
-                {
-                    IntPtr* pArgStorage = stackalloc IntPtr[_argCount * 2];
-                    NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr) * 2);
-                    copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
-                    regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
-                    shouldCopyBack = new Span<bool>(pArgStorage + _argCount, _argCount);
-
-                    try
-                    {
-                        RuntimeImports.RegisterForGCReporting(&regArgStorage);
-
-                        CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-                        try
-                        {
-                            ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
-                        }
-                        catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-                        {
-                            throw new TargetInvocationException(e);
-                        }
-
-                        CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                        return ret;
-                    }
-                    finally
-                    {
-                        RuntimeImports.UnregisterForGCReporting(&regArgStorage);
-                    }
-                }
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
             }
 
-            if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
+            if (_invokeFunc_ObjSpanArgs is not null)
             {
-                MethodInvokerCommon.DetermineInvokeStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
-            }
-
-            IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
-            NativeMemory.Clear(pStorage, (nuint)(3 * _argCount) * (nuint)sizeof(IntPtr));
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
-            regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
-            IntPtr* pByRefStorage = pStorage + _argCount;
-            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
-            shouldCopyBack = new Span<bool>(pStorage + _argCount * 2, _argCount);
-
-            try
-            {
-                RuntimeImports.RegisterForGCReporting(&regArgStorage);
-                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
-
-                CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
-
-                for (int i = 0; i < _argCount; i++)
-                {
-#pragma warning disable CS8500
-                    *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-#pragma warning restore CS8500
-                        ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
-                        ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
-                }
+                IntPtr* pArgStorage = stackalloc IntPtr[_argCount * 2];
+                NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr) * 2);
+                copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
+                regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
+                shouldCopyBack = new Span<bool>(pArgStorage + _argCount, _argCount);
 
                 try
                 {
-                    ret = _invokeFunc_RefArgs!(obj, pByRefStorage);
+                    GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+
+                    CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+
+                    try
+                    {
+                        ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    }
+                    catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                    {
+                        throw new TargetInvocationException(e);
+                    }
+
+                    CopyBack(parameters, copyOfArgs, shouldCopyBack);
                 }
-                catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                finally
                 {
-                    throw new TargetInvocationException(e);
+                    GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
+                }
+            }
+            else
+            {
+                if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
+                {
+                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: true);
                 }
 
-                CopyBack(parameters, copyOfArgs, shouldCopyBack);
-                return ret;
+                IntPtr* pStorage = stackalloc IntPtr[3 * _argCount];
+                NativeMemory.Clear(pStorage, (nuint)(3 * _argCount) * (nuint)sizeof(IntPtr));
+                copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
+                regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
+                IntPtr* pByRefStorage = pStorage + _argCount;
+                GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
+                shouldCopyBack = new Span<bool>(pStorage + _argCount * 2, _argCount);
+
+                try
+                {
+                    GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+                    GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
+
+                    CheckArguments(parameters, copyOfArgs, shouldCopyBack, binder, culture, invokeAttr);
+
+                    for (int i = 0; i < _argCount; i++)
+                    {
+    #pragma warning disable CS8500
+                        *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+    #pragma warning restore CS8500
+                            ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
+                            ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
+                    }
+
+                    try
+                    {
+                        ret = _invokeFunc_RefArgs!(obj, pByRefStorage);
+                    }
+                    catch (Exception e) when ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+                    {
+                        throw new TargetInvocationException(e);
+                    }
+
+                    CopyBack(parameters, copyOfArgs, shouldCopyBack);
+                }
+                finally
+                {
+                    GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
+                    GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
+                }
             }
-            finally
-            {
-                RuntimeImports.UnregisterForGCReporting(&regByRefStorage);
-                RuntimeImports.UnregisterForGCReporting(&regArgStorage);
-            }
+
+            return ret;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -324,7 +317,7 @@ namespace System.Reflection
                 if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
                 {
                     // Initialize for next time.
-                    MethodInvokerCommon.DetermineInvokeStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, backwardsCompat: true);
+                    DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: true);
                 }
 
                 InvokeDirectByRefWithFewArgs(obj, copyOfArgs, invokeAttr);
@@ -417,6 +410,5 @@ namespace System.Reflection
 
             return false;
         }
-        #endregion
     }
 }

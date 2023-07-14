@@ -116,7 +116,7 @@ namespace System.Reflection.Tests
         {
             MethodInvoker invoker = MethodInvoker.Create(GetMethod(methodDeclaringType, methodName));
 
-            // Since Type.Missing is not supported, and Span<object> requires an object-back array, adapt the input.
+            // Adapt the input since Type.Missing is not supported, and Span<object> requires an object[] array (e.g. not string[]).
             if (parameters is null)
             {
                 Assert.Equal(result, invoker.Invoke(obj, new Span<object?>()));

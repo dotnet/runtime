@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using static System.Reflection.InvokerEmitUtil;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime;
-using static System.Reflection.MethodBase;
 using System.Reflection.Emit;
+using static System.Reflection.InvokerEmitUtil;
+using static System.Reflection.MethodBase;
+using static System.Reflection.MethodInvokerCommon;
 
 namespace System.Reflection
 {
@@ -56,7 +57,7 @@ namespace System.Reflection
             _argCount = _argTypes.Length;
             _isStatic = _method.IsStatic;
 
-            MethodInvokerCommon.Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
+            Initialize(argumentTypes, out _strategy, out _invokerArgFlags, out _needsByRefStrategy);
         }
 
         public object? Invoke(object? obj) => Invoke(obj, null, null, null, null);
@@ -67,9 +68,10 @@ namespace System.Reflection
         {
             if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
-                ((RuntimeMethodInfo)_method).ThrowNoInvokeException();
+                ThrowForBadInvocationFlags();
             }
 
+            // Allow additional non-used arguments to simplify caller's logic.
             if (_argCount > MaxStackAllocArgCount)
             {
                 MethodBaseInvoker.ThrowTargetParameterCountException();
@@ -77,7 +79,7 @@ namespace System.Reflection
 
             if (!_isStatic)
             {
-                MethodInvokerCommon.ValidateInvokeTarget(obj, _method);
+                ValidateInvokeTarget(obj, _method);
             }
 
             switch (_argCount)
@@ -96,25 +98,18 @@ namespace System.Reflection
                     break;
             }
 
+            // Check fast path first.
             if (_invokeFunc_Obj4Args is not null)
             {
-                // Fast path.
                 return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4);
             }
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0)
             {
-                if (_needsByRefStrategy)
+                DetermineStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, _needsByRefStrategy, backwardsCompat: false);
+                if (_invokeFunc_Obj4Args is not null)
                 {
-                    _strategy |= InvokerStrategy.StrategyDetermined_Obj4Args;
-                }
-                else
-                {
-                    MethodInvokerCommon.DetermineInvokeStrategy_Obj4Args(ref _strategy, ref _invokeFunc_Obj4Args, _method, backwardsCompat: false);
-                    if (_invokeFunc_Obj4Args is not null)
-                    {
-                        return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4);
-                    }
+                    return _invokeFunc_Obj4Args(obj, arg1, arg2, arg3, arg4);
                 }
             }
 
@@ -125,6 +120,7 @@ namespace System.Reflection
         {
             if (!_needsByRefStrategy)
             {
+                // Switch to fast path if possible.
                 switch (_argCount)
                 {
                     case 0:
@@ -144,7 +140,7 @@ namespace System.Reflection
 
             if ((_invocationFlags & (InvocationFlags.NoInvoke | InvocationFlags.ContainsStackPointers)) != 0)
             {
-                ((RuntimeMethodInfo)_method).ThrowNoInvokeException();
+                ThrowForBadInvocationFlags();
             }
 
             if (arguments.Length != _argCount)
@@ -154,7 +150,7 @@ namespace System.Reflection
 
             if (!_isStatic)
             {
-                MethodInvokerCommon.ValidateInvokeTarget(obj, _method);
+                ValidateInvokeTarget(obj, _method);
             }
 
             if (arguments.Length > MaxStackAllocArgCount)
@@ -163,6 +159,17 @@ namespace System.Reflection
             }
 
             return InvokeWithFewArgs(obj, arguments);
+        }
+
+        private void ThrowForBadInvocationFlags()
+        {
+            if (_method is RuntimeMethodInfo rmi)
+            {
+                rmi.ThrowNoInvokeException();
+            }
+
+            Debug.Assert(_method is RuntimeConstructorInfo);
+            ((RuntimeConstructorInfo)_method).ThrowNoInvokeException();
         }
 
         internal object? InvokeWithFewArgs(object? obj, Span<object?> arguments)
@@ -180,26 +187,19 @@ namespace System.Reflection
                 copyOfArgs[i] = arg;
             }
 
+            // Check fast path first.
             if (_invokeFunc_ObjSpanArgs is not null)
             {
-                // Fast path.
                 return _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
                 // No need to call CopyBack here since there are no ref values.
             }
 
             if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                if (_needsByRefStrategy)
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
+                if (_invokeFunc_ObjSpanArgs is not null)
                 {
-                    _strategy |= InvokerStrategy.StrategyDetermined_ObjSpanArgs;
-                }
-                else
-                {
-                    MethodInvokerCommon.DetermineInvokeStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, backwardsCompat: false);
-                    if (_invokeFunc_ObjSpanArgs is not null)
-                    {
-                        return _invokeFunc_ObjSpanArgs(obj: null, copyOfArgs);
-                    }
+                    return _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
                 }
             }
 
@@ -218,10 +218,10 @@ namespace System.Reflection
         {
             if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
             {
-                MethodInvokerCommon.DetermineInvokeStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
+                DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
             }
 
-            scoped StackAllocatedByRefs byrefs = default;
+            StackAllocatedByRefs byrefs = default;
 #pragma warning disable CS8500
             IntPtr* pByRefFixedStorage = (IntPtr*)&byrefs;
 #pragma warning restore CS8500
@@ -242,83 +242,84 @@ namespace System.Reflection
         {
             Span<object?> copyOfArgs;
             GCFrameRegistration regArgStorage;
+            object? ret;
 
-            if (!_needsByRefStrategy)
+            if ((_strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0)
             {
-                if ((_strategy & InvokerStrategy.HasBeenInvoked_ObjSpanArgs) == 0)
-                {
-                    MethodInvokerCommon.DetermineInvokeStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, backwardsCompat: false);
-                }
+                DetermineStrategy_ObjSpanArgs(ref _strategy, ref _invokeFunc_ObjSpanArgs, _method, _needsByRefStrategy, backwardsCompat: false);
+            }
 
-                if (_invokeFunc_ObjSpanArgs is not null)
-                {
-                    IntPtr* pArgStorage = stackalloc IntPtr[_argCount];
-                    NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr));
-                    copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
-                    regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
+            if (_invokeFunc_ObjSpanArgs is not null)
+            {
+                IntPtr* pArgStorage = stackalloc IntPtr[_argCount];
+                NativeMemory.Clear(pArgStorage, (nuint)_argCount * (nuint)sizeof(IntPtr));
+                copyOfArgs = new(ref Unsafe.AsRef<object?>(pArgStorage), _argCount);
+                regArgStorage = new((void**)pArgStorage, (uint)_argCount, areByRefs: false);
 
-                    try
+                try
+                {
+                    GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+
+                    for (int i = 0; i < _argCount; i++)
                     {
-                        RuntimeImports.RegisterForGCReporting(&regArgStorage);
-
-                        for (int i = 0; i < _argCount; i++)
-                        {
-                            object? arg = arguments[i];
-                            CheckArgument(ref arg, i);
-                            copyOfArgs[i] = arg;
-                        }
-
-                        return _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
-                        // No need to call CopyBack here since there are no ref values.
+                        object? arg = arguments[i];
+                        CheckArgument(ref arg, i);
+                        copyOfArgs[i] = arg;
                     }
-                    finally
-                    {
-                        RuntimeImports.UnregisterForGCReporting(&regArgStorage);
-                    }
+
+                    ret = _invokeFunc_ObjSpanArgs(obj, copyOfArgs);
+                    // No need to call CopyBack here since there are no ref values.
                 }
-            }
-
-            if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
-            {
-                MethodInvokerCommon.DetermineInvokeStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
-            }
-
-            IntPtr* pStorage = stackalloc IntPtr[2 * _argCount];
-            NativeMemory.Clear(pStorage, (nuint)(2 * _argCount) * (nuint)sizeof(IntPtr));
-            copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
-
-            IntPtr* pByRefStorage = pStorage + _argCount;
-            scoped Span<bool> shouldCopyBack = stackalloc bool[_argCount];
-
-            regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
-            GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
-
-            try
-            {
-                RuntimeImports.RegisterForGCReporting(&regArgStorage);
-                RuntimeImports.RegisterForGCReporting(&regByRefStorage);
-
-                for (int i = 0; i < _argCount; i++)
+                finally
                 {
-                    object? arg = arguments[i];
-                    shouldCopyBack[i] = CheckArgument(ref arg, i);
-                    copyOfArgs[i] = arg;
-#pragma warning disable CS8500
-                    *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
-#pragma warning restore CS8500
-                        ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
-                        ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
+                    GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
+                }
+            }
+            else
+            {
+                if ((_strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0)
+                {
+                    DetermineStrategy_RefArgs(ref _strategy, ref _invokeFunc_RefArgs, _method, backwardsCompat: false);
                 }
 
-                object? ret = _invokeFunc_RefArgs!(obj, pByRefStorage);
-                CopyBack(arguments, copyOfArgs, shouldCopyBack);
-                return ret;
+                IntPtr* pStorage = stackalloc IntPtr[2 * _argCount];
+                NativeMemory.Clear(pStorage, (nuint)(2 * _argCount) * (nuint)sizeof(IntPtr));
+                copyOfArgs = new(ref Unsafe.AsRef<object?>(pStorage), _argCount);
+
+                IntPtr* pByRefStorage = pStorage + _argCount;
+                scoped Span<bool> shouldCopyBack = stackalloc bool[_argCount];
+
+                regArgStorage = new((void**)pStorage, (uint)_argCount, areByRefs: false);
+                GCFrameRegistration regByRefStorage = new((void**)pByRefStorage, (uint)_argCount, areByRefs: true);
+
+                try
+                {
+                    GCFrameRegistration.RegisterForGCReporting(&regArgStorage);
+                    GCFrameRegistration.RegisterForGCReporting(&regByRefStorage);
+
+                    for (int i = 0; i < _argCount; i++)
+                    {
+                        object? arg = arguments[i];
+                        shouldCopyBack[i] = CheckArgument(ref arg, i);
+                        copyOfArgs[i] = arg;
+    #pragma warning disable CS8500
+                        *(ByReference*)(pByRefStorage + i) = (_invokerArgFlags[i] & InvokerArgFlags.IsValueType) != 0 ?
+    #pragma warning restore CS8500
+                            ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i).GetRawData()) :
+                            ByReference.Create(ref Unsafe.AsRef<object>(pStorage + i));
+                    }
+
+                    ret = _invokeFunc_RefArgs!(obj, pByRefStorage);
+                    CopyBack(arguments, copyOfArgs, shouldCopyBack);
+                }
+                finally
+                {
+                    GCFrameRegistration.UnregisterForGCReporting(&regByRefStorage);
+                    GCFrameRegistration.UnregisterForGCReporting(&regArgStorage);
+                }
             }
-            finally
-            {
-                RuntimeImports.UnregisterForGCReporting(&regByRefStorage);
-                RuntimeImports.UnregisterForGCReporting(&regArgStorage);
-            }
+
+            return ret;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
