@@ -362,7 +362,7 @@ namespace System.Formats.Tar.Tests
             AssertFileModeEquals(filePath, TestPermission1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public async Task LinkBeforeTargetAsync()
         {
             using TempDirectory source = new TempDirectory();
