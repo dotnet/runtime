@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Net.Http;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Http;
@@ -50,11 +53,32 @@ namespace Microsoft.Extensions.DependencyInjection
             // because we access it by reaching into the service collection.
             services.TryAddSingleton(new HttpClientMappingRegistry());
 
+            // This is used to store configuration for the default builder.
+            services.TryAddSingleton(new DefaultHttpClientConfigurationTracker());
+
             // Register default client as HttpClient
             services.TryAddTransient(s =>
             {
                 return s.GetRequiredService<IHttpClientFactory>().CreateClient(string.Empty);
             });
+
+            return services;
+        }
+
+        /// <summary>
+        /// Adds a delegate that will be used to configure all <see cref="HttpClient"/> instances.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/>.</param>
+        /// <param name="configure">A delegate that is used to configure an <see cref="IHttpClientBuilder"/>.</param>
+        /// <returns>The <see cref="IServiceCollection"/>.</returns>
+        public static IServiceCollection ConfigureHttpClientDefaults(this IServiceCollection services, Action<IHttpClientBuilder> configure)
+        {
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(configure);
+
+            AddHttpClient(services);
+
+            configure(new DefaultHttpClientBuilder(services, name: null!));
 
             return services;
         }

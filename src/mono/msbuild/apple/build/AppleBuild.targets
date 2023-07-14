@@ -239,6 +239,8 @@
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <AppleAppBuilderTask
+      UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
+      NativeDependencies="$(NativeDependencies)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
