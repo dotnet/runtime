@@ -2401,13 +2401,17 @@ emit_unsafe_accessor_ldargs (MonoMethodBuilder *mb, MonoMethodSignature *accesso
 static void
 emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
+	// TODO: support coreCLR's weird "you can call the .ctor as a normal instance member" method
 	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
-	g_assert (member_name == NULL || !strcmp (member_name, ".ctor"));
 	if (!member_name)
 		member_name = ".ctor";
+	if (strcmp (member_name, ".ctor") != 0) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid UnsafeAccessorAttribute for constructor.");
+		return;
+	}
 
 	MonoType *target_type = sig->ret; // for constructors the return type is the target type
-	if (target_type == NULL || target_type->type == MONO_TYPE_VOID) {
+	if (target_type == NULL || target_type->type == MONO_TYPE_VOID || m_type_is_byref (target_type)) {
 		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
 		return;
 	}
@@ -2423,9 +2427,9 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 		g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
 		if (!is_ok (find_method_error)) {
 			// FIXME: emit_exception_for_error doesn't like MissingMethod errors
-			mono_mb_emit_exception_for_error (mb, find_method_error);
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", g_strdup_printf ("Could not find constructor due to: %s", mono_error_get_message (find_method_error)));
 		} else {
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find ctor");
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find constructor");
 		}
 		return;
 	}
@@ -2463,10 +2467,9 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	if (!is_ok (find_method_error) || target_method == NULL) {
 		g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
 		if (!is_ok (find_method_error)) {
-			// FIXME: emit_exception_for_error doesn't like MissingMethod errors
-			mono_mb_emit_exception_for_error (mb, find_method_error);
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", g_strdup_printf ("Could not find method due to: %s", mono_error_get_message (find_method_error)));
 		} else {
-			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find ctor");
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find method");
 		}
 		return;
 	}
@@ -2507,7 +2510,8 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	default:
-		g_assert_not_reached(); // some unknown wrapper kind
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_InvalidKindValue");
+		return;
 	}
 }
 
