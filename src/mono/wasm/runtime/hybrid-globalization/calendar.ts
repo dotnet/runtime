@@ -24,6 +24,7 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
         const cultureName = monoStringToString(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const calendarInfo = {
+            EnglishName: "",
             YearMonth: "",
             MonthDay: "",
             LongDates: "",
@@ -42,6 +43,7 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
         const month = 11;
         const day = 22;
         const date = new Date(year, month - 1, day);
+        calendarInfo.EnglishName = getCalendarName(locale);
         const dayNames = getDayNames(locale);
         calendarInfo.DayNames = dayNames.long.join(INNER_SEPARATOR);
         calendarInfo.AbbreviatedDayNames = dayNames.abbreviated.join(INNER_SEPARATOR);
@@ -75,6 +77,32 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
     finally {
         cultureRoot.release();
         exceptionRoot.release();
+    }
+}
+
+function getCalendarName(locale: any){
+    const calendars = get_calendar_info(locale);
+    if (!calendars || calendars.length == 0)
+        return "";
+    return calendars[0];
+}
+
+
+function get_calendar_info(locale: string)
+{
+    try {
+        // most tools have it implemented as property
+        return (new Intl.Locale(locale) as any).calendars;
+    }
+    catch {
+        try {
+            // but a few use methods, which is the preferred way
+            return (new Intl.Locale(locale) as any).getCalendars();
+        }
+        catch
+        {
+            return undefined;
+        }
     }
 }
 
