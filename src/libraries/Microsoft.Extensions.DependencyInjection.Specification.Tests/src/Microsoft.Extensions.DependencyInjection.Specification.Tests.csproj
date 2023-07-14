@@ -15,17 +15,18 @@
     <PackageDescription>Suite of xUnit.net tests to check for container compatibility with Microsoft.Extensions.DependencyInjection.</PackageDescription>
     <!-- this assembly doesn't need to be binplaced -->
     <EnableBinPlacing>false</EnableBinPlacing>
-    <!-- This is warning in net8.0 because xunit.assert pulls in netstandard packages that have non-portable RIDs (OpenSsl).
-         They won't actually get used at run time - package conflict resolution would normally handle removing them. However,
-         due to the way the repo builds, the platform manifest for the ref package has not yet been generated when this test
-         is being built, so they are not removed (and the SDK warns on it). -->
-    <NoWarn>$(NoWarn);NETSDK1206</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.DependencyInjection.Abstractions\src\Microsoft.Extensions.DependencyInjection.Abstractions.csproj" />
     <PackageReference Include="xunit.assert" Version="$(XUnitVersion)" />
     <PackageReference Include="xunit.extensibility.core" Version="$(XUnitVersion)" />
+
+    <!-- Upgrade the NETStandard.Library transitive xunit dependency to avoid transitive 1.x NS dependencies. -->
+    <PackageReference Include="NETStandard.Library"
+                      Version="$(NetStandardLibraryVersion)"
+                      PrivateAssets="all"
+                      Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
 
 </Project>
