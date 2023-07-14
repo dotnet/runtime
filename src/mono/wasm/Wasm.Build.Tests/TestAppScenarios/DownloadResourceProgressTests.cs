@@ -23,7 +23,7 @@ public class DownloadResourceProgressTests : AppTestBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task DownloadProgressFinishes(bool fetchFailure)
+    public async Task DownloadProgressFinishes(bool failFirstAssemblyDownload)
     {
         CopyTestAsset("WasmBasicTestApp", "DownloadResourceProgressTests");
         PublishProject("Debug");
@@ -32,8 +32,14 @@ public class DownloadResourceProgressTests : AppTestBase
             Configuration: "Debug",
             ForPublish: true,
             TestScenario: "DownloadResourceProgressTest",
-            BrowserQueryString: new Dictionary<string, string> { ["fetchFailure"] = fetchFailure.ToString().ToLowerInvariant() }
+            BrowserQueryString: new Dictionary<string, string> { ["failFirstAssemblyDownload"] = failFirstAssemblyDownload.ToString().ToLowerInvariant() }
         ));
         Assert.True(result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")), "The download progress test didn't emit expected error message");
+        Assert.True(
+            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failFirstAssemblyDownload),
+            failFirstAssemblyDownload
+                ? "The download progress test didn't emit expected message about failing download"
+                : "The download progress test did emit unexpected message about failing download"
+        );
     }
 }

@@ -26,13 +26,14 @@ switch (testCase) {
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
     case "DownloadResourceProgressTest":
-        if (params.get("fetchFailure") === "true") {
-            let hasFetchFailed = false;
+        if (params.get("failFirstAssemblyDownload") === "true") {
+            let hasFailedFetch = false;
             dotnet.withResourceLoader((type, name, defaultUri, integrity) => {
-                if (hasFetchFailed || type !== "assembly")
+                if (hasFailedFetch || type !== "assembly")
                     return fetch(defaultUri, { integrity: integrity, cache: 'no-cache' });
 
-                hasFetchFailed = true;
+                testOutput("Throw error instead of downloading resource");
+                hasFailedFetch = true;
                 const error = new Error("Simulating a failed fetch");
                 error.silent = true;
                 throw error;
