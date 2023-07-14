@@ -2143,5 +2143,75 @@ namespace System.Tests
             AssertExtensions.Equal(+expectedResult, Half.Lerp(+value1, +value2, amount), Half.Zero);
             AssertExtensions.Equal((expectedResult == Half.Zero) ? expectedResult : -expectedResult, Half.Lerp(-value1, -value2, amount), Half.Zero);
         }
+
+        public static IEnumerable<object[]> DegreesToRadians_TestData()
+        {
+            yield return new object[] { Half.NaN,               Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,              Half.Zero,             Half.Zero };
+            yield return new object[] { (Half)(0.3184f),        (Half)(0.005554f),     CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (Half)(0.4343f),        (Half)(0.00758f),      CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (Half)(0.5f),           (Half)(0.00872f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.6367f),        (Half)(0.01111f),      CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (Half)(0.6934f),        (Half)(0.0121f),       CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (Half)(0.707f),         (Half)(0.01234f),      CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (Half)(0.785f),         (Half)(0.0137f),       CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (Half)(1.0f),           (Half)(0.01744f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(1.128f),         (Half)(0.01968f),      CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (Half)(1.414f),         (Half)(0.02467f),      CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (Half)(1.442f),         (Half)(0.02518f),      CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (Half)(1.5f),           (Half)(0.02617f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(1.57f),          (Half)(0.0274f),       CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (Half)(2.0f),           (Half)(0.03488f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(2.303f),         (Half)(0.04016f),      CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (Half)(2.5f),           (Half)(0.0436f),       CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(2.719f),         (Half)(0.04742f),      CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (Half)(3.0f),           (Half)(0.05234f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(3.14f),          (Half)(0.0548f),       CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (Half)(3.5f),           (Half)(0.06107f),      CrossPlatformMachineEpsilon };
+            yield return new object[] { Half.PositiveInfinity,  Half.PositiveInfinity, Half.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(DegreesToRadians_TestData))]
+        public static void DegreesToRadiansTest(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, Half.DegreesToRadians(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, Half.DegreesToRadians(+value), allowedVariance);
+        }
+
+        public static IEnumerable<object[]> RadiansToDegrees_TestData()
+        {
+            yield return new object[] { Half.NaN,              Half.NaN,              Half.Zero };
+            yield return new object[] { Half.Zero,             Half.Zero,             Half.Zero };
+            yield return new object[] { (Half)(0.005554f),     (Half)(0.3184f),       CrossPlatformMachineEpsilon };       // value:  (1 / pi)
+            yield return new object[] { (Half)(0.00758f),      (Half)(0.4343f),       CrossPlatformMachineEpsilon };       // value:  (log10(e))
+            yield return new object[] { (Half)(0.00872f),      (Half)(0.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.01111f),      (Half)(0.6367f),       CrossPlatformMachineEpsilon };       // value:  (2 / pi)
+            yield return new object[] { (Half)(0.0121f),       (Half)(0.6934f),       CrossPlatformMachineEpsilon };       // value:  (ln(2))
+            yield return new object[] { (Half)(0.01234f),      (Half)(0.707f),        CrossPlatformMachineEpsilon };       // value:  (1 / sqrt(2))
+            yield return new object[] { (Half)(0.0137f),       (Half)(0.785f),        CrossPlatformMachineEpsilon };       // value:  (pi / 4)
+            yield return new object[] { (Half)(0.01744f),      (Half)(1.0f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.01968f),      (Half)(1.128f),        CrossPlatformMachineEpsilon };       // value:  (2 / sqrt(pi))
+            yield return new object[] { (Half)(0.02467f),      (Half)(1.414f),        CrossPlatformMachineEpsilon };       // value:  (sqrt(2))
+            yield return new object[] { (Half)(0.02518f),      (Half)(1.442f),        CrossPlatformMachineEpsilon };       // value:  (log2(e))
+            yield return new object[] { (Half)(0.02617f),      (Half)(1.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.0274f),       (Half)(1.57f),         CrossPlatformMachineEpsilon };       // value:  (pi / 2)
+            yield return new object[] { (Half)(0.03488f),      (Half)(2.0f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.04016f),      (Half)(2.303f),        CrossPlatformMachineEpsilon };       // value:  (ln(10))
+            yield return new object[] { (Half)(0.0436f),       (Half)(2.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.04742f),      (Half)(2.719f),        CrossPlatformMachineEpsilon };       // value:  (e)
+            yield return new object[] { (Half)(0.05234f),      (Half)(3.0f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { (Half)(0.0548f),       (Half)(3.14f),         CrossPlatformMachineEpsilon };       // value:  (pi)
+            yield return new object[] { (Half)(0.06107f),      (Half)(3.5f),          CrossPlatformMachineEpsilon };
+            yield return new object[] { Half.PositiveInfinity, Half.PositiveInfinity, Half.Zero };
+        }
+
+        [Theory]
+        [MemberData(nameof(RadiansToDegrees_TestData))]
+        public static void RadiansToDegreesTest(Half value, Half expectedResult, Half allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, Half.RadiansToDegrees(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, Half.RadiansToDegrees(+value), allowedVariance);
+        }
     }
 }
