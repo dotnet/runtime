@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
     /// <summary>
     /// Extension methods for configuring an <see cref="IHttpClientBuilder"/>
     /// </summary>
-    public static class HttpClientBuilderExtensions
+    public static partial class HttpClientBuilderExtensions
     {
         /// <summary>
         /// Adds a delegate that will be used to configure a named <see cref="HttpClient"/>.
