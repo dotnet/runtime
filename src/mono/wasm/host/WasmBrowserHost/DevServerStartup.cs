@@ -2,14 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.AppHost;
 
-internal sealed class Startup
+internal sealed class DevServerStartup
 {
-    public Startup(IConfiguration configuration)
+    public DevServerStartup(IConfiguration configuration)
     {
         Configuration = configuration;
     }
@@ -21,12 +25,12 @@ internal sealed class Startup
         services.AddRouting();
     }
 
-    public static void Configure(IApplicationBuilder app, IConfiguration configuration)
+    public static void Configure(IApplicationBuilder app, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs, ILogger logger, IHostApplicationLifetime applicationLifetime, IConfiguration configuration)
     {
         app.UseDeveloperExceptionPage();
         EnableConfiguredPathbase(app, configuration);
 
-        // TODO MF: app.UseWebAssemblyDebugging();
+        app.UseWebAssemblyDebugging();
 
         bool applyCopHeaders = configuration.GetValue<bool>("ApplyCopHeaders");
 
@@ -72,6 +76,8 @@ internal sealed class Startup
                 }
             });
         });
+
+        ServerURLsProvider.Hook(app, logger, applicationLifetime, realUrlsAvailableTcs);
     }
 
     private static void EnableConfiguredPathbase(IApplicationBuilder app, IConfiguration configuration)

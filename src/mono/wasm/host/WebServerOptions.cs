@@ -12,6 +12,7 @@ namespace Microsoft.WebAssembly.AppHost;
 internal sealed record WebServerOptions
 (
     Func<WebSocket, Task>? OnConsoleConnected,
+    string? ApplicationPath,
     string? ContentRootPath,
     bool WebServerUseCors,
     bool WebServerUseCrossOriginPolicy,

@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 
@@ -102,6 +103,7 @@ internal sealed class BrowserHost
                                     ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
                                     : null,
             ContentRootPath: Path.GetFullPath(appPath),
+            ApplicationPath: Path.GetFullPath(appPath),
             WebServerUseCors: true,
             WebServerUseCrossOriginPolicy: true,
             Urls: urls
