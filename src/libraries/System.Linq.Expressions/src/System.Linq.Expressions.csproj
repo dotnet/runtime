@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-ios;$(NetCoreAppCurrent)-tvos;$(NetCoreAppCurrent)-maccatalyst</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <DefineConstants> $(DefineConstants);FEATURE_FAST_CREATE</DefineConstants>
     <NoWarn>$(NoWarn);CA1859</NoWarn>
     <EnableAOTAnalyzer>false</EnableAOTAnalyzer>
