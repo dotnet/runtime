@@ -1,19 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-** Purpose:
-** Contains eventing constants defined by the Windows
-** environment.
-**
-============================================================*/
-
 namespace System.Diagnostics.Tracing
 {
     /// <summary>
-    /// WindowsEventLevel. Custom values must be in the range from 16 through 255
+    /// Contains an event level that is defined in an event provider. The level signifies the severity of the event.
+    /// Custom values must be in the range from 16 through 255.
     /// </summary>
     public enum EventLevel
     {
@@ -42,8 +34,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         Verbose
     }
+
     /// <summary>
-    /// WindowsEventTask. Custom values must be in the range from 1 through 65534
+    /// Contains an event task that is defined in an event provider. The task identifies a portion of an application or a component that publishes an event. A task is a 16-bit value with 16 top values reserved.
+    /// Custom values must be in the range from 1 through 65534.
     /// </summary>
     public enum EventTask
     {
@@ -52,8 +46,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         None = 0
     }
+
     /// <summary>
-    /// EventOpcode. Custom values must be in the range from 11 through 239
+    /// Contains an event opcode that is defined in an event provider. An opcode defines a numeric value that identifies the activity or a point within an activity that the application was performing when it raised the event.
+    /// Custom values must be in the range from 11 through 239.
     /// </summary>
     public enum EventOpcode
     {
@@ -103,9 +99,8 @@ namespace System.Diagnostics.Tracing
         Receive = 240
     }
 
-    // Added for CLR V4
     /// <summary>
-    /// EventChannel. Custom values must be in the range from 16 through 255. Currently only predefined values allowed.
+    /// Specifies the event log channel for the event.
     /// </summary>
     public enum EventChannel : byte
     {
@@ -125,7 +120,7 @@ namespace System.Diagnostics.Tracing
     }
 
     /// <summary>
-    /// EventOpcode
+    /// Defines the standard keywords that apply to events.
     /// </summary>
     [Flags]
     public enum EventKeywords : long

@@ -5,6 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -332,6 +333,25 @@ namespace Microsoft.Extensions.Hosting.Tests
                 Assert.Contains("(ThrowOnStarting)", ex.InnerExceptions[0].Message);
                 Assert.Contains("(ThrowOnStart)", ex.InnerExceptions[1].Message);
                 Assert.Contains("(ThrowOnStarted)", ex.InnerExceptions[2].Message);
+            }
+        }
+
+        [Fact]
+        public async Task ValidateOnStartAbortsChain()
+        {
+            ExceptionImpl impl = new(throwAfterAsyncCall: true, throwOnStartup: true, throwOnShutdown: false);
+            var hostBuilder = CreateHostBuilder(services =>
+            {
+                services.AddHostedService((token) => impl)
+                .AddOptions<ComplexOptions>()
+                .Validate(o => o.Boolean)
+                .ValidateOnStart();
+            });
+
+            using (IHost host = hostBuilder.Build())
+            {
+                await Assert.ThrowsAnyAsync<OptionsValidationException>(async () => await host.StartAsync());
+                Assert.False(impl.StartingCalled);
             }
         }
     }

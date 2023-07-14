@@ -349,23 +349,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithPrivateProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithInternalProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithProtectedProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
-        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
-        public override async Task NonPublicProperty_WithJsonInclude_Invalid(Type type)
-        {
-            // Exception messages direct users to use JsonSourceGenerationMode.Metadata to see a more detailed error.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper("{}", type));
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(Activator.CreateInstance(type), type));
-        }
-
-        [Theory]
         [InlineData(typeof(ClassWithBadIgnoreAttribute))]
         [InlineData(typeof(StructWithBadIgnoreAttribute))]
         public override async Task JsonIgnoreCondition_WhenWritingNull_OnValueType_Fail(Type type)

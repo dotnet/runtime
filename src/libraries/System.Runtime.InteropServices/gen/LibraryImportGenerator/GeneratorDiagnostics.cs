@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -29,56 +26,62 @@ namespace Microsoft.Interop
 
         private const string Category = "LibraryImportGenerator";
 
+        /// <inheritdoc cref="SR.InvalidAttributedMethodSignatureMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidAttributedMethodSignature =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
-            GetResourceString(nameof(SR.InvalidAttributedMethodSignatureMessage)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodSignatureMessageLibraryImport)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
-            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidAttributedMethodContainingTypeMissingModifiers =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
-            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessage)),
+            GetResourceString(nameof(SR.InvalidAttributedMethodContainingTypeMissingModifiersMessageLibraryImport)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
-            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescription)));
+            description: GetResourceString(nameof(SR.InvalidAttributedMethodDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.InvalidStringMarshallingConfigurationMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor InvalidStringMarshallingConfiguration =
             new DiagnosticDescriptor(
             Ids.InvalidLibraryImportAttributeUsage,
             GetResourceString(nameof(SR.InvalidLibraryImportAttributeUsageTitle)),
-            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessage)),
+            GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationMessageLibraryImport)),
             Category,
             DiagnosticSeverity.Error,
             isEnabledByDefault: true,
             description: GetResourceString(nameof(SR.InvalidStringMarshallingConfigurationDescription)));
 
+        /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterLibraryImport"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
-                GetResourceString(nameof(SR.TypeNotSupportedMessageParameter)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageParameterLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.TypeNotSupportedMessageReturnLibraryImport"/>
         public static readonly DiagnosticDescriptor ReturnTypeNotSupported =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
                 GetResourceString(nameof(SR.TypeNotSupportedTitle)),
-                GetResourceString(nameof(SR.TypeNotSupportedMessageReturn)),
+                GetResourceString(nameof(SR.TypeNotSupportedMessageReturnLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.TypeNotSupportedMessageParameterWithDetails"/>
         public static readonly DiagnosticDescriptor ParameterTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
@@ -87,8 +90,9 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.TypeNotSupportedMessageReturnWithDetails"/>
         public static readonly DiagnosticDescriptor ReturnTypeNotSupportedWithDetails =
             new DiagnosticDescriptor(
                 Ids.TypeNotSupported,
@@ -97,78 +101,86 @@ namespace Microsoft.Interop
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.TypeNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.TypeNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageParameterLibraryImport"/>
         public static readonly DiagnosticDescriptor ParameterConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageParameter)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageParameterLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageReturnLibraryImport"/>
         public static readonly DiagnosticDescriptor ReturnConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageReturn)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageReturnLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.MarshalAsConfigurationNotSupportedMessageParameterLibraryImport"/>
         public static readonly DiagnosticDescriptor MarshalAsParameterConfigurationNotSupported =
             new DiagnosticDescriptor(
                 GeneratorDiagnostics.Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageParameter)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageParameterLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.MarshalAsConfigurationNotSupportedMessageReturnLibraryImport"/>
         public static readonly DiagnosticDescriptor MarshalAsReturnConfigurationNotSupported =
             new DiagnosticDescriptor(
                 GeneratorDiagnostics.Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageReturn)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.MarshalAsConfigurationNotSupportedMessageReturnLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor ConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.ConfigurationNotSupportedMessage)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageValueLibraryImport"/>
         public static readonly DiagnosticDescriptor ConfigurationValueNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageValue)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageValueLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.ConfigurationNotSupportedMessageMarshallingInfoLibraryImport"/>
         public static readonly DiagnosticDescriptor MarshallingAttributeConfigurationNotSupported =
             new DiagnosticDescriptor(
                 Ids.ConfigurationNotSupported,
-                GetResourceString(nameof(SR.ConfigurationNotSupportedTitle)),
-                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageMarshallingInfo)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedTitleLibraryImport)),
+                GetResourceString(nameof(SR.ConfigurationNotSupportedMessageMarshallingInfoLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescription)));
+                description: GetResourceString(nameof(SR.ConfigurationNotSupportedDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.CannotForwardToDllImportMessage"/>
         public static readonly DiagnosticDescriptor CannotForwardToDllImport =
             new DiagnosticDescriptor(
                 Ids.CannotForwardToDllImport,
@@ -179,16 +191,18 @@ namespace Microsoft.Interop
                 isEnabledByDefault: true,
                 description: GetResourceString(nameof(SR.CannotForwardToDllImportDescription)));
 
+        /// <inheritdoc cref="SR.RequiresAllowUnsafeBlocksMessageLibraryImport"/>
         public static readonly DiagnosticDescriptor RequiresAllowUnsafeBlocks =
             new DiagnosticDescriptor(
                 Ids.RequiresAllowUnsafeBlocks,
-                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitle)),
-                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessage)),
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksTitleLibraryImport)),
+                GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksMessageLibraryImport)),
                 Category,
                 DiagnosticSeverity.Error,
                 isEnabledByDefault: true,
-                description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescription)));
+                description: GetResourceString(nameof(SR.RequiresAllowUnsafeBlocksDescriptionLibraryImport)));
 
+        /// <inheritdoc cref="SR.UnnecessaryParameterMarshallingInfoMessage"/>
         public static readonly DiagnosticDescriptor UnnecessaryParameterMarshallingInfo =
             new DiagnosticDescriptor(
                 Ids.UnnecessaryMarshallingInfo,
@@ -202,6 +216,8 @@ namespace Microsoft.Interop
                 {
                     WellKnownDiagnosticTags.Unnecessary
                 });
+
+        /// <inheritdoc cref="SR.UnnecessaryMarshallingInfoDescription"/>
         public static readonly DiagnosticDescriptor UnnecessaryReturnMarshallingInfo =
             new DiagnosticDescriptor(
                 Ids.UnnecessaryMarshallingInfo,

@@ -53,33 +53,41 @@ namespace System
         {
             if (b.Length != 16)
             {
-                ThrowArgumentException();
+                ThrowGuidArrayCtorArgumentException();
             }
 
-            if (BitConverter.IsLittleEndian)
+            this = MemoryMarshal.Read<Guid>(b);
+
+            if (!BitConverter.IsLittleEndian)
             {
-                this = MemoryMarshal.Read<Guid>(b);
-                return;
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
             }
+        }
 
-            // slower path for BigEndian:
-            _k = b[15];  // hoist bounds checks
-            _a = BinaryPrimitives.ReadInt32LittleEndian(b);
-            _b = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(4));
-            _c = BinaryPrimitives.ReadInt16LittleEndian(b.Slice(6));
-            _d = b[8];
-            _e = b[9];
-            _f = b[10];
-            _g = b[11];
-            _h = b[12];
-            _i = b[13];
-            _j = b[14];
-
-            [StackTraceHidden]
-            static void ThrowArgumentException()
+        public Guid(ReadOnlySpan<byte> b, bool bigEndian)
+        {
+            if (b.Length != 16)
             {
-                throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), nameof(b));
+                ThrowGuidArrayCtorArgumentException();
             }
+
+            this = MemoryMarshal.Read<Guid>(b);
+
+            if (BitConverter.IsLittleEndian == bigEndian)
+            {
+                _a = BinaryPrimitives.ReverseEndianness(_a);
+                _b = BinaryPrimitives.ReverseEndianness(_b);
+                _c = BinaryPrimitives.ReverseEndianness(_c);
+            }
+        }
+
+        [DoesNotReturn]
+        [StackTraceHidden]
+        private static void ThrowGuidArrayCtorArgumentException()
+        {
+            throw new ArgumentException(SR.Format(SR.Arg_GuidArrayCtor, "16"), "b");
         }
 
         [CLSCompliant(false)]
@@ -833,6 +841,10 @@ namespace System
             str[i] == '0' &&
             (str[i + 1] | 0x20) == 'x';
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static unsafe ReadOnlySpan<byte> AsBytes(in Guid source) =>
+            new ReadOnlySpan<byte>(Unsafe.AsPointer(ref Unsafe.AsRef(in source)), sizeof(Guid));
+
         // Returns an unsigned byte array containing the GUID.
         public byte[] ToByteArray()
         {
@@ -843,7 +855,27 @@ namespace System
             }
             else
             {
-                TryWriteBytes(g);
+                // slower path for BigEndian
+                Guid guid = new Guid(AsBytes(this), false);
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
+            }
+            return g;
+        }
+
+
+        // Returns an unsigned byte array containing the GUID.
+        public byte[] ToByteArray(bool bigEndian)
+        {
+            var g = new byte[16];
+            if (BitConverter.IsLittleEndian != bigEndian)
+            {
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in this));
+            }
+            else
+            {
+                // slower path for Reverse
+                Guid guid = new Guid(AsBytes(this), bigEndian);
+                MemoryMarshal.TryWrite(g, ref Unsafe.AsRef(in guid));
             }
             return g;
         }
@@ -851,26 +883,42 @@ namespace System
         // Returns whether bytes are successfully written to given span.
         public bool TryWriteBytes(Span<byte> destination)
         {
-            if (BitConverter.IsLittleEndian)
-            {
-                return MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
-            }
-
-            // slower path for BigEndian
             if (destination.Length < 16)
                 return false;
 
-            destination[15] = _k; // hoist bounds checks
-            BinaryPrimitives.WriteInt32LittleEndian(destination, _a);
-            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(4), _b);
-            BinaryPrimitives.WriteInt16LittleEndian(destination.Slice(6), _c);
-            destination[8] = _d;
-            destination[9] = _e;
-            destination[10] = _f;
-            destination[11] = _g;
-            destination[12] = _h;
-            destination[13] = _i;
-            destination[14] = _j;
+            if (BitConverter.IsLittleEndian)
+            {
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+            }
+            else
+            {
+                // slower path for BigEndian
+                Guid guid = new Guid(AsBytes(this), false);
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+            }
+            return true;
+        }
+
+        // Returns whether bytes are successfully written to given span.
+        public bool TryWriteBytes(Span<byte> destination, bool bigEndian, out int bytesWritten)
+        {
+            if (destination.Length < 16)
+            {
+                bytesWritten = 0;
+                return false;
+            }
+
+            if (BitConverter.IsLittleEndian != bigEndian)
+            {
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in this));
+            }
+            else
+            {
+                // slower path for Reverse
+                Guid guid = new Guid(AsBytes(this), bigEndian);
+                MemoryMarshal.TryWrite(destination, ref Unsafe.AsRef(in guid));
+            }
+            bytesWritten = 16;
             return true;
         }
 

@@ -1,10 +1,11 @@
-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Work In Progress to add native events to EventPipe
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // @TODO: Audit native events in NativeAOT Runtime
+#ifndef CLR_ETW_ALL_MAIN_H
+#define CLR_ETW_ALL_MAIN_H
 
 #include "clreventpipewriteevents.h"
 #include "EtwEvents.h"
@@ -41,66 +42,6 @@ inline ULONG FireEtwExceptionThrown_V1(
     ULONG status = EventPipeWriteEventExceptionThrown_V1(ExceptionType,ExceptionMessage,ExceptionEIP,ExceptionHRESULT,ExceptionFlags,ClrInstanceID,ActivityId,RelatedActivityId);
 #ifndef TARGET_UNIX
     status &= FireEtXplatExceptionThrown_V1(ExceptionType,ExceptionMessage,ExceptionEIP,ExceptionHRESULT,ExceptionFlags,ClrInstanceID);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCAllocationTick_V1(void) {return EventPipeEventEnabledGCAllocationTick_V1();}
-
-inline ULONG FireEtwGCAllocationTick_V1(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCAllocationTick_V1(AllocationAmount,AllocationKind,ClrInstanceID,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCAllocationTick_V1(AllocationAmount,AllocationKind,ClrInstanceID);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCAllocationTick_V2(void) {return EventPipeEventEnabledGCAllocationTick_V2();}
-
-inline ULONG FireEtwGCAllocationTick_V2(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCAllocationTick_V2(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCAllocationTick_V2(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCAllocationTick_V3(void) {return EventPipeEventEnabledGCAllocationTick_V3();}
-
-inline ULONG FireEtwGCAllocationTick_V3(
-    const unsigned int  AllocationAmount,
-    const unsigned int  AllocationKind,
-    const unsigned short  ClrInstanceID,
-    const unsigned __int64  AllocationAmount64,
-    void*  TypeID,
-    const WCHAR*  TypeName,
-    const unsigned int  HeapIndex,
-    void*  Address,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCAllocationTick_V3(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCAllocationTick_V3(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address);
 #endif
     return status;
 }
@@ -336,29 +277,6 @@ inline ULONG FireEtwGCGenerationRange(
     ULONG status = EventPipeWriteEventGCGenerationRange(Generation,RangeStart,RangeUsedLength,RangeReservedLength,ClrInstanceID,ActivityId,RelatedActivityId);
 #ifndef TARGET_UNIX
     status &= FireEtXplatGCGenerationRange(Generation,RangeStart,RangeUsedLength,RangeReservedLength,ClrInstanceID);
-#endif
-    return status;
-}
-
-inline BOOL EventEnabledGCGlobalHeapHistory_V2(void) {return EventPipeEventEnabledGCGlobalHeapHistory_V2();}
-
-inline ULONG FireEtwGCGlobalHeapHistory_V2(
-    const unsigned __int64  FinalYoungestDesired,
-    const signed int  NumHeaps,
-    const unsigned int  CondemnedGeneration,
-    const unsigned int  Gen0ReductionCount,
-    const unsigned int  Reason,
-    const unsigned int  GlobalMechanisms,
-    const unsigned short  ClrInstanceID,
-    const unsigned int  PauseMode,
-    const unsigned int  MemoryPressure,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCGlobalHeapHistory_V2(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCGlobalHeapHistory_V2(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure);
 #endif
     return status;
 }
@@ -601,25 +519,6 @@ inline ULONG FireEtwSetGCHandle(
     return status;
 }
 
-inline BOOL EventEnabledGCStart_V1(void) {return EventPipeEventEnabledGCStart_V1();}
-
-inline ULONG FireEtwGCStart_V1(
-    const unsigned int  Count,
-    const unsigned int  Depth,
-    const unsigned int  Reason,
-    const unsigned int  Type,
-    const unsigned short  ClrInstanceID,
-    const GUID * ActivityId = nullptr,
-    const GUID * RelatedActivityId = nullptr
-)
-{
-    ULONG status = EventPipeWriteEventGCStart_V1(Count,Depth,Reason,Type,ClrInstanceID,ActivityId,RelatedActivityId);
-#ifndef TARGET_UNIX
-    status &= FireEtXplatGCStart_V1(Count,Depth,Reason,Type,ClrInstanceID);
-#endif
-    return status;
-}
-
 inline BOOL EventEnabledGCStart_V2(void) {return EventPipeEventEnabledGCStart_V2();}
 
 inline ULONG FireEtwGCStart_V2(
@@ -702,3 +601,467 @@ inline ULONG FireEtwGCSuspendEEBegin_V1(
 #endif
     return status;
 }
+
+inline BOOL EventEnabledDecreaseMemoryPressure(void) {return EventPipeEventEnabledDecreaseMemoryPressure();}
+
+inline ULONG FireEtwDecreaseMemoryPressure(
+    const unsigned __int64  BytesFreed,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventDecreaseMemoryPressure(BytesFreed,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledFinalizeObject(void) {return EventPipeEventEnabledFinalizeObject();}
+
+inline ULONG FireEtwFinalizeObject(
+    const void*  TypeID,
+    const void*  ObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventFinalizeObject(TypeID,ObjectID,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCFinalizersBegin_V1(void) {return EventPipeEventEnabledGCFinalizersBegin_V1();}
+
+inline ULONG FireEtwGCFinalizersBegin_V1(
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCFinalizersBegin_V1(ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCFinalizersEnd_V1(void) {return EventPipeEventEnabledGCFinalizersEnd_V1();}
+
+inline ULONG FireEtwGCFinalizersEnd_V1(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCFinalizersEnd_V1(Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledContentionStart_V2(void) {return EventPipeEventEnabledContentionStart_V2();}
+
+inline ULONG FireEtwContentionStart_V2(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned __int64  LockOwnerThreadID,
+    const GUID *  ActivityId = nullptr,
+    const GUID *  RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventContentionStart_V2(ContentionFlags,ClrInstanceID,LockID,AssociatedObjectID,LockOwnerThreadID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledContentionStop_V1(void) {return EventPipeEventEnabledContentionStop_V1();}
+
+inline ULONG FireEtwContentionStop_V1(
+    const unsigned char  ContentionFlags,
+    const unsigned short  ClrInstanceID,
+    const double  DurationNs,
+    const GUID *  ActivityId = nullptr,
+    const GUID *  RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventContentionStop_V1(ContentionFlags,ClrInstanceID,DurationNs,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledContentionLockCreated(void) {return EventPipeEventEnabledContentionLockCreated();}
+
+inline ULONG FireEtwContentionLockCreated(
+    const void*  LockID,
+    const void*  AssociatedObjectID,
+    const unsigned short  ClrInstanceID,
+    const GUID *  ActivityId = nullptr,
+    const GUID *  RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventContentionLockCreated(LockID,AssociatedObjectID,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadStart(void) {return EventPipeEventEnabledThreadPoolWorkerThreadStart();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadStart(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadStart(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadStop(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadStop(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadWait(
+    const unsigned int  ActiveWorkerThreadCount,
+    const unsigned int  RetiredWorkerThreadCount,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadWait(ActiveWorkerThreadCount,RetiredWorkerThreadCount,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolMinMaxThreads(void) {return EventPipeEventEnabledThreadPoolMinMaxThreads();}
+
+inline uint32_t FireEtwThreadPoolMinMaxThreads(
+    const unsigned short  MinWorkerThreads,
+    const unsigned short  MaxWorkerThreads,
+    const unsigned short  MinIOCompletionThreads,
+    const unsigned short  MaxIOCompletionThreads,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolMinMaxThreads(MinWorkerThreads,MaxWorkerThreads,MinIOCompletionThreads,MaxIOCompletionThreads,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentSample(void) {return EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentSample();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentSample(
+    const double  Throughput,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentSample(Throughput,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentAdjustment(void) {return EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentAdjustment();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentAdjustment(
+    const double  AverageThroughput,
+    const unsigned int  NewWorkerThreadCount,
+    const unsigned int  Reason,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentAdjustment(AverageThroughput,NewWorkerThreadCount,Reason,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkerThreadAdjustmentStats(void) {return EventPipeEventEnabledThreadPoolWorkerThreadAdjustmentStats();}
+
+inline uint32_t FireEtwThreadPoolWorkerThreadAdjustmentStats(
+    const double  Duration,
+    const double  Throughput,
+    const double  ThreadWave,
+    const double  ThroughputWave,
+    const double  ThroughputErrorEstimate,
+    const double  AverageThroughputErrorEstimate,
+    const double  ThroughputRatio,
+    const double  Confidence,
+    const double  NewControlSetting,
+    const unsigned short  NewThreadWaveMagnitude,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkerThreadAdjustmentStats(Duration,Throughput,ThreadWave,ThroughputWave,ThroughputErrorEstimate,AverageThroughputErrorEstimate,ThroughputRatio,Confidence,NewControlSetting,NewThreadWaveMagnitude,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolIOEnqueue(void) {return EventPipeEventEnabledThreadPoolIOEnqueue();}
+
+inline uint32_t FireEtwThreadPoolIOEnqueue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const BOOL  MultiDequeues,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolIOEnqueue(NativeOverlapped,Overlapped,MultiDequeues,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolIODequeue(void) {return EventPipeEventEnabledThreadPoolIODequeue();}
+
+inline uint32_t FireEtwThreadPoolIODequeue(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolIODequeue(NativeOverlapped,Overlapped,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolWorkingThreadCount(void) {return EventPipeEventEnabledThreadPoolWorkingThreadCount();}
+
+inline uint32_t FireEtwThreadPoolWorkingThreadCount(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolWorkingThreadCount(Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledThreadPoolIOPack(void) {return EventPipeEventEnabledThreadPoolIOPack();}
+
+inline uint32_t FireEtwThreadPoolIOPack(
+    const void*  NativeOverlapped,
+    const void*  Overlapped,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    uint32_t status = EventPipeWriteEventThreadPoolIOPack(NativeOverlapped,Overlapped,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCAllocationTick_V4(void) {return EventPipeEventEnabledGCAllocationTick_V4();}
+
+inline ULONG FireEtwGCAllocationTick_V4(
+    const unsigned int  AllocationAmount,
+    const unsigned int  AllocationKind,
+    const unsigned short  ClrInstanceID,
+    const unsigned __int64  AllocationAmount64,
+    const void*  TypeID,
+    const WCHAR*  TypeName,
+    const unsigned int  HeapIndex,
+    const void*  Address,
+    const unsigned __int64  ObjectSize,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCAllocationTick_V4(AllocationAmount,AllocationKind,ClrInstanceID,AllocationAmount64,TypeID,TypeName,HeapIndex,Address,ObjectSize,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCHeapStats_V2(void) {return EventPipeEventEnabledGCHeapStats_V2();}
+
+inline ULONG FireEtwGCHeapStats_V2(
+    const unsigned __int64  GenerationSize0,
+    const unsigned __int64  TotalPromotedSize0,
+    const unsigned __int64  GenerationSize1,
+    const unsigned __int64  TotalPromotedSize1,
+    const unsigned __int64  GenerationSize2,
+    const unsigned __int64  TotalPromotedSize2,
+    const unsigned __int64  GenerationSize3,
+    const unsigned __int64  TotalPromotedSize3,
+    const unsigned __int64  FinalizationPromotedSize,
+    const unsigned __int64  FinalizationPromotedCount,
+    const unsigned int  PinnedObjectCount,
+    const unsigned int  SinkBlockCount,
+    const unsigned int  GCHandleCount,
+    const unsigned short  ClrInstanceID,
+    const unsigned __int64  GenerationSize4,
+    const unsigned __int64  TotalPromotedSize4,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCHeapStats_V2(GenerationSize0,TotalPromotedSize0,GenerationSize1,TotalPromotedSize1,GenerationSize2,TotalPromotedSize2,GenerationSize3,TotalPromotedSize3,FinalizationPromotedSize,FinalizationPromotedCount,PinnedObjectCount,SinkBlockCount,GCHandleCount,ClrInstanceID,GenerationSize4,TotalPromotedSize4,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCSampledObjectAllocationHigh(void) {return EventPipeEventEnabledGCSampledObjectAllocationHigh();}
+
+inline ULONG FireEtwGCSampledObjectAllocationHigh(
+    const void*  Address,
+    const void*  TypeID,
+    const unsigned int  ObjectCountForTypeSample,
+    const unsigned __int64  TotalSizeForTypeSample,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCSampledObjectAllocationHigh(Address,TypeID,ObjectCountForTypeSample,TotalSizeForTypeSample,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCSampledObjectAllocationLow(void) {return EventPipeEventEnabledGCSampledObjectAllocationLow();}
+
+inline ULONG FireEtwGCSampledObjectAllocationLow(
+    const void*  Address,
+    const void*  TypeID,
+    const unsigned int  ObjectCountForTypeSample,
+    const unsigned __int64  TotalSizeForTypeSample,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCSampledObjectAllocationLow(Address,TypeID,ObjectCountForTypeSample,TotalSizeForTypeSample,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledPinObjectAtGCTime(void) {return EventPipeEventEnabledPinObjectAtGCTime();}
+
+inline ULONG FireEtwPinObjectAtGCTime(
+    const void*  HandleID,
+    const void*  ObjectID,
+    const unsigned __int64  ObjectSize,
+    const WCHAR*  TypeName,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventPinObjectAtGCTime(HandleID,ObjectID,ObjectSize,TypeName,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCBulkRootStaticVar(void) {return EventPipeEventEnabledGCBulkRootStaticVar();}
+
+inline ULONG FireEtwGCBulkRootStaticVar(
+    const unsigned int  Count,
+    const unsigned __int64  AppDomainID,
+    const unsigned short  ClrInstanceID,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCBulkRootStaticVar(Count,AppDomainID,ClrInstanceID,Values_ElementSize, Values,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledIncreaseMemoryPressure(void) {return EventPipeEventEnabledIncreaseMemoryPressure();}
+
+inline ULONG FireEtwIncreaseMemoryPressure(
+    const unsigned __int64  BytesAllocated,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventIncreaseMemoryPressure(BytesAllocated,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCGlobalHeapHistory_V4(void) {return EventPipeEventEnabledGCGlobalHeapHistory_V4();}
+
+inline ULONG FireEtwGCGlobalHeapHistory_V4(
+    const unsigned __int64  FinalYoungestDesired,
+    const signed int  NumHeaps,
+    const unsigned int  CondemnedGeneration,
+    const unsigned int  Gen0ReductionCount,
+    const unsigned int  Reason,
+    const unsigned int  GlobalMechanisms,
+    const unsigned short  ClrInstanceID,
+    const unsigned int  PauseMode,
+    const unsigned int  MemoryPressure,
+    const unsigned int  CondemnReasons0,
+    const unsigned int  CondemnReasons1,
+    const unsigned int  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCGlobalHeapHistory_V4(FinalYoungestDesired,NumHeaps,CondemnedGeneration,Gen0ReductionCount,Reason,GlobalMechanisms,ClrInstanceID,PauseMode,MemoryPressure,CondemnReasons0,CondemnReasons1,Count,Values_ElementSize, Values,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGenAwareBegin(void) {return EventPipeEventEnabledGenAwareBegin();}
+
+inline ULONG FireEtwGenAwareBegin(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGenAwareBegin(Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGenAwareEnd(void) {return EventPipeEventEnabledGenAwareEnd();}
+
+inline ULONG FireEtwGenAwareEnd(
+    const unsigned int  Count,
+    const unsigned short  ClrInstanceID,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGenAwareEnd(Count,ClrInstanceID,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCLOHCompact(void) {return EventPipeEventEnabledGCLOHCompact();}
+
+inline ULONG FireEtwGCLOHCompact(
+    const unsigned short  ClrInstanceID,
+    const unsigned short  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCLOHCompact(ClrInstanceID,Count,Values_ElementSize, Values,ActivityId,RelatedActivityId);
+    return status;
+}
+
+inline BOOL EventEnabledGCFitBucketInfo(void) {return EventPipeEventEnabledGCFitBucketInfo();}
+
+inline ULONG FireEtwGCFitBucketInfo(
+    const unsigned short  ClrInstanceID,
+    const unsigned short  BucketKind,
+    const unsigned __int64  TotalSize,
+    const unsigned short  Count,
+    int Values_ElementSize,
+    const void* Values,
+    const GUID * ActivityId = nullptr,
+    const GUID * RelatedActivityId = nullptr
+)
+{
+    ULONG status = EventPipeWriteEventGCFitBucketInfo(ClrInstanceID,BucketKind,TotalSize,Count,Values_ElementSize, Values,ActivityId,RelatedActivityId);
+    return status;
+}
+#endif // __CLR_ETW_ALL_MAIN_H__

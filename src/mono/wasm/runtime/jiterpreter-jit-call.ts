@@ -404,7 +404,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         for (let i = 0; i < trampImports.length; i++)
             builder.markImportAsUsed(trampImports[i][0]);
 
-        builder._generateImportSection();
+        builder._generateImportSection(false);
 
         // Function section
         builder.beginSection(3);
