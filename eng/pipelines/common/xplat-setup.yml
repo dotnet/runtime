@@ -1,6 +1,7 @@
 parameters:
   jobTemplate: ''
   hostedOs: ''
+  hostedArch: ''
   osGroup: ''
   osSubgroup: ''
   archType: ''

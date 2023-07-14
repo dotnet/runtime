@@ -452,7 +452,7 @@
     <value>The signature Type array contains some invalid type (i.e. null, void)</value>
   </data>
   <data name="Arg_InvalidUTF8String" xml:space="preserve">
-    <value>The UTF8 string passed in could not be converted to Unicode.</value>
+    <value>The UTF-8 string passed in could not be converted to Unicode.</value>
   </data>
   <data name="Arg_IOException" xml:space="preserve">
     <value>I/O error occurred.</value>
@@ -1292,7 +1292,7 @@
     <value>The NativeDigits array must contain exactly ten members.</value>
   </data>
   <data name="Argument_InvalidNativeDigitValue" xml:space="preserve">
-    <value>Each member of the NativeDigits array must be a single text element (one or more UTF16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
+    <value>Each member of the NativeDigits array must be a single text element (one or more UTF-16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
   </data>
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>

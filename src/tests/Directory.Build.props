@@ -81,7 +81,7 @@
     <RunWithAndroid Condition="'$(TargetOS)' == 'android'">true</RunWithAndroid>
 
     <RunWithiOS>false</RunWithiOS>
-    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">true</RunWithiOS>
+    <RunWithiOS Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst'">true</RunWithiOS>
 
     <MonoAot>false</MonoAot>
     <MonoAot Condition="'$(__MonoAot)' == '1'">true</MonoAot>
@@ -206,6 +206,17 @@
     <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <PublishTrimmed>true</PublishTrimmed>
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeFlavor)' == 'coreclr' and '$(TargetsAppleMobile)' == 'true'">
+    <_targetOS>$(TargetOS)</_targetOS>
+    <UseNativeAOTRuntime>true</UseNativeAOTRuntime>
+    <NativeLib>static</NativeLib>
+    <CustomNativeMain>true</CustomNativeMain>
+    <_IsApplePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsApplePlatform>
+    <_IsiOSLikePlatform Condition="'$(TargetsAppleMobile)' == 'true'">true</_IsiOSLikePlatform>
+    <DsymUtilOptions Condition="'$(_IsApplePlatform)' == 'true'">--flat</DsymUtilOptions>
+    <_SymbolPrefix Condition="'$(_IsApplePlatform)' == 'true'">_</_SymbolPrefix>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)testing\tests.props"  Condition="'$(IsTestsCommonProject)' != 'true'" />

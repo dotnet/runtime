@@ -731,6 +731,7 @@ struct UNIX_CONTEXT;
 #endif
 
 #ifdef TARGET_UNIX
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #else
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);

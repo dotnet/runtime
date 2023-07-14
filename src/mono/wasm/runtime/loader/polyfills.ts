@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+import MonoWasmThreads from "consts:monoWasmThreads";
 
 import type { DotnetModuleInternal } from "../types/internal";
 import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB } from "./globals";
@@ -13,6 +17,19 @@ const URLPolyfill = class URL {
         return this.url;
     }
 };
+
+export function verifyEnvironment() {
+    mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version.");
+    mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version.");
+    if (MonoWasmThreads) {
+        mono_assert(!ENVIRONMENT_IS_SHELL && !ENVIRONMENT_IS_NODE, "This build of dotnet is multi-threaded, it doesn't support shell environments like V8 or NodeJS.");
+        mono_assert(globalThis.SharedArrayBuffer !== undefined, "SharedArrayBuffer is not enabled on this page. Please use a modern browser and set Cross-Origin-Opener-Policy and Cross-Origin-Embedder-Policy http headers. See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements");
+        mono_assert(typeof globalThis.EventTarget === "function", "This browser/engine doesn't support EventTarget API. Please use a modern version.");
+    }
+
+    // TODO detect other (WASM) features that are required for the runtime
+    // See https://github.com/dotnet/runtime/issues/84574
+}
 
 export async function detect_features_and_polyfill(module: DotnetModuleInternal): Promise<void> {
 
