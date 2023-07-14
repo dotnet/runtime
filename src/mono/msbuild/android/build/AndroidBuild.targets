@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
-    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
-    <!--<AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>-->
+    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true'">false</AndroidGenerateAppBundle>
 
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
@@ -47,6 +46,9 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_CommonLinkerArgs Include="-l:libz.so;-l:liblog.so;-l:libc.so;-l:libm.so;" />
+      <_CommonLinkerArgs Include="--build-id=sha1" />
+
       <!-- add all non stub libs first -->
       <!-- if RuntimeComponents is empty, exclude -static.a and include -stub-static.a instead -->
       <!-- if RuntimeComponents is *, we're ok because all -static.a is included -->

@@ -25,10 +25,6 @@ namespace Microsoft.Android.Build
 
         public string Abi => abi;
 
-        // set the project name to something generic.
-        // return the output path
-        // let the builder figure out the name + extension
-
         public AndroidProject(string projectName, string runtimeIdentifier, TaskLoggingHelper logger) :
             this(projectName, runtimeIdentifier, Environment.GetEnvironmentVariable("ANDROID_NDK_ROOT")!, logger)
         {
@@ -40,12 +36,11 @@ namespace Microsoft.Android.Build
             abi = DetermineAbi(runtimeIdentifier);
             targetArchitecture = GetTargetArchitecture(runtimeIdentifier);
 
-            logger.LogError("TargetArch: " + targetArchitecture);
-
             this.logger = logger;
             this.projectName = projectName;
         }
 
+        // builds using NDK toolchain
         public void Build(string workingDir, AndroidBuildOptions buildOptions, bool stripDebugSymbols = false, string apiLevel = DefaultMinApiLevel)
         {
             NdkTools tools = new NdkTools(targetArchitecture, GetHostOS(), apiLevel);
