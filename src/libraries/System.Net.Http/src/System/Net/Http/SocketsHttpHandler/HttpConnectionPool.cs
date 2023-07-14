@@ -138,7 +138,8 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
 
-            Debug.Assert(host is not null || proxyUri is not null);
+            // The only case where 'host' will not be set if this is a Proxy connection pool.
+            Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
             _originAuthority = new HttpAuthority(host ?? proxyUri!.IdnHost, port);
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
