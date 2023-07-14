@@ -174,7 +174,7 @@ namespace System.Text
                     Vector512.LoadUnsafe(ref Unsafe.Subtract(ref searchSpaceEnd, Vector512<T>.Count)));
             }
 
-            if (Avx.IsSupported)
+            else if (Avx.IsSupported)
             {
                 // Process inputs with lengths [33, 64] bytes.
                 if (length <= 2 * Vector256<T>.Count)
