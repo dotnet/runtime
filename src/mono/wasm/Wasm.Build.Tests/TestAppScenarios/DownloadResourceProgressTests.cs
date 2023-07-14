@@ -15,7 +15,7 @@ namespace Wasm.Build.Tests.TestAppScenarios;
 
 public class DownloadResourceProgressTests : AppTestBase
 {
-    public AppSettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+    public DownloadResourceProgressTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
     {
     }
