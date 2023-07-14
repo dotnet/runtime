@@ -73,7 +73,7 @@ namespace System.Xml.Serialization
                 // Only catch and handle known failures with RefEmit
                 catch (CodeGeneratorConversionException ex)
                 {
-                    // There is no CSharp-generating/compiling fallback in .Net Core because compilers are not part of the SDK.
+                    // There is no CSharp-generating/compiling fallback in .Net Core because compilers are not part of the runtime.
                     // Instead of throwing a PNSE as a result of trying this "fallback" which doesn't exist, lets just let the
                     // original error bubble up.
                     //fallbackToCSharpAssemblyGeneration = true;
