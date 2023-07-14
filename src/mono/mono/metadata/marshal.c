@@ -5178,8 +5178,7 @@ mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsaf
 	}
 	mono_mb_free (mb);
 
-	// TODO: remove before merging
-	mono_method_print_code (res);
+	/* mono_method_print_code (res); */
 
 	return res;
 }
