@@ -151,9 +151,10 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % Vector512.Size == 0, "Vector read should be aligned.");
-                        if (Vector512.LoadAligned(pBuffer).ExtractMostSignificantBits() != 0)
+                        ulong msbMask = Vector512.LoadAligned(pBuffer).ExtractMostSignificantBits();
+                        if (msbMask != 0)
                         {
-                            break; // found non-ASCII data
+                            return (nuint)pBuffer - (nuint)pOriginalBuffer + (nuint)BitOperations.TrailingZeroCount(msbMask); // found non-ASCII data
                         }
 
                         pBuffer += Vector512.Size;
@@ -188,9 +189,10 @@ namespace System.Text
                     do
                     {
                         Debug.Assert((nuint)pBuffer % Vector256.Size == 0, "Vector read should be aligned.");
-                        if (Vector256.LoadAligned(pBuffer).ExtractMostSignificantBits() != 0)
+                        uint msbMask = Vector256.LoadAligned(pBuffer).ExtractMostSignificantBits();
+                        if (msbMask != 0)
                         {
-                            break; // found non-ASCII data
+                            return (nuint)pBuffer - (nuint)pOriginalBuffer + (nuint)BitOperations.TrailingZeroCount(msbMask); // found non-ASCII data
                         }
 
                         pBuffer += Vector256.Size;
@@ -897,8 +899,6 @@ namespace System.Text
             {
                 const uint SizeOfVector512InChars = Vector512.Size / sizeof(ushort);
 
-                Vector512<ushort> asciiMask = Vector512.Create((ushort) 0xFF80);
-
                 if (!VectorContainsNonAsciiChar(Vector512.Load((ushort*)pBuffer)))
                 {
                     // The first several elements of the input buffer were ASCII. Bump up the pointer to the
@@ -918,7 +918,7 @@ namespace System.Text
 
                     do
                     {
-                        Debug.Assert((nuint)pBuffer % SizeOfVector512InChars == 0, "Vector read should be aligned.");
+                        Debug.Assert((nuint)pBuffer % Vector512.Size == 0, "Vector read should be aligned.");
                         if (VectorContainsNonAsciiChar(Vector512.LoadAligned((ushort*)pBuffer)))
                         {
                             break; // found non-ASCII data
@@ -934,8 +934,6 @@ namespace System.Text
             else if (Vector256.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector256<ushort>.Count)
             {
                 const uint SizeOfVector256InChars = Vector256.Size / sizeof(ushort);
-
-                Vector256<ushort> asciiMask = Vector256.Create((ushort) 0xFF80);
 
                 if (!VectorContainsNonAsciiChar(Vector256.Load((ushort*)pBuffer)))
                 {
@@ -956,7 +954,7 @@ namespace System.Text
 
                     do
                     {
-                        Debug.Assert((nuint)pBuffer % SizeOfVector256InChars == 0, "Vector read should be aligned.");
+                        Debug.Assert((nuint)pBuffer % Vector256.Size == 0, "Vector read should be aligned.");
                         if (VectorContainsNonAsciiChar(Vector256.LoadAligned((ushort*)pBuffer)))
                         {
                             break; // found non-ASCII data
@@ -972,8 +970,6 @@ namespace System.Text
             else if (Vector128.IsHardwareAccelerated && bufferLength >= 2 * (uint)Vector128<ushort>.Count)
             {
                 const uint SizeOfVector128InChars = Vector128.Size / sizeof(ushort); // JIT will make this a const
-
-                Vector128<ushort> asciiMask = Vector128.Create((ushort) 0xFF80);
 
                 if (!VectorContainsNonAsciiChar(Vector128.Load((ushort*)pBuffer)))
                 {
@@ -993,7 +989,7 @@ namespace System.Text
 
                     do
                     {
-                        Debug.Assert((nuint)pBuffer % SizeOfVector128InChars == 0, "Vector read should be aligned.");
+                        Debug.Assert((nuint)pBuffer % Vector128.Size == 0, "Vector read should be aligned.");
                         if (VectorContainsNonAsciiChar(Vector128.LoadAligned((ushort*)pBuffer)))
                         {
                             break; // found non-ASCII data
@@ -1130,7 +1126,7 @@ namespace System.Text
 
                     do
                     {
-                        Debug.Assert((nuint)pBuffer % SizeOfVectorInChars == 0, "Vector read should be aligned.");
+                        Debug.Assert((nuint)pBuffer % SizeOfVectorInBytes == 0, "Vector read should be aligned.");
                         if (Vector.GreaterThanAny(Unsafe.Read<Vector<ushort>>(pBuffer), maxAscii))
                         {
                             break; // found non-ASCII data
@@ -2157,11 +2153,11 @@ namespace System.Text
             // hit of potentially unaligned reads in order to hit this sweet spot.
 
             // pAsciiBuffer points to the start of the destination buffer, immediately before where we wrote
-            // the 8 bytes previously. If the 0x08 bit is set at the pinned address, then the 8 bytes we wrote
-            // previously mean that the 0x08 bit is *not* set at address &pAsciiBuffer[SizeOfVector128 / 2]. In
+            // the 16 bytes previously. If the 0x10 bit is set at the pinned address, then the 16 bytes we wrote
+            // previously mean that the 0x10 bit is *not* set at address &pAsciiBuffer[SizeOfVector256 / 2]. In
             // that case we can immediately back up to the previous aligned boundary and start the main loop.
-            // If the 0x08 bit is *not* set at the pinned address, then it means the 0x08 bit *is* set at
-            // address &pAsciiBuffer[SizeOfVector128 / 2], and we should perform one more 8-byte write to bump
+            // If the 0x10 bit is *not* set at the pinned address, then it means the 0x10 bit *is* set at
+            // address &pAsciiBuffer[SizeOfVector256 / 2], and we should perform one more 16-byte write to bump
             // just past the next aligned boundary address.
             if (((uint)pAsciiBuffer & (Vector256.Size / 2)) == 0)
             {
@@ -2174,7 +2170,7 @@ namespace System.Text
                     goto Finish;
                 }
 
-                // Turn the 32 ASCII chars we just read into 32 ASCII bytes, then copy it to the destination.
+                // Turn the 16 ASCII chars we just read into 16 ASCII bytes, then copy it to the destination.
                 asciiVector = Vector256.Narrow(utf16VectorFirst, utf16VectorFirst);
                 asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             }
@@ -2227,7 +2223,7 @@ namespace System.Text
 
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
-            Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
+            Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector128.Size == 0, "Destination should be 128-bit-aligned.");
             asciiVector = Vector256.Narrow(utf16VectorFirst, utf16VectorFirst);
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += Vector256.Size / 2;
@@ -2274,11 +2270,11 @@ namespace System.Text
             // hit of potentially unaligned reads in order to hit this sweet spot.
 
             // pAsciiBuffer points to the start of the destination buffer, immediately before where we wrote
-            // the 8 bytes previously. If the 0x08 bit is set at the pinned address, then the 8 bytes we wrote
-            // previously mean that the 0x08 bit is *not* set at address &pAsciiBuffer[SizeOfVector128 / 2]. In
+            // the 32 bytes previously. If the 0x20 bit is set at the pinned address, then the 32 bytes we wrote
+            // previously mean that the 0x20 bit is *not* set at address &pAsciiBuffer[SizeOfVector512 / 2]. In
             // that case we can immediately back up to the previous aligned boundary and start the main loop.
-            // If the 0x08 bit is *not* set at the pinned address, then it means the 0x08 bit *is* set at
-            // address &pAsciiBuffer[SizeOfVector128 / 2], and we should perform one more 8-byte write to bump
+            // If the 0x20 bit is *not* set at the pinned address, then it means the 0x20 bit *is* set at
+            // address &pAsciiBuffer[SizeOfVector512 / 2], and we should perform one more 32-byte write to bump
             // just past the next aligned boundary address.
 
             if (((uint)pAsciiBuffer & (Vector512.Size / 2)) == 0)
@@ -2345,7 +2341,7 @@ namespace System.Text
 
             // First part was all ASCII, narrow and aligned write. Note we're only filling in the low half of the vector.
 
-            Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % sizeof(ulong) == 0, "Destination should be ulong-aligned.");
+            Debug.Assert(((nuint)pAsciiBuffer + currentOffsetInElements) % Vector256.Size == 0, "Destination should be 256-bit-aligned.");
             asciiVector = Vector512.Narrow(utf16VectorFirst, utf16VectorFirst);
             asciiVector.GetLower().StoreUnsafe(ref asciiBuffer, currentOffsetInElements);
             currentOffsetInElements += Vector512.Size / 2;
@@ -2384,9 +2380,9 @@ namespace System.Text
                             break;
                         }
 
-                        (Vector512<ushort> low, Vector512<ushort> upper) = Vector512.Widen(asciiVector);
-                        low.Store(pCurrentWriteAddress);
-                        upper.Store(pCurrentWriteAddress + Vector512<ushort>.Count);
+                        (Vector512<ushort> utf16LowVector, Vector512<ushort> utf16HighVector) = Vector512.Widen(asciiVector);
+                        utf16LowVector.Store(pCurrentWriteAddress);
+                        utf16HighVector.Store(pCurrentWriteAddress + Vector512<ushort>.Count);
 
                         currentOffset += (nuint)Vector512<byte>.Count;
                         pCurrentWriteAddress += (nuint)Vector512<byte>.Count;
