@@ -7,6 +7,7 @@ using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Net.Sockets;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.NameResolution.Tests
@@ -15,27 +16,29 @@ namespace System.Net.NameResolution.Tests
     {
         private const string DnsLookupsRequested = "dns-lookups-requested";
 
-        [Fact]
-        public static async Task ResolveValidHostName_MetricsRecorded()
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public static void ResolveValidHostName_MetricsRecorded()
         {
-            const string ValidHostName = "localhost";
+            RemoteExecutor.Invoke(async () =>
+            {
+                const string ValidHostName = "localhost";
 
-            using var recorder = new InstrumentRecorder<long>(DnsLookupsRequested);
+                using var recorder = new InstrumentRecorder<long>(DnsLookupsRequested);
 
-            await Dns.GetHostEntryAsync(ValidHostName);
-            await Dns.GetHostAddressesAsync(ValidHostName);
+                await Dns.GetHostEntryAsync(ValidHostName);
+                await Dns.GetHostAddressesAsync(ValidHostName);
 
-            Dns.GetHostEntry(ValidHostName);
-            Dns.GetHostAddresses(ValidHostName);
+                Dns.GetHostEntry(ValidHostName);
+                Dns.GetHostAddresses(ValidHostName);
 
-            Dns.EndGetHostEntry(Dns.BeginGetHostEntry(ValidHostName, null, null));
-            Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(ValidHostName, null, null));
+                Dns.EndGetHostEntry(Dns.BeginGetHostEntry(ValidHostName, null, null));
+                Dns.EndGetHostAddresses(Dns.BeginGetHostAddresses(ValidHostName, null, null));
 
-            long[] measurements = GetMeasurementsForHostname(recorder, ValidHostName);
+                long[] measurements = GetMeasurementsForHostname(recorder, ValidHostName);
 
-            // >= 6 because other tests running in parallel may have also resolved the same host.
-            Assert.True(measurements.Length >= 6, $"Was {measurements.Length}");
-            Assert.All(measurements, m => Assert.Equal(1, m));
+                Assert.Equal(6, measurements.Length);
+                Assert.All(measurements, m => Assert.Equal(1, m));
+            }).Dispose();
         }
 
         [Fact]
