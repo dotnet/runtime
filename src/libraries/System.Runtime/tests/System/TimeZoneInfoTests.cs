@@ -2433,7 +2433,7 @@ namespace System.Tests
         }
 
         [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows | ~TestPlatforms.Browser | ~TestPlatforms.iOS | ~TestPlatforms.tvOS)]
+        [PlatformSpecific(~TestPlatforms.Windows & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
         public static void UtcAliases_MapToUtc()
         {
             foreach (string alias in s_UtcAliases)
