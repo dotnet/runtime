@@ -26,14 +26,16 @@ switch (testCase) {
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
     case "DownloadResourceProgressTest":
-        let hasFetchFailed = false;
-        dotnet.withLoadBootResource((type, name, defaultUri, integrity) => {
-            if (hasFetchFailed || type !== "assembly")
-                return fetch(defaultUri, { integrity: integrity, cache: 'no-cache' });
+        if (params.get("fetchFailure") === "true") {
+            let hasFetchFailed = false;
+            dotnet.withLoadBootResource((type, name, defaultUri, integrity) => {
+                if (hasFetchFailed || type !== "assembly")
+                    return fetch(defaultUri, { integrity: integrity, cache: 'no-cache' });
 
-            hasFetchFailed = true;
-            throw new Error("Simulating a failed fetch");
-        });
+                hasFetchFailed = true;
+                throw new Error("Simulating a failed fetch");
+            });
+        }
         dotnet.witModuleConfig({
             onDownloadResourceProgress: (loaded, total) => {
                 console.log(`DownloadResourceProgress: ${loaded} / ${total}`);

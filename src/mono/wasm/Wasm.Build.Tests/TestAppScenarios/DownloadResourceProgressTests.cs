@@ -20,8 +20,10 @@ public class DownloadResourceProgressTests : AppTestBase
     {
     }
 
-    [Fact]
-    public async Task DownloadProgressFinishes()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DownloadProgressFinishes(bool fetchFailure)
     {
         CopyTestAsset("WasmBasicTestApp", "DownloadResourceProgressTests");
         PublishProject("Debug");
@@ -29,7 +31,8 @@ public class DownloadResourceProgressTests : AppTestBase
         var result = await RunSdkStyleApp(new(
             Configuration: "Debug",
             ForPublish: true,
-            TestScenario: "DownloadResourceProgressTest"
+            TestScenario: "DownloadResourceProgressTest",
+            BrowserQueryString: new Dictionary<string, string> { ["fetchFailure"] = fetchFailure.ToString() }
         ));
         Assert.Collection(
             result.TestOutput,
