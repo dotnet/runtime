@@ -1155,15 +1155,45 @@ mono_arch_opcode_needs_emulation (MonoCompile *cfg, int opcode)
 #endif
 		return !riscv_stdext_m;
 
+	case OP_FADD:
+	case OP_FSUB:
 	case OP_FDIV:
+	case OP_RDIV:
 	case OP_FMUL:
-	case OP_FCONV_TO_I4:
+	case OP_RMUL:
+	case OP_FNEG:
+	case OP_FMOVE:
+	case OP_RMOVE:
+	case OP_FCALL:
+	case OP_FCEQ:
+	case OP_FCLT:
+	case OP_FCLT_UN:
+	case OP_RCLT:
+	case OP_RCLT_UN:
+	case OP_FCGT:
+	case OP_FCGT_UN:
+	case OP_RCOMPARE:
+	case OP_FCOMPARE:
+	case OP_FBEQ:
+	case OP_FBLT:
+	case OP_FBLE:
+	case OP_FBGT:
+	case OP_FBGE:
+	case OP_FBGE_UN:
+	case OP_FBLT_UN:
+	case OP_FBLE_UN:
+	case OP_FBGT_UN:
+	case OP_RCONV_TO_I4:
 	case OP_ICONV_TO_R4:
 #ifdef TARGET_RISCV64
+	case OP_R8CONST:
 	case OP_ICONV_TO_R8:
 	case OP_LCONV_TO_R8:
+	case OP_FCONV_TO_I4:
+	case OP_FCONV_TO_R4:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
+	case OP_RCONV_TO_R8:
 #endif
 		return !mono_arch_is_soft_float ();
 	default:
@@ -1689,6 +1719,7 @@ mono_arch_decompose_opts (MonoCompile *cfg, MonoInst *ins)
 
 	case OP_ICONV_TO_R8:
 	case OP_LCONV_TO_R8:
+	case OP_FCONV_TO_R4:
 	case OP_FCONV_TO_R8:
 	case OP_FCONV_TO_I8:
 #endif
@@ -2117,6 +2148,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_RCONV_TO_R8:
 		case OP_RCONV_TO_I4:
 		case OP_FCONV_TO_I4:
+		case OP_FCONV_TO_R4:
 		case OP_FCEQ:
 		case OP_FCLT:
 		case OP_FCLT_UN:
