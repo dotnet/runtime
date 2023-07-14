@@ -2608,6 +2608,9 @@
   <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
     <value>Handle is not pinned.</value>
   </data>
+  <data name="InvalidOperation_InvalidUtf8" xml:space="preserve">
+    <value>Formatted string contains characters not representable as valid UTF-8.</value>
+  </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
   </data>
