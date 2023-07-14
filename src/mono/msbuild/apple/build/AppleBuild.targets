@@ -57,26 +57,6 @@
     <ItemGroup>
       <_CommonLinkerArgs Condition="'$(_IsLibraryMode)' == 'true' and '$(TargetOS)' != 'tvos' and '$(TargetOS)' != 'tvossimulator'" Include="-framework GSS" />
     </ItemGroup>
-
-    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <!-- add all non stub libs first -->
-      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
-      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
-      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
-
-      <_UsedComponents 
-        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
-        Include="$(RuntimeComponents)" />
-
-      <_RuntimeLibraries 
-        Include="$(AppleBuildDir)\*-stub-static.a" />
-      <_RuntimeLibraries 
-        Include="$(AppleBuildDir)\*.a"
-        Exclude="$(AppleBuildDir)\*-static.a" />
-
-      <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
-      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
-    </ItemGroup>
   </Target>
 
   <Target Name="_BeforeAppleBuild">
@@ -108,7 +88,7 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_ScanAssembliesDecideLightweightMarshaler" Condition="'$(AppleGenerateAppBundle)' == 'true'">
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler">
     <ItemGroup>
       <AssembliesToScan Include="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
@@ -122,6 +102,28 @@
     </ItemGroup>
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' == 0">
       <RuntimeComponents Remove="marshal-ilgen" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="_ProcessRuntimeComponents">
+    <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <!-- add all non stub libs first -->
+      <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
+      <!-- if runtimecomponents is *, we're ok because all -static.a is included -->
+      <!-- if runtimecomponents is a list, add to items and only pull in -static.a -->
+
+      <_UsedComponents 
+        Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
+        Include="$(RuntimeComponents)" />
+
+      <_RuntimeLibraries 
+        Include="$(AppleBuildDir)\*-stub-static.a" />
+      <_RuntimeLibraries 
+        Include="$(AppleBuildDir)\*.a"
+        Exclude="$(AppleBuildDir)\*-static.a" />
+
+      <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
+      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
     </ItemGroup>
   </Target>
 
