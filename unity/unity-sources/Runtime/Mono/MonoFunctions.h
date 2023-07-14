@@ -65,7 +65,6 @@ DO_API(void*, mono_aot_get_method, (MonoDomain * domain, MonoMethod * method))
 DO_API(void, mono_gc_wbarrier_set_field, (MonoObject * obj, gpointer field_ptr, MonoObject * value))
 
 // Type-safe way of looking up methods based on method signatures
-DO_API(MonoObject*, mono_runtime_invoke_array, (MonoMethod * method, void *obj, MonoArray * params, MonoException **exc))
 DO_API(char*, mono_array_addr_with_size, (MonoArray * array, int size, uintptr_t idx));
 #define mono_array_addr(array, type, index) ((type*)(void*) mono_array_addr_with_size (array, sizeof (type), index))
 
@@ -81,7 +80,6 @@ DO_API(const char*, mono_field_get_name, (MonoClassField * field))
 DO_API(MonoClass*, mono_field_get_parent, (MonoClassField * field))
 DO_API(MonoType*, mono_field_get_type, (MonoClassField * field))
 DO_API(gboolean, mono_type_is_byref, (MonoType * type))
-DO_API(guint32, mono_type_get_attrs, (MonoType * type))
 DO_API(int, mono_type_get_type, (MonoType * type))
 DO_API(const char*, mono_method_get_name, (MonoMethod * method))
 DO_API(char*, mono_method_full_name, (MonoMethod * method, gboolean signature))
@@ -179,7 +177,6 @@ DO_API(const char*, mono_image_strerror, (int status))
 DO_API(MonoImage*, mono_image_open_from_data_with_name, (char *data, guint32 data_len, gboolean need_copy, int *status, gboolean refonly, const char *name))
 DO_API(MonoAssembly *, mono_assembly_load_from, (MonoImage * image, const char*fname, int *status))
 DO_API(gboolean, mono_assembly_fill_assembly_name, (MonoImage * image, MonoAssemblyName * aname))
-DO_API(char*, mono_stringify_assembly_name, (MonoAssemblyName * aname))
 DO_API(int, mono_assembly_name_parse, (const char* name, MonoAssemblyName * assembly))
 DO_API(void, mono_assembly_name_free, (MonoAssemblyName * assembly))
 DO_API(MonoAssembly*, mono_assembly_loaded, (MonoAssemblyName * aname))
@@ -218,7 +215,6 @@ DO_API(void, mono_stack_walk, (MonoStackWalk func, gpointer user_data));
 DO_API(void, mono_stack_walk_no_il, (MonoStackWalk start, void* user_data));
 
 DO_API(char*, mono_pmip, (void *ip));
-DO_API(MonoObject*, mono_runtime_delegate_invoke, (MonoObject * delegate, void** params, MonoException** exc))
 
 DO_API(MonoJitInfo*, mono_jit_info_table_find, (MonoDomain * domain, void* ip))
 
@@ -243,8 +239,6 @@ DO_API_OPTIONAL(void*, GC_free, (void*))
 
 DO_API(MonoProperty*, mono_class_get_properties, (MonoClass * klass, gpointer * iter))
 DO_API(MonoMethod*, mono_property_get_get_method, (MonoProperty * prop))
-DO_API(MonoObject *, mono_object_new_alloc_specific, (MonoVTable * vtable))
-DO_API(MonoObject *, mono_object_new_specific, (MonoVTable * vtable))
 //DO_API(MonoDomain*, mono_object_get_domain, (MonoObject *obj))
 
 DO_API(void, mono_gc_collect, (int generation))
@@ -286,8 +280,6 @@ DO_API(void, mono_unity_domain_set_config, (MonoDomain * domain, const char *bas
 DO_API(void, mono_thread_push_appdomain_ref, (MonoDomain * domain))
 DO_API(void, mono_thread_pop_appdomain_ref, ())
 
-DO_API(int, mono_runtime_exec_main, (MonoMethod * method, MonoArray * args, MonoObject **exc))
-
 DO_API(MonoImage*, mono_get_corlib, ())
 DO_API(MonoImage*, mono_image_loaded, (const char *name))
 DO_API(MonoClassField*, mono_class_get_field_from_name, (MonoClass * klass, const char *name))
@@ -302,7 +294,6 @@ DO_API(void, mono_set_dirs, (const char *assembly_dir, const char *config_dir))
 DO_API(void, mono_set_break_policy, (MonoBreakPolicyFunc policy_callback))
 #endif
 
-DO_API(void, mono_set_ignore_version_and_key_when_finding_assemblies_already_loaded, (gboolean value))
 DO_API(void, mono_verifier_set_mode, (MiniVerifierMode mode))
 DO_API(void, mono_jit_parse_options, (int argc, char * argv[]))
 DO_API(gpointer, mono_object_unbox, (MonoObject * o))
@@ -436,9 +427,6 @@ DO_API(void*, mono_unity_vtable_get_static_field_data, (MonoVTable * vTable))
 DO_API(void, mono_unity_class_for_each, (MonoClassFunc callback, void* userData))
 DO_API(void, mono_unity_stop_gc_world, ())
 DO_API(void, mono_unity_start_gc_world, ())
-
-DO_API(MonoManagedMemorySnapshot*, mono_unity_capture_memory_snapshot, ());
-DO_API(void, mono_unity_free_captured_memory_snapshot, (MonoManagedMemorySnapshot * snapshot));
 
 // GLib functions
 #define g_free mono_unity_g_free
