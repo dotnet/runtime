@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -29,9 +30,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsRunning => _runLoop?.IsRunning == true;
         public RunLoopExitState Stopped => _runLoop?.StoppedState;
 
-        public DevToolsProxy(ILogger logger, string loggerId)
+        protected readonly ProxyOptions _options;
+        public DevToolsProxy(ProxyOptions options, ILogger logger, string loggerId)
         {
             _loggerId = loggerId;
+            _options = options;
             this.logger = logger;
         }
 
@@ -236,8 +239,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ClientWebSocket browserSocket = new();
                 browserSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
                 var proxy = WebRequest.DefaultWebProxy;
-                if (proxy is not null && !proxy.IsBypassed(browserUri))
-                    browserSocket.Options.Proxy = new WebProxy(proxy.GetProxy(browserUri), true); //we always bypass the proxy for local addresses
+                if (_options.IgnoreProxyForLocalAddress && proxy is not null && !proxy.IsBypassed(browserUri))
+                    browserSocket.Options.Proxy = new WebProxy(proxy.GetProxy(browserUri), true); //bypass the proxy for local addresses
                 await browserSocket.ConnectAsync(browserUri, cts.Token);
 
                 using var ideConn = new DevToolsDebuggerConnection(ideSocket, "ide", logger);
