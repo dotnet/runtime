@@ -213,7 +213,7 @@ get_delegate_virtual_invoke_impl (MonoTrampInfo **info, gboolean load_imt_reg, i
 		g_assert_not_reached ();
 
 	/* Load this->vtable [offset] */
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_T0, MONO_STRUCT_OFFSET (MonoObject, vtable), 0);
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_A0, MONO_STRUCT_OFFSET (MonoObject, vtable), 0);
 	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_T0, offset, 0);
 
 	riscv_jalr (code, RISCV_ZERO, RISCV_T0, 0);
@@ -2704,7 +2704,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 				} else if (ins->next->opcode == OP_IL_SEQ_POINT || ins->next->opcode == OP_MOVE ||
 				           ins->next->opcode == OP_LOAD_MEMBASE || ins->next->opcode == OP_NOP ||
 				           ins->next->opcode == OP_LOADI4_MEMBASE || ins->next->opcode == OP_BR ||
-				           ins->next->opcode == OP_LOADI8_MEMBASE) {
+				           ins->next->opcode == OP_LOADI8_MEMBASE || ins->next->opcode == OP_ICONST) {
 					/**
 					 * there is compare without branch OP followed
 					 *
