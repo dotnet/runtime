@@ -1,20 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import BuildConfiguration from "consts:configuration";
+
 import type { MonoConfig, DotnetHostBuilder, DotnetModuleConfig, RuntimeAPI, WebAssemblyStartOptions, LoadBootResourceCallback } from "../types";
 import type { MonoConfigInternal, EmscriptenModuleInternal, RuntimeModuleExportsInternal, NativeModuleExportsInternal, } from "../types/internal";
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, exportedRuntimeAPI, globalObjectsRoot, mono_assert } from "./globals";
 import { deep_merge_config, deep_merge_module, mono_wasm_load_config } from "./config";
 import { is_exited, mono_exit } from "./exit";
-import { setup_proxy_console } from "./logging";
+import { setup_proxy_console, mono_log_info } from "./logging";
 import { resolve_asset_path, start_asset_download } from "./assets";
 import { detect_features_and_polyfill } from "./polyfills";
 import { runtimeHelpers, loaderHelpers } from "./globals";
 import { init_globalization } from "./icu";
 import { setupPreloadChannelToMainThread } from "./worker";
 import { invokeLibraryInitializers } from "./libraryInitializers";
-
 
 const module = globalObjectsRoot.module;
 const monoConfig = module.config as MonoConfigInternal;
@@ -388,6 +389,11 @@ export class HostBuilder implements DotnetHostBuilder {
 }
 
 export async function createEmscripten(moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)): Promise<RuntimeAPI | EmscriptenModuleInternal> {
+    if (BuildConfiguration === "Debug") {
+        mono_log_info(`starting script ${loaderHelpers.scriptUrl}`);
+        mono_log_info(`starting in ${loaderHelpers.scriptDirectory}`);
+    }
+
     // extract ModuleConfig
     if (typeof moduleFactory === "function") {
         const extension = moduleFactory(globalObjectsRoot.api) as any;

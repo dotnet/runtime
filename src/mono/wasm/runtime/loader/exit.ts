@@ -22,9 +22,15 @@ export function assert_runtime_running() {
 
 export function abort_startup(reason: any, should_exit: boolean, should_throw?: boolean): void {
     if (loaderHelpers.isAborted) return;
-    loaderHelpers.isAborted = true;
-    loaderHelpers.exitCode = 1;
 
+    const exit_code = (reason && typeof reason.status === "number") ? reason.status : 1;
+    reason = reason || (runtimeHelpers.ExitStatus
+        ? new runtimeHelpers.ExitStatus(exit_code)
+        : new Error("Exit with code " + exit_code));
+    reason.status = exit_code;
+
+    loaderHelpers.isAborted = true;
+    loaderHelpers.exitCode = exit_code;
     mono_log_debug("abort_startup, reason: " + reason);
     loaderHelpers.allDownloadsQueued.promise_control.reject(reason);
     loaderHelpers.afterConfigLoaded.promise_control.reject(reason);

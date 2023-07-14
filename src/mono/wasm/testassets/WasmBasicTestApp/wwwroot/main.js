@@ -48,6 +48,9 @@ try {
             exports.AppSettingsTest.Run();
             exit(0);
             break;
+        default:
+            console.error(`Unknown test case: ${testCase}`);
+            exit(3);
     }
 } catch (e) {
     exit(1, e);
