@@ -142,7 +142,7 @@ jobs:
       clean: true
       fetchDepth: $(checkoutFetchDepth)
 
-    - ${{ if and(eq(parameters.isOfficialBuild, true), in(parameters.osGroup, 'windows')) }}:
+    - ${{ if and(eq(parameters.isOfficialBuild, true), notin(parameters.osGroup, 'osx', 'maccatalyst', 'ios', 'iossimulator', 'tvos', 'tvossimulator')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
     - ${{ each monoCrossAOTTargetOS in parameters.monoCrossAOTTargetOS }}:
