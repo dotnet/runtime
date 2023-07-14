@@ -2778,6 +2778,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOR_IMM:
 		case OP_XOR_IMM:
 		case OP_IXOR_IMM:
+		case OP_LXOR_IMM:
 			if (!RISCV_VALID_I_IMM (ins->inst_imm))
 				mono_decompose_op_imm (cfg, bb, ins);
 			break;
