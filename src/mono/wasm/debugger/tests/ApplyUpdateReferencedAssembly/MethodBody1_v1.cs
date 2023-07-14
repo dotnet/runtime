@@ -84,7 +84,25 @@ namespace ApplyUpdateReferencedAssembly
             Console.WriteLine($"add a breakpoint the instance method of the new class");
         }
     }
-
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
+// DO NOT CHANGE
     // public class MethodBody9 {
     //     public static int M1(int x, int y) {
     //         return x + y;
@@ -94,4 +112,16 @@ namespace ApplyUpdateReferencedAssembly
     //         return M1(1, 2);
     //     }
     // }
+
+    public class MethodBody10 {
+        public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a method in a new class");
+            StaticMethod2();
+            Console.WriteLine("do not step into StaticMethod2");
+        }
+        [System.Diagnostics.DebuggerStepThroughAttribute]
+        public static void StaticMethod2 () {
+            Console.WriteLine($"do not step into here");
+        }
+    }
 }

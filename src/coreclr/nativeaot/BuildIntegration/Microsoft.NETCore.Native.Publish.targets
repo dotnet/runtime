@@ -106,7 +106,7 @@
     <!-- replace native symbol file if it exists -->
     <Delete Files="$(PublishDir)\$(TargetName)$(_symbolExt)" />
     <Copy SourceFiles="$(NativeOutputPath)$(TargetName)$(_symbolExt)" DestinationFolder="$(PublishDir)"
-      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)')" />
+      Condition="Exists('$(NativeOutputPath)$(TargetName)$(_symbolExt)') and '$(CopyOutputSymbolsToPublishDirectory)' == 'true'" />
   </Target>
 
 </Project>
