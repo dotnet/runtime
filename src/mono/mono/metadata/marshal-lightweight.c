@@ -2493,7 +2493,7 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 
 	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
 
-	mono_mb_emit_op (mb, CEE_CALL, target_method); /* callvirt ? */
+	mono_mb_emit_op (mb, hasthis ? CEE_CALLVIRT : CEE_CALL, target_method);
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
