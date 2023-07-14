@@ -534,6 +534,7 @@ namespace System.Text.RegularExpressions
                     }
 
                     _concatenation.AddChild(_unit!);
+                    _unit = null;
                 }
             }
 
