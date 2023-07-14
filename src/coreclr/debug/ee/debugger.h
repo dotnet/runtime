@@ -2212,6 +2212,15 @@ public:
         return m_trappingRuntimeThreads;
     }
 
+#ifndef DACCESS_COMPILE
+private:
+    HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
+
+public:
+    HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
+#endif //DACCESS_COMPILE
+    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
+
     //
     // The debugger mutex is used to protect any "global" Left Side
     // data structures. The RCThread takes it when handling a Right

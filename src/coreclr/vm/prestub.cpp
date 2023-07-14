@@ -372,6 +372,15 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
+    NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+    if (shouldTier && !nativeCodeVersion.IsDefaultVersion())
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        if (pConfig->GetCodeVersion().GetILCodeVersion().IsDeoptimized())
+        {
+            shouldTier = false;
+        }
+    }
 
     if (pConfig->MayUsePrecompiledCode())
     {
