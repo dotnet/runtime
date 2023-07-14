@@ -674,7 +674,7 @@ namespace System.Text
             {
                 // narrowing operation required, we know data is all-ASCII so use extract helper
                 Vector256<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
-                narrow.StoreLowerUnsafe(ref *(byte*)pDest, elementOffset);
+                narrow.GetLower().StoreUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else
             {
@@ -703,7 +703,7 @@ namespace System.Text
             {
                 // narrowing operation required, we know data is all-ASCII so use extract helper
                 Vector512<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
-                narrow.StoreLowerUnsafe(ref *(byte*)pDest, elementOffset);
+                narrow.GetLower().StoreUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else
             {
