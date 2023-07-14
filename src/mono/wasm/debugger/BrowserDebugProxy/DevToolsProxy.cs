@@ -239,7 +239,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ClientWebSocket browserSocket = new();
                 browserSocket.Options.KeepAliveInterval = Timeout.InfiniteTimeSpan;
                 var proxy = WebRequest.DefaultWebProxy;
-                if (_options.IgnoreProxyForLocalAddress && proxy is not null && !proxy.IsBypassed(browserUri))
+                if (_options is not null && _options.IgnoreProxyForLocalAddress && proxy is not null && !proxy.IsBypassed(browserUri))
                     browserSocket.Options.Proxy = new WebProxy(proxy.GetProxy(browserUri), true); //bypass the proxy for local addresses
                 await browserSocket.ConnectAsync(browserUri, cts.Token);
 
