@@ -66,9 +66,9 @@
         if they match, consider it as the root directory and copy the files there,
         otherwise, copy the files to a subdirectory.
       -->
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) == '$(AssemblyName)'"
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and ($([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) == '$(AssemblyName)' or '$(CustomMain)' != 'true')"
               Include="@(AppleAssembliesToBundle)"                    TargetDir="publish" />
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) != '$(AssemblyName)'"
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) != '$(AssemblyName)' and  '$(CustomMain)' == 'true'"
                    Include="@(AppleAssembliesToBundle)"               TargetDir="publish\$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)'))))" />
 
       <BundleFiles Include="@(AppleNativeFilesToBundle)"              TargetDir="publish" />

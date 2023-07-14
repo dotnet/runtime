@@ -598,7 +598,7 @@ extends:
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_Mono_RuntimeTests
-            buildArgs: -s mono+libs -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
+            buildArgs: -s mono+libs -c $(_BuildConfig)
             timeoutInMinutes: 240
             # extra steps, run tests
             extraVariablesTemplates:
@@ -610,6 +610,7 @@ extends:
               creator: dotnet-bot
               compileOnHelix: true
               interpreter: true
+              testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
               testRunNamePrefixSuffix: Mono_$(_BuildConfig)
               extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
