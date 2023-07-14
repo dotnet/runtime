@@ -1,9 +1,6 @@
 # Due to how we build the libraries native build as part of the CoreCLR build as well as standalone,
 # we can end up coming to this file twice. Only run it once to simplify our build.
-if (CLR_CMAKE_COMPILER_CONFIGURED)
-  return()
-endif()
-set(CLR_CMAKE_COMPILER_CONFIGURED ON)
+include_guard()
 
 include(${CMAKE_CURRENT_LIST_DIR}/configuretools.cmake)
 
