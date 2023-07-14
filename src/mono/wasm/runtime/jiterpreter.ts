@@ -837,7 +837,7 @@ function generate_wasm(
             }
         );
 
-        builder.emitImportsAndFunctions();
+        builder.emitImportsAndFunctions(false);
 
         if (!keep) {
             if (ti && (ti.abortReason === "end-of-body"))
