@@ -14,6 +14,7 @@ Wasm.Build.Tests.ConfigSrcTests
 Wasm.Build.Tests.IcuShardingTests
 Wasm.Build.Tests.HybridGlobalizationTests
 Wasm.Build.Tests.InvariantGlobalizationTests
+Wasm.Build.Tests.InvariantTimezoneTests
 Wasm.Build.Tests.MainWithArgsTests
 Wasm.Build.Tests.NativeBuildTests
 Wasm.Build.Tests.NativeLibraryTests
@@ -26,3 +27,6 @@ Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmSIMDTests
 Wasm.Build.Tests.WasmTemplateTests
+Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
+Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
+Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests

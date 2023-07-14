@@ -6,6 +6,10 @@
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    public static partial class OptionsBuilderExtensions
+    {
+        public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> ValidateOnStart<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder) where TOptions : class { throw null; }
+    }
     public static partial class OptionsServiceCollectionExtensions
     {
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddOptions(this Microsoft.Extensions.DependencyInjection.IServiceCollection services) { throw null; }
@@ -134,6 +138,10 @@ namespace Microsoft.Extensions.Options
     public partial interface IPostConfigureOptions<in TOptions> where TOptions : class
     {
         void PostConfigure(string? name, TOptions options);
+    }
+    public partial interface IStartupValidator
+    {
+        public void Validate();
     }
     public partial interface IValidateOptions<TOptions> where TOptions : class
     {
@@ -318,12 +326,12 @@ namespace Microsoft.Extensions.Options
     public class ValidateOptionsResultBuilder
     {
         public ValidateOptionsResultBuilder() { }
-        public void AddError(string error, string? propertyName = null) { throw null; }
-        public void AddResult(System.ComponentModel.DataAnnotations.ValidationResult? result) { throw null; }
-        public void AddResults(System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult?>? results) { throw null; }
-        public void AddResult(ValidateOptionsResult result) { throw null; }
-        public ValidateOptionsResult Build() { throw null; }
-        public void Clear() { throw null; }
+        public void AddError(string error, string? propertyName = null) { }
+        public void AddResult(Microsoft.Extensions.Options.ValidateOptionsResult result) { }
+        public void AddResult(System.ComponentModel.DataAnnotations.ValidationResult? result) { }
+        public void AddResults(System.Collections.Generic.IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult?>? results) { }
+        public Microsoft.Extensions.Options.ValidateOptionsResult Build() { throw null; }
+        public void Clear() { }
     }
     public partial class ValidateOptions<TOptions> : Microsoft.Extensions.Options.IValidateOptions<TOptions> where TOptions : class
     {

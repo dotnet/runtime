@@ -2,11 +2,16 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
     <!-- Type not supported; property on type not suppported; value types invalid for bind; generator could not parse target type -->
     <NoWarn>SYSLIB1100,SYSLIB1101,SYSLIB1103,SYSLIB1104</NoWarn>
     <!-- The SDK disables the configuration binding generator by default no matter how it was referenced, so we need to enable it here for testing. -->
     <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS;ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER</DefineConstants>
+    <DefineConstants Condition="'$(LaunchTestDebugger)' == 'true'">$(DefineConstants);LAUNCH_DEBUGGER</DefineConstants>
+    <DefineConstants Condition="'$(SkipBaselines)' == 'true'">$(DefineConstants);SKIP_BASELINES</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">

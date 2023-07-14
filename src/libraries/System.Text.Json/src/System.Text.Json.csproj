@@ -83,9 +83,9 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Nodes\JsonObject.IDictionary.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.CreateOverloads.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValue.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonValueNotTrimmable.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfTCustomized.cs" />
     <Compile Include="System\Text\Json\Nodes\JsonValueOfT.cs" />
-    <Compile Include="System\Text\Json\Nodes\JsonValueTrimmable.cs" />
+    <Compile Include="System\Text\Json\Nodes\JsonValueOfTPrimitive.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeNumberResult.cs" />
     <Compile Include="System\Text\Json\Reader\ConsumeTokenResult.cs" />
     <Compile Include="System\Text\Json\Reader\JsonReaderException.cs" />
@@ -114,9 +114,14 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Converters\CastingConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableDictionaryOfTKeyTValueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\ImmutableEnumerableOfTConverterWithReflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\ReadOnlyMemoryConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverterFactory.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Collection\StackOrQueueConverterWithReflection.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\JsonMetadataServicesConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Object\ObjectWithParameterizedConstructorConverter.Large.Reflection.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Collection\MemoryConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\ReadOnlyMemoryByteConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\MemoryByteConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\Converters\Value\JsonPrimitiveConverter.cs" />
     <Compile Include="System\Text\Json\Serialization\IgnoreReferenceResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\IJsonOnDeserialized.cs" />
@@ -142,6 +147,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolver.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoKind.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolverChain.cs" />
+    <Compile Include="System\Text\Json\Serialization\Metadata\JsonTypeInfoResolverWithAddedModifiers.cs" />
     <Compile Include="System\Text\Json\Serialization\PolymorphicSerializationState.cs" />
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriterCache.cs" />
     <Compile Include="System\Text\Json\Serialization\ReferenceEqualsWrapper.cs" />

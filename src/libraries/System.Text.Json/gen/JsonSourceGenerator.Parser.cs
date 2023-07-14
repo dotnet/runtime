@@ -443,20 +443,22 @@ namespace System.Text.Json.SourceGeneration
 
                     if (!TryGetDeserializationConstructor(type, useDefaultCtorInAnnotatedStructs, out IMethodSymbol? constructor))
                     {
-                        classType = ClassType.TypeUnsupportedBySourceGen;
                         ReportDiagnostic(DiagnosticDescriptors.MultipleJsonConstructorAttribute, typeLocation, type.ToDisplayString());
                     }
-                    else
+                    else if (constructor != null && !IsSymbolAccessibleWithin(constructor, within: contextType))
                     {
-                        classType = ClassType.Object;
-
-                        implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
-                        implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
-
-                        ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                        propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeLocation, options, out hasExtensionDataProperty);
-                        propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
+                        ReportDiagnostic(DiagnosticDescriptors.JsonConstructorInaccessible, typeLocation, type.ToDisplayString());
+                        constructor = null;
                     }
+
+                    classType = ClassType.Object;
+
+                    implementsIJsonOnSerializing = _knownSymbols.IJsonOnSerializingType.IsAssignableFrom(type);
+                    implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
+
+                    ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeLocation, options, out hasExtensionDataProperty);
+                    propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
                 var typeRef = new TypeRef(type);
@@ -578,6 +580,22 @@ namespace System.Text.Json.SourceGeneration
                 collectionType = default;
                 immutableCollectionFactoryTypeFullName = null;
                 needsRuntimeType = false;
+
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.MemoryType))
+                {
+                    Debug.Assert(!SymbolEqualityComparer.Default.Equals(type, _knownSymbols.MemoryByteType));
+                    valueType = ((INamedTypeSymbol)type).TypeArguments[0];
+                    collectionType = CollectionType.MemoryOfT;
+                    return true;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.ReadOnlyMemoryType))
+                {
+                    Debug.Assert(!SymbolEqualityComparer.Default.Equals(type, _knownSymbols.ReadOnlyMemoryByteType));
+                    valueType = ((INamedTypeSymbol)type).TypeArguments[0];
+                    collectionType = CollectionType.ReadOnlyMemoryOfT;
+                    return true;
+                }
 
                 // IAsyncEnumerable<T> takes precedence over IEnumerable.
                 if (type.GetCompatibleGenericBaseType(_knownSymbols.IAsyncEnumerableOfTType) is INamedTypeSymbol iAsyncEnumerableType)
@@ -849,7 +867,7 @@ namespace System.Text.Json.SourceGeneration
                     memberInfo,
                     hasJsonInclude,
                     out bool isReadOnly,
-                    out bool isPublic,
+                    out bool isAccessible,
                     out bool isRequired,
                     out bool canUseGetter,
                     out bool canUseSetter,
@@ -899,7 +917,7 @@ namespace System.Text.Json.SourceGeneration
                     NameSpecifiedInSourceCode = memberInfo.MemberNameNeedsAtSign() ? "@" + memberInfo.Name : memberInfo.Name,
                     MemberName = memberInfo.Name,
                     IsProperty = memberInfo is IPropertySymbol,
-                    IsPublic = isPublic,
+                    IsPublic = isAccessible,
                     IsVirtual = memberInfo.IsVirtual(),
                     JsonPropertyName = jsonPropertyName,
                     RuntimePropertyName = runtimePropertyName,
@@ -1031,14 +1049,14 @@ namespace System.Text.Json.SourceGeneration
                 ISymbol memberInfo,
                 bool hasJsonInclude,
                 out bool isReadOnly,
-                out bool isPublic,
+                out bool isAccessible,
                 out bool isRequired,
                 out bool canUseGetter,
                 out bool canUseSetter,
                 out bool hasJsonIncludeButIsInaccessible,
                 out bool isSetterInitOnly)
             {
-                isPublic = false;
+                isAccessible = false;
                 isReadOnly = false;
                 isRequired = false;
                 canUseGetter = false;
@@ -1049,71 +1067,71 @@ namespace System.Text.Json.SourceGeneration
                 switch (memberInfo)
                 {
                     case IPropertySymbol propertyInfo:
-                        {
-                            IMethodSymbol? getMethod = propertyInfo.GetMethod;
-                            IMethodSymbol? setMethod = propertyInfo.SetMethod;
 #if ROSLYN4_4_OR_GREATER
-                            isRequired = propertyInfo.IsRequired;
+                        isRequired = propertyInfo.IsRequired;
 #endif
-
-                            if (getMethod != null)
+                        if (propertyInfo.GetMethod is { } getMethod)
+                        {
+                            if (getMethod.DeclaredAccessibility is Accessibility.Public)
                             {
-                                if (getMethod.DeclaredAccessibility is Accessibility.Public)
-                                {
-                                    isPublic = true;
-                                    canUseGetter = true;
-                                }
-                                else if (IsSymbolAccessibleWithin(getMethod, within: contextType))
-                                {
-                                    canUseGetter = hasJsonInclude;
-                                }
-                                else
-                                {
-                                    hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                                }
+                                isAccessible = true;
+                                canUseGetter = true;
                             }
-
-                            if (setMethod != null)
+                            else if (IsSymbolAccessibleWithin(getMethod, within: contextType))
                             {
-                                isSetterInitOnly = setMethod.IsInitOnly;
-
-                                if (setMethod.DeclaredAccessibility is Accessibility.Public)
-                                {
-                                    isPublic = true;
-                                    canUseSetter = true;
-                                }
-                                else if (IsSymbolAccessibleWithin(setMethod, within: contextType))
-                                {
-                                    canUseSetter = hasJsonInclude;
-                                }
-                                else
-                                {
-                                    hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                                }
+                                isAccessible = true;
+                                canUseGetter = hasJsonInclude;
                             }
                             else
                             {
-                                isReadOnly = true;
+                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
                             }
+                        }
+
+                        if (propertyInfo.SetMethod is { } setMethod)
+                        {
+                            isSetterInitOnly = setMethod.IsInitOnly;
+
+                            if (setMethod.DeclaredAccessibility is Accessibility.Public)
+                            {
+                                isAccessible = true;
+                                canUseSetter = true;
+                            }
+                            else if (IsSymbolAccessibleWithin(setMethod, within: contextType))
+                            {
+                                isAccessible = true;
+                                canUseSetter = hasJsonInclude;
+                            }
+                            else
+                            {
+                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
+                            }
+                        }
+                        else
+                        {
+                            isReadOnly = true;
                         }
                         break;
                     case IFieldSymbol fieldInfo:
-                        {
-                            isReadOnly = fieldInfo.IsReadOnly;
+                        isReadOnly = fieldInfo.IsReadOnly;
 #if ROSLYN4_4_OR_GREATER
-                            isRequired = fieldInfo.IsRequired;
+                        isRequired = fieldInfo.IsRequired;
 #endif
-                            if (fieldInfo.DeclaredAccessibility is Accessibility.Public)
-                            {
-                                isPublic = true;
-                                canUseGetter = true;
-                                canUseSetter = !isReadOnly;
-                            }
-                            else
-                            {
-                                // Unlike properties JsonIncludeAttribute is not supported for internal fields.
-                                hasJsonIncludeButIsInaccessible = hasJsonInclude;
-                            }
+                        if (fieldInfo.DeclaredAccessibility is Accessibility.Public)
+                        {
+                            isAccessible = true;
+                            canUseGetter = true;
+                            canUseSetter = !isReadOnly;
+                        }
+                        else if (IsSymbolAccessibleWithin(fieldInfo, within: contextType))
+                        {
+                            isAccessible = true;
+                            canUseGetter = hasJsonInclude;
+                            canUseSetter = hasJsonInclude && !isReadOnly;
+                        }
+                        else
+                        {
+                            hasJsonIncludeButIsInaccessible = hasJsonInclude;
                         }
                         break;
                     default:
@@ -1410,20 +1428,18 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                // For correctness, throw if multiple ctors have [JsonConstructor], even if one or more are non-public.
-                IMethodSymbol? dummyCtorWithAttribute = ctorWithAttribute;
-
+                // Search for non-public ctors with [JsonConstructor].
                 foreach (IMethodSymbol constructor in namedType.GetExplicitlyDeclaredInstanceConstructors().Where(ctor => ctor.DeclaredAccessibility is not Accessibility.Public))
                 {
                     if (constructor.ContainsAttribute(_knownSymbols.JsonConstructorAttributeType))
                     {
-                        if (dummyCtorWithAttribute != null)
+                        if (ctorWithAttribute != null)
                         {
                             deserializationCtor = null;
                             return false;
                         }
 
-                        dummyCtorWithAttribute = constructor;
+                        ctorWithAttribute = constructor;
                     }
                 }
 
@@ -1449,8 +1465,6 @@ namespace System.Text.Json.SourceGeneration
                     SymbolEqualityComparer.Default.Equals(_knownSymbols.UIntPtrType, type) ||
                     _knownSymbols.MemberInfoType.IsAssignableFrom(type) ||
                     _knownSymbols.DelegateType.IsAssignableFrom(type) ||
-                    SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.MemoryType) ||
-                    SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _knownSymbols.ReadOnlyMemoryType) ||
                     type is IArrayTypeSymbol { Rank: > 1 };
             }
 
@@ -1474,6 +1488,8 @@ namespace System.Text.Json.SourceGeneration
 #pragma warning restore
 
                 AddTypeIfNotNull(knownSymbols.ByteArrayType);
+                AddTypeIfNotNull(knownSymbols.MemoryByteType);
+                AddTypeIfNotNull(knownSymbols.ReadOnlyMemoryByteType);
                 AddTypeIfNotNull(knownSymbols.TimeSpanType);
                 AddTypeIfNotNull(knownSymbols.DateTimeOffsetType);
                 AddTypeIfNotNull(knownSymbols.DateOnlyType);

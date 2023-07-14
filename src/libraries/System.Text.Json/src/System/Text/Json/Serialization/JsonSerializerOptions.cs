@@ -899,7 +899,7 @@ namespace System.Text.Json
 
                 TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault
                     ? DefaultJsonTypeInfoResolver.RootDefaultInstance()
-                    : new JsonTypeInfoResolverChain(),
+                    : JsonTypeInfoResolver.Empty,
 
                 _isReadOnly = true,
             };
