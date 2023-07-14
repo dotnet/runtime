@@ -32,7 +32,7 @@ public class DownloadResourceProgressTests : AppTestBase
             Configuration: "Debug",
             ForPublish: true,
             TestScenario: "DownloadResourceProgressTest",
-            BrowserQueryString: new Dictionary<string, string> { ["fetchFailure"] = fetchFailure.ToString() }
+            BrowserQueryString: new Dictionary<string, string> { ["fetchFailure"] = fetchFailure.ToString().ToLowerInvariant() }
         ));
         Assert.True(result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")), "The download progress test didn't emit expected error message");
     }
