@@ -1074,6 +1074,17 @@ ULONG FireEtwGCFitBucketInfo(
 // Events currently only fired via ETW (private runtime provider)
 // ==================================================================
 
+ULONG FireEtwGCSettings(
+    const unsigned __int64  SegmentSize,
+    const unsigned __int64  LargeObjectSegmentSize,
+    const BOOL  ServerGC,
+    const GUID* ActivityId,
+    const GUID* RelatedActivityId
+)
+{
+    return FireEtXplatGCSettings(SegmentSize,LargeObjectSegmentSize,ServerGC);
+}
+
 ULONG FireEtwPinPlugAtGCTime(
     const void*  PlugStart,
     const void*  PlugEnd,

@@ -4,6 +4,8 @@
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // @TODO: Use genEtwProvider.py to generate headers to replace this file.
 //        Reconcile tracking/callbacks/contexts used for ETW vs EventPipe.
+// FireEtXplat* functions handle ETW only. The naming matches the generated
+// output of genEtwProvider.py.
 #ifndef __RH_ETW_DEFS_INCLUDED
 #define __RH_ETW_DEFS_INCLUDED
 
@@ -136,7 +138,7 @@ extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_NATIVEAOT_GC_P
 
 #define FireEtXplatGCPerHeapHistory() (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? TemplateEventDescriptor(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory) : 0
 
-#define FireEtwGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCSettings(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings, SegmentSize, LargeObjectSegmentSize, ServerGC) : 0
+#define FireEtXplatGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_GCSettings(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCSettings, SegmentSize, LargeObjectSegmentSize, ServerGC) : 0
 
 #define FireEtXplatPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PinPlugAtGCTime)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_PinPlugAtGCTime(Microsoft_Windows_Redhawk_GC_PrivateHandle, &PinPlugAtGCTime, PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID) : 0
 
@@ -345,9 +347,6 @@ extern "C" __declspec(selectany) RH_ETW_CONTEXT MICROSOFT_WINDOWS_NATIVEAOT_GC_P
 
 #define RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public() do { PalEventRegister(&MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER, RhEtwControlCallback, &MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context, &Microsoft_Windows_Redhawk_GC_PublicHandle); } while (false)
 #define RH_ETW_UNREGISTER_Microsoft_Windows_Redhawk_GC_Public() do { PalEventUnregister(Microsoft_Windows_Redhawk_GC_PublicHandle); } while (false)
-
-// BulkType event is currently implemented in EventTrace.cpp
-// #define FireEtwBulkType(Count, ClrInstanceID, Values_Len_, Values) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &BulkType)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_BulkType(Microsoft_Windows_Redhawk_GC_PublicHandle, &BulkType, Count, ClrInstanceID, Values_Len_, Values) : 0
 
 #define FireEtXplatDestroyGCHandle(HandleID, ClrInstanceID) (MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PublicHandle, &DestroyGCHandle)) ? Template_MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_DestroyGCHandle(Microsoft_Windows_Redhawk_GC_PublicHandle, &DestroyGCHandle, HandleID, ClrInstanceID) : 0
 
@@ -825,20 +824,6 @@ TemplateEventDescriptor(REGHANDLE RegHandle, const EVENT_DESCRIPTOR * Descriptor
 
 #define ETW_EVENT_ENABLED(Context, EventDescriptor) false
 
-#define FireEtwBGCPlanEnd(ClrInstanceID)
-#define FireEtwBGCSweepEnd(ClrInstanceID)
-#define FireEtwGCGlobalHeapHistory_V1(FinalYoungestDesired, NumHeaps, CondemnedGeneration, Gen0ReductionCount, Reason, GlobalMechanisms, ClrInstanceID)
-#define FireEtwGCJoin_V1(Heap, JoinTime, JoinType, ClrInstanceID)
-#define FireEtwGCOptimized_V1(DesiredAllocation, NewAllocation, GenerationNumber, ClrInstanceID)
-#define FireEtwGCPerHeapHistory()
-#define FireEtwGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC)
-#define FireEtwPrvGCMarkCards_V1(HeapNum, ClrInstanceID)
-#define FireEtwPrvGCMarkFinalizeQueueRoots_V1(HeapNum, ClrInstanceID)
-#define FireEtwPrvGCMarkHandles_V1(HeapNum, ClrInstanceID)
-#define FireEtwPrvGCMarkStackRoots_V1(HeapNum, ClrInstanceID)
-
-// BulkType event is currently implemented in EventTrace.cpp
-// #define FireEtwBulkType(Count, ClrInstanceID, Values_Len_, Values)
 #define FireEtXplatDestroyGCHandle(HandleID, ClrInstanceID)
 #define FireEtXplatExceptionThrown_V1(ExceptionType, ExceptionMessage, ExceptionEIP, ExceptionHRESULT, ExceptionFlags, ClrInstanceID)
 #define FireEtXplatGCAllocationTick_V1(AllocationAmount, AllocationKind, ClrInstanceID)

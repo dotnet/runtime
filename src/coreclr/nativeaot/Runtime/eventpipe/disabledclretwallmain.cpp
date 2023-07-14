@@ -726,6 +726,21 @@ ULONG FireEtwGCFitBucketInfo(
 )
 { return ERROR_SUCCESS; }
 
+#ifdef FEATURE_ETW
+
+// ==================================================================
+// Events currently only fired via ETW (private runtime provider)
+// ==================================================================
+
+ULONG FireEtwGCSettings(
+    const unsigned __int64  SegmentSize,
+    const unsigned __int64  LargeObjectSegmentSize,
+    const BOOL  ServerGC,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+)
+{ return ERROR_SUCCESS; }
+
 ULONG FireEtwPinPlugAtGCTime(
     const void*  PlugStart,
     const void*  PlugEnd,
@@ -858,3 +873,5 @@ ULONG FireEtwPrvDestroyGCHandle(
     const GUID* RelatedActivityId = nullptr
 )
 { return ERROR_SUCCESS; }
+
+#endif // FEATURE_ETW

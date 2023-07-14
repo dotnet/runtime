@@ -5,6 +5,8 @@
 // @TODO: Use genEventing.py to generate this file. Update script to handle
 //        nativeaot runtime and allow generating separate declaration and
 //        implementation files
+// FireEtw* functions handle both EventPipe and ETW. The naming matches the
+// generated output of genEventing.py used in shared code and other runtimes.
 #ifndef CLR_ETW_ALL_MAIN_H
 #define CLR_ETW_ALL_MAIN_H
 
@@ -665,6 +667,14 @@ ULONG FireEtwGCFitBucketInfo(
 // Events currently only fired via ETW (private runtime provider)
 // ==================================================================
 
+ULONG FireEtwGCSettings(
+    const unsigned __int64  SegmentSize,
+    const unsigned __int64  LargeObjectSegmentSize,
+    const BOOL  ServerGC,
+    const GUID* ActivityId = nullptr,
+    const GUID* RelatedActivityId = nullptr
+);
+
 ULONG FireEtwPinPlugAtGCTime(
     const void*  PlugStart,
     const void*  PlugEnd,
@@ -797,6 +807,7 @@ ULONG FireEtwPrvDestroyGCHandle(
 #define FireEtwBGCOverflow(Min, Max, Objects, IsLarge, ClrInstanceID)
 #define FireEtwBGCRevisit(Pages, Objects, IsLarge, ClrInstanceID)
 #define FireEtwGCFullNotify_V1(GenNumber, IsAlloc, ClrInstanceID)
+#define FireEtwGCSettings(SegmentSize, LargeObjectSegmentSize, ServerGC)
 #define FireEtwPinPlugAtGCTime(PlugStart, PlugEnd, GapBeforeSize, ClrInstanceID)
 #define FireEtwPrvDestroyGCHandle(HandleID, ClrInstanceID)
 #define FireEtwPrvSetGCHandle(HandleID, ObjectID, Kind, Generation, AppDomainID, ClrInstanceID)
