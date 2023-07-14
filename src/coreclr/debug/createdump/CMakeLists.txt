@@ -70,6 +70,7 @@ else(CLR_CMAKE_HOST_WIN32)
         datatarget.cpp
         dumpwriter.cpp
         crashreportwriter.cpp
+        ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
     )
 
 if(CLR_CMAKE_HOST_OSX)
@@ -86,7 +87,6 @@ else()
         crashinfounix.cpp
         threadinfounix.cpp
         dumpwriterelf.cpp
-        ${CLR_SRC_NATIVE_DIR}/minipal/utf8.c
         ${CREATEDUMP_SOURCES}
     )
 endif(CLR_CMAKE_HOST_OSX)
