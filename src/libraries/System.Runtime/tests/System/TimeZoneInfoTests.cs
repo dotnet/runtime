@@ -2335,7 +2335,7 @@ namespace System.Tests
                     }
                 }
 
-                if (!PlatformDetection.IsBrowser)
+                if (!PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
                 {
                     foreach (string alias in s_UtcAliases)
                     {
