@@ -95,8 +95,6 @@ namespace System.Reflection
             bool needsByRefStrategy,
             bool backwardsCompat)
         {
-            Debug.Assert((strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0);
-
             if (needsByRefStrategy)
             {
                 // If ByRefs are used, we can't use this strategy.
@@ -126,8 +124,6 @@ namespace System.Reflection
             bool needsByRefStrategy,
             bool backwardsCompat)
         {
-            Debug.Assert((strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0);
-
             if (needsByRefStrategy)
             {
                 // If ByRefs are used, we can't use this strategy.
@@ -156,8 +152,6 @@ namespace System.Reflection
             MethodBase method,
             bool backwardsCompat)
         {
-            Debug.Assert((strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0);
-
             if ((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0)
             {
                 // The first time, ignoring race conditions, use the slow path.
