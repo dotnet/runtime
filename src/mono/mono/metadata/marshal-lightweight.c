@@ -2370,11 +2370,11 @@ method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMetho
 {
 	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
 	g_assert (ret->param_count > 0);
-	ret->param_count--;
 	ret->hasthis = hasthis;
 	for (int i = 1; i < ret->param_count; i++)
 		ret->params [i - 1] = ret->params [i];
-	memset (&ret->params[ret->param_count], 0, sizeof (MonoType)); // just in case
+	memset (&ret->params[ret->param_count - 1], 0, sizeof (MonoType)); // just in case
+	ret->param_count--;
 	return ret;
 }
 
@@ -2441,6 +2441,47 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 }
 
 static void
+emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
+	g_assert (member_name != NULL);
+
+	if (sig->param_count < 1 || sig->params[0] == NULL) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
+	MonoType *target_type = sig->params[0]; // for constructors the return type is the target type
+
+	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
+
+	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
+
+	ERROR_DECL(find_method_error);
+	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
+	MonoMethod *target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
+	if (!is_ok (find_method_error) || target_method == NULL) {
+		g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
+		if (!is_ok (find_method_error)) {
+			// FIXME: emit_exception_for_error doesn't like MissingMethod errors
+			mono_mb_emit_exception_for_error (mb, find_method_error);
+		} else {
+			mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Could not find ctor");
+		}
+		return;
+	}
+	// TODO: verify this gets the target method from a generic instance not the gtd
+	g_assert (target_method);
+
+	g_assert (target_method->klass == target_class);
+
+	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
+
+	mono_mb_emit_op (mb, CEE_CALL, target_method); /* callvirt ? */
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
 emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
 	if (accessor_method->is_generic) {
@@ -2459,13 +2500,11 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 		emit_unsafe_accessor_field_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
-		// TODO
 		emit_unsafe_accessor_ctor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
-		// TODO
-		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
+		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	default:
 		g_assert_not_reached(); // some unknown wrapper kind
