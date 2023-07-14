@@ -21,7 +21,7 @@ export function assert_runtime_running() {
 }
 
 function unifyReason(exit_code: number, reason?: any) {
-    exit_code = (typeof reason === "object" && typeof reason.status === "number") ? reason.status : 1;
+    exit_code = (typeof reason === "object" && typeof reason.status === "number") ? reason.status : exit_code;
     const message = (typeof reason === "object" && typeof reason.message === "number")
         ? reason.message
         : "" + reason;
