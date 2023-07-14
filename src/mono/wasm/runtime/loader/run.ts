@@ -401,8 +401,8 @@ function importModules() {
     runtimeHelpers.nativeModuleUrl = resolve_asset_path("js-module-native").resolvedUrl!;
     return [
         // keep js module names dynamic by using config, in the future we can use feature detection to load different flavors
-        import(runtimeHelpers.runtimeModuleUrl),
-        import(runtimeHelpers.nativeModuleUrl),
+        import(/* webpackIgnore: true */runtimeHelpers.runtimeModuleUrl),
+        import(/* webpackIgnore: true */runtimeHelpers.nativeModuleUrl),
     ];
 }
 
