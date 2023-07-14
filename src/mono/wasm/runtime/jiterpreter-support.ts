@@ -242,7 +242,7 @@ export class WasmBuilder {
         const result: any = {
             c: <any>this.getConstants(),
             m: { h: (<any>Module).asm.memory },
-            f: { f: getWasmFunctionTable() },
+            // f: { f: getWasmFunctionTable() },
         };
 
         const importsToEmit = this.getImportsToEmit();
@@ -520,6 +520,9 @@ export class WasmBuilder {
         const importsToEmit = this.getImportsToEmit();
         this.lockImports = true;
 
+        if (includeFunctionTable !== false)
+            throw new Error("function table imports are disabled");
+
         // Import section
         this.beginSection(2);
         this.appendULeb(
@@ -687,7 +690,9 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    call_indirect(functionTypeName: string, tableIndex: number) {
+    call_indirect(/* functionTypeName: string, tableIndex: number */) {
+        throw new Error("call_indirect unavailable");
+        /*
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
@@ -695,6 +700,7 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.call_indirect);
         this.appendULeb(typeIndex);
         this.appendULeb(tableIndex);
+        */
     }
 
     callImport(name: string) {

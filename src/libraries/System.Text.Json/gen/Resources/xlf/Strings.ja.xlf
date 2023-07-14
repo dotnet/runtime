@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="JsonConstructorInaccessibleMessageFormat">
         <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
-        <target state="new">The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</target>
+        <target state="translated">型 '{0}' のコンストラクターには JsonConstructorAttribute で注釈が付けられますが、ソース ジェネレーターからアクセスすることはできません。</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConstructorInaccessibleTitle">
         <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
-        <target state="new">Constructor annotated with JsonConstructorAttribute is inaccessible.</target>
+        <target state="translated">JsonConstructorAttribute で注釈が付けられたコンストラクターにアクセスできません。</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">

@@ -65,6 +65,9 @@
     <Compile Include="$(AotCommonPath)\System\Collections\Generic\LowLevelDictionary.cs">
       <Link>System\Collections\Generic\LowLevelDictionary.cs</Link>
     </Compile>
+    <Compile Include="$(CompilerCommonPath)\System\Collections\Generic\ArrayBuilder.cs">
+      <Link>System\Collections\Generic\ArrayBuilder.cs</Link>
+    </Compile>
     <Compile Include="$(CompilerCommonPath)\Internal\LowLevelLinq\LowLevelEnumerable.cs">
       <Link>Internal\LowLevelLinq\LowLevelEnumerable.cs</Link>
     </Compile>

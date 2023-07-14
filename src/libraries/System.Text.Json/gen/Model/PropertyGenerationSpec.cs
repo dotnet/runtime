@@ -57,9 +57,12 @@ namespace System.Text.Json.SourceGeneration
         /// specified ahead-of-time via <see cref="JsonSourceGenerationOptionsAttribute"/>.
         /// Only used in fast-path serialization logic.
         /// </summary>
-        public required string RuntimePropertyName { get; init; }
+        public required string EffectiveJsonPropertyName { get; init; }
 
-        public required string PropertyNameVarName { get; init; }
+        /// <summary>
+        /// The field identifier used for storing JsonEncodedText for use by the fast-path serializer.
+        /// </summary>
+        public required string PropertyNameFieldName { get; init; }
 
         /// <summary>
         /// Whether the property has a set method.
@@ -156,7 +159,7 @@ namespace System.Text.Json.SourceGeneration
             }
 
             // Discard fields when JsonInclude or IncludeFields aren't enabled.
-            if (!IsProperty && !HasJsonInclude && !contextSpec.IncludeFields)
+            if (!IsProperty && !HasJsonInclude && contextSpec.GeneratedOptionsSpec?.IncludeFields != true)
             {
                 return false;
             }
@@ -166,12 +169,12 @@ namespace System.Text.Json.SourceGeneration
             {
                 if (IsProperty)
                 {
-                    if (contextSpec.IgnoreReadOnlyProperties)
+                    if (contextSpec.GeneratedOptionsSpec?.IgnoreReadOnlyProperties == true)
                     {
                         return false;
                     }
                 }
-                else if (contextSpec.IgnoreReadOnlyFields)
+                else if (contextSpec.GeneratedOptionsSpec?.IgnoreReadOnlyFields == true)
                 {
                     return false;
                 }

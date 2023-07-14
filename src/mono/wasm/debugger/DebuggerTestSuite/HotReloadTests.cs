@@ -600,6 +600,32 @@ namespace DebuggerTests
                                        });
         }
 
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewClassUsingDebugAttribute()
+        {
+            await SetJustMyCode(true);
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1", expectBpResolvedEvent: true, sourcesToWait: new string [] { "MethodBody0.cs", "MethodBody1.cs" });
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            await SetBreakpoint(".*/MethodBody1.cs$", 118, 12, use_regex: true);            
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody10", "StaticMethod1", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("ApplyUpdateReferencedAssembly.MethodBody10.StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 118, 12, scripts, top_frame["location"]);
+
+            await StepAndCheck(StepKind.Into, $"dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 119, 12, "ApplyUpdateReferencedAssembly.MethodBody10.StaticMethod1");
+        }
+
         // Enable this test when https://github.com/dotnet/hotreload-utils/pull/264 flows into dotnet/runtime repo
         // [ConditionalFact(nameof(RunningOnChrome))]
         // public async Task DebugHotReloadMethod_ChangeParameterName()
