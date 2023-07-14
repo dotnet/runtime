@@ -18,7 +18,7 @@ const URLPolyfill = class URL {
     }
 };
 
-export function sanityCheck() {
+export function verifyEnvironment() {
     mono_assert(ENVIRONMENT_IS_SHELL || typeof globalThis.URL === "function", "This browser/engine doesn't support URL API. Please use a modern version.");
     mono_assert(typeof globalThis.BigInt64Array === "function", "This browser/engine doesn't support BigInt64Array API. Please use a modern version.");
     if (MonoWasmThreads) {
