@@ -33,22 +33,11 @@ typedef BOOL (*PFN_PAL_GetUnwindInfoSize)(
     PULONG64 ehFrameStart,
     PULONG64 ehFrameSize);
 
-typedef int (*PFN_WideCharToMultiByte)(
-    IN UINT codePage,
-    IN DWORD dwFlags,
-    IN LPCWSTR lpWideCharStr,
-    IN int cchWideChar,
-    OUT LPSTR lpMultiByteStr,
-    IN int cbMultiByte,
-    IN LPCSTR lpDefaultChar,
-    OUT LPBOOL lpUsedDefaultChar);
-
 bool g_initialized = false;
 PFN_PAL_InitializeDLL g_PAL_InitializeDLL = nullptr;
 PFN_PAL_TerminateEx g_PAL_TerminateEx = nullptr;
 PFN_PAL_VirtualUnwindOutOfProc g_PAL_VirtualUnwindOutOfProc = nullptr;
 PFN_PAL_GetUnwindInfoSize g_PAL_GetUnwindInfoSize = nullptr;
-PFN_WideCharToMultiByte g_WideCharToMultiByte = nullptr;
 
 bool
 InitializePAL()
@@ -94,7 +83,6 @@ InitializePAL()
     g_PAL_TerminateEx = (PFN_PAL_TerminateEx)dlsym(dacModule, PAL_FUNCTION_PREFIX "PAL_TerminateEx");
     g_PAL_VirtualUnwindOutOfProc = (PFN_PAL_VirtualUnwindOutOfProc)dlsym(dacModule, PAL_FUNCTION_PREFIX "PAL_VirtualUnwindOutOfProc");
     g_PAL_GetUnwindInfoSize = (PFN_PAL_GetUnwindInfoSize)dlsym(dacModule, PAL_FUNCTION_PREFIX "PAL_GetUnwindInfoSize");
-    g_WideCharToMultiByte = (PFN_WideCharToMultiByte)dlsym(dacModule, PAL_FUNCTION_PREFIX "WideCharToMultiByte");
     return true;
 }
 
@@ -214,25 +202,6 @@ PAL_GetUnwindInfoSize(
     return g_PAL_GetUnwindInfoSize(baseAddress, ehFrameHdrAddr, readMemoryCallback, ehFrameStart, ehFrameSize);
 }
 
-int
-PALAPI
-WideCharToMultiByte(
-    IN UINT codePage,
-    IN DWORD dwFlags,
-    IN LPCWSTR lpWideCharStr,
-    IN int cchWideChar,
-    OUT LPSTR lpMultiByteStr,
-    IN int cbMultiByte,
-    IN LPCSTR lpDefaultChar,
-    OUT LPBOOL lpUsedDefaultChar)
-{
-    if (!InitializePAL() || g_WideCharToMultiByte == nullptr)
-    {
-        return 0;
-    }
-    return g_WideCharToMultiByte(codePage, dwFlags, lpWideCharStr, cchWideChar, lpMultiByteStr, cbMultiByte, lpDefaultChar, lpUsedDefaultChar);
-}
-
 //
 // Used in pal\inc\rt\safecrt.h's _invalid_parameter handler
 //
@@ -246,6 +215,14 @@ RaiseException(
     IN CONST ULONG_PTR* lpArguments)
 {
     throw;
+}
+
+size_t u16_strlen(const WCHAR* str)
+{
+    size_t nChar = 0;
+    while (*str++)
+        nChar++;
+    return nChar;
 }
 
 //

@@ -977,15 +977,16 @@ std::string
 ConvertString(const WCHAR* str)
 {
     if (str == nullptr)
-        return{};
+        return { };
 
-    int len = WideCharToMultiByte(CP_UTF8, 0, str, -1, nullptr, 0, nullptr, nullptr);
+    size_t cch = u16_strlen(str) + 1;
+    int len = minipal_get_length_utf16_to_utf8((CHAR16_T*)str, cch, 0);
     if (len == 0)
-        return{};
+        return { };
 
     ArrayHolder<char> buffer = new char[len + 1];
-    WideCharToMultiByte(CP_UTF8, 0, str, -1, buffer, len + 1, nullptr, nullptr);
-    return std::string{ buffer };
+    minipal_convert_utf16_to_utf8((CHAR16_T*)str, cch, buffer, len + 1, 0);
+    return std::string { buffer };
 }
 
 //
