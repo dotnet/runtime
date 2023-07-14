@@ -2204,6 +2204,13 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 					ins->next->opcode = OP_RISCV_BNE;
 					ins->next->sreg1 = ins->dreg;
 					ins->next->sreg2 = RISCV_ZERO;
+				} else if (ins->next->opcode == OP_FBLE || ins->next->opcode == OP_FBLE_UN){
+					ins->opcode = OP_FCLE;
+					ins->dreg = mono_alloc_ireg (cfg);
+
+					ins->next->opcode = OP_RISCV_BNE;
+					ins->next->sreg1 = ins->dreg;
+					ins->next->sreg2 = RISCV_ZERO;
 				} else if (ins->next->opcode == OP_FBEQ) {
 					// fcmp rd, rs1, rs2; fbeq rd -> fceq rd, rs2, rs1; bne rd, X0
 					ins->opcode = OP_FCEQ;
