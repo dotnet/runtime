@@ -16,8 +16,8 @@
     <TestArchiveTestsDir>$(TestArchiveTestsRoot)$(OSPlatformConfig)/</TestArchiveTestsDir>
     <TestArchiveRuntimeRoot>$(TestArchiveRoot)runtime/</TestArchiveRuntimeRoot>
 
-    <PublishTestAsSelfContainedDependsOn>BuildiOSApp</PublishTestAsSelfContainedDependsOn>
-    <PublishTestAsSelfContainedAfterTargets>BuildiOSApp</PublishTestAsSelfContainedAfterTargets>
+    <PublishTestAsSelfContainedDependsOn>BuildMonoiOSApp</PublishTestAsSelfContainedDependsOn>
+    <PublishTestAsSelfContainedAfterTargets>BuildMonoiOSApp</PublishTestAsSelfContainedAfterTargets>
     <BundleTestAppleAppDependsOn>GenerateRunScript</BundleTestAppleAppDependsOn>
 
     <CustomMain>true</CustomMain>
