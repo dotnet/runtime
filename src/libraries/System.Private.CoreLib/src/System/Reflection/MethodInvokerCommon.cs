@@ -95,7 +95,7 @@ namespace System.Reflection
             bool needsByRefStrategy,
             bool backwardsCompat)
         {
-            Debug.Assert((strategy &= InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0);
+            Debug.Assert((strategy & InvokerStrategy.StrategyDetermined_ObjSpanArgs) == 0);
 
             if (needsByRefStrategy)
             {
@@ -126,7 +126,7 @@ namespace System.Reflection
             bool needsByRefStrategy,
             bool backwardsCompat)
         {
-            Debug.Assert((strategy &= InvokerStrategy.StrategyDetermined_Obj4Args) == 0);
+            Debug.Assert((strategy & InvokerStrategy.StrategyDetermined_Obj4Args) == 0);
 
             if (needsByRefStrategy)
             {
@@ -156,7 +156,7 @@ namespace System.Reflection
             MethodBase method,
             bool backwardsCompat)
         {
-            Debug.Assert((strategy &= InvokerStrategy.StrategyDetermined_RefArgs) == 0);
+            Debug.Assert((strategy & InvokerStrategy.StrategyDetermined_RefArgs) == 0);
 
             if ((strategy & InvokerStrategy.HasBeenInvoked_RefArgs) == 0)
             {
@@ -169,6 +169,7 @@ namespace System.Reflection
                 {
                     invokeFunc_RefArgs = CreateInvokeDelegate_RefArgs(method, backwardsCompat);
                 }
+
                 strategy |= InvokerStrategy.StrategyDetermined_RefArgs;
             }
         }

@@ -8,7 +8,7 @@ namespace System.Reflection.Tests
 {
     public class InvokeEmitTests
     {
-        [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
+        [ConditionalFact(typeof(InvokeEmitTests), nameof(IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Method()
         {
             MethodInfo method = typeof(TestClassThatThrows).GetMethod(nameof(TestClassThatThrows.Throw))!;
@@ -20,7 +20,7 @@ namespace System.Reflection.Tests
             Assert.DoesNotContain("InterpretedInvoke_Method", exInner.ToString());
         }
 
-        [ConditionalFact(typeof(InvokeEmitTests), nameof(InvokeEmitTests.IsEmitInvokeSupported))]
+        [ConditionalFact(typeof(InvokeEmitTests), nameof(IsEmitInvokeSupported))]
         public static void VerifyInvokeIsUsingEmit_Constructor()
         {
             ConstructorInfo ctor = typeof(TestClassThatThrows).GetConstructor(Type.EmptyTypes)!;
