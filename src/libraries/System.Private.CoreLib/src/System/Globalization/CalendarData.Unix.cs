@@ -15,7 +15,7 @@ namespace System.Globalization
                 // calling this makes sure that we will have all the necessary fields populated (no exceptions thrown):
                 IcuLoadCalendarDataFromSystem(localeName, calendarId);
                 // this overrides the values that were already implemented for Hybrid:
-                return JSLoadCalendarDataFromBrowser(localeName);
+                return JSLoadCalendarDataFromBrowser(localeName, calendarId);
             }
             return IcuLoadCalendarDataFromSystem(localeName, calendarId);
 #else

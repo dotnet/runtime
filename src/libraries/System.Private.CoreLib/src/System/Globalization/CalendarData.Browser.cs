@@ -31,16 +31,16 @@ namespace System.Globalization
     // CalendarData_EraNames = 13, // ?? DateTimeFormatInfo.GetEraName  ?? date.toLocaleDateString("pl-PL", { era: "long"})
     // CalendarData_AbbrevEraNames = 14, // ?? DateTimeFormatInfo.GetAbbreviatedEraName ?? date.toLocaleDateString("pl-PL", { era: "short"})
         private const int CALENDAR_INFO_BUFFER_LEN = 1000;
-        private unsafe bool JSLoadCalendarDataFromBrowser(string localeName)
+        private unsafe bool JSLoadCalendarDataFromBrowser(string localeName, CalendarId calendarId)
         {
             char* buffer = stackalloc char[CALENDAR_INFO_BUFFER_LEN];
             int exception;
             object exResult;
-            int resultLength = Interop.JsGlobalization.GetCalendarInfo(localeName, buffer, CALENDAR_INFO_BUFFER_LEN, out exception, out exResult);
+            int resultLength = Interop.JsGlobalization.GetCalendarInfo(localeName, calendarId, buffer, CALENDAR_INFO_BUFFER_LEN, out exception, out exResult);
             if (exception != 0)
                 throw new Exception((string)exResult);
             string result = new string(buffer, 0, resultLength);
-            string[] subresults = result.Split("|||");
+            string[] subresults = result.Split("##");
             if (subresults.Length < 2)
                 throw new Exception("CalendarInfo recieved from the Browser is in icorrect format.");
             // JS always has one result per locale, so even arrays are initialized with one element
@@ -48,13 +48,15 @@ namespace System.Globalization
             this.sMonthDay = subresults[1];
             this.saLongDates = new string[] { subresults[2] };
             this.saShortDates = new string[] { subresults[3] };
-            this.saDayNames = subresults[4].Split("||");
-            this.saAbbrevDayNames = subresults[5].Split("||");
-            this.saSuperShortDayNames = subresults[6].Split("||");
-            this.saMonthNames = ResizeMonthsArray(subresults[7].Split("||"));
-            this.saAbbrevMonthNames = ResizeMonthsArray(subresults[8].Split("||"));
-            this.saMonthGenitiveNames = ResizeMonthsArray(subresults[9].Split("||"));
-            this.saAbbrevMonthGenitiveNames = ResizeMonthsArray(subresults[10].Split("||"));
+            this.saEraNames = new string[] { subresults[4] };
+            this.saAbbrevEraNames = new string[] { subresults[5] };
+            this.saDayNames = subresults[6].Split("||");
+            this.saAbbrevDayNames = subresults[7].Split("||");
+            this.saSuperShortDayNames = subresults[8].Split("||");
+            this.saMonthNames = ResizeMonthsArray(subresults[9].Split("||"));
+            this.saAbbrevMonthNames = ResizeMonthsArray(subresults[10].Split("||"));
+            this.saMonthGenitiveNames = ResizeMonthsArray(subresults[11].Split("||"));
+            this.saAbbrevMonthGenitiveNames = ResizeMonthsArray(subresults[12].Split("||"));
             return true;
 
             static string[] ResizeMonthsArray(string[] months)

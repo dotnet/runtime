@@ -9,14 +9,14 @@ import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/i
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 
-const OUTER_SEPARATOR = "|||";
+const OUTER_SEPARATOR = "##";
 const INNER_SEPARATOR = "||";
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
 
 // this function joing all calendar info with OUTER_SEPARATOR into one string and returns back to managed code
-export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
+export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: number, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
 {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
@@ -28,6 +28,8 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number,
             MonthDay: "",
             LongDates: "",
             ShortDates: "",
+            EraNames: "",
+            AbbreviatedEraNames: "",
             DayNames: "",
             AbbreviatedDayNames: "",
             ShortestDayNames: "",
@@ -53,6 +55,9 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, dst: number,
         calendarInfo.MonthDay = getMonthDayPattern(locale, date);
         calendarInfo.ShortDates = getShortDatePattern(locale);
         calendarInfo.LongDates = getLongDatePattern(locale, date);
+        const eraNames = getEraNames(date, locale, calendarId);
+        calendarInfo.EraNames = eraNames.eraNames;
+        calendarInfo.AbbreviatedEraNames = eraNames.abbreviatedEraNames;
        
         const result = Object.values(calendarInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
@@ -249,7 +254,7 @@ function getMonthNames(locale: string | undefined) : { long: string[], abbreviat
 {
     // some calendars have the first month on non-0 index in JS
     // first month: Muharram ("ar") or Farwardin ("fa") or January
-    const localeLang = locale?.split("-")[0];
+    const localeLang = locale ? locale.split("-")[0] : "";
     const firstMonthShift = localeLang == "ar" ? 8 : localeLang == "fa" ? 3 : 0;
     const date = new Date(2021, firstMonthShift, 1);
     const months: string[] = [];
@@ -290,6 +295,66 @@ function getMonthNames(locale: string | undefined) : { long: string[], abbreviat
         monthsAbbGen[i - firstMonthShift] = getGenitiveForName(date, monthWithDayShort, monthNameShort, formatWithoutMonthName);
     }
     return {long: months, abbreviated: monthsAbb, longGenitive: monthsGen, abbreviatedGenitive: monthsAbbGen };
+}
+
+// .NET expects that only the Japanese calendars have more than 1 era.
+// So for other calendars, only return the latest era.
+function getEraNames(date: Date, locale: string | undefined, calendarId: number) : { eraNames: string, abbreviatedEraNames: string}
+{
+    if (ShouldBePopulatedByManagedCode(calendarId))
+    {
+        // managed code already handles these calendars,
+        // so empty strings will get overwritten in 
+        // InitializeEraNames/InitializeAbbreviatedEraNames
+        return {
+            eraNames: "",
+            abbreviatedEraNames: ""
+        };
+    }
+    const yearStr = date.toLocaleDateString(locale, { year: "numeric" });
+    const dayStr = date.toLocaleDateString(locale, { day: "numeric" });
+    const eraDate = date.toLocaleDateString(locale, { era: "short" });
+    const shortEraDate = date.toLocaleDateString(locale, { era: "narrow" });
+    
+    const eraDateParts = eraDate.includes(yearStr) ?
+        GetEraDateParts(yearStr) :
+        GetEraDateParts(date.getFullYear().toString());
+
+    return {
+        eraNames: GetEraFromDateParts(eraDateParts.eraDateParts, eraDateParts.ignoredPart),
+        abbreviatedEraNames: GetEraFromDateParts(eraDateParts.abbrEraDateParts, eraDateParts.ignoredPart)
+    };
+
+    function ShouldBePopulatedByManagedCode(calendarId: number)
+    {
+        return (calendarId > 1 && calendarId < 15) || calendarId == 22 || calendarId == 23;
+    }
+
+    function GetEraFromDateParts(dateParts: string[], ignoredPart: string) : string
+    {
+        const regex = new RegExp(`^((?!${ignoredPart}|[0-9]).)*$`);
+        const filteredEra = dateParts.filter(part => regex.test(part));
+        if (filteredEra.length == 0)
+            throw new Error(`Internal error, era format for locale ${locale} was in non-standard format.`);
+        return filteredEra[0].trim();
+    }
+
+    function GetEraDateParts(yearStr: string)
+    {
+        if (eraDate.startsWith(yearStr) || eraDate.endsWith(yearStr))
+        {
+            return { 
+                eraDateParts: eraDate.split(dayStr),
+                abbrEraDateParts: shortEraDate.split(dayStr),
+                ignoredPart: yearStr,
+            };
+        }
+        return { 
+            eraDateParts: eraDate.split(yearStr),
+            abbrEraDateParts: shortEraDate.split(yearStr),
+            ignoredPart: dayStr,
+        };
+    }
 }
 
 // const date = new Date(year, month - 1, 22, 2, 3, 4)

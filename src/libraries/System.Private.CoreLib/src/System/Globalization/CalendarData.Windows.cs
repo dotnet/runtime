@@ -47,7 +47,7 @@ namespace System.Globalization
             bool result =
 #if TARGET_BROWSER
                 GlobalizationMode.Hybrid ?
-                    JSLoadCalendarDataFromBrowser(localeName) :
+                    JSLoadCalendarDataFromBrowser(localeName, calendarId) :
                     IcuLoadCalendarDataFromSystem(localeName, calendarId);
 #else
                 IcuLoadCalendarDataFromSystem(localeName, calendarId);
