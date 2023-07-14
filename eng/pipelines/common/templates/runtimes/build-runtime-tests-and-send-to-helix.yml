@@ -76,37 +76,21 @@ steps:
           env:
             __MonoToolPrefix: aarch64-linux-gnu-
 
-
-  # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)
+  # Checks the value of the compileOnHelix parameter
+  # and if set invokes libraries pipeline for AOT on Helix
   - ${{ if eq(parameters.compileOnHelix, 'true') }}:
-    #  Send tests to Helix
-    - script: $(_msbuildCommand) $(_warnAsErrorParamHelixOverride) -restore
-              $(Build.SourcesDirectory)/src/libraries/sendtohelix.proj
-              /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
-              /p:TargetArchitecture=${{ parameters.archType }}
-              /p:TargetRuntimeIdentifier=${{ parameters.targetRid }}
-              /p:Configuration=${{ parameters.buildConfig }}
-              /p:TargetOS=${{ parameters.osGroup }}
-              /p:MonoForceInterpreter=${{ parameters.interpreter }}
-              /p:TestScope=innerloop
-              /p:TestRunNamePrefixSuffix=${{ parameters.testRunNamePrefixSuffix }}
-              /p:HelixBuild=$(Build.BuildNumber)
-              ${{ parameters.extraHelixArguments }}
-              /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/SendToHelix.binlog
-      displayName: Send to Helix
-      condition: and(succeeded(), ${{ parameters.condition }})
-      continueOnError: ${{ eq(parameters.shouldContinueOnError, true) }}
-      env:
-        SYSTEM_ACCESSTOKEN: $(System.AccessToken) # We need to set this env var to publish helix results to Azure Dev Ops
-        # _Scenarios: ${{ join(',', parameters.scenarios) }} # Pass scenarios to MSBuild as env var to avoid need of escaping comma separated list
-
-        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          HelixAccessToken: $(HelixApiAccessToken)
-          HelixTargetQueues: ${{ replace(lower(join('+', parameters.helixQueues)), '.open', '') }}
-          Creator: ''
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          HelixTargetQueues: ${{ join('+', parameters.helixQueues) }}
-          Creator: ${{ parameters.creator }}
+    - template: /eng/pipelines/libraries/helix.yml
+      parameters:
+        osGroup: ${{ parameters.osGroup }}
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        archType: ${{ parameters.archType }}
+        targetRid: ${{ parameters.targetRid }}
+        buildConfig: ${{ parameters.buildConfig }}
+        interpreter: ${{ parameters.interpreter }}
+        testRunNamePrefixSuffix: ${{ parameters.testRunNamePrefixSuffix }}
+        extraHelixArguments: ${{ parameters.extraHelixArguments }}
+        helixQueues: ${{ parameters.helixQueues }}
+        creator: ${{ parameters.creator }}
   - ${{ else }}:
     - template: /eng/pipelines/common/templates/runtimes/send-to-helix-step.yml
       parameters:
