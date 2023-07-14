@@ -3662,8 +3662,7 @@ MetaSig::CompareElementType(
     }
     CONTRACTL_END
 
-    TokenPairList tempList { nullptr };
-    CompareState temp{ &tempList };
+    CompareState temp{  };
     if (state == NULL)
         state = &temp;
 
