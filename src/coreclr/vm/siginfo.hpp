@@ -432,9 +432,10 @@ public:
 // infinite recursion when types refer to each other in a cycle, e.g. a delegate that takes itself as
 // a parameter or a struct that declares a field of itself (illegal but we don't know at this point).
 //
-class TokenPairList
+class TokenPairList final
 {
 public:
+
     // Chain using this constructor when comparing two typedefs for equivalence.
     TokenPairList(mdToken token1, ModuleBase *pModule1, mdToken token2, ModuleBase *pModule2, TokenPairList *pNext)
         : m_token1(token1), m_token2(token2),
@@ -470,7 +471,6 @@ public:
     static TokenPairList AdjustForTypeSpec(TokenPairList *pTemplate, ModuleBase *pTypeSpecModule, PCCOR_SIGNATURE pTypeSpecSig, DWORD cbTypeSpecSig);
     static TokenPairList AdjustForTypeEquivalenceForbiddenScope(TokenPairList *pTemplate);
 
-private:
     TokenPairList(TokenPairList *pTemplate)
         : m_token1(pTemplate ? pTemplate->m_token1 : mdTokenNil),
           m_token2(pTemplate ? pTemplate->m_token2 : mdTokenNil),
@@ -480,6 +480,7 @@ private:
           m_pNext(pTemplate ? pTemplate->m_pNext : NULL)
     { LIMITED_METHOD_CONTRACT; }
 
+private:
     mdToken m_token1, m_token2;
     ModuleBase *m_pModule1, *m_pModule2;
     BOOL m_bInTypeEquivalenceForbiddenScope;
