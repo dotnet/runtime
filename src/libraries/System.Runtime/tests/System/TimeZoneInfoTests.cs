@@ -2433,6 +2433,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [PlatformSpecific(~TestPlatforms.Browser | ~TestPlatforms.iOS | ~TestPlatforms.tvOS)]
         public static void UtcAliases_MapToUtc()
         {
             foreach (string alias in s_UtcAliases)
