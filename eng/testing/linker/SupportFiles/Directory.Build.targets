@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="$(ToolsILLinkDir)Microsoft.NET.ILLink.Tasks.props" />
+  <Import Project="$(ToolsILLinkDir)build/Microsoft.NET.ILLink.Tasks.props" />
   <Import Project="$(RepositoryEngineeringDir)testing\tests.mobile.targets" Condition="'$(RuntimeIdentifier)' == 'browser-wasm'" />
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
