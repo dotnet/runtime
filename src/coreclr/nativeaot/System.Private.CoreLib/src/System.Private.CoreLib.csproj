@@ -5,6 +5,7 @@
 
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.xml" />
+    <ILLinkLinkAttributesXmls Include="ILLink\ILLink.LinkAttributes.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)'=='true'">
     <ILLinkSubstitutionsXmls Include="ILLink\ILLink.Substitutions.Unix.xml" />

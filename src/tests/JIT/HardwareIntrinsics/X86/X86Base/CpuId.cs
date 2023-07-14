@@ -373,7 +373,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
         static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
         {
             bool isSupportedByHardware = (register & (1 << bitNumber)) != 0;
-            isHierarchyDisabled |= !GetDotnetEnable(name);
+            isHierarchyDisabled |= (!isSupported || !GetDotnetEnable(name));
 
             if (isSupported)
             {

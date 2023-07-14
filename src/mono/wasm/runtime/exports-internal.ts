@@ -13,6 +13,8 @@ import { mono_wasm_get_loaded_files } from "./assets";
 import { jiterpreter_dump_stats } from "./jiterpreter";
 import { getOptions, applyOptions } from "./jiterpreter-support";
 import { mono_wasm_gc_lock, mono_wasm_gc_unlock } from "./gc-lock";
+import { loadLazyAssembly } from "./lazyLoading";
+import { loadSatelliteAssemblies } from "./satelliteAssemblies";
 
 export function export_internal(): any {
     return {
@@ -78,6 +80,9 @@ export function export_internal(): any {
         // Blazor GC Lock support
         mono_wasm_gc_lock,
         mono_wasm_gc_unlock,
+
+        loadLazyAssembly,
+        loadSatelliteAssemblies
     };
 }
 

@@ -294,7 +294,7 @@ namespace Microsoft.Interop
                 }
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupport.NotSupported);
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.Default, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
 
             if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference))
             {
@@ -426,35 +426,31 @@ namespace Microsoft.Interop
                 }
             }
 
-            ByValueMarshalKindSupport byValueMarshalKindSupport;
+            ByValueMarshalKindSupportDescriptor byValueMarshalKindSupport;
             if (info.ManagedType is not SzArrayType)
             {
-                // We only support the [In] and [Out] attributes on array types.
-                byValueMarshalKindSupport = ByValueMarshalKindSupport.NotSupported;
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.Default;
             }
             else if (!elementIsBlittable || ElementTypeIsSometimesNonBlittable(elementInfo))
             {
                 // If the type is not blittable or is sometimes not blittable, we will generate different code when the attributes are provided.
-                byValueMarshalKindSupport = ByValueMarshalKindSupport.Supported;
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.ArrayParameter;
             }
             else
             {
                 // If the type is always blittable, we'll generate the same code regardless of the attributes,
                 // but we'll allow them to make it easier to transition to source-generated code and allow users to be clear about expectations
                 // for values in pre-allocated buffers.
-                byValueMarshalKindSupport = ByValueMarshalKindSupport.Unnecessary;
+                byValueMarshalKindSupport = ByValueMarshalKindSupportDescriptor.PinnedParameter;
             }
 
-            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(
-                marshallingStrategy,
-                byValueMarshalKindSupport);
-
             // Elements in the collection must be blittable to use the pinnable marshaller.
-            if (marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable)
+            bool isPinned = marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference) && elementIsBlittable;
+            IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, byValueMarshalKindSupport, isPinned);
+            if (isPinned)
             {
                 marshallingGenerator = new StaticPinnableManagedValueMarshaller(marshallingGenerator, marshallerTypeSyntax);
             }
-
             return ResolvedGenerator.Resolved(marshallingGenerator);
         }
 

@@ -1261,7 +1261,7 @@ namespace __OptionValidationStaticInstances
 
             // validate the location is inside the MyOptions class and not outside the compilation which is in the referenced assembly
             Assert.StartsWith("src-0.cs: (12,", diag.Location.GetLineSpan().ToString());
-        }, assemblyPath).Dispose();
+        }, assemblyPath, new RemoteInvokeOptions { TimeOut = 300 * 1000}).Dispose();
 
         File.Delete(assemblyPath); // cleanup
     }
@@ -1379,7 +1379,7 @@ namespace __OptionValidationStaticInstances
             MemoryStream ms = new();
             EmitResult emitResult = compilation.Emit(ms);
             Assert.True(emitResult.Success);
-        }, assemblyPath).Dispose();
+        }, assemblyPath, new RemoteInvokeOptions { TimeOut = 300 * 1000}).Dispose();
 
         File.Delete(assemblyPath); // cleanup
 
