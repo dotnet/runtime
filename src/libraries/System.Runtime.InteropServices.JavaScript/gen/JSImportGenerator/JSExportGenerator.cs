@@ -206,7 +206,7 @@ namespace Microsoft.Interop.JavaScript
 
             var containingTypeContext = new ContainingSyntaxContext(originalSyntax);
 
-            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers.StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
+            var methodSyntaxTemplate = new ContainingSyntax(originalSyntax.Modifiers, SyntaxKind.MethodDeclaration, originalSyntax.Identifier, originalSyntax.TypeParameterList);
 
             return new IncrementalStubGenerationContext(
                 signatureContext,

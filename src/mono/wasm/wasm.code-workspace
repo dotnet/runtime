@@ -13,6 +13,7 @@
 	"settings": {
 		"omnisharp.enableMsBuildLoadProjectsOnDemand": true,
 		"omnisharp.defaultLaunchSolution": "${workspaceFolder}sln/WasmBuild.sln",
-		"omnisharp.enableRoslynAnalyzers": true
+		"omnisharp.enableRoslynAnalyzers": true,
+		"cSpell.enabled": false
 	}
 }

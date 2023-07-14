@@ -3,10 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices.JavaScript;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using System.Runtime.InteropServices.JavaScript;
 
 namespace Microsoft.Interop.JavaScript
 {
@@ -26,7 +26,8 @@ namespace Microsoft.Interop.JavaScript
         public virtual bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _inner.UsesNativeIdentifier(info, context);
         public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => _inner.GetNativeSignatureBehavior(info);
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context) => _inner.GetValueBoundaryBehavior(info, context);
-        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, StubCodeContext context) => _inner.SupportsByValueMarshalKind(marshalKind, context);
+        public ByValueMarshalKindSupport SupportsByValueMarshalKind(ByValueContentsMarshalKind marshalKind, TypePositionInfo info, StubCodeContext context, out GeneratorDiagnostic? diagnostic)
+            => _inner.SupportsByValueMarshalKind(marshalKind, info, context, out diagnostic);
 
         public virtual IEnumerable<ExpressionSyntax> GenerateBind(TypePositionInfo info, StubCodeContext context)
         {

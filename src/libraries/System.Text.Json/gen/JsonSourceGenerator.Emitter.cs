@@ -337,6 +337,8 @@ namespace System.Text.Json.SourceGeneration
                 switch (collectionType)
                 {
                     case CollectionType.Array:
+                    case CollectionType.MemoryOfT:
+                    case CollectionType.ReadOnlyMemoryOfT:
                         createCollectionMethodExpr = $"{createCollectionInfoMethodName}<{valueTypeFQN}>({OptionsLocalVariableName}, {InfoVarName})";
                         break;
                     case CollectionType.IEnumerable:
@@ -411,11 +413,18 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine();
 
                 string getCurrentElementExpr;
+                const string elementVarName = "element";
                 switch (typeGenerationSpec.CollectionType)
                 {
                     case CollectionType.Array:
                         writer.WriteLine($"for (int i = 0; i < {ValueVarName}.Length; i++)");
                         getCurrentElementExpr = $"{ValueVarName}[i]";
+                        break;
+
+                    case CollectionType.MemoryOfT:
+                    case CollectionType.ReadOnlyMemoryOfT:
+                        writer.WriteLine($"foreach ({valueTypeGenerationSpec.TypeRef.FullyQualifiedName} {elementVarName} in {ValueVarName}.Span)");
+                        getCurrentElementExpr = elementVarName;
                         break;
 
                     case CollectionType.IListOfT:
@@ -426,7 +435,6 @@ namespace System.Text.Json.SourceGeneration
                         break;
 
                     default:
-                        const string elementVarName = "element";
                         writer.WriteLine($"foreach ({valueTypeGenerationSpec.TypeRef.FullyQualifiedName} {elementVarName} in {ValueVarName})");
                         getCurrentElementExpr = elementVarName;
                         break;
@@ -1321,6 +1329,8 @@ namespace System.Text.Json.SourceGeneration
                     CollectionType.ConcurrentQueue => "CreateConcurrentQueueInfo",
                     CollectionType.ImmutableEnumerable => "CreateImmutableEnumerableInfo",
                     CollectionType.IAsyncEnumerableOfT => "CreateIAsyncEnumerableInfo",
+                    CollectionType.MemoryOfT => "CreateMemoryInfo",
+                    CollectionType.ReadOnlyMemoryOfT => "CreateReadOnlyMemoryInfo",
                     CollectionType.ISet => "CreateISetInfo",
 
                     CollectionType.Dictionary => "CreateDictionaryInfo",
