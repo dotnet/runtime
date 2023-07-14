@@ -401,29 +401,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         if (doCpObj &&
             (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
         {
-            bool doUnrollCpObj = false;
-
-            if (dstAddr->OperIs(GT_LCL_ADDR))
-            {
-                doUnrollCpObj = true;
-            }
-            else
-            {
-                // If the layout contains a byref, then we know it must live on the stack
-                // and no write barriers are needed.
-                unsigned slots = layout->GetSlotCount();
-                for (unsigned i = 0; i < slots; i++)
-                {
-                    if (layout->IsGCByRef(i))
-                    {
-                        doUnrollCpObj = true;
-                        break;
-                    }
-                }
-
-            }
-
-            if (doUnrollCpObj)
+            // No write barriers are needed on the stack.
+            // If the layout contains a byref, then we know it must live on the stack.
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the

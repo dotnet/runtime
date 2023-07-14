@@ -184,6 +184,8 @@ public:
         return m_gcPtrCount != 0;
     }
 
+    bool HasGCByRef() const;
+
     bool IsGCPtr(unsigned slot) const
     {
         return GetGCPtr(slot) != TYPE_GC_NONE;
