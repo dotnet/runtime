@@ -3,6 +3,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -200,6 +201,10 @@ namespace System.Threading
 
             // OS doesn't signal handle, so do it here
             overlapped->InternalLow = (IntPtr)0;
+
+            if (NativeRuntimeEventSource.Log.IsEnabled())
+                NativeRuntimeEventSource.Log.ThreadPoolIOEnqueue(overlapped);
+
             // Both types of callbacks are executed on the same thread pool
             return ThreadPool.UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
         }
