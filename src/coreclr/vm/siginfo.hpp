@@ -957,10 +957,7 @@ class MetaSig
             // be compared.
             bool IgnoreCustomModifiers;
 
-            CompareState()
-                : Visited{ nullptr }
-                , IgnoreCustomModifiers{ false }
-            { }
+            CompareState() = default;
 
             CompareState(TokenPairList* list)
                 : Visited{ list }
