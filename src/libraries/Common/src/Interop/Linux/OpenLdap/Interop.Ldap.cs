@@ -3,6 +3,7 @@
 
 using System;
 using System.DirectoryServices.Protocols;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
@@ -68,19 +69,21 @@ internal static partial class Interop
     {
         static Ldap()
         {
-            // Register callback that tries to load other libraries when the default library "libldap-2.4.so.2" not found
-            AssemblyLoadContext.Default.ResolvingUnmanagedDll += (assembly, ldapName) =>
+            Assembly currentAssembly = typeof(Ldap).Assembly;
+
+            // Register callback that tries to load other libraries when the default library "libldap-2.5.so.0" not found
+            AssemblyLoadContext.GetLoadContext(currentAssembly).ResolvingUnmanagedDll += (assembly, ldapName) =>
             {
                 IntPtr handle = IntPtr.Zero;
 
-                if (ldapName != Libraries.OpenLdap)
+                if (assembly != currentAssembly || ldapName != Libraries.OpenLdap)
                 {
                     return handle;
                 }
 
-                if (NativeLibrary.TryLoad("libldap-2.5.so.0", out handle) ||
-                    NativeLibrary.TryLoad("libldap-2.6.so.0", out handle) ||
-                    NativeLibrary.TryLoad(Libraries.OpenLdap, out handle))
+                // Try loading previous (libldap-2.4.so.2) and next (libldap-2.6.so.0) versions
+                if (NativeLibrary.TryLoad("libldap-2.4.so.2", out handle) ||
+                    NativeLibrary.TryLoad("libldap-2.6.so.0", out handle))
                 {
                     return handle;
                 }
