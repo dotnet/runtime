@@ -476,6 +476,53 @@ namespace Microsoft.Extensions.DependencyInjection
             return true;
         }
 
+        private static object? GetService(IServiceProvider serviceProvider, ParameterInfo parameterInfo)
+        {
+            // Handle keyed service
+            if (TryGetServiceKey(parameterInfo, out object? key))
+            {
+                if (serviceProvider is IKeyedServiceProvider keyedServiceProvider)
+                {
+                    return keyedServiceProvider.GetKeyedService(parameterInfo.ParameterType, key);
+                }
+                throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+            }
+            // Try non keyed service
+            return serviceProvider.GetService(parameterInfo.ParameterType);
+        }
+
+        private static bool IsService(IServiceProviderIsService serviceProviderIsService, ParameterInfo parameterInfo)
+        {
+            // Handle keyed service
+            if (TryGetServiceKey(parameterInfo, out object? key))
+            {
+                if (serviceProviderIsService is IServiceProviderIsKeyedService serviceProviderIsKeyedService)
+                {
+                    return serviceProviderIsKeyedService.IsKeyedService(parameterInfo.ParameterType, key);
+                }
+                throw new InvalidOperationException(SR.KeyedServicesNotSupported);
+            }
+            // Try non keyed service
+            return serviceProviderIsService.IsService(parameterInfo.ParameterType);
+        }
+
+        private static bool TryGetServiceKey(ParameterInfo parameterInfo, out object? key)
+        {
+            if (parameterInfo.CustomAttributes != null)
+            {
+                foreach (var attribute in parameterInfo.GetCustomAttributes(true))
+                {
+                    if (attribute is FromKeyedServicesAttribute keyed)
+                    {
+                        key = keyed.Key;
+                        return true;
+                    }
+                }
+            }
+            key = null;
+            return false;
+        }
+
         private readonly struct ConstructorMatcher
         {
             private readonly ConstructorInfo _constructor;
@@ -517,7 +564,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 for (int i = 0; i < _parameters.Length; i++)
                 {
                     if (_parameterValues[i] == null &&
-                        !serviceProviderIsService.IsService(_parameters[i].ParameterType))
+                        !IsService(serviceProviderIsService, _parameters[i]))
                     {
                         if (ParameterDefaultValue.TryGetDefaultValue(_parameters[i], out object? defaultValue))
                         {
@@ -539,7 +586,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 {
                     if (_parameterValues[index] == null)
                     {
-                        object? value = provider.GetService(_parameters[index].ParameterType);
+                        object? value = GetService(provider, _parameters[index]);
                         if (value == null)
                         {
                             if (!ParameterDefaultValue.TryGetDefaultValue(_parameters[index], out object? defaultValue))

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -9,6 +10,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Emitter
         {
+            private static readonly AssemblyName s_assemblyName = typeof(Emitter).Assembly.GetName();
+
             private enum InitializationKind
             {
                 None = 0,
@@ -18,6 +21,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
             private static class Expression
             {
+                public const string configurationGetSection = "configuration.GetSection";
                 public const string sectionKey = "section.Key";
                 public const string sectionPath = "section.Path";
                 public const string sectionValue = "section.Value";
@@ -30,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string ActionOfBinderOptions = $"global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>";
                 public const string AddSingleton = $"{ServiceCollectionServiceExtensions}.AddSingleton";
                 public const string ConfigurationChangeTokenSource = "global::Microsoft.Extensions.Options.ConfigurationChangeTokenSource";
-                public const string CoreBindingHelper = $"global::{ConfigurationBindingGenerator.ProjectName}.{Identifier.CoreBindingHelper}";
+                public const string CoreBindingHelper = $"global::{ProjectName}.{Identifier.CoreBindingHelper}";
                 public const string IConfiguration = "global::Microsoft.Extensions.Configuration.IConfiguration";
                 public const string IConfigurationSection = IConfiguration + "Section";
                 public const string IOptionsChangeTokenSource = "global::Microsoft.Extensions.Options.IOptionsChangeTokenSource";
@@ -45,6 +49,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private static class MinimalDisplayString
             {
                 public const string NullableActionOfBinderOptions = "Action<BinderOptions>?";
+                public const string HashSetOfString = "HashSet<string>";
+                public const string LazyHashSetOfString = "Lazy<HashSet<string>>";
+                public const string ListOfString = "List<string>";
             }
 
             private static class Identifier
@@ -64,18 +71,19 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string optionsBuilder = nameof(optionsBuilder);
                 public const string originalCount = nameof(originalCount);
                 public const string section = nameof(section);
+                public const string sectionKey = nameof(sectionKey);
                 public const string services = nameof(services);
-                public const string stringValue = nameof(stringValue);
                 public const string temp = nameof(temp);
                 public const string type = nameof(type);
+                public const string validateKeys = nameof(validateKeys);
+                public const string value = nameof(value);
 
                 public const string Add = nameof(Add);
                 public const string AddSingleton = nameof(AddSingleton);
                 public const string Any = nameof(Any);
                 public const string Array = nameof(Array);
+                public const string AsConfigWithChildren = nameof(AsConfigWithChildren);
                 public const string Bind = nameof(Bind);
-                public const string BindCore = nameof(BindCore);
-                public const string BindCoreUntyped = nameof(BindCoreUntyped);
                 public const string BinderOptions = nameof(BinderOptions);
                 public const string Configure = nameof(Configure);
                 public const string CopyTo = nameof(CopyTo);
@@ -91,12 +99,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string GeneratedServiceCollectionBinder = nameof(GeneratedServiceCollectionBinder);
                 public const string Get = nameof(Get);
                 public const string GetBinderOptions = nameof(GetBinderOptions);
-                public const string GetCore = nameof(GetCore);
                 public const string GetChildren = nameof(GetChildren);
                 public const string GetSection = nameof(GetSection);
                 public const string GetValue = nameof(GetValue);
-                public const string GetValueCore = nameof(GetValueCore);
-                public const string HasChildren = nameof(HasChildren);
                 public const string HasConfig = nameof(HasConfig);
                 public const string HasValueOrChildren = nameof(HasValueOrChildren);
                 public const string HasValue = nameof(HasValue);
@@ -115,6 +120,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 public const string TryGetValue = nameof(TryGetValue);
                 public const string TryParse = nameof(TryParse);
                 public const string Uri = nameof(Uri);
+                public const string ValidateConfigurationKeys = nameof(ValidateConfigurationKeys);
                 public const string Value = nameof(Value);
             }
 
@@ -125,12 +131,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBlankLineIfRequired()
             {
-                if (_precedingBlockExists)
+                if (_emitBlankLineBeforeNextStatement)
                 {
                     _writer.WriteBlankLine();
                 }
 
-                _precedingBlockExists = true;
+                _emitBlankLineBeforeNextStatement = true;
             }
 
             private void EmitCheckForNullArgument_WithBlankLine_IfRequired(bool isValueType)
@@ -170,9 +176,31 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
+            private void EmitRootBindingClassBlockStart(string className)
+            {
+                EmitBlankLineIfRequired();
+                _writer.WriteBlock($$"""
+                    /// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
+                    {{GetGeneratedCodeAttributeSrc()}}
+                    internal static class {{className}}
+                    {
+                    """);
+
+                _emitBlankLineBeforeNextStatement = false;
+            }
+
+            private string GetGeneratedCodeAttributeSrc()
+            {
+                string attributeRefExpr = _useFullyQualifiedNames ? $"global::System.CodeDom.Compiler.GeneratedCodeAttribute" : "GeneratedCode";
+                return $@"[{attributeRefExpr}(""{s_assemblyName.Name}"", ""{s_assemblyName.Version}"")]";
+            }
+
             private string GetInitException(string message) => $@"throw new {GetInvalidOperationDisplayName()}(""{message}"")";
 
-            private string GetIncrementalVarName(string prefix) => $"{prefix}{_parseValueCount++}";
+            private string GetIncrementalIdentifier(string prefix) => $"{prefix}{_valueSuffixIndex++}";
+
+            private string GetInitalizeMethodDisplayString(ObjectSpec type) =>
+                GetHelperMethodDisplayString($"{nameof(MethodsToGen_CoreBindingHelper.Initialize)}{type.DisplayStringWithoutSpecialCharacters}");
 
             private string GetTypeDisplayString(TypeSpec type) => _useFullyQualifiedNames ? type.FullyQualifiedDisplayString : type.MinimalDisplayString;
 

@@ -34,11 +34,11 @@ public class BuildPublishTests : BuildTestBase
 
         // Build
         BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false, isNet7AndBelow: false);
+        AssertBlazorBootJson(config, isPublish: false);
 
         // Publish
         BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true, isNet7AndBelow: false);
+        AssertBlazorBootJson(config, isPublish: true);
     }
 
     [Theory]

@@ -81,6 +81,13 @@ interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder;
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder;
     withApplicationArgumentsFromQuery(): DotnetHostBuilder;
+    withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder;
+    withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
+    /**
+     * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+     * from a custom source, such as an external CDN.
+     */
+    withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>;
     run(): Promise<number>;
 }
@@ -120,7 +127,7 @@ type MonoConfig = {
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
-     * debugLevel < 0 enabled debugging and disables debug logging.
+     * debugLevel < 0 enables debugging and disables debug logging.
      */
     debugLevel?: number;
     /**
@@ -149,7 +156,56 @@ type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string;
+    /**
+     * Gets the application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47
+     */
+    applicationCulture?: string;
+    /**
+     * definition of assets to load along with the runtime.
+     */
+    resources?: ResourceGroups;
+    /**
+     * config extensions declared in MSBuild items @(WasmBootConfigExtension)
+     */
+    extensions?: {
+        [name: string]: any;
+    };
 };
+type ResourceExtensions = {
+    [extensionName: string]: ResourceList;
+};
+interface ResourceGroups {
+    readonly hash?: string;
+    readonly assembly?: ResourceList;
+    readonly lazyAssembly?: ResourceList;
+    readonly pdb?: ResourceList;
+    readonly runtime?: ResourceList;
+    readonly satelliteResources?: {
+        [cultureName: string]: ResourceList;
+    };
+    readonly libraryInitializers?: ResourceList;
+    readonly libraryStartupModules?: {
+        readonly onRuntimeConfigLoaded?: ResourceList;
+        readonly onRuntimeReady?: ResourceList;
+    };
+    readonly extensions?: ResourceExtensions;
+    readonly vfs?: {
+        [virtualPath: string]: ResourceList;
+    };
+}
+type ResourceList = {
+    [name: string]: string;
+};
+/**
+ * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+ * from a custom source, such as an external CDN.
+ * @param type The type of the resource to be loaded.
+ * @param name The name of the resource to be loaded.
+ * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
+ * @param integrity The integrity string representing the expected content in the response.
+ * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ */
+type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 interface ResourceRequest {
     name: string;
     behavior: AssetBehaviours;
@@ -189,11 +245,81 @@ interface AssetEntry extends ResourceRequest {
      */
     pendingDownload?: LoadingResource;
 }
-type AssetBehaviours = "resource" | "assembly" | "pdb" | "heap" | "icu" | "vfs" | "dotnetwasm" | "js-module-threads" | "js-module-runtime" | "js-module-dotnet" | "js-module-native" | "symbols";
-type GlobalizationMode = "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-"invariant" | //  operate in invariant globalization mode.
-"hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-"auto";
+type AssetBehaviours = 
+/**
+ * Load asset as a managed resource assembly.
+ */
+"resource"
+/**
+ * Load asset as a managed assembly.
+ */
+ | "assembly"
+/**
+ * Load asset as a managed debugging information.
+ */
+ | "pdb"
+/**
+ * Store asset into the native heap.
+ */
+ | "heap"
+/**
+ * Load asset as an ICU data archive.
+ */
+ | "icu"
+/**
+ * Load asset into the virtual filesystem (for fopen, File.Open, etc).
+ */
+ | "vfs"
+/**
+ * The binary of the dotnet runtime.
+ */
+ | "dotnetwasm"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-threads"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-runtime"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-dotnet"
+/**
+ * The javascript module for threads.
+ */
+ | "js-module-native"
+/**
+ * The javascript module that came from nuget package .
+ */
+ | "js-module-library-initializer"
+/**
+ * The javascript module for threads.
+ */
+ | "symbols";
+declare const enum GlobalizationMode {
+    /**
+     * Load sharded ICU data.
+     */
+    Sharded = "sharded",
+    /**
+     * Load all ICU data.
+     */
+    All = "all",
+    /**
+     * Operate in invariant globalization mode.
+     */
+    Invariant = "invariant",
+    /**
+     * Use user defined icu file.
+     */
+    Custom = "custom",
+    /**
+     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
+     */
+    Hybrid = "hybrid"
+}
 type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig;
@@ -213,6 +339,7 @@ type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>;
     setModuleImports(moduleName: string, moduleImports: any): void;
     getConfig: () => MonoConfig;
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>;
     setHeapB32: (offset: NativePointer, value: number | boolean) => void;
     setHeapU8: (offset: NativePointer, value: number) => void;
     setHeapU16: (offset: NativePointer, value: number) => void;
@@ -270,6 +397,7 @@ type ModuleAPI = {
     exit: (code: number, reason?: any) => void;
 };
 type CreateDotnetRuntimeType = (moduleFactory: DotnetModuleConfig | ((api: RuntimeAPI) => DotnetModuleConfig)) => Promise<RuntimeAPI>;
+type WebAssemblyBootResourceType = "assembly" | "pdb" | "dotnetjs" | "dotnetwasm" | "globalization" | "manifest" | "configuration";
 
 interface IDisposable {
     dispose(): void;
@@ -300,65 +428,9 @@ declare function mono_exit(exit_code: number, reason?: any): void;
 declare const dotnet: DotnetHostBuilder;
 declare const exit: typeof mono_exit;
 
-interface BootJsonData {
-    readonly entryAssembly: string;
-    readonly resources: ResourceGroups;
-    /** Gets a value that determines if this boot config was produced from a non-published build (i.e. dotnet build or dotnet run) */
-    readonly debugBuild: boolean;
-    readonly debugLevel: number;
-    readonly linkerEnabled: boolean;
-    readonly cacheBootResources: boolean;
-    readonly config: string[];
-    readonly icuDataMode: ICUDataMode;
-    readonly startupMemoryCache: boolean | undefined;
-    readonly runtimeOptions: string[] | undefined;
-    readonly environmentVariables?: {
-        [name: string]: string;
-    };
-    readonly diagnosticTracing?: boolean;
-    readonly pthreadPoolSize: number;
-    modifiableAssemblies: string | null;
-    aspnetCoreBrowserTools: string | null;
-}
-type BootJsonDataExtension = {
-    [extensionName: string]: ResourceList;
-};
-interface ResourceGroups {
-    readonly hash?: string;
-    readonly assembly: ResourceList;
-    readonly lazyAssembly: ResourceList;
-    readonly pdb?: ResourceList;
-    readonly runtime: ResourceList;
-    readonly satelliteResources?: {
-        [cultureName: string]: ResourceList;
-    };
-    readonly libraryInitializers?: ResourceList;
-    readonly extensions?: BootJsonDataExtension;
-    readonly runtimeAssets: ExtendedResourceList;
-    readonly vfs?: {
-        [virtualPath: string]: ResourceList;
-    };
-}
-type ResourceList = {
-    [name: string]: string;
-};
-type ExtendedResourceList = {
-    [name: string]: {
-        hash: string;
-        behavior: string;
-    };
-};
-declare enum ICUDataMode {
-    Sharded = 0,
-    All = 1,
-    Invariant = 2,
-    Custom = 3,
-    Hybrid = 4
-}
-
 declare global {
     function getDotnetRuntime(runtimeId: number): RuntimeAPI | undefined;
 }
 declare const createDotnetRuntime: CreateDotnetRuntimeType;
 
-export { AssetEntry, BootJsonData, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, ICUDataMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };
+export { AssetEntry, CreateDotnetRuntimeType, DotnetModuleConfig, EmscriptenModule, GlobalizationMode, IMemoryView, ModuleAPI, MonoConfig, ResourceRequest, RuntimeAPI, createDotnetRuntime as default, dotnet, exit };

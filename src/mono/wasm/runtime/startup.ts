@@ -262,7 +262,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
 
         if (!runtimeHelpers.mono_wasm_runtime_is_ready) mono_wasm_runtime_ready();
 
-        if (runtimeHelpers.config.startupOptions && INTERNAL.resourceLoader) {
+        if (INTERNAL.resourceLoader) {
             if (INTERNAL.resourceLoader.bootConfig.debugBuild && INTERNAL.resourceLoader.bootConfig.cacheBootResources) {
                 INTERNAL.resourceLoader.logToConsole();
             }

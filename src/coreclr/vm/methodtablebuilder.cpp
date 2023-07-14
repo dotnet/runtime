@@ -3293,13 +3293,6 @@ MethodTableBuilder::EnumerateClassMethods()
             }
         }
 
-        if (implType == METHOD_IMPL && isStaticVirtual && IsMdAbstract(dwMemberAttrs))
-        {
-            // Don't record reabstracted static virtual methods as they don't constitute
-            // actual method slots, they're just markers used by the static virtual lookup.
-            continue;
-        }
-
         // For delegates we don't allow any non-runtime implemented bodies
         // for any of the four special methods
         if (IsDelegate() && !IsMiRuntime(dwImplFlags))
