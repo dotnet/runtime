@@ -16,6 +16,10 @@
 
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
+
+    <AppName>HelloiOS</AppName>
+    <SelfContained>true</SelfContained>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
   </PropertyGroup>
 
   <ItemGroup>

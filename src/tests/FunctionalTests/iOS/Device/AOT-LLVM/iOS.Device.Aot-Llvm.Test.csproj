@@ -9,7 +9,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
-    <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
+    <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <MonoEnableLLVM>true</MonoEnableLLVM>
@@ -17,9 +17,10 @@
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>Link</TrimMode>
 
-    <AppName>HelloiOS</AppName>
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <ShouldILStrip>true</ShouldILStrip>
+
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
   </PropertyGroup>
 
