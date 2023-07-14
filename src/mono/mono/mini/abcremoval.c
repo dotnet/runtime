@@ -1144,7 +1144,7 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 		if (TRACE_ABC_REMOVAL)
 			mono_print_ins (ins);
 
-		if (ins->opcode == OP_BOUNDS_CHECK) { /* Handle OP_LDELEMA2D, too */
+		if (ins->opcode == OP_BOUNDS_CHECK || ins->opcode == OP_BOUNDS_CHECK_SEXT) { /* Handle OP_LDELEMA2D, too */
 			array_var = ins->sreg1;
 			index_var = ins->sreg2;
 
@@ -1204,6 +1204,7 @@ MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 		 */
 		if (COMPILE_LLVM (cfg) && (ins->opcode == OP_LDLEN ||
 								   ins->opcode == OP_BOUNDS_CHECK ||
+								   ins->opcode == OP_BOUNDS_CHECK_SEXT ||
 								   ins->opcode == OP_STRLEN ||
 								   (MONO_IS_LOAD_MEMBASE (ins) && (ins->flags & MONO_INST_FAULT)) ||
 								   (MONO_IS_STORE_MEMBASE (ins) && (ins->flags & MONO_INST_FAULT)))) {

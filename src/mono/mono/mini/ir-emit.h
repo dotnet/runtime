@@ -971,11 +971,12 @@ static int ccount = 0;
 #endif
 
 static inline void
-mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length_offset, int index_reg, const char *ex_name)
+mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length_offset, int index_reg, const char *ex_name, gboolean need_sext)
 {
 	if (!(cfg->opt & MONO_OPT_UNSAFE)) {
 		ex_name = ex_name ? ex_name : "IndexOutOfRangeException";
 		if (!(cfg->opt & MONO_OPT_ABCREM)) {
+			g_assert (!need_sext);
 			MONO_EMIT_NULL_CHECK (cfg, array_reg, FALSE);
 			if (COMPILE_LLVM (cfg))
 				MONO_EMIT_DEFAULT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), TRUE, ex_name);
@@ -983,7 +984,10 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
 				MONO_ARCH_EMIT_BOUNDS_CHECK ((cfg), (array_reg), GINT_TO_UINT(array_length_offset), (index_reg), ex_name);
 		} else {
 			MonoInst *ins;
-			MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);
+			if (need_sext)
+				MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK_SEXT);
+			else
+				MONO_INST_NEW ((cfg), ins, OP_BOUNDS_CHECK);
 			ins->sreg1 = array_reg;
 			ins->sreg2 = index_reg;
 			ins->inst_p0 = (gpointer)ex_name;
@@ -1002,8 +1006,8 @@ mini_emit_bounds_check_offset (MonoCompile *cfg, int array_reg, int array_length
  * array_length_field is the field in the previous struct with the length
  * index_reg is the vreg holding the index
  */
-#define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg) do { \
-		mini_emit_bounds_check_offset ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), NULL); \
+#define MONO_EMIT_BOUNDS_CHECK(cfg, array_reg, array_type, array_length_field, index_reg, need_sext) do { \
+		mini_emit_bounds_check_offset ((cfg), (array_reg), MONO_STRUCT_OFFSET (array_type, array_length_field), (index_reg), NULL, need_sext); \
 	} while (0)
 
 #endif

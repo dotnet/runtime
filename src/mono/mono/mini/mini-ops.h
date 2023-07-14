@@ -763,6 +763,7 @@ MINI_OP(OP_NEWARR, "newarr", IREG, IREG, NONE)
 MINI_OP(OP_LDLEN, "ldlen", IREG, IREG, NONE)
 /* inst_p0 is the exception name to throw or NULL */
 MINI_OP(OP_BOUNDS_CHECK, "bounds_check", NONE, IREG, IREG)
+MINI_OP(OP_BOUNDS_CHECK_SEXT, "bounds_check_sext", NONE, IREG, IREG)
 /* type checks */
 MINI_OP(OP_ISINST, "isinst", IREG, IREG, NONE)
 MINI_OP(OP_CASTCLASS, "castclass", IREG, IREG, NONE)
