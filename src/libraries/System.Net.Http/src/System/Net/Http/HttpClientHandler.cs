@@ -42,7 +42,7 @@ namespace System.Net.Http
                 {
                     handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
                 }
-                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
+                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory, out _);
 
                 // Ensure a single handler is used for all requests.
                 if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)

@@ -61,7 +61,6 @@ namespace System.Net.Http
         private ValueTask<int> _readAheadTask;
         private ArrayBuffer _readBuffer;
 
-        private long _idleSinceTickCount;
         private int _keepAliveTimeoutSeconds; // 0 == no timeout
         private bool _inUse;
         private bool _detachedFromPool;
@@ -70,13 +69,13 @@ namespace System.Net.Http
         private bool _connectionClose; // Connection: close was seen on last response
 
         private const int Status_Disposed = 1;
-        private const int Status_NotDisposedAndTrackedByTelemetry = 2;
         private int _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
             Stream stream,
             TransportContext? transportContext)
+            : base(pool)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -89,14 +88,6 @@ namespace System.Net.Http
             _writeBuffer = new ArrayBuffer(InitialWriteBufferSize, usePool: false);
             _readBuffer = new ArrayBuffer(InitialReadBufferSize, usePool: false);
 
-            _idleSinceTickCount = Environment.TickCount64;
-
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                HttpTelemetry.Log.Http11ConnectionEstablished();
-                _disposed = Status_NotDisposedAndTrackedByTelemetry;
-            }
-
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
@@ -108,16 +99,11 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            int previousValue = Interlocked.Exchange(ref _disposed, Status_Disposed);
-            if (previousValue != Status_Disposed)
+            if (Interlocked.Exchange(ref _disposed, Status_Disposed) != Status_Disposed)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
-                // Only decrement the connection count if we counted this connection
-                if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
-                {
-                    HttpTelemetry.Log.Http11ConnectionClosed();
-                }
+                MarkConnectionAsClosed();
 
                 if (!_detachedFromPool)
                 {
@@ -269,8 +255,6 @@ namespace System.Net.Http
             return _keepAliveTimeoutSeconds != 0 &&
                 GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
         }
-
-        public override long GetIdleTicks(long nowTicks) => nowTicks - _idleSinceTickCount;
 
         public TransportContext? TransportContext => _transportContext;
 
@@ -516,6 +500,8 @@ namespace System.Net.Http
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
+
+            MarkConnectionAsNotIdle();
 
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
@@ -2085,8 +2071,6 @@ namespace System.Net.Http
             else
             {
                 Debug.Assert(!_detachedFromPool, "Should not be detached from pool unless _connectionClose is true");
-
-                _idleSinceTickCount = Environment.TickCount64;
 
                 // Put connection back in the pool.
                 _pool.RecycleHttp11Connection(this);

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Http.Metrics;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -15,10 +16,78 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
+        private readonly ConnectionMetricsInfo? _connectionMetricsInfo;
+        private readonly bool _httpTelemetryMarkedConnectionAsOpened;
+
+        private readonly long _creationTickCount = Environment.TickCount64;
+        private long _idleSinceTickCount;
+
         /// <summary>Cached string for the last Date header received on this connection.</summary>
         private string? _lastDateHeaderValue;
         /// <summary>Cached string for the last Server header received on this connection.</summary>
         private string? _lastServerHeaderValue;
+
+        public HttpConnectionBase(HttpConnectionPool pool)
+        {
+            Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
+            Debug.Assert(pool.Settings._metrics is not null);
+
+            string protocol =
+                this is HttpConnection ? "HTTP/1.1" :
+                this is Http2Connection ? "HTTP/2" :
+                "HTTP/3";
+
+            int port = pool.OriginAuthority.Port;
+            int defaultPort = pool.IsSecure ? HttpConnectionPool.DefaultHttpsPort : HttpConnectionPool.DefaultHttpPort;
+
+            _connectionMetricsInfo = ConnectionMetricsInfo.TryCreate(
+                pool.Settings._metrics,
+                protocol,
+                pool.IsSecure ? "https" : "http",
+                pool.OriginAuthority.HostValue,
+                port == defaultPort ? null : port);
+
+            _connectionMetricsInfo?.ConnectionEstablished();
+
+            MarkConnectionAsIdle();
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                _httpTelemetryMarkedConnectionAsOpened = true;
+
+                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished();
+                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished();
+                else HttpTelemetry.Log.Http30ConnectionEstablished();
+            }
+        }
+
+        public void MarkConnectionAsClosed()
+        {
+            _connectionMetricsInfo?.ConnectionClosed(durationMs: Environment.TickCount64 - _creationTickCount);
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                // Only decrement the connection count if we counted this connection
+                if (_httpTelemetryMarkedConnectionAsOpened)
+                {
+                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed();
+                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed();
+                    else HttpTelemetry.Log.Http30ConnectionClosed();
+                }
+            }
+        }
+
+        public void MarkConnectionAsIdle()
+        {
+            _idleSinceTickCount = Environment.TickCount64;
+
+            _connectionMetricsInfo?.MarkAsIdle();
+        }
+
+        public void MarkConnectionAsNotIdle()
+        {
+            _connectionMetricsInfo?.MarkAsNotIdle();
+        }
 
         /// <summary>Uses <see cref="HeaderDescriptor.GetHeaderValue"/>, but first special-cases several known headers for which we can use caching.</summary>
         public string GetResponseHeaderValueWithCaching(HeaderDescriptor descriptor, ReadOnlySpan<byte> value, Encoding? valueEncoding)
@@ -60,11 +129,9 @@ namespace System.Net.Http
             }
         }
 
-        private readonly long _creationTickCount = Environment.TickCount64;
-
         public long GetLifetimeTicks(long nowTicks) => nowTicks - _creationTickCount;
 
-        public abstract long GetIdleTicks(long nowTicks);
+        public virtual long GetIdleTicks(long nowTicks) => nowTicks - _idleSinceTickCount;
 
         /// <summary>Check whether a connection is still usable, or should be scavenged.</summary>
         /// <returns>True if connection can be used.</returns>
