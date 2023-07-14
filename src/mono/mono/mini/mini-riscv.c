@@ -2104,6 +2104,7 @@ mono_arch_lowering_pass (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_START_HANDLER:
 		case OP_CALL_HANDLER:
 		case OP_ENDFINALLY:
+		case OP_ENDFILTER:
 		case OP_GET_EX_OBJ:
 		case OP_GENERIC_CLASS_INIT:
 		case OP_I8CONST:
@@ -4606,7 +4607,8 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			for (GList *tmp = ins->inst_eh_blocks; tmp != bb->clause_holes; tmp = tmp->prev)
 				mono_cfg_add_try_hole (cfg, ((MonoLeaveClause *)tmp->data)->clause, code, bb);
 			break;
-		case OP_ENDFINALLY: {
+		case OP_ENDFINALLY:
+		case OP_ENDFILTER: {
 			MonoInst *spvar = mono_find_spvar_for_region (cfg, bb->region);
 			if (cfg->param_area)
 				riscv_addi (code, RISCV_SP, RISCV_SP, -cfg->param_area);
