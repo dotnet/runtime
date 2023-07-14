@@ -108,14 +108,14 @@ Stub *StubCacheBase::Canonicalize(const BYTE * pRawStub)
     // Couldn't find it, let's try to compile it.
     CPUSTUBLINKER sl;
     CPUSTUBLINKER *psl = &sl;
-    CompileStub(pRawStub, psl);
+    DWORD linkFlags = CompileStub(pRawStub, psl);
 
     // Append the raw stub to the native stub
     // and link up the stub.
     CodeLabel *plabel = psl->EmitNewCodeLabel();
     psl->EmitBytes(pRawStub, Length(pRawStub));
     StubHolder<Stub> pstub;
-    pstub = psl->Link(m_heap);
+    pstub = psl->Link(m_heap, linkFlags);
     UINT32 offset = psl->GetLabelOffset(plabel);
 
     if (offset > 0xffff)

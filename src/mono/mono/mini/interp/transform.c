@@ -2540,7 +2540,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		MonoType *t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
 
-		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8);
+		if (t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8)
+			return FALSE;
+
+		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || (TARGET_SIZEOF_VOID_P == 8 && (t->type == MONO_TYPE_I || t->type == MONO_TYPE_U)));
 		gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
 
 		gboolean is_compareto = strcmp (tm, "EnumCompareTo") == 0;
@@ -3784,10 +3787,20 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (native && !method->dynamic)
 				icall_sig = interp_get_icall_sig (csignature);
 #endif
+			gboolean default_cconv = TRUE;
+#ifdef TARGET_X86
+#ifdef TARGET_WIN32
+			// Platform that we don't actively support ?
+			default_cconv = csignature->call_convention == MONO_CALL_C;
+#else
+			default_cconv = csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C;
+#endif
+#endif
+
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for
 			// this, probably once we will have an explicit param area where we copy arguments.
-			if (icall_sig != MINT_ICALLSIG_MAX) {
+			if (icall_sig != MINT_ICALLSIG_MAX && default_cconv) {
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
@@ -3801,10 +3814,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			} else if (native) {
 				interp_add_ins (td, MINT_CALLI_NAT);
-#ifdef TARGET_X86
-				/* Windows not tested/supported yet */
-				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
-#endif
 
 				InterpMethod *imethod = NULL;
 				/*
@@ -6097,11 +6106,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_LDSTR);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, s);
-			} else {
-				/* defer allocation to execution-time */
-				interp_add_ins (td, MINT_LDSTR_TOKEN);
+			} else if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				/* token is an index into the MonoDynamicMethod:method.method_data
+				 * which comes from ReflectionMethodBuilder:refs.  See
+				 * reflection_methodbuilder_to_mono_method.
+				 *
+				 * the actual data item is a managed MonoString from the managed DynamicMethod
+				 */
+				interp_add_ins (td, MINT_LDSTR_DYNAMIC);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, GUINT_TO_POINTER (token));
+			} else {
+				/* the token is an index into MonoWrapperMethod:method_data that
+				 * stores a global or malloc'ed C string. defer MonoString
+				 * allocation to execution-time */
+				interp_add_ins (td, MINT_LDSTR_CSTR);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				const char *cstr = (const char*)mono_method_get_wrapper_data (method, token);
+				td->last_ins->data [0] = get_data_item_index (td, (void*)cstr);
 			}
 			td->ip += 5;
 			break;
@@ -7086,7 +7108,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int size = mono_class_value_size (klass, NULL);
 					g_assert (size < G_MAXUINT16);
 
-					handle_stelem (td, MINT_STELEM_VT);
+					handle_stelem (td, m_class_has_references (klass) ? MINT_STELEM_VT : MINT_STELEM_VT_NOREF);
 					td->last_ins->data [0] = get_data_item_index (td, klass);
 					td->last_ins->data [1] = GINT_TO_UINT16 (size);
 					break;
@@ -11395,6 +11417,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		method = nm;
 		header = interp_method_get_header (nm, error);
 		return_if_nok (error);
+	}
+
+	int accessor_kind = -1;
+	char *member_name = NULL;
+	if (!header && mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		method = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+		g_assert (method);
 	}
 
 	if (!header) {

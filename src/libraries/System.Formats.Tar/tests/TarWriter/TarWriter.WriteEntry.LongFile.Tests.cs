@@ -27,6 +27,7 @@ namespace System.Formats.Tar.Tests
 
         [Theory]
         [MemberData(nameof(WriteEntry_LongFileSize_TheoryData))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Needs too much disk space.")]
         public void WriteEntry_LongFileSize(TarEntryFormat entryFormat, long size, bool unseekableStream)
         {
             // Write archive with a 8 Gb long entry.

@@ -293,8 +293,7 @@ enum {
 	 (RISCV_BITS ((ins), 12, 8) << 12) | (RISCV_SIGN ((ins)) << 20))
 
 // Check a value for validity as an immediate.
-#define RISCV_VALID_IMM(value)	 \
-	(((gint32)value) == (value))
+#define RISCV_VALID_IMM32(value) (((gint32)value) == (value))
 #define RISCV_VALID_I_IMM(value) \
 	(RISCV_DECODE_I_IMM (RISCV_ENCODE_I_IMM ((value))) == (value))
 #define RISCV_VALID_S_IMM(value) \

@@ -37,7 +37,6 @@ private:
     // friend VOID CPUSTUBLINKER::EmitMulticastInvoke(...);
     // friend VOID CPUSTUBLINKER::EmitShuffleThunk(...);
     friend class CPUSTUBLINKER;
-    friend class DelegateInvokeStubManager;
     friend BOOL MulticastFrame::TraceFrame(Thread *thread, BOOL fromPatch,
                                 TraceDestination *trace, REGDISPLAY *regs);
 
@@ -213,12 +212,13 @@ private:
     // Compile a static delegate shufflethunk. Always returns
     // STANDALONE since we don't interpret these things.
     //---------------------------------------------------------
-    virtual void CompileStub(const BYTE *pRawStub,
+    virtual DWORD CompileStub(const BYTE *pRawStub,
                              StubLinker *pstublinker)
     {
         STANDARD_VM_CONTRACT;
 
         ((CPUSTUBLINKER*)pstublinker)->EmitShuffleThunk((ShuffleEntry*)pRawStub);
+        return NEWSTUB_FL_THUNK;
     }
 
     //---------------------------------------------------------
@@ -233,19 +233,6 @@ private:
             pse++;
         }
         return sizeof(ShuffleEntry) * (UINT)(1 + (pse - (ShuffleEntry*)pRawStub));
-    }
-
-    virtual void AddStub(const BYTE* pRawStub, Stub* pNewStub)
-    {
-        CONTRACTL
-        {
-            THROWS;
-            GC_NOTRIGGER;
-            MODE_ANY;
-        }
-        CONTRACTL_END;
-
-        DelegateInvokeStubManager::g_pManager->AddStub(pNewStub);
     }
 };
 

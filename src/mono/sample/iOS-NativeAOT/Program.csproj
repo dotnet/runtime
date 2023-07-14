@@ -47,7 +47,7 @@
   <Target Name="ConfigureIlcPathsForiOSCrossCompilation" Condition="'$(PublishAotUsingRuntimePack)' != 'true'"
     BeforeTargets="SetupProperties">
       <PropertyGroup>
-        <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(HostOS).$(BuildArchitecture).$(CoreCLRConfiguration)', 'ilc'))</IlcPath>
+        <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', '$(BuildArchitecture)' ,'ilc'))</IlcPath>
         <IlcToolsPath>$(IlcPath)</IlcToolsPath>
         <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
         <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>

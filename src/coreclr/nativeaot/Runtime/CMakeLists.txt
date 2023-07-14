@@ -111,8 +111,6 @@ if (WIN32)
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
-    eventtrace.cpp
-    rheventtrace.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
@@ -222,6 +220,18 @@ endif()
 
 if(FEATURE_EVENT_TRACE)
   add_definitions(-DFEATURE_EVENT_TRACE)
+  list(APPEND COMMON_RUNTIME_SOURCES
+    eventtrace.cpp
+  )
+  # These are carry-overs from .NET Native and only included on Windows currently
+  #   bulktype : directly emits via ETW with EventWrite
+  #   gcheap : GCHeapDump, GCHeapSurvivalAndMovement - not prioritizing for nativeaot yet
+  if (WIN32)
+    list(APPEND COMMON_RUNTIME_SOURCES
+      eventtrace_bulktype.cpp
+      eventtrace_gcheap.cpp
+    )
+  endif()
 endif()
 
 add_definitions(-DFEATURE_BASICFREEZE)

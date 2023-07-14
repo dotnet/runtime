@@ -146,6 +146,7 @@
     </PropertyGroup>
 
     <NdkToolFinderTask
+      Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'"
       Architecture="$(TargetArchitecture)"
       HostOS="$(_HostOS)"
       MinApiLevel="$(AndroidLibraryMinApiLevel)">
@@ -157,7 +158,7 @@
       <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
     </NdkToolFinderTask>
 
-    <PropertyGroup>
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'">
       <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
       <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>

@@ -17,6 +17,7 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(nameof(IsAdmin_IsNotNano_RemoteExecutorIsSupported_CanShareFiles))] // Nano has no "netapi32.dll", Admin rights are required
         [PlatformSpecific(TestPlatforms.Windows)]
         [OuterLoop("Requires admin privileges")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80019", TestRuntimes.Mono)]
         public void TestUserNetworkCredentialsPropertiesOnWindows()
         {
             const string ShareName = "testForDotNet";

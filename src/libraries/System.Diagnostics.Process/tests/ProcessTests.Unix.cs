@@ -81,6 +81,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [OuterLoop("Opens program")]
         [SkipOnPlatform(TestPlatforms.MacCatalyst, "In App Sandbox mode, the process doesn't have read access to the binary.")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_DirectoryNameInCurDirectorySameAsFileNameInExecDirectory_Success()
         {
             string fileToOpen = "dotnet";
@@ -110,6 +111,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [OuterLoop]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_UseShellExecute_OnUnix_OpenMissingFile_DoesNotThrow()
         {
             if (OperatingSystem.IsLinux() &&
@@ -129,6 +131,7 @@ namespace System.Diagnostics.Tests
 
         [Theory, InlineData(true), InlineData(false)]
         [OuterLoop("Opens program")]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.Android | TestPlatforms.Browser, "Not supported on iOS/tvOS/Android/Browser.")]
         public void ProcessStart_UseShellExecute_OnUnix_SuccessWhenProgramInstalled(bool isFolder)
         {
             string programToOpen = s_allowedProgramsToRun.FirstOrDefault(program => IsProgramInstalled(program));

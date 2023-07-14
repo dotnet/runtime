@@ -354,6 +354,7 @@ internal static class Utils
 #endif
     }
 
+<<<<<<< HEAD
     public static bool IsMacOS()
     {
 #if NETCOREAPP
@@ -372,6 +373,8 @@ internal static class Utils
 #endif
     }
 
+=======
+>>>>>>> upstream/main
     public static bool IsManagedAssembly(string filePath)
     {
         if (!File.Exists(filePath))

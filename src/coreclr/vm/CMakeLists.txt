@@ -515,6 +515,8 @@ set(GC_HEADERS_WKS
 if(FEATURE_EVENT_TRACE)
     list(APPEND VM_SOURCES_WKS
         eventtrace.cpp
+        eventtrace_bulktype.cpp
+        eventtrace_gcheap.cpp
         )
     list(APPEND VM_HEADERS_WKS
         eventtracepriv.h
