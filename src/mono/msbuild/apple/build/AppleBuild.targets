@@ -88,24 +88,33 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_ScanAssembliesDecideLightweightMarshaler">
-    <ItemGroup>
+  <Target Name="_ScanAssembliesDecideLightweightMarshaler" DependsOnTargets="_AppleResolveReferences">
+    <PropertyGroup Condition="'$(RuntimeComponents)'=='*'">
+      <ForceAllComponents>true</ForceAllComponents>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(ForceAllComponents)'!='true'">
+      <RuntimeComponentList Include="$(RuntimeComponents)" />
       <AssembliesToScan Include="@(_AssembliesToBundleInternal)" />
     </ItemGroup>
 
-    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)">
+    <MarshalingPInvokeScanner Assemblies ="@(AssembliesToScan)" Condition="'$(ForceAllComponents)'!='true'">
       <Output TaskParameter="IncompatibleAssemblies" ItemName="MonoLightweightMarshallerIncompatibleAssemblies" />
     </MarshalingPInvokeScanner>
-    
+
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' > 0">
-      <RuntimeComponents Include="marshal-ilgen" />
+      <RuntimeComponentList Include="marshal-ilgen" KeepDuplicates="false"/>
     </ItemGroup>
     <ItemGroup Condition="'@(MonoLightweightMarshallerIncompatibleAssemblies->Count())' == 0">
-      <RuntimeComponents Remove="marshal-ilgen" />
+      <RuntimeComponentList Remove="marshal-ilgen" />
     </ItemGroup>
+
+    <PropertyGroup Condition="'$(ForceAllComponents)'!='true'">
+      <RuntimeComponents>@(RuntimeComponentList)</RuntimeComponents>
+    </PropertyGroup>
   </Target>
 
-  <Target Name="_ProcessRuntimeComponents">
+  <Target Name="_ProcessRuntimeComponents" DependsOnTargets="_ScanAssembliesDecideLightweightMarshaler" BeforeTargets="_BuildNativeLibrary">
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <!-- add all non stub libs first -->
       <!-- if runtimecompoents is empty, exclude -static.a and include -stub-static.a instead -->
