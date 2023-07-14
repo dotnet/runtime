@@ -3,7 +3,7 @@
 
 import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
-import { abort_startup, assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
+import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_asset_path } from "./assets";
 import { mono_log_error, setup_proxy_console } from "./logging";
@@ -80,7 +80,6 @@ export function setLoaderGlobals(
         wasmDownloadPromise: createPromiseController<AssetEntryInternal>(),
         runtimeModuleLoaded: createPromiseController<void>(),
 
-        abort_startup,
         is_exited,
         is_runtime_running,
         assert_runtime_running,

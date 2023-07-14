@@ -6,6 +6,7 @@ import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } fr
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
+import { mono_exit } from "./exit";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -181,10 +182,10 @@ export async function mono_download_assets(): Promise<void> {
         // and we are not awating it here
         Promise.all(promises_of_asset_instantiation).then(() => {
             runtimeHelpers.allAssetsInMemory.promise_control.resolve();
-        }).catch(e => {
-            loaderHelpers.err("Error in mono_download_assets: " + e);
-            loaderHelpers.abort_startup(e, true);
-            throw e;
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)

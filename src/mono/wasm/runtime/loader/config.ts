@@ -10,6 +10,7 @@ import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
+import { mono_exit } from "./exit";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -118,7 +119,7 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
         loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });
-        loaderHelpers.abort_startup(errMessage, true);
+        mono_exit(1, new Error(errMessage));
         throw err;
     }
 }

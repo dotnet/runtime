@@ -17,14 +17,14 @@ export async function mono_run_main_and_exit(main_assembly_name: string, args: s
         const result = await mono_run_main(main_assembly_name, args);
         loaderHelpers.mono_exit(result);
         return result;
-    } catch (error) {
+    } catch (error: any) {
         try {
             loaderHelpers.mono_exit(1, error);
         }
         catch (e) {
             // ignore
         }
-        if (error instanceof runtimeHelpers.ExitStatus) {
+        if (error && typeof error.status === "number") {
             return error.status;
         }
         return 1;

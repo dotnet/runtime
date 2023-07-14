@@ -114,7 +114,7 @@ export function assert_not_disposed(result: any): GCHandle {
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
-    if (loaderHelpers.isAborted || loaderHelpers.exitCode !== undefined) {
+    if (loaderHelpers.is_exited()) {
         // We're shutting down, so don't bother doing anything else.
         return;
     }

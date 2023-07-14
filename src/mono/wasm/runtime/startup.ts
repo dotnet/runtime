@@ -24,7 +24,7 @@ import { preAllocatePThreadWorkerPool, instantiateWasmPThreadWorkerPool } from "
 import { export_linker } from "./exports-linker";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
 import { getMemorySnapshot, storeMemorySnapshot, getMemorySnapshotSize } from "./snapshot";
-import { mono_log_debug, mono_log_warn, mono_set_thread_id } from "./logging";
+import { mono_log_debug, mono_log_error, mono_log_warn, mono_set_thread_id } from "./logging";
 import { getBrowserThreadID } from "./pthreads/shared";
 
 // legacy
@@ -96,14 +96,12 @@ export function configureEmscriptenStartup(module: DotnetModuleInternal): void {
     // execution order == [*] ==
     if (!module.onAbort) {
         module.onAbort = (error) => {
-            const is_exited = loaderHelpers.is_exited();
-            if (!runtimeHelpers.runtimeReady) loaderHelpers.abort_startup(error, is_exited, false);
+            loaderHelpers.mono_exit(1, error);
         };
     }
     if (!module.onExit) {
         module.onExit = (code) => {
-            if (!runtimeHelpers.runtimeReady) loaderHelpers.abort_startup("exit " + code, false, false);
-            if (!loaderHelpers.is_exited()) loaderHelpers.mono_exit(code, null);
+            loaderHelpers.mono_exit(code, null);
         };
     }
 }
@@ -156,8 +154,8 @@ function preInit(userPreInit: (() => void)[]) {
         // all user Module.preInit callbacks
         userPreInit.forEach(fn => fn());
     } catch (err) {
-        _print_error("user preInint() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user preInint() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // this will start immediately but return on first await.
@@ -174,7 +172,7 @@ function preInit(userPreInit: (() => void)[]) {
 
             endMeasure(mark, MeasuredBlock.preInit);
         } catch (err) {
-            loaderHelpers.abort_startup(err, true);
+            loaderHelpers.mono_exit(1, err);
             throw err;
         }
         // signal next stage
@@ -194,8 +192,8 @@ async function preInitWorkerAsync() {
         runtimeHelpers.afterPreInit.promise_control.resolve();
         endMeasure(mark, MeasuredBlock.preInitWorker);
     } catch (err) {
-        _print_error("user preInitWorker() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user preInitWorker() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
 }
@@ -218,8 +216,8 @@ async function preRunAsync(userPreRun: (() => void)[]) {
         userPreRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.preRun);
     } catch (err) {
-        _print_error("user callback preRun() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user callback preRun() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // signal next stage
@@ -253,7 +251,7 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
                 : new Error("Snapshot taken, exiting because exitAfterSnapshot was set.");
             reason.silent = true;
 
-            loaderHelpers.abort_startup(reason, false, true);
+            loaderHelpers.mono_exit(0, reason);
             return;
         }
 
@@ -283,15 +281,15 @@ async function onRuntimeInitializedAsync(userOnRuntimeInitialized: () => void) {
             userOnRuntimeInitialized();
         }
         catch (err: any) {
-            _print_error("user callback onRuntimeInitialized() failed", err);
+            mono_log_error("user callback onRuntimeInitialized() failed", err);
             throw err;
         }
         // finish
         await mono_wasm_after_user_runtime_initialized();
         endMeasure(mark, MeasuredBlock.onRuntimeInitialized);
     } catch (err) {
-        _print_error("onRuntimeInitializedAsync() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("onRuntimeInitializedAsync() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // signal next stage
@@ -313,8 +311,8 @@ async function postRunAsync(userpostRun: (() => void)[]) {
         userpostRun.map(fn => fn());
         endMeasure(mark, MeasuredBlock.postRun);
     } catch (err) {
-        _print_error("user callback posRun() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("user callback posRun() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     // signal next stage
@@ -410,25 +408,13 @@ async function mono_wasm_after_user_runtime_initialized(): Promise<void> {
                 await Module.onDotnetReady();
             }
             catch (err: any) {
-                _print_error("onDotnetReady () failed", err);
+                mono_log_error("onDotnetReady () failed", err);
                 throw err;
             }
         }
     } catch (err: any) {
-        _print_error("Error in mono_wasm_after_user_runtime_initialized", err);
+        mono_log_error("mono_wasm_after_user_runtime_initialized () failed", err);
         throw err;
-    }
-}
-
-
-function _print_error(message: string, err: any): void {
-    if (typeof err === "object" && err.silent) {
-        return;
-    }
-    Module.err(`${message}: ${JSON.stringify(err)}`);
-    if (typeof err === "object" && err.stack) {
-        Module.err("Stacktrace: \n");
-        Module.err(err.stack);
     }
 }
 
@@ -518,8 +504,8 @@ async function instantiate_wasm_module(
         }
         runtimeHelpers.afterInstantiateWasm.promise_control.resolve();
     } catch (err) {
-        _print_error("instantiate_wasm_module() failed", err);
-        loaderHelpers.abort_startup(err, true);
+        mono_log_error("instantiate_wasm_module() failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
     Module.removeRunDependency("instantiate_wasm_module");
@@ -586,8 +572,8 @@ export function mono_wasm_load_runtime(unused?: string, debugLevel?: number): vo
         endMeasure(mark, MeasuredBlock.loadRuntime);
 
     } catch (err: any) {
-        _print_error("mono_wasm_load_runtime () failed", err);
-        loaderHelpers.abort_startup(err, false);
+        mono_log_error("mono_wasm_load_runtime () failed", err);
+        loaderHelpers.mono_exit(1, err);
         throw err;
     }
 }
@@ -610,7 +596,7 @@ export function bindings_init(): void {
         runtimeHelpers._i52_error_scratch_buffer = <any>Module._malloc(4);
         endMeasure(mark, MeasuredBlock.bindingsInit);
     } catch (err) {
-        _print_error("Error in bindings_init", err);
+        mono_log_error("Error in bindings_init", err);
         throw err;
     }
 }

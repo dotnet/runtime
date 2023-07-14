@@ -103,7 +103,6 @@ export type LoaderHelpers = {
     assertAfterExit: boolean;
 
     exitCode: number | undefined;
-    isAborted: boolean;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
@@ -127,7 +126,6 @@ export type LoaderHelpers = {
     is_exited: () => boolean,
     is_runtime_running: () => boolean,
     assert_runtime_running: () => void,
-    abort_startup: (reason: any, should_exit: boolean, should_throw?: boolean) => void,
     mono_exit: (exit_code: number, reason?: any) => void,
     createPromiseController: <T>(afterResolve?: () => void, afterReject?: () => void) => PromiseAndController<T>,
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
