@@ -9,7 +9,6 @@
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <AppName>HelloiOS</AppName>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
     <!-- Escape NativeAOT bundling targets -->
@@ -47,8 +46,7 @@
   <Target Name="ConfigureIlcPathsForiOSCrossCompilation" Condition="'$(PublishAotUsingRuntimePack)' != 'true'"
     BeforeTargets="SetupProperties">
       <PropertyGroup>
-        <IlcPath>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'bin', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', '$(BuildArchitecture)' ,'ilc'))</IlcPath>
-        <IlcToolsPath>$(IlcPath)</IlcToolsPath>
+        <IlcToolsPath>$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
         <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
         <IlcFrameworkPath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkPath>
         <IlcFrameworkNativePath>$(LibrariesAllBinArtifactsPath)</IlcFrameworkNativePath>
@@ -60,7 +58,7 @@
     DependsOnTargets="IlcCompile;CopyFilesToPublishDirectory">
 
     <PropertyGroup>
-      <AppDir>$(MSBuildThisFileDirectory)$(PublishDir)\app</AppDir>
+      <AppDir>$(MSBuildThisFileDirectory)$(OutputPath)\Bundle</AppDir>
       <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
       <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
       <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
@@ -91,7 +89,7 @@
         InvariantGlobalization="$(InvariantGlobalization)"
         EnableAppSandbox="$(EnableAppSandbox)"
         StripSymbolTable="$(StripDebugSymbols)"
-        AppDir="$(MSBuildThisFileDirectory)$(PublishDir)" 
+        AppDir="$(MSBuildThisFileDirectory)$(OutputPath)" 
         ExtraLinkerArguments="@(ExtraLinkerArguments)" >
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />

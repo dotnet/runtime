@@ -72,9 +72,7 @@ namespace TLens.Analyzers
 					methods.Add (method);
 				}
 
-				if (!fields.ContainsKey (field))
-					fields.Add (field, access);
-				else
+				if (!fields.TryAdd (field, access))
 					fields[field] |= access;
 			}
 		}

@@ -42,7 +42,7 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         assert(inlineContext->GetCode() != nullptr);
         depth++;
 
-        if ((inlineContext->GetCode() == candidateCode) && (inlineContext->GetCallee() == inlineInfo->fncHandle) &&
+        if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
             (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
         {
             // This is a recursive inline

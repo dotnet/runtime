@@ -27,6 +27,7 @@ namespace System.Numerics
           ISubtractionOperators<TSelf, TSelf, TSelf>,
           IUnaryPlusOperators<TSelf, TSelf>,
           IUnaryNegationOperators<TSelf, TSelf>,
+          IUtf8SpanFormattable,
           IUtf8SpanParsable<TSelf>
         where TSelf : INumberBase<TSelf>?
     {
@@ -297,7 +298,7 @@ namespace System.Numerics
             if (textMaxCharCount < 256)
             {
                 utf16TextArray = null;
-                utf16Text = stackalloc char[512];
+                utf16Text = stackalloc char[256];
             }
             else
             {
@@ -425,7 +426,7 @@ namespace System.Numerics
             if (textMaxCharCount < 256)
             {
                 utf16TextArray = null;
-                utf16Text = stackalloc char[512];
+                utf16Text = stackalloc char[256];
             }
             else
             {
@@ -454,6 +455,60 @@ namespace System.Numerics
             }
 
             return succeeded;
+        }
+
+        bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            char[]? utf16DestinationArray;
+            scoped Span<char> utf16Destination;
+            int destinationMaxCharCount = Encoding.UTF8.GetMaxCharCount(utf8Destination.Length);
+
+            if (destinationMaxCharCount < 256)
+            {
+                utf16DestinationArray = null;
+                utf16Destination = stackalloc char[256];
+            }
+            else
+            {
+                utf16DestinationArray = ArrayPool<char>.Shared.Rent(destinationMaxCharCount);
+                utf16Destination = utf16DestinationArray.AsSpan(0, destinationMaxCharCount);
+            }
+
+            if (!TryFormat(utf16Destination, out int charsWritten, format, provider))
+            {
+                if (utf16DestinationArray != null)
+                {
+                    // Return rented buffers if necessary
+                    ArrayPool<char>.Shared.Return(utf16DestinationArray);
+                }
+
+                bytesWritten = 0;
+                return false;
+            }
+
+            // Make sure we slice the buffer to just the characters written
+            utf16Destination = utf16Destination.Slice(0, charsWritten);
+
+            OperationStatus utf8DestinationStatus = Utf8.FromUtf16(utf16Destination, utf8Destination, out _, out bytesWritten, replaceInvalidSequences: false);
+
+            if (utf16DestinationArray != null)
+            {
+                // Return rented buffers if necessary
+                ArrayPool<char>.Shared.Return(utf16DestinationArray);
+            }
+
+            if (utf8DestinationStatus == OperationStatus.Done)
+            {
+                return true;
+            }
+
+            if (utf8DestinationStatus != OperationStatus.DestinationTooSmall)
+            {
+                ThrowHelper.ThrowInvalidOperationException_InvalidUtf8();
+            }
+
+            bytesWritten = 0;
+            return false;
         }
 
         static TSelf IUtf8SpanParsable<TSelf>.Parse(ReadOnlySpan<byte> utf8Text, IFormatProvider? provider)
