@@ -6,10 +6,10 @@ namespace System.Buffers.Text
     public static partial class Utf8Formatter
     {
         /// <summary>
-        /// Formats a Double as a UTF8 string.
+        /// Formats a Double as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
@@ -29,10 +29,10 @@ namespace System.Buffers.Text
             FormattingHelpers.TryFormat(value, destination, out bytesWritten, format);
 
         /// <summary>
-        /// Formats a Single as a UTF8 string.
+        /// Formats a Single as a UTF-8 string.
         /// </summary>
         /// <param name="value">Value to format</param>
-        /// <param name="destination">Buffer to write the UTF8-formatted value to</param>
+        /// <param name="destination">Buffer to write the UTF-8 formatted value to</param>
         /// <param name="bytesWritten">Receives the length of the formatted text in bytes</param>
         /// <param name="format">The standard format to use</param>
         /// <returns>
