@@ -5648,6 +5648,43 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     emitAdjustStackDepthPushPop(ins);
 }
 
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
+//
+// Arguments:
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//
+void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isFloatReg(dataReg));
+
+    // Store lower 8 bytes
+    emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
+
+    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // Extract and store upper 4 bytes
+        emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
+    }
+    else
+    {
+        regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+        assert(isFloatReg(tmpReg));
+
+        // Extract upper 4 bytes from data
+        emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
+
+        // Store upper 4 bytes
+        emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
+}
+#endif // FEATURE_SIMD
+
 /*****************************************************************************
  *
  *  Add an instruction referencing a register and a constant.
