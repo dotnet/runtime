@@ -4,7 +4,7 @@
 import BuildConfiguration from "consts:configuration";
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_cs } from "./marshal-to-cs";
 import { marshal_exception_to_js, bind_arg_marshal_to_js } from "./marshal-to-js";
 import {
@@ -128,6 +128,7 @@ function bind_fn_0V(closure: BindingClosure) {
     if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_0V() {
         const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
         mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
@@ -148,6 +149,7 @@ function bind_fn_1V(closure: BindingClosure) {
     if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_1V(arg1: any) {
         const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
         mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
@@ -171,6 +173,7 @@ function bind_fn_1R(closure: BindingClosure) {
     if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_1R(arg1: any) {
         const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
         mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
@@ -198,6 +201,7 @@ function bind_fn_2R(closure: BindingClosure) {
     if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn_2R(arg1: any, arg2: any) {
         const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
         mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {
@@ -226,6 +230,7 @@ function bind_fn(closure: BindingClosure) {
     if (!MonoWasmThreads) (<any>closure) = null;
     return function bound_fn(...js_args: any[]) {
         const mark = startMeasure();
+        loaderHelpers.assert_runtime_running();
         mono_assert(!MonoWasmThreads || !closure.isDisposed, "The function was already disposed");
         const sp = Module.stackSave();
         try {

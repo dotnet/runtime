@@ -432,28 +432,6 @@ mono_wasm_send_dbg_command (int id, MdbgProtCommandSet command_set, int command,
 		invoke_data.flags = INVOKE_FLAG_DISABLE_BREAKPOINTS_AND_STEPPING;
 		error = mono_do_invoke_method (tls, &buf, &invoke_data, data, &data);
 	}
-	else if (command_set == MDBGPROT_CMD_SET_VM && (command ==  MDBGPROT_CMD_GET_ASSEMBLY_BYTES))
-	{
-		char* assembly_name = m_dbgprot_decode_string (data, &data, data + size);
-		if (assembly_name == NULL)
-		{
-			m_dbgprot_buffer_init (&buf, 128);
-			m_dbgprot_buffer_add_int (&buf, 0);
-			m_dbgprot_buffer_add_int (&buf, 0);
-		}
-		else
-		{
-			const unsigned char* assembly_bytes = NULL;
-			unsigned int assembly_size = 0;
-			mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
-			const unsigned char* pdb_bytes = NULL;
-			unsigned int symfile_size = 0;
-			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
-			m_dbgprot_buffer_init (&buf, assembly_size + symfile_size);
-			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) assembly_bytes, assembly_size);
-			m_dbgprot_buffer_add_byte_array (&buf, (uint8_t *) pdb_bytes, symfile_size);
-		}
-	}
 	else
 	{
 		m_dbgprot_buffer_init (&buf, 128);

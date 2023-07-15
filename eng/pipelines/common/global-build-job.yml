@@ -70,6 +70,8 @@ jobs:
 
       - name: _osParameter
         value: -os ${{ parameters.osGroup }}
+      - name: _archParameter
+        value: -arch ${{ parameters.archType }}
 
       - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubGroup, '_bionic')) }}:
         - name: _osParameter
@@ -184,7 +186,7 @@ jobs:
         - task: CodeQL3000Init@0
           displayName: Initialize CodeQL (manually-injected)
 
-      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
+      - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci $(_archParameter) $(_osParameter) $(crossArg) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}

@@ -111,11 +111,15 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
 
 export function assert_not_disposed(result: any): GCHandle {
     const gc_handle = result[js_owned_gc_handle_symbol];
-    mono_assert(gc_handle != GCHandleNull, "ObjectDisposedException");
+    mono_check(gc_handle != GCHandleNull, "ObjectDisposedException");
     return gc_handle;
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
+    if (loaderHelpers.is_exited()) {
+        // We're shutting down, so don't bother doing anything else.
+        return;
+    }
     teardown_managed_proxy(null, gc_handle);
 }
 
@@ -168,7 +172,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 const promise_control = loaderHelpers.getPromiseController(obj);
                 if (promise_control) {
                     promise_control.reject(new Error("WebWorker which is origin of the Task is being terminated."));
-                }
+            }
                 if (typeof obj.dispose === "function") {
                     obj.dispose();
                 }
