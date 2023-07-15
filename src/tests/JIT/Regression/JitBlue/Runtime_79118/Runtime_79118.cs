@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using Xunit;
 
-readonly struct Ray
+public readonly struct Ray
 {
     public readonly Vector3 Origin;
     public readonly Vector3 Direction;
@@ -39,7 +39,7 @@ public class RayTracer
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static void Consume(object o)
+    private static void Consume(object o)
     {
         var _ = o.ToString();
     }
