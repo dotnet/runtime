@@ -6280,8 +6280,14 @@ void Compiler::impMarkInlineCandidate(GenTree*               callNode,
         {
             InlineResult inlineResult(this, call, nullptr, "impMarkInlineCandidate for GDV");
 
+            CORINFO_CONTEXT_HANDLE moreExactContext = call->GetGDVCandidateInfo(candidateId)->exactContextHnd;
+            if (moreExactContext == NULL)
+            {
+                moreExactContext = exactContextHnd;
+            }
+
             // Do the actual evaluation
-            impMarkInlineCandidateHelper(call, candidateId, exactContextHnd, exactContextNeedsRuntimeLookup, callInfo,
+            impMarkInlineCandidateHelper(call, candidateId, moreExactContext, exactContextNeedsRuntimeLookup, callInfo,
                                          ilOffset, &inlineResult);
             // Ignore non-inlineable candidates
             // TODO: Consider keeping them to just devirtualize without inlining, at least for interface
@@ -7815,26 +7821,10 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 
-            CORINFO_CONTEXT_HANDLE exactContextHnd = pParam->exactContextHnd;
-            if (pParam->call->IsGuardedDevirtualizationCandidate())
-            {
-                InlineCandidateInfo* candidateInfo = pParam->call->GetGDVCandidateInfo(pParam->candidateIndex);
-                if (candidateInfo->exactContextHnd != nullptr)
-                {
-                    // exactContextHnd represents the exact class the method is defined in.
-                    exactContextHnd = candidateInfo->exactContextHnd;
-                }
-                else
-                {
-                    // exactContextHnd can't be null for normal GDV class guesses
-                    assert(candidateInfo->guardedClassHandle == nullptr);
-                }
-            }
-
             // Speculatively check if initClass() can be done.
             // If it can be done, we will try to inline the method.
             CorInfoInitClassResult const initClassResult =
-                compCompHnd->initClass(nullptr /* field */, ftn /* method */, exactContextHnd /* context */);
+                compCompHnd->initClass(nullptr /* field */, ftn /* method */, pParam->exactContextHnd /* context */);
 
             if (initClassResult & CORINFO_INITCLASS_DONT_INLINE)
             {
