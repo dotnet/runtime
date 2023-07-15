@@ -1869,17 +1869,9 @@ void CodeGen::genPutArgStkFieldList(GenTreePutArgStk* putArgStk, unsigned outArg
 // argument area.
 
 #if defined(FEATURE_SIMD)
-        // storing of TYP_SIMD12 (i.e. Vector3) argument.
         if (type == TYP_SIMD12)
         {
-// Need an additional integer register to extract upper 4 bytes from data.
-#if defined(TARGET_ARM64)
-            // TODO: tmpReg can be avoided with st1 instruction on ARM64.
-            regNumber tmpReg = nextArgNode->GetSingleTempReg();
-            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, tmpReg);
-#else
-            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, nextArgNode);
-#endif
+            GetEmitter()->emitStoreSimd12ToLclOffset(outArgVarNum, thisFieldOffset, reg, nextArgNode);
         }
         else
 #endif // FEATURE_SIMD

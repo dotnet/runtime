@@ -5653,13 +5653,13 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
 // emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
 //
 // Arguments:
-//     varNum  - the variable on the stack to use as a base;
-//     offset  - the offset from the varNum;
-//     data    - the src node with SIMD12 value;
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
 //
-void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, GenTree* data)
+void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
 {
-    regNumber dataReg = data->GetRegNum();
     assert(varNum != BAD_VAR_NUM);
     assert(isFloatReg(dataReg));
 
@@ -5673,7 +5673,7 @@ void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, GenTr
     }
     else
     {
-        regNumber tmpReg = data->GetSingleTempReg();
+        regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
         assert(isFloatReg(tmpReg));
 
         // Extract upper 4 bytes from data

@@ -859,7 +859,7 @@ void emitOutputPreEpilogNOP();
 #endif // TARGET_AMD64
 
 #if defined(FEATURE_SIMD)
-void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, GenTree* data);
+void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
 #endif // FEATURE_SIMD
 
 /*****************************************************************************

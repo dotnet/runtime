@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 readonly struct Ray
 {
@@ -16,10 +18,10 @@ readonly struct Ray
     }
 }
 
-class RayTracer
+public class RayTracer
 {
     private static IEnumerable<object> hittables;
-    
+
     static RayTracer()
     {
         var list = new List<object>();
@@ -32,7 +34,8 @@ class RayTracer
     {
         Ray r = GetRay();
         Consume(r.Direction);
-        traceRay(r); 
+        traceRay(r);
+        return 100;
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -48,7 +51,8 @@ class RayTracer
 
     private static Vector3 traceRay(Ray r)
     {
-        foreach (object h in hittables) {
+        foreach (object h in hittables)
+        {
             TestHit(r);
             return Vector3.One;
         }

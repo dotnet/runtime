@@ -1008,12 +1008,12 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
 // emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
 //
 // Arguments:
-//     varNum  - the variable on the stack to use as a base;
-//     offset  - the offset from the varNum;
-//     dataReg - the src reg with SIMD12 value;
-//     tmpReg  - a tmp reg to use for the write, can be general or float.
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
 //
-void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, regNumber tmpReg)
+void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
 {
     assert(varNum != BAD_VAR_NUM);
     assert(isVectorRegister(dataReg));
@@ -1022,6 +1022,7 @@ void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber data
     emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
 
     // Extract upper 4-bytes from data
+    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
     emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
 
     // 4-byte write
