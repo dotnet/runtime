@@ -22,7 +22,7 @@ public class RayTracer
 {
     private static IEnumerable<object> hittables;
 
-    static RayTracer()
+    private static RayTracer()
     {
         var list = new List<object>();
         list.Add(new object());
@@ -44,7 +44,7 @@ public class RayTracer
         var _ = o.ToString();
     }
 
-    public static Ray GetRay()
+    private static Ray GetRay()
     {
         return new Ray(Vector3.Zero, -Vector3.UnitY);
     }
@@ -60,7 +60,7 @@ public class RayTracer
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void TestHit(Ray ray)
+    private static void TestHit(Ray ray)
     {
         return;
     }
