@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { _lookup_js_owned_object } from "./gc-handles";
-import { createPromiseController, loaderHelpers } from "./globals";
+import { createPromiseController, loaderHelpers, mono_assert } from "./globals";
 import { TaskCallbackHolder } from "./marshal-to-cs";
 import { ControllablePromise, GCHandle } from "./types/internal";
 

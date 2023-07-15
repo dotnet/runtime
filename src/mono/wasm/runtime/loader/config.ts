@@ -4,12 +4,13 @@
 import BuildConfiguration from "consts:configuration";
 import type { DotnetModuleInternal, MonoConfigInternal } from "../types/internal";
 import type { DotnetModuleConfig } from "../types";
-import { exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_WEB, exportedRuntimeAPI, loaderHelpers, runtimeHelpers } from "./globals";
 import { initializeBootConfig, loadBootConfig } from "./blazor/_Integration";
 import { BootConfigResult } from "./blazor/BootConfig";
 import { BootJsonData } from "../types/blazor";
 import { mono_log_error, mono_log_debug } from "./logging";
 import { invokeLibraryInitializers } from "./libraryInitializers";
+import { mono_exit } from "./exit";
 
 export function deep_merge_config(target: MonoConfigInternal, source: MonoConfigInternal): MonoConfigInternal {
     const providedConfig: MonoConfigInternal = { ...source };
@@ -42,6 +43,7 @@ export function normalizeConfig() {
     config.environmentVariables = config.environmentVariables || {};
     config.assets = config.assets || [];
     config.runtimeOptions = config.runtimeOptions || [];
+    loaderHelpers.assertAfterExit = config.assertAfterExit = config.assertAfterExit || !ENVIRONMENT_IS_WEB;
 
     if (config.debugLevel === undefined && BuildConfiguration === "Debug") {
         config.debugLevel = -1;
@@ -116,8 +118,8 @@ export async function mono_wasm_load_config(module: DotnetModuleInternal): Promi
         loaderHelpers.afterConfigLoaded.promise_control.resolve(loaderHelpers.config);
     } catch (err) {
         const errMessage = `Failed to load config file ${configFilePath} ${err} ${(err as Error)?.stack}`;
-        loaderHelpers.config = module.config = <any>{ message: errMessage, error: err, isError: true };
-        loaderHelpers.abort_startup(errMessage, true);
+        loaderHelpers.config = module.config = Object.assign(loaderHelpers.config, { message: errMessage, error: err, isError: true });
+        mono_exit(1, new Error(errMessage));
         throw err;
     }
 }

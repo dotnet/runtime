@@ -41,20 +41,31 @@ const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/
 const inlineAssert = [
     {
         // eslint-disable-next-line quotes
+        pattern: 'mono_check\\(([^,]*), *"([^"]*)"\\);',
+        // eslint-disable-next-line quotes
+        replacement: (match) => `if (!(${match[1]})) throw new Error("Assert failed: ${match[2]}"); // inlined mono_check`
+    },
+    {
+        // eslint-disable-next-line quotes
+        pattern: 'mono_check\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
+        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined mono_check`
+    },
+    {
+        // eslint-disable-next-line quotes
         pattern: 'mono_assert\\(([^,]*), *"([^"]*)"\\);',
         // eslint-disable-next-line quotes
-        replacement: (match) => `if (!(${match[1]})) throw new Error("Assert failed: ${match[2]}"); // inlined mono_assert`
+        replacement: (match) => `if (!(${match[1]})) mono_assert(false, "${match[2]}"); // inlined mono_assert condition`
     },
     {
         // eslint-disable-next-line quotes
         pattern: 'mono_assert\\(([^,]*), \\(\\) => *`([^`]*)`\\);',
-        replacement: (match) => `if (!(${match[1]})) throw new Error(\`Assert failed: ${match[2]}\`); // inlined mono_assert`
+        replacement: (match) => `if (!(${match[1]})) mono_assert(false, \`${match[2]}\`); // inlined mono_assert condition`
     }
 ];
 const checkAssert =
 {
-    pattern: /^\s*mono_assert/gm,
-    failure: "previous regexp didn't inline all mono_assert statements"
+    pattern: /^\s*mono_check/gm,
+    failure: "previous regexp didn't inline all mono_check statements"
 };
 const checkNoLoader =
 {
