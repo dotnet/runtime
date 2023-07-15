@@ -7,6 +7,7 @@
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <MainLibraryFileName>iOS.Device.ExportManagedSymbols.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
@@ -14,12 +15,12 @@
     <MonoEnableLLVM>true</MonoEnableLLVM>
     <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
 
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>Link</TrimMode>
+    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
+    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
 
-    <AppName>HelloiOS</AppName>
     <SelfContained>true</SelfContained>
-    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,12 +14,12 @@
     <ExpectedExitCode>42</ExpectedExitCode>
     <MonoEnableLLVM>true</MonoEnableLLVM>
 
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>Link</TrimMode>
+    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
+    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
 
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
-    <ShouldILStrip>true</ShouldILStrip>
+    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
 
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
   </PropertyGroup>
