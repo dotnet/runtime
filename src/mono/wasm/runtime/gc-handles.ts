@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 import BuildConfiguration from "consts:configuration";
 
-import { loaderHelpers, runtimeHelpers } from "./globals";
+import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { fn_wrapper_by_fn_handle } from "./invoke-js";
 import { mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
@@ -172,7 +172,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 const promise_control = loaderHelpers.getPromiseController(obj);
                 if (promise_control) {
                     promise_control.reject(new Error("WebWorker which is origin of the Task is being terminated."));
-            }
+                }
                 if (typeof obj.dispose === "function") {
                     obj.dispose();
                 }
