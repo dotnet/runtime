@@ -293,6 +293,13 @@ public sealed partial class QuicStream
             if (complete)
             {
                 _receiveTcs.TrySetResult(final: true);
+                unsafe
+                {
+                    // Confirm the last data which came with the FIN flag.
+                    MsQuicApi.Api.StreamReceiveComplete(
+                        _handle,
+                        (ulong)lastReceiveSize);
+                }
             }
 
             // Unblock the next await to end immediately, i.e. there were/are any data in the buffer.
@@ -516,6 +523,9 @@ public sealed partial class QuicStream
             (int)data.TotalBufferLength,
             data.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN));
 
+        // If we copied all the data and also received FIN flag, postpone the confirmation of the data until they are consumed.
+        bool lastReceive = (totalCopied == data.TotalBufferLength) && data.Flags.HasFlag(QUIC_RECEIVE_FLAGS.FIN);
+
         if (totalCopied < data.TotalBufferLength)
         {
             Volatile.Write(ref _receivedNeedsEnable, 1);
@@ -524,7 +534,7 @@ public sealed partial class QuicStream
         _receiveTcs.TrySetResult();
 
         data.TotalBufferLength = totalCopied;
-        return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : QUIC_STATUS_SUCCESS;
+        return (_receiveBuffers.HasCapacity() && Interlocked.CompareExchange(ref _receivedNeedsEnable, 0, 1) == 1) ? QUIC_STATUS_CONTINUE : lastReceive ? QUIC_STATUS_PENDING : QUIC_STATUS_SUCCESS;
     }
     private unsafe int HandleEventSendComplete(ref SEND_COMPLETE_DATA data)
     {

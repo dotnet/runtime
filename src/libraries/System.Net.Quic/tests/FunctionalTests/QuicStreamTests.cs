@@ -1208,5 +1208,89 @@ namespace System.Net.Quic.Tests
                 }
             );
         }
+
+        [Theory]
+        [InlineData(1, true, true)]
+        [InlineData(1024, true, true)]
+        [InlineData(1024*1024*1024, true, true)]
+        [InlineData(1, true, false)]
+        [InlineData(1024, true, false)]
+        [InlineData(1024*1024*1024, true, false)]
+        [InlineData(1, false, true)]
+        [InlineData(1024, false, true)]
+        [InlineData(1024*1024*1024, false, true)]
+        [InlineData(1, false, false)]
+        [InlineData(1024, false, false)]
+        [InlineData(1024*1024*1024, false, false)]
+        public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool closeConnection)
+        {
+            using var logger = new TestUtilities.TestEventListener(_output, "Private.InternalDiagnostics.System.Net.Quic");
+            await RunClientServer(
+                serverFunction: async connection =>
+                {
+                    long expectedErrorCode = closeConnection ? DefaultCloseErrorCodeClient : DefaultStreamErrorCodeClient;
+                    QuicError expectedError = closeConnection ? QuicError.ConnectionAborted : QuicError.StreamAborted;
+                    await using QuicStream stream = await connection.AcceptInboundStreamAsync();
+                    await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
+                    if (closeServer)
+                    {
+                        expectedError = QuicError.OperationAborted;
+                        if (closeConnection)
+                        {
+                            expectedErrorCode = DefaultCloseErrorCodeServer;
+                            await connection.DisposeAsync();
+                        }
+                        else
+                        {
+                            expectedErrorCode = DefaultStreamErrorCodeServer;
+                            await stream.DisposeAsync();
+                        }
+                    }
+
+                    _output.WriteLine($"Server {stream} ReadsClosed={stream.ReadsClosed.Status}");
+                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
+                    if (expectedError == QuicError.OperationAborted)
+                    {
+                        Assert.Null(ex.ApplicationErrorCode);
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                    }
+                },
+                clientFunction: async connection =>
+                {
+                    long expectedErrorCode = closeConnection ? DefaultCloseErrorCodeServer : DefaultStreamErrorCodeServer;
+                    QuicError expectedError = closeConnection ? QuicError.ConnectionAborted : QuicError.StreamAborted;
+                    await using QuicStream stream = await connection.OpenOutboundStreamAsync(QuicStreamType.Bidirectional);
+                    await stream.WriteAsync(new byte[payloadSize], completeWrites: true);
+                    if (!closeServer)
+                    {
+                        expectedError = QuicError.OperationAborted;
+                        if (closeConnection)
+                        {
+                            expectedErrorCode = DefaultCloseErrorCodeClient;
+                            await connection.DisposeAsync();
+                        }
+                        else
+                        {
+                            expectedErrorCode = DefaultStreamErrorCodeClient;
+                            await stream.DisposeAsync();
+                        }
+                    }
+
+                    _output.WriteLine($"Client {stream} ReadsClosed={stream.ReadsClosed.Status}");
+                    var ex = await AssertThrowsQuicExceptionAsync(expectedError, () => stream.ReadsClosed);
+                    if (expectedError == QuicError.OperationAborted)
+                    {
+                        Assert.Null(ex.ApplicationErrorCode);
+                    }
+                    else
+                    {
+                        Assert.Equal(expectedErrorCode, ex.ApplicationErrorCode);
+                    }
+                }
+            );
+        }
     }
 }
