@@ -13,6 +13,7 @@
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <MonoEnableLLVM>true</MonoEnableLLVM>
+    <UseTestRunner>false</UseTestRunner>
 
     <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
     <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
