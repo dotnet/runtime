@@ -1230,6 +1230,30 @@ void CodeGen::inst_RV_RV_TT(
     if (IsEmbBroadcast)
     {
         instOptions = INS_OPTS_EVEX_b;
+        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        {
+            switch (ins)
+            {
+                case INS_pand:
+                    ins = INS_vpandq;
+                    break;
+
+                case INS_pandn:
+                    ins = INS_vpandnq;
+                    break;
+
+                case INS_por:
+                    ins = INS_vporq;
+                    break;
+
+                case INS_pxor:
+                    ins = INS_vpxorq;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
     OperandDesc op2Desc = genOperandDesc(op2);

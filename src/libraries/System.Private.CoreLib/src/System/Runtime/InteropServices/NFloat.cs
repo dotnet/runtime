@@ -1851,6 +1851,24 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.CosPi(TSelf)" />
         public static NFloat CosPi(NFloat x) => new NFloat(NativeType.CosPi(x._value));
 
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.DegreesToRadians(TSelf)" />
+        public static NFloat DegreesToRadians(NFloat degrees)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return new NFloat(NativeType.DegreesToRadians(degrees._value));
+        }
+
+        /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.RadiansToDegrees(TSelf)" />
+        public static NFloat RadiansToDegrees(NFloat radians)
+        {
+            // NOTE: Don't change the algorithm without consulting the DIM
+            // which elaborates on why this implementation was chosen
+
+            return new NFloat(NativeType.RadiansToDegrees(radians._value));
+        }
+
         /// <inheritdoc cref="ITrigonometricFunctions{TSelf}.Sin(TSelf)" />
         public static NFloat Sin(NFloat x) => new NFloat(NativeType.Sin(x._value));
 

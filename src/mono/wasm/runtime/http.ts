@@ -2,15 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { wrap_as_cancelable_promise } from "./cancelable-promise";
-import { Module, loaderHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, Module, loaderHelpers } from "./globals";
 import { MemoryViewType, Span } from "./marshal";
 import type { VoidPtr } from "./types/emscripten";
+
+
+function verifyEnvironment() {
+    if (typeof globalThis.fetch !== "function" || typeof globalThis.AbortController !== "function") {
+        const message = ENVIRONMENT_IS_NODE
+            ? "Please install `node-fetch` and `node-abort-controller` npm packages to enable HTTP client support."
+            : "This browser doesn't support fetch API. Please use a modern browser.";
+        throw new Error(message);
+    }
+}
 
 export function http_wasm_supports_streaming_response(): boolean {
     return typeof Response !== "undefined" && "body" in Response.prototype && typeof ReadableStream === "function";
 }
 
 export function http_wasm_create_abort_controler(): AbortController {
+    verifyEnvironment();
     return new AbortController();
 }
 
@@ -38,6 +49,7 @@ export function http_wasm_fetch_bytes(url: string, header_names: string[], heade
 }
 
 export function http_wasm_fetch(url: string, header_names: string[], header_values: string[], option_names: string[], option_values: any[], abort_controller: AbortController, body: string | Uint8Array | null): Promise<ResponseExtension> {
+    verifyEnvironment();
     mono_assert(url && typeof url === "string", "expected url string");
     mono_assert(header_names && header_values && Array.isArray(header_names) && Array.isArray(header_values) && header_names.length === header_values.length, "expected headerNames and headerValues arrays");
     mono_assert(option_names && option_values && Array.isArray(option_names) && Array.isArray(option_values) && option_names.length === option_values.length, "expected headerNames and headerValues arrays");
