@@ -28,6 +28,7 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonCamelCaseNamingPolicy.cs" Link="Common\System\Text\Json\JsonCamelCaseNamingPolicy.cs" />
     <Compile Include="..\Common\JsonNamingPolicy.cs" Link="Common\System\Text\Json\JsonNamingPolicy.cs" />
     <Compile Include="..\Common\JsonAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonAttribute.cs" />
+    <Compile Include="..\Common\JsonCommentHandling.cs" Link="Common\System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="..\Common\JsonConstants.cs" Link="Common\System\Text\Json\JsonConstants.cs" />
     <Compile Include="..\Common\JsonHelpers.cs" Link="Common\System\Text\Json\JsonHelpers.cs" />
     <Compile Include="..\Common\JsonIgnoreCondition.cs" Link="Common\System\Text\Json\Serialization\JsonIgnoreCondition.cs" />
@@ -39,10 +40,12 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="..\Common\JsonUnmappedMemberHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnmappedMemberHandling.cs" />
     <Compile Include="..\Common\JsonSeparatorNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSeparatorNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSerializableAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSerializableAttribute.cs" />
+    <Compile Include="..\Common\JsonSerializerDefaults.cs" Link="Common\System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
     <Compile Include="..\Common\JsonSnakeCaseLowerNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseLowerNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSnakeCaseUpperNamingPolicy.cs" Link="Common\System\Text\Json\Serialization\JsonSnakeCaseUpperNamingPolicy.cs" />
     <Compile Include="..\Common\JsonSourceGenerationMode.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationMode.cs" />
     <Compile Include="..\Common\JsonSourceGenerationOptionsAttribute.cs" Link="Common\System\Text\Json\Serialization\JsonSourceGenerationOptionsAttribute.cs" />
+    <Compile Include="..\Common\JsonUnknownTypeHandling.cs" Link="Common\System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="..\Common\ReflectionExtensions.cs" Link="Common\System\Text\Json\Serialization\ReflectionExtensions.cs" />
     <Compile Include="..\Common\ThrowHelper.cs" Link="Common\System\Text\Json\ThrowHelper.cs" />
     <Compile Include="System\Text\Json\AppContextSwitchHelper.cs" />
@@ -61,7 +64,6 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Document\JsonElement.Parse.cs" />
     <Compile Include="System\Text\Json\Document\JsonProperty.cs" />
     <Compile Include="System\Text\Json\Document\JsonValueKind.cs" />
-    <Compile Include="System\Text\Json\JsonCommentHandling.cs" />
     <Compile Include="System\Text\Json\JsonConstants.cs" />
     <Compile Include="System\Text\Json\JsonEncodedText.cs" />
     <Compile Include="System\Text\Json\JsonException.cs" />
@@ -249,12 +251,10 @@ The System.Text.Json library is built-in as part of the shared framework in .NET
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Stream.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.String.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializer.Write.Utf8JsonWriter.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonSerializerDefaults.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Caching.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.Converters.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptions.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonStringEnumConverter.cs" />
-    <Compile Include="System\Text\Json\Serialization\JsonUnknownTypeHandling.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\FSharpCoreReflectionProxy.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonCollectionInfoValuesOfTCollection.cs" />
     <Compile Include="System\Text\Json\Serialization\Metadata\JsonMetadataServices.Collections.cs" />

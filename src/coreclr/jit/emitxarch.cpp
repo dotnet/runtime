@@ -6081,6 +6081,30 @@ bool emitter::IsJmpInstruction(instruction ins)
     return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
+//------------------------------------------------------------------------
+// IsBitwiseInstruction: Determine if an instruction is a bit-wise instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsBitwiseInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_pand:
+        case INS_pandn:
+        case INS_por:
+        case INS_pxor:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
 // is not an important detail, such as when "regular" floating-point code is generated
 //

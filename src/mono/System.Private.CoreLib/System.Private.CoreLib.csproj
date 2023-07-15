@@ -205,6 +205,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Reflection\LoaderAllocator.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MemberInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Reflection\RuntimeAssembly.cs" />
@@ -248,6 +249,7 @@
       <Compile Include="$(BclSourcesRoot)\System\Resources\ManifestBasedResourceGroveler.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\ControlledExecution.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\DependentHandle.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Runtime\GCFrameRegistration.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\GCSettings.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\JitInfo.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Runtime\CompilerServices\JitHelpers.cs" />

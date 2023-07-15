@@ -3,7 +3,7 @@
 
 import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";

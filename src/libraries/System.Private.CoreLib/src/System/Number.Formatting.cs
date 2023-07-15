@@ -3605,7 +3605,7 @@ namespace System
         }
 
         /// <summary>Appends a char to the builder when the char is not known to be ASCII.</summary>
-        /// <remarks>This requires a helper as if the character isn't ASCII, for UTF8 encoding it will result in multiple bytes added.</remarks>
+        /// <remarks>This requires a helper as if the character isn't ASCII, for UTF-8 encoding it will result in multiple bytes added.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void AppendUnknownChar<TChar>(ref ValueListBuilder<TChar> vlb, char ch) where TChar : unmanaged, IUtfChar<TChar>
         {
