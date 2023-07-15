@@ -370,7 +370,7 @@
             string value = item.ItemSpec;
             
             // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME environment parameter to the run script
-            string output = lastLine.Replace("--signal-app-end", $"--signal-app-end --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}");
+            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}");
             resultBuilder.AppendLine(output);
 
             // Rename the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
