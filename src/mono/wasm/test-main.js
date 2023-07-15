@@ -259,6 +259,7 @@ function configureRuntime(dotnet, runArgs) {
         .withExitOnUnhandledError()
         .withExitCodeLogging()
         .withElementOnExit()
+        .withAssertAfterExit()
         .withConfig({
             loadAllSatelliteResources: true
         });
