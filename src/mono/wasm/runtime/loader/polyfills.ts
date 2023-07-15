@@ -4,7 +4,7 @@
 import MonoWasmThreads from "consts:monoWasmThreads";
 
 import type { DotnetModuleInternal } from "../types/internal";
-import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB } from "./globals";
+import { INTERNAL, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, ENVIRONMENT_IS_WEB, mono_assert } from "./globals";
 
 let node_fs: any | undefined = undefined;
 let node_url: any | undefined = undefined;

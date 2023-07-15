@@ -3,7 +3,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
@@ -1880,7 +1880,7 @@ export function bytesFromHex(hex: string): Uint8Array {
     return bytes;
 }
 
-let observedTaintedZeroPage : boolean | undefined;
+let observedTaintedZeroPage: boolean | undefined;
 
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
