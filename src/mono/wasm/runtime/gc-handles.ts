@@ -6,7 +6,7 @@ import BuildConfiguration from "consts:configuration";
 
 import { loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { fn_wrapper_by_fn_handle } from "./invoke-js";
-import { mono_log_warn } from "./logging";
+import { mono_log_info, mono_log_warn } from "./logging";
 import { bound_cs_function_symbol, imported_js_function_symbol, proxy_debug_symbol } from "./marshal";
 import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "./types/internal";
 import { _use_weak_ref, create_weak_ref } from "./weak-ref";
@@ -146,9 +146,13 @@ export function assertNoProxies(): void {
 // when we arrive here, the C# side is already done with the object. 
 // We don't have to call back to release them.
 export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): void {
-    if (!MonoWasmThreads) return;
     let keepSomeCsAlive = false;
     let keepSomeJsAlive = false;
+
+    let doneImports = 0;
+    let doneExports = 0;
+    let doneGCHandles = 0;
+    let doneJSHandles = 0;
     // dispose all proxies to C# objects
     const gc_handles = [..._js_owned_object_table.keys()];
     for (const gc_handle of gc_handles) {
@@ -180,6 +184,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                     obj[js_owned_gc_handle_symbol] = GCHandleNull;
                 }
                 if (!_use_weak_ref && wr) wr.dispose();
+                doneGCHandles++;
             } else {
                 keepSomeCsAlive = true;
             }
@@ -219,6 +224,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 if (obj[cs_owned_js_handle_symbol] === js_handle) {
                     obj[cs_owned_js_handle_symbol] = undefined;
                 }
+                doneJSHandles++;
             } else {
                 keepSomeJsAlive = true;
             }
@@ -237,6 +243,7 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 const closure = (<any>bound_fn)[imported_js_function_symbol];
                 if (closure) {
                     closure.disposed = true;
+                    doneImports++;
                 }
             }
         }
@@ -250,9 +257,11 @@ export function forceDisposeProxies(disposeMethods: boolean, verbose: boolean): 
                 const closure = bound_fn[bound_cs_function_symbol];
                 if (closure) {
                     closure.disposed = true;
+                    doneExports++;
                 }
             }
         }
         exportsByAssembly.clear();
     }
+    mono_log_info(`forceDisposeProxies done: ${doneImports} imports, ${doneExports} exports, ${doneGCHandles} GCHandles, ${doneJSHandles} JSHandles.`);
 }

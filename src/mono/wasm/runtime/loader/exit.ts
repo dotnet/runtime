@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
-import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix } from "./logging";
+import { mono_log_debug, consoleWebSocket, mono_log_error, mono_log_info_no_prefix, mono_log_warn } from "./logging";
 
 export function is_exited() {
     return loaderHelpers.exitCode !== undefined;
@@ -45,7 +45,6 @@ export function mono_exit(exit_code: number, reason?: any): void {
 
     if (!is_exited()) {
         try {
-            reason.stack;
             if (!runtimeHelpers.runtimeReady) {
                 mono_log_debug("abort_startup, reason: " + reason);
                 abort_promises(reason);
@@ -57,8 +56,9 @@ export function mono_exit(exit_code: number, reason?: any): void {
                 runtimeHelpers.forceDisposeProxies(true, true);
             }
         }
-        catch {
-            // ignore any failures
+        catch (err) {
+            mono_log_warn("mono_exit failed", err);
+            // don't propagate any failures
         }
 
         loaderHelpers.exitCode = exit_code;
