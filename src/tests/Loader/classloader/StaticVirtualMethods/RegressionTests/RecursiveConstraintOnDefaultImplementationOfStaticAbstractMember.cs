@@ -1,18 +1,26 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace GitHub_79603
+using Xunit;
+
+// This test comes from https://github.com/dotnet/runtime/issues/79603
+namespace RecursiveConstraintOnDefaultImplementationOfStaticAbstractMember
 {
-    internal class Program
+    public class Tests
     {
-        static int Main(string[] args)
+        [Fact]
+        public static void AbstractClass()
         {
-           //both calls leads to crash BEFORE "Main" even got called.
             _ = typeof(Buggyclass).TypeHandle;
+        }
+
+        [Fact]
+        public static void ImplClass()
+        {
             _ = new C2();
-            return 100;
         }
     }
+
     public interface IFactory<TSelf> where TSelf : IFactory<TSelf>
     {
         static abstract TSelf Create();
