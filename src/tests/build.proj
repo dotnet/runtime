@@ -328,6 +328,8 @@
       <PublishDir>$(BuildDir)/</PublishDir>
       <TestProjectName>$(AssemblyName)</TestProjectName>
       <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
+      <!-- FIXME: Don't hardcode tests that require runtime components -->
+      <UseRuntimeComponents Condition="'$(Category)' == 'tracing_eventpipe'">true</UseRuntimeComponents>
     </PropertyGroup>
 
     <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)">
