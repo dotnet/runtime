@@ -394,12 +394,12 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             comp->lvaSetVarDoNotEnregister(srcLclNum DEBUGARG(DoNotEnregisterReason::StoreBlkSrc));
         }
 
-        ClassLayout* layout  = blkNode->GetLayout();
-        bool         doCpObj = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        ClassLayout* layout               = blkNode->GetLayout();
+        bool         doCpObj              = !blkNode->OperIs(GT_STORE_DYN_BLK) && layout->HasGCPtr();
+        unsigned     copyBlockUnrollLimit = comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false);
 
 #ifndef JIT32_GCENCODER
-        if (doCpObj &&
-            (size <= comp->getUnrollThreshold(Compiler::UnrollKind::Memcpy, false)))
+        if (doCpObj && (size <= copyBlockUnrollLimit))
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.

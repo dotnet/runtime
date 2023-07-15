@@ -552,8 +552,6 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
     GenTree* src     = blkNode->Data();
     unsigned size    = blkNode->Size();
 
-    const bool isDstAddrLocal = dstAddr->OperIs(GT_LCL_ADDR);
-
     if (blkNode->OperIsInitBlkOp())
     {
         if (src->OperIs(GT_INIT_VAL))
@@ -625,7 +623,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         {
             // No write barriers are needed on the stack.
             // If the layout contains a byref, then we know it must live on the stack.
-            if (isDstAddrLocal || layout->HasGCByRef())
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
             {
                 // If the size is small enough to unroll then we need to mark the block as non-interruptible
                 // to actually allow unrolling. The generated code does not report GC references loaded in the
