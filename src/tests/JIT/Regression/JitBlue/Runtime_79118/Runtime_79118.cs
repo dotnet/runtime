@@ -22,7 +22,7 @@ public class RayTracer
 {
     private static IEnumerable<object> hittables;
 
-    private static RayTracer()
+    static RayTracer()
     {
         var list = new List<object>();
         list.Add(new object());
