@@ -70,6 +70,8 @@
       <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
       <ExtraLinkerArguments Include="@(LinkerArg)" />
       <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
+      <_ExcludeFromAppDir Include=".dll" />
+      <_ExcludeFromAppDir Include=".json" />
     </ItemGroup>
 
     <RemoveDir Directories="$(AppDir)" />
@@ -89,7 +91,8 @@
         InvariantGlobalization="$(InvariantGlobalization)"
         EnableAppSandbox="$(EnableAppSandbox)"
         StripSymbolTable="$(StripDebugSymbols)"
-        AppDir="$(MSBuildThisFileDirectory)$(OutputPath)" 
+        AppDir="$(MSBuildThisFileDirectory)$(OutputPath)"
+        ExcludeFromAppDir="@(_ExcludeFromAppDir)"
         ExtraLinkerArguments="@(ExtraLinkerArguments)" >
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
