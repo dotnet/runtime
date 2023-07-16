@@ -1,7 +1,6 @@
 ## About
 
-Provides a programming interface for modern HTTP applications, including HTTP client components that allow applications to consume web services over HTTP and HTTP components that can be used by both clients and servers for parsing HTTP headers.
+The package is obsolete and not necessary. It should NOT be used. If you use it anyway (e.g. due to dependencies out of your control), it won't cause you any harm.
 
-**NOTE:** System.Net.Http package is obsolete. You don't need to reference this package in your projects, because HTTP API is included in the shared framework. It is only provided for backwards compatibility.
-
-For more information about HTTP API, see [System.Net.Http namespace](https://learn.microsoft.com/en-us/dotnet/api/system.net.http).
+It is a result of failed attempt from 2016 to deliver value to .NET Framework customers outside of official .NET Framework updates. Later we realized it causes more troubles we didn't foresee, therefore we stopped shipping it for .NET Core entirely (the package will just forward to the in-box implementation) and on .NET Framework we made it exact copy of in-box code. As a result, using it does not bring any value, but does not cause any harm either.
+For more details, see [comment on GitHub issue dotnet/runtime#20777](https://github.com/dotnet/runtime/issues/20777#issuecomment-338418610)
