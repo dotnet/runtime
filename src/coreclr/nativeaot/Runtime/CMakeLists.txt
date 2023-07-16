@@ -23,7 +23,6 @@ set(COMMON_RUNTIME_SOURCES
     TypeManager.cpp
     ObjectLayout.cpp
     portable.cpp
-    profheapwalkhelper.cpp
     RestrictedCallouts.cpp
     RhConfig.cpp
     RuntimeInstance.cpp
@@ -111,8 +110,6 @@ if (WIN32)
     windows/PalRedhawkCommon.cpp
     windows/PalRedhawkMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
-    eventtrace.cpp
-    rheventtrace.cpp
   )
 
   list(APPEND FULL_RUNTIME_SOURCES windows/CoffNativeCodeManager.cpp)
@@ -242,6 +239,7 @@ add_definitions(-D_LIB)
 # add_definitions(-DSTRESS_HEAP)
 
 if(WIN32)
+  set(FEATURE_ETW 1)
   add_definitions(-DFEATURE_ETW)
   add_definitions(-DFEATURE_SUSPEND_REDIRECTION)
   add_definitions(-DFEATURE_SPECIAL_USER_MODE_APC)

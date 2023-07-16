@@ -11,9 +11,9 @@
       Public properties (optional):
       - $(WasmAppDir)        - AppBundle dir (Defaults to `$(OutputPath)\$(Configuration)\AppBundle`)
       - $(WasmMainAssemblyFileName)- Defaults to $(TargetFileName)
-      - $(WasmBuildNative)   - Whenever to build the native executable. Defaults to false.
-      - $(WasmNativeStrip)   - Whenever to strip the native executable. Defaults to true.
-      - $(WasmLinkIcalls)    - Whenever to link out unused icalls. Defaults to $(WasmBuildNative).
+      - $(WasmBuildNative)   - Whether to build the native executable. Defaults to false.
+      - $(WasmNativeStrip)   - Whether to strip the native executable. Defaults to true.
+      - $(WasmLinkIcalls)    - Whether to link out unused icalls. Defaults to $(WasmBuildNative).
       - $(RunAOTCompilation) - Defaults to false.
 
       - $(WasmDebugLevel)
@@ -24,11 +24,12 @@
       - $(WasmNativeDebugSymbols) - Build with native debug symbols, useful only with `$(RunAOTCompilation)`, or `$(WasmBuildNative)`
                                     Defaults to true.
       - $(WasmEmitSymbolMap)      - Generates a `dotnet.js.symbols` file with a map of wasm function number to name.
-      - $(WasmDedup)         - Whenever to dedup generic instances when using AOT. Defaults to true.
+      - $(WasmDedup)         - Whether to dedup generic instances when using AOT. Defaults to true.
 
       - $(WasmProfilers)     - Profilers to use
       - $(AOTProfilePath)    - profile data file to be used for profile-guided optimization
-      - $(InvariantGlobalization)       - Whenever to disable ICU. Defaults to false.
+      - $(InvariantGlobalization)       - Whether to disable ICU. Defaults to false.
+      - $(InvariantTimezone)            - Whether to disable Timezone database. Defaults to false.
 
       - $(WasmResolveAssembliesBeforeBuild) - Resolve the assembly dependencies. Defaults to false
       - $(WasmAssemblySearchPaths)          - used for resolving assembly dependencies
@@ -119,6 +120,7 @@
     <WasmSingleFileBundle Condition="'$(WasmSingleFileBundle)' == ''">false</WasmSingleFileBundle>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmSingleFileBundle)' == 'true'">true</WasmBuildNative>
     <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantGlobalization)' == 'true'">true</WasmBuildNative>
+    <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(InvariantTimezone)' == 'true'">true</WasmBuildNative>
 
     <WasiBundleAssemblies Condition="'$(WasiBundleAssemblies)' == ''">true</WasiBundleAssemblies>
     <WasiRunner Condition="'$(WasiRunner)' == ''">wasmtime</WasiRunner>

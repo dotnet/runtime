@@ -1047,6 +1047,7 @@ arm_encode_arith_imm (int imm, guint32 *shift)
 
 /* NEON :: move SIMD register*/
 #define arm_neon_mov(p, rd, rn) arm_neon_orr ((p), VREG_FULL, (rd), (rn), (rn))
+#define arm_neon_mov_8b(p, rd, rn) arm_neon_orr ((p), VREG_LOW, (rd), (rn), (rn))
 
 /* NEON :: AES */ 
 #define arm_neon_aes_opcode(p, size, opcode, rd, rn) arm_neon_opcode_2reg ((p), VREG_FULL, 0b00001110001010000000100000000000 | (size) << 22 | (opcode) << 12, (rd), (rn))

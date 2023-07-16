@@ -35,7 +35,7 @@ namespace System.Diagnostics.CodeAnalysis
         }
 
         /// <summary>
-        ///  Gets or sets the ID that the compiler will use when reporting a use of the API the attribute applies to.
+        ///  Gets the ID that the compiler will use when reporting a use of the API the attribute applies to.
         /// </summary>
         /// <value>The unique diagnostic ID.</value>
         /// <remarks>

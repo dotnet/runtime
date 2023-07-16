@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#ifdef TARGET_WINDOWS
+#include <windows.h>
+#else
+#include <stdlib.h>
+#endif
+
 #include <sys/types.h>
 
 #ifdef __APPLE__
@@ -225,6 +231,21 @@ ep_on_error:
 
 #else
     return true;
+#endif
+}
+
+uint32_t
+ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
+{
+#ifdef TARGET_UNIX
+    ep_char8_t *nameNarrow = ep_rt_utf16le_to_utf8_string (name, ep_rt_utf16_string_len (name));
+    ep_char8_t *valueNarrow = ep_rt_utf16le_to_utf8_string (value, ep_rt_utf16_string_len (value));
+    int32_t ret_value = setenv(nameNarrow, valueNarrow, 1);
+    free(nameNarrow);
+    free(valueNarrow);
+    return ret_value;
+#else
+    return SetEnvironmentVariableW(reinterpret_cast<LPCWSTR>(name), reinterpret_cast<LPCWSTR>(value)) ? S_OK : HRESULT_FROM_WIN32(GetLastError());
 #endif
 }
 #endif /* ENABLE_PERFTRACING */

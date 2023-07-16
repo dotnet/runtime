@@ -649,7 +649,7 @@ bool emitter::emitInsMayWriteMultipleRegs(instrDesc* id)
  *  Return a string that represents the given register.
  */
 
-const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr attr, bool varName) const
 {
     assert(reg < REG_COUNT);
 

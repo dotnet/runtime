@@ -155,7 +155,7 @@ compare_utf8_to_utf16_explicit (const gunichar2 *expected, const gchar *utf8, gl
 
 	gerror = NULL;
 	if (include_nuls)
-		ret = eg_utf8_to_utf16_with_nuls (utf8, size_spec, &in_read, &out_read, &gerror);
+		ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &gerror);
 	else
 		ret = g_utf8_to_utf16 (utf8, size_spec, &in_read, &out_read, &gerror);
 
@@ -271,7 +271,7 @@ test_utf8_to_utf16_with_nuls (void)
 #endif
 
 	/* implicit length is forbidden */
-		if (eg_utf8_to_utf16_with_nuls (src1, -1, NULL, NULL, NULL) != NULL)
+		if (g_utf8_to_utf16 (src1, -1, NULL, NULL, NULL) != NULL)
 		return FAILED ("explicit nulls must fail with -1 length\n");
 
 	/* empty string */
@@ -699,7 +699,7 @@ utf8_byteslen (const gchar *src)
 static Test utf8_tests [] = {
 	{"g_utf16_to_utf8", test_utf16_to_utf8},
 	{"g_utf8_to_utf16", test_utf8_to_utf16},
-	{"g_utf8_to_utf16_with_nuls", test_utf8_to_utf16_with_nuls},
+	{"g_utf8_to_utf16_nuls", test_utf8_to_utf16_with_nuls},
 	{"g_utf8_seq", test_utf8_seq},
 	{"g_ucs4_to_utf16", test_ucs4_to_utf16 },
 	{"g_utf16_to_ucs4", test_utf16_to_ucs4 },

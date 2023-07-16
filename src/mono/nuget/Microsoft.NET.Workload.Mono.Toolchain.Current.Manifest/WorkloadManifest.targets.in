@@ -141,6 +141,15 @@
     <_KnownWebAssemblySdkPackVersion>$(_RuntimePackInWorkloadVersionCurrent)</_KnownWebAssemblySdkPackVersion>
   </PropertyGroup>
 
+  <!-- Support for "browser" target platform identifier -->
+  <PropertyGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <TargetPlatformSupported>true</TargetPlatformSupported>
+    <TargetPlatformVersion Condition="'$(TargetPlatformVersion)' == ''">1.0</TargetPlatformVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and $([MSBuild]::VersionGreaterThanOrEquals('$(TargetFrameworkVersion)', '8.0'))">
+    <SdkSupportedTargetPlatformVersion Include="1.0" />
+  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetsCurrent)' == 'true' and '$(_MonoWorkloadTargetsMobile)' == 'true'">
     <KnownRuntimePack Update="@(KnownRuntimePack)">
       <!-- FIXMEWASI: workaround for now -->
@@ -149,7 +158,6 @@
       <LatestRuntimeFrameworkVersion Condition="'%(KnownRuntimePack.TargetFramework)' == '${NetCoreAppCurrent}' and '%(KnownRuntimePack.RuntimePackLabels)' == 'Mono'">$(_MonoWorkloadRuntimePackPackageVersion)</LatestRuntimeFrameworkVersion>
       <!-- Overrides for wasm threading support -->
       <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnableThreads)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.multithread.**RID**</RuntimePackNamePatterns>
-      <RuntimePackNamePatterns Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(WasmEnablePerfTracing)' == 'true'">Microsoft.NETCore.App.Runtime.Mono.perftrace.**RID**</RuntimePackNamePatterns>
     </KnownRuntimePack>
     <KnownWebAssemblySdkPack Update="@(KnownWebAssemblySdkPack)">
       <WebAssemblySdkPackVersion Condition="'%(KnownWebAssemblySdkPack.TargetFramework)' == '${NetCoreAppCurrent}'">$(_KnownWebAssemblySdkPackVersion)</WebAssemblySdkPackVersion>

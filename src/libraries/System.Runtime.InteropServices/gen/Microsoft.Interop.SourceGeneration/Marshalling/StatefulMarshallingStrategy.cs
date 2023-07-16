@@ -1,9 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -433,6 +431,12 @@ namespace Microsoft.Interop
                     PredefinedType(Token(SyntaxKind.IntKeyword)),
                     SingletonSeparatedList(
                         VariableDeclarator(numElementsIdentifier))));
+
+            var elementsSetup = _elementsMarshalling.GenerateSetupStatement(info, context);
+            if (elementsSetup is not EmptyStatementSyntax)
+            {
+                yield return elementsSetup;
+            }
             // Use the numElements local to ensure the compiler doesn't give errors for using an uninitialized variable.
             // The value will never be used unless it has been initialized, so this is safe.
             yield return MarshallerHelpers.SkipInitOrDefaultInit(
@@ -456,7 +460,7 @@ namespace Microsoft.Interop
             {
                 // If the parameter is marshalled by-value [Out], then we don't marshal the contents of the collection.
                 // We do clear the span, so that if the invoke target doesn't fill it, we aren't left with undefined content.
-                yield return _elementsMarshalling.GenerateClearUnmanagedValuesSource(info, context);
+                yield return _elementsMarshalling.GenerateClearManagedValuesDestination(info, context);
                 yield break;
             }
 

@@ -217,6 +217,10 @@ namespace System.Collections.Immutable.Tests
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);
 
+            queue = ImmutableQueue.Create((ReadOnlySpan<int>)new[] { 1, 2 });
+            Assert.False(queue.IsEmpty);
+            Assert.Equal(new[] { 1, 2 }, queue);
+
             queue = ImmutableQueue.CreateRange((IEnumerable<int>)new[] { 1, 2 });
             Assert.False(queue.IsEmpty);
             Assert.Equal(new[] { 1, 2 }, queue);

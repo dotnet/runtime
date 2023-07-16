@@ -586,7 +586,11 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 EMSCRIPTEN_KEEPALIVE void
 mono_wasm_execute_timer (void)
 {
-	g_assert (timer_handler);
+	// callback could be null if timer was never used by the application, but only by prevent_timer_throttling_tick()
+	if (timer_handler==NULL) {
+		return;
+	}
+
 	background_job_cb cb = timer_handler;
 	cb ();
 }

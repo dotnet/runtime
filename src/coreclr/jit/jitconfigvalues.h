@@ -235,6 +235,7 @@ CONFIG_INTEGER(JitDumpFgBlockFlags, W("JitDumpFgBlockFlags"), 0) // 0 == don't d
 CONFIG_INTEGER(JitDumpFgLoopFlags, W("JitDumpFgLoopFlags"), 0)   // 0 == don't display loop flags; 1 == display flags
 CONFIG_INTEGER(JitDumpFgBlockOrder, W("JitDumpFgBlockOrder"), 0) // 0 == bbNext order;  1 == bbNum order; 2 == bbID
                                                                  // order
+CONFIG_INTEGER(JitDumpFgMemorySsa, W("JitDumpFgMemorySsa"), 0)   // non-zero: show memory phis + SSA/VNs
 
 CONFIG_STRING(JitLateDisasmTo, W("JITLateDisasmTo"))
 CONFIG_STRING(JitRange, W("JitRange"))
@@ -298,7 +299,7 @@ CONFIG_INTEGER(JitStressEvexEncoding, W("JitStressEvexEncoding"), 0) // Enable E
 
 // clang-format off
 
-CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
+CONFIG_INTEGER(PreferredVectorBitWidth,     W("PreferredVectorBitWidth"),   0) // The preferred decimal width, in bits, to use for any implicit vectorization emitted. A value less than 128 is treated as the system default.
 
 //
 // Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
@@ -528,12 +529,12 @@ CONFIG_INTEGER(JitEnableGuardedDevirtualization, W("JitEnableGuardedDevirtualiza
 
 #define MAX_GDV_TYPE_CHECKS 5
 // Number of types to probe for polymorphic virtual call-sites to devirtualize them,
-// Max number is MAX_GDV_TYPE_CHECKS defined above ^
-CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), 1)
+// Max number is MAX_GDV_TYPE_CHECKS defined above ^. -1 means it's up to JIT to decide
+CONFIG_INTEGER(JitGuardedDevirtualizationMaxTypeChecks, W("JitGuardedDevirtualizationMaxTypeChecks"), -1)
 
 // Various policies for GuardedDevirtualization
 CONFIG_INTEGER(JitGuardedDevirtualizationChainLikelihood, W("JitGuardedDevirtualizationChainLikelihood"), 0x4B) // 75
-CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 4)
+CONFIG_INTEGER(JitGuardedDevirtualizationChainStatements, W("JitGuardedDevirtualizationChainStatements"), 1)
 #if defined(DEBUG)
 CONFIG_STRING(JitGuardedDevirtualizationRange, W("JitGuardedDevirtualizationRange"))
 CONFIG_INTEGER(JitRandomGuardedDevirtualization, W("JitRandomGuardedDevirtualization"), 0)
@@ -624,7 +625,7 @@ CONFIG_INTEGER(JitCFGUseDispatcher, W("JitCFGUseDispatcher"), 2)
 CONFIG_INTEGER(JitEnableTailMerge, W("JitEnableTailMerge"), 1)
 
 // Enable physical promotion
-CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 0)
+CONFIG_INTEGER(JitEnablePhysicalPromotion, W("JitEnablePhysicalPromotion"), 1)
 
 #if defined(DEBUG)
 // JitFunctionFile: Name of a file that contains a list of functions. If the currently compiled function is in the

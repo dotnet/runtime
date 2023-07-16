@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- always set SelfContained when running to use Mono on desktop -->
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <UsingTask TaskName="MonoAOTCompiler"

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { ControllablePromise, PromiseAndController, PromiseController } from "../types/internal";
+import { mono_assert } from "./globals";
 
 /// a unique symbol used to mark a promise as controllable
 export const promise_control_symbol = Symbol.for("wasm promise_control");

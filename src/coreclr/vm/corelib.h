@@ -492,8 +492,7 @@ DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
-DEFINE_CLASS(METHOD_INVOKER,        Reflection,             MethodInvoker)
-DEFINE_CLASS(CONSTRUCTOR_INVOKER,   Reflection,             ConstructorInvoker)
+DEFINE_CLASS(METHODBASEINVOKER,     Reflection,             MethodBaseInvoker)
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
@@ -614,29 +613,6 @@ END_ILLINK_FEATURE_SWITCH()
 
 DEFINE_CLASS(MONITOR,               Threading,              Monitor)
 DEFINE_METHOD(MONITOR,              ENTER,                  Enter,                      SM_Obj_RetVoid)
-
-DEFINE_CLASS(VOLATILE, Threading, Volatile)
-
-#define DEFINE_VOLATILE_METHODS(methodType, paramType) \
-    DEFINE_METHOD(VOLATILE, READ_##paramType, Read, methodType##_Ref##paramType##_Ret##paramType) \
-    DEFINE_METHOD(VOLATILE, WRITE_##paramType, Write, methodType##_Ref##paramType##_##paramType)
-
-DEFINE_VOLATILE_METHODS(SM,Bool)
-DEFINE_VOLATILE_METHODS(SM,SByt)
-DEFINE_VOLATILE_METHODS(SM,Byte)
-DEFINE_VOLATILE_METHODS(SM,Shrt)
-DEFINE_VOLATILE_METHODS(SM,UShrt)
-DEFINE_VOLATILE_METHODS(SM,Int)
-DEFINE_VOLATILE_METHODS(SM,UInt)
-DEFINE_VOLATILE_METHODS(SM,Long)
-DEFINE_VOLATILE_METHODS(SM,ULong)
-DEFINE_VOLATILE_METHODS(SM,IntPtr)
-DEFINE_VOLATILE_METHODS(SM,UIntPtr)
-DEFINE_VOLATILE_METHODS(SM,Flt)
-DEFINE_VOLATILE_METHODS(SM,Dbl)
-DEFINE_VOLATILE_METHODS(GM,T)
-
-#undef DEFINE_VOLATILE_METHODS
 
 DEFINE_CLASS(PARAMETER,             Reflection,             ParameterInfo)
 
@@ -1178,7 +1154,6 @@ DEFINE_METHOD(UTF8BUFFERMARSHALER, CONVERT_TO_MANAGED, ConvertToManaged, NoSig)
 
 // Classes referenced in EqualityComparer<T>.Default optimization
 
-DEFINE_CLASS(BYTE_EQUALITYCOMPARER, CollectionsGeneric, ByteEqualityComparer)
 DEFINE_CLASS(ENUM_EQUALITYCOMPARER, CollectionsGeneric, EnumEqualityComparer`1)
 DEFINE_CLASS(NULLABLE_EQUALITYCOMPARER, CollectionsGeneric, NullableEqualityComparer`1)
 DEFINE_CLASS(GENERIC_EQUALITYCOMPARER, CollectionsGeneric, GenericEqualityComparer`1)

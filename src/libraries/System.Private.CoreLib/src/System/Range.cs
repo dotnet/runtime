@@ -20,7 +20,12 @@ namespace System
     /// int[] subArray2 = someArray[1..^0]; // { 2, 3, 4, 5 }
     /// </code>
     /// </remarks>
-    public readonly struct Range : IEquatable<Range>
+#if SYSTEM_PRIVATE_CORELIB
+    public
+#else
+    internal
+#endif
+    readonly struct Range : IEquatable<Range>
     {
         /// <summary>Represent the inclusive start index of the Range.</summary>
         public Index Start { get; }
@@ -126,10 +131,15 @@ namespace System
 
             if ((uint)end > (uint)length || (uint)start > (uint)end)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length);
+                ThrowArgumentOutOfRangeException();
             }
 
             return (start, end - start);
+        }
+
+        private static void ThrowArgumentOutOfRangeException()
+        {
+            throw new ArgumentOutOfRangeException("length");
         }
     }
 }

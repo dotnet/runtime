@@ -28,6 +28,7 @@ namespace System.Text.Json.Serialization.Metadata
                 new EnumConverterFactory(),
                 new JsonNodeConverterFactory(),
                 new FSharpTypeConverterFactory(),
+                new MemoryConverterFactory(),
                 // IAsyncEnumerable takes precedence over IEnumerable.
                 new IAsyncEnumerableConverterFactory(),
                 // IEnumerable should always be second to last since they can convert any IEnumerable.
@@ -39,7 +40,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         private static Dictionary<Type, JsonConverter> GetDefaultSimpleConverters()
         {
-            const int NumberOfSimpleConverters = 26;
+            const int NumberOfSimpleConverters = 28;
             var converters = new Dictionary<Type, JsonConverter>(NumberOfSimpleConverters);
 
             // Use a dictionary for simple converters.
@@ -62,6 +63,8 @@ namespace System.Text.Json.Serialization.Metadata
             Add(JsonMetadataServices.Int64Converter);
             Add(JsonMetadataServices.JsonElementConverter);
             Add(JsonMetadataServices.JsonDocumentConverter);
+            Add(JsonMetadataServices.MemoryByteConverter);
+            Add(JsonMetadataServices.ReadOnlyMemoryByteConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
@@ -121,7 +124,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal static JsonConverter? GetCustomConverterForMember(Type typeToConvert, MemberInfo memberInfo, JsonSerializerOptions options)
+        private static JsonConverter? GetCustomConverterForMember(Type typeToConvert, MemberInfo memberInfo, JsonSerializerOptions options)
         {
             Debug.Assert(memberInfo is FieldInfo or PropertyInfo);
             Debug.Assert(typeToConvert != null);

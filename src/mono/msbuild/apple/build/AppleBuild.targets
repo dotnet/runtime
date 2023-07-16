@@ -239,6 +239,8 @@
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <AppleAppBuilderTask
+      UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
+      NativeDependencies="$(NativeDependencies)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
@@ -261,6 +263,7 @@
       ProjectName="$(AppName)"
       RuntimeComponents="$(RuntimeComponents)"
       TargetOS="$(TargetOS)"
+      StripSymbolTable="$(StripDebugSymbols)"
       ExcludeFromAppDir="@(_ExcludeFromAppDir)"
       UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
@@ -278,7 +281,8 @@
   <Target Name="_AppleGenerateRuntimeConfig"
           Inputs="$(_AppleRuntimeConfigFilePath)"
           Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AppleRuntimeConfigFilePath)')">
+          Condition="Exists('$(_AppleRuntimeConfigFilePath)')"
+          BeforeTargets="_GenerateBundle">
     <ItemGroup>
       <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>

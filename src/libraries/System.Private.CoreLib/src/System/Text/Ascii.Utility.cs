@@ -1670,9 +1670,9 @@ namespace System.Text
                             break;
                         }
 
-                        (Vector256<ushort> low, Vector256<ushort> upper) = Vector256.Widen(asciiVector);
-                        low.Store(pCurrentWriteAddress);
-                        upper.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
+                        (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(asciiVector);
+                        utf16LowVector.Store(pCurrentWriteAddress);
+                        utf16HighVector.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
 
                         currentOffset += (nuint)Vector256<byte>.Count;
                         pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
@@ -1694,11 +1694,9 @@ namespace System.Text
                             break;
                         }
 
-                        // Vector128.Widen is not used here as it less performant on ARM64
-                        Vector128<ushort> utf16HalfVector = Vector128.WidenLower(asciiVector);
-                        utf16HalfVector.Store(pCurrentWriteAddress);
-                        utf16HalfVector = Vector128.WidenUpper(asciiVector);
-                        utf16HalfVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
+                        (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(asciiVector);
+                        utf16LowVector.Store(pCurrentWriteAddress);
+                        utf16HighVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
 
                         currentOffset += (nuint)Vector128<byte>.Count;
                         pCurrentWriteAddress += (nuint)Vector128<byte>.Count;

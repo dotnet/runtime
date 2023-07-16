@@ -155,7 +155,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticFieldClass()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldClass)}");
@@ -180,7 +179,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessStaticFieldValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessStaticFieldValue)}");
@@ -192,7 +190,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_AccessFieldValue()
     {
         Console.WriteLine($"Running {nameof(Verify_AccessFieldValue)}");
@@ -390,6 +387,16 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : DoesNotExist,
             () => FieldNotFound(null));
         AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
+            isNativeAot ? null : UserDataClass.StaticFieldName,
+            () => 
+            {
+                UserDataValue value = default;
+                FieldNotFoundStaticMismatch1(ref value);
+            });
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
+            isNativeAot ? null : UserDataValue.FieldName,
+            () => FieldNotFoundStaticMismatch2(default));
+        AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
             isNativeAot ? null : DoesNotExist,
             () => StaticFieldNotFound(null));
 
@@ -409,6 +416,12 @@ static unsafe class UnsafeAccessorsTests
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=DoesNotExist)]
         extern static ref string FieldNotFound(UserDataClass d);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.StaticFieldName)]
+        extern static ref string FieldNotFoundStaticMismatch1(ref UserDataValue d);
+
+        [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=UserDataValue.FieldName)]
+        extern static ref string FieldNotFoundStaticMismatch2(UserDataValue d);
+
         [UnsafeAccessor(UnsafeAccessorKind.StaticField, Name=DoesNotExist)]
         extern static ref string StaticFieldNotFound(UserDataClass d);
 
@@ -421,6 +434,21 @@ static unsafe class UnsafeAccessorsTests
         // precise match and that also fails because the custom modifiers don't match precisely.
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodNameAmbiguous)]
         extern static string CallAmbiguousMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
+    }
+
+    class Invalid
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        public extern string NonStatic(string a);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        public static extern string CallToString<U>(U a);
+    }
+
+    class Invalid<T>
+    {
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name=nameof(ToString))]
+        public static extern string CallToString(T a);
     }
 
     [Fact]
@@ -445,6 +473,9 @@ static unsafe class UnsafeAccessorsTests
         Assert.Throws<BadImageFormatException>(() => InvalidCtorType());
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnPointers(null));
         Assert.Throws<BadImageFormatException>(() => LookUpFailsOnFunctionPointers(null));
+        Assert.Throws<BadImageFormatException>(() => new Invalid().NonStatic(string.Empty));
+        Assert.Throws<BadImageFormatException>(() => Invalid.CallToString<string>(string.Empty));
+        Assert.Throws<BadImageFormatException>(() => Invalid<string>.CallToString(string.Empty));
 
         [UnsafeAccessor(UnsafeAccessorKind.Field, Name=UserDataValue.FieldName)]
         extern static string FieldReturnMustBeByRefClass(UserDataClass d);

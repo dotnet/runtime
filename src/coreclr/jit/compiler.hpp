@@ -706,6 +706,50 @@ inline regNumber genRegNumFromMask(regMaskTP mask)
     return regNum;
 }
 
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMaskAndToggle : Maps first bit set in the register mask to a
+//          register number and also toggle the bit in the `mask`.
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask and updates the `mask` to toggle
+//    the bit.
+//
+
+inline regNumber genFirstRegNumFromMaskAndToggle(regMaskTP& mask)
+{
+    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+    mask ^= genRegMask(regNum);
+
+    return regNum;
+}
+
+//------------------------------------------------------------------------------
+// genFirstRegNumFromMask : Maps first bit set in the register mask to a register number.
+//
+// Arguments:
+//    mask               - the register mask
+//
+// Return Value:
+//    The number of the first register contained in the mask.
+//
+
+inline regNumber genFirstRegNumFromMask(regMaskTP mask)
+{
+    assert(mask != 0); // Must have one bit set, so can't have a mask of zero
+
+    /* Convert the mask to a register number */
+
+    regNumber regNum = (regNumber)BitOperations::BitScanForward(mask);
+
+    return regNum;
+}
+
 /*****************************************************************************
  *
  *  Return the size in bytes of the given type.
@@ -4498,16 +4542,6 @@ inline char* regMaskIntToString(regMaskTP mask, Compiler* context)
 inline static bool StructHasOverlappingFields(DWORD attribs)
 {
     return ((attribs & CORINFO_FLG_OVERLAPPING_FIELDS) != 0);
-}
-
-inline static bool StructHasCustomLayout(DWORD attribs)
-{
-    return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
-}
-
-inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
-{
-    return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
 }
 
 inline static bool StructHasIndexableFields(DWORD attribs)

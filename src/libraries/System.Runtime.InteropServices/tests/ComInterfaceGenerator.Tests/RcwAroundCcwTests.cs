@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using SharedTypes.ComInterfaces;
+using SharedTypes.ComInterfaces.MarshallingFails;
 using Xunit;
 using static ComInterfaceGenerator.Tests.ComInterfaces;
-using System.Collections.Generic;
 
 namespace ComInterfaceGenerator.Tests
 {
@@ -104,6 +104,62 @@ namespace ComInterfaceGenerator.Tests
             Assert.Throws<ArgumentException>(() =>
                 obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 })
             );
+        }
+
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
+        [Fact]
+        public void IJaggedArrayMarshallingFails()
+        {
+            var obj = CreateWrapper<IJaggedIntArrayMarshallingFailsImpl, IJaggedIntArrayMarshallingFails>();
+
+            Assert.Throws<ArgumentException>(() =>
+                _ = obj.Get(out _, out _)
+            );
+            var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
+            var length = 3;
+            var widths = new int[] { 3, 2, 4 };
+            Assert.Throws<ArgumentException>(() =>
+                obj.Set(array, widths, length)
+            );
+        }
+
+        [Fact]
+        public void IStringArrayMarshallingFails()
+        {
+            var obj = CreateWrapper<IStringArrayMarshallingFailsImpl, IStringArrayMarshallingFails>();
+
+            var strings = IStringArrayMarshallingFailsImpl.StartingStrings;
+
+            // All of these will marshal either to COM or the CCW will marshal on the return
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.Param(strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.RefParam(ref strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.InParam(in strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.OutParam(out strings);
+            });
+            // https://github.com/dotnet/runtime/issues/87845
+            //Assert.Throws<ArgumentException>(() =>
+            //{
+            //    obj.ByValueOutParam(strings);
+            //});
+            Assert.Throws<ArgumentException>(() =>
+            {
+                obj.ByValueInOutParam(strings);
+            });
+            Assert.Throws<ArgumentException>(() =>
+            {
+                _ = obj.ReturnValue();
+            });
         }
     }
 

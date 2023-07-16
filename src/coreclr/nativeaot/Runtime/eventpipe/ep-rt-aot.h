@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 // Implementation of ep-rt.h targeting NativeAOT runtime.
-#ifndef __EVENTPIPE_RT_AOT_H__
-#define __EVENTPIPE_RT_AOT_H__
+#ifndef EVENTPIPE_RT_AOT_H
+#define EVENTPIPE_RT_AOT_H
 
 #include <ctype.h>  // For isspace
 #ifdef TARGET_UNIX
@@ -1114,10 +1114,8 @@ static
 void
 ep_rt_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 {
-    STATIC_CONTRACT_NOTHROW;
-    EP_ASSERT (env_array != NULL);
-
-    // PalDebugBreak();
+    extern void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array);
+    ep_rt_aot_os_environment_get_utf16(env_array);
 }
 
 /*
@@ -2009,4 +2007,4 @@ ep_rt_volatile_store_ptr_without_barrier (
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /* __EVENTPIPE_RT_AOT_H__ */
+#endif /* EVENTPIPE_RT_AOT_H */

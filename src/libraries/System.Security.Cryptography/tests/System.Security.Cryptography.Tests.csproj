@@ -339,6 +339,11 @@
     <Compile Include="X509Certificates\PfxFormatTests.SingleCertGenerator.cs" />
     <Compile Include="X509Certificates\PfxFormatTests_Collection.cs" />
     <Compile Include="X509Certificates\PfxFormatTests_SingleCert.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.CustomAppContextDataLimit.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.X509Certificate2Collection.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.X509Certificate2.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.X509Certificate.cs" />
+    <Compile Include="X509Certificates\PfxIterationCountTests.cs" />
     <Compile Include="X509Certificates\PfxTests.cs" />
     <Compile Include="X509Certificates\PropsTests.cs" />
     <Compile Include="X509Certificates\PublicKeyTests.cs" />

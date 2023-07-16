@@ -2383,10 +2383,16 @@ class SuperPMIReplayThroughputDiff:
         if self.coreclr_args.base_jit_option:
             for o in self.coreclr_args.base_jit_option:
                 base_option_flags += "-jitoption", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
+                base_option_flags += "-jitoption", o
 
         diff_option_flags = []
         if self.coreclr_args.diff_jit_option:
             for o in self.coreclr_args.diff_jit_option:
+                diff_option_flags += "-jit2option", o
+        if self.coreclr_args.jitoption:
+            for o in self.coreclr_args.jitoption:
                 diff_option_flags += "-jit2option", o
 
         base_jit_build_string_decoded = decode_clrjit_build_string(self.base_jit_path)

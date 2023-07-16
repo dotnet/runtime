@@ -127,7 +127,7 @@ inline int emitter::emitGetInsCDinfo(instrDesc* id)
     }
 }
 
-inline void emitter::emitGetInsCns(instrDesc* id, CnsVal* cv)
+inline void emitter::emitGetInsCns(const instrDesc* id, CnsVal* cv) const
 {
     cv->cnsReloc = id->idIsCnsReloc();
     if (id->idIsLargeCns())
@@ -140,7 +140,7 @@ inline void emitter::emitGetInsCns(instrDesc* id, CnsVal* cv)
     }
 }
 
-inline ssize_t emitter::emitGetInsAmdCns(instrDesc* id, CnsVal* cv)
+inline ssize_t emitter::emitGetInsAmdCns(const instrDesc* id, CnsVal* cv) const
 {
     cv->cnsReloc = id->idIsCnsReloc();
     if (id->idIsLargeDsp())
@@ -171,7 +171,7 @@ inline ssize_t emitter::emitGetInsAmdCns(instrDesc* id, CnsVal* cv)
     }
 }
 
-inline void emitter::emitGetInsDcmCns(instrDesc* id, CnsVal* cv)
+inline void emitter::emitGetInsDcmCns(const instrDesc* id, CnsVal* cv) const
 {
     cv->cnsReloc = id->idIsCnsReloc();
     if (id->idIsLargeCns())
@@ -191,7 +191,7 @@ inline void emitter::emitGetInsDcmCns(instrDesc* id, CnsVal* cv)
     }
 }
 
-inline ssize_t emitter::emitGetInsAmdAny(instrDesc* id)
+inline ssize_t emitter::emitGetInsAmdAny(const instrDesc* id) const
 {
     if (id->idIsLargeDsp())
     {

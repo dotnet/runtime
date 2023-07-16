@@ -411,12 +411,6 @@ int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
     return 0;
 }
 
-
-char* SystemNative_GetPeerUserName(intptr_t socket)
-{
-    return NULL;
-}
-
 void SystemNative_GetDomainSocketSizes(int32_t* pathOffset, int32_t* pathSize, int32_t* addressSize)
 {
     *pathOffset = -1;

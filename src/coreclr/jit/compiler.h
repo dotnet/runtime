@@ -593,8 +593,13 @@ public:
                                   // fgRetypeImplicitByRefArgs and fgMarkDemotedImplicitByRefArgs to indicate whether
                                   // references to the arg are being rewritten as references to a promoted shadow local.
     unsigned char lvIsStructField : 1; // Is this local var a field of a promoted struct local?
-    unsigned char lvContainsHoles : 1; // True when we have a promoted struct that contains holes
-    unsigned char lvCustomLayout : 1;  // True when this struct has "CustomLayout"
+    unsigned char lvContainsHoles : 1; // Is this a promoted struct whose fields do not cover the struct local?
+
+    // True for a promoted struct that has significant padding in it.
+    // Significant padding is any data in the struct that is not covered by a
+    // promoted field and that the EE told us we need to preserve on block
+    // copies/inits.
+    unsigned char lvAnySignificantPadding : 1;
 
     unsigned char lvIsMultiRegArg : 1; // true if this is a multireg LclVar struct used in an argument context
     unsigned char lvIsMultiRegRet : 1; // true if this is a multireg LclVar struct assigned from a multireg call
@@ -2055,7 +2060,6 @@ public:
     bool shouldUseVerboseSsa();
     bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
     int  morphNum;              // This counts the trees that have been morphed, allowing us to label each uniquely.
-    bool doExtraSuperPmiQueries;
     void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level); // Make queries recursively 'level' deep.
 
     const char* VarNameToStr(VarName name)
@@ -2495,6 +2499,8 @@ public:
     GenTree* gtNewZeroConNode(var_types type);
 
     GenTree* gtNewOneConNode(var_types type, var_types simdBaseType = TYP_UNDEF);
+
+    GenTree* gtNewGenericCon(var_types type, uint8_t* cnsVal);
 
     GenTree* gtNewConWithPattern(var_types type, uint8_t pattern);
 
@@ -3568,17 +3574,18 @@ public:
     // Info about struct type fields.
     struct lvaStructFieldInfo
     {
-        CORINFO_FIELD_HANDLE fldHnd;
-        unsigned char        fldOffset;
-        unsigned char        fldOrdinal;
-        var_types            fldType;
-        unsigned             fldSize;
-        CORINFO_CLASS_HANDLE fldTypeHnd;
+        // Class handle for SIMD type recognition, see CORINFO_TYPE_LAYOUT_NODE
+        // for more details on the restrictions.
+        CORINFO_CLASS_HANDLE fldSIMDTypeHnd = NO_CLASS_HANDLE;
+        uint8_t              fldOffset = 0;
+        uint8_t              fldOrdinal = 0;
+        var_types            fldType = TYP_UNDEF;
+        unsigned             fldSize = 0;
 
-        lvaStructFieldInfo()
-            : fldHnd(nullptr), fldOffset(0), fldOrdinal(0), fldType(TYP_UNDEF), fldSize(0), fldTypeHnd(nullptr)
-        {
-        }
+#ifdef DEBUG
+        // Field handle for diagnostic purposes only. See CORINFO_TYPE_LAYOUT_NODE.
+        CORINFO_FIELD_HANDLE diagFldHnd = NO_FIELD_HANDLE;
+#endif
     };
 
     // Info about a struct type, instances of which may be candidates for promotion.
@@ -3587,7 +3594,7 @@ public:
         CORINFO_CLASS_HANDLE typeHnd;
         bool                 canPromote;
         bool                 containsHoles;
-        bool                 customLayout;
+        bool                 anySignificantPadding;
         bool                 fieldsSorted;
         unsigned char        fieldCnt;
         lvaStructFieldInfo   fields[MAX_NumOfFieldsInPromotableStruct];
@@ -3596,16 +3603,11 @@ public:
             : typeHnd(typeHnd)
             , canPromote(false)
             , containsHoles(false)
-            , customLayout(false)
+            , anySignificantPadding(false)
             , fieldsSorted(false)
             , fieldCnt(0)
         {
         }
-    };
-
-    struct lvaFieldOffsetCmp
-    {
-        bool operator()(const lvaStructFieldInfo& field1, const lvaStructFieldInfo& field2);
     };
 
     // This class is responsible for checking validity and profitability of struct promotion.
@@ -3629,10 +3631,8 @@ public:
         void PromoteStructVar(unsigned lclNum);
         void SortStructFields();
 
-        bool CanConstructAndPromoteField(lvaStructPromotionInfo* structPromotionInfo);
-
-        lvaStructFieldInfo GetFieldInfo(CORINFO_FIELD_HANDLE fieldHnd, BYTE ordinal);
-        bool TryPromoteStructField(lvaStructFieldInfo& outerFieldInfo);
+        var_types TryPromoteValueClassAsPrimitive(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t index);
+        void AdvanceSubTree(CORINFO_TYPE_LAYOUT_NODE* treeNodes, size_t maxTreeNodes, size_t* index);
 
     private:
         Compiler*              compiler;
@@ -3886,7 +3886,6 @@ protected:
     GenTree* impInitClass(CORINFO_RESOLVED_TOKEN* pResolvedToken);
 
     GenTree* impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORINFO_CLASS_HANDLE ownerCls);
-    GenTree* impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType);
 
     GenTree* impImportStaticFieldAddress(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                          CORINFO_ACCESS_FLAGS    access,
@@ -3957,8 +3956,17 @@ protected:
                               var_types             callType,
                               NamedIntrinsic        intrinsicName,
                               bool                  tailCall);
+    GenTree* impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
+                                CORINFO_SIG_INFO*     sig,
+                                CorInfoType           callJitType,
+                                NamedIntrinsic        intrinsicName,
+                                bool                  tailCall,
+                                bool                  isMax,
+                                bool                  isMagnitude,
+                                bool                  isNumber);
     NamedIntrinsic lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method);
-    NamedIntrinsic lookupPrimitiveNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveFloatNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
+    NamedIntrinsic lookupPrimitiveIntNamedIntrinsic(CORINFO_METHOD_HANDLE method, const char* methodName);
     GenTree* impUnsupportedNamedIntrinsic(unsigned              helper,
                                           CORINFO_METHOD_HANDLE method,
                                           CORINFO_SIG_INFO*     sig,
@@ -7116,7 +7124,7 @@ public:
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
     }
 
-    bool doesMethodHasTlsFieldAccess()
+    bool methodHasTlsFieldAccess()
     {
         return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
     }
@@ -7149,6 +7157,28 @@ public:
                                              unsigned              methodAttr,
                                              unsigned              classAttr,
                                              unsigned              likelihood);
+
+    int getGDVMaxTypeChecks()
+    {
+        int typeChecks = JitConfig.JitGuardedDevirtualizationMaxTypeChecks();
+        if (typeChecks < 0)
+        {
+            // Negative value means "it's up to JIT to decide"
+            if (IsTargetAbi(CORINFO_NATIVEAOT_ABI) && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT))
+            {
+                return 3;
+            }
+
+            // We plan to use 3 for CoreCLR too, but we need to make sure it doesn't regress performance
+            // as CoreCLR heavily relies on Dynamic PGO while for NativeAOT we *usually* don't have it and
+            // can only perform the "exact" devirtualization.
+            return 1;
+        }
+
+        // MAX_GDV_TYPE_CHECKS is the upper limit. The constant can be changed, we just suspect that even
+        // 4 type checks is already too much.
+        return min(MAX_GDV_TYPE_CHECKS, typeChecks);
+    }
 
     bool doesMethodHaveExpRuntimeLookup()
     {
@@ -8478,6 +8508,16 @@ private:
         return info.compCompHnd->getTypeInstantiationArgument(cls, index);
     }
 
+    bool isNumericsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Numerics") == 0;
+    }
+
+    bool isRuntimeIntrinsicsNamespace(const char* ns)
+    {
+        return strcmp(ns, "System.Runtime.Intrinsics") == 0;
+    }
+
 #ifdef FEATURE_SIMD
     // Have we identified any SIMD types?
     // This is currently used by struct promotion to avoid getting type information for a struct
@@ -8582,11 +8622,6 @@ private:
         return isOpaqueSIMDType(varDsc->GetLayout());
     }
 
-    bool isNumericsNamespace(const char* ns)
-    {
-        return strcmp(ns, "System.Numerics") == 0;
-    }
-
     bool isSIMDClass(CORINFO_CLASS_HANDLE clsHnd)
     {
         if (isIntrinsicType(clsHnd))
@@ -8605,7 +8640,7 @@ private:
         {
             const char* namespaceName = nullptr;
             (void)getClassNameFromMetadata(clsHnd, &namespaceName);
-            return strcmp(namespaceName, "System.Runtime.Intrinsics") == 0;
+            return isRuntimeIntrinsicsNamespace(namespaceName);
         }
 #endif // FEATURE_HW_INTRINSICS
         return false;
@@ -8898,6 +8933,20 @@ private:
 #endif // FEATURE_SIMD
 
 public:
+    // Similar to roundUpSIMDSize, but for General Purpose Registers (GPR)
+    unsigned int roundUpGPRSize(unsigned size)
+    {
+        if (size > 4 && (REGSIZE_BYTES == 8))
+        {
+            return 8;
+        }
+        else if (size > 2)
+        {
+            return 4;
+        }
+        return size; // 2, 1, 0
+    }
+
     enum UnrollKind
     {
         Memset,

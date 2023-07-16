@@ -3497,7 +3497,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         assert(bufferSize >= genTypeSize(fieldType));
         if (info.compCompHnd->getStaticFieldContent(field, buffer, genTypeSize(fieldType)))
         {
-            GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
+            GenTree* cnsValue = gtNewGenericCon(fieldType, buffer);
             if (cnsValue != nullptr)
             {
                 JITDUMP("... success! The value is:\n");
@@ -3620,7 +3620,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static readonly field struct"));
         lvaSetStruct(structTempNum, fieldClsHnd, false);
 
-        GenTree* constValTree = impImportCnsTreeFromBuffer(buffer, fieldVarType);
+        GenTree* constValTree = gtNewGenericCon(fieldVarType, buffer);
         assert(constValTree != nullptr);
 
         GenTree* fieldStoreTree = gtNewStoreLclFldNode(structTempNum, fieldVarType, fldOffset, constValTree);
@@ -3631,102 +3631,6 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         return impCreateLocalNode(structTempNum DEBUGARG(0));
     }
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// impImportCnsTreeFromBuffer: read value of the given type from the
-//    given buffer to create a tree representing that constant.
-//
-// Arguments:
-//    buffer    - array of bytes representing the value
-//    valueType - type of the value
-//
-// Return Value:
-//    The tree representing the constant from the given buffer
-//
-GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType)
-{
-    GenTree* tree = nullptr;
-    switch (valueType)
-    {
-// Use memcpy to read from the buffer and create an Icon/Dcon tree
-#define CreateTreeFromBuffer(type, treeFactory)                                                                        \
-    type v##type;                                                                                                      \
-    memcpy(&v##type, buffer, sizeof(type));                                                                            \
-    tree = treeFactory(v##type);
-
-        case TYP_BOOL:
-        {
-            CreateTreeFromBuffer(bool, gtNewIconNode);
-            break;
-        }
-        case TYP_BYTE:
-        {
-            CreateTreeFromBuffer(int8_t, gtNewIconNode);
-            break;
-        }
-        case TYP_UBYTE:
-        {
-            CreateTreeFromBuffer(uint8_t, gtNewIconNode);
-            break;
-        }
-        case TYP_SHORT:
-        {
-            CreateTreeFromBuffer(int16_t, gtNewIconNode);
-            break;
-        }
-        case TYP_USHORT:
-        {
-            CreateTreeFromBuffer(uint16_t, gtNewIconNode);
-            break;
-        }
-        case TYP_UINT:
-        case TYP_INT:
-        {
-            CreateTreeFromBuffer(int32_t, gtNewIconNode);
-            break;
-        }
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            CreateTreeFromBuffer(int64_t, gtNewLconNode);
-            break;
-        }
-        case TYP_FLOAT:
-        {
-            CreateTreeFromBuffer(float, gtNewDconNode);
-            break;
-        }
-        case TYP_DOUBLE:
-        {
-            CreateTreeFromBuffer(double, gtNewDconNode);
-            break;
-        }
-        case TYP_REF:
-        {
-            size_t ptr;
-            memcpy(&ptr, buffer, sizeof(ssize_t));
-
-            if (ptr == 0)
-            {
-                tree = gtNewNull();
-            }
-            else
-            {
-                setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
-            }
-            break;
-        }
-        default:
-            return nullptr;
-    }
-
-    assert(tree != nullptr);
-    tree->gtType = genActualType(valueType);
-    return tree;
 }
 
 //------------------------------------------------------------------------
@@ -5435,6 +5339,23 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
     bool shouldExpandInline = true;
     bool isClassExact       = impIsClassExact(pResolvedToken->hClass);
 
+    // ECMA-335 III.4.3:  If typeTok is a nullable type, Nullable<T>, it is interpreted as "boxed" T
+    // We can convert constant-ish tokens of nullable to its underlying type.
+    // However, when the type is shared generic parameter like Nullable<Struct<__Canon>>, the actual type will require
+    // runtime lookup. It's too complex to add another level of indirection in op2, fallback to the cast helper instead.
+    if (isClassExact && !(info.compCompHnd->getClassAttribs(pResolvedToken->hClass) & CORINFO_FLG_SHAREDINST))
+    {
+        CORINFO_CLASS_HANDLE hClass = info.compCompHnd->getTypeForBox(pResolvedToken->hClass);
+
+        if (hClass != pResolvedToken->hClass)
+        {
+            bool runtimeLookup;
+            pResolvedToken->hClass = hClass;
+            op2                    = impTokenToHandle(pResolvedToken, &runtimeLookup);
+            assert(!runtimeLookup);
+        }
+    }
+
     // Profitability check.
     //
     // Don't bother with inline expansion when jit is trying to generate code quickly
@@ -5793,7 +5714,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    bool enablePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+    bool enablePatchpoints =
+        !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
 
 #ifdef DEBUG
 

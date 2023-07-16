@@ -7,29 +7,24 @@
     <DefineConstants>$(DefineConstants);NO_SUPPRESS_GC_TRANSITION</DefineConstants>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
     <IsPackable>true</IsPackable>
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <!-- M.E.Configuration.Binder.SourceGeneration: JavaScriptEncoder not supported; no logic generated which is okay. Remove this when https://github.com/dotnet/runtime/issues/88865 is fixed.  -->
+    <NoWarn>$(NoWarn);SYSLIB1100</NoWarn>
     <PackageDescription>Console logger provider implementation for Microsoft.Extensions.Logging.</PackageDescription>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs"
-             Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
-    <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs"
-             Link="Common\src\Extensions\Logging\NullScope.cs" />
-    <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs"
-             Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
-    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
-             Link="Common\System\ThrowHelper.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\NullExternalScopeProvider.cs" Link="Common\src\Extensions\Logging\NullExternalScopeProvider.cs" />
+    <Compile Include="$(CommonPath)Extensions\Logging\NullScope.cs" Link="Common\src\Extensions\Logging\NullScope.cs" />
+    <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
-             Link="Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs"
-             Link="Common\Interop\Windows\Interop.GetConsoleMode.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs"
-             Link="Common\Interop\Windows\Interop.GetStdHandle.cs" />
-    <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs"
-             Link="Common\System\Console\ConsoleUtils.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs" Link="Common\Interop\Windows\Interop.Libraries.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetConsoleMode.cs" Link="Common\Interop\Windows\Interop.GetConsoleMode.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs" Link="Common\Interop\Windows\Interop.GetStdHandle.cs" />
+    <Compile Include="$(CommonPath)System\Console\ConsoleUtils.cs" Link="Common\System\Console\ConsoleUtils.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
@@ -65,6 +60,10 @@
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Runtime" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="All" />
   </ItemGroup>
 
 </Project>

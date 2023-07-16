@@ -602,7 +602,7 @@ finalize_all (SgenHashTable *hash_table)
  * objects are still alive.
  */
 void
-sgen_finalize_all ()
+sgen_finalize_all (void)
 {
 	LOCK_GC;
 	sgen_process_fin_stage_entries ();

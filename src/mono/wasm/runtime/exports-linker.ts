@@ -2,7 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import MonoWasmThreads from "consts:monoWasmThreads";
-import WasmEnableLegacyJsInterop from "consts:WasmEnableLegacyJsInterop";
+import WasmEnableLegacyJsInterop from "consts:wasmEnableLegacyJsInterop";
+
 import { mono_wasm_debugger_log, mono_wasm_add_dbg_command_received, mono_wasm_set_entrypoint_breakpoint, mono_wasm_fire_debugger_agent_message_with_data, mono_wasm_fire_debugger_agent_message_with_data_to_pause } from "./debug";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_bind_cs_function } from "./invoke-cs";
