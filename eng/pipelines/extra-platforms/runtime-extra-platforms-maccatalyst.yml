@@ -75,32 +75,3 @@ jobs:
         creator: dotnet-bot
         interpreter: true
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
-
-#
-# MacCatalyst
-# Build the whole product using Native AOT and run libraries tests
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/global-build-job.yml
-    helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
-    buildConfig: Release
-    runtimeFlavor: coreclr
-    isExtraPlatformsBuild: ${{ parameters.isExtraPlatformsBuild }}
-    isMacCatalystOnlyBuild: ${{ parameters.isMacCatalystOnlyBuild }}
-    platforms:
-      - maccatalyst_x64
-      - maccatalyst_arm64
-    # don't run tests on arm64 PRs until we can get significantly more devices
-    - ${{ if eq(variables['isRollingBuild'], true) }}:
-      - iossimulator_arm64
-    jobParameters:
-      testGroup: innerloop
-      nameSuffix: AllSubsets_NativeAOT
-      buildArgs: --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=adhoc /p:UseNativeAOTRuntime=true
-      timeoutInMinutes: 180
-      # extra steps, run tests
-      extraStepsTemplate: /eng/pipelines/libraries/helix.yml
-      extraStepsParameters:
-        creator: dotnet-bot
-        testRunNamePrefixSuffix: NativeAOT_$(_BuildConfig)
