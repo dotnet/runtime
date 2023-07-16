@@ -7,7 +7,6 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
-    <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
     <UseTestRunner>false</UseTestRunner>
@@ -21,6 +20,7 @@
     <MonoEnableLLVM>true</MonoEnableLLVM>
     <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
     <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
+    <MainLibraryFileName>iOS.Device.Aot-Llvm.Test.dll</MainLibraryFileName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
