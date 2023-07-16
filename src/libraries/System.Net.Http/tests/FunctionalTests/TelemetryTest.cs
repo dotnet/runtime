@@ -883,11 +883,11 @@ namespace System.Net.Http.Functional.Tests
                         ManualResetEventSlim allConnectionsOpen = new(false);
                         int connectionCounter = 0;
 
-                        Task[] prallelConnectionTasks = Enumerable.Repeat(server, NumParallelRequests)
+                        Task[] parallelConnectionTasks = Enumerable.Repeat(server, NumParallelRequests)
                             .Select(_ => server.AcceptConnectionAsync(HandleConnectionAsync))
                             .ToArray();
 
-                        await Task.WhenAll(prallelConnectionTasks);
+                        await Task.WhenAll(parallelConnectionTasks);
 
                         async Task HandleConnectionAsync(GenericLoopbackConnection connection)
                         {

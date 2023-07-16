@@ -1570,7 +1570,9 @@ namespace System.Net.Http
                 case HttpConnectionKind.SocksTunnel:
                 case HttpConnectionKind.SslSocksTunnel:
                     stream = await EstablishSocksTunnel(request, async, cancellationToken).ConfigureAwait(false);
-                break;
+                    // remoteEndPoint is returned for diagnostic purposes.
+                    remoteEndPoint = GetRemoteEndPoint(stream);
+                    break;
             }
 
             Debug.Assert(stream != null);
