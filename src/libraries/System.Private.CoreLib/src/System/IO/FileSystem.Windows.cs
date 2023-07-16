@@ -56,101 +56,6 @@ namespace System.IO
             throw Win32Marshal.GetExceptionForWin32Error(errorCode, fullPath);
         }
 
-        private static SafeFileHandle? TryOpenTargetNoAlternativeDataStream(
-            string lpFileName,
-            int dwDesiredAccess,
-            FileShare dwShareMode,
-            FileMode dwCreationDisposition,
-            int dwFlagsAndAttributes,
-            ref Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA fileInformation,
-            out string openedFileName)
-        {
-            // Default value for openedFileName.
-            openedFileName = lpFileName;
-
-            // Check the file isn't an alternative data stream
-            if (Path.GetFileName(lpFileName.AsSpan()).Contains(':'))
-            {
-                return null;
-            }
-
-            // Try to open it in a way where we can detect symlinks.
-            SafeFileHandle result = Interop.Kernel32.CreateFile(
-                lpFileName,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT
-                );
-
-            // Check we successfully opened it.
-            if (result.IsInvalid)
-            {
-                return null;
-            }
-
-            // Read the file attributes.
-            if (!Interop.Kernel32.GetFileAttributesEx(lpFileName, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref fileInformation))
-            {
-                result.Dispose();
-                return null;
-            }
-
-            // Deal with the case of a reparse point.
-            if ((fileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
-            {
-                // Get the path of the target.
-                result.Dispose();
-                //try
-                //{
-                /*    */string? target = GetFinalLinkTarget(lpFileName, false);
-                //}
-                //catch
-                //{
-                //    return false;
-                //}
-
-                // Deal with no target
-                if (target == null)
-                {
-                    return null;
-                }
-
-                // Check the target's file name for alternative data streams.
-                if (Path.GetFileName(target.AsSpan()).Contains(':'))
-                {
-                    return null;
-                }
-
-                // Open the target.
-                result = Interop.Kernel32.CreateFile(
-                    target,
-                    dwDesiredAccess,
-                    dwShareMode,
-                    dwCreationDisposition,
-                    dwFlagsAndAttributes | Interop.Kernel32.FileOperations.FILE_FLAG_OPEN_REPARSE_POINT
-                    );
-                openedFileName = target;
-
-                // Read the file attributes.
-                if (!Interop.Kernel32.GetFileAttributesEx(lpFileName, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref fileInformation))
-                {
-                    result.Dispose();
-                    return null;
-                }
-
-                // Check we haven't somehow ended up with another symlink due to things changing very quickly.
-                if ((fileInformation.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_REPARSE_POINT) != 0)
-                {
-                    result.Dispose();
-                    return null;
-                }
-            }
-
-            // Return our result.
-            return result;
-        }
-
         private static unsafe bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
             // Check the destination file isn't an alternative data stream (unsupported, and crashes on up to some versions of Windows 11).
@@ -163,20 +68,12 @@ namespace System.IO
             // Open the source file.
             // We use FILE_FLAGS_NO_BUFFERING since we're not using unaligned writes during cloning and can skip buffering overhead.
             const int FILE_FLAG_NO_BUFFERING = 0x20000000;
-            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA sourceFileInformation = default;
-            SafeFileHandle? _sourceHandle = TryOpenTargetNoAlternativeDataStream(
+            using (SafeFileHandle sourceHandle = Interop.Kernel32.CreateFile(
                 sourceFullPath,
                 Interop.Kernel32.GenericOperations.GENERIC_READ,
                 FileShare.Read,
                 FileMode.Open,
-                FILE_FLAG_NO_BUFFERING,
-                ref sourceFileInformation,
-                out string openedSourceFullPath);
-            if (_sourceHandle == null)
-            {
-                return false;
-            }
-            using (SafeFileHandle sourceHandle = _sourceHandle)
+                FILE_FLAG_NO_BUFFERING))
             {
                 // Return false if we failed to open the source file.
                 if (sourceHandle.IsInvalid)
@@ -200,9 +97,6 @@ namespace System.IO
                     //return false;
                 }
 
-                // Get file size.
-                long sourceSize = (long)(((ulong)sourceFileInformation.nFileSizeHigh << 32) | sourceFileInformation.nFileSizeLow);
-
                 // Helper variables.
                 SafeFileHandle? destinationHandle = null;
                 bool madeNew = false;
@@ -214,19 +108,12 @@ namespace System.IO
                     if (overwrite)
                     {
                         // Try to open the existing file.
-                        destinationHandle = TryOpenTargetNoAlternativeDataStream(
+                        destinationHandle = Interop.Kernel32.CreateFile(
                             destFullPath,
                             Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                             FileShare.None,
                             FileMode.Open,
-                            0,
-                            ref destFileInformation,
-                            out _);
-                        if (destinationHandle == null)
-                        {
-                            // Alternative data stream.
-                            return false;
-                        }
+                            0);
                         if (destinationHandle.IsInvalid)
                         {
                             // Try opening as a new file.
@@ -238,19 +125,12 @@ namespace System.IO
                     if (destinationHandle == null)
                     {
                         // Try to create the destination file.
-                        destinationHandle = TryOpenTargetNoAlternativeDataStream(
+                        destinationHandle = Interop.Kernel32.CreateFile(
                             destFullPath,
-                            Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
+                            Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE | Interop.Kernel32.GenericOperations.DELETE,
                             FileShare.None,
                             FileMode.CreateNew,
-                            0,
-                            ref destFileInformation,
-                            out _);
-                        if (destinationHandle == null)
-                        {
-                            // Alternative data stream.
-                            return false;
-                        }
+                            0);
                         if (destinationHandle.IsInvalid)
                         {
                             // Failure to open.
@@ -283,9 +163,34 @@ namespace System.IO
                         //return false;
                     }
 
-                    // Get the source volume path. Note: we need the real path here for symlinks also, hence openedSourceFullPath.
+                    // Get the source file path. We need to do this, because we may have opened a symlink - this returns the file we actually have open.
+                    if (!Interop.Kernel32.GetFinalPathNameByHandle(sourceHandle, Interop.Kernel32.FILE_NAME_NORMALIZED | Interop.Kernel32.VOLUME_NAME_DOS, out string? sourceName))
+                    {
+                        // This may fail as a result of it not being on a drive with a DOS path, we shouldn't throw here
+                        throw new Exception("I2");
+                        //return false;
+                    }
+
+                    // Check we haven't opened an alternate data stream - this may cause a BSOD on Windows versions lower than TBD (todo) if we don't exit before block copy.
+                    if (Path.GetFileName(sourceName.AsSpan()).Contains(':'))
+                    {
+                        return false;
+                    }
+
+                    // Also check the destination file
+                    if (!Interop.Kernel32.GetFinalPathNameByHandle(destinationHandle, Interop.Kernel32.FILE_NAME_NORMALIZED | Interop.Kernel32.VOLUME_NAME_DOS, out string? destName))
+                    {
+                        throw new Exception("I3");
+                        //return false;
+                    }
+                    if (Path.GetFileName(destName.AsSpan()).Contains(':'))
+                    {
+                        return false;
+                    }
+
+                    // Get the source volume path. Note: we need the real path here for symlinks also, hence sourceName.
                     // Todo: do we care about not propogating an error from this?
-                    string volumePath = Interop.Kernel32.GetVolumePathName(openedSourceFullPath);
+                    string volumePath = Interop.Kernel32.GetVolumePathName(sourceName);
 
                     // Read the source volume's cluster size.
                     if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, out int sectorsPerCluster, out int bytesPerCluster, out _, out _))
@@ -363,6 +268,14 @@ namespace System.IO
                             //return false;
                         }
                     }
+
+                    // Read the file attributes.
+                    Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA sourceFileInformation = default;
+                    int error = FillAttributeInfo(sourceHandle, ref sourceFileInformation);
+                    Debug.Assert(error == 0); //todo: is there a good reason for this to fail? if so we should handle it properly, not by a Debug.Assert
+
+                    // Get file size.
+                    long sourceSize = (long)(((ulong)sourceFileInformation.nFileSizeHigh << 32) | sourceFileInformation.nFileSizeLow);
 
                     // Set length of destination to same as source.
                     Interop.Kernel32.FILE_END_OF_FILE_INFO eofInfo;

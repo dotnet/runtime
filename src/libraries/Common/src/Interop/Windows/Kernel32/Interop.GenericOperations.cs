@@ -7,6 +7,7 @@ internal static partial class Interop
     {
         internal static partial class GenericOperations
         {
+            internal const int DELETE = 0x00010000;
             internal const int GENERIC_READ = unchecked((int)0x80000000);
             internal const int GENERIC_WRITE = 0x40000000;
         }

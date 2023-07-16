@@ -16,14 +16,14 @@ internal static partial class Interop
         [return: MarshalAs(UnmanagedType.Bool)]
         private static unsafe partial bool GetVolumePathName(char* lpszFileName, char* lpszVolumePathName, int cchBufferLength);
 
-        public static unsafe string GetVolumePathName(string fileName)
+        internal static unsafe string GetVolumePathName(string fileName)
         {
             // Ensure we have the prefix
             fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
 
             // Ensure our output buffer will be long enough (see https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-getvolumepathnamew#remarks)
             int requiredBufferLength = (int)GetFullPathNameW(ref MemoryMarshal.GetReference<char>(fileName), 0, ref Unsafe.NullRef<char>(), 0);
-            if (requiredBufferLength == 0) Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error(), fileName);
+            if (requiredBufferLength == 0) throw Win32Marshal.GetExceptionForWin32Error(Marshal.GetLastWin32Error(), fileName);
 
             // Allocate a value string builder
             // note: MAX_PATH is not a hard limit, but would only be exceeded by a long path
