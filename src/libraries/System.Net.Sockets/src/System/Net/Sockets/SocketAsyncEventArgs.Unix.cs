@@ -49,7 +49,6 @@ namespace System.Net.Sockets
             Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
 
             IntPtr acceptedFd;
-            //int socketAddressLen = _acceptAddressBufferCount / 2;
             SocketError socketError = handle.AsyncContext.AcceptAsync(_acceptBuffer!, out int socketAddressLen, out acceptedFd, AcceptCompletionCallback, cancellationToken);
 
             if (socketError != SocketError.IOPending)
@@ -98,7 +97,6 @@ namespace System.Net.Sockets
 
         private void CompleteTransferOperation(Memory<byte> _, int socketAddressSize, SocketFlags receivedFlags)
         {
-            //Debug.Assert(socketAddress == null || socketAddress == _socketAddress!.Buffer, $"Unexpected socketAddress: {socketAddress}");
             _socketAddressSize = socketAddressSize;
             _receivedFlags = receivedFlags;
         }
@@ -147,7 +145,7 @@ namespace System.Net.Sockets
             SocketFlags flags;
             SocketError errorCode;
             int bytesReceived;
-            int socketAddressLen; // = _socketAddress!.Size;
+            int socketAddressLen;
             if (_bufferList == null)
             {
                 errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer.Slice(_offset, _count), _socketFlags, _socketAddress!.SocketBuffer, out socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback, cancellationToken);
@@ -175,8 +173,6 @@ namespace System.Net.Sockets
 
         private void CompleteReceiveMessageFromOperation(Memory<byte> socketAddress, int socketAddressSize, SocketFlags receivedFlags, IPPacketInformation ipPacketInformation)
         {
-            //Debug.Assert(_socketAddress != null, "Expected non-null _socketAddress");
-            //Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress, $"Unexpected socketAddress: {socketAddress}");
             Debug.Assert(socketAddress.Length == socketAddressSize);
 
             _socketAddressSize = socketAddress.Length;
@@ -297,7 +293,6 @@ namespace System.Net.Sockets
             _socketAddressSize = 0;
 
             int bytesSent;
-            //int socketAddressLen = _socketAddress!.Size;
             SocketError errorCode;
             if (_bufferList == null)
             {

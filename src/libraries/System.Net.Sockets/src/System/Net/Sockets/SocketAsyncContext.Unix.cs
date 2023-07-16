@@ -1535,7 +1535,6 @@ namespace System.Net.Sockets
 
         public SocketError Receive(Memory<byte> buffer, SocketFlags flags, int timeout, out int bytesReceived)
         {
-            //int socketAddressLen = 0;
             return ReceiveFrom(buffer, ref flags, Memory<byte>.Empty, out int _, timeout, out bytesReceived);
         }
 

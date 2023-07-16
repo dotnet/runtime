@@ -397,11 +397,6 @@ namespace System.Net.Sockets
             Span<Interop.Sys.IOVector> iovecs = allocOnStack ? stackalloc Interop.Sys.IOVector[IovStackThreshold] : new Interop.Sys.IOVector[maxBuffers];
 
             int sockAddrLen = socketAddress.Length;
-            //if (socketAddress != null)
-            //{
-            //    sockAddrLen = socketAddressLen;
-            //}
-
             long received = 0;
             int toReceive = 0, iovCount = 0;
             try
@@ -1264,7 +1259,7 @@ namespace System.Net.Sockets
 
         public static SocketError ReceiveMessageFrom(Socket socket, SafeSocketHandle handle, byte[] buffer, int offset, int count, ref SocketFlags socketFlags, Internals.SocketAddress socketAddress, out Internals.SocketAddress receiveAddress, out IPPacketInformation ipPacketInformation, out int bytesTransferred)
         {
-            int socketAddressLen; // = socketAddress.Size;
+            int socketAddressLen;
 
             bool isIPv4, isIPv6;
             Socket.GetIPProtocolInformation(socket.AddressFamily, socketAddress, out isIPv4, out isIPv6);
