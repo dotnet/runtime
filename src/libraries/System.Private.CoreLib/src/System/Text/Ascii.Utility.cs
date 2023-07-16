@@ -1587,26 +1587,6 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector256<byte> ExtractAsciiVector(Vector256<ushort> vectorFirst, Vector256<ushort> vectorSecond)
-        {
-            // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
-            // to a vector of bytes [ b7 ... b0 b7' ... b0'].
-
-            // prefer architecture specific intrinsic as they don't perform additional AND like Vector128.Narrow does
-            return Vector256.Narrow(vectorFirst, vectorSecond);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static Vector512<byte> ExtractAsciiVector(Vector512<ushort> vectorFirst, Vector512<ushort> vectorSecond)
-        {
-            // Narrows two vectors of words [ w7 w6 w5 w4 w3 w2 w1 w0 ] and [ w7' w6' w5' w4' w3' w2' w1' w0' ]
-            // to a vector of bytes [ b7 ... b0 b7' ... b0'].
-
-            // prefer architecture specific intrinsic as they don't perform additional AND like Vector128.Narrow does
-            return Vector512.Narrow(vectorFirst, vectorSecond);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static unsafe nuint NarrowUtf16ToAscii_Intrinsified(char* pUtf16Buffer, byte* pAsciiBuffer, nuint elementCount)
         {
             // This method contains logic optimized using vector instructions for both x64 and Arm64.

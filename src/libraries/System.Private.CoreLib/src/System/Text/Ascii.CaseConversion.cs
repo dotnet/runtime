@@ -673,7 +673,7 @@ namespace System.Text
             else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
                 // narrowing operation required, we know data is all-ASCII so use extract helper
-                Vector256<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
+                Vector256<byte> narrow = Vector256.Narrow(vector.AsUInt16(), vector.AsUInt16());
                 narrow.GetLower().StoreUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else
@@ -702,7 +702,7 @@ namespace System.Text
             else if (sizeof(TFrom) == 2 && sizeof(TTo) == 1)
             {
                 // narrowing operation required, we know data is all-ASCII so use extract helper
-                Vector512<byte> narrow = ExtractAsciiVector(vector.AsUInt16(), vector.AsUInt16());
+                Vector512<byte> narrow = Vector512.Narrow(vector.AsUInt16(), vector.AsUInt16());
                 narrow.GetLower().StoreUnsafe(ref *(byte*)pDest, elementOffset);
             }
             else
