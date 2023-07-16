@@ -35,7 +35,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             compilerContext.EnsureLoadableMethod(method.Method);
             compilerContext.EnsureLoadableType(_method.OwningType);
 
-            if (method.ConstrainedType != null)
+            if (method.ConstrainedType != null && !method.ConstrainedType.IsRuntimeDeterminedSubtype)
                 compilerContext.EnsureLoadableType(method.ConstrainedType);
         }
 
