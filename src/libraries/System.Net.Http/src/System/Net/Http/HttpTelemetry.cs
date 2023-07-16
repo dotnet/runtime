@@ -97,13 +97,13 @@ namespace System.Net.Http
             ConnectionEstablished(versionMajor, versionMinor, connectionId, scheme, host, port, socketAddress);
         }
 
-        [Event(4, Level = EventLevel.Informational)]
+        [Event(4, Level = EventLevel.Informational, Version = 1)]
         private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, string scheme, string host, int port, string? socketAddress)
         {
             WriteEvent(eventId: 4, versionMajor, versionMinor, connectionId, scheme, host, port, socketAddress);
         }
 
-        [Event(5, Level = EventLevel.Informational)]
+        [Event(5, Level = EventLevel.Informational, Version = 1)]
         private void ConnectionClosed(byte versionMajor, byte versionMinor, long connectionId)
         {
             WriteEvent(eventId: 5, versionMajor, versionMinor, connectionId);
@@ -115,7 +115,7 @@ namespace System.Net.Http
             WriteEvent(eventId: 6, timeOnQueueMilliseconds, versionMajor, versionMinor);
         }
 
-        [Event(7, Level = EventLevel.Informational)]
+        [Event(7, Level = EventLevel.Informational, Version = 1)]
         public void RequestHeadersStart(long connectionId)
         {
             WriteEvent(eventId: 7, connectionId);
