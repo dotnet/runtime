@@ -89,20 +89,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 else
                 {
                     bool isStub = false;
-                    bool needsInstantiationArg = false;
-                    if (methodNode is Import methodImport && methodImport.Signature is MethodFixupSignature methodSignature)
+                    if (methodNode is DelayLoadHelperImport methodImport)
                     {
-                        isStub = methodSignature.IsUnboxingStub || methodSignature.IsInstantiatingStub;
-                        needsInstantiationArg = methodSignature.NeedsInstantiationArg;
-                        if (isStub &&
-                            methodSignature.ConstrainedType != null &&
-                            methodSignature.ConstrainedType.IsCanonicalSubtype(Internal.TypeSystem.CanonicalFormKind.Any) &&
-                            !methodNode.Method.OwningType.IsCanonicalSubtype(Internal.TypeSystem.CanonicalFormKind.Any))
-                        {
-                            needsInstantiationArg = true;
-                        }
+                        MethodFixupSignature signature = (MethodFixupSignature)methodImport.ImportSignature.Target;
+                        isStub = signature.IsUnboxingStub || signature.IsInstantiatingStub;
                     }
-                    builder.GetCallRefMap(methodNode.Method, isStub: isStub, needsTypeInstArg: needsInstantiationArg);
+                    builder.GetCallRefMap(methodNode.Method, isStub);
                 }
                 if (methodIndex >= nextMethodIndex)
                 {
