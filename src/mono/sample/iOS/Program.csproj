@@ -3,30 +3,40 @@
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
-    <IntermediateOutputPath>$(MSBuildThisFileDirectory)/obj/</IntermediateOutputPath>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)/$(OutputPath)/publish</PublishDir>
+    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
     <AppName>HelloiOS</AppName>
     <MainLibraryFileName>$(AssemblyName).dll</MainLibraryFileName>
-    <SelfContained Condition="'$(ArchiveTests)' == 'true'">true</SelfContained>
-    <UseConsoleUITemplate>false</UseConsoleUITemplate>
+    <SelfContained>true</SelfContained>
 
     <RunAOTCompilation Condition="'$(RunAOTCompilation)' == ''">true</RunAOTCompilation>
-    <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>Link</TrimMode>
     <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-    <!-- ILLink issue when publishing for Helix, to be fixed -->
-    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
-    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
-    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
-    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
-    <DefineConstants Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">$(DefineConstants);CI_TEST_IOS</DefineConstants>
+    <ShouldILStrip Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
+
+    <EnableDefaultAssembliesToBundle>true</EnableDefaultAssembliesToBundle>
+    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+    <GenerateXcodeProject>true</GenerateXcodeProject>
+    <UseConsoleUITemplate>false</UseConsoleUITemplate>
+
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' != 'true'">CopyFilesToPublishDirectory</BuildAppBundleAfterTargets>
+    <BuildAppBundleAfterTargets Condition="'$(ArchiveTests)' == 'true'">CopyFilesToPublishDirectory;Build</BuildAppBundleAfterTargets>
+    <BuildAppBundleDependsOnTargets Condition="'$(ArchiveTests)' == 'true'">Publish</BuildAppBundleDependsOnTargets>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="Program.cs" Link="Program.cs" />
-  </ItemGroup>
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
 
- <Target Name="RunAppBundle"
+  <Target Name="BuildAppBundle" AfterTargets="$(BuildAppBundleAfterTargets)" DependsOnTargets="$(BuildAppBundleDependsOnTargets)"/>
+  <Target Name="_SetAppleGenerateAppBundleProps" Condition="'$(TargetOS)' != 'ios' and '$(ArchiveTests)' != 'true'" BeforeTargets="_AppleGenerateAppBundle">
+    <PropertyGroup>
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="RunAppBundle"
           AfterTargets="_AppleGenerateAppBundle"
           Condition="'$(ArchiveTests)' != 'true' and '$(DeployAndRun)' == 'true'">
     <!-- Install and run on a device or simulator -->
@@ -38,7 +48,7 @@
   </Target>
 
   <Target Name="CopySampleAppToHelixTestDir"
-          Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' != 'ios'"
+          Condition="'$(ArchiveTests)' == 'true'"
           AfterTargets="_AppleGenerateAppBundle" >
     <PropertyGroup>
       <!-- Helix properties -->

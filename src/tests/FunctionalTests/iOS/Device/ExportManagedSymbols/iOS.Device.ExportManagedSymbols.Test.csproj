@@ -2,26 +2,17 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <OutputPath>bin</OutputPath>
     <MonoForceInterpreter>false</MonoForceInterpreter>
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">iOS</TargetOS>
     <MainLibraryFileName>iOS.Device.ExportManagedSymbols.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
+    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
     <MonoEnableLLVM>true</MonoEnableLLVM>
     <NativeMainSource>$(MSBuildProjectDirectory)/main.m</NativeMainSource>
-    <UseTestRunner>false</UseTestRunner>
-
-    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
-    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
-
-    <SelfContained>true</SelfContained>
-    <UseConsoleUITemplate>true</UseConsoleUITemplate>
-    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
   </PropertyGroup>
 
   <ItemGroup>

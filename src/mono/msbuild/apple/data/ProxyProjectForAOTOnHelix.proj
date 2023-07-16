@@ -30,6 +30,17 @@
     <UseArtifactsIntermediateOutput Condition="'$(UseNativeAOTRuntime)' == 'true'">true</UseArtifactsIntermediateOutput>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <UseArtifactsIntermediateOutput>true</UseArtifactsIntermediateOutput>
+		<NativeLib>static</NativeLib>
+		<CustomNativeMain>true</CustomNativeMain>
+		<NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
+		<_IsApplePlatform>true</_IsApplePlatform>
+		<TargetsAppleMobile>true</TargetsAppleMobile>
+		<_targetOS>$(TargetOS)</_targetOS>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>

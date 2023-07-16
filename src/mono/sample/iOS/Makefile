@@ -27,7 +27,7 @@ runtimepack:
 	../../../../build.sh mono+libs -os $(TARGET) -arch $(MONO_ARCH) -c $(MONO_CONFIG)
 
 build-appbundle: clean appbuilder
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=$(TARGET) \
 	/p:TargetArchitecture=$(MONO_ARCH) \
@@ -37,7 +37,7 @@ build-appbundle: clean appbuilder
 	/bl
 
 run: clean appbuilder
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=ios \
 	/p:TargetArchitecture=$(MONO_ARCH) \
@@ -48,7 +48,7 @@ run: clean appbuilder
 	/bl
 
 run-sim: clean appbuilder
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=iossimulator \
 	/p:TargetArchitecture=$(MONO_ARCH) \
@@ -60,7 +60,7 @@ run-sim: clean appbuilder
 	/bl
 
 run-sim-interp: clean appbuilder
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=iossimulator \
 	/p:TargetArchitecture=$(MONO_ARCH) \
@@ -72,7 +72,7 @@ run-sim-interp: clean appbuilder
 	/bl
 
 run-catalyst: clean appbuilder
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
@@ -83,7 +83,7 @@ run-catalyst: clean appbuilder
 	/bl
 
 run-catalyst-interp: clean appbuilder
-	$(DOTNET) build \
+	$(DOTNET) publish \
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \

@@ -582,7 +582,7 @@ extends:
           runtimeFlavor: coreclr
           platforms:
             - ios_arm64
-            # - tvos_arm64
+            - tvos_arm64
           jobParameters:
             testGroup: innerloop
             nameSuffix: AllSubsets_NativeAOT

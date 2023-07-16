@@ -8,28 +8,19 @@
     <DeployAndRun Condition="'$(DeployAndRun)' == ''">true</DeployAndRun>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <AppName>HelloiOS</AppName>
-    <DefineConstants Condition="'$(ArchiveTests)' == 'true'">$(DefineConstants);CI_TEST</DefineConstants>
-    <DefineConstants Condition="'$(ArchiveTests)' == 'true' and '$(TargetOS)' == 'ios'">$(DefineConstants);CI_TEST_IOS</DefineConstants>
     <UseNativeAOTRuntime Condition="'$(UseNativeAOTRuntime)' == ''">true</UseNativeAOTRuntime>
-    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)/$(OutputPath)/publish</PublishDir>
     <NativeLib>static</NativeLib>
     <CustomNativeMain>true</CustomNativeMain>
-    <_AotCompileTargetName>_AppleNativeAotCompile;</_AotCompileTargetName>
-    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
-    <RunAOTCompilation>false</RunAOTCompilation>
-    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-    <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
     <!-- Escape NativeAOT bundling targets -->
     <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
-    <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(NativeAotTargetsPath)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(PublishAotUsingRuntimePack)' == 'true'">
     <PublishAot>true</PublishAot>
     <MSBuildWarningsAsErrors>$(MSBuildWarningsAsErrors);NU1603</MSBuildWarningsAsErrors>
     <UseLocalTargetingRuntimePack>false</UseLocalTargetingRuntimePack>
-    <!-- <RestoreAdditionalProjectSources>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'packages', '$(CoreCLRConfiguration)', 'Shipping'))</RestoreAdditionalProjectSources> -->
+    <RestoreAdditionalProjectSources>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'artifacts', 'packages', '$(CoreCLRConfiguration)', 'Shipping'))</RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
@@ -37,6 +28,7 @@
     <DirectPInvoke Include="__Internal" />
   </ItemGroup>
 
+  <Import Condition="'$(PublishAotUsingRuntimePack)' != 'true'" Project="$(CoreClrProjectRoot)nativeaot\BuildIntegration\Microsoft.DotNet.ILCompiler.SingleEntry.targets" />
   <UsingTask TaskName="AppleAppBuilderTask"
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
 
@@ -61,9 +53,59 @@
     </PropertyGroup>
   </Target>
 
+  <Target Name="BuildAppBundle"
+    AfterTargets="Build"
+    DependsOnTargets="IlcCompile;CopyFilesToPublishDirectory">
+
+    <PropertyGroup>
+      <AppDir>$(MSBuildThisFileDirectory)$(OutputPath)\Bundle</AppDir>
+      <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
+      <StripDebugSymbols Condition="'$(StripDebugSymbols)' == ''">false</StripDebugSymbols>
+      <DevTeamProvisioning Condition="'$(TargetOS)' == 'maccatalyst' and '$(DevTeamProvisioning)' == ''">adhoc</DevTeamProvisioning>
+      <EnableAppSandbox Condition="'$(TargetOS)' == 'maccatalyst' and '$(EnableAppSandbox)' == ''">false</EnableAppSandbox>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
+      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
+      <ExtraLinkerArguments Include="@(LinkerArg)" />
+      <_NativeDependencies Include="%(ManagedBinary.IlcOutputFile)" />
+      <_ExcludeFromAppDir Include=".dll" />
+      <_ExcludeFromAppDir Include=".json" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(AppDir)" />
+
+    <AppleAppBuilderTask
+        UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
+        NativeDependencies="@(_NativeDependencies)"
+        TargetOS="$(TargetOS)"
+        Arch="$(TargetArchitecture)"
+        ProjectName="$(AppName)"
+        Assemblies="@(BundleAssemblies)"
+        GenerateXcodeProject="True"
+        BuildAppBundle="True"
+        DevTeamProvisioning="$(DevTeamProvisioning)"
+        OutputDirectory="$(AppDir)"
+        Optimized="$(Optimized)"
+        InvariantGlobalization="$(InvariantGlobalization)"
+        EnableAppSandbox="$(EnableAppSandbox)"
+        StripSymbolTable="$(StripDebugSymbols)"
+        AppDir="$(MSBuildThisFileDirectory)$(OutputPath)"
+        ExcludeFromAppDir="@(_ExcludeFromAppDir)"
+        ExtraLinkerArguments="@(ExtraLinkerArguments)" >
+        <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
+        <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
+    </AppleAppBuilderTask>
+
+    <Message Importance="High" Text="Xcode: $(XcodeProjectPath)"/>
+    <Message Importance="High" Text="App:   $(AppBundlePath)"/>
+
+  </Target>
+
   <Target Name="RunAppBundle"
           AfterTargets="BuildAppBundle"
-          Condition="'$(DeployAndRun)' == 'true' and '$(ArchiveTests)' != 'true'">
+          Condition="'$(DeployAndRun)' == 'true'">
     <Exec Condition="'$(TargetOS)' == 'iossimulator'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-simulator-64 --output-directory=/tmp/out" />
     <Exec Condition="'$(TargetOS)' == 'ios'" Command="dotnet xharness apple run --app=$(AppBundlePath) --targets=ios-device --output-directory=/tmp/out" />
   </Target>

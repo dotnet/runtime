@@ -2,16 +2,31 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <MonoForceInterpreter>false</MonoForceInterpreter>
-    <RunAOTCompilation>true</RunAOTCompilation>
+    <OutputPath>bin</OutputPath>
     <TestRuntime>true</TestRuntime>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture)</RuntimeIdentifier>
     <TargetOS Condition="'$(TargetOS)' == ''">iossimulator</TargetOS>
-    <MainLibraryFileName>iOS.Simulator.Aot-Llvm.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <EnableAggressiveTrimming>true</EnableAggressiveTrimming>
+    <UseTestRunner>false</UseTestRunner>
+    <SelfContained>true</SelfContained>
+    <UseConsoleUITemplate>true</UseConsoleUITemplate>
+    <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
+    <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RunAOTCompilation)' == 'true'">
     <MonoEnableLLVM>true</MonoEnableLLVM>
+    <PublishTrimmed Condition="'$(ArchiveTests)' != 'true'">true</PublishTrimmed>
+    <TrimMode Condition="'$(ArchiveTests)' != 'true'">Link</TrimMode>
+    <MainLibraryFileName>iOS.Simulator.Aot-Llvm.Test.dll</MainLibraryFileName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <_AotCompileTargetName>_AppleNativeAotCompile;</_AotCompileTargetName>
+    <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
+    <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(NativeAotTargetsPath)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
   </PropertyGroup>
 
   <ItemGroup>

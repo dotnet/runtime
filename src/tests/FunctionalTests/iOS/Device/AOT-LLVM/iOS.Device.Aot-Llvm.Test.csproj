@@ -25,10 +25,6 @@
 
   <PropertyGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
     <_AotCompileTargetName>_AppleNativeAotCompile;</_AotCompileTargetName>
-    <NativeLib>static</NativeLib>
-    <CustomNativeMain>true</CustomNativeMain>
-    <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
-    <NativeCompilationDuringPublish>false</NativeCompilationDuringPublish>
     <IlcCompileDependsOn>Compile;ComputeIlcCompileInputs;SetupOSSpecificProps;PrepareForILLink</IlcCompileDependsOn>
     <ILCompilerTargetsPath>$([MSBuild]::NormalizePath('$(NativeAotTargetsPath)', 'Microsoft.DotNet.ILCompiler.SingleEntry.targets'))</ILCompilerTargetsPath>
   </PropertyGroup>
