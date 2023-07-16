@@ -32,6 +32,16 @@
         <target state="translated">U polí nebo vlastností s otevřenými obecnými typy nelze použít ValidateObjectMembersAttribute nebo ValidateEnumeratedItemsAttribute.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="translated">Atributy ověřování nelze použít u konstantního ani statického člena {0}.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="translated">Nelze ověřit konstanty, statická pole ani vlastnosti.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">Existuje cyklický odkaz obsahující typ {0}, který brání jeho použití pro statické ověření.</target>
@@ -50,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">Typ anotovaný třídou OptionsValidatorAttribute neimplementuje nezbytné rozhraní.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

@@ -413,6 +413,11 @@ public:
     virtual void ResumeForGarbageCollectionStarted() = 0;
 #endif
     virtual BOOL IsSynchronizing() = 0;
+
+#ifndef DACCESS_COMPILE
+    virtual HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef) = 0;
+    virtual HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult) = 0;
+#endif //DACCESS_COMPILE
 };
 
 #ifndef DACCESS_COMPILE

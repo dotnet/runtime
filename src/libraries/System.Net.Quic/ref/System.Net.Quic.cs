@@ -51,16 +51,14 @@ namespace System.Net.Quic
         InternalError = 1,
         ConnectionAborted = 2,
         StreamAborted = 3,
-        AddressInUse = 4,
-        InvalidAddress = 5,
         ConnectionTimeout = 6,
-        HostUnreachable = 7,
         ConnectionRefused = 8,
         VersionNegotiationError = 9,
         ConnectionIdle = 10,
-        ProtocolError = 11,
         OperationAborted = 12,
         AlpnInUse = 13,
+        TransportError = 14,
+        CallbackError = 15,
     }
     public sealed partial class QuicException : System.IO.IOException
     {

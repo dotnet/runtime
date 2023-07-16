@@ -7,6 +7,7 @@
     <EnableDefaultItems>true</EnableDefaultItems>
     <!-- <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules> -->
     <DefineConstants>$(DefineConstants);ROSLYN4_0_OR_GREATER;ROSLYN4_4_OR_GREATER;ROSLYN_4_0_OR_GREATER</DefineConstants>
+    <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
   </PropertyGroup>
 
   <ItemGroup>

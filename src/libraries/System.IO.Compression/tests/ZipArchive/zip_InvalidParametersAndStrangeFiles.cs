@@ -159,7 +159,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
         public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_CopyTo_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
@@ -188,7 +187,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Fix not shipped for .NET Framework.")]
         public static async Task ZipArchiveEntry_CorruptedStream_ReadMode_Read_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(zfile("normal.zip"));
@@ -257,7 +255,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is not available on .NET Framework.")]
         public static async Task Zip64ArchiveEntry_CorruptedStream_CopyTo_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(compat("deflate64.zip"));
@@ -306,7 +303,6 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Deflate64 zip support is not available on .NET Framework.")]
         public static async Task Zip64ArchiveEntry_CorruptedFile_Read_UpToUncompressedSize()
         {
             MemoryStream stream = await LocalMemoryStream.readAppFileAsync(compat("deflate64.zip"));

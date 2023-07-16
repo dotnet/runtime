@@ -322,7 +322,7 @@ namespace ILCompiler
                 bDepth--;
             }
 
-            while (ta != tb)
+            while (!ta.IsEquivalentTo(tb))
             {
                 ta = ta.BaseType;
                 tb = tb.BaseType;
@@ -350,7 +350,11 @@ namespace ILCompiler
             Debug.Assert(taElem != tbElem);
 
             TypeDesc mergeElem;
-            if (taElem.IsArray && tbElem.IsArray)
+            if (taElem.IsEquivalentTo(tbElem))
+            {
+                mergeElem = taElem;
+            }
+            else if (taElem.IsArray && tbElem.IsArray)
             {
                 mergeElem = MergeArrayTypesToCommonParent((ArrayType)taElem, (ArrayType)tbElem);
             }

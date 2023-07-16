@@ -1922,6 +1922,9 @@ void           LinearScan::identifyCandidates()
                             fieldVarDsc->lvLRACandidate                = 0;
                             localVarIntervals[fieldVarDsc->lvVarIndex] = nullptr;
                             VarSetOps::RemoveElemD(compiler, registerCandidateVars, fieldVarDsc->lvVarIndex);
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                            VarSetOps::RemoveElemD(compiler, largeVectorVars, fieldVarDsc->lvVarIndex);
+#endif
                             JITDUMP("*");
                         }
                         // This is not accurate, but we need a non-zero refCnt for the parent so that it will
@@ -2003,12 +2006,6 @@ void           LinearScan::identifyCandidates()
             }
             JITDUMP("  ");
             DBEXEC(VERBOSE, newInt->dump(compiler));
-        }
-        else
-        {
-            // Added code just to check if we ever reach here. If not delete this if-else.
-            assert(false);
-            localVarIntervals[varDsc->lvVarIndex] = nullptr;
         }
     }
 

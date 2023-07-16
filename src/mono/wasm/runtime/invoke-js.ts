@@ -10,7 +10,7 @@ import { setI32, setI32_unchecked, receiveWorkerHeapViews } from "./memory";
 import { monoStringToString, stringToMonoStringRoot } from "./strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef, JSFunctionSignature, JSMarshalerArguments, WasmRoot, BoundMarshalerToJs, JSFnHandle, BoundMarshalerToCs, JSHandle, MarshalerType } from "./types/internal";
 import { Int32Ptr } from "./types/emscripten";
-import { INTERNAL, Module, runtimeHelpers } from "./globals";
+import { INTERNAL, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { bind_arg_marshal_to_js } from "./marshal-to-js";
 import { mono_wasm_new_external_root } from "./roots";
 import { mono_log_debug, mono_wasm_symbolicate_string } from "./logging";
@@ -309,22 +309,22 @@ function mono_wasm_lookup_function(function_name: string, js_module_name: string
 }
 
 export function set_property(self: any, name: string, value: any): void {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     self[name] = value;
 }
 
 export function get_property(self: any, name: string): any {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     return self[name];
 }
 
 export function has_property(self: any, name: string): boolean {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     return name in self;
 }
 
 export function get_typeof_property(self: any, name: string): string {
-    mono_assert(self, "Null reference");
+    mono_check(self, "Null reference");
     return typeof self[name];
 }
 
@@ -336,8 +336,8 @@ export const importedModulesPromises: Map<string, Promise<any>> = new Map();
 export const importedModules: Map<string, Promise<any>> = new Map();
 
 export function dynamic_import(module_name: string, module_url: string): Promise<any> {
-    mono_assert(module_name, "Invalid module_name");
-    mono_assert(module_url, "Invalid module_name");
+    mono_assert(module_name && typeof module_name === "string", "module_name must be string");
+    mono_assert(module_url && typeof module_url === "string", "module_url must be string");
     assert_synchronization_context();
     let promise = importedModulesPromises.get(module_name);
     const newPromise = !promise;
@@ -397,6 +397,7 @@ export function wrap_no_error_root(is_exception: Int32Ptr | null, result?: WasmR
 }
 
 export function assert_bindings(): void {
+    loaderHelpers.assert_runtime_running();
     if (MonoWasmThreads) {
         mono_assert(runtimeHelpers.mono_wasm_bindings_is_ready, "Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads");
     } else {

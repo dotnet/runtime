@@ -12,13 +12,14 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.SourceGeneration.Configuration.Binder.Tests;
 using SourceGenerators.Tests;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
 {
     [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
-    public partial class ConfigurationBindingGeneratorTests
+    public partial class ConfigurationBindingGeneratorTests : ConfigurationBinderTestsBase
     {
         private static class Diagnostics
         {
@@ -188,6 +189,59 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
             }
         }
 
+        [Fact]
+        public async Task BindCanParseMethodParam()
+        {
+            string source = """
+                using System;
+                using Microsoft.AspNetCore.Builder;
+                using Microsoft.Extensions.Configuration;
+                using Microsoft.Extensions.DependencyInjection;
+
+                public class Program
+                {
+                    public static void Main()
+                    {
+                        ConfigurationBuilder configurationBuilder = new();
+                        IConfiguration config = configurationBuilder.Build();
+
+                        BindOptions(config, new MyClass0());
+                        BindOptions(config, new MyClass1(), (_) => { });
+                        BindOptions(config, "", new MyClass2());
+                    }
+
+                    private void BindOptions(IConfiguration config, MyClass0 instance)
+                    {
+                        config.Bind(instance);
+                    }
+
+                    private void BindOptions(IConfiguration config, MyClass1 instance, Action<BinderOptions>? configureOptions)
+                    {
+                        config.Bind(instance, configureOptions);
+                    }
+
+                    private void BindOptions(IConfiguration config, string path, MyClass2 instance)
+                    {
+                        config.Bind(path, instance);
+                    }
+
+                    public class MyClass0 { }
+                    public class MyClass1 { }
+                    public class MyClass2 { }
+                }
+                """;
+
+            var (d, r) = await RunGenerator(source);
+            Assert.Single(r);
+
+            string generatedSource = string.Join('\n', r[0].SourceText.Lines.Select(x => x.ToString()));
+            Assert.Contains($"public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass0 obj) => {{ }};", generatedSource);
+            Assert.Contains($"public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, global::Program.MyClass1 obj, global::System.Action<global::Microsoft.Extensions.Configuration.BinderOptions>? configureOptions) => {{ }};", generatedSource);
+            Assert.Contains($"public static void Bind(this global::Microsoft.Extensions.Configuration.IConfiguration configuration, string key, global::Program.MyClass2 obj) => {{ }};", generatedSource);
+
+            Assert.Empty(d);
+        }
+
         private static async Task VerifyAgainstBaselineUsingFile(
             string filename,
             string testSourceCode,
@@ -203,12 +257,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
                                              .Split(Environment.NewLine);
 
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
+            bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
+                out string errorMessage);
 
+#if !SKIP_BASELINES
             Assert.Single(r);
             (assessDiagnostics ?? ((d) => Assert.Empty(d))).Invoke(d);
-
-            Assert.True(RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
-                out string errorMessage), errorMessage);
+            Assert.True(success, errorMessage);
+#endif
         }
 
         private static async Task<(ImmutableArray<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGenerator(

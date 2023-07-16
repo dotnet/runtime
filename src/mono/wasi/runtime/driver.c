@@ -63,7 +63,9 @@ int32_t monoeg_g_hasenv(const char *variable);
 void mono_free (void*);
 int32_t mini_parse_debug_option (const char *option);
 char *mono_method_get_full_name (MonoMethod *method);
+#ifndef INVARIANT_TIMEZONE
 extern void mono_register_timezones_bundle (void);
+#endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 extern void mono_register_assemblies_bundle (void);
 #ifndef INVARIANT_GLOBALIZATION
@@ -439,7 +441,9 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mini_parse_debug_option ("top-runtime-invoke-unhandled");
 
+#ifndef INVARIANT_TIMEZONE
 	mono_register_timezones_bundle ();
+#endif /* INVARIANT_TIMEZONE */
 #ifdef WASM_SINGLE_FILE
 	mono_register_assemblies_bundle ();
 #endif

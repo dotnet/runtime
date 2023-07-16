@@ -11,6 +11,7 @@ namespace System.Text.Json.Serialization.Tests
     {
         [Fact]
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/80020", TestRuntimes.Mono)]
         public async Task MultipleThreadsLooping()
         {
             const int Iterations = 100;

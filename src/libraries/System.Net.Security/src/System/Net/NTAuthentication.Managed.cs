@@ -785,7 +785,7 @@ namespace System.Net
             Span<byte> signature)
         {
             BinaryPrimitives.WriteInt32LittleEndian(signature, 1);
-            BinaryPrimitives.WriteUInt32LittleEndian(signature.Slice(12), _serverSequenceNumber);
+            BinaryPrimitives.WriteUInt32LittleEndian(signature.Slice(12), sequenceNumber);
             using (var hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.MD5, signingKey))
             {
                 hmac.AppendData(signature.Slice(12, 4));

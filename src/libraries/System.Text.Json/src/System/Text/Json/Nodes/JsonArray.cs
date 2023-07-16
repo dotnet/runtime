@@ -48,14 +48,18 @@ namespace System.Text.Json.Nodes
             InitializeFromArray(items);
         }
 
-        internal override JsonNode InternalDeepClone()
-        {
-            if (_jsonElement.HasValue)
-            {
-                return new JsonArray(_jsonElement.Value.Clone(), Options);
-            }
+        internal override JsonValueKind GetValueKindCore() => JsonValueKind.Array;
 
-            List<JsonNode?> list = List;
+        internal override JsonNode DeepCloneCore()
+        {
+            GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement);
+
+            if (list is null)
+            {
+                return jsonElement.HasValue
+                    ? new JsonArray(jsonElement.Value.Clone(), Options)
+                    : new JsonArray(Options);
+            }
 
             var jsonArray = new JsonArray(Options)
             {
@@ -64,29 +68,21 @@ namespace System.Text.Json.Nodes
 
             for (int i = 0; i < list.Count; i++)
             {
-                JsonNode? item = list[i];
-                if (item is null)
-                {
-                    jsonArray.Add(null);
-                }
-                else
-                {
-                    jsonArray.Add(item.DeepClone());
-                }
+                jsonArray.Add(list[i]?.DeepCloneCore());
             }
 
             return jsonArray;
         }
 
-        internal override bool DeepEquals(JsonNode? node)
+        internal override bool DeepEqualsCore(JsonNode? node)
         {
             switch (node)
             {
                 case null or JsonObject:
                     return false;
                 case JsonValue value:
-                    // JsonValueTrimmable/NonTrimmable can hold the array type so calling this method to continue the deep comparision.
-                    return value.DeepEquals(this);
+                    // JsonValue instances have special comparison semantics, dispatch to their implementation.
+                    return value.DeepEqualsCore(this);
                 case JsonArray array:
                     List<JsonNode?> currentList = List;
                     List<JsonNode?> otherList = array.List;
@@ -153,17 +149,12 @@ namespace System.Text.Json.Nodes
         /// </exception>
         public static JsonArray? Create(JsonElement element, JsonNodeOptions? options = null)
         {
-            if (element.ValueKind == JsonValueKind.Null)
+            return element.ValueKind switch
             {
-                return null;
-            }
-
-            if (element.ValueKind == JsonValueKind.Array)
-            {
-                return new JsonArray(element, options);
-            }
-
-            throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Array)));
+                JsonValueKind.Null => null,
+                JsonValueKind.Array => new JsonArray(element, options),
+                _ => throw new InvalidOperationException(SR.Format(SR.NodeElementWrongType, nameof(JsonValueKind.Array))),
+            };
         }
 
         internal JsonArray(JsonElement element, JsonNodeOptions? options = null) : base(options)
@@ -183,28 +174,20 @@ namespace System.Text.Json.Nodes
         [RequiresDynamicCode(JsonValue.CreateDynamicCodeMessage)]
         public void Add<T>(T? value)
         {
-            if (value == null)
+            JsonNode? nodeToAdd = value switch
             {
-                Add(null);
-            }
-            else
-            {
-                JsonNode jNode = value as JsonNode ?? new JsonValueNotTrimmable<T>(value);
+                null => null,
+                JsonNode node => node,
+                _ => JsonValue.Create(value, Options)
+            };
 
-                // Call the IList.Add() implementation.
-                Add(jNode);
-            }
+            Add(nodeToAdd);
         }
 
-        internal List<JsonNode?> List
-        {
-            get
-            {
-                CreateNodes();
-                Debug.Assert(_list != null);
-                return _list;
-            }
-        }
+        /// <summary>
+        /// Gets or creates the underlying list containing the element nodes of the array.
+        /// </summary>
+        internal List<JsonNode?> List => _list is { } list ? list : InitializeList();
 
         internal JsonNode? GetItem(int index)
         {
@@ -237,72 +220,78 @@ namespace System.Text.Json.Nodes
                 ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
-            if (_jsonElement.HasValue)
+            GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement);
+
+            if (list is null && jsonElement.HasValue)
             {
-                _jsonElement.Value.WriteTo(writer);
+                jsonElement.Value.WriteTo(writer);
             }
             else
             {
-                CreateNodes();
-                Debug.Assert(_list != null);
-
-                options ??= s_defaultOptions;
-
                 writer.WriteStartArray();
 
-                for (int i = 0; i < _list.Count; i++)
+                foreach (JsonNode? element in List)
                 {
-                    JsonNodeConverter.Instance.Write(writer, _list[i]!, options);
+                    if (element is null)
+                    {
+                        writer.WriteNullValue();
+                    }
+                    else
+                    {
+                        element.WriteTo(writer, options);
+                    }
                 }
 
                 writer.WriteEndArray();
             }
         }
 
-        private void CreateNodes()
+        private List<JsonNode?> InitializeList()
         {
-            if (_list is null)
+            GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement);
+
+            if (list is null)
             {
-                CreateNodesCore();
-            }
+                if (jsonElement.HasValue)
+                {
+                    JsonElement jElement = jsonElement.Value;
+                    Debug.Assert(jElement.ValueKind == JsonValueKind.Array);
 
-            void CreateNodesCore()
-            {
-                // Even though _list initialization can be subject to races,
-                // ensure that contending threads use a coherent view of jsonElement.
+                    list = new List<JsonNode?>(jElement.GetArrayLength());
 
-                // Because JsonElement cannot be read atomically there might be torn reads,
-                // however the order of read/write operations guarantees that that's only
-                // possible if the value of _list is non-null.
-                JsonElement? jsonElement = _jsonElement;
-                Interlocked.MemoryBarrier();
-                List<JsonNode?>? list = _list;
-
-                if (list is null)
+                    foreach (JsonElement element in jElement.EnumerateArray())
+                    {
+                        JsonNode? node = JsonNodeConverter.Create(element, Options);
+                        node?.AssignParent(this);
+                        list.Add(node);
+                    }
+                }
+                else
                 {
                     list = new();
-
-                    if (jsonElement.HasValue)
-                    {
-                        JsonElement jElement = jsonElement.Value;
-                        Debug.Assert(jElement.ValueKind == JsonValueKind.Array);
-
-                        list = new List<JsonNode?>(jElement.GetArrayLength());
-
-                        foreach (JsonElement element in jElement.EnumerateArray())
-                        {
-                            JsonNode? node = JsonNodeConverter.Create(element, Options);
-                            node?.AssignParent(this);
-                            list.Add(node);
-                        }
-                    }
-
-                    // Ensure _jsonElement is written to after _list
-                    _list = list;
-                    Interlocked.MemoryBarrier();
-                    _jsonElement = null;
                 }
+
+                // Ensure _jsonElement is written to after _list
+                _list = list;
+                Interlocked.MemoryBarrier();
+                _jsonElement = null;
             }
+
+            return list;
+        }
+
+        /// <summary>
+        /// Provides a coherent view of the underlying representation of the current node.
+        /// The jsonElement value should be consumed if and only if the list value is null.
+        /// </summary>
+        private void GetUnderlyingRepresentation(out List<JsonNode?>? list, out JsonElement? jsonElement)
+        {
+            // Because JsonElement cannot be read atomically there might be torn reads,
+            // however the order of read/write operations guarantees that that's only
+            // possible if the value of _list is non-null.
+            jsonElement = _jsonElement;
+            Interlocked.MemoryBarrier();
+            list = _list;
         }
 
         [ExcludeFromCodeCoverage] // Justification = "Design-time"

@@ -14,6 +14,24 @@ Support for `MarshalAs(UnmanagedType.Interface)` is added to the interop source 
 
 The `ComInterfaceMarshaller<T>` type has the following general behavior: An unmanaged pointer is marshalled to a managed object through `GetOrCreateObjectForComInstance` on a shared `StrategyBasedComWrappers` instance. A managed object is marshalled to an unmanaged pointer through that same shared instance with the `GetOrCreateComInterfaceForObject` method and then calling `QueryInterface` on the returned `IUnknown*` to get the pointer for the unmanaged interface with the IID from the managed type as defined by our default interface details strategy (or the IID of `IUnknown` if the managed type has no IID).
 
+### Strict Blittability
+
+Strict blittability checks have been slightly relaxed. A few select types are now considered strictly blittable that previously were not:
+
+- `System.Runtime.InteropServices.CLong`
+- `System.Runtime.InteropServices.CULong`
+- `System.Runtime.InteropServices.NFloat`
+- `System.Guid`
+
+The first three types are interop intrinsics that were specifically designed to be used at the unmanaged API layer, so they should be considered blittable by all interop systems. `System.Guid` is extremely commonly used in COM-based APIs, and with the move to supporting COM interop in source-generation, this type shows up in signatures quite a bit. As .NET has always maintained that `Guid` is a blittable representation of `GUID` and it is marked as `NonVersionable` (so we have already committed to maintain the shape between multiple versions of the runtime), we have decided to add it to the list of strictly blittable types.
+
+We strive to keep this list of "exceptions" to our strict blittability rules small, but we will continue to evaluate the list of types in the future as we explore new interop scenarios. We will follow these rules to determine if we will consider encoding the type as strictly blittable in the future:
+
+- The type is defined in the same assembly as `System.Object` (the core assembly) and is marked either as `NonVersionable` or `Intrinsic` in CoreCLR's System.Private.CoreLib.
+- The type is an primitive ABI type defined by the interop team.
+
+Types that meet one of these two criterion will have stable shapes and will not accidentally introduce non-blittable fields like `bool` and `char`, so we can consider adding them to the exception list. We do not guarantee that we will add any more types as exceptions in the future, but we will consider it if we find a compelling reason to do so.
+
 ## Version 2 (.NET 7 Release)
 
 The focus of version 2 is to support all repos that make up the .NET Product, including ASP.NET Core and Windows Forms, as well as all packages in dotnet/runtime.

@@ -41,7 +41,6 @@ System.Data.Odbc.OdbcTransaction</PackageDescription>
     <Compile Include="Common\System\Data\Common\DbConnectionStringCommon.cs" />
     <Compile Include="$(CommonPath)System\Data\Common\NameValuePair.cs"
              Link="Common\System\Data\Common\NameValuePair.cs" />
-    <Compile Include="Common\System\Data\Common\NameValuePermission.cs" />
     <Compile Include="Common\System\Data\Common\SafeNativeMethods.cs" />
     <Compile Include="Common\System\Data\DataStorage.cs" />
     <Compile Include="Common\System\Data\ProviderBase\DbBuffer.cs" />

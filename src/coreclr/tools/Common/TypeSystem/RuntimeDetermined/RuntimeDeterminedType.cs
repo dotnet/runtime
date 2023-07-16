@@ -129,6 +129,14 @@ namespace Internal.TypeSystem
             return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
         }
 
+        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        {
+            MethodDesc method = _rawCanonType.GetMethodWithEquivalentSignature(name, signature, substitution);
+            if (method == null)
+                return null;
+            return Context.GetMethodForRuntimeDeterminedType(method.GetTypicalMethodDefinition(), this);
+        }
+
         protected override TypeFlags ComputeTypeFlags(TypeFlags mask)
         {
             TypeFlags flags = 0;

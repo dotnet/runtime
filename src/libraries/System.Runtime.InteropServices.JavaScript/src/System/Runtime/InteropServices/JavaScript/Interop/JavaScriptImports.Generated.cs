@@ -44,5 +44,10 @@ namespace System.Runtime.InteropServices.JavaScript
         public static partial JSObject GetDotnetInstance();
         [JSImport("INTERNAL.dynamic_import")]
         public static partial Task<JSObject> DynamicImport(string moduleName, string moduleUrl);
+
+#if DEBUG
+        [JSImport("globalThis.console.log")]
+        public static partial void Log([JSMarshalAs<JSType.String>] string message);
+#endif
     }
 }

@@ -515,14 +515,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                 ? context
                 : throw new KeyNotFoundException($"No execution context found for session {sessionId}");
 
-        public bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext)
+        public bool TryGetCurrentExecutionContextValue(SessionId id, out ExecutionContext executionContext, bool ignoreDestroyedContext = true)
         {
             executionContext = null;
             if (!contexts.TryGetValue(id, out ConcurrentBag<ExecutionContext> contextBag))
                 return false;
             if (contextBag.IsEmpty)
                 return false;
-            executionContext = contextBag.Where(context => context.Id == contextBag.Where(context => context.Destroyed == false).Max(context => context.Id)).FirstOrDefault();
+            IEnumerable<ExecutionContext> validContexts = null;
+            if (ignoreDestroyedContext)
+                validContexts = contextBag.Where(context => context.Destroyed == false);
+            else
+                validContexts = contextBag;
+            if (!validContexts.Any())
+                return false;
+            int maxId = validContexts.Max(context => context.Id);
+            executionContext = contextBag.FirstOrDefault(context => context.Id == maxId);
             return executionContext != null;
         }
 
@@ -540,7 +548,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public bool TryGetAndAddContext(SessionId sessionId, ExecutionContext newExecutionContext, out ExecutionContext previousExecutionContext)
         {
-            bool hasExisting = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext);
+            bool hasExisting = TryGetCurrentExecutionContextValue(sessionId, out previousExecutionContext, ignoreDestroyedContext: false);
             ConcurrentBag<ExecutionContext> bag = contexts.GetOrAdd(sessionId, _ => new ConcurrentBag<ExecutionContext>());
             bag.Add(newExecutionContext);
             return hasExisting;
@@ -567,6 +575,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!contexts.TryGetValue(sessionId, out ConcurrentBag<ExecutionContext> contextBag))
                 return;
             foreach (ExecutionContext context in contextBag.Where(x => x.Id == id).ToList())
+                context.Destroyed = true;
+        }
+        public void ClearContexts(SessionId sessionId)
+        {
+            if (!contexts.TryGetValue(sessionId, out ConcurrentBag<ExecutionContext> contextBag))
+                return;
+            foreach (ExecutionContext context in contextBag)
                 context.Destroyed = true;
         }
         public bool ContainsKey(SessionId sessionId) => contexts.ContainsKey(sessionId);
