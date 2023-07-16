@@ -290,6 +290,8 @@
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'maccatalyst'" >maccatalyst</RuntimePackOSSuffix>
+
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
 
