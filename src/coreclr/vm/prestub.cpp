@@ -372,6 +372,15 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
+    NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+    if (shouldTier && !nativeCodeVersion.IsDefaultVersion())
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        if (pConfig->GetCodeVersion().GetILCodeVersion().IsDeoptimized())
+        {
+            shouldTier = false;
+        }
+    }
 
     if (pConfig->MayUsePrecompiledCode())
     {
@@ -1274,7 +1283,8 @@ namespace
                 continue;
 
             // Check signature
-            MetaSig::CompareState state{};
+            TokenPairList list { nullptr };
+            MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;

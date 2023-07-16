@@ -3,27 +3,31 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record ObjectSpec : TypeSpec
     {
-        public ObjectSpec(INamedTypeSymbol type) : base(type)
-        {
-            InitializeMethodDisplayString = $"Initialize{type.Name.Replace(".", string.Empty).Replace("<", string.Empty).Replace(">", string.Empty)}";
-        }
+        public ObjectSpec(INamedTypeSymbol type) : base(type) { }
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Object;
 
         public override InitializationStrategy InitializationStrategy { get; set; }
 
-        public override bool CanInitialize => CanInitCompexType;
+        public override bool CanInitialize => CanInitComplexObject();
 
         public Dictionary<string, PropertySpec> Properties { get; } = new(StringComparer.OrdinalIgnoreCase);
 
         public List<ParameterSpec> ConstructorParameters { get; } = new();
 
-        public string? InitializeMethodDisplayString { get; }
+        private string _displayStringWithoutSpecialCharacters;
+        public string DisplayStringWithoutSpecialCharacters =>
+            _displayStringWithoutSpecialCharacters ??= $"{MinimalDisplayString.Replace(".", string.Empty).Replace("<", string.Empty).Replace(">", string.Empty)}";
+
+        public override bool NeedsMemberBinding => CanInitialize &&
+            Properties.Values.Count > 0 &&
+            Properties.Values.Any(p => p.ShouldBind());
     }
 }

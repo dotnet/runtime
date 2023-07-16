@@ -201,4 +201,10 @@
   <data name="ValidatorsNeedSimpleConstructorTitle" xml:space="preserve">
     <value>Validators used for transitive or enumerable validation must have a constructor with no parameters.</value>
   </data>
+  <data name="InaccessibleValidationAttributeMessage" xml:space="preserve">
+    <value>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</value>
+  </data>
+  <data name="InaccessibleValidationAttributeTitle" xml:space="preserve">
+    <value>Validation attribute on the member is inaccessible from the validator type..</value>
+  </data>
 </root>

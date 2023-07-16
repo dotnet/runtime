@@ -34,7 +34,6 @@ VPTR_CLASS(JumpStubStubManager)
 VPTR_CLASS(RangeSectionStubManager)
 VPTR_CLASS(ILStubManager)
 VPTR_CLASS(InteropDispatchStubManager)
-VPTR_CLASS(DelegateInvokeStubManager)
 #if defined(TARGET_X86) && !defined(UNIX_X86_ABI)
 VPTR_CLASS(TailCallStubManager)
 #endif

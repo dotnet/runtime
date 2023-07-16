@@ -101,7 +101,7 @@ namespace System.Text.Json.Nodes
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   <see cref="JsonNode"/>.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON text to parse.</param>

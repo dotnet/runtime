@@ -44,20 +44,9 @@
 
 #include "stressLog.h"
 #ifdef FEATURE_EVENT_TRACE
-    #ifndef _INC_WINDOWS
-        typedef void* LPVOID;
-        typedef uint32_t UINT;
-        typedef void* PVOID;
-        typedef uint64_t ULONGLONG;
-        typedef uint32_t ULONG;
-        typedef int64_t LONGLONG;
-        typedef uint8_t BYTE;
-        typedef uint16_t UINT16;
-    #endif // _INC_WINDOWS
 
     #include "clretwallmain.h"
     #include "eventtrace.h"
-    #include "eventtrace_etw.h"
 
 #else // FEATURE_EVENT_TRACE
 
