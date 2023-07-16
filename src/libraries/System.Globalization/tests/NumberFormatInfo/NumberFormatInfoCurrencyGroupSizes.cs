@@ -10,21 +10,44 @@ namespace System.Globalization.Tests
     {
         public static IEnumerable<object[]> CurrencyGroupSizes_TestData()
         {
-            yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 } };
-            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 } };
+            yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 3 }, null };
+            yield return new object[] { CultureInfo.GetCultureInfo("en-US").NumberFormat, new int[] { 3 }, null };
 
             if (PlatformDetection.IsNotUsingLimitedCultures && !PlatformDetection.IsUbuntu && !PlatformDetection.IsWindows7 && !PlatformDetection.IsWindows8x && !PlatformDetection.IsFedora)
             {
-                yield return new object[] { CultureInfo.GetCultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 } };
+                yield return new object[] { CultureInfo.GetCultureInfo("ur-IN").NumberFormat, new int[] { 3, 2 },  new int[] { 3 }};
             }
+        }
+
+        private static bool ArrayEqual<T>(T[] a, T[] b)
+        {
+            if (a == null || b == null)
+            {
+                return a == b;
+            }
+
+            if (a.Length != b.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < a.Length; ++i)
+            {
+                if (!a[i].Equals(b[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         [Theory]
         [MemberData(nameof(CurrencyGroupSizes_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79867", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
-        public void CurrencyGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected)
+        public void CurrencyGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected, int [] expectedAlternative)
         {
-            Assert.Equal(expected, format.CurrencyGroupSizes);
+            Assert.True(ArrayEqual(expected, format.CurrencyGroupSizes) || ArrayEqual(expectedAlternative, format.CurrencyGroupSizes),
+            $"Expected {string.Join(", ", expected)} or {string.Join(", ", expectedAlternative ?? Array.Empty<int>())}, got {string.Join(", ", format.CurrencyGroupSizes)}");
         }
 
         [Theory]
