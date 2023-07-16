@@ -2452,12 +2452,10 @@ emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_m
 	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
 	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		// g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
 		emit_missing_method_error (mb, find_method_error, "constructor");
 		mono_error_cleanup (find_method_error);
 		return;
 	}
-	g_assert (target_method);
 	g_assert (target_method->klass == target_class);
 
 	emit_unsafe_accessor_ldargs (mb, sig, 0);
@@ -2499,12 +2497,10 @@ emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor
 	else
 		target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
 	if (!is_ok (find_method_error) || target_method == NULL) {
-		// g_warning ("FAILed to find '%s' in '%s' with sig '%s', due to %s\n", member_name, m_class_get_name (target_class), mono_signature_full_name (member_sig), mono_error_get_message (find_method_error));
 		emit_missing_method_error (mb, find_method_error, member_name);
 		mono_error_cleanup (find_method_error);
 		return;
 	}
-	g_assert (target_method);
 	if (!hasthis && target_method->klass != target_class) {
 		emit_missing_method_error (mb, find_method_error, member_name);
 		return;
