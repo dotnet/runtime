@@ -61,11 +61,6 @@
       <ILLinkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsDir)', '..', '.packages', 'microsoft.net.illink.tasks', '$(MicrosoftNETILLinkTasksVersion)'))</ILLinkDir>
     </PropertyGroup>
 
-    <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'coreclr'">
-        <CoreCLRILCompilerDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', '$(HostArchitecture)', 'ilc'))</CoreCLRILCompilerDir>
-        <IlcSdkDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsBinDir)', 'coreclr', '$(TargetOS).$(TargetArchitecture).$(CoreCLRConfiguration)', 'aotsdk'))</IlcSdkDir>
-    </PropertyGroup>
-
     <ItemGroup Condition="'$(NeedsiOSSDK)' == 'true'">
       <HelixCorrelationPayload Include="cmake" Uri="$(CMakeUrl)"                 Destination="build/cmake" />
       <HelixCorrelationPayload Include="$(AppleAppBuilderDir)"                   Destination="build/AppleAppBuilder" />
@@ -75,9 +70,9 @@
       <HelixCorrelationPayload Include="$(iOSLikeLibraryBuilderTargetsDir)"      Destination="build/common" />
       <HelixCorrelationPayload Include="$(MonoAotCrossDir)"                      Destination="build/cross"                      Condition="'$(RuntimeFlavor)' == 'mono'" />
       <HelixCorrelationPayload Include="$(MonoTargetsTasksDir)"                  Destination="build/MonoTargetsTasks" />
-      <HelixCorrelationPayload Include="$(CoreCLRILCompilerDir)"                 Destination="build/ilc"                        Condition="'$(RuntimeFlavor)' == 'coreclr'" />
+      <HelixCorrelationPayload Include="$(CoreCLRCrossILCompilerDir)"            Destination="build/ilc"                        Condition="'$(RuntimeFlavor)' == 'coreclr'" />
       <HelixCorrelationPayload Include="$(NativeAotTargetsPath)"                 Destination="build/BuildIntegration"           Condition="'$(RuntimeFlavor)' == 'coreclr'" />
-      <HelixCorrelationPayload Include="$(IlcSdkDir)"                            Destination="build/aotsdk"                     Condition="'$(RuntimeFlavor)' == 'coreclr'" />
+      <HelixCorrelationPayload Include="$(CoreCLRAotSdkDir)"                     Destination="build/aotsdk"                     Condition="'$(RuntimeFlavor)' == 'coreclr'" />
       <HelixCorrelationPayload Include="$(ILLinkDir)"                            Destination="build/microsoft.net.illink.tasks" />
     </ItemGroup>
 
