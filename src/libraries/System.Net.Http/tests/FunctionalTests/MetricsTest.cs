@@ -46,11 +46,20 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void VerifySchemeHostPortTags(KeyValuePair<string, object?>[] tags, Uri uri)
+        private static void VerifySchemeHostPortSocketAddressTags(KeyValuePair<string, object?>[] tags, Uri uri, bool verifySocketAddress = false)
         {
             VerifyOptionalTag(tags, "scheme", uri.Scheme);
             VerifyOptionalTag(tags, "host", uri.Host);
             VerifyOptionalTag(tags, "port", uri.Port);
+
+            if (verifySocketAddress)
+            {
+                string socketAddress = (string)tags.Single(t => t.Key == "socket.address").Value;
+                IPAddress ip = IPAddress.Parse(socketAddress);
+                Assert.True(ip.Equals(IPAddress.Loopback.MapToIPv6()) ||
+                    ip.Equals(IPAddress.Loopback) ||
+                    ip.Equals(IPAddress.IPv6Loopback));
+            }
         }
 
         protected static void VerifyRequestDuration(Measurement<double> measurement, Uri uri, string? protocol, int? statusCode, string method = "GET") =>
@@ -60,7 +69,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.Equal(InstrumentNames.RequestDuration, instrumentName);
             Assert.InRange(measurement, double.Epsilon, 60);
-            VerifySchemeHostPortTags(tags, uri);
+            VerifySchemeHostPortSocketAddressTags(tags, uri);
             VerifyOptionalTag(tags, "method", method);
             VerifyOptionalTag(tags, "protocol", protocol);
             VerifyOptionalTag(tags, "status-code", statusCode);
@@ -73,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.Equal(InstrumentNames.CurrentRequests, instrumentName);
             Assert.Equal(expectedValue, measurement);
-            VerifySchemeHostPortTags(tags, uri);
+            VerifySchemeHostPortSocketAddressTags(tags, uri);
         }
 
         protected static void VerifyFailedRequests(Measurement<long> measurement, long expectedValue, Uri uri, string? protocol, int? statusCode, string method = "GET")
@@ -82,7 +91,7 @@ namespace System.Net.Http.Functional.Tests
 
             KeyValuePair<string, object?>[] tags = measurement.Tags.ToArray();
 
-            VerifySchemeHostPortTags(tags, uri);
+            VerifySchemeHostPortSocketAddressTags(tags, uri);
 
             Assert.Equal(method, tags.Single(t => t.Key == "method").Value);
             VerifyOptionalTag(tags, "protocol", protocol);
@@ -93,7 +102,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.Equal(expectedName, actualName);
             Assert.Equal(expectedValue, Assert.IsType<long>(measurement));
-            VerifySchemeHostPortTags(tags, uri);
+            VerifySchemeHostPortSocketAddressTags(tags, uri, verifySocketAddress: true);
             VerifyOptionalTag(tags, "protocol", protocol);
         }
 
@@ -101,7 +110,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.InRange(measurement, double.Epsilon, 60);
             Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
-            VerifySchemeHostPortTags(tags, uri);
+            VerifySchemeHostPortSocketAddressTags(tags, uri, verifySocketAddress: true);
             VerifyOptionalTag(tags, "protocol", protocol);
         }
 

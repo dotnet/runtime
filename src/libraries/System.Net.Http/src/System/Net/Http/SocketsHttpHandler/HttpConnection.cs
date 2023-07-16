@@ -74,8 +74,9 @@ namespace System.Net.Http
         public HttpConnection(
             HttpConnectionPool pool,
             Stream stream,
-            TransportContext? transportContext)
-            : base(pool)
+            TransportContext? transportContext,
+            IPEndPoint? remoteEndPoint)
+            : base(pool, remoteEndPoint)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -517,7 +518,7 @@ namespace System.Net.Http
             CancellationTokenRegistration cancellationRegistration = RegisterCancellation(cancellationToken);
             try
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
                 WriteHeaders(request, normalizedMethod);
 

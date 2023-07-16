@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Net.Http.HPack;
+using System.Net.Http.Metrics;
 using System.Net.Http.QPack;
 using System.Net.Quic;
 using System.Net.Security;
@@ -955,7 +956,6 @@ namespace System.Net.Http
 #endif
                 // if the authority was sent as an option through alt-svc then include alt-used header
                 http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, request.RequestUri, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())
@@ -1544,11 +1544,8 @@ namespace System.Net.Http
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
                     stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
-                    if (HttpTelemetry.Log.IsEnabled())
-                    {
-                        // remoteEndPoint is returned optionally for diagnostic purposes.
-                        remoteEndPoint = GetRemoteEndPoint(stream);
-                    }
+                    // remoteEndPoint is returned for diagnostic purposes.
+                    remoteEndPoint = GetRemoteEndPoint(stream);
                     if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
                     {
                         stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
@@ -1557,11 +1554,8 @@ namespace System.Net.Http
 
                 case HttpConnectionKind.Proxy:
                     stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
-                    if (HttpTelemetry.Log.IsEnabled())
-                    {
-                        // remoteEndPoint is returned optionally for diagnostic purposes.
-                        remoteEndPoint = GetRemoteEndPoint(stream);
-                    }
+                    // remoteEndPoint is returned for diagnostic purposes.
+                    remoteEndPoint = GetRemoteEndPoint(stream);
                     if (_sslOptionsProxy != null)
                     {
                         stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
@@ -1735,16 +1729,14 @@ namespace System.Net.Http
         private async ValueTask<HttpConnection> ConstructHttp11ConnectionAsync(bool async, Stream stream, TransportContext? transportContext, HttpRequestMessage request, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
         {
             Stream newStream = await ApplyPlaintextFilterAsync(async, stream, HttpVersion.Version11, request, cancellationToken).ConfigureAwait(false);
-            Debug.Assert(request.RequestUri != null);
-            return new HttpConnection(this, newStream, transportContext, request.RequestUri, remoteEndPoint);
+            return new HttpConnection(this, newStream, transportContext, remoteEndPoint);
         }
 
         private async ValueTask<Http2Connection> ConstructHttp2ConnectionAsync(Stream stream, HttpRequestMessage request, IPEndPoint? remoteEndPoint, CancellationToken cancellationToken)
         {
             stream = await ApplyPlaintextFilterAsync(async: true, stream, HttpVersion.Version20, request, cancellationToken).ConfigureAwait(false);
 
-            Debug.Assert(request.RequestUri != null);
-            Http2Connection http2Connection = new Http2Connection(this, stream, request.RequestUri, remoteEndPoint);
+            Http2Connection http2Connection = new Http2Connection(this, stream, remoteEndPoint);
             try
             {
                 await http2Connection.SetupAsync(cancellationToken).ConfigureAwait(false);

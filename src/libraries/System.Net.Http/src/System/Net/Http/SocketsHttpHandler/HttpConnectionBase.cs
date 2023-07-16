@@ -33,9 +33,9 @@ namespace System.Net.Http
         /// <summary>Cached string for the last Server header received on this connection.</summary>
         private string? _lastServerHeaderValue;
 
-        internal long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
+        public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
 
-        public HttpConnectionBase(HttpConnectionPool pool)
+        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool.Settings._metrics is not null);
@@ -59,7 +59,8 @@ namespace System.Net.Http
                     protocol,
                     pool.IsSecure ? "https" : "http",
                     pool.OriginAuthority.HostValue,
-                    port == defaultPort ? null : port);
+                    port == defaultPort ? null : port,
+                    remoteEndPoint?.Address?.ToString());
 
                 _connectionMetrics.ConnectionEstablished();
 
@@ -70,9 +71,13 @@ namespace System.Net.Http
             {
                 _httpTelemetryMarkedConnectionAsOpened = true;
 
-                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished();
-                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished();
-                else HttpTelemetry.Log.Http30ConnectionEstablished();
+                string scheme = pool.IsSecure ? "https" : "http";
+                string host = pool.OriginAuthority.HostValue;
+                int port = pool.OriginAuthority.Port;
+
+                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
+                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
+                else HttpTelemetry.Log.Http30ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
             }
         }
 
@@ -85,9 +90,9 @@ namespace System.Net.Http
                 // Only decrement the connection count if we counted this connection
                 if (_httpTelemetryMarkedConnectionAsOpened)
                 {
-                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed();
-                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed();
-                    else HttpTelemetry.Log.Http30ConnectionClosed();
+                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed(Id);
+                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed(Id);
+                    else HttpTelemetry.Log.Http30ConnectionClosed(Id);
                 }
             }
         }
