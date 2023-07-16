@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.Options.Generators
                                 ? modelType.GetLocation()
                                 : syntax.GetLocation();
 
-                            var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation);
+                            var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType);
                             if (membersToValidate.Count == 0)
                             {
                                 // this type lacks any eligible members
@@ -243,7 +243,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate, Location lowerLocationInCompilation)
+        private List<ValidatedMember> GetMembersToValidate(ITypeSymbol modelType, bool speculate, Location lowerLocationInCompilation, ITypeSymbol validatorType)
         {
             // make a list of the most derived members in the model type
 
@@ -271,7 +271,7 @@ namespace Microsoft.Extensions.Options.Generators
                     ? member.GetLocation()
                     : lowerLocationInCompilation;
 
-                var memberInfo = GetMemberInfo(member, speculate, location);
+                var memberInfo = GetMemberInfo(member, speculate, location, validatorType);
                 if (memberInfo is not null)
                 {
                     if (member.DeclaredAccessibility != Accessibility.Public && member.DeclaredAccessibility != Accessibility.Internal)
@@ -287,7 +287,7 @@ namespace Microsoft.Extensions.Options.Generators
             return membersToValidate;
         }
 
-        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location)
+        private ValidatedMember? GetMemberInfo(ISymbol member, bool speculate, Location location, ITypeSymbol validatorType)
         {
             ITypeSymbol memberType;
             switch (member)
@@ -370,7 +370,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (transValidatorTypeName == null)
                     {
                         transValidatorIsSynthetic = true;
-                        transValidatorTypeName = AddSynthesizedValidator(memberType, member, location);
+                        transValidatorTypeName = AddSynthesizedValidator(memberType, member, location, validatorType);
                     }
 
                     // pop the stack
@@ -433,7 +433,7 @@ namespace Microsoft.Extensions.Options.Generators
                     if (enumerationValidatorTypeName == null)
                     {
                         enumerationValidatorIsSynthetic = true;
-                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member, location);
+                        enumerationValidatorTypeName = AddSynthesizedValidator(enumeratedType, member, location, validatorType);
                     }
 
                     // pop the stack
@@ -441,6 +441,12 @@ namespace Microsoft.Extensions.Options.Generators
                 }
                 else if (ConvertTo(attributeType, _symbolHolder.ValidationAttributeSymbol))
                 {
+                    if (!_compilation.IsSymbolAccessibleWithin(attributeType, validatorType))
+                    {
+                        Diag(DiagDescriptors.InaccessibleValidationAttribute, location, attributeType.Name, member.OriginalDefinition.ToDisplayString(SymbolDisplayFormat.MinimallyQualifiedFormat), validatorType.Name);
+                        continue;
+                    }
+
                     var validationAttr = new ValidationAttributeInfo(attributeType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat));
                     validationAttrs.Add(validationAttr);
 
@@ -475,7 +481,7 @@ namespace Microsoft.Extensions.Options.Generators
             {
                 if (!HasOpenGenerics(memberType, out var genericType))
                 {
-                    var membersToValidate = GetMembersToValidate(memberType, false, location);
+                    var membersToValidate = GetMembersToValidate(memberType, false, location, validatorType);
                     if (membersToValidate.Count > 0)
                     {
                         Diag(DiagDescriptors.PotentiallyMissingTransitiveValidation, location, memberType.Name, member.Name);
@@ -491,7 +497,7 @@ namespace Microsoft.Extensions.Options.Generators
                 {
                     if (!HasOpenGenerics(enumeratedType, out var genericType))
                     {
-                        var membersToValidate = GetMembersToValidate(enumeratedType, false, location);
+                        var membersToValidate = GetMembersToValidate(enumeratedType, false, location, validatorType);
                         if (membersToValidate.Count > 0)
                         {
                             Diag(DiagDescriptors.PotentiallyMissingEnumerableValidation, location, enumeratedType.Name, member.Name);
@@ -519,7 +525,7 @@ namespace Microsoft.Extensions.Options.Generators
             return null;
         }
 
-        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location)
+        private string? AddSynthesizedValidator(ITypeSymbol modelType, ISymbol member, Location location, ITypeSymbol validatorType)
         {
             var mt = modelType.WithNullableAnnotation(NullableAnnotation.None);
             if (mt.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
@@ -533,7 +539,7 @@ namespace Microsoft.Extensions.Options.Generators
                 return "global::" + validator.Namespace + "." + validator.Name;
             }
 
-            var membersToValidate = GetMembersToValidate(mt, true, location);
+            var membersToValidate = GetMembersToValidate(mt, true, location, validatorType);
             if (membersToValidate.Count == 0)
             {
                 // this type lacks any eligible members

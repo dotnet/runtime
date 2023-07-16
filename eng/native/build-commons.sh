@@ -104,7 +104,7 @@ build_native()
             echo "Error: Unknown Android architecture $hostArch."
             exit 1
         fi
-    elif [[ "$__TargetOS" == iossimulator ]]; then
+    elif [[ "$targetOS" == iossimulator ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
         # set default iOS simulator deployment target
@@ -118,7 +118,7 @@ build_native()
             echo "Error: Unknown iOS Simulator architecture $__TargetArch."
             exit 1
         fi
-    elif [[ "$__TargetOS" == ios ]]; then
+    elif [[ "$targetOS" == ios ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
         # set default iOS device deployment target
@@ -130,7 +130,7 @@ build_native()
             echo "Error: Unknown iOS architecture $__TargetArch."
             exit 1
         fi
-    elif [[ "$__TargetOS" == tvossimulator ]]; then
+    elif [[ "$targetOS" == tvossimulator ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
         # set default tvOS simulator deployment target
@@ -144,7 +144,7 @@ build_native()
             echo "Error: Unknown tvOS Simulator architecture $__TargetArch."
             exit 1
         fi
-    elif [[ "$__TargetOS" == tvos ]]; then
+    elif [[ "$targetOS" == tvos ]]; then
         cmakeArgs="-C $__RepoRootDir/eng/native/tryrun_ios_tvos.cmake $cmakeArgs"
 
         # set default tvOS device deployment target
@@ -285,7 +285,6 @@ source "$__RepoRootDir/eng/native/init-os-and-arch.sh"
 
 __TargetArch=$arch
 __TargetOS=$os
-__HostOS=$os
 __OutputRid=''
 
 # Get the number of processors available to the scheduler
@@ -482,6 +481,16 @@ while :; do
             fi
             ;;
 
+        hostos|-hostos)
+            if [[ -n "$2" ]]; then
+                __HostOS="$2"
+                shift
+            else
+                echo "ERROR: 'hostos' requires a non-empty option argument"
+                exit 1
+            fi
+            ;;
+
         *)
             handle_arguments "$1" "$2"
             if [[ "$__ShiftArgs" == 1 ]]; then
@@ -496,6 +505,10 @@ done
 
 if [[ -z "$__HostArch" ]]; then
     __HostArch=$__TargetArch
+fi
+
+if [[ -z "$__HostOS" ]]; then
+    __HostOS=$__TargetOS
 fi
 
 __CommonMSBuildArgs="/p:TargetArchitecture=$__TargetArch /p:Configuration=$__BuildType /p:TargetOS=$__TargetOS /nodeReuse:false $__OfficialBuildIdArg $__SignTypeArg $__SkipRestoreArg"

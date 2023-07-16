@@ -244,7 +244,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(NegativeZero));
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(NFloat.NaN));
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(Zero));
-            Assert.False(BinaryNumberHelper<NFloat>.IsPow2(NFloat.Epsilon));
+            Assert.True(BinaryNumberHelper<NFloat>.IsPow2(NFloat.Epsilon));
             Assert.False(BinaryNumberHelper<NFloat>.IsPow2(MaxSubnormal));
             Assert.True(BinaryNumberHelper<NFloat>.IsPow2(MinNormal));
             Assert.True(BinaryNumberHelper<NFloat>.IsPow2(One));

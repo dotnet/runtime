@@ -254,12 +254,13 @@
   </ItemGroup>
 
   <!-- Build the CoreCLR cross tools when we're doing a cross build and either we're building any CoreCLR native tools for platforms CoreCLR fully supports or when someone explicitly requests them -->
-  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsMobile)' != 'true') or $(_subset.Contains('+clr.crossarchtools+'))) and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)')">
+  <ItemGroup Condition="(('$(ClrRuntimeBuildSubsets)' != '' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR') or $(_subset.Contains('+clr.crossarchtools+'))) and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)')">
     <ProjectToBuild
       Include="$(CoreClrProjectRoot)runtime.proj"
       AdditionalProperties="%(AdditionalProperties);
                             ClrCrossComponentsSubset=true;
                             HostArchitecture=$(BuildArchitecture);
+                            HostCrossOS=$(HostOS);
                             PgoInstrument=false;
                             NoPgoOptimize=true;
                             CrossBuild=false;
@@ -300,26 +301,6 @@
                             CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1" Category="clr" />
   </ItemGroup>
 
-  <!-- When targeting the iOS platforms with Native AOT, build the ClrAllJitsSubset and the Ilc for the host  -->
-  <PropertyGroup>
-    <IsNativeAOTHostBuildEnabled Condition="$(_subset.Contains('+clr.nativeaotruntime+')) and '$(NativeAotSupported)' == 'true' and '$(PrimaryRuntimeFlavor)' == 'CoreCLR' and '$(TargetsAppleMobile)' == 'true'">true</IsNativeAOTHostBuildEnabled>
-    <NativeAOTAdditionalProperties Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">TargetOS=osx;TargetArchitecture=$(BuildArchitecture)</NativeAOTAdditionalProperties>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(IsNativeAOTHostBuildEnabled)' == 'true'">
-    <ProjectToBuild
-      Include="$(CoreClrProjectRoot)runtime.proj"
-      AdditionalProperties="%(AdditionalProperties);
-                            $(NativeAOTAdditionalProperties);
-                            ClrAllJitsSubset=true;
-                            ClrCrossComponentsSubset=true;
-                            PgoInstrument=false;
-                            NoPgoOptimize=true;
-                            CMakeArgs=$(CMakeArgs) -DCLR_CROSS_COMPONENTS_BUILD=1"
-      Category="clr" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
-    <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" AdditionalProperties="$(NativeAOTAdditionalProperties)" />
-  </ItemGroup>
-
   <ItemGroup Condition="$(_subset.Contains('+crossdacpack+'))">
     <ProjectToBuild Include="$(CoreClrProjectRoot).nuget\Microsoft.CrossOsDiag.Private.CoreCLR\Microsoft.CrossOsDiag.Private.CoreCLR.proj" Category="clr" />
   </ItemGroup>
@@ -336,8 +317,8 @@
     <ProjectToBuild Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler.csproj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
     <ProjectToBuild Include="$(CoreClrProjectRoot)nativeaot\BuildIntegration\BuildIntegration.proj" Category="clr" Condition="'$(NativeAotSupported)' == 'true'" />
 
-    <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)')" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
-    <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="'$(NativeAotSupported)' == 'true' and ('$(CrossBuild)' == 'true' or '$(BuildArchitecture)' != '$(TargetArchitecture)' or '$(HostOS)' != '$(TargetOS)')" Include="$(CoreClrProjectRoot)tools\aot\ILCompiler\ILCompiler_crossarch.csproj" Category="clr" />
+    <ProjectToBuild Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(HostOS)' != '$(TargetOS)'" Include="$(CoreClrProjectRoot)tools\aot\crossgen2\crossgen2_crossarch.csproj" Category="clr" />
 
     <ProjectToBuild Condition="'$(TargetOS)' == 'windows' or ('$(TargetOS)' == 'linux' and ('$(TargetArchitecture)' == 'x64' or '$(TargetArchitecture)' == 'arm64')) or '$(TargetOS)' == 'osx'" Include="$(CoreClrProjectRoot)tools\SuperFileCheck\SuperFileCheck.csproj" Category="clr" />
   </ItemGroup>

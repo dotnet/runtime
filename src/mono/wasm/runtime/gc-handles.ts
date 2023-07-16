@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { runtimeHelpers } from "./globals";
+import { loaderHelpers, runtimeHelpers } from "./globals";
 import { mono_log_warn } from "./logging";
 import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "./types/internal";
 import { create_weak_ref } from "./weak-ref";
@@ -109,11 +109,15 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
 
 export function assert_not_disposed(result: any): GCHandle {
     const gc_handle = result[js_owned_gc_handle_symbol];
-    mono_assert(gc_handle != GCHandleNull, "ObjectDisposedException");
+    mono_check(gc_handle != GCHandleNull, "ObjectDisposedException");
     return gc_handle;
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
+    if (loaderHelpers.is_exited()) {
+        // We're shutting down, so don't bother doing anything else.
+        return;
+    }
     teardown_managed_proxy(null, gc_handle);
 }
 

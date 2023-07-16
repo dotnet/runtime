@@ -6515,7 +6515,14 @@ void CodeGen::genJmpMethod(GenTree* jmp)
                 // Must be <= 16 bytes or else it wouldn't be passed in registers, except for HFA,
                 // which can be bigger (and is handled above).
                 noway_assert(EA_SIZE_IN_BYTES(varDsc->lvSize()) <= 16);
-                loadType = varDsc->GetLayout()->GetGCPtrType(0);
+                if (emitter::isFloatReg(argReg))
+                {
+                    loadType = varDsc->lvIs4Field1 ? TYP_FLOAT : TYP_DOUBLE;
+                }
+                else
+                {
+                    loadType = varDsc->GetLayout()->GetGCPtrType(0);
+                }
             }
             else
             {
@@ -6532,14 +6539,23 @@ void CodeGen::genJmpMethod(GenTree* jmp)
             regSet.AddMaskVars(genRegMask(argReg));
             gcInfo.gcMarkRegPtrVal(argReg, loadType);
 
-            if (compiler->lvaIsMultiregStruct(varDsc, compiler->info.compIsVarArgs))
+            if (varDsc->GetOtherArgReg() < REG_STK)
             {
                 // Restore the second register.
-                argRegNext = genRegArgNext(argReg);
+                argRegNext = varDsc->GetOtherArgReg();
 
-                loadType = varDsc->GetLayout()->GetGCPtrType(1);
+                if (emitter::isFloatReg(argRegNext))
+                {
+                    loadType = varDsc->lvIs4Field2 ? TYP_FLOAT : TYP_DOUBLE;
+                }
+                else
+                {
+                    loadType = varDsc->GetLayout()->GetGCPtrType(1);
+                }
+
                 loadSize = emitActualTypeSize(loadType);
-                GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, TARGET_POINTER_SIZE);
+                int offs = loadSize == EA_4BYTE ? 4 : 8;
+                GetEmitter()->emitIns_R_S(ins_Load(loadType), loadSize, argRegNext, varNum, offs);
 
                 regSet.AddMaskVars(genRegMask(argRegNext));
                 gcInfo.gcMarkRegPtrVal(argRegNext, loadType);

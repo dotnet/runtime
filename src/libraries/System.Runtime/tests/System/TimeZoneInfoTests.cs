@@ -2334,6 +2334,14 @@ namespace System.Tests
                         yield return new object[] { tz };
                     }
                 }
+
+                if (!PlatformDetection.IsBrowser && !PlatformDetection.IsiOS && !PlatformDetection.IstvOS)
+                {
+                    foreach (string alias in s_UtcAliases)
+                    {
+                        yield return new object[] { TimeZoneInfo.FindSystemTimeZoneById(alias) };
+                    }
+                }
             }
         }
 
@@ -2421,6 +2429,19 @@ namespace System.Tests
                 {
                     Assert.False(string.IsNullOrWhiteSpace(timeZone.DaylightName), $"Id: \"{timeZone.Id}\", DaylightName should not have been empty.");
                 }
+            }
+        }
+
+        private static bool SupportICUWithUtcAlias => PlatformDetection.IsIcuGlobalization && PlatformDetection.IsNotAppleMobile && PlatformDetection.IsNotBrowser;
+
+        [ConditionalFact(nameof(SupportICUWithUtcAlias))]
+        public static void UtcAliases_MapToUtc()
+        {
+            foreach (string alias in s_UtcAliases)
+            {
+                TimeZoneInfo actualUtc = TimeZoneInfo.FindSystemTimeZoneById(alias);
+                Assert.True(TimeZoneInfo.Utc.HasSameRules(actualUtc));
+                Assert.True(actualUtc.HasSameRules(TimeZoneInfo.Utc));
             }
         }
 

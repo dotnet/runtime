@@ -96,7 +96,7 @@ namespace Wasm.Build.Tests
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            BuildProject(buildArgs,
+            BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: true,
@@ -117,7 +117,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             bool expectRelinking = config == "Release";
-            BuildProject(buildArgs,
+            BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !expectRelinking,
@@ -145,7 +145,7 @@ namespace Wasm.Build.Tests
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            BuildProject(buildArgs,
+            BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                         DotnetWasmFromRuntimePack: true,
@@ -173,7 +173,7 @@ namespace Wasm.Build.Tests
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             bool expectRelinking = config == "Release";
-            BuildProject(buildArgs,
+            BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !expectRelinking,
@@ -217,7 +217,7 @@ namespace Wasm.Build.Tests
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
 
-            BuildProject(buildArgs,
+            BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !relinking,
@@ -391,7 +391,7 @@ namespace Wasm.Build.Tests
             buildArgs = ExpandBuildArgs(buildArgs);
 
             bool expectRelinking = config == "Release" || aot || relinking;
-            BuildProject(buildArgs,
+            BuildTemplateProject(buildArgs,
                         id: id,
                         new BuildProjectOptions(
                             DotnetWasmFromRuntimePack: !expectRelinking,

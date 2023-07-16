@@ -293,6 +293,38 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     var_types dstType = tree->CastToType();
     unsigned  dstSize = genTypeSize(dstType);
 
+#if defined(TARGET_AMD64)
+    // If AVX512 is present, we have intrinsic available to convert
+    // ulong directly to float. Hence, we need to combine the 2 nodes
+    // GT_CAST(GT_CAST(TYP_ULONG, TYP_DOUBLE), TYP_FLOAT) into a single
+    // node i.e. GT_CAST(TYP_ULONG, TYP_FLOAT). At this point, we already
+    // have the 2 GT_CAST nodes in the tree and we are combining them below.
+    if (oper->OperIs(GT_CAST))
+    {
+        GenTreeCast* innerCast = oper->AsCast();
+
+        if (innerCast->IsUnsigned())
+        {
+            GenTree*  innerOper    = innerCast->CastOp();
+            var_types innerSrcType = genActualType(innerOper);
+            var_types innerDstType = innerCast->CastToType();
+            unsigned  innerDstSize = genTypeSize(innerDstType);
+            innerSrcType           = varTypeToUnsigned(innerSrcType);
+
+            // Check if we are going from ulong->double->float
+            if ((innerSrcType == TYP_ULONG) && (innerDstType == TYP_DOUBLE) && (dstType == TYP_FLOAT))
+            {
+                if (compOpportunisticallyDependsOn(InstructionSet_AVX512F))
+                {
+                    // One optimized (combined) cast here
+                    tree = gtNewCastNode(TYP_FLOAT, innerOper, true, TYP_FLOAT);
+                    return fgMorphTree(tree);
+                }
+            }
+        }
+    }
+#endif // TARGET_AMD64
+
     // See if the cast has to be done in two steps.  R -> I
     if (varTypeIsFloating(srcType) && varTypeIsIntegral(dstType))
     {
@@ -449,7 +481,7 @@ GenTree* Compiler::fgMorphExpandCast(GenTreeCast* tree)
     {
         srcType = varTypeToUnsigned(srcType);
 
-        if (srcType == TYP_ULONG)
+        if (srcType == TYP_ULONG && !compOpportunisticallyDependsOn(InstructionSet_AVX512F))
         {
             if (dstType == TYP_FLOAT)
             {

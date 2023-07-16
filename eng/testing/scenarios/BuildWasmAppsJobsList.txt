@@ -27,3 +27,6 @@ Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WasmRunOutOfAppBundleTests
 Wasm.Build.Tests.WasmSIMDTests
 Wasm.Build.Tests.WasmTemplateTests
+Wasm.Build.Tests.TestAppScenarios.LazyLoadingTests
+Wasm.Build.Tests.TestAppScenarios.LibraryInitializerTests
+Wasm.Build.Tests.TestAppScenarios.SatelliteLoadingTests
