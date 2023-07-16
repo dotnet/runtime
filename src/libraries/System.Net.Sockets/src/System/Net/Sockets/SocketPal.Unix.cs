@@ -641,10 +641,9 @@ namespace System.Net.Sockets
             return false;
         }
 
-        public static unsafe bool TryStartConnect(SafeSocketHandle socket, byte[] socketAddress, int socketAddressLen, out SocketError errorCode)
+        public static unsafe bool TryStartConnect(SafeSocketHandle socket, Memory<byte> socketAddress, out SocketError errorCode)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
-            Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
+            Debug.Assert(socketAddress.Length > 0, $"Unexpected socketAddressLen: {socketAddress.Length}");
 
             if (socket.IsDisconnected)
             {
@@ -653,9 +652,9 @@ namespace System.Net.Sockets
             }
 
             Interop.Error err;
-            fixed (byte* rawSocketAddress = socketAddress)
+            fixed (byte* rawSocketAddress = socketAddress.Span)
             {
-                err = Interop.Sys.Connect(socket, rawSocketAddress, socketAddressLen);
+                err = Interop.Sys.Connect(socket, rawSocketAddress, socketAddress.Length);
             }
 
             if (err == Interop.Error.SUCCESS)
@@ -1117,15 +1116,15 @@ namespace System.Net.Sockets
             return errorCode;
         }
 
-        public static SocketError Connect(SafeSocketHandle handle, byte[] socketAddress, int socketAddressLen)
+        public static SocketError Connect(SafeSocketHandle handle, Memory<byte> socketAddress)
         {
             if (!handle.IsNonBlocking)
             {
-                return handle.AsyncContext.Connect(socketAddress, socketAddressLen);
+                return handle.AsyncContext.Connect(socketAddress);
             }
 
             SocketError errorCode;
-            bool completed = TryStartConnect(handle, socketAddress, socketAddressLen, out errorCode);
+            bool completed = TryStartConnect(handle, socketAddress, out errorCode);
             if (completed)
             {
                 handle.RegisterConnectResult(errorCode);

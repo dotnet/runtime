@@ -187,12 +187,12 @@ namespace System.Net.Sockets
             return socket.IsInvalid ? GetLastSocketError() : SocketError.Success;
         }
 
-        public static SocketError Connect(SafeSocketHandle handle, byte[] peerAddress, int peerAddressLen)
+        public static SocketError Connect(SafeSocketHandle handle, Memory<byte> peerAddress)
         {
             SocketError errorCode = Interop.Winsock.WSAConnect(
                 handle,
-                peerAddress,
-                peerAddressLen,
+                peerAddress.Span,
+                peerAddress.Length,
                 IntPtr.Zero,
                 IntPtr.Zero,
                 IntPtr.Zero,

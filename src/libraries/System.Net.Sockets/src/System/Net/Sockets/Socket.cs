@@ -3172,7 +3172,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             try
             {
-                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
+                errorCode = SocketPal.Connect(_handle, socketAddress.SocketBuffer);
             }
             catch (Exception ex)
             {
