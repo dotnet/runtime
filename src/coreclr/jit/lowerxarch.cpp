@@ -811,7 +811,7 @@ void Lowering::LowerCast(GenTree* tree)
     }
     else if (srcType == TYP_ULONG)
     {
-        noway_assert(castToType != TYP_FLOAT);
+        assert(castToType != TYP_FLOAT || comp->compIsaSupportedDebugOnly(InstructionSet_AVX512F));
     }
 
     // Case of src is a small type and dst is a floating point type.
