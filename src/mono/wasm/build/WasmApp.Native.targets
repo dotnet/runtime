@@ -682,7 +682,7 @@
       <Output TaskParameter="CompiledAssemblies" ItemName="_WasmAssembliesInternal" />
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </MonoAOTCompiler>
-     <ILStrip
+    <ILStrip
         Condition=" '$(WASMStripIL)' == 'true' "
         TrimIndividualMethods="true"
         Assemblies="@(_WasmAssembliesInternal)">

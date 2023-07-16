@@ -116,6 +116,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
     private bool TrimMethods(ITaskItem assemblyItem)
     {
+        string assemblyFilePathArg = assemblyItem.ItemSpec;
         string methodTokenFile = assemblyItem.GetMetadata("MethodTokenFile");
         if (string.IsNullOrEmpty(methodTokenFile))
         {
@@ -165,7 +166,7 @@ public class ILStrip : Microsoft.Build.Utilities.Task
 
         if (isTrimmed)
         {
-            AddItemToTrimmedList(assemblyFilePath, trimmedAssemblyFilePath);
+            AddItemToTrimmedList(assemblyFilePathArg, trimmedAssemblyFilePath);
         }
 
         return true;
