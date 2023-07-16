@@ -2304,7 +2304,10 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
-    // AVX: For now we support only conversion from Int/Long -> float
+    // AVX: Supports following conversions
+    //   srcType = int16/int64                     castToType = float
+    // AVX512: Supports following conversions
+    //   srcType = ulong                           castToType = double/float
 
     switch (from)
     {
@@ -2373,6 +2376,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     unreached();
             }
             break;
+
+        case TYP_ULONG:
+            switch (to)
+            {
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
+                case TYP_FLOAT:
+                    return INS_vcvtusi2ss64;
+                default:
+                    unreached();
+            }
 
         default:
             unreached();

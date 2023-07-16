@@ -50,8 +50,8 @@ export function _release_temp_frame(): void {
 
 
 function assert_int_in_range(value: Number, min: Number, max: Number) {
-    mono_assert(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
-    mono_assert(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
+    mono_check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
+    mono_check(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
 }
 
 export function _zero_region(byteOffset: VoidPtr, sizeBytes: number): void {
@@ -141,7 +141,7 @@ function autoThrowI52(error: I52Error) {
  * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
  */
 export function setI52(offset: MemOffset, value: number): void {
-    mono_assert(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
+    mono_check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
     receiveWorkerHeapViews();
     const error = cwraps.mono_wasm_f64_to_i52(<any>offset, value);
     autoThrowI52(error);
@@ -151,28 +151,28 @@ export function setI52(offset: MemOffset, value: number): void {
  * Throws for values which are not 52 bit integer or are negative. See Number.isSafeInteger().
  */
 export function setU52(offset: MemOffset, value: number): void {
-    mono_assert(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
-    mono_assert(value >= 0, "Can't convert negative Number into UInt64");
+    mono_check(Number.isSafeInteger(value), () => `Value is not a safe integer: ${value} (${typeof (value)})`);
+    mono_check(value >= 0, "Can't convert negative Number into UInt64");
     receiveWorkerHeapViews();
     const error = cwraps.mono_wasm_f64_to_u52(<any>offset, value);
     autoThrowI52(error);
 }
 
 export function setI64Big(offset: MemOffset, value: bigint): void {
-    mono_assert(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
-    mono_assert(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
+    mono_check(typeof value === "bigint", () => `Value is not an bigint: ${value} (${typeof (value)})`);
+    mono_check(value >= min_int64_big && value <= max_int64_big, () => `Overflow: value ${value} is out of ${min_int64_big} ${max_int64_big} range`);
 
     Module.HEAP64[<any>offset >>> 3] = value;
 }
 
 export function setF32(offset: MemOffset, value: number): void {
-    mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
+    mono_check(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     receiveWorkerHeapViews();
     Module.HEAPF32[<any>offset >>> 2] = value;
 }
 
 export function setF64(offset: MemOffset, value: number): void {
-    mono_assert(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
+    mono_check(typeof value === "number", () => `Value is not a Number: ${value} (${typeof (value)})`);
     receiveWorkerHeapViews();
     Module.HEAPF64[<any>offset >>> 3] = value;
 }

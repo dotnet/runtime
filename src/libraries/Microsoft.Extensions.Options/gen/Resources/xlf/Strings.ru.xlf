@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
-        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <target state="translated">Атрибут проверки "{0}" элемента "{1}" недоступен из типа средства проверки "{2}".</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeTitle">
         <source>Validation attribute on the member is inaccessible from the validator type..</source>
-        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <target state="translated">Атрибут проверки элемента недоступен из типа средства проверки.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

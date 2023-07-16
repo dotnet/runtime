@@ -5,7 +5,7 @@ import { mono_log_warn } from "./logging";
 import { MonoConfig } from "../types";
 import { appendUniqueQuery } from "./assets";
 import { loaderHelpers } from "./globals";
-import { abort_startup } from "./exit";
+import { mono_exit } from "./exit";
 
 export type LibraryInitializerTypes =
     "onRuntimeConfigLoaded"
@@ -62,8 +62,9 @@ export async function invokeLibraryInitializers(functionName: string, args: any[
 async function abortStartupOnError(scriptName: string, methodName: string, callback: () => Promise<void> | undefined): Promise<void> {
     try {
         await callback();
-    } catch (error) {
-        mono_log_warn(`Failed to invoke '${methodName}' on library initializer '${scriptName}': ${error}`);
-        abort_startup(error, true);
+    } catch (err) {
+        mono_log_warn(`Failed to invoke '${methodName}' on library initializer '${scriptName}': ${err}`);
+        mono_exit(1, err);
+        throw err;
     }
 }
