@@ -13,9 +13,9 @@ namespace Microsoft.Extensions.Logging
     /// </summary>
     /// <typeparam name="T">The type.</typeparam>
     [DebuggerDisplay("{DebuggerToString(),nq}")]
-    [DebuggerTypeProxy(typeof(Logger<>.LoggerTDebugView))]
     public class Logger<T> : ILogger<T>
     {
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
         private readonly ILogger _logger;
 
         /// <summary>
@@ -52,12 +52,6 @@ namespace Microsoft.Extensions.Logging
         internal string DebuggerToString()
         {
             return DebuggerDisplayFormatting.DebuggerToString(GetCategoryName(), this);
-        }
-
-        private sealed class LoggerTDebugView(Logger<T> logger)
-        {
-            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
-            public ILogger Logger => logger._logger;
         }
     }
 }
