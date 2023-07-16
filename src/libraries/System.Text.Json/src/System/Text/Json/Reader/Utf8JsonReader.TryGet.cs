@@ -68,10 +68,12 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">The destination buffer is too small to hold the unescaped value.</exception>
         public readonly int CopyString(Span<byte> utf8Destination)
         {
-            if (_tokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
+            if (_tokenType is not (JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number))
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
+
+            Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
 
             int bytesWritten;
 
@@ -124,10 +126,12 @@ namespace System.Text.Json
         /// <exception cref="ArgumentException">The destination buffer is too small to hold the unescaped value.</exception>
         public readonly int CopyString(Span<char> destination)
         {
-            if (_tokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
+            if (_tokenType is not (JsonTokenType.String or JsonTokenType.PropertyName or JsonTokenType.Number))
             {
                 ThrowHelper.ThrowInvalidOperationException_ExpectedString(_tokenType);
             }
+
+            Debug.Assert(_tokenType != JsonTokenType.Number || !ValueIsEscaped, "Numbers can't contain escape characters.");
 
             scoped ReadOnlySpan<byte> unescapedSource;
             byte[]? rentedBuffer = null;

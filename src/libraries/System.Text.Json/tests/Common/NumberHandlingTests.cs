@@ -63,6 +63,11 @@ namespace System.Text.Json.Serialization.Tests
             await RunAsRootTypeTest(JsonNumberTestData.Floats);
             await RunAsRootTypeTest(JsonNumberTestData.Doubles);
             await RunAsRootTypeTest(JsonNumberTestData.Decimals);
+#if NETCOREAPP
+            await RunAsRootTypeTest(JsonNumberTestData.Int128s);
+            await RunAsRootTypeTest(JsonNumberTestData.UInt128s);
+            await RunAsRootTypeTest(JsonNumberTestData.Halfs);
+#endif
             await RunAsRootTypeTest(JsonNumberTestData.NullableBytes);
             await RunAsRootTypeTest(JsonNumberTestData.NullableSBytes);
             await RunAsRootTypeTest(JsonNumberTestData.NullableShorts);
@@ -74,6 +79,11 @@ namespace System.Text.Json.Serialization.Tests
             await RunAsRootTypeTest(JsonNumberTestData.NullableFloats);
             await RunAsRootTypeTest(JsonNumberTestData.NullableDoubles);
             await RunAsRootTypeTest(JsonNumberTestData.NullableDecimals);
+#if NETCOREAPP
+            await RunAsRootTypeTest(JsonNumberTestData.NullableInt128s);
+            await RunAsRootTypeTest(JsonNumberTestData.NullableUInt128s);
+            await RunAsRootTypeTest(JsonNumberTestData.NullableHalfs);
+#endif
         }
 
         private async Task RunAsRootTypeTest<T>(List<T> numbers)
@@ -373,6 +383,11 @@ namespace System.Text.Json.Serialization.Tests
             await RunAsCollectionElementTest(JsonNumberTestData.Floats);
             await RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             await RunAsCollectionElementTest(JsonNumberTestData.Decimals);
+#if NETCOREAPP
+            await RunAsCollectionElementTest(JsonNumberTestData.Int128s);
+            await RunAsCollectionElementTest(JsonNumberTestData.UInt128s);
+            await RunAsCollectionElementTest(JsonNumberTestData.Halfs);
+#endif
 
             // https://github.com/dotnet/runtime/issues/66220
             if (!PlatformDetection.IsAppleMobile)
@@ -388,6 +403,11 @@ namespace System.Text.Json.Serialization.Tests
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
                 await RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+#if NETCOREAPP
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableInt128s);
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableUInt128s);
+                await RunAsCollectionElementTest(JsonNumberTestData.NullableHalfs);
+#endif
             }
         }
 
@@ -1080,6 +1100,11 @@ namespace System.Text.Json.Serialization.Tests
             await Perform_Number_RoundTripNull_Test<ulong>();
             await Perform_Number_RoundTripNull_Test<float>();
             await Perform_Number_RoundTripNull_Test<decimal>();
+#if NETCOREAPP
+            await Perform_Number_RoundTripNull_Test<Int128>();
+            await Perform_Number_RoundTripNull_Test<UInt128>();
+            await Perform_Number_RoundTripNull_Test<Half>();
+#endif
         }
 
         private async Task Perform_Number_RoundTripNull_Test<T>()
@@ -1105,6 +1130,11 @@ namespace System.Text.Json.Serialization.Tests
             await Perform_NullableNumber_RoundTripNull_Test<ulong?>();
             await Perform_NullableNumber_RoundTripNull_Test<float?>();
             await Perform_NullableNumber_RoundTripNull_Test<decimal?>();
+#if NETCOREAPP
+            await Perform_NullableNumber_RoundTripNull_Test<Int128?>();
+            await Perform_NullableNumber_RoundTripNull_Test<UInt128?>();
+            await Perform_NullableNumber_RoundTripNull_Test<Half?>();
+#endif
         }
 
         private async Task Perform_NullableNumber_RoundTripNull_Test<T>()
@@ -1133,6 +1163,11 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<float>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<double>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<decimal>(json, s_optionsAllowFloatConstants));
+#if NETCOREAPP
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Int128>(json, s_optionsAllowFloatConstants));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<UInt128>(json, s_optionsAllowFloatConstants));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Half>(json, s_optionsAllowFloatConstants));
+#endif
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<byte?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<sbyte?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<short?>(json, s_optionsAllowFloatConstants));
@@ -1144,6 +1179,11 @@ namespace System.Text.Json.Serialization.Tests
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<float?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<double?>(json, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<decimal?>(json, s_optionsAllowFloatConstants));
+#if NETCOREAPP
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Int128?>(json, s_optionsAllowFloatConstants));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<UInt128?>(json, s_optionsAllowFloatConstants));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Half?>(json, s_optionsAllowFloatConstants));
+#endif
         }
 
         [Fact]
