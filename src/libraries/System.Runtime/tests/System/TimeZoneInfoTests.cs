@@ -2432,8 +2432,9 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows & ~TestPlatforms.Browser & ~TestPlatforms.iOS & ~TestPlatforms.tvOS)]
+        private static bool SupportICUWithUtcAlias => PlatformDetection.IsIcuGlobalization && PlatformDetection.IsNotAppleMobile && PlatformDetection.IsNotBrowser;
+
+        [ConditionalFact(nameof(SupportICUWithUtcAlias))]
         public static void UtcAliases_MapToUtc()
         {
             foreach (string alias in s_UtcAliases)
