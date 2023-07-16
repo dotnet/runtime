@@ -239,6 +239,9 @@
 
   <ItemGroup Condition="'$(TargetOS)' == 'ios' and '$(RunDisablediOSTests)' != 'true'">
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
+
+    <!-- Functional tests on devices have problems with return codes from mlaunch -->
+    <ProjectExclusions Include="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\*.Test.csproj" Exclude="$(RepoRoot)\src\tests\FunctionalTests\iOS\Device\**\iOS.Device.Aot-Llvm.Test.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetOS)' == 'tvos' and '$(RunDisablediOSTests)' != 'true'">
