@@ -193,7 +193,8 @@ namespace System.IO
                     string volumePath = Interop.Kernel32.GetVolumePathName(sourceName);
 
                     // Read the source volume's cluster size.
-                    if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, out int sectorsPerCluster, out int bytesPerCluster, out _, out _))
+                    uint sectorsPerCluster, bytesPerCluster;
+                    if (!Interop.Kernel32.GetDiskFreeSpace(volumePath!, &sectorsPerCluster, &bytesPerCluster, null, null))
                     {
                         throw new Exception("K");
                         //return false;

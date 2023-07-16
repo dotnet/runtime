@@ -9,6 +9,6 @@ internal static partial class Interop
     {
         [LibraryImport(Libraries.Kernel32, EntryPoint = "GetDiskFreeSpaceW",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static partial bool GetDiskFreeSpace(string drive, out int sectorsPerCluster, out int bytesPerSector, out int numberOfFreeClusters, out int totalNumberOfClusters);
+        internal static unsafe partial bool GetDiskFreeSpace(string drive, uint* sectorsPerCluster, uint* bytesPerSector, uint* numberOfFreeClusters, uint* totalNumberOfClusters);
     }
 }
