@@ -58,13 +58,6 @@ namespace System.IO
 
         private static unsafe bool TryCloneFile(string sourceFullPath, string destFullPath, bool overwrite)
         {
-            // Check the destination file isn't an alternative data stream (unsupported, and crashes on up to some versions of Windows 11).
-            // Todo: make some of these conditional based on Windows version.
-            if (Path.GetFileName(destFullPath.AsSpan()).Contains(':'))
-            {
-                return false;
-            }
-
             // Open the source file.
             // We use FILE_FLAGS_NO_BUFFERING since we're not using unaligned writes during cloning and can skip buffering overhead.
             const int FILE_FLAG_NO_BUFFERING = 0x20000000;
