@@ -528,12 +528,10 @@ namespace System.Text.RegularExpressions
 
                 if (_pos < _pattern.Length)
                 {
-                    if (_pattern[_pos++] == '$')
-                    {
-                        _unit = ScanDollar();
-                    }
+                    _pos++;
+                    _unit = ScanDollar();
 
-                    _concatenation.AddChild(_unit!);
+                    _concatenation.AddChild(_unit);
                     _unit = null;
                 }
             }
