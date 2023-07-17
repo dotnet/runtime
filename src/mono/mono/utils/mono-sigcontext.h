@@ -111,7 +111,14 @@
 
 #elif defined(TARGET_AMD64)
 
-#if defined(__APPLE__)
+#if defined(MONO_CROSS_COMPILE)
+	#define UCONTEXT_REG_RDX(ctx) NULL
+	#define UCONTEXT_REG_RSP(ctx) NULL
+	#define UCONTEXT_REG_RSI(ctx) NULL
+	#define UCONTEXT_REG_RDI(ctx) NULL
+	#define UCONTEXT_REG_RIP(ctx) NULL
+
+#elif defined(__APPLE__)
 	#define UCONTEXT_REG_RAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rax)
 	#define UCONTEXT_REG_RBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rbx)
 	#define UCONTEXT_REG_RCX(ctx) (((ucontext_t*)(ctx))->uc_mcontext->__ss.__rcx)
