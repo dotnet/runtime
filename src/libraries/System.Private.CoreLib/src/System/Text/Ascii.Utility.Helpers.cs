@@ -115,7 +115,7 @@ namespace System.Text
             uint num = Unsafe.ReadUnaligned<uint>(ref source);
             return ((byte)num | (num << 8)) & 0x00FF00FFu;
         }
-        
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static uint ReadUInt32WideningUpper(ref byte source)
         {
