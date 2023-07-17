@@ -132,5 +132,11 @@ namespace System.Text.Json.Serialization
         /// Specifies the source generation mode for types that don't explicitly set the mode with <see cref="JsonSerializableAttribute.GenerationMode"/>.
         /// </summary>
         public JsonSourceGenerationMode GenerationMode { get; set; }
+
+        /// <summary>
+        /// Instructs the source generator to default to <see cref="JsonStringEnumConverter"/>
+        /// instead of numeric serialization for all enum types encountered in its type graph.
+        /// </summary>
+        public bool UseStringEnumConverter { get; set; }
     }
 }
