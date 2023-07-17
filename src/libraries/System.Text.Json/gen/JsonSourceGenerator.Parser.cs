@@ -449,6 +449,7 @@ namespace System.Text.Json.SourceGeneration
                 bool hasExtensionDataProperty = false;
                 TypeRef? runtimeTypeRef = null;
                 List<PropertyGenerationSpec>? propertySpecs = null;
+                List<int>? fastPathPropertyIndices = null;
                 ObjectConstructionStrategy constructionStrategy = default;
                 bool constructorSetsRequiredMembers = false;
                 ParameterGenerationSpec[]? ctorParamSpecs = null;
@@ -549,7 +550,7 @@ namespace System.Text.Json.SourceGeneration
                     implementsIJsonOnSerialized = _knownSymbols.IJsonOnSerializedType.IsAssignableFrom(type);
 
                     ctorParamSpecs = ParseConstructorParameters(typeToGenerate, constructor, out constructionStrategy, out constructorSetsRequiredMembers);
-                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeLocation, options, out hasExtensionDataProperty);
+                    propertySpecs = ParsePropertyGenerationSpecs(contextType, typeToGenerate, typeLocation, options, out hasExtensionDataProperty, out fastPathPropertyIndices);
                     propertyInitializerSpecs = ParsePropertyInitializers(ctorParamSpecs, propertySpecs, constructorSetsRequiredMembers, ref constructionStrategy);
                 }
 
@@ -581,6 +582,7 @@ namespace System.Text.Json.SourceGeneration
                     UnmappedMemberHandling = unmappedMemberHandling,
                     PreferredPropertyObjectCreationHandling = preferredPropertyObjectCreationHandling,
                     PropertyGenSpecs = propertySpecs?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<PropertyGenerationSpec>.Empty,
+                    FastPathPropertyIndices = fastPathPropertyIndices?.ToImmutableEquatableArray(),
                     PropertyInitializerSpecs = propertyInitializerSpecs?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<PropertyInitializerGenerationSpec>.Empty,
                     CtorParamGenSpecs = ctorParamSpecs?.ToImmutableEquatableArray() ?? ImmutableEquatableArray<ParameterGenerationSpec>.Empty,
                     CollectionType = collectionType,
@@ -828,11 +830,11 @@ namespace System.Text.Json.SourceGeneration
                 in TypeToGenerate typeToGenerate,
                 Location typeLocation,
                 SourceGenerationOptionsSpec? options,
-                out bool hasExtensionDataProperty)
+                out bool hasExtensionDataProperty,
+                out List<int>? fastPathPropertyIndices)
             {
                 List<PropertyGenerationSpec> properties = new();
-                Dictionary<string, ITypeSymbol>? ignoredVirtualMembers = null;
-                bool isPropertyOrderSpecified = false;
+                PropertyHierarchyResolutionState state = new();
                 hasExtensionDataProperty = false;
 
                 // Walk the type hierarchy starting from the current type up to the base type(s)
@@ -848,14 +850,18 @@ namespace System.Text.Json.SourceGeneration
                             // property is static or an indexer
                             propertyInfo.IsStatic || propertyInfo.Parameters.Length > 0 ||
                             // It is overridden by a derived property
-                            PropertyIsOverriddenAndIgnored(propertyInfo))
+                            PropertyIsOverriddenAndIgnored(propertyInfo, state.IgnoredMembers))
                         {
                             continue;
                         }
 
-                        PropertyGenerationSpec? spec = ParsePropertyGenerationSpec(contextType, declaringTypeRef, typeLocation, propertyInfo.Type, propertyInfo, ref hasExtensionDataProperty, typeToGenerate.Mode, options);
-
-                        AddMember(propertyInfo.Type, spec);
+                        AddMember(
+                            declaringTypeRef,
+                            memberType: propertyInfo.Type,
+                            memberInfo: propertyInfo,
+                            typeToGenerate.Mode,
+                            ref state,
+                            ref hasExtensionDataProperty);
                     }
 
                     foreach (IFieldSymbol fieldInfo in members.OfType<IFieldSymbol>())
@@ -872,42 +878,135 @@ namespace System.Text.Json.SourceGeneration
                             continue;
                         }
 
-                        PropertyGenerationSpec? spec = ParsePropertyGenerationSpec(contextType, declaringTypeRef, typeLocation, fieldInfo.Type, fieldInfo, ref hasExtensionDataProperty, typeToGenerate.Mode, options);
-
-                        AddMember(fieldInfo.Type, spec);
+                        AddMember(
+                            declaringTypeRef,
+                            memberType: fieldInfo.Type,
+                            memberInfo: fieldInfo,
+                            typeToGenerate.Mode,
+                            ref state,
+                            ref hasExtensionDataProperty);
                     }
                 }
 
-                if (isPropertyOrderSpecified)
+                if (state.IsPropertyOrderSpecified)
                 {
-                    properties.StableSortByKey(p => p.Order);
+                    state.Properties.StableSortByKey(i => properties[i].Order);
                 }
 
+                fastPathPropertyIndices = state.HasInvalidConfigurationForFastPath ? null : state.Properties;
                 return properties;
 
-                void AddMember(ITypeSymbol memberType, PropertyGenerationSpec? spec)
+                void AddMember(
+                    TypeRef declaringTypeRef,
+                    ITypeSymbol memberType,
+                    ISymbol memberInfo,
+                    JsonSourceGenerationMode? generationMode,
+                    ref PropertyHierarchyResolutionState state,
+                    ref bool hasExtensionDataProperty)
                 {
-                    if (spec is null)
+                    PropertyGenerationSpec? propertySpec = ParsePropertyGenerationSpec(
+                        contextType,
+                        declaringTypeRef,
+                        typeLocation,
+                        memberType,
+                        memberInfo,
+                        ref hasExtensionDataProperty,
+                        generationMode,
+                        options);
+
+                    if (propertySpec is null)
                     {
+                        // ignored invalid property
                         return;
                     }
 
-                    properties.Add(spec);
+                    AddPropertyWithConflictResolution(propertySpec, memberInfo, propertyIndex: properties.Count, ref state);
+                    properties.Add(propertySpec);
 
-                    isPropertyOrderSpecified |= spec.Order != 0;
-
-                    if (spec.DefaultIgnoreCondition == JsonIgnoreCondition.Always && spec.IsVirtual)
+                    // In case of JsonInclude fail if either:
+                    // 1. the getter is not accessible by the source generator or
+                    // 2. neither getter or setter methods are public.
+                    if (propertySpec.HasJsonInclude && (!propertySpec.CanUseGetter || !propertySpec.IsPublic))
                     {
-                        ignoredVirtualMembers ??= new();
-                        ignoredVirtualMembers[spec.MemberName] = memberType;
+                        state.HasInvalidConfigurationForFastPath = true;
                     }
                 }
 
-                bool PropertyIsOverriddenAndIgnored(IPropertySymbol property)
+                bool PropertyIsOverriddenAndIgnored(IPropertySymbol property, Dictionary<string, ISymbol>? ignoredMembers)
                 {
                     return property.IsVirtual() &&
-                        ignoredVirtualMembers?.TryGetValue(property.Name, out ITypeSymbol? ignoredMemberType) == true &&
-                        SymbolEqualityComparer.Default.Equals(property.Type, ignoredMemberType);
+                        ignoredMembers?.TryGetValue(property.Name, out ISymbol? ignoredMember) == true &&
+                        ignoredMember.IsVirtual() &&
+                        SymbolEqualityComparer.Default.Equals(property.Type, ignoredMember.GetMemberType());
+                }
+            }
+
+            private ref struct PropertyHierarchyResolutionState
+            {
+                public PropertyHierarchyResolutionState() { }
+                public readonly List<int> Properties = new();
+                public Dictionary<string, (PropertyGenerationSpec, ISymbol, int index)> AddedProperties = new();
+                public Dictionary<string, ISymbol>? IgnoredMembers;
+                public bool IsPropertyOrderSpecified;
+                public bool HasInvalidConfigurationForFastPath;
+            }
+
+            /// <summary>
+            /// Runs the property name conflict resolution algorithm for the fast-path serializer
+            /// using the compile-time specified naming policies. Note that the metadata serializer
+            /// does not consult these results since its own run-time configuration can be different.
+            /// Instead the same algorithm is executed at run-time within the JsonTypeInfo infrastructure.
+            /// </summary>
+            private static void AddPropertyWithConflictResolution(
+                PropertyGenerationSpec propertySpec,
+                ISymbol memberInfo,
+                int propertyIndex,
+                ref PropertyHierarchyResolutionState state)
+            {
+                // Algorithm should be kept in sync with the runtime equivalent in JsonTypeInfo.cs
+                string memberName = propertySpec.MemberName;
+
+                if (state.AddedProperties.TryAdd(propertySpec.EffectiveJsonPropertyName, (propertySpec, memberInfo, state.Properties.Count)))
+                {
+                    state.Properties.Add(propertyIndex);
+                    state.IsPropertyOrderSpecified |= propertySpec.Order != 0;
+                }
+                else
+                {
+                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
+                    (PropertyGenerationSpec other, ISymbol otherSymbol, int index) = state.AddedProperties[propertySpec.EffectiveJsonPropertyName];
+
+                    if (other.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                    {
+                        // Overwrite previously cached property since it has [JsonIgnore].
+                        state.AddedProperties[propertySpec.EffectiveJsonPropertyName] = (propertySpec, memberInfo, index);
+                        state.Properties[index] = state.Properties.Count;
+                        state.IsPropertyOrderSpecified |= propertySpec.Order != 0;
+                    }
+                    else
+                    {
+                        bool ignoreCurrentProperty =
+                            // Does the current property have `JsonIgnoreAttribute`?
+                            propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always ||
+                            // Is the current property hidden by the previously cached property
+                            // (with `new` keyword, or by overriding)?
+                            memberInfo.IsOverriddenOrShadowedBy(otherSymbol) ||
+                            // Was a property with the same CLR name ignored? That property hid the current property,
+                            // thus, if it was ignored, the current property should be ignored too.
+                            (state.IgnoredMembers?.TryGetValue(memberName, out ISymbol? ignored) == true && memberInfo.IsOverriddenOrShadowedBy(ignored));
+
+                        if (!ignoreCurrentProperty)
+                        {
+                            // Property name conflict cannot be reconciled
+                            // Signal the fast-path generator to emit a throwing stub method.
+                            state.HasInvalidConfigurationForFastPath = true;
+                        }
+                    }
+                }
+
+                if (propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
+                {
+                    (state.IgnoredMembers ??= new())[memberName] = memberInfo;
                 }
             }
 

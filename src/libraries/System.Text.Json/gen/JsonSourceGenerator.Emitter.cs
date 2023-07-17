@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -669,6 +668,11 @@ namespace System.Text.Json.SourceGeneration
                         writer.WriteLine($"properties[{i}].ObjectCreationHandling = {FormatObjectCreationHandling(property.ObjectCreationHandling.Value)};");
                     }
 
+                    if (property.Order != 0)
+                    {
+                        writer.WriteLine($"properties[{i}].Order = {property.Order};");
+                    }
+
                     writer.WriteLine();
                 }
 
@@ -734,7 +738,7 @@ namespace System.Text.Json.SourceGeneration
 
             private void GenerateFastPathFuncForObject(SourceWriter writer, ContextGenerationSpec contextSpec, string serializeMethodName, TypeGenerationSpec typeGenSpec)
             {
-                if (!TryResolveFastPathPropertyNameConflicts(typeGenSpec, out List<PropertyGenerationSpec>? properties))
+                if (typeGenSpec.FastPathPropertyIndices is null)
                 {
                     // Type uses configuration that doesn't support fast-path: emit a stub that just throws.
                     GenerateFastPathFuncHeader(writer, typeGenSpec, serializeMethodName, skipNullCheck: true);
@@ -758,8 +762,10 @@ namespace System.Text.Json.SourceGeneration
                 writer.WriteLine();
 
                 // Provide generation logic for each prop.
-                foreach (PropertyGenerationSpec propertyGenSpec in properties)
+                foreach (int i in typeGenSpec.FastPathPropertyIndices)
                 {
+                    PropertyGenerationSpec propertyGenSpec = typeGenSpec.PropertyGenSpecs[i];
+
                     if (!propertyGenSpec.ShouldIncludePropertyForFastPath(contextSpec))
                     {
                         continue;
@@ -1442,120 +1448,6 @@ namespace System.Text.Json.SourceGeneration
 
             private static bool IsGenerationModeSpecified(TypeGenerationSpec typeSpec, JsonSourceGenerationMode mode)
                 => typeSpec.GenerationMode == JsonSourceGenerationMode.Default || (mode & typeSpec.GenerationMode) != 0;
-
-            /// <summary>
-            /// Runs the property name conflict resolution algorithm for the fast-path serializer
-            /// using the compile-time specified naming policies. Note that the metadata serializer
-            /// does not consult these results since its own run-time configuration can be different.
-            /// Instead the same algorithm is executed at run-time within the JsonTypeInfo infrastructure.
-            /// </summary>
-            private static bool TryResolveFastPathPropertyNameConflicts(
-                TypeGenerationSpec typeSpec,
-                [NotNullWhen(true)] out List<PropertyGenerationSpec>? resolvedProperties)
-            {
-                Debug.Assert(typeSpec.IsFastPathSupported());
-
-                PropertyHierarchyResolutionState state = new();
-
-                foreach (PropertyGenerationSpec property in typeSpec.PropertyGenSpecs)
-                {
-                    // In case of JsonInclude fail if either:
-                    // 1. the getter is not accessible by the source generator or
-                    // 2. neither getter or setter methods are public.
-                    if (property.HasJsonInclude && (!property.CanUseGetter || !property.IsPublic))
-                    {
-                        resolvedProperties = null;
-                        return false;
-                    }
-
-                    if (!AddPropertyWithConflictResolution(typeSpec, property, ref state))
-                    {
-                        resolvedProperties = null;
-                        return false;
-                    }
-                }
-
-                resolvedProperties = state.Properties;
-                return true;
-            }
-
-            private ref struct PropertyHierarchyResolutionState
-            {
-                public PropertyHierarchyResolutionState() { }
-                public readonly List<PropertyGenerationSpec> Properties = new();
-                public Dictionary<string, (PropertyGenerationSpec, int index)> AddedProperties = new();
-                public HashSet<string>? IgnoredMembers;
-            }
-
-            private static bool AddPropertyWithConflictResolution(
-                TypeGenerationSpec typeSpec,
-                PropertyGenerationSpec propertySpec,
-                ref PropertyHierarchyResolutionState state)
-            {
-                // Algorithm should be kept in sync with the reflection equivalent in JsonTypeInfo.cs
-                string memberName = propertySpec.MemberName;
-
-                if (state.AddedProperties.TryAdd(propertySpec.EffectiveJsonPropertyName, (propertySpec, state.Properties.Count)))
-                {
-                    state.Properties.Add(propertySpec);
-                }
-                else
-                {
-                    // The JsonPropertyNameAttribute or naming policy resulted in a collision.
-                    (PropertyGenerationSpec other, int index) = state.AddedProperties[propertySpec.EffectiveJsonPropertyName];
-
-                    if (other.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
-                    {
-                        // Overwrite previously cached property since it has [JsonIgnore].
-                        state.AddedProperties[propertySpec.EffectiveJsonPropertyName] = (propertySpec, index);
-                        state.Properties[index] = propertySpec;
-                    }
-                    else
-                    {
-                        bool ignoreCurrentProperty;
-
-                        if (typeSpec.TypeRef.TypeKind is not TypeKind.Interface)
-                        {
-                            ignoreCurrentProperty =
-                                // Does the current property have `JsonIgnoreAttribute`?
-                                propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always ||
-                                // Is the current property hidden by the previously cached property
-                                // (with `new` keyword, or by overriding)?
-                                other.MemberName == memberName ||
-                                // Was a property with the same CLR name ignored? That property hid the current property,
-                                // thus, if it was ignored, the current property should be ignored too.
-                                state.IgnoredMembers?.Contains(memberName) == true;
-                        }
-                        else
-                        {
-                            // Unlike classes, interface hierarchies reject all naming conflicts for non-ignored properties.
-                            // Conflicts like this are possible in two cases:
-                            // 1. Diamond ambiguity in property names, or
-                            // 2. Linear interface hierarchies that use properties with DIMs.
-                            //
-                            // Diamond ambiguities are not supported. Assuming there is demand, we might consider
-                            // adding support for DIMs in the future, however that would require adding more APIs
-                            // for the case of source gen.
-
-                            ignoreCurrentProperty = propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always;
-                        }
-
-                        if (!ignoreCurrentProperty)
-                        {
-                            // Property name conflict cannot be reconciled
-                            // Signal the fast-path generator to emit a throwing stub method.
-                            return false;
-                        }
-                    }
-                }
-
-                if (propertySpec.DefaultIgnoreCondition == JsonIgnoreCondition.Always)
-                {
-                    (state.IgnoredMembers ??= new()).Add(memberName);
-                }
-
-                return true;
-            }
         }
     }
 }
