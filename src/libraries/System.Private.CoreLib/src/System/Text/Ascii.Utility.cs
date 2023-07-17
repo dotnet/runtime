@@ -1752,7 +1752,10 @@ namespace System.Text
                         goto FoundNonAsciiData;
                     }
 
-                    WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref pUtf16Buffer[currentOffset], asciiData);
+                    Unsafe.WriteUnaligned(
+                        ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]),
+                        ReadUInt32Widening(ref Unsafe.As<uint, byte>(ref asciiData)));
+
                     currentOffset += 4;
                 } while (currentOffset <= finalOffsetWhereCanLoop);
             }
@@ -1771,15 +1774,9 @@ namespace System.Text
                     goto FoundNonAsciiData;
                 }
 
-                if (BitConverter.IsLittleEndian)
-                {
-                    *(uint*)(pUtf16Buffer + currentOffset) = (asciiData | (asciiData << 8)) & 0x00ff00ffu;
-                }
-                else
-                {
-                    // this should cause test failure
-                    throw new NotImplementedException();
-                }
+                Unsafe.WriteUnaligned(
+                    ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]),
+                    ReadUInt32WideningLower(ref Unsafe.As<uint, byte>(ref asciiData)));
 
                 currentOffset += 2;
             }
@@ -1839,41 +1836,9 @@ namespace System.Text
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
 
-            if (AdvSimd.Arm64.IsSupported)
-            {
-                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
-                Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                Vector128<byte> vecNarrow = Vector128.CreateScalar(value).AsByte();
-                Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
-                Unsafe.WriteUnaligned(ref Unsafe.As<char, byte>(ref outputBuffer), vecWide.ToScalar());
-            }
-            else
-            {
-                if (BitConverter.IsLittleEndian)
-                {
-                    outputBuffer = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 1) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 2) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 3) = (char)value;
-                }
-                else
-                {
-                    Unsafe.Add(ref outputBuffer, 3) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 2) = (char)(byte)value;
-                    value >>= 8;
-                    Unsafe.Add(ref outputBuffer, 1) = (char)(byte)value;
-                    value >>= 8;
-                    outputBuffer = (char)value;
-                }
-            }
+            Unsafe.WriteUnaligned(
+                ref Unsafe.As<char, byte>(ref outputBuffer),
+                ReadUInt32Widening(ref Unsafe.As<uint, byte>(ref value)));
         }
     }
 }
