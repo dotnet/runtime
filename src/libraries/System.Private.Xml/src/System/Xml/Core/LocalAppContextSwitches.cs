@@ -1,45 +1,71 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
+using SwitchesHelpers = System.LocalAppContextSwitches;
+
 namespace System.Xml
 {
     internal static class LocalAppContextSwitches
     {
-        public static bool DontThrowOnInvalidSurrogatePairs { get; } =
-            AppContext.TryGetSwitch(
-                switchName: "Switch.System.Xml.DontThrowOnInvalidSurrogatePairs",
-                isEnabled: out bool value)
-            ? value : false;
+        private static int s_dontThrowOnInvalidSurrogatePairs;
+        public static bool DontThrowOnInvalidSurrogatePairs
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.DontThrowOnInvalidSurrogatePairs", ref s_dontThrowOnInvalidSurrogatePairs);
+            }
+        }
 
-        public static bool IgnoreEmptyKeySequences { get; } =
-            AppContext.TryGetSwitch(
-                switchName: "Switch.System.Xml.IgnoreEmptyKeySequences",
-                isEnabled: out bool value)
-            ? value : false;
+        private static int s_ignoreEmptyKeySequences;
+        public static bool IgnoreEmptyKeySequences
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreEmptyKeySequencess", ref s_ignoreEmptyKeySequences);
+            }
+        }
 
-        public static bool IgnoreKindInUtcTimeSerialization { get; } =
-            AppContext.TryGetSwitch(
-                switchName: "Switch.System.Xml.IgnoreKindInUtcTimeSerialization",
-                isEnabled: out bool value)
-            ? value : false;
+        private static int s_ignoreKindInUtcTimeSerialization;
+        public static bool IgnoreKindInUtcTimeSerialization
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreKindInUtcTimeSerialization", ref s_ignoreKindInUtcTimeSerialization);
+            }
+        }
 
-        public static bool LimitXPathComplexity { get; } =
-            AppContext.TryGetSwitch(
-                switchName: "Switch.System.Xml.LimitXPathComplexity",
-                isEnabled: out bool value)
-            ? value : false;
+        private static int s_limitXPathComplexity;
+        public static bool LimitXPathComplexity
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.LimitXPathComplexity", ref s_limitXPathComplexity);
+            }
+        }
 
-        public static bool AllowDefaultResolver { get; } =
-            AppContext.TryGetSwitch(
-                switchName: "Switch.System.Xml.AllowDefaultResolver",
-                isEnabled: out bool value)
-            ? value : false;
+        private static int s_allowDefaultResolver;
+        public static bool AllowDefaultResolver
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.AllowDefaultResolver", ref s_allowDefaultResolver);
+            }
+        }
 
-
-        public static bool IsNetworkingEnabledByDefault { get; } =
-            AppContext.TryGetSwitch(
-                switchName: "System.Xml.XmlResolver.IsNetworkingEnabledByDefault",
-                isEnabled: out bool value)
-            ? value : true;
+        private static int s_isNetworkingEnabledByDefault;
+        public static bool IsNetworkingEnabledByDefault
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                return SwitchesHelpers.GetCachedSwitchValue("System.Xml.XmlResolver.IsNetworkingEnabledByDefault", ref s_isNetworkingEnabledByDefault);
+            }
+        }
     }
 }
