@@ -374,11 +374,11 @@
             string value = item.ItemSpec;
             
             // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME environment parameter to the run script
-            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}");
+            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}") + "&& echo \"Test passed\" || { echo \"Test failed\"; exit 1; }";
             resultBuilder.AppendLine(output);
 
             // Rename the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
-            resultBuilder.AppendLine("cp \"${output_directory}/net.dot."+AppName+".log\" \"${output_directory}/"+value.Split('/')[0]+".log\"");
+            resultBuilder.AppendLine("mv \"${output_directory}/net.dot."+AppName+".log\" \"${output_directory}/"+value.Split('/')[0]+".log\"");
         }
 
         StringBuilder outputScriptBuilder = new StringBuilder(string.Join("\n", lines.Take(lines.Length - 1)));
