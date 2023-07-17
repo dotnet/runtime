@@ -1680,8 +1680,15 @@ ves_pinvoke_method (
 	}
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+	gpointer call_info = *cache;
+
+	if (!call_info) {
+		call_info = mono_arch_get_interp_native_call_info (get_default_mem_manager (), sig);
+		mono_memory_barrier ();
+		*cache = call_info;
+	}
 	CallContext ccontext;
-	mono_arch_set_native_call_context_args (&ccontext, &frame, sig);
+	mono_arch_set_native_call_context_args (&ccontext, &frame, sig, call_info);
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, &frame);
@@ -1705,7 +1712,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!context->has_resume_state) {
-		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig);
+		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
 	}
 
 	g_free (ccontext.stack);
@@ -3045,8 +3052,10 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	frame.stack = sp;
 	frame.retval = sp;
 
+	gpointer call_info = mono_arch_get_interp_native_call_info (NULL, sig);
+
 	/* Copy the args saved in the trampoline to the frame stack */
-	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig);
+	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig, call_info);
 
 	/* Allocate storage for value types */
 	stackval *newsp = sp;
@@ -3087,7 +3096,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 
 	/* Write back the return value */
 	/* 'frame' is still valid */
-	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, retp);
+	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, call_info, retp);
+
+	mono_arch_free_interp_native_call_info (call_info);
 }
 
 #else
@@ -5562,19 +5573,23 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDSTR_TOKEN) {
+		MINT_IN_CASE(MINT_LDSTR_DYNAMIC) {
 			MonoString *s = NULL;
 			guint32 strtoken = (guint32)(gsize)frame->imethod->data_items [ip [2]];
 
 			MonoMethod *method = frame->imethod->method;
-			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
-				s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
-			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				// FIXME push/pop LMF
-				s = mono_string_new_wrapper_internal ((const char*)mono_method_get_wrapper_data (method, strtoken));
-			} else {
-				g_assert_not_reached ();
-			}
+			g_assert (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
+			s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
+			LOCAL_VAR (ip [1], gpointer) = s;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDSTR_CSTR) {
+			MonoString *s = NULL;
+			const char* cstr = (const char*)frame->imethod->data_items [ip [2]];
+
+			// FIXME push/pop LMF
+			s = mono_string_new_wrapper_internal (cstr);
 			LOCAL_VAR (ip [1], gpointer) = s;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -6502,6 +6517,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
 			MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [ip [4]];
 			mono_value_copy_internal (dst_addr, locals + ip [3], klass_vt);
+			ip += 6;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_STELEM_VT_NOREF) {
+			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
+			NULL_CHECK (o);
+			guint32 aindex = LOCAL_VAR (ip [2], guint32);
+			if (aindex >= mono_array_length_internal (o))
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
+
+			guint16 size = ip [5];
+			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
+			memcpy (dst_addr, locals + ip [3], size);
 			ip += 6;
 			MINT_IN_BREAK;
 		}

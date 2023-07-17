@@ -98,5 +98,12 @@ namespace Microsoft.Extensions.Options.Generators
             messageFormat: SR.CantValidateStaticOrConstMemberMessage,
             category: Category,
             defaultSeverity: DiagnosticSeverity.Warning);
+
+        public static DiagnosticDescriptor InaccessibleValidationAttribute { get; } = Make(
+            id: "SYSLIB1215",
+            title: SR.InaccessibleValidationAttributeTitle,
+            messageFormat: SR.InaccessibleValidationAttributeMessage,
+            category: Category,
+            defaultSeverity: DiagnosticSeverity.Info);
     }
 }

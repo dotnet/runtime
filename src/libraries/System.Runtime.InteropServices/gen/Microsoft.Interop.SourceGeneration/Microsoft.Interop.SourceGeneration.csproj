@@ -6,6 +6,7 @@
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <StringResourcesPath>../Common/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
 
   <!-- Code included from System.Runtime.InteropServices -->

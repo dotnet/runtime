@@ -131,7 +131,7 @@ namespace System.Text.RegularExpressions.Tests
             Assert.True(regex.IsMatch("iI"));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMobile), nameof(PlatformDetection.IsNotBrowser))]
         // This test creates a source generated engine for each of the ~870 cultures and ensures the result compiles. This test alone takes around 30
         // seconds on a fast machine, so marking as OuterLoop.
         [OuterLoop]

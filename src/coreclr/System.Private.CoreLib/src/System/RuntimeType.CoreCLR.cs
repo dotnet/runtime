@@ -3639,37 +3639,33 @@ namespace System
         private static extern bool CanValueSpecialCast(RuntimeType valueType, RuntimeType targetType);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern object AllocateValueType(RuntimeType type, object? value);
+        internal static extern object AllocateValueType(RuntimeType type, object? value);
 
-        private CheckValueStatus TryChangeTypeSpecial(
-            ref object value,
-            out bool isValueType)
+        private CheckValueStatus TryChangeTypeSpecial(ref object value)
         {
-                Pointer? pointer = value as Pointer;
-                RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
+            Pointer? pointer = value as Pointer;
+            RuntimeType srcType = pointer != null ? pointer.GetPointerType() : (RuntimeType)value.GetType();
 
-                if (!CanValueSpecialCast(srcType, this))
-                {
-                    isValueType = false;
-                    return CheckValueStatus.ArgumentException;
-                }
+            if (!CanValueSpecialCast(srcType, this))
+            {
+                return CheckValueStatus.ArgumentException;
+            }
 
-                if (pointer != null)
+            if (pointer != null)
+            {
+                value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+            }
+            else
+            {
+                CorElementType srcElementType = GetUnderlyingType(srcType);
+                CorElementType dstElementType = GetUnderlyingType(this);
+                if (dstElementType != srcElementType)
                 {
-                    value = pointer.GetPointerValue(); // Convert source pointer to IntPtr
+                    value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
                 }
-                else
-                {
-                    CorElementType srcElementType = GetUnderlyingType(srcType);
-                    CorElementType dstElementType = GetUnderlyingType(this);
-                    if (dstElementType != srcElementType)
-                    {
-                        value = InvokeUtils.ConvertOrWiden(srcType, value, this, dstElementType);
-                    }
-                }
+            }
 
-                isValueType = true;
-                return CheckValueStatus.Success;
+            return CheckValueStatus.Success;
         }
 
         #endregion

@@ -36,6 +36,15 @@ namespace Microsoft.Extensions
             public T Value { get; set; }
         }
 
+        public record GenericOptionsRecord<T>(T Value);
+
+        public class GenericOptionsWithParamCtor<T>
+        {
+            public GenericOptionsWithParamCtor(T value) => Value = value;
+
+            public T Value { get; }
+        }
+
         public class OptionsWithNesting
         {
             public NestedOptions Nested { get; set; }

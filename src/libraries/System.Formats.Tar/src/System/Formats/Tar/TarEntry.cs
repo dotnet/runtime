@@ -555,7 +555,7 @@ namespace System.Formats.Tar
         {
             try
             {
-                File.SetLastWriteTime(destinationFileName, lastWriteTime.LocalDateTime); // SetLastWriteTime expects local time
+                File.SetLastWriteTime(destinationFileName, lastWriteTime.UtcDateTime);
             }
             catch
             {

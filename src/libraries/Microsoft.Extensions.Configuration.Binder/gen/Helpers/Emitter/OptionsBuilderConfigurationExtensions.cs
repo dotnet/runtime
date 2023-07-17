@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
@@ -18,10 +16,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                EmitBlankLineIfRequired();
-                _writer.WriteLine("/// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>");
-                _writer.WriteBlockStart($"internal static class {Identifier.GeneratedOptionsBuilderBinder}");
-                _precedingBlockExists = false;
+                EmitRootBindingClassBlockStart(Identifier.GeneratedOptionsBuilderBinder);
 
                 EmitBindMethods_Extensions_OptionsBuilder();
                 EmitBindConfigurationMethod();
@@ -44,7 +39,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitMethodBlockStart("Bind", paramList, documentation);
                     _writer.WriteLine($"return global::{Identifier.GeneratedOptionsBuilderBinder}.Bind({Identifier.optionsBuilder}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
                     _writer.WriteBlockEnd();
-                    _writer.WriteBlankLine();
                 }
 
                 EmitMethodBlockStart(
@@ -81,7 +75,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 _writer.WriteBlock($$"""
                 {{FullyQualifiedDisplayString.IConfiguration}} {{Identifier.section}} = string.Equals(string.Empty, {{Identifier.configSectionPath}}, global::System.StringComparison.OrdinalIgnoreCase) ? {{Identifier.configuration}} : {{Identifier.configuration}}.{{Identifier.GetSection}}({{Identifier.configSectionPath}});
-                {{FullyQualifiedDisplayString.CoreBindingHelper}}.{{Identifier.BindCoreUntyped}}({{Identifier.section}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}});
+                {{FullyQualifiedDisplayString.CoreBindingHelper}}.{{nameof(MethodsToGen_CoreBindingHelper.BindCoreUntyped)}}({{Identifier.section}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}});
             """);
 
                 _writer.WriteBlockEnd(");");

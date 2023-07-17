@@ -7124,7 +7124,7 @@ public:
         optMethodFlags |= OMF_HAS_GUARDEDDEVIRT;
     }
 
-    bool doesMethodHasTlsFieldAccess()
+    bool methodHasTlsFieldAccess()
     {
         return (optMethodFlags & OMF_HAS_TLS_FIELD) != 0;
     }
@@ -9524,16 +9524,6 @@ public:
         bool IsReversePInvoke()
         {
             return jitFlags->IsSet(JitFlags::JIT_FLAG_REVERSE_PINVOKE);
-        }
-
-        // true if JitFlags::JIT_FLAG_VECTOR512_THROTTLING is set to true
-        bool Vector512Throttling()
-        {
-#if defined(TARGET_XARCH)
-            return jitFlags->IsSet(JitFlags::JIT_FLAG_VECTOR512_THROTTLING);
-#else
-            return false;
-#endif
         }
 
         bool compScopeInfo; // Generate the LocalVar info ?
