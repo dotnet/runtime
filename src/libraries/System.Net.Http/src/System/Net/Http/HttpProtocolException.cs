@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Quic;
 
 namespace System.Net.Http
 {
@@ -47,10 +48,10 @@ namespace System.Net.Http
             return new HttpProtocolException((long)protocolError, message, null);
         }
 
-        internal static HttpProtocolException CreateHttp3StreamException(Http3ErrorCode protocolError)
+        internal static HttpProtocolException CreateHttp3StreamException(Http3ErrorCode protocolError, QuicException innerException)
         {
             string message = SR.Format(SR.net_http_http3_stream_error, GetName(protocolError), ((int)protocolError).ToString("x"));
-            return new HttpProtocolException((long)protocolError, message, null);
+            return new HttpProtocolException((long)protocolError, message, innerException);
         }
 
         internal static HttpProtocolException CreateHttp3ConnectionException(Http3ErrorCode protocolError, string? message = null)

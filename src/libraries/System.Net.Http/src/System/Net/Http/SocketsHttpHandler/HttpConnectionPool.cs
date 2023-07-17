@@ -1165,7 +1165,7 @@ namespace System.Net.Http
                     // Throw if fallback is not allowed by the version policy.
                     if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
                     {
-                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e);
+                        throw new HttpRequestException(SR.Format(SR.net_http_requested_version_server_refused, request.Version, request.VersionPolicy), e, httpRequestError: HttpRequestError.VersionNegotiationError);
                     }
 
                     if (NetEventSource.Log.IsEnabled())

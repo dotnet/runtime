@@ -252,27 +252,17 @@ namespace System.Net.Http
                 {
                     case Http3ErrorCode.VersionFallback:
                         // The server is requesting us fall back to an older HTTP version.
-                        throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion, httpRequestError: HttpRequestError.VersionNegotiationError);
+                        throw new HttpRequestException(SR.net_http_retry_on_older_version, ex, RequestRetryType.RetryOnLowerHttpVersion);
 
                     case Http3ErrorCode.RequestRejected:
                         // The server is rejecting the request without processing it, retry it on a different connection.
-                        throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure, httpRequestError: HttpRequestError.Unknown);
+                        HttpProtocolException rejectedException = HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        throw new HttpRequestException(SR.net_http_request_aborted, rejectedException, RequestRetryType.RetryOnConnectionFailure, httpRequestError: HttpRequestError.HttpProtocolError);
 
                     default:
                         // Our stream was reset.
-                        HttpRequestError httpRequestError;
-                        Exception innerException;
-                        if (_connection.AbortException != null)
-                        {
-                            httpRequestError = HttpRequestError.Unknown;
-                            innerException = _connection.AbortException;
-                        }
-                        else
-                        {
-                            httpRequestError = HttpRequestError.HttpProtocolError;
-                            innerException = HttpProtocolException.CreateHttp3StreamException(code);
-                        }
-                        throw new HttpRequestException(SR.net_http_client_execution_error, innerException, httpRequestError: httpRequestError);
+                        var innerException = HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        throw new HttpRequestException(SR.net_http_client_execution_error, innerException, httpRequestError: HttpRequestError.HttpProtocolError);
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
@@ -1265,7 +1255,7 @@ namespace System.Net.Http
                 case QuicException e when (e.QuicError == QuicError.StreamAborted):
                     // Peer aborted the stream
                     Debug.Assert(e.ApplicationErrorCode.HasValue);
-                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value);
+                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value, e);
 
                 case QuicException e when (e.QuicError == QuicError.ConnectionAborted):
                     // Our connection was reset. Start aborting the connection.
