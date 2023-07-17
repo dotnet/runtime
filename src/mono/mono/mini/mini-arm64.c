@@ -1689,6 +1689,14 @@ add_param (CallInfo *cinfo, ArgInfo *ainfo, MonoType *t, gboolean is_return)
 	}
 }
 
+static int
+call_info_size (MonoMethodSignature *sig)
+{
+	int n = sig->hasthis + sig->param_count;
+
+	return sizeof (CallInfo) + (sizeof (ArgInfo) * n);
+}
+
 /*
  * get_call_info:
  *
@@ -1703,10 +1711,11 @@ get_call_info (MonoMemPool *mp, MonoMethodSignature *sig)
 
 	n = sig->hasthis + sig->param_count;
 
+	int size = call_info_size (sig);
 	if (mp)
-		cinfo = mono_mempool_alloc0 (mp, sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+		cinfo = mono_mempool_alloc0 (mp, size);
 	else
-		cinfo = g_malloc0 (sizeof (CallInfo) + (sizeof (ArgInfo) * n));
+		cinfo = g_malloc0 (size);
 
 	cinfo->nargs = n;
 	cinfo->pinvoke = sig->pinvoke;
@@ -1794,6 +1803,8 @@ arg_get_storage (CallContext *ccontext, ArgInfo *ainfo)
 		case ArgOnStackR8:
 		case ArgVtypeOnStack:
 			return ccontext->stack + ainfo->offset;
+		case ArgVtypeByRefOnStack:
+			return *(gpointer*)(ccontext->stack + ainfo->offset);
 		case ArgVtypeByRef:
 			return (gpointer) ccontext->gregs [ainfo->reg];
                 default:
@@ -1825,12 +1836,34 @@ arg_set_val (CallContext *ccontext, ArgInfo *ainfo, gpointer src)
 	}
 }
 
+gpointer
+mono_arch_get_interp_native_call_info (MonoMemoryManager *mem_manager, MonoMethodSignature *sig)
+{
+	CallInfo *cinfo = get_call_info (NULL, sig);
+	if (mem_manager) {
+		int size = call_info_size (sig);
+		gpointer res = mono_mem_manager_alloc0 (mem_manager, size);
+		memcpy (res, cinfo, size);
+		g_free (cinfo);
+		return res;
+	} else {
+		return cinfo;
+	}
+}
+
+void
+mono_arch_free_interp_native_call_info (gpointer call_info)
+{
+	/* Allocated by get_call_info () */
+	g_free (call_info);
+}
+
 /* Set arguments in the ccontext (for i2n entry) */
 void
-mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1856,6 +1889,10 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		if (ainfo->storage == ArgVtypeByRef) {
 			ccontext->gregs [ainfo->reg] = (host_mgreg_t)interp_cb->frame_arg_to_storage ((MonoInterpFrameHandle)frame, sig, i);
 			continue;
+		} else if (ainfo->storage == ArgVtypeByRefOnStack) {
+			storage = ccontext->stack + ainfo->offset;
+			*(gpointer*)storage = interp_cb->frame_arg_to_storage (frame, sig, i);
+			continue;
 		}
 
 		int temp_size = arg_need_temp (ainfo);
@@ -1869,16 +1906,14 @@ mono_arch_set_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
 	}
-
-	g_free (cinfo);
 }
 
 /* Set return value in the ccontext (for n2i return) */
 void
-mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer retp)
+mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info, gpointer retp)
 {
 	const MonoEECallbacks *interp_cb;
-	CallInfo *cinfo;
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1886,7 +1921,6 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		return;
 
 	interp_cb = mini_get_interp_callbacks ();
-	cinfo = get_call_info (NULL, sig);
 	ainfo = &cinfo->ret;
 
 	if (retp) {
@@ -1905,16 +1939,14 @@ mono_arch_set_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		if (temp_size)
 			arg_set_val (ccontext, ainfo, storage);
 	}
-
-	g_free (cinfo);
 }
 
 /* Gets the arguments from ccontext (for n2i entry) */
 gpointer
-mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb = mini_get_interp_callbacks ();
-	CallInfo *cinfo = get_call_info (NULL, sig);
+	CallInfo *cinfo = (CallInfo*)call_info;
 	gpointer storage;
 	ArgInfo *ainfo;
 
@@ -1937,16 +1969,15 @@ mono_arch_get_native_call_context_args (CallContext *ccontext, gpointer frame, M
 		if (ainfo->storage == ArgVtypeByRef)
 			storage = (gpointer) ccontext->gregs [cinfo->ret.reg];
 	}
-	g_free (cinfo);
 	return storage;
 }
 
 /* Gets the return value from ccontext (for i2n exit) */
 void
-mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig)
+mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, MonoMethodSignature *sig, gpointer call_info)
 {
 	const MonoEECallbacks *interp_cb;
-	CallInfo *cinfo;
+	CallInfo *cinfo = (CallInfo*)call_info;
 	ArgInfo *ainfo;
 	gpointer storage;
 
@@ -1954,7 +1985,6 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		return;
 
 	interp_cb = mini_get_interp_callbacks ();
-	cinfo = get_call_info (NULL, sig);
 	ainfo = &cinfo->ret;
 
 	if (ainfo->storage != ArgVtypeByRef) {
@@ -1968,8 +1998,6 @@ mono_arch_get_native_call_context_ret (CallContext *ccontext, gpointer frame, Mo
 		}
 		interp_cb->data_to_frame_arg ((MonoInterpFrameHandle)frame, sig, -1, storage);
 	}
-
-	g_free (cinfo);
 }
 
 typedef struct {
@@ -4901,11 +4929,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_FCONV_TO_I4:
-			arm_fcvtzs_dx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_U4:
-			arm_fcvtzu_dx (code, dreg, sreg1);
+			arm_fcvtzu_dw (code, dreg, sreg1);
 			break;
 		case OP_FCONV_TO_I8:
 			arm_fcvtzs_dx (code, dreg, sreg1);
@@ -5002,11 +5029,10 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			arm_uxthw (code, dreg, dreg);
 			break;
 		case OP_RCONV_TO_I4:
-			arm_fcvtzs_sx (code, dreg, sreg1);
-			arm_sxtwx (code, dreg, dreg);
+			arm_fcvtzs_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_U4:
-			arm_fcvtzu_sx (code, dreg, sreg1);
+			arm_fcvtzu_sw (code, dreg, sreg1);
 			break;
 		case OP_RCONV_TO_I8:
 			arm_fcvtzs_sx (code, dreg, sreg1);

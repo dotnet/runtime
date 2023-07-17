@@ -883,11 +883,15 @@ mono_jiterp_get_trace_hit_count (gint32 trace_index) {
 
 JiterpreterThunk
 mono_interp_tier_prepare_jiterpreter_fast (
-	void *frame, MonoMethod *method, const guint16 *ip,
-	const guint16 *start_of_body, int size_of_body
+	void *_frame, const guint16 *ip
 ) {
 	if (!mono_opt_jiterpreter_traces_enabled)
 		return (JiterpreterThunk)(void*)JITERPRETER_NOT_JITTED;
+
+	InterpFrame *frame = _frame;
+	MonoMethod *method = frame->imethod->method;
+	const guint16 *start_of_body = frame->imethod->jinfo->code_start;
+	int size_of_body = frame->imethod->jinfo->code_size;
 
 	guint32 trace_index = READ32 (ip + 1);
 	TraceInfo *trace_info = trace_info_get (trace_index);
@@ -905,7 +909,7 @@ mono_interp_tier_prepare_jiterpreter_fast (
 	if (count == mono_opt_jiterpreter_minimum_trace_hit_count) {
 		JiterpreterThunk result = mono_interp_tier_prepare_jiterpreter(
 			frame, method, ip, (gint32)trace_index,
-			start_of_body, size_of_body
+			start_of_body, size_of_body, frame->imethod->is_verbose
 		);
 		trace_info->thunk = result;
 		return result;

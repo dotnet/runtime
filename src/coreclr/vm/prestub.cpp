@@ -372,6 +372,15 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         shouldTier = false;
     }
 #endif // FEATURE_TIERED_COMPILATION
+    NativeCodeVersion nativeCodeVersion = pConfig->GetCodeVersion();
+    if (shouldTier && !nativeCodeVersion.IsDefaultVersion())
+    {
+        CodeVersionManager::LockHolder codeVersioningLockHolder;
+        if (pConfig->GetCodeVersion().GetILCodeVersion().IsDeoptimized())
+        {
+            shouldTier = false;
+        }
+    }
 
     if (pConfig->MayUsePrecompiledCode())
     {
@@ -1168,9 +1177,6 @@ namespace
         pSig1++;
         pSig2++;
 
-        // Generics are not supported
-        _ASSERTE((callConv & IMAGE_CEE_CS_CALLCONV_GENERIC) == 0);
-
         DWORD declArgCount;
         DWORD methodArgCount;
         IfFailThrow(CorSigUncompressData_EndPtr(pSig1, pEndSig1, &declArgCount));
@@ -1277,7 +1283,8 @@ namespace
                 continue;
 
             // Check signature
-            MetaSig::CompareState state{};
+            TokenPairList list { nullptr };
+            MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
@@ -1438,6 +1445,14 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
     HRESULT hr = GetCustomAttribute(WellKnownAttribute::UnsafeAccessorAttribute, &data, &dataLen);
     if (hr != S_OK)
         return false;
+
+    // UnsafeAccessor must be on a static method
+    if (!IsStatic())
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+    // Block generic support early
+    if (HasClassOrMethodInstantiation())
+        ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
     UnsafeAccessorKind kind;
     SString name;

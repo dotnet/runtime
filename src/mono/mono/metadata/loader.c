@@ -972,6 +972,22 @@ fail:
 	return NULL;
 }
 
+MonoMethod*
+mono_unsafe_accessor_find_ctor (MonoClass *in_class, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
+{
+	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
+	//return find_method (in_class, /*ic*/NULL, name, sig, from_class, error);
+	return find_method_in_class (in_class, ".ctor", /*qname*/NULL, /*fqname*/NULL, sig, from_class, error);
+}
+
+MonoMethod*
+mono_unsafe_accessor_find_method (MonoClass *in_class, const char *name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
+{
+	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
+	return find_method (in_class, /*ic*/NULL, name, sig, from_class, error);
+}
+
+
 static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx, MonoError *error)
 {
@@ -2076,8 +2092,8 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
 	idx = mono_metadata_token_index (method->token);
 
-        if (G_UNLIKELY (img->has_updates))
-                loc = mono_metadata_update_get_updated_method_rva (img, idx);
+	if (G_UNLIKELY (img->has_updates))
+		loc = mono_metadata_update_get_updated_method_rva (img, idx);
 
 	if (!loc) {
 		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
@@ -2098,6 +2114,44 @@ mono_method_get_header_internal (MonoMethod *method, MonoError *error)
 	if (!container)
 		container = mono_class_try_get_generic_container (method->klass);
 	return mono_metadata_parse_mh_full (img, container, (const char *)loc, error);
+}
+
+gboolean
+mono_method_metadata_has_header (MonoMethod *method)
+{
+	int idx;
+	guint32 rva;
+	MonoImage* img;
+	gpointer loc = NULL;
+
+	img = m_class_get_image (method->klass);
+
+	if (mono_method_has_no_body (method)) {
+		return FALSE;
+	}
+
+	if (method->is_inflated) {
+		MonoMethodInflated *imethod = (MonoMethodInflated *) method;
+		return mono_method_metadata_has_header (imethod->declaring);
+	}
+
+	if (method->wrapper_type != MONO_WRAPPER_NONE || method->sre_method) {
+		MonoMethodWrapper *mw = (MonoMethodWrapper *)method;
+		return mw->header != NULL;
+	}
+
+	g_assert (mono_metadata_token_table (method->token) == MONO_TABLE_METHOD);
+	idx = mono_metadata_token_index (method->token);
+
+	if (G_UNLIKELY (img->has_updates))
+		loc = mono_metadata_update_get_updated_method_rva (img, idx);
+
+	if (!loc) {
+		rva = mono_metadata_decode_row_col (&img->tables [MONO_TABLE_METHOD], idx - 1, MONO_METHOD_RVA);
+		loc = mono_image_rva_map (img, rva);
+	}
+
+	return loc != NULL;
 }
 
 MonoMethodHeader*

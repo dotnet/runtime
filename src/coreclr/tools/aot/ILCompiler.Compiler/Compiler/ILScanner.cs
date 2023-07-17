@@ -636,6 +636,11 @@ namespace ILCompiler
                     {
                         TypeDesc type = eetypeNode.Type;
                         _constructedTypes.Add(type);
+
+                        // It's convenient to also see Array<T> as constructed for each T[]
+                        DefType closestDefType = type.GetClosestDefType();
+                        if (closestDefType != type)
+                            _constructedTypes.Add(closestDefType);
                     }
                 }
             }

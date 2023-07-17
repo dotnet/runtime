@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __EVENTPIPE_ADAPTER_H__
-#define __EVENTPIPE_ADAPTER_H__
+#ifndef EVENTPIPE_ADAPTER_H
+#define EVENTPIPE_ADAPTER_H
 
 #if defined(FEATURE_PERFTRACING)
 
@@ -148,13 +148,7 @@ public:
             reinterpret_cast<const uint8_t*>(activityId),
             reinterpret_cast<const uint8_t*>(relatedActivityId));
     }
-
-	static inline bool EventIsEnabled (const EventPipeEvent *epEvent)
-	{
-		STATIC_CONTRACT_NOTHROW;
-		return ep_event_is_enabled(epEvent);
-	}
 };
 
 #endif // FEATURE_PERFTRACING
-#endif // __EVENTPIPE_ADAPTER_H__
+#endif // EVENTPIPE_ADAPTER_H

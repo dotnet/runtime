@@ -39,6 +39,7 @@
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSExportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSImportAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\CancelablePromise.cs" />
+    <Compile Include="System\Runtime\InteropServices\JavaScript\SynchronizationContextExtensions.cs" />
 
     <Compile Include="System\Runtime\InteropServices\JavaScript\MarshalerType.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\Marshaling\JSMarshalerArgument.BigInt64.cs" />
@@ -84,6 +85,7 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Channels" />

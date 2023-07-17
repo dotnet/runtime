@@ -348,6 +348,10 @@ ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
 		// and executed.
 		IfFailRet(EnsureEEStarted());
 
+		// Ensure runtime thread for diagnostic server thread
+		SetupThreadNoThrow(&hr);
+		IfFailRet(hr);
+
 		EX_TRY {
 			GCX_COOP();
 

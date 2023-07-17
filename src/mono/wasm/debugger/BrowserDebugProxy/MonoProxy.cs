@@ -142,6 +142,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         Contexts.DestroyContext(sessionId, args["executionContextId"].Value<int>());
                         return false;
                     }
+                case "Runtime.executionContextsCleared":
+                    {
+                        Contexts.ClearContexts(sessionId);
+                        return false;
+                    }
 
                 case "Debugger.paused":
                     {
@@ -669,7 +674,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             // GetAssemblyByName seems to work on file names
             AssemblyInfo assembly = store.GetAssemblyByName(aname);
-            assembly ??= store.GetAssemblyByName(aname + ".exe");
             assembly ??= store.GetAssemblyByName(aname + ".dll");
             if (assembly == null)
             {
@@ -1329,7 +1333,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var pdb_data = string.IsNullOrEmpty(pdb_b64) ? null : Convert.FromBase64String(pdb_b64);
 
                 var context = Contexts.GetCurrentContext(sessionId);
-                foreach (var source in store.Add(sessionId, assembly_data, pdb_data, token))
+                foreach (var source in store.Add(sessionId, new AssemblyAndPdbData(assembly_data, pdb_data), token))
                 {
                     await OnSourceFileAdded(sessionId, source, context, token);
                 }
@@ -1541,7 +1545,17 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (req.TryResolve(source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, false, token);
+                    try
+                    {
+                        await SetBreakpoint(sessionId, context.store, req, true, false, token);
+                    }
+                    catch (DebuggerAgentException e)
+                    {
+                        //it's not a wasm page then the command throws an error
+                        if (!e.Message.Contains("getDotnetRuntime is not defined"))
+                            logger.LogDebug($"Unexpected error on RuntimeReady {e}");
+                        return;
+                    }
                 }
             }
         }

@@ -218,7 +218,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            return $"{FieldType} {name}";
+            return $"{FieldType.FormatTypeName ()} {name}";
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -241,11 +241,10 @@ namespace System.Reflection
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                ParameterCopyBackAction _ = default;
 
                 if (!ReferenceEquals(val.GetType(), fieldType))
                 {
-                    fieldType.CheckValue(ref val, ref _, binder, culture, invokeAttr);
+                    fieldType.CheckValue(ref val, binder, culture, invokeAttr);
                 }
             }
 

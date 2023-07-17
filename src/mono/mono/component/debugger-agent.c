@@ -99,6 +99,7 @@
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/components.h>
 #include <mono/mini/debugger-agent-external.h>
+#include <mono/metadata/bundled-resources-internals.h>
 
 #ifdef HAVE_UCONTEXT_H
 #include <ucontext.h>
@@ -6945,6 +6946,88 @@ valid_memory_address (gpointer addr, gint size)
 	return ret;
 }
 
+static MonoAssembly*
+find_assembly_by_name (char* assembly_name)
+{
+	//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
+	char *lookup_name = g_strdup (assembly_name);
+	for (int i = ((int)strlen (lookup_name) - 1); i >= 0; --i) {
+		if (lookup_name [i] == '.') {
+			lookup_name [i] = 0;
+			break;
+		}
+	}
+
+	//resolve the assembly
+	MonoImageOpenStatus status;
+	MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
+	g_free (lookup_name);	
+	if (!aname) {
+		PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+		return NULL;
+	}
+
+	MonoAssemblyByNameRequest byname_req;
+	mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
+	MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
+	if (!assembly) {
+		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
+		for (guint i = 0; i < assemblies->len; ++i) {
+			MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
+			if (!strcmp(assemblyOnALC->aname.name, aname->name)) {
+				assembly = assemblyOnALC;
+				break;
+			}
+		}
+		g_ptr_array_free (assemblies, TRUE);
+		if (!assembly) {
+			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
+			goto exit;
+		}
+	}
+exit:
+	mono_assembly_name_free_internal (aname);
+	return assembly;
+}
+
+static void
+send_debug_information (MonoAssembly *ass, Buffer *buf)
+{
+	guint8 pe_guid [16];
+	gint32 pe_age;
+	gint32 pe_timestamp;
+	guint8 *ppdb_data = NULL;
+	int ppdb_size = 0, ppdb_compressed_size = 0;
+	char *ppdb_path;
+	GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
+	GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
+	gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
+	if (!has_debug_info || ppdb_size > 0)
+	{
+		buffer_add_byte (buf, 0);
+		g_array_free (pdb_checksum_hash_type, TRUE);
+		g_array_free (pdb_checksum, TRUE);
+		return;
+	}
+	buffer_add_byte (buf, 1);
+	buffer_add_int (buf, pe_age);
+	buffer_add_byte_array (buf, pe_guid, 16);
+	buffer_add_string (buf, ppdb_path);
+	buffer_add_int (buf, pdb_checksum_hash_type->len);
+	for (int i = 0 ; i < pdb_checksum_hash_type->len; ++i) {
+		char* checksum_hash_type =  g_array_index (pdb_checksum_hash_type, char*, i);
+		buffer_add_string (buf, checksum_hash_type);
+		if (!strcmp (checksum_hash_type, "SHA256"))
+			buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 32);
+		else if (!strcmp (checksum_hash_type, "SHA384"))
+			buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 48);
+		else if (!strcmp (checksum_hash_type, "SHA512"))
+			buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 64);
+	}
+	g_array_free (pdb_checksum_hash_type, TRUE);
+	g_array_free (pdb_checksum, TRUE);
+}
+
 static ErrorCode
 vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 {
@@ -7303,45 +7386,9 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 	}
 	case MDBGPROT_CMD_GET_ASSEMBLY_BY_NAME: {
 		char* assembly_name = decode_string (p, &p, end);
-		//we get 'foo.dll' but mono_assembly_load expects 'foo' so we strip the last dot
-		char *lookup_name = g_strdup (assembly_name);
-		for (int i = ((int)strlen (lookup_name) - 1); i >= 0; --i) {
-			if (lookup_name [i] == '.') {
-				lookup_name [i] = 0;
-				break;
-			}
-		}
-
-		//resolve the assembly
-		MonoImageOpenStatus status;
-		MonoAssemblyName* aname = mono_assembly_name_new (lookup_name);
-		if (!aname) {
-			PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-			buffer_add_int(buf, -1);
-			break;
-		}
-		MonoAssemblyByNameRequest byname_req;
-		mono_assembly_request_prepare_byname (&byname_req, mono_alc_get_default ());
-		MonoAssembly *assembly = mono_assembly_request_byname (aname, &byname_req, &status);
-		g_free (lookup_name);
-		if (!assembly) {
-			GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
-			for (guint i = 0; i < assemblies->len; ++i) {
-				MonoAssembly *assemblyOnALC = (MonoAssembly*)g_ptr_array_index (assemblies, i);
-				if (!strcmp(assemblyOnALC->aname.name, aname->name)) {
-					assembly = assemblyOnALC;
-					break;
-				}
-			}
-			g_ptr_array_free (assemblies, TRUE);
-			if (!assembly) {
-				PRINT_DEBUG_MSG (1, "Could not resolve assembly %s\n", assembly_name);
-				buffer_add_int(buf, -1);
-				mono_assembly_name_free_internal (aname);
-				break;
-			}
-		}
-		mono_assembly_name_free_internal (aname);
+		MonoAssembly* assembly = find_assembly_by_name (assembly_name);
+		if (!assembly)
+			buffer_add_int (buf, -1);
 		buffer_add_assemblyid (buf, mono_get_root_domain (), assembly);
 		break;
 	}
@@ -7416,6 +7463,55 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 				break;
 			}
 		}
+		break;
+	}
+	case MDBGPROT_CMD_GET_ASSEMBLY_BYTES: { //only used by wasm
+#ifdef HOST_WASM
+		char* assembly_name = m_dbgprot_decode_string (p, &p, end);
+		if (assembly_name == NULL)
+		{
+			m_dbgprot_buffer_add_int (buf, 0);
+			m_dbgprot_buffer_add_int (buf, 0);
+			m_dbgprot_buffer_add_int (buf, 0);
+		}
+		else
+		{
+			int ppdb_size = 0;
+			const unsigned char* assembly_bytes = NULL;
+			unsigned int assembly_size = 0;
+			const unsigned char* pdb_bytes = NULL;
+			unsigned int symfile_size = 0;
+			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
+			MonoAssembly* assembly = find_assembly_by_name (assembly_name);
+			assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
+			assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
+			if (symfile_size == 0) //try to send embedded pdb data
+			{
+				guint8 pe_guid [16];
+				gint32 pe_age;
+				gint32 pe_timestamp;
+				guint8 *ppdb_data = NULL;
+				int ppdb_compressed_size = 0;
+				char *ppdb_path;
+				mono_get_pe_debug_info_full (assembly->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, NULL, NULL);
+				if (ppdb_compressed_size > 0)
+				{
+					symfile_size = ppdb_compressed_size;
+					pdb_bytes = ppdb_data;
+				}
+			}
+			m_dbgprot_buffer_init (buf, assembly_size + symfile_size + 1024);
+			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) assembly_bytes, assembly_size);
+			m_dbgprot_buffer_add_int (buf, ppdb_size);
+			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) pdb_bytes, symfile_size);
+			if (assembly)
+				send_debug_information (assembly, buf);
+		}
+#else
+		m_dbgprot_buffer_add_int (buf, 0);
+		m_dbgprot_buffer_add_int (buf, 0);
+		m_dbgprot_buffer_add_int (buf, 0);
+#endif
 		break;
 	}
 	default:
@@ -8042,39 +8138,7 @@ assembly_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
         break;
 	}
 	case MDBGPROT_CMD_ASSEMBLY_GET_DEBUG_INFORMATION: {
-		guint8 pe_guid [16];
-		gint32 pe_age;
-		gint32 pe_timestamp;
-		guint8 *ppdb_data = NULL;
-		int ppdb_size = 0, ppdb_compressed_size = 0;
-		char *ppdb_path;
-		GArray *pdb_checksum_hash_type = g_array_new (FALSE, TRUE, sizeof (char*));
-		GArray *pdb_checksum = g_array_new (FALSE, TRUE, sizeof (guint8*));
-		gboolean has_debug_info = mono_get_pe_debug_info_full (ass->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, pdb_checksum_hash_type, pdb_checksum);
-		if (!has_debug_info || ppdb_size > 0)
-		{
-			buffer_add_byte (buf, 0);
-			g_array_free (pdb_checksum_hash_type, TRUE);
-			g_array_free (pdb_checksum, TRUE);
-			return ERR_NONE;
-		}
-		buffer_add_byte (buf, 1);
-		buffer_add_int (buf, pe_age);
-		buffer_add_byte_array (buf, pe_guid, 16);
-		buffer_add_string (buf, ppdb_path);
-		buffer_add_int (buf, pdb_checksum_hash_type->len);
-		for (int i = 0 ; i < pdb_checksum_hash_type->len; ++i) {
-			char* checksum_hash_type =  g_array_index (pdb_checksum_hash_type, char*, i);
-			buffer_add_string (buf, checksum_hash_type);
-			if (!strcmp (checksum_hash_type, "SHA256"))
-				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 32);
-			else if (!strcmp (checksum_hash_type, "SHA384"))
-				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 48);
-			else if (!strcmp (checksum_hash_type, "SHA512"))
-				buffer_add_byte_array (buf, g_array_index (pdb_checksum, guint8*, i), 64);
-		}
-		g_array_free (pdb_checksum_hash_type, TRUE);
-		g_array_free (pdb_checksum, TRUE);
+		send_debug_information (ass, buf);
 		break;
 	}
 	case MDBGPROT_CMD_ASSEMBLY_HAS_DEBUG_INFO_LOADED: {

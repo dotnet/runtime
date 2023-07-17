@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { prevent_timer_throttling } from "./scheduling";
 import { Queue } from "./queue";
-import { createPromiseController } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, createPromiseController, mono_assert } from "./globals";
 import { setI32, localHeapViewU8 } from "./memory";
 import { VoidPtr } from "./types/emscripten";
 import { PromiseController } from "./types/internal";
@@ -26,7 +26,20 @@ let mono_wasm_web_socket_close_warning = false;
 const ws_send_buffer_blocking_threshold = 65536;
 const emptyBuffer = new Uint8Array();
 
+function verifyEnvironment() {
+    if (ENVIRONMENT_IS_SHELL) {
+        throw new Error("WebSockets are not supported in shell JS engine.");
+    }
+    if (typeof globalThis.WebSocket !== "function") {
+        const message = ENVIRONMENT_IS_NODE
+            ? "Please install `ws` npm package to enable networking support."
+            : "This browser doesn't support WebSocket API. Please use a modern browser.";
+        throw new Error(message);
+    }
+}
+
 export function ws_wasm_create(uri: string, sub_protocols: string[] | null, receive_status_ptr: VoidPtr, onClosed: (code: number, reason: string) => void): WebSocketExtension {
+    verifyEnvironment();
     mono_assert(uri && typeof uri === "string", () => `ERR12: Invalid uri ${typeof uri}`);
 
     const ws = new globalThis.WebSocket(uri, sub_protocols || undefined) as WebSocketExtension;
@@ -108,7 +121,7 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 
     const readyState = ws.readyState;
     if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
-        throw new Error("InvalidState: The WebSocket is not connected.");
+        throw new Error(`InvalidState: ${readyState} The WebSocket is not connected.`);
     }
 
     if (receive_event_queue.getLength()) {
@@ -130,7 +143,6 @@ export function ws_wasm_receive(ws: WebSocketExtension, buffer_ptr: VoidPtr, buf
 
 export function ws_wasm_close(ws: WebSocketExtension, code: number, reason: string | null, wait_for_close_received: boolean): Promise<void> | null {
     mono_assert(!!ws, "ERR19: expected ws instance");
-
 
     if (ws.readyState == WebSocket.CLOSED) {
         return null;
@@ -207,16 +219,19 @@ function _mono_wasm_web_socket_send_and_wait(ws: WebSocketExtension, buffer_view
         if (ws.bufferedAmount === 0) {
             promise_control.resolve();
         }
-        else if (ws.readyState != WebSocket.OPEN) {
-            // only reject if the data were not sent
-            // bufferedAmount does not reset to zero once the connection closes
-            promise_control.reject("InvalidState: The WebSocket is not connected.");
-        }
-        else if (!promise_control.isDone) {
-            globalThis.setTimeout(polling_check, nextDelay);
-            // exponentially longer delays, up to 1000ms
-            nextDelay = Math.min(nextDelay * 1.5, 1000);
-            return;
+        else {
+            const readyState = ws.readyState;
+            if (readyState != WebSocket.OPEN && readyState != WebSocket.CLOSING) {
+                // only reject if the data were not sent
+                // bufferedAmount does not reset to zero once the connection closes
+                promise_control.reject(`InvalidState: ${readyState} The WebSocket is not connected.`);
+            }
+            else if (!promise_control.isDone) {
+                globalThis.setTimeout(polling_check, nextDelay);
+                // exponentially longer delays, up to 1000ms
+                nextDelay = Math.min(nextDelay * 1.5, 1000);
+                return;
+            }
         }
         // remove from pending
         const index = pending.indexOf(promise_control);

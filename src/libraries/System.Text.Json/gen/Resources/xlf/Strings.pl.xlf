@@ -62,14 +62,24 @@
         <target state="translated">Deserializacja właściwości tylko do inicjowania nie jest obecnie obsługiwana w trybie generowania źródła.</target>
         <note />
       </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleMessageFormat">
+        <source>The constructor on type '{0}' has been annotated with JsonConstructorAttribute but is not accessible by the source generator.</source>
+        <target state="translated">W przypadku konstruktora w zakresie typu „{0}” dokonano adnotacji przy użyciu atrybutu JsonConstructorAttribute, ale nie jest on dostępny dla generatora źródła.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonConstructorInaccessibleTitle">
+        <source>Constructor annotated with JsonConstructorAttribute is inaccessible.</source>
+        <target state="translated">Konstruktor, w przypadku którego dokonano adnotacji za pomocą atrybutu JsonConstructorAttribute, jest niedostępny.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeMessageFormat">
         <source>The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</source>
-        <target state="new">The 'JsonConverterAttribute' type '{0}' specified on member '{1}' is not a converter type or does not contain an accessible parameterless constructor.</target>
+        <target state="translated">Typ „{0}” „JsonConverterAttribute” określony w przypadku składowej „{1}” nie jest typem konwertera lub nie zawiera dostępnego konstruktora bez parametrów.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonConverterAttributeInvalidTypeTitle">
         <source>The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</source>
-        <target state="new">The 'JsonConverterAttribute.Type' contains an invalid or inaccessible argument.</target>
+        <target state="translated">Typ „JsonConverterAttribute.Type” zawiera nieprawidłowy lub niedostępny argument.</target>
         <note />
       </trans-unit>
       <trans-unit id="JsonStringEnumConverterNotSupportedMessageFormat">
@@ -80,6 +90,16 @@
       <trans-unit id="JsonStringEnumConverterNotSupportedTitle">
         <source>The non-generic 'JsonStringEnumConverter' requires dynamic code.</source>
         <target state="translated">Nieogólny element „JsonStringEnumConverter” wymaga dynamicznego kodu.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionMessageFormat">
+        <source>The System.Text.Json source generator is not available in C# '{0}'. Please use language version {1} or greater.</source>
+        <target state="translated">Generator źródła System.Text.Json nie jest dostępny w języku C# „{0}”. Użyj wersji językowej lub nowszej {1} .</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="JsonUnsupportedLanguageVersionTitle">
+        <source>C# language version not supported by the source generator.</source>
+        <target state="translated">Wersja języka C# nie jest obsługiwana przez generator źródła.</target>
         <note />
       </trans-unit>
       <trans-unit id="MultipleJsonConstructorAttributeFormat">

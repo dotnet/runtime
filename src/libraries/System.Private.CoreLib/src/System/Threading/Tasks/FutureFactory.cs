@@ -1626,7 +1626,7 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                   GenericDelegateCache<TAntecedentResult, TResult>.CWAllFuncDelegate,
+                   static (starter, continuationFunction) => ((Func<Task<TAntecedentResult>[], TResult>)continuationFunction!)(starter.Result),
                    continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
             else
@@ -1634,7 +1634,11 @@ namespace System.Threading.Tasks
                 Debug.Assert(continuationAction != null);
 
                 return starter.ContinueWith(
-                   GenericDelegateCache<TAntecedentResult, TResult>.CWAllActionDelegate,
+                   static (starter, continuationAction) =>
+                   {
+                       ((Action<Task<TAntecedentResult>[]>)continuationAction!)(starter.Result);
+                       return default(TResult)!;
+                   },
                    continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
@@ -2026,7 +2030,7 @@ namespace System.Threading.Tasks
             if (scheduler == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
 
             // Call common ContinueWhenAny setup logic, extract starter
-            Task<Task> starter = TaskFactory.CommonCWAnyLogic(tasks);
+            Task<Task<TAntecedentResult>> starter = TaskFactory.CommonCWAnyLogic(tasks);
 
             // Bail early if cancellation has been requested.
             if (cancellationToken.IsCancellationRequested
@@ -2040,64 +2044,20 @@ namespace System.Threading.Tasks
             if (continuationFunction != null)
             {
                 return starter.ContinueWith(
-                    GenericDelegateCache<TAntecedentResult, TResult>.CWAnyFuncDelegate,
+                    static (starter, continuationFunction) => ((Func<Task<TAntecedentResult>, TResult>)continuationFunction!)(starter.Result),
                     continuationFunction, scheduler, cancellationToken, continuationOptions);
             }
             else
             {
                 Debug.Assert(continuationAction != null);
                 return starter.ContinueWith(
-                    GenericDelegateCache<TAntecedentResult, TResult>.CWAnyActionDelegate,
+                    static (starter, continuationAction) =>
+                    {
+                        ((Action<Task<TAntecedentResult>>)continuationAction!)(starter.Result);
+                        return default(TResult)!;
+                    },
                     continuationAction, scheduler, cancellationToken, continuationOptions);
             }
         }
-    }
-
-    // For the ContinueWhenAnyImpl/ContinueWhenAllImpl methods that are generic on TAntecedentResult,
-    // the compiler won't cache the internal ContinueWith delegate because it is generic on both
-    // TAntecedentResult and TResult.  The GenericDelegateCache serves as a cache for those delegates.
-    internal static class GenericDelegateCache<TAntecedentResult, TResult>
-    {
-        // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAnyImpl<TAntecedentResult>(non-null continuationFunction)
-        internal static Func<Task<Task>, object?, TResult> CWAnyFuncDelegate =
-            static (Task<Task> wrappedWinner, object? state) =>
-            {
-                Debug.Assert(state is Func<Task<TAntecedentResult>, TResult>);
-                var func = (Func<Task<TAntecedentResult>, TResult>)state;
-                var arg = (Task<TAntecedentResult>)wrappedWinner.Result;
-                return func(arg);
-            };
-
-        // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAnyImpl<TAntecedentResult>(non-null continuationAction)
-        internal static Func<Task<Task>, object?, TResult> CWAnyActionDelegate =
-            static (Task<Task> wrappedWinner, object? state) =>
-            {
-                Debug.Assert(state is Action<Task<TAntecedentResult>>);
-                var action = (Action<Task<TAntecedentResult>>)state;
-                var arg = (Task<TAntecedentResult>)wrappedWinner.Result;
-                action(arg);
-                return default!;
-            };
-
-        // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAllImpl<TAntecedentResult>(non-null continuationFunction)
-        internal static Func<Task<Task<TAntecedentResult>[]>, object?, TResult> CWAllFuncDelegate =
-            static (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
-            {
-                wrappedAntecedents.NotifyDebuggerOfWaitCompletionIfNecessary();
-                Debug.Assert(state is Func<Task<TAntecedentResult>[], TResult>);
-                var func = (Func<Task<TAntecedentResult>[], TResult>)state;
-                return func(wrappedAntecedents.Result);
-            };
-
-        // ContinueWith delegate for TaskFactory<TResult>.ContinueWhenAllImpl<TAntecedentResult>(non-null continuationAction)
-        internal static Func<Task<Task<TAntecedentResult>[]>, object?, TResult> CWAllActionDelegate =
-            static (Task<Task<TAntecedentResult>[]> wrappedAntecedents, object? state) =>
-            {
-                wrappedAntecedents.NotifyDebuggerOfWaitCompletionIfNecessary();
-                Debug.Assert(state is Action<Task<TAntecedentResult>[]>);
-                var action = (Action<Task<TAntecedentResult>[]>)state;
-                action(wrappedAntecedents.Result);
-                return default!;
-            };
     }
 }

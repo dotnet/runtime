@@ -869,15 +869,11 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 	}
 	/* printf ("TODAT0 %p\n", data); */
 	switch (type->type) {
+	case MONO_TYPE_BOOLEAN:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_U1: {
 		guint8 *p = (guint8*)data;
 		*p = GINT32_TO_UINT8 (val->data.i);
-		return MINT_STACK_SLOT_SIZE;
-	}
-	case MONO_TYPE_BOOLEAN: {
-		guint8 *p = (guint8*)data;
-		*p = (val->data.i != 0);
 		return MINT_STACK_SLOT_SIZE;
 	}
 	case MONO_TYPE_I2:
@@ -1684,8 +1680,15 @@ ves_pinvoke_method (
 	}
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
+	gpointer call_info = *cache;
+
+	if (!call_info) {
+		call_info = mono_arch_get_interp_native_call_info (get_default_mem_manager (), sig);
+		mono_memory_barrier ();
+		*cache = call_info;
+	}
 	CallContext ccontext;
-	mono_arch_set_native_call_context_args (&ccontext, &frame, sig);
+	mono_arch_set_native_call_context_args (&ccontext, &frame, sig, call_info);
 	args = &ccontext;
 #else
 	InterpMethodArguments *margs = build_args_from_sig (sig, &frame);
@@ -1709,7 +1712,7 @@ ves_pinvoke_method (
 
 #ifdef MONO_ARCH_HAVE_INTERP_PINVOKE_TRAMP
 	if (!context->has_resume_state) {
-		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig);
+		mono_arch_get_native_call_context_ret (&ccontext, &frame, sig, call_info);
 	}
 
 	g_free (ccontext.stack);
@@ -3049,8 +3052,10 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 	frame.stack = sp;
 	frame.retval = sp;
 
+	gpointer call_info = mono_arch_get_interp_native_call_info (NULL, sig);
+
 	/* Copy the args saved in the trampoline to the frame stack */
-	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig);
+	gpointer retp = mono_arch_get_native_call_context_args (ccontext, &frame, sig, call_info);
 
 	/* Allocate storage for value types */
 	stackval *newsp = sp;
@@ -3091,7 +3096,9 @@ interp_entry_from_trampoline (gpointer ccontext_untyped, gpointer rmethod_untype
 
 	/* Write back the return value */
 	/* 'frame' is still valid */
-	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, retp);
+	mono_arch_set_native_call_context_ret (ccontext, &frame, sig, call_info, retp);
+
+	mono_arch_free_interp_native_call_info (call_info);
 }
 
 #else
@@ -3558,6 +3565,26 @@ mono_interp_enum_hasflag (stackval *sp1, stackval *sp2, MonoClass* klass)
 	stackval_to_data (m_class_get_byval_arg (klass), sp1, &a_val, FALSE);
 	stackval_to_data (m_class_get_byval_arg (klass), sp2, &b_val, FALSE);
 	return (a_val & b_val) == b_val;
+}
+
+static void
+interp_simd_create (gpointer dest, gpointer args, int el_size)
+{
+	const int num_elements = SIZEOF_V128 / el_size;
+	gint8 res_buffer [SIZEOF_V128];
+	for (int i = 0; i < num_elements; i++) {
+		switch (el_size) {
+			case 1: res_buffer [i] = *(gint8*)args; break;
+			case 2: ((gint16*)res_buffer) [i] = *(gint16*)args; break;
+			case 4: ((gint32*)res_buffer) [i] = *(gint32*)args; break;
+			case 8: ((gint64*)res_buffer) [i] = *(gint64*)args; break;
+			default:
+				g_assert_not_reached ();
+		}
+		args = (gpointer) ((char*)args + MINT_STACK_SLOT_SIZE);
+	}
+
+	memcpy (dest, res_buffer, SIZEOF_V128);
 }
 
 // varargs in wasm consumes extra linear stack per call-site.
@@ -5546,19 +5573,23 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			LOCAL_VAR (ip [1], gpointer) = frame->imethod->data_items [ip [2]];
 			ip += 3;
 			MINT_IN_BREAK;
-		MINT_IN_CASE(MINT_LDSTR_TOKEN) {
+		MINT_IN_CASE(MINT_LDSTR_DYNAMIC) {
 			MonoString *s = NULL;
 			guint32 strtoken = (guint32)(gsize)frame->imethod->data_items [ip [2]];
 
 			MonoMethod *method = frame->imethod->method;
-			if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
-				s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
-			} else if (method->wrapper_type != MONO_WRAPPER_NONE) {
-				// FIXME push/pop LMF
-				s = mono_string_new_wrapper_internal ((const char*)mono_method_get_wrapper_data (method, strtoken));
-			} else {
-				g_assert_not_reached ();
-			}
+			g_assert (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD);
+			s = (MonoString*)mono_method_get_wrapper_data (method, strtoken);
+			LOCAL_VAR (ip [1], gpointer) = s;
+			ip += 3;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_LDSTR_CSTR) {
+			MonoString *s = NULL;
+			const char* cstr = (const char*)frame->imethod->data_items [ip [2]];
+
+			// FIXME push/pop LMF
+			s = mono_string_new_wrapper_internal (cstr);
 			LOCAL_VAR (ip [1], gpointer) = s;
 			ip += 3;
 			MINT_IN_BREAK;
@@ -5748,50 +5779,22 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I1_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint8);
-			gint8 res_buffer [num_elements];
-			gint8 *args = (gint8*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint8);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 1);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I2_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint16);
-			gint16 res_buffer [num_elements];
-			gint16 *args = (gint16*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint16);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 2);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I4_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint32);
-			gint32 res_buffer [num_elements];
-			gint32 *args = (gint32*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint32);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 4);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
 		MINT_IN_CASE(MINT_SIMD_V128_I8_CREATE) {
-			const int num_elements = SIZEOF_V128 / sizeof (gint64);
-			gint64 res_buffer [num_elements];
-			gint64 *args = (gint64*)(locals + ip [2]);
-			for (int i = 0; i < num_elements; i++) {
-				res_buffer [i] = *args;
-				args += MINT_STACK_SLOT_SIZE / sizeof (gint64);
-			}
-			memcpy (locals + ip [1], res_buffer, SIZEOF_V128);
+			interp_simd_create (locals + ip [1], locals + ip [2], 8);
 			ip += 3;
 			MINT_IN_BREAK;
 		}
@@ -6514,6 +6517,19 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
 			MonoClass *klass_vt = (MonoClass*)frame->imethod->data_items [ip [4]];
 			mono_value_copy_internal (dst_addr, locals + ip [3], klass_vt);
+			ip += 6;
+			MINT_IN_BREAK;
+		}
+		MINT_IN_CASE(MINT_STELEM_VT_NOREF) {
+			MonoArray *o = LOCAL_VAR (ip [1], MonoArray*);
+			NULL_CHECK (o);
+			guint32 aindex = LOCAL_VAR (ip [2], guint32);
+			if (aindex >= mono_array_length_internal (o))
+				THROW_EX (interp_get_exception_index_out_of_range (frame, ip), ip);
+
+			guint16 size = ip [5];
+			char *dst_addr = mono_array_addr_with_size_fast ((MonoArray *) o, size, aindex);
+			memcpy (dst_addr, locals + ip [3], size);
 			ip += 6;
 			MINT_IN_BREAK;
 		}
@@ -7648,7 +7664,7 @@ MINT_IN_CASE(MINT_BRTRUE_I8_SP) ZEROP_SP(gint64, !=); MINT_IN_BREAK;
 				 *  JS workers in order to register them at the appropriate slots in the function pointer
 				 *  table. when growing the function pointer table we will also need to synchronize that.
 				 */
-				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, frame->imethod->method, ip, frame->imethod->jinfo->code_start, frame->imethod->jinfo->code_size);
+				JiterpreterThunk prepare_result = mono_interp_tier_prepare_jiterpreter_fast(frame, ip);
 				ptrdiff_t offset;
 				switch ((guint32)(void*)prepare_result) {
 					case JITERPRETER_TRAINING:

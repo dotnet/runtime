@@ -38,7 +38,8 @@ void getMethodSig(
 
 bool getMethodInfo(
           CORINFO_METHOD_HANDLE ftn,
-          CORINFO_METHOD_INFO* info) override;
+          CORINFO_METHOD_INFO* info,
+          CORINFO_CONTEXT_HANDLE context) override;
 
 CorInfoInline canInline(
           CORINFO_METHOD_HANDLE callerHnd,
@@ -241,6 +242,11 @@ unsigned getClassNumInstanceFields(
 CORINFO_FIELD_HANDLE getFieldInClass(
           CORINFO_CLASS_HANDLE clsHnd,
           int32_t num) override;
+
+GetTypeLayoutResult getTypeLayout(
+          CORINFO_CLASS_HANDLE typeHnd,
+          CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+          size_t* numTreeNodes) override;
 
 bool checkMethodModifier(
           CORINFO_METHOD_HANDLE hMethod,

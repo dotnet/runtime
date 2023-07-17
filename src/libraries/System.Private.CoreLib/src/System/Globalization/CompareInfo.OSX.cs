@@ -11,6 +11,13 @@ namespace System.Globalization
 {
     public partial class CompareInfo
     {
+        private enum ErrorCodes
+        {
+            ERROR_INDEX_NOT_FOUND = -1,
+            ERROR_COMPARISON_OPTIONS_NOT_FOUND = -2,
+            ERROR_MIXED_COMPOSITION_NOT_FOUND = -3,
+        }
+
         private unsafe int CompareStringNative(ReadOnlySpan<char> string1, ReadOnlySpan<char> string2, CompareOptions options)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
@@ -27,7 +34,7 @@ namespace System.Globalization
                 result = Interop.Globalization.CompareStringNative(m_name, m_name.Length, pString1, string1.Length, pString2, string2.Length, options);
             }
 
-            Debug.Assert(result != -2);
+            Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
 
             return result;
         }
@@ -37,8 +44,8 @@ namespace System.Globalization
             AssertComparisonSupported(options);
 
             Interop.Range result = Interop.Globalization.IndexOfNative(m_name, m_name.Length, target, cwTargetLength, pSource, cwSourceLength, options, fromBeginning);
-            Debug.Assert(result.Location != -2);
-            if (result.Location == -3)
+            Debug.Assert(result.Location != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
+            if (result.Location == (int)ErrorCodes.ERROR_MIXED_COMPOSITION_NOT_FOUND)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_HybridGlobalizationWithMixedCompositions);
             if (matchLengthPtr != null)
                 *matchLengthPtr = result.Length;
@@ -51,7 +58,7 @@ namespace System.Globalization
             AssertComparisonSupported(options);
 
             int result = Interop.Globalization.StartsWithNative(m_name, m_name.Length, pPrefix, cwPrefixLength, pSource, cwSourceLength, options);
-            Debug.Assert(result != -2);
+            Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
 
             return result > 0 ? true : false;
         }
@@ -61,7 +68,7 @@ namespace System.Globalization
             AssertComparisonSupported(options);
 
             int result = Interop.Globalization.EndsWithNative(m_name, m_name.Length, pSuffix, cwSuffixLength, pSource, cwSourceLength, options);
-            Debug.Assert(result != -2);
+            Debug.Assert(result != (int)ErrorCodes.ERROR_COMPARISON_OPTIONS_NOT_FOUND);
 
             return result > 0 ? true : false;
         }

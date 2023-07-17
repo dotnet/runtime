@@ -30,6 +30,9 @@ namespace System.Linq
         internal static void ThrowNotSupportedException() => throw new NotSupportedException();
 
         [DoesNotReturn]
+        internal static bool ThrowNotSupportedException_Boolean() => throw new NotSupportedException();
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException() => throw new OverflowException();
 
         private static string GetArgumentString(ExceptionArgument argument)

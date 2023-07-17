@@ -50,7 +50,6 @@ steps:
                 /p:BuildMonoAotCrossCompilerOnly=true
                 /p:MonoLibClang="/usr/local/lib/libclang.so.16"
                 /p:MonoAOTEnableLLVM=true
-                /p:MonoAOTLLVMUseCxx11Abi=true
                 /p:CrossBuild=true
         displayName: "Build Mono LLVM AOT cross compiler"
 

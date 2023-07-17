@@ -871,19 +871,50 @@ mono_win32_interrupt_wait (PVOID thread_info, HANDLE native_thread_handle, DWORD
 void
 mono_win32_abort_blocking_io_call (THREAD_INFO_TYPE *info);
 
-#define W32_DEFINE_LAST_ERROR_RESTORE_POINT \
+#else
+
+
+#endif
+
+#ifdef USE_WINDOWS_BACKEND
+
+/* APC calls can change GetLastError while a thread is suspended.  Save/restore it when doing thread
+   state transitions (for example in m2n wrappers) in order to protect the result of the last
+   pinvoke */
+
+#define MONO_DEFINE_LAST_ERROR_RESTORE_POINT \
 	const DWORD _last_error_restore_point = GetLastError ();
 
-#define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
+#define MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT \
 		/* Only restore if changed to prevent unnecessary writes. */ \
 		if (GetLastError () != _last_error_restore_point) \
 			mono_SetLastError (_last_error_restore_point);
 
+#elif defined(USE_WASM_BACKEND) || defined (USE_POSIX_BACKEND)
+
+#define MONO_DEFINE_LAST_ERROR_RESTORE_POINT     \
+	int _last_errno_restore_point = errno;
+
+#define MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT       \
+        if (errno != _last_errno_restore_point)         \
+                errno = _last_errno_restore_point;
+
+/* Posix semaphores set errno on failure and sporadic wakeup.  GC state transitions are done in n2m
+ * and m2n wrappers and may change the value of errno from the last pinvoke.  Use these macros to
+ * save/restore errno when doing thread state transitions. */
+
+#elif defined(USE_MACH_BACKEND)
+
+/* Mach semaphores don't set errno on failure.  Change this to be the same as POSIX if some other primitives used
+   in thread state transitions pollute errno. */
+
+#define MONO_DEFINE_LAST_ERROR_RESTORE_POINT /* nothing */
+#define MONO_RESTORE_LAST_ERROR_FROM_RESTORE_POINT /* nothing */
+
 #else
-
-#define W32_DEFINE_LAST_ERROR_RESTORE_POINT /* nothing */
-#define W32_RESTORE_LAST_ERROR_FROM_RESTORE_POINT /* nothing */
-
+#error "unknown threads backend, not sure how to save/restore last error"
 #endif
+
+
 
 #endif /* __MONO_THREADS_H__ */

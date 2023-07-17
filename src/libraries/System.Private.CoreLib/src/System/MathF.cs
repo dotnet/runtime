@@ -5,12 +5,6 @@
 // Portions of the code implemented below are based on the 'Berkeley SoftFloat Release 3e' algorithms.
 // ===================================================================================================
 
-/*============================================================
-**
-** Purpose: Some single-precision floating-point math operations
-**
-===========================================================*/
-
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -20,6 +14,9 @@ using System.Runtime.Intrinsics.Arm;
 
 namespace System
 {
+    /// <summary>
+    /// Provides constants and static methods for trigonometric, logarithmic, and other common mathematical functions.
+    /// </summary>
     public static partial class MathF
     {
         public const float E = 2.71828183f;

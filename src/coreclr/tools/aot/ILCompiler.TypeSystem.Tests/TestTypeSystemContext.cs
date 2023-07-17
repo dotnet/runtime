@@ -139,5 +139,8 @@ namespace TypeSystemTests
 
         public override bool SupportsUniversalCanon => true;
         public override bool SupportsCanon => true;
+
+        public override bool SupportsCOMInterop => true;
+        public override bool SupportsTypeEquivalence => true;
     }
 }

@@ -184,12 +184,6 @@ EXTERN_C FCDECL1(void*, JIT_GetSharedNonGCStaticBaseNoCtor_Portable, DomainLocal
 extern FCDECL1(Object*, JIT_NewS_MP_FastPortable, CORINFO_CLASS_HANDLE typeHnd_);
 extern FCDECL1(Object*, JIT_New, CORINFO_CLASS_HANDLE typeHnd_);
 
-#ifndef JIT_NewCrossContext
-#define JIT_NewCrossContext JIT_NewCrossContext_Portable
-#endif
-EXTERN_C FCDECL1(Object*, JIT_NewCrossContext, CORINFO_CLASS_HANDLE typeHnd_);
-EXTERN_C FCDECL1(Object*, JIT_NewCrossContext_Portable, CORINFO_CLASS_HANDLE typeHnd_);
-
 extern FCDECL1(StringObject*, AllocateString_MP_FastPortable, DWORD stringLength);
 extern FCDECL1(StringObject*, UnframedAllocateString, DWORD stringLength);
 extern FCDECL1(StringObject*, FramedAllocateString, DWORD stringLength);
@@ -551,8 +545,9 @@ public:
     CalledMethod * GetCalledMethods() { return m_pCalledMethods; }
 #endif
 
-    // Add/Find transient method details.
+    // Add/Remove/Find transient method details.
     void AddTransientMethodDetails(TransientMethodDetails details);
+    TransientMethodDetails RemoveTransientMethodDetails(MethodDesc* pMD);
     bool FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details);
 
 protected:

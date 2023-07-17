@@ -80,7 +80,7 @@
   </Target>
 
   <UsingTask TaskName="EmitBundleSourceFiles" AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
-  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)">
+  <Target Name="GenerateTimezonesArchive" Returns="@(_WasmArchivedTimezones)" Condition="'$(InvariantTimezone)' != 'true'">
     <PropertyGroup>
       <_WasmTimezonesPath>$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))</_WasmTimezonesPath>
       <_WasmTimezonesBundleSourceFile>wasm-bundled-timezones.c</_WasmTimezonesBundleSourceFile>
@@ -195,6 +195,7 @@
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
       <EmccExportedRuntimeMethod Include="maybeExit" />
+      <EmccExportedRuntimeMethod Include="abort" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />
@@ -451,7 +452,9 @@
     </ItemGroup>
 
     <Copy SourceFiles="$(NativeBinDir)dotnet.js;
+                       $(NativeBinDir)dotnet.js.map;
                        $(NativeBinDir)dotnet.runtime.js;
+                       $(NativeBinDir)dotnet.runtime.js.map;
                        $(NativeBinDir)dotnet.native.js;
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)dotnet-legacy.d.ts;
@@ -514,7 +517,7 @@
 
   <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock),ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>

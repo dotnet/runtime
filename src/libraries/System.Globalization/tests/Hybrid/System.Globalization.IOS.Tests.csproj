@@ -38,5 +38,6 @@
     <Compile Include="..\CompareInfo\CompareInfoTests.LastIndexOf.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsPrefix.cs" />
     <Compile Include="..\CompareInfo\CompareInfoTests.IsSuffix.cs" />
+    <Compile Include="..\System\Globalization\TextInfoTests.cs" />
   </ItemGroup>
 </Project>

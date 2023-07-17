@@ -1673,17 +1673,27 @@ namespace System.Runtime.Serialization.DataContracts
             {
                 string trimmedNs = dataContractNs.Trim();
                 // Code similar to XmlConvert.ToUri (string.Empty is a valid uri but not "   ")
-                if (trimmedNs.Length == 0 || trimmedNs.IndexOf("##", StringComparison.Ordinal) != -1)
+                if (trimmedNs.Length == 0 || trimmedNs.Contains("##", StringComparison.Ordinal))
+                {
                     ThrowInvalidDataContractException(SR.Format(SR.DataContractNamespaceIsNotValid, dataContractNs), type);
+                }
+
                 dataContractNs = trimmedNs;
             }
             if (Uri.TryCreate(dataContractNs, UriKind.RelativeOrAbsolute, out Uri? uri))
             {
-                if (uri.ToString() == Globals.SerializationNamespace)
+                Span<char> formatted = stackalloc char[Globals.SerializationNamespace.Length];
+                if (uri.TryFormat(formatted, out int charsWritten) &&
+                    charsWritten == Globals.SerializationNamespace.Length &&
+                    formatted.SequenceEqual(Globals.SerializationNamespace))
+                {
                     ThrowInvalidDataContractException(SR.Format(SR.DataContractNamespaceReserved, Globals.SerializationNamespace), type);
+                }
             }
             else
+            {
                 ThrowInvalidDataContractException(SR.Format(SR.DataContractNamespaceIsNotValid, dataContractNs), type);
+            }
         }
 
         internal static string GetClrTypeFullName(Type type)

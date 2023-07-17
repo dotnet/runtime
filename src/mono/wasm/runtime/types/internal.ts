@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI, WebAssemblyStartOptions } from ".";
+import type { AssetBehaviours, AssetEntry, DotnetModuleConfig, LoadBootResourceCallback, LoadingResource, MonoConfig, ResourceRequest, RuntimeAPI } from ".";
+import type { BootJsonData } from "./blazor";
 import type { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr, Int32Ptr } from "./emscripten";
 
 export type GCHandle = {
@@ -72,11 +73,12 @@ export type MonoConfigInternal = MonoConfig & {
     browserProfilerOptions?: BrowserProfilerOptions, // dictionary-style Object. If omitted, browser profiler will not be initialized.
     waitForDebugger?: number,
     appendElementOnExit?: boolean
+    assertAfterExit?: boolean // default true for shell/nodeJS
     logExitCode?: boolean
     forwardConsoleLogsToWS?: boolean,
     asyncFlushOnExit?: boolean
-    exitAfterSnapshot?: number,
-    startupOptions?: Partial<WebAssemblyStartOptions>
+    exitAfterSnapshot?: number
+    loadAllSatelliteResources?: boolean
 };
 
 export type RunArguments = {
@@ -98,12 +100,16 @@ export type LoaderHelpers = {
 
     maxParallelDownloads: number;
     enableDownloadRetry: boolean;
+    assertAfterExit: boolean;
+
+    exitCode: number | undefined;
 
     loadedFiles: string[],
     _loaded_files: { url: string, file: string }[];
+    loadedAssemblies: string[],
     scriptDirectory: string
     scriptUrl: string
-    assetUniqueQuery?: string
+    modulesUniqueQuery?: string
     preferredIcuAsset: string | null,
     invariantMode: boolean,
 
@@ -117,7 +123,9 @@ export type LoaderHelpers = {
     wasmDownloadPromise: PromiseAndController<AssetEntryInternal>,
     runtimeModuleLoaded: PromiseAndController<void>,
 
-    abort_startup: (reason: any, should_exit: boolean) => void,
+    is_exited: () => boolean,
+    is_runtime_running: () => boolean,
+    assert_runtime_running: () => void,
     mono_exit: (exit_code: number, reason?: any) => void,
     createPromiseController: <T>(afterResolve?: () => void, afterReject?: () => void) => PromiseAndController<T>,
     getPromiseController: <T>(promise: ControllablePromise<T>) => PromiseController<T>,
@@ -132,8 +140,14 @@ export type LoaderHelpers = {
     err(message: string): void;
     getApplicationEnvironment?: (bootConfigResponse: Response) => string | null;
 
+    hasDebuggingEnabled(bootConfig: BootJsonData): boolean,
+
+    loadBootResource?: LoadBootResourceCallback;
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
+    libraryInitializers?: { scriptName: string, exports: any }[];
+
     isChromium: boolean,
-    isFirefox: boolean,
+    isFirefox: boolean
 }
 export type RuntimeHelpers = {
     config: MonoConfigInternal;
@@ -153,12 +167,15 @@ export type RuntimeHelpers = {
     waitForDebugger?: number;
     ExitStatus: ExitStatusError;
     quit: Function,
+    mono_wasm_exit?: (code: number) => void,
+    mono_wasm_abort?: () => void,
     javaScriptExports: JavaScriptExports,
     storeMemorySnapshotPending: boolean,
     memorySnapshotCacheKey: string,
     subtle: SubtleCrypto | null,
     updateMemoryViews: () => void
     runtimeReady: boolean,
+    jsSynchronizationContextInstalled: boolean,
     cspPolicy: boolean,
 
     runtimeModuleUrl: string
@@ -318,6 +335,12 @@ export interface JavaScriptExports {
 
     // the marshaled signature is: string GetManagedStackTrace(GCHandle exception)
     get_managed_stack_trace(exception_gc_handle: GCHandle): string | null
+
+    // the marshaled signature is: void LoadSatelliteAssembly(byte[] dll)
+    load_satellite_assembly(dll: Uint8Array): void;
+
+    // the marshaled signature is: void LoadLazyAssembly(byte[] dll, byte[] pdb)
+    load_lazy_assembly(dll: Uint8Array, pdb: Uint8Array | null): void;
 }
 
 export type MarshalerToJs = (arg: JSMarshalerArgument, element_type?: MarshalerType, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => any;

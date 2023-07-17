@@ -3,6 +3,30 @@
 <Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
   <Suppression>
     <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Net.Quic.QuicError.AddressInUse</Target>
+    <Left>net7.0/System.Net.Quic.dll</Left>
+    <Right>net8.0/System.Net.Quic.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Net.Quic.QuicError.HostUnreachable</Target>
+    <Left>net7.0/System.Net.Quic.dll</Left>
+    <Right>net8.0/System.Net.Quic.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Net.Quic.QuicError.InvalidAddress</Target>
+    <Left>net7.0/System.Net.Quic.dll</Left>
+    <Right>net8.0/System.Net.Quic.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>F:System.Net.Quic.QuicError.ProtocolError</Target>
+    <Left>net7.0/System.Net.Quic.dll</Left>
+    <Right>net8.0/System.Net.Quic.dll</Right>
+  </Suppression>
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
     <Target>M:System.Runtime.InteropServices.JavaScript.JSFunctionBinding.#ctor</Target>
     <Left>net7.0/System.Runtime.InteropServices.JavaScript.dll</Left>
     <Right>net8.0/System.Runtime.InteropServices.JavaScript.dll</Right>

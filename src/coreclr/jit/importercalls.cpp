@@ -2589,6 +2589,9 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Threading_Interlocked_MemoryBarrier:
             case NI_System_Threading_Interlocked_ReadMemoryBarrier:
 
+            case NI_System_Threading_Volatile_Read:
+            case NI_System_Threading_Volatile_Write:
+
                 betterToExpand = true;
                 break;
 
@@ -3839,6 +3842,51 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                     op1     = impImplicitR4orR8Cast(op1, TYP_FLOAT);
                     retNode = gtNewBitCastNode(TYP_INT, op1);
                 }
+                break;
+            }
+
+            case NI_System_Threading_Volatile_Read:
+            {
+                assert((sig->sigInst.methInstCount == 0) || (sig->sigInst.methInstCount == 1));
+                var_types retType = sig->sigInst.methInstCount == 0 ? JITtype2varType(sig->retType) : TYP_REF;
+#ifndef TARGET_64BIT
+                if ((retType == TYP_LONG) || (retType == TYP_DOUBLE))
+                {
+                    break;
+                }
+#endif // !TARGET_64BIT
+                assert(retType == TYP_REF || impIsPrimitive(sig->retType));
+                retNode = gtNewIndir(retType, impPopStack().val, GTF_IND_VOLATILE);
+                break;
+            }
+
+            case NI_System_Threading_Volatile_Write:
+            {
+                var_types type = TYP_REF;
+                if (sig->sigInst.methInstCount == 0)
+                {
+                    CORINFO_CLASS_HANDLE typeHnd = nullptr;
+                    CorInfoType          jitType =
+                        strip(info.compCompHnd->getArgType(sig, info.compCompHnd->getArgNext(sig->args), &typeHnd));
+                    assert(impIsPrimitive(jitType));
+                    type = JITtype2varType(jitType);
+#ifndef TARGET_64BIT
+                    if ((type == TYP_LONG) || (type == TYP_DOUBLE))
+                    {
+                        break;
+                    }
+#endif // !TARGET_64BIT
+                }
+                else
+                {
+                    assert(sig->sigInst.methInstCount == 1);
+                    assert(!eeIsValueClass(sig->sigInst.methInst[0]));
+                }
+
+                GenTree* value = impPopStack().val;
+                GenTree* addr  = impPopStack().val;
+
+                retNode = gtNewStoreIndNode(type, addr, value, GTF_IND_VOLATILE);
                 break;
             }
 
@@ -7505,57 +7553,41 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             CORINFO_SIG_INFO sig;
             info.compCompHnd->getMethodSig(methodHnd, &sig);
             assert(sig.sigInst.classInstCount == 1);
+
             CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
             assert(typeHnd != nullptr);
 
-            // Lookup can incorrect when we have __Canon as it won't appear
-            // to implement any interface types.
-            //
-            // And if we do not have a final type, devirt & inlining is
-            // unlikely to result in much simplification.
-            //
-            // We can use CORINFO_FLG_FINAL to screen out both of these cases.
-            const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            bool        isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
-
-            if (!isFinalType)
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
             {
-                CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-                if (instParam != nullptr)
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
+                if (hClass != NO_CLASS_HANDLE)
                 {
-                    assert(instParam->GetNext() == nullptr);
-                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
-                    if (hClass != NO_CLASS_HANDLE)
-                    {
-                        hClass = getTypeInstantiationArgument(hClass, 0);
-                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_FINAL) != 0)
-                        {
-                            typeHnd     = hClass;
-                            isFinalType = true;
-                        }
-                    }
+                    typeHnd = getTypeInstantiationArgument(hClass, 0);
                 }
             }
 
-            if (isFinalType)
+            if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
             {
-                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                {
-                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
-                }
-                else
-                {
-                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
-                }
+                result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+            }
+            else
+            {
+                assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+            }
+
+            if (result != NO_CLASS_HANDLE)
+            {
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }
             else
             {
-                JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n", eeGetClassName(typeHnd));
+                JITDUMP("Special intrinsic for type %s: type undetermined, so deferring opt\n",
+                        eeGetClassName(typeHnd));
             }
-
             break;
         }
 
@@ -7727,11 +7759,35 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 #endif
+            JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
+                    compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
+
+            if (pParam->exactContextHnd == nullptr)
+            {
+                JITDUMP("NULL context\n");
+            }
+            else if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
+            {
+                JITDUMP("Current method context\n");
+            }
+            else if ((((size_t)pParam->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
+            {
+                JITDUMP("Method context: %s\n",
+                        compiler->eeGetMethodName((CORINFO_METHOD_HANDLE)pParam->exactContextHnd));
+            }
+            else
+            {
+                JITDUMP("Class context: %s\n", compiler->eeGetClassName((CORINFO_CLASS_HANDLE)(
+                                                   (size_t)pParam->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK)));
+            }
+
+            const bool isGdv = pParam->call->IsGuardedDevirtualizationCandidate();
 
             // Fetch method info. This may fail, if the method doesn't have IL.
+            // NOTE: For GDV we're expected to use a different context (per candidate)
             //
             CORINFO_METHOD_INFO methInfo;
-            if (!compCompHnd->getMethodInfo(ftn, &methInfo))
+            if (!compCompHnd->getMethodInfo(ftn, &methInfo, isGdv ? nullptr : pParam->exactContextHnd))
             {
                 inlineResult->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 return;
@@ -8088,7 +8144,7 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
-                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_Max : NI_SSE_Max;
+                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_MaxScalar : NI_SSE_MaxScalar;
 
                     // one is constant and we know its something we can handle, so pop both peeked values
 
@@ -8118,18 +8174,18 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
 
                 if (isNumber)
                 {
-                    needsFixup = cnsNode->IsFloatNegativeZero();
+                    needsFixup = cnsNode->IsFloatPositiveZero();
                 }
                 else
                 {
-                    needsFixup = cnsNode->IsFloatPositiveZero();
+                    needsFixup = cnsNode->IsFloatNegativeZero();
                 }
 
                 if (!needsFixup || compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // Given the checks, op1 can safely be the cns and op2 the other node
 
-                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_Min : NI_SSE_Min;
+                    intrinsicName = (callType == TYP_DOUBLE) ? NI_SSE2_MinScalar : NI_SSE_MinScalar;
 
                     // one is constant and we know its something we can handle, so pop both peeked values
 
@@ -8390,7 +8446,10 @@ GenTree* Compiler::impMinMaxIntrinsic(CORINFO_METHOD_HANDLE method,
     }
 #endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
 
-    return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+    // TODO-CQ: Returning this as an intrinsic blocks inlining and is undesirable
+    // return impMathIntrinsic(method, sig, callType, intrinsicName, tailCall);
+
+    return nullptr;
 }
 
 //------------------------------------------------------------------------
@@ -9153,6 +9212,17 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
                     else if (strcmp(methodName, "get_ManagedThreadId") == 0)
                     {
                         result = NI_System_Threading_Thread_get_ManagedThreadId;
+                    }
+                }
+                else if (strcmp(className, "Volatile") == 0)
+                {
+                    if (strcmp(methodName, "Read") == 0)
+                    {
+                        result = NI_System_Threading_Volatile_Read;
+                    }
+                    else if (strcmp(methodName, "Write") == 0)
+                    {
+                        result = NI_System_Threading_Volatile_Write;
                     }
                 }
             }

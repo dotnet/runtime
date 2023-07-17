@@ -32,6 +32,7 @@ public class AssetsComputingHelper
         bool copySymbols,
         string customIcuCandidateFilename,
         bool enableThreads,
+        bool emitSourceMap,
         out string reason)
     {
         var extension = candidate.GetMetadata("Extension");
@@ -55,6 +56,7 @@ public class AssetsComputingHelper
             ".dat" when !string.IsNullOrEmpty(customIcuCandidateFilename) && fileName != customIcuCandidateFilename => "custom icu file will be used instead of icu from the runtime pack",
             ".json" when fromMonoPackage && (fileName == "emcc-props" || fileName == "package") => $"{fileName}{extension} is not used by Blazor",
             ".ts" when fromMonoPackage && fileName == "dotnet.d" => "dotnet type definition is not used by Blazor",
+            ".map" when !emitSourceMap && fromMonoPackage && (fileName == "dotnet.js" || fileName == "dotnet.runtime.js") => "source map file is not published",
             ".ts" when fromMonoPackage && fileName == "dotnet-legacy.d" => "dotnet type definition is not used by Blazor",
             ".js" when assetType == "native" && !(dotnetJsSingleThreadNames.Contains(fileName) || (enableThreads && fileName == "dotnet.native.worker")) => $"{fileName}{extension} is not used by Blazor",
             ".pdb" when !copySymbols => "copying symbols is disabled",

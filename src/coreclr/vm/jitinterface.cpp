@@ -65,20 +65,28 @@
 
 #include "tailcallhelp.h"
 
-#ifdef HOST_WINDOWS
+#ifdef TARGET_WINDOWS
 EXTERN_C uint32_t _tls_index;
 #endif
 
-#ifdef _MSC_VER
-__declspec(selectany) __declspec(thread) uint32_t t_NonGCMaxThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) uint32_t t_GCMaxThreadStaticBlocks;
+struct ThreadStaticBlockInfo
+{
+    uint32_t NonGCMaxThreadStaticBlocks;
+    void** NonGCThreadStaticBlocks;
 
-__declspec(selectany) __declspec(thread) void** t_NonGCThreadStaticBlocks;
-__declspec(selectany) __declspec(thread) void** t_GCThreadStaticBlocks;
+    uint32_t GCMaxThreadStaticBlocks;
+    void** GCThreadStaticBlocks;
+};
+#ifdef _MSC_VER
+__declspec(selectany) __declspec(thread)  ThreadStaticBlockInfo t_ThreadStatics;
+__declspec(selectany) __declspec(thread)  uint32_t t_NonGCThreadStaticBlocksSize;
+__declspec(selectany) __declspec(thread)  uint32_t t_GCThreadStaticBlocksSize;
 #else
-EXTERN_C __thread uint32_t t_maxThreadStaticBlocks;
-EXTERN_C __thread void** t_threadStaticBlocks;
-#endif
+extern "C" void* __tls_get_addr(void* ti);
+__thread ThreadStaticBlockInfo t_ThreadStatics;
+__thread uint32_t t_NonGCThreadStaticBlocksSize;
+__thread uint32_t t_GCThreadStaticBlocksSize;
+#endif // _MSC_VER
 
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
@@ -1297,6 +1305,179 @@ static CorInfoHelpFunc getInstanceFieldHelper(FieldDesc * pField, CORINFO_ACCESS
     return (CorInfoHelpFunc)helper;
 }
 
+
+
+/*********************************************************************/
+uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
+{
+    CONTRACTL {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    UINT32 typeIndex = 0;
+
+    JIT_TO_EE_TRANSITION();
+
+    FieldDesc* fieldDesc = (FieldDesc*)field;
+    _ASSERTE(fieldDesc->IsThreadStatic());
+
+    if (isGCType)
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+    else
+    {
+        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
+    }
+
+    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
+
+    EE_TO_JIT_TRANSITION();
+    return typeIndex;
+}
+
+#if defined(TARGET_WINDOWS)
+/*********************************************************************/
+static uint32_t ThreadLocalOffset(void* p)
+{
+    PTEB Teb = NtCurrentTeb();
+    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
+    uint8_t* pOurTls = pTls[_tls_index];
+    return (uint32_t)((uint8_t*)p - pOurTls);
+}
+#elif defined(TARGET_OSX)
+extern "C" void* GetThreadVarsAddress();
+
+static void* GetThreadVarsSectionAddressFromDesc(uint8_t* p)
+{
+    _ASSERT(p[0] == 0x48 && p[1] == 0x8d && p[2] == 0x3d);
+
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 3;
+
+    // The descriptor address is located at *p at this point.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
+}
+
+static void* GetThreadVarsSectionAddress()
+{
+#ifdef TARGET_AMD64
+    // On x64, the address is related to rip, so, disassemble the function,
+    // read the offset, and then relative to the IP, find the final address of
+    // __thread_vars section.
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetThreadVarsAddress);
+    return GetThreadVarsSectionAddressFromDesc(p);
+#else
+    return GetThreadVarsAddress();
+#endif // TARGET_AMD64
+}
+
+#else
+
+// Linux
+
+#ifdef TARGET_AMD64
+
+extern "C" void* GetTlsIndexObjectDescOffset();
+
+static void* GetThreadStaticDescriptor(uint8_t* p)
+{
+    if (!(p[0] == 0x66 && p[1] == 0x48 && p[2] == 0x8d && p[3] == 0x3d))
+    {
+        // The optimization is disabled if coreclr is not compiled in .so format.
+        _ASSERTE(false && "Unexpected code sequence");
+        return nullptr;
+    }
+
+    // At this point, `p` contains the instruction pointer and is pointing to the above opcodes.
+    // These opcodes are patched by the dynamic linker.
+    // Move beyond the opcodes that we have already checked above.
+    p += 4;
+
+    // The descriptor address is located at *p at this point. Read that and add
+    // it to the instruction pointer to locate the address of `ti` that will be used
+    // to pass to __tls_get_addr during execution.
+    // (p + 4) below skips the descriptor address bytes embedded in the instruction and
+    // add it to the `instruction pointer` to find out the address.
+    return *(uint32_t*)p + (p + 4);
+}
+
+static void* GetTlsIndexObjectAddress()
+{
+    uint8_t* p = reinterpret_cast<uint8_t*>(&GetTlsIndexObjectDescOffset);
+    return GetThreadStaticDescriptor(p);
+}
+
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+extern "C" size_t GetThreadStaticsVariableOffset();
+
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
+#endif // TARGET_WINDOWS
+
+
+void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
+{
+    CONTRACTL {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    } CONTRACTL_END;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    size_t threadStaticBaseOffset = 0;
+
+#if defined(TARGET_WINDOWS)
+    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
+    pInfo->tlsIndex.accessType = IAT_VALUE;
+
+    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
+    threadStaticBaseOffset = ThreadLocalOffset(&t_ThreadStatics);
+
+#elif defined(TARGET_OSX)
+
+    pInfo->threadVarsSection = GetThreadVarsSectionAddress();
+
+#elif defined(TARGET_AMD64)
+
+    // For Linux/x64, get the address of tls_get_addr system method and the base address
+    // of struct that we will pass to it.
+    pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
+    pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
+
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
+
+    // For Linux arm64/loongarch64, just get the offset of thread static variable, and during execution,
+    // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
+    // this offset, loongarch64 taken from $tp register gives back the thread variable address.
+    threadStaticBaseOffset = GetThreadStaticsVariableOffset();
+
+#else
+    _ASSERTE_MSG(false, "Unsupported scenario of optimizing TLS access on Linux Arm32/x86");
+#endif // TARGET_WINDOWS
+
+    if (isGCType)
+    {
+        pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCMaxThreadStaticBlocks));
+        pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, GCThreadStaticBlocks));
+    }
+    else
+    {
+        pInfo->offsetOfMaxThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCMaxThreadStaticBlocks));
+        pInfo->offsetOfThreadStaticBlocks = (uint32_t)(threadStaticBaseOffset + offsetof(ThreadStaticBlockInfo, NonGCThreadStaticBlocks));
+    }
+    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
+
+    EE_TO_JIT_TRANSITION_LEAF();
+}
+
 /*********************************************************************/
 void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                             CORINFO_METHOD_HANDLE  callerHandle,
@@ -1401,25 +1582,42 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 fieldAccessor = CORINFO_FIELD_STATIC_SHARED_STATIC_HELPER;
 
                 pResult->helper = getSharedStaticsHelper(pField, pFieldMT);
+#if defined(TARGET_ARM)
+                // Optimization is disabled for linux/windows arm
+#elif !defined(TARGET_WINDOWS) && defined(TARGET_X86)
+                // Optimization is disabled for linux/x86
+#elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
+                // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_RISCV64)
+                // Optimization is disabled for riscv64
+#else
+                bool optimizeThreadStaticAccess = true;
+#if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
+                // For linux/x64, check if compiled coreclr as .so file and not single file.
+                // For single file, the `tls_index` might not be accurate.
+                // Do not perform this optimization in such case.
+                optimizeThreadStaticAccess = GetTlsIndexObjectAddress() != nullptr;
+#endif // TARGET_UNIX && TARGET_AMD64
 
-#ifdef HOST_WINDOWS
-#ifndef TARGET_ARM
-                // For windows, we convert the TLS access to the optimized helper where we will store
-                // the static blocks in TLS directly and access them via inline code.
-                if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
-                    (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                if (optimizeThreadStaticAccess)
                 {
-                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                    pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    // For windows x64/x86/arm64, linux x64/arm64/loongarch64:
+                    // We convert the TLS access to the optimized helper where we will store
+                    // the static blocks in TLS directly and access them via inline code.
+                    if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
+                        (pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
+                    else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
+                                (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
+                    {
+                        fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
+                        pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
+                    }
                 }
-                else if ((pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR) ||
-                            (pResult->helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE))
-                {
-                    fieldAccessor = CORINFO_FIELD_STATIC_TLS_MANAGED;
-                    pResult->helper = CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED;
-                }
-#endif // !TARGET_ARM
-#endif // HOST_WINDOWS
+#endif // TARGET_ARM
             }
             else
             {
@@ -1600,113 +1798,6 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
     EE_TO_JIT_TRANSITION();
 }
-
-
-
-#ifdef HOST_WINDOWS
-
-/*********************************************************************/
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
-{
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    UINT32 typeIndex = 0;
-
-    JIT_TO_EE_TRANSITION();
-
-    FieldDesc* fieldDesc = (FieldDesc*)field;
-    _ASSERTE(fieldDesc->IsThreadStatic());
-
-    if (isGCType)
-    {
-        typeIndex = AppDomain::GetCurrentDomain()->GetGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
-    }
-    else
-    {
-        typeIndex = AppDomain::GetCurrentDomain()->GetNonGCThreadStaticTypeIndex(fieldDesc->GetEnclosingMethodTable());
-    }
-
-    assert(typeIndex != TypeIDProvider::INVALID_TYPE_ID);
-
-    EE_TO_JIT_TRANSITION();
-    return typeIndex;
-}
-
-/*********************************************************************/
-static uint32_t ThreadLocalOffset(void* p)
-{
-    PTEB Teb = NtCurrentTeb();
-    uint8_t** pTls = (uint8_t**)Teb->ThreadLocalStoragePointer;
-    uint8_t* pOurTls = pTls[_tls_index];
-    return (uint32_t)((uint8_t*)p - pOurTls);
-}
-
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    pInfo->tlsIndex.addr = (void*)static_cast<uintptr_t>(_tls_index);
-    pInfo->tlsIndex.accessType = IAT_VALUE;
-
-    pInfo->offsetOfThreadLocalStoragePointer = offsetof(_TEB, ThreadLocalStoragePointer);
-    if (isGCType)
-    {
-        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_GCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_GCMaxThreadStaticBlocks);
-    }
-    else
-    {
-        pInfo->offsetOfThreadStaticBlocks = ThreadLocalOffset(&t_NonGCThreadStaticBlocks);
-        pInfo->offsetOfMaxThreadStaticBlocks = ThreadLocalOffset(&t_NonGCMaxThreadStaticBlocks);
-    }
-
-    pInfo->offsetOfGCDataPointer = static_cast<uint32_t>(PtrArray::GetDataOffset());
-
-    JIT_TO_EE_TRANSITION_LEAF();
-}
-#else
-
-uint32_t CEEInfo::getThreadLocalFieldInfo (CORINFO_FIELD_HANDLE  field, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    return 0;
-}
-
-void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType)
-{
-    CONTRACTL {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_PREEMPTIVE;
-    } CONTRACTL_END;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-
-    pInfo->tlsIndex.addr = (UINT8*)0;
-
-    pInfo->offsetOfThreadLocalStoragePointer = 0;
-    pInfo->offsetOfThreadStaticBlocks = 0;
-    pInfo->offsetOfMaxThreadStaticBlocks = 0;
-    pInfo->offsetOfGCDataPointer = 0;
-
-    JIT_TO_EE_TRANSITION_LEAF();
-}
-#endif // HOST_WINDOWS
 
 //---------------------------------------------------------------------------------------
 //
@@ -2075,6 +2166,189 @@ CEEInfo::getFieldInClass(CORINFO_CLASS_HANDLE clsHnd, INT num)
     MethodTable* pMT= VMClsHnd.AsMethodTable();
 
     result = (CORINFO_FIELD_HANDLE) ((pMT->GetApproxFieldDescListRaw()) + num);
+
+    EE_TO_JIT_TRANSITION_LEAF();
+
+    return result;
+}
+
+static GetTypeLayoutResult GetTypeLayoutHelper(
+    MethodTable* pMT,
+    unsigned parentIndex,
+    unsigned baseOffs,
+    FieldDesc* pFD,
+    CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+    size_t maxTreeNodes,
+    size_t* numTreeNodes)
+{
+    STANDARD_VM_CONTRACT;
+
+    if (*numTreeNodes >= maxTreeNodes)
+    {
+        return GetTypeLayoutResult::Partial;
+    }
+
+    unsigned structNodeIndex = (unsigned)(*numTreeNodes)++;
+    CORINFO_TYPE_LAYOUT_NODE& parNode = treeNodes[structNodeIndex];
+    parNode.simdTypeHnd = NULL;
+    parNode.diagFieldHnd = CORINFO_FIELD_HANDLE(pFD);
+    parNode.parent = parentIndex;
+    parNode.offset = baseOffs;
+    parNode.size = pMT->GetNumInstanceFieldBytes();
+    parNode.numFields = 0;
+    parNode.type = CorInfoType::CORINFO_TYPE_VALUECLASS;
+
+    EEClass* pClass = pMT->GetClass();
+    parNode.hasSignificantPadding = pClass->HasExplicitFieldOffsetLayout() || pClass->HasExplicitSize();
+
+    // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
+    // not care about since they are considered primitives by the JIT.
+    if (pMT->IsIntrinsicType())
+    {
+        const char* nsName;
+        pMT->GetFullyQualifiedNameInfo(&nsName);
+
+        if ((strcmp(nsName, "System.Runtime.Intrinsics") == 0) ||
+            (strcmp(nsName, "System.Numerics") == 0))
+        {
+            parNode.simdTypeHnd = CORINFO_CLASS_HANDLE(pMT);
+            if (parentIndex != UINT32_MAX)
+            {
+                return GetTypeLayoutResult::Success;
+            }
+        }
+    }
+
+    ApproxFieldDescIterator fieldIterator(pMT, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pFD = fieldIterator.Next(); pFD != NULL; pFD = fieldIterator.Next())
+    {
+        CorElementType fieldType = pFD->GetFieldType();
+        parNode.numFields++;
+
+        if (fieldType == ELEMENT_TYPE_VALUETYPE)
+        {
+            MethodTable* pFieldMT = pFD->GetApproxFieldTypeHandleThrowing().AsMethodTable();
+            GetTypeLayoutResult result = GetTypeLayoutHelper(pFieldMT, structNodeIndex, baseOffs + pFD->GetOffset(), pFD, treeNodes, maxTreeNodes, numTreeNodes);
+            if (result != GetTypeLayoutResult::Success)
+            {
+                return result;
+            }
+        }
+        else
+        {
+            if (*numTreeNodes >= maxTreeNodes)
+            {
+                return GetTypeLayoutResult::Partial;
+            }
+
+            CorInfoType corInfoType = CEEInfo::asCorInfoType(fieldType);
+            _ASSERTE(corInfoType != CORINFO_TYPE_UNDEF);
+
+            CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
+            treeNode.simdTypeHnd = NULL;
+            treeNode.diagFieldHnd = CORINFO_FIELD_HANDLE(pFD);
+            treeNode.parent = structNodeIndex;
+            treeNode.offset = baseOffs + pFD->GetOffset();
+            treeNode.size = GetSizeForCorElementType(fieldType);
+            treeNode.numFields = 0;
+            treeNode.type = corInfoType;
+            treeNode.hasSignificantPadding = false;
+        }
+
+        if (pMT->GetClass()->IsInlineArray())
+        {
+            size_t treeNodeEnd = *numTreeNodes;
+            uint32_t elemSize = pFD->GetSize();
+            uint32_t arrSize = pMT->GetNumInstanceFieldBytes();
+
+            // Number of fields added for each element, including all
+            // subfields. For example, for ValueTuple<int, int>[4]:
+            // [ 0]: InlineArray
+            // [ 1]:   ValueTuple<int, int>  parent = 0          -
+            // [ 2]:     int                 parent = 1          |
+            // [ 3]:     int                 parent = 1          |
+            // [ 4]:   ValueTuple<int, int>  parent = 0          - stride = 3
+            // [ 5]:     int                 parent = 4
+            // [ 6]:     int                 parent = 4
+            // [ 7]:   ValueTuple<int, int>  parent = 0
+            // [ 8]:     int                 parent = 7
+            // [ 9]:     int                 parent = 7
+            // [10]:   ValueTuple<int, int>  parent = 0
+            // [11]:     int                 parent = 10
+            // [12]:     int                 parent = 10
+
+            unsigned elemFieldsStride = (unsigned)*numTreeNodes - (structNodeIndex + 1);
+
+            // Now duplicate the fields of the previous entry for each
+            // additional element. For each entry we have to update the offset
+            // and the parent index.
+            for (uint32_t elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
+            {
+                size_t prevElemStart = *numTreeNodes - elemFieldsStride;
+                for (size_t i = 0; i < elemFieldsStride; i++)
+                {
+                    if (*numTreeNodes >= maxTreeNodes)
+                    {
+                        return GetTypeLayoutResult::Partial;
+                    }
+
+                    CORINFO_TYPE_LAYOUT_NODE& treeNode = treeNodes[(*numTreeNodes)++];
+                    treeNode = treeNodes[prevElemStart + i];
+                    treeNode.offset += elemSize;
+                    // The first field points back to the inline array and has
+                    // no bias; the rest of them do.
+                    treeNode.parent += (i == 0) ? 0 : elemFieldsStride;
+                }
+
+                parNode.numFields++;
+            }
+        }
+    }
+
+    return GetTypeLayoutResult::Success;
+}
+
+GetTypeLayoutResult CEEInfo::getTypeLayout(
+    CORINFO_CLASS_HANDLE clsHnd,
+    CORINFO_TYPE_LAYOUT_NODE* treeNodes,
+    size_t* numTreeNodes)
+{
+    STANDARD_VM_CONTRACT;
+
+    GetTypeLayoutResult result = GetTypeLayoutResult::Failure;
+
+    JIT_TO_EE_TRANSITION_LEAF();
+
+    TypeHandle typeHnd(clsHnd);
+
+    if (typeHnd.IsNativeValueType())
+    {
+        if (*numTreeNodes > 0)
+        {
+            *numTreeNodes = 1;
+            treeNodes[0].simdTypeHnd = NULL;
+            treeNodes[0].diagFieldHnd = NULL;
+            treeNodes[0].parent = UINT32_MAX;
+            treeNodes[0].offset = 0;
+            treeNodes[0].size = typeHnd.GetSize();
+            treeNodes[0].numFields = 0;
+            treeNodes[0].type = CORINFO_TYPE_VALUECLASS;
+            treeNodes[0].hasSignificantPadding = true;
+            result = GetTypeLayoutResult::Success;
+        }
+        else
+        {
+            result = GetTypeLayoutResult::Partial;
+        }
+    }
+    else if (typeHnd.IsValueType())
+    {
+        MethodTable* pMT = typeHnd.AsMethodTable();
+
+        size_t maxTreeNodes = *numTreeNodes;
+        *numTreeNodes = 0;
+        result = GetTypeLayoutHelper(pMT, UINT32_MAX, 0, NULL, treeNodes, maxTreeNodes, numTreeNodes);
+    }
 
     EE_TO_JIT_TRANSITION_LEAF();
 
@@ -3220,6 +3494,23 @@ void CEEInfo::AddTransientMethodDetails(TransientMethodDetails details)
     m_transientDetails->Append(std::move(details));
 }
 
+TransientMethodDetails CEEInfo::RemoveTransientMethodDetails(MethodDesc* pMD)
+{
+    STANDARD_VM_CONTRACT;
+    _ASSERTE(pMD != NULL);
+
+    TransientMethodDetails local{};
+    TransientMethodDetails* details;
+    if (FindTransientMethodDetails(pMD, &details))
+    {
+        // Details found, move contents to return
+        // and default initialize the found instance.
+        local = std::move(*details);
+        *details = {};
+    }
+    return local;
+}
+
 bool CEEInfo::FindTransientMethodDetails(MethodDesc* pMD, TransientMethodDetails** details)
 {
     STANDARD_VM_CONTRACT;
@@ -3640,13 +3931,6 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             if (pMT->IsByRefLike())
                 ret |= CORINFO_FLG_BYREF_LIKE;
 
-            if ((pClass->IsNotTightlyPacked() && (!pClass->IsManagedSequential() || pClass->HasExplicitSize())) ||
-                pMT == g_TypedReferenceMT ||
-                VMClsHnd.IsNativeValueType())
-            {
-                ret |= CORINFO_FLG_CUSTOMLAYOUT;
-            }
-
             if (pClass->IsUnsafeValueClass())
                 ret |= CORINFO_FLG_UNSAFE_VALUECLASS;
         }
@@ -3669,9 +3953,7 @@ uint32_t CEEInfo::getClassAttribsInternal (CORINFO_CLASS_HANDLE clsHnd)
             ret |= CORINFO_FLG_DELEGATE;
 
         if (pClass->IsBeforeFieldInit())
-        {
             ret |= CORINFO_FLG_BEFOREFIELDINIT;
-        }
 
         if (pClass->IsAbstract())
             ret |= CORINFO_FLG_ABSTRACT;
@@ -4787,6 +5069,7 @@ void CEEInfo::getCallInfo(
 
     BOOL fResolvedConstraint = FALSE;
     BOOL fForceUseRuntimeLookup = FALSE;
+    BOOL fAbstractSVM = FALSE;
 
     MethodDesc * pMDAfterConstraintResolution = pMD;
     if (constrainedType.IsNull())
@@ -4867,11 +5150,21 @@ void CEEInfo::getCallInfo(
 #ifdef FEATURE_DEFAULT_INTERFACES
         else if (directMethod && pMD->IsStatic())
         {
-            // Default interface implementation of static virtual method
-            pMDAfterConstraintResolution = directMethod;
-            fResolvedConstraint = TRUE;
-            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
-            exactType = directMethod->GetMethodTable();
+            if (directMethod->IsAbstract())
+            {
+                // This is the result when we call a SVM which is abstract, or re-abstracted
+                directMethod = NULL;
+                pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+                fAbstractSVM = true;
+            }
+            else
+            {
+                // Default interface implementation of static virtual method
+                pMDAfterConstraintResolution = directMethod;
+                fResolvedConstraint = TRUE;
+                pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+                exactType = directMethod->GetMethodTable();
+            }
         }
 #endif
         else  if (constrainedType.IsValueType())
@@ -5368,7 +5661,14 @@ void CEEInfo::getCallInfo(
             // shared generics is covered by the ConstrainedMethodEntrySlot dictionary entry.
             pResult->kind = CORINFO_CALL;
             pResult->accessAllowed = CORINFO_ACCESS_ILLEGAL;
-            pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION;
+            if (fAbstractSVM)
+            {
+                pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION;
+            }
+            else
+            {
+                pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION;
+            }
             pResult->callsiteCalloutHelper.numArgs = 3;
             pResult->callsiteCalloutHelper.args[0].methodHandle = (CORINFO_METHOD_HANDLE)pMD;
             pResult->callsiteCalloutHelper.args[0].argType = CORINFO_HELPER_ARG_TYPE_Method;
@@ -6927,100 +7227,6 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
     return false;
 }
 
-bool getILIntrinsicImplementationForVolatile(MethodDesc * ftn,
-                                             CORINFO_METHOD_INFO * methInfo)
-{
-    STANDARD_VM_CONTRACT;
-
-    //
-    // This replaces the implementations of Volatile.* in CoreLib with more efficient ones.
-    // We do this because we cannot otherwise express these in C#.  What we *want* to do is
-    // to treat the byref args to these methods as "volatile."  In pseudo-C#, this would look
-    // like:
-    //
-    //   int Read(ref volatile int location)
-    //   {
-    //       return location;
-    //   }
-    //
-    // However, C# does not yet provide a way to declare a byref as "volatile."  So instead,
-    // we substitute raw IL bodies for these methods that use the correct volatile instructions.
-    //
-
-    _ASSERTE(CoreLibBinder::IsClass(ftn->GetMethodTable(), CLASS__VOLATILE));
-
-    const size_t VolatileMethodBodySize = 6;
-
-    struct VolatileMethodImpl
-    {
-        BinderMethodID methodId;
-        BYTE body[VolatileMethodBodySize];
-    };
-
-#define VOLATILE_IMPL(type, loadinst, storeinst) \
-    { \
-        METHOD__VOLATILE__READ_##type, \
-        { \
-            CEE_LDARG_0, \
-            CEE_PREFIX1, (CEE_VOLATILE & 0xFF), \
-            loadinst, \
-            CEE_NOP, /*pad to VolatileMethodBodySize bytes*/ \
-            CEE_RET \
-        } \
-    }, \
-    { \
-        METHOD__VOLATILE__WRITE_##type, \
-        { \
-            CEE_LDARG_0, \
-            CEE_LDARG_1, \
-            CEE_PREFIX1, (CEE_VOLATILE & 0xFF), \
-            storeinst, \
-            CEE_RET \
-        } \
-    },
-
-    static const VolatileMethodImpl volatileImpls[] =
-    {
-        VOLATILE_IMPL(T,       CEE_LDIND_REF, CEE_STIND_REF)
-        VOLATILE_IMPL(Bool,    CEE_LDIND_I1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Int,     CEE_LDIND_I4,  CEE_STIND_I4)
-        VOLATILE_IMPL(IntPtr,  CEE_LDIND_I,   CEE_STIND_I)
-        VOLATILE_IMPL(UInt,    CEE_LDIND_U4,  CEE_STIND_I4)
-        VOLATILE_IMPL(UIntPtr, CEE_LDIND_I,   CEE_STIND_I)
-        VOLATILE_IMPL(SByt,    CEE_LDIND_I1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Byte,    CEE_LDIND_U1,  CEE_STIND_I1)
-        VOLATILE_IMPL(Shrt,    CEE_LDIND_I2,  CEE_STIND_I2)
-        VOLATILE_IMPL(UShrt,   CEE_LDIND_U2,  CEE_STIND_I2)
-        VOLATILE_IMPL(Flt,     CEE_LDIND_R4,  CEE_STIND_R4)
-
-        //
-        // Ordinary volatile loads and stores only guarantee atomicity for pointer-sized (or smaller) data.
-        // So, on 32-bit platforms we must use Interlocked operations instead for the 64-bit types.
-        // The implementation in CoreLib already does this, so we will only substitute a new
-        // IL body if we're running on a 64-bit platform.
-        //
-        IN_TARGET_64BIT(VOLATILE_IMPL(Long,  CEE_LDIND_I8, CEE_STIND_I8))
-        IN_TARGET_64BIT(VOLATILE_IMPL(ULong, CEE_LDIND_I8, CEE_STIND_I8))
-        IN_TARGET_64BIT(VOLATILE_IMPL(Dbl,   CEE_LDIND_R8, CEE_STIND_R8))
-    };
-
-    mdMethodDef md = ftn->GetMemberDef();
-    for (unsigned i = 0; i < ARRAY_SIZE(volatileImpls); i++)
-    {
-        if (md == CoreLibBinder::GetMethod(volatileImpls[i].methodId)->GetMemberDef())
-        {
-            methInfo->ILCode = const_cast<BYTE*>(volatileImpls[i].body);
-            methInfo->ILCodeSize = VolatileMethodBodySize;
-            methInfo->maxStack = 2;
-            methInfo->EHcount = 0;
-            methInfo->options = (CorInfoOptions)0;
-            return true;
-        }
-    }
-
-    return false;
-}
-
 bool getILIntrinsicImplementationForInterlocked(MethodDesc * ftn,
                                                 CORINFO_METHOD_INFO * methInfo)
 {
@@ -7349,45 +7555,65 @@ public:
         _ASSERTE(pMD != NULL);
     }
 
-    MethodInfoHelperContext(const TransientMethodDetails* details)
-        : Method{ details->Method }
-        , Header{ details->Header }
-        , TransientResolver{ NULL }
-    {
-        LIMITED_METHOD_CONTRACT;
-        if (IsDynamicScope(details->Scope))
-            TransientResolver = GetDynamicResolver(details->Scope);
-    }
-
     MethodInfoHelperContext(const MethodInfoHelperContext&) = delete;
     MethodInfoHelperContext(MethodInfoHelperContext&& other) = delete;
 
-    ~MethodInfoHelperContext() = default;
+    ~MethodInfoHelperContext()
+    {
+        STANDARD_VM_CONTRACT;
+        delete TransientResolver;
+    }
 
     MethodInfoHelperContext& operator=(const MethodInfoHelperContext&) = delete;
     MethodInfoHelperContext& operator=(MethodInfoHelperContext&& other) = delete;
 
     bool HasTransientMethodDetails() const
     {
+        LIMITED_METHOD_CONTRACT;
         return TransientResolver != NULL;
     }
 
     CORINFO_MODULE_HANDLE CreateScopeHandle() const
     {
+        LIMITED_METHOD_CONTRACT;
         _ASSERTE(HasTransientMethodDetails());
         return MakeDynamicScope(TransientResolver);
     }
 
-    TransientMethodDetails CreateTransientMethodDetails() const
+    // This operation transfers any ownership to a
+    // TransientMethodDetails instance.
+    TransientMethodDetails CreateTransientMethodDetails()
     {
+        STANDARD_VM_CONTRACT;
         _ASSERTE(HasTransientMethodDetails());
-        return TransientMethodDetails{Method, Header, CreateScopeHandle() };
+
+        CORINFO_MODULE_HANDLE handle = CreateScopeHandle();
+        TransientResolver = NULL;
+        return TransientMethodDetails{ Method, Header, handle };
+    }
+
+    void UpdateWith(const TransientMethodDetails& details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        Header = details.Header;
+        TransientResolver = details.Scope != NULL ? GetDynamicResolver(details.Scope) : NULL;
+    }
+
+    void TakeOwnership(TransientMethodDetails details)
+    {
+        LIMITED_METHOD_CONTRACT;
+        UpdateWith(details);
+
+        // Default initialize local instance since we are
+        // taking ownership of the transient method details.
+        details = {};
     }
 };
 
 static void getMethodInfoHelper(
     MethodInfoHelperContext& cxt,
-    CORINFO_METHOD_INFO* methInfo)
+    CORINFO_METHOD_INFO* methInfo,
+    CORINFO_CONTEXT_HANDLE exactContext = NULL)
 {
     STANDARD_VM_CONTRACT;
     _ASSERTE(methInfo != NULL);
@@ -7421,10 +7647,6 @@ static void getMethodInfoHelper(
             else if (CoreLibBinder::IsClass(pMT, CLASS__INTERLOCKED))
             {
                 fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
-            }
-            else if (CoreLibBinder::IsClass(pMT, CLASS__VOLATILE))
-            {
-                fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
             }
             else if (CoreLibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
             {
@@ -7511,7 +7733,23 @@ static void getMethodInfoHelper(
     DWORD           cbSig = 0;
     ftn->GetSig(&pSig, &cbSig);
 
-    SigTypeContext context(ftn);
+    SigTypeContext context;
+
+    if (exactContext == NULL || exactContext == METHOD_BEING_COMPILED_CONTEXT())
+    {
+        SigTypeContext::InitTypeContext(ftn, &context);
+    }
+    else if (((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD)
+    {
+        MethodDesc* contextMD = (MethodDesc*)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK);
+        SigTypeContext::InitTypeContext(contextMD, &context);
+    }
+    else
+    {
+        _ASSERT(((size_t)exactContext & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_CLASS);
+        TypeHandle th = TypeHandle((CORINFO_CLASS_HANDLE)((size_t)exactContext & ~CORINFO_CONTEXTFLAGS_MASK));
+        SigTypeContext::InitTypeContext(th, &context);
+    }
 
     /* Fetch the method signature */
     // Type parameters in the signature should be instantiated according to the
@@ -7550,7 +7788,8 @@ static void getMethodInfoHelper(
 bool
 CEEInfo::getMethodInfo(
     CORINFO_METHOD_HANDLE ftnHnd,
-    CORINFO_METHOD_INFO * methInfo)
+    CORINFO_METHOD_INFO * methInfo,
+    CORINFO_CONTEXT_HANDLE context)
 {
     CONTRACTL {
         THROWS;
@@ -7568,28 +7807,43 @@ CEEInfo::getMethodInfo(
     MethodInfoHelperContext cxt{ ftn };
     if (ftn->IsDynamicMethod())
     {
-        getMethodInfoHelper(cxt, methInfo);
+        getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
     else if (!ftn->IsWrapperStub() && ftn->HasILHeader())
     {
         COR_ILMETHOD_DECODER header(ftn->GetILHeader(TRUE), ftn->GetMDImport(), NULL);
         cxt.Header = &header;
-        getMethodInfoHelper(cxt, methInfo);
+        getMethodInfoHelper(cxt, methInfo, context);
         result = true;
     }
     else if (ftn->IsIL() && ftn->GetRVA() == 0)
     {
+        // We will either find or create transient method details.
+        _ASSERTE(!cxt.HasTransientMethodDetails());
+
         // IL methods with no RVA indicate there is no implementation defined in metadata.
         // Check if we previously generated details/implementation for this method.
         TransientMethodDetails* detailsMaybe = NULL;
         if (FindTransientMethodDetails(ftn, &detailsMaybe))
-        {
-            cxt.Header = detailsMaybe->Header;
-            cxt.TransientResolver = GetDynamicResolver(detailsMaybe->Scope);
-        }
+            cxt.UpdateWith(*detailsMaybe);
 
         getMethodInfoHelper(cxt, methInfo);
+
+        // If we have transient method details we need to handle
+        // the lifetime of the details.
+        if (cxt.HasTransientMethodDetails())
+        {
+            // If we didn't find transient details, but we have them
+            // after getting method info, store them for cleanup.
+            if (detailsMaybe == NULL)
+                AddTransientMethodDetails(cxt.CreateTransientMethodDetails());
+
+            // Reset the context because ownership has either been
+            // transferred or was found in this instance.
+            cxt.UpdateWith({});
+        }
+
         result = true;
     }
 
@@ -8679,55 +8933,31 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultComparerClassHelper(CORINFO_CLASS_HANDLE
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
 
-    // If T implements IComparable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(inst)))
-    {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_COMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-    }
-
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))
     {
         Instantiation nullableInst = elemTypeHnd.AsMethodTable()->GetInstantiation();
-        TypeHandle iequatable = TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(nullableInst);
-        if (nullableInst[0].CanCastTo(iequatable))
-        {
-            TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_COMPARER)).Instantiate(nullableInst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__NULLABLE_COMPARER)).Instantiate(nullableInst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // We need to special case the Enum comparers based on their underlying type to avoid boxing
     if (elemTypeHnd.IsEnum())
     {
-        MethodTable* targetClass = NULL;
-        CorElementType normType = elemTypeHnd.GetVerifierCorElementType();
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_COMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+    }
 
-        switch(normType)
-        {
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            {
-                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_COMPARER);
-                break;
-            }
+    if (elemTypeHnd.IsCanonicalSubtype())
+    {
+        return NULL;
+    }
 
-            default:
-                break;
-        }
-
-        if (targetClass != NULL)
-        {
-            TypeHandle resultTh = ((TypeHandle)targetClass->GetCanonicalMethodTable()).Instantiate(inst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+    // If T implements IComparable<T>
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__ICOMPARABLEGENERIC)).Instantiate(inst)))
+    {
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_COMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
@@ -8768,24 +8998,11 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // And in compile.cpp's SpecializeEqualityComparer
     TypeHandle elemTypeHnd(elemType);
 
-    // Special case for byte
-    if (elemTypeHnd.AsMethodTable()->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__ELEMENT_TYPE_U1)))
-    {
-        return CORINFO_CLASS_HANDLE(CoreLibBinder::GetClass(CLASS__BYTE_EQUALITYCOMPARER));
-    }
-
     // Mirrors the logic in BCL's CompareHelpers.CreateDefaultComparer
     // And in compile.cpp's SpecializeComparer
     //
     // We need to find the appropriate instantiation
     Instantiation inst(&elemTypeHnd, 1);
-
-    // If T implements IEquatable<T>
-    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
-    {
-        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
-        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-    }
 
     // Nullable<T>
     if (Nullable::IsNullableType(elemTypeHnd))
@@ -8801,33 +9018,20 @@ CORINFO_CLASS_HANDLE CEEInfo::getDefaultEqualityComparerClassHelper(CORINFO_CLAS
     // to avoid boxing and call the correct versions of GetHashCode.
     if (elemTypeHnd.IsEnum())
     {
-        MethodTable* targetClass = NULL;
-        CorElementType normType = elemTypeHnd.GetVerifierCorElementType();
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
+    }
 
-        switch(normType)
-        {
-            case ELEMENT_TYPE_I1:
-            case ELEMENT_TYPE_I2:
-            case ELEMENT_TYPE_U1:
-            case ELEMENT_TYPE_U2:
-            case ELEMENT_TYPE_I4:
-            case ELEMENT_TYPE_U4:
-            case ELEMENT_TYPE_I8:
-            case ELEMENT_TYPE_U8:
-            {
-                targetClass = CoreLibBinder::GetClass(CLASS__ENUM_EQUALITYCOMPARER);
-                break;
-            }
+    if (elemTypeHnd.IsCanonicalSubtype())
+    {
+        return NULL;
+    }
 
-            default:
-                break;
-        }
-
-        if (targetClass != NULL)
-        {
-            TypeHandle resultTh = ((TypeHandle)targetClass->GetCanonicalMethodTable()).Instantiate(inst);
-            return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
-        }
+    // If T implements IEquatable<T>
+    if (elemTypeHnd.CanCastTo(TypeHandle(CoreLibBinder::GetClass(CLASS__IEQUATABLEGENERIC)).Instantiate(inst)))
+    {
+        TypeHandle resultTh = ((TypeHandle)CoreLibBinder::GetClass(CLASS__GENERIC_EQUALITYCOMPARER)).Instantiate(inst);
+        return CORINFO_CLASS_HANDLE(resultTh.GetMethodTable());
     }
 
     // Default case
@@ -12615,7 +12819,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif
 
 #if defined(TARGET_AMD64)
-    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow);
+    BOOL fAllowRel32 = (g_fAllowRel32 | fForceJumpStubOverflow) && g_pConfig->JitEnableOptionalRelocs();
 #endif
 
     size_t reserveForJumpStubs = 0;
@@ -12795,6 +12999,12 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #endif // TARGET_ARM64
 
             reserveForJumpStubs = jitInfo.GetReserveForJumpStubs();
+
+            // Get any transient method details and take ownership
+            // from the JITInfo instance. We are going to be recreating
+            // a new JITInfo and will reuse these details there.
+            TransientMethodDetails details = jitInfo.RemoveTransientMethodDetails(ftn);
+            cxt.TakeOwnership(std::move(details));
             continue;
         }
 #endif // (TARGET_AMD64 || TARGET_ARM64)

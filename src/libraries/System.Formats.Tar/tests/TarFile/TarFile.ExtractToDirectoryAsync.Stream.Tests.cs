@@ -151,7 +151,7 @@ namespace System.Formats.Tar.Tests
 
                 using (TempDirectory root = new TempDirectory())
                 {
-                    await Assert.ThrowsAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false));
+                    await Assert.ThrowsAnyAsync<IOException>(() => TarFile.ExtractToDirectoryAsync(archive, root.Path, overwriteFiles: false));
                     Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
                 }
             }
@@ -185,19 +185,20 @@ namespace System.Formats.Tar.Tests
         {
             using (TempDirectory root = new TempDirectory())
             {
-                string baseDir = string.IsNullOrEmpty(subfolder) ? root.Path : Path.Join(root.Path, subfolder);
+                string baseDir = root.Path;
                 Directory.CreateDirectory(baseDir);
 
                 string linkName = "link";
                 string targetName = "target";
-                string targetPath = Path.Join(baseDir, targetName);
-
-                File.Create(targetPath).Dispose();
+                string targetPath = string.IsNullOrEmpty(subfolder) ? targetName : Path.Join(subfolder, targetName);
 
                 await using (MemoryStream archive = new MemoryStream())
                 {
                     await using (TarWriter writer = new TarWriter(archive, format, leaveOpen: true))
                     {
+                        TarEntry fileEntry = InvokeTarEntryCreationConstructor(format, TarEntryType.RegularFile, targetPath);
+                        await writer.WriteEntryAsync(fileEntry);
+
                         TarEntry entry = InvokeTarEntryCreationConstructor(format, entryType, linkName);
                         entry.LinkName = targetPath;
                         await writer.WriteEntryAsync(entry);

@@ -267,8 +267,11 @@ mono_ios_runtime_init (void)
 
     char icu_dat_path [1024];
     int res;
-
+#if defined(HYBRID_GLOBALIZATION)
+    res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt_hybrid.dat");
+#else
     res = snprintf (icu_dat_path, sizeof (icu_dat_path) - 1, "%s/%s", bundle, "icudt.dat");
+#endif
     assert (res > 0);
 
     // TODO: set TRUSTED_PLATFORM_ASSEMBLIES, APP_PATHS and NATIVE_DLL_SEARCH_DIRECTORIES

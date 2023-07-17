@@ -32,7 +32,7 @@ namespace System.Net.Http
         private readonly Uri? _proxyUri;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
-        private readonly HttpAuthority? _originAuthority;
+        private readonly HttpAuthority _originAuthority;
 
         /// <summary>Initially set to null, this can be set to enable HTTP/3 based on Alt-Svc.</summary>
         private volatile HttpAuthority? _http3Authority;
@@ -114,6 +114,7 @@ namespace System.Net.Http
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2;
         private readonly SslClientAuthenticationOptions? _sslOptionsHttp2Only;
         private SslClientAuthenticationOptions? _sslOptionsHttp3;
+        private SslClientAuthenticationOptions? _sslOptionsProxy;
 
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
         private bool _usedSinceLastCleanup = true;
@@ -137,10 +138,9 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
 
-            if (host != null)
-            {
-                _originAuthority = new HttpAuthority(host, port);
-            }
+            // The only case where 'host' will not be set is if this is a Proxy connection pool.
+            Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
+            _originAuthority = new HttpAuthority(host ?? proxyUri!.IdnHost, port);
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
@@ -232,7 +232,7 @@ namespace System.Net.Http
             }
 
             string? hostHeader = null;
-            if (_originAuthority != null)
+            if (host is not null)
             {
                 // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
@@ -302,6 +302,12 @@ namespace System.Net.Http
                 _http2RequestQueue = new RequestQueue<Http2Connection?>();
             }
 
+            if (_proxyUri != null && HttpUtilities.IsSupportedSecureScheme(_proxyUri.Scheme))
+            {
+                _sslOptionsProxy = ConstructSslOptions(poolManager, _proxyUri.IdnHost);
+                _sslOptionsProxy.ApplicationProtocols = null;
+            }
+
             if (NetEventSource.Log.IsEnabled()) Trace($"{this}");
         }
 
@@ -319,6 +325,15 @@ namespace System.Net.Http
             Debug.Assert(sslHostName != null);
 
             SslClientAuthenticationOptions sslOptions = poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
+
+            // This is only set if we are underlying handler for HttpClientHandler
+            if (poolManager.Settings._clientCertificateOptions == ClientCertificateOption.Manual && sslOptions.LocalCertificateSelectionCallback != null &&
+                    (sslOptions.ClientCertificates == null || sslOptions.ClientCertificates.Count == 0))
+            {
+                // If we have no client certificates do not set callback when internal selection is used.
+                // It breaks TLS resume on Linux
+                sslOptions.LocalCertificateSelectionCallback = null;
+            }
 
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
@@ -340,7 +355,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
-        public HttpAuthority? OriginAuthority => _originAuthority;
+        public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
@@ -363,7 +378,6 @@ namespace System.Net.Http
                 {
                     var sb = new StringBuilder();
 
-                    Debug.Assert(_originAuthority != null);
                     sb.Append(IsSecure ? "https://" : "http://")
                       .Append(_originAuthority.IdnHost);
 
@@ -918,12 +932,16 @@ namespace System.Net.Http
                 {
                     quicConnection = await ConnectHelper.ConnectQuicAsync(request, new DnsEndPoint(authority.IdnHost, authority.Port), _poolManager.Settings._pooledConnectionIdleTimeout, _sslOptionsHttp3!, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {e}");
+                    if (NetEventSource.Log.IsEnabled()) Trace($"QUIC connection failed: {ex}");
 
-                    // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
-                    BlocklistAuthority(authority, e);
+                    // Block list authority only if the connection attempt was not cancelled.
+                    if (ex is not OperationCanceledException oce || !cancellationToken.IsCancellationRequested || oce.CancellationToken != cancellationToken)
+                    {
+                        // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
+                        BlocklistAuthority(authority, ex);
+                    }
                     throw;
                 }
 
@@ -936,7 +954,7 @@ namespace System.Net.Http
                 }
 #endif
                 // if the authority was sent as an option through alt-svc then include alt-used header
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
+                http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())
@@ -1250,7 +1268,7 @@ namespace System.Net.Http
 
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
-                        var authority = new HttpAuthority(value.Host ?? _originAuthority!.IdnHost, value.Port);
+                        var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
                         if (IsAltSvcBlocked(authority, out _))
                         {
                             // Skip authorities in our blocklist.
@@ -1523,12 +1541,19 @@ namespace System.Net.Http
                 case HttpConnectionKind.Http:
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
-                    Debug.Assert(_originAuthority != null);
                     stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
+                    {
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case HttpConnectionKind.Proxy:
                     stream = await ConnectToTcpHostAsync(_proxyUri!.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
+                    if (_sslOptionsProxy != null)
+                    {
+                        stream = await ConnectHelper.EstablishSslConnectionAsync(_sslOptionsProxy, request, async, stream, cancellationToken).ConfigureAwait(false);
+                    }
                     break;
 
                 case HttpConnectionKind.ProxyTunnel:
@@ -1725,8 +1750,6 @@ namespace System.Net.Http
 
         private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(_originAuthority != null);
-
             // Send a CONNECT request to the proxy server to establish a tunnel.
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
             tunnelRequest.Headers.Host = $"{_originAuthority.IdnHost}:{_originAuthority.Port}";    // This specifies destination host/port to connect to
@@ -1757,7 +1780,6 @@ namespace System.Net.Http
 
         private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(_originAuthority != null);
             Debug.Assert(_proxyUri != null);
 
             Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
@@ -1930,6 +1952,7 @@ namespace System.Net.Http
                     {
                         // Add connection to the pool.
                         added = true;
+                        connection.MarkConnectionAsIdle();
                         _availableHttp11Connections.Add(connection);
                     }
 
@@ -2393,10 +2416,10 @@ namespace System.Net.Http
             (_proxyUri == null ?
                 (_sslOptionsHttp11 == null ?
                     $"http://{_originAuthority}" :
-                    $"https://{_originAuthority}" + (_sslOptionsHttp11.TargetHost != _originAuthority!.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)) :
+                    $"https://{_originAuthority}" + (_sslOptionsHttp11.TargetHost != _originAuthority.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)) :
                 (_sslOptionsHttp11 == null ?
                     $"Proxy {_proxyUri}" :
-                    $"https://{_originAuthority}/ tunnelled via Proxy {_proxyUri}" + (_sslOptionsHttp11.TargetHost != _originAuthority!.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)));
+                    $"https://{_originAuthority}/ tunnelled via Proxy {_proxyUri}" + (_sslOptionsHttp11.TargetHost != _originAuthority.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)));
 
         private void Trace(string? message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(

@@ -857,6 +857,10 @@ namespace Internal.JitInterface
             sig->_retType = (byte)corInfoRetType;
             sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
+#if READYTORUN
+            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
+#endif
+
             sig->flags = 0;    // used by IL stubs code
 
             sig->numArgs = (ushort)signature.Length;
@@ -1179,16 +1183,35 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, sig: sig, scope: null);
         }
 
-        private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
+        private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context)
         {
             MethodDesc method = HandleToObject(ftn);
-#if READYTORUN
+
+            if (context != null && method.IsSharedByGenericInstantiations)
+            {
+                TypeSystemEntity ctx = entityFromContext(context);
+                if (ctx is MethodDesc methodFromCtx && context != contextFromMethodBeingCompiled())
+                {
+                    Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
+                    method = methodFromCtx;
+                }
+                else if (ctx is InstantiatedType instantiatedCtxType)
+                {
+                    MethodDesc instantiatedMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedCtxType);
+                    if (method.HasInstantiation)
+                    {
+                        instantiatedMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(instantiatedMethod, method.Instantiation);
+                    }
+                    method = instantiatedMethod;
+                }
+            }
+
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
             // later.
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
-#endif
+
             MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
@@ -1736,6 +1759,7 @@ namespace Internal.JitInterface
                     ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
+                    ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
@@ -1762,6 +1786,8 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
+#else
+                ValidateSafetyOfUsingTypeEquivalenceOfType(field.FieldType);
 #endif
             }
             else
@@ -1983,10 +2009,6 @@ namespace Internal.JitInterface
                 if (metadataType.IsByRefLike)
                     result |= CorInfoFlag.CORINFO_FLG_BYREF_LIKE;
 
-                // The CLR has more complicated rules around CUSTOMLAYOUT, but this will do.
-                if (metadataType.IsExplicitLayout || (metadataType.IsSequentialLayout && metadataType.GetClassLayout().Size != 0) || metadataType.IsWellKnownType(WellKnownType.TypedReference))
-                    result |= CorInfoFlag.CORINFO_FLG_CUSTOMLAYOUT;
-
                 if (metadataType.IsUnsafeValueType)
                     result |= CorInfoFlag.CORINFO_FLG_UNSAFE_VALUECLASS;
 
@@ -2015,7 +2037,18 @@ namespace Internal.JitInterface
                     result |= CorInfoFlag.CORINFO_FLG_CONTAINS_GC_PTR;
 
                 if (metadataType.IsBeforeFieldInit)
-                    result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+                {
+                    bool makeBeforeFieldInit = true;
+
+#if READYTORUN
+                    makeBeforeFieldInit &= _compilation.CompilationModuleGroup.VersionsWithType(type);
+#endif
+
+                    if (makeBeforeFieldInit)
+                    {
+                        result |= CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
+                    }
+                }
 
                 // Assume overlapping fields for explicit layout.
                 if (metadataType.IsExplicitLayout)
@@ -2024,15 +2057,6 @@ namespace Internal.JitInterface
                 if (metadataType.IsAbstract)
                     result |= CorInfoFlag.CORINFO_FLG_ABSTRACT;
             }
-
-#if READYTORUN
-            if (!_compilation.CompilationModuleGroup.VersionsWithType(type))
-            {
-                // Prevent the JIT from drilling into types outside of the current versioning bubble
-                result |= CorInfoFlag.CORINFO_FLG_DONT_DIG_FIELDS;
-                result &= ~CorInfoFlag.CORINFO_FLG_BEFOREFIELDINIT;
-            }
-#endif
 
             return (uint)result;
         }
@@ -2352,6 +2376,184 @@ namespace Internal.JitInterface
 
             // We could not find the field that was searched for.
             throw new InvalidOperationException();
+        }
+
+        private GetTypeLayoutResult GetTypeLayoutHelper(MetadataType type, uint parentIndex, uint baseOffs, FieldDesc field, CORINFO_TYPE_LAYOUT_NODE* treeNodes, nuint maxTreeNodes, nuint* numTreeNodes)
+        {
+            if (*numTreeNodes >= maxTreeNodes)
+            {
+                return GetTypeLayoutResult.Partial;
+            }
+
+            uint structNodeIndex = (uint)(*numTreeNodes)++;
+            CORINFO_TYPE_LAYOUT_NODE* parNode = &treeNodes[structNodeIndex];
+            parNode->simdTypeHnd = null;
+            parNode->diagFieldHnd = field == null ? null : ObjectToHandle(field);
+            parNode->parent = parentIndex;
+            parNode->offset = baseOffs;
+            parNode->size = (uint)type.GetElementSize().AsInt;
+            parNode->numFields = 0;
+            parNode->type = CorInfoType.CORINFO_TYPE_VALUECLASS;
+            parNode->hasSignificantPadding = type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0);
+
+#if READYTORUN
+            // The contract of getTypeLayout is carefully crafted to still
+            // allow us to return hints about fields even for types outside the
+            // version bubble. The general idea is that the JIT does not use
+            // the information returned by this function to create new
+            // optimizations out of the blue, but only as a hint to optimize
+            // existing field uses more thoroughly. In particular the uses of
+            // fields outside the version bubble are only non-opaque and
+            // amenable to the optimizations that this unlocks if they already
+            // went through EncodeFieldBaseOffset.
+            //
+            if (!parNode->hasSignificantPadding && !_compilation.IsLayoutFixedInCurrentVersionBubble(type))
+            {
+                // For types without fixed layout the JIT is not allowed to
+                // rely on padding bits being insignificant, since fields could
+                // be added later inside that padding without invalidating the
+                // generated code.
+                parNode->hasSignificantPadding = true;
+            }
+#endif
+
+            // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
+            // not care about since they are considered primitives by the JIT.
+            if (type.IsIntrinsic)
+            {
+                string ns = type.Namespace;
+                if (ns == "System.Runtime.Intrinsics" || ns == "System.Numerics")
+                {
+                    parNode->simdTypeHnd = ObjectToHandle(type);
+                    if (parentIndex != uint.MaxValue)
+                    {
+#if READYTORUN
+                        if (NeedsTypeLayoutCheck(type))
+                        {
+                            // We cannot allow the JIT to call getClassSize for
+                            // arbitrary types of fields as it will insert a fixup
+                            // that we may not be able to encode. We could skip the
+                            // field, but that will make prejit promotion different
+                            // from the runtime promotion. We could also change the
+                            // JIT to avoid calling getClassSize and just use the
+                            // size from the returned node, but for that we would
+                            // need to be sure that the type layout check fixup
+                            // added in getTypeLayout is sufficient to guarantee
+                            // the size of all these intrinsically handled SIMD
+                            // types.
+                            return GetTypeLayoutResult.Failure;
+                        }
+#endif
+
+                        return GetTypeLayoutResult.Success;
+                    }
+                }
+            }
+
+            foreach (FieldDesc fd in type.GetFields())
+            {
+                if (fd.IsStatic)
+                    continue;
+
+                parNode->numFields++;
+
+                Debug.Assert(fd.Offset != FieldAndOffset.InvalidOffset);
+
+                TypeDesc fieldType = fd.FieldType;
+                CorInfoType corInfoType = asCorInfoType(fieldType);
+                if (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS)
+                {
+                    Debug.Assert(fieldType is MetadataType);
+                    GetTypeLayoutResult result = GetTypeLayoutHelper((MetadataType)fieldType, structNodeIndex, baseOffs + (uint)fd.Offset.AsInt, fd, treeNodes, maxTreeNodes, numTreeNodes);
+                    if (result != GetTypeLayoutResult.Success)
+                        return result;
+                }
+                else
+                {
+                    if (*numTreeNodes >= maxTreeNodes)
+                        return GetTypeLayoutResult.Partial;
+
+                    CORINFO_TYPE_LAYOUT_NODE* treeNode = &treeNodes[(*numTreeNodes)++];
+                    treeNode->simdTypeHnd = null;
+                    treeNode->diagFieldHnd = ObjectToHandle(fd);
+                    treeNode->parent = structNodeIndex;
+                    treeNode->offset = baseOffs + (uint)fd.Offset.AsInt;
+                    treeNode->size = (uint)fieldType.GetElementSize().AsInt;
+                    treeNode->numFields = 0;
+                    treeNode->type = corInfoType;
+                    treeNode->hasSignificantPadding = false;
+                }
+
+                if (type.IsInlineArray)
+                {
+                    nuint treeNodeEnd = *numTreeNodes;
+                    int elemSize = fieldType.GetElementSize().AsInt;
+                    int arrSize = type.GetElementSize().AsInt;
+
+                    // Number of fields added for each element, including all
+                    // subfields. For example, for ValueTuple<int, int>[4]:
+                    // [ 0]: InlineArray             parent = -1
+                    // [ 1]:   ValueTuple<int, int>  parent = 0          -
+                    // [ 2]:     int                 parent = 1          |
+                    // [ 3]:     int                 parent = 1          |
+                    // [ 4]:   ValueTuple<int, int>  parent = 0          - stride = 3
+                    // [ 5]:     int                 parent = 4
+                    // [ 6]:     int                 parent = 4
+                    // [ 7]:   ValueTuple<int, int>  parent = 0
+                    // [ 8]:     int                 parent = 7
+                    // [ 9]:     int                 parent = 7
+                    // [10]:   ValueTuple<int, int>  parent = 0
+                    // [11]:     int                 parent = 10
+                    // [12]:     int                 parent = 10
+                    uint elemFieldsStride = (uint)*numTreeNodes - (structNodeIndex + 1);
+
+                    // Now duplicate the fields of the previous entry for each
+                    // additional element. For each entry we have to update the
+                    // offset and the parent index.
+                    for (int elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
+                    {
+                        nuint prevElemStart = *numTreeNodes - elemFieldsStride;
+                        for (nuint i = 0; i < elemFieldsStride; i++)
+                        {
+                            if (*numTreeNodes >= maxTreeNodes)
+                                return GetTypeLayoutResult.Partial;
+
+                            CORINFO_TYPE_LAYOUT_NODE* treeNode = &treeNodes[(*numTreeNodes)++];
+                            *treeNode = treeNodes[prevElemStart + i];
+                            treeNode->offset += (uint)elemSize;
+                            // The first field points back to the inline array
+                            // and has no bias; the rest of them do.
+                            treeNode->parent += (i == 0) ? 0 : elemFieldsStride;
+                        }
+
+                        parNode->numFields++;
+                    }
+                }
+            }
+
+            return GetTypeLayoutResult.Success;
+        }
+
+        private GetTypeLayoutResult getTypeLayout(CORINFO_CLASS_STRUCT_* typeHnd, CORINFO_TYPE_LAYOUT_NODE* treeNodes, UIntPtr* numTreeNodes)
+        {
+            TypeDesc type = HandleToObject(typeHnd);
+
+            if (type is not MetadataType metadataType || !type.IsValueType)
+                return GetTypeLayoutResult.Failure;
+
+            nuint maxFields = *numTreeNodes;
+            *numTreeNodes = 0;
+            GetTypeLayoutResult result = GetTypeLayoutHelper(metadataType, uint.MaxValue, 0, null, treeNodes, maxFields, numTreeNodes);
+
+#if READYTORUN
+            if (NeedsTypeLayoutCheck(type))
+            {
+                ISymbolNode node = _compilation.SymbolNodeFactory.CheckTypeLayout(type);
+                AddPrecodeFixup(node);
+            }
+#endif
+
+            return result;
         }
 
         private bool checkMethodModifier(CORINFO_METHOD_STRUCT_* hMethod, byte* modifier, bool fOptional)

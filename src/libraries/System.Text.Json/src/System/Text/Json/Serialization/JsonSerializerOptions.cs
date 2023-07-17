@@ -139,6 +139,8 @@ namespace System.Text.Json
         /// <param name="defaults"> The <see cref="JsonSerializerDefaults"/> to reason about.</param>
         public JsonSerializerOptions(JsonSerializerDefaults defaults) : this()
         {
+            // Should be kept in sync with equivalent overload in JsonSourceGenerationOptionsAttribute
+
             if (defaults == JsonSerializerDefaults.Web)
             {
                 _propertyNameCaseInsensitive = true;
@@ -899,7 +901,7 @@ namespace System.Text.Json
 
                 TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault
                     ? DefaultJsonTypeInfoResolver.RootDefaultInstance()
-                    : new JsonTypeInfoResolverChain(),
+                    : JsonTypeInfoResolver.Empty,
 
                 _isReadOnly = true,
             };

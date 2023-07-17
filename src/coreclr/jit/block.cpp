@@ -1665,9 +1665,9 @@ weight_t BasicBlock::getBBWeight(Compiler* comp)
     {
         weight_t calledCount = getCalledCount(comp);
 
-        // Normalize the bbWeights by multiplying by BB_UNITY_WEIGHT and dividing by the calledCount.
+        // Normalize the bbWeight.
         //
-        weight_t fullResult = this->bbWeight * BB_UNITY_WEIGHT / calledCount;
+        weight_t fullResult = (this->bbWeight / calledCount) * BB_UNITY_WEIGHT;
 
         return fullResult;
     }

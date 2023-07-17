@@ -137,6 +137,7 @@ linked_functions = [...linked_functions,
     "mono_wasm_install_js_worker_interop",
     "mono_wasm_uninstall_js_worker_interop",
 ]
+#endif
 
 if (ENABLE_AOT_PROFILER) {
     linked_functions = [...linked_functions,
@@ -153,7 +154,6 @@ if (ENABLE_AOT_PROFILER) {
     ]
 }
 
-#endif
 if (!DISABLE_LEGACY_JS_INTEROP) {
     linked_functions = [...linked_functions,
         "mono_wasm_invoke_js_with_args_ref",

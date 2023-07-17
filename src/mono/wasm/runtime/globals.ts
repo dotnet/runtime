@@ -5,6 +5,7 @@
 /// <reference path="./types/v8.d.ts" />
 /// <reference path="./types/node.d.ts" />
 
+import { mono_log_error } from "./logging";
 import { RuntimeAPI } from "./types/index";
 import type { GlobalObjects, EmscriptenInternals, RuntimeHelpers, LoaderHelpers, DotnetModuleInternal, PromiseAndController } from "./types/internal";
 
@@ -72,4 +73,20 @@ export function setRuntimeGlobals(globalObjects: GlobalObjects) {
 
 export function createPromiseController<T>(afterResolve?: () => void, afterReject?: () => void): PromiseAndController<T> {
     return loaderHelpers.createPromiseController<T>(afterResolve, afterReject);
+}
+
+// this will abort the program if the condition is false
+// see src\mono\wasm\runtime\rollup.config.js
+// we inline the condition, because the lambda could allocate closure on hot path otherwise
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+    if (condition) return;
+    const message = "Assert failed: " + (typeof messageFactory === "function"
+        ? messageFactory()
+        : messageFactory);
+    const abort = runtimeHelpers.mono_wasm_abort;
+    if (abort) {
+        mono_log_error(message);
+        abort();
+    }
+    throw new Error(message);
 }

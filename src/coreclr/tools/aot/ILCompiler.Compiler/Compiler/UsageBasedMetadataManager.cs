@@ -81,7 +81,7 @@ namespace ILCompiler
             UsageBasedMetadataGenerationOptions generationOptions,
             MetadataManagerOptions options,
             Logger logger,
-            IEnumerable<KeyValuePair<string, bool>> featureSwitchValues,
+            IReadOnlyDictionary<string, bool> featureSwitchValues,
             IEnumerable<string> rootEntireAssembliesModules,
             IEnumerable<string> additionalRootedAssemblies,
             IEnumerable<string> trimmedAssemblies,
@@ -94,8 +94,8 @@ namespace ILCompiler
             FlowAnnotations = flowAnnotations;
             Logger = logger;
 
-            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, new Dictionary<string, bool>(featureSwitchValues));
-            FeatureSwitches = new Dictionary<string, bool>(featureSwitchValues);
+            _linkAttributesHashTable = new LinkAttributesHashTable(Logger, featureSwitchValues);
+            FeatureSwitches = featureSwitchValues;
 
             _rootEntireAssembliesModules = new HashSet<string>(rootEntireAssembliesModules);
             _rootEntireAssembliesModules.UnionWith(additionalRootedAssemblies);
@@ -325,16 +325,7 @@ namespace ILCompiler
                 bool fullyRoot;
                 string reason;
 
-                // https://github.com/dotnet/runtime/issues/78752
-                // Compat with https://github.com/dotnet/linker/issues/1541 IL Linker bug:
-                // Asking to root an assembly with entrypoint will not actually root things in the assembly.
-                // We need to emulate this because the SDK injects a root for the entrypoint assembly right now
-                // because of IL Linker's implementation details (IL Linker won't root Main() by itself).
-                // TODO: We should technically reflection-root Main() here but hopefully the above issue
-                // will be fixed before it comes to that being necessary.
-                bool isEntrypointAssembly = module is EcmaModule ecmaModule && ecmaModule.PEReader.PEHeaders.IsExe;
-
-                if (!isEntrypointAssembly && _rootEntireAssembliesModules.Contains(assemblyName))
+                if (_rootEntireAssembliesModules.Contains(assemblyName))
                 {
                     // If the assembly was specified as a root on the command line, root it
                     fullyRoot = true;
@@ -351,7 +342,7 @@ namespace ILCompiler
                 {
                     // If rooting default assemblies was requested, root
                     fullyRoot = (_generationOptions & UsageBasedMetadataGenerationOptions.RootDefaultAssemblies) != 0;
-                    reason = "Assemblies rooted from command line";
+                    reason = "Partial trimming and assembly not trimmable";
                 }
 
                 if (fullyRoot)
@@ -988,10 +979,10 @@ namespace ILCompiler
 
         private sealed class LinkAttributesHashTable : LockFreeReaderHashtable<EcmaModule, AssemblyFeatureInfo>
         {
-            private readonly Dictionary<string, bool> _switchValues;
+            private readonly IReadOnlyDictionary<string, bool> _switchValues;
             private readonly Logger _logger;
 
-            public LinkAttributesHashTable(Logger logger, Dictionary<string, bool> switchValues)
+            public LinkAttributesHashTable(Logger logger, IReadOnlyDictionary<string, bool> switchValues)
             {
                 _logger = logger;
                 _switchValues = switchValues;

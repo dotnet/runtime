@@ -154,7 +154,7 @@ regNumber Compiler::raUpdateRegStateForArg(RegState* regState, LclVarDsc* argDsc
         if (argDsc->lvIsHfaRegArg())
         {
             assert(regState->rsIsFloat);
-            unsigned cSlots = GetHfaCount(argDsc->GetLayout()->GetClassHandle());
+            unsigned cSlots = argDsc->lvHfaSlots();
             for (unsigned i = 1; i < cSlots; i++)
             {
                 assert(inArgReg + i <= LAST_FP_ARGREG);

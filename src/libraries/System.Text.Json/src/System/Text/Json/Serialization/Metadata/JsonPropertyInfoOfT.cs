@@ -128,8 +128,9 @@ namespace System.Text.Json.Serialization.Metadata
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal override void DetermineReflectionPropertyAccessors(MemberInfo memberInfo)
-            => DefaultJsonTypeInfoResolver.DeterminePropertyAccessors<T>(this, memberInfo);
+        internal override void DetermineReflectionPropertyAccessors(MemberInfo memberInfo, bool useNonPublicAccessors)
+            => DefaultJsonTypeInfoResolver.DeterminePropertyAccessors<T>(this, memberInfo, useNonPublicAccessors);
+
         private protected override void DetermineEffectiveConverter(JsonTypeInfo jsonTypeInfo)
         {
             Debug.Assert(jsonTypeInfo is JsonTypeInfo<T>);
