@@ -455,9 +455,6 @@ static unsafe class UnsafeAccessorsTests
             isNativeAot ? null : UserDataClass.StaticMethodName,
             () => { string sr = string.Empty; StaticMethodWithDifferentReturnType(null, null, ref sr, string.Empty); });
 
-        Assert.Throws<AmbiguousMatchException>(
-            () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
-
         AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
             isNativeAot ? null : UserDataClass.StaticMethodName,
             () => { string sr = string.Empty; StaticMethodWithDifferentReturnType(null, null, ref sr, string.Empty); });
@@ -500,9 +497,6 @@ static unsafe class UnsafeAccessorsTests
         // precise match and that also fails because the custom modifiers don't match precisely.
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name=UserDataClass.MethodNameAmbiguous)]
         extern static string CallAmbiguousMethod(UserDataClass d, delegate* unmanaged[Stdcall, SuppressGCTransition]<void> fptr);
-
-        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.StaticMethodName)]
-        extern static int StaticMethodWithDifferentReturnType(UserDataClass d, string s, ref string sr, in string si);
     }
 
     class Invalid
