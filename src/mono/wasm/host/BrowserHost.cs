@@ -36,7 +36,7 @@ internal sealed class BrowserHost
                                               CancellationToken token)
     {
         var args = new BrowserArguments(commonArgs);
-        args.Validate();
+        // TODO MF: args.Validate();
         var host = new BrowserHost(args, logger);
         await host.RunAsync(loggerFactory, token);
 
@@ -76,8 +76,7 @@ internal sealed class BrowserHost
                             ? aspnetUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
                             : new string[] { $"http://127.0.0.1:{_args.CommonConfig.HostProperties.WebServerPort}", "https://127.0.0.1:0" };
 
-        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args.CommonConfig.AppPath,
-                                                                           _args.ForwardConsoleOutput ?? false,
+        (ServerURLs serverURLs, IWebHost host) = await StartWebServerAsync(_args,
                                                                            urls,
                                                                            token);
 
@@ -89,21 +88,49 @@ internal sealed class BrowserHost
         await host.WaitForShutdownAsync(token);
     }
 
-    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(string appPath, bool forwardConsole, string[] urls, CancellationToken token)
+    private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
+        string appPath = args.CommonConfig.AppPath;
+        bool forwardConsole = args.ForwardConsoleOutput ?? false;
+
         WasmTestMessagesProcessor? logProcessor = null;
         if (forwardConsole)
         {
             logProcessor = new(_logger);
         }
 
+        if (args.CommonConfig.RuntimeConfigPath != null)
+        {
+            var runtimeConfigPath = Path.GetFullPath(args.CommonConfig.RuntimeConfigPath);
+
+            DevServerOptions CreateDevServerOptions(string staticWebAssetsPath) => new
+            (
+                OnConsoleConnected: forwardConsole
+                    ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
+                    : null,
+                StaticWebAssetsPath: staticWebAssetsPath,
+                WebServerUseCors: true,
+                WebServerUseCrossOriginPolicy: true,
+                Urls: urls
+            );
+
+            var mainAssemblyPath = Path.Combine(Path.GetDirectoryName(runtimeConfigPath)!, args.CommonConfig.HostProperties.MainAssembly);
+
+            var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, ".staticwebassets.runtime.json");
+            if (File.Exists(staticWebAssetsPath))
+                return await DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
+
+            staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, ".StaticWebAssets.xml");
+            if (File.Exists(staticWebAssetsPath))
+                return await DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
+        }
+
         WebServerOptions options = new
         (
             OnConsoleConnected: forwardConsole
-                                    ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
-                                    : null,
+                ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
+                : null,
             ContentRootPath: Path.GetFullPath(appPath),
-            ApplicationPath: Path.GetFullPath(appPath),
             WebServerUseCors: true,
             WebServerUseCrossOriginPolicy: true,
             Urls: urls

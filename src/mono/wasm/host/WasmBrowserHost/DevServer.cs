@@ -15,7 +15,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 internal static class DevServer
 {
-    internal static async Task<(ServerURLs, IWebHost)> StartAsync(WebServerOptions options, ILogger logger, CancellationToken token)
+    internal static async Task<(ServerURLs, IWebHost)> StartAsync(DevServerOptions options, ILogger logger, CancellationToken token)
     {
         TaskCompletionSource<ServerURLs> realUrlsAvailableTcs = new();
 
@@ -23,7 +23,7 @@ internal static class DevServer
             .UseConfiguration(ConfigureHostConfiguration(options))
             .UseKestrel()
             .UseStaticWebAssets()
-            .UseStartup<WebServerStartup>()
+            .UseStartup<DevServerStartup>()
             .ConfigureLogging(logging =>
             {
                 logging.AddConsole().AddFilter(null, LogLevel.Warning);
@@ -57,21 +57,18 @@ internal static class DevServer
         return (serverUrls, host);
     }
 
-    private static IConfiguration ConfigureHostConfiguration(WebServerOptions options)
+    private static IConfiguration ConfigureHostConfiguration(DevServerOptions options)
     {
         var config = new ConfigurationBuilder();
 
-        var applicationPath = options.ApplicationPath;
-        var applicationDirectory = Path.GetDirectoryName(applicationPath)!;
-        var name = Path.ChangeExtension(applicationPath, ".staticwebassets.runtime.json");
-        name = !File.Exists(name) ? Path.ChangeExtension(applicationPath, ".StaticWebAssets.xml") : name;
+        var applicationDirectory = Path.GetDirectoryName(options.StaticWebAssetsPath)!;
 
         var inMemoryConfiguration = new Dictionary<string, string?>
         {
             [WebHostDefaults.EnvironmentKey] = "Development",
             ["Logging:LogLevel:Microsoft"] = "Warning",
             ["Logging:LogLevel:Microsoft.Hosting.Lifetime"] = "Information",
-            [WebHostDefaults.StaticWebAssetsKey] = name,
+            [WebHostDefaults.StaticWebAssetsKey] = options.StaticWebAssetsPath,
             ["ApplyCopHeaders"] = options.WebServerUseCrossOriginPolicy.ToString()
         };
 
