@@ -2354,6 +2354,10 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("UnsafeAccessorKind does not match expected static modifier on field '%s' in '%s'", member_name, m_class_get_name (target_class)));
 		return;
 	}
+	if (is_field_static && m_field_get_parent (target_field) != target_class) {
+		// don't look up static fields using the inheritance hierarchy
+		mono_mb_emit_exception_full (mb, "System", "MissingFieldException", g_strdup_printf("Field '%s' not found in '%s'", member_name, m_class_get_name (target_class)));
+	}
 
 	if (kind == MONO_UNSAFE_ACCESSOR_FIELD)
 		mono_mb_emit_ldarg (mb, 0);
@@ -2361,11 +2365,159 @@ emit_unsafe_accessor_field_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_
 	mono_mb_emit_byte (mb, CEE_RET);
 }
 
+/*
+ * Given an accessor method signature (where the first arg is a target class) creates the signature
+ * of the expected member method (ie, with the first arg removed)
+ */
+static MonoMethodSignature *
+method_sig_from_accessor_sig (MonoMethodBuilder *mb, gboolean hasthis, MonoMethodSignature *accessor_sig, MonoGenericContext *ctx)
+{
+	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
+	g_assert (ret->param_count > 0);
+	ret->hasthis = hasthis;
+	for (int i = 1; i < ret->param_count; i++)
+		ret->params [i - 1] = ret->params [i];
+	memset (&ret->params[ret->param_count - 1], 0, sizeof (MonoType)); // just in case
+	ret->param_count--;
+	return ret;
+}
+
+/*
+ * Given an accessor method signature (where the return type is a target class) creates the signature
+ * of the expected constructor method (same args, but return type is void).
+ */
+static MonoMethodSignature *
+ctor_sig_from_accessor_sig (MonoMethodBuilder *mb, MonoMethodSignature *accessor_sig, MonoGenericContext *ctx)
+{
+	MonoMethodSignature *ret = mono_metadata_signature_dup_full (get_method_image (mb->method), accessor_sig);
+	ret->hasthis = TRUE; /* ctors are considered instance methods */
+	ret->ret = mono_get_void_type ();
+	return ret;
+}
+
+static void
+emit_unsafe_accessor_ldargs (MonoMethodBuilder *mb, MonoMethodSignature *accessor_sig, int skip_count)
+{
+	for (int i = skip_count; i < accessor_sig->param_count; i++)
+		mono_mb_emit_ldarg (mb, i);
+}
+
+static gboolean
+unsafe_accessor_target_type_forbidden (MonoType *target_type)
+{
+	switch (target_type->type)
+	{
+	case MONO_TYPE_VOID:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}
+
+static void
+emit_missing_method_error (MonoMethodBuilder *mb, MonoError *failure, const char *display_member_name)
+{
+	if (!is_ok (failure)) {
+		mono_mb_emit_exception_full (mb, "System", "MissingMethodException", g_strdup_printf ("Could not find %s due to: %s", display_member_name, mono_error_get_message (failure)));
+	} else {
+		mono_mb_emit_exception_full (mb, "System", "MissingMethodException", g_strdup_printf ("Could not find %s", display_member_name));
+	}
+}
+
+static void
+emit_unsafe_accessor_ctor_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	g_assert (kind == MONO_UNSAFE_ACCESSOR_CTOR);
+	// null or empty string member name is ok for a constructor
+	if (!member_name || member_name[0] == '\0')
+		member_name = ".ctor";
+	if (strcmp (member_name, ".ctor") != 0) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid UnsafeAccessorAttribute for constructor.");
+		return;
+	}
+
+	MonoType *target_type = sig->ret; // for constructors the return type is the target type
+	if (target_type == NULL || m_type_is_byref (target_type) || unsafe_accessor_target_type_forbidden (target_type)) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+
+	MonoMethodSignature *member_sig = ctor_sig_from_accessor_sig (mb, sig, ctx);
+
+	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
+
+	ERROR_DECL(find_method_error);
+	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
+	MonoMethod *target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
+	if (!is_ok (find_method_error) || target_method == NULL) {
+		emit_missing_method_error (mb, find_method_error, "constructor");
+		mono_error_cleanup (find_method_error);
+		return;
+	}
+	g_assert (target_method->klass == target_class);
+
+	emit_unsafe_accessor_ldargs (mb, sig, 0);
+
+	mono_mb_emit_op (mb, CEE_NEWOBJ, target_method);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
+static void
+emit_unsafe_accessor_method_wrapper (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
+{
+	g_assert (kind == MONO_UNSAFE_ACCESSOR_METHOD || kind == MONO_UNSAFE_ACCESSOR_STATIC_METHOD);
+	g_assert (member_name != NULL);
+
+	// We explicitly allow calling a constructor as if it was an instance method, but we need some hacks in a couple of places
+	gboolean ctor_as_method = !strcmp (member_name, ".ctor");
+
+	if (sig->param_count < 1 || sig->params[0] == NULL || unsafe_accessor_target_type_forbidden (sig->params[0])) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+		return;
+	}
+	gboolean hasthis = kind == MONO_UNSAFE_ACCESSOR_METHOD;
+	MonoType *target_type = sig->params[0];
+
+	MonoMethodSignature *member_sig = method_sig_from_accessor_sig (mb, hasthis, sig, ctx);
+
+	MonoClass *target_class = mono_class_from_mono_type_internal (target_type);
+
+	if (hasthis && m_class_is_valuetype (target_class) && !m_type_is_byref (target_type)) {
+		// If the non-static method access is for a value type, the instance must be byref.
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "Invalid usage of UnsafeAccessorAttribute.");
+	}
+
+	ERROR_DECL(find_method_error);
+	MonoClass *in_class = mono_class_is_ginst (target_class) ? mono_class_get_generic_class (target_class)->container_class : target_class;
+	MonoMethod *target_method = NULL;
+	if (!ctor_as_method)
+		target_method = mono_unsafe_accessor_find_method (in_class, member_name, member_sig, target_class, find_method_error);
+	else
+		target_method = mono_unsafe_accessor_find_ctor (in_class, member_sig, target_class, find_method_error);
+	if (!is_ok (find_method_error) || target_method == NULL) {
+		emit_missing_method_error (mb, find_method_error, member_name);
+		mono_error_cleanup (find_method_error);
+		return;
+	}
+	if (!hasthis && target_method->klass != target_class) {
+		emit_missing_method_error (mb, find_method_error, member_name);
+		return;
+	}
+	g_assert (target_method->klass == target_class); // are instance methods allowed to be looked up using inheritance?
+
+	emit_unsafe_accessor_ldargs (mb, sig, !hasthis ? 1 : 0);
+
+	mono_mb_emit_op (mb, hasthis ? CEE_CALLVIRT : CEE_CALL, target_method);
+	mono_mb_emit_byte (mb, CEE_RET);
+}
+
 static void
 emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name)
 {
-	if (accessor_method->is_generic) {
-		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor_Generics");
+	if (accessor_method->is_inflated || accessor_method->is_generic || mono_class_is_ginst (accessor_method->klass) || ctx != NULL) {
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_Generics");
 		return;
 	}
 
@@ -2380,16 +2532,15 @@ emit_unsafe_accessor_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethod *accessor_
 		emit_unsafe_accessor_field_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_CTOR:
-		// TODO
-		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
+		emit_unsafe_accessor_ctor_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	case MONO_UNSAFE_ACCESSOR_METHOD:
 	case MONO_UNSAFE_ACCESSOR_STATIC_METHOD:
-		// TODO
-		mono_mb_emit_exception_full (mb, "System", "NotImplementedException", "UnsafeAccessor");
+		emit_unsafe_accessor_method_wrapper (mb, accessor_method, sig, ctx, kind, member_name);
 		return;
 	default:
-		g_assert_not_reached(); // some unknown wrapper kind
+		mono_mb_emit_exception_full (mb, "System", "BadImageFormatException", "UnsafeAccessor_InvalidKindValue");
+		return;
 	}
 }
 

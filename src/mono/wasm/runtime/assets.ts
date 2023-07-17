@@ -3,7 +3,7 @@
 
 import cwraps from "./cwraps";
 import { mono_wasm_load_icu_data } from "./icu";
-import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { mono_log_info, mono_log_debug, mono_log_warn, parseSymbolMapFile } from "./logging";
 import { mono_wasm_load_bytes_into_heap } from "./memory";
 import { endMeasure, MeasuredBlock, startMeasure } from "./profiler";
