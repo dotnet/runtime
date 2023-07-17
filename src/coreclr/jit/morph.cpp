@@ -10115,8 +10115,14 @@ GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
     if (!src->OperIs(GT_CAST))
         return store;
 
-    if (store->OperIs(GT_STORE_LCL_VAR) && !lvaGetDesc(store->AsLclVarCommon())->lvNormalizeOnLoad())
-        return store;
+    if (store->OperIs(GT_STORE_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(store->AsLclVarCommon()->GetLclNum());
+
+        // It is not safe to remove the cast for non-NormalizeOnLoad variables, parameters or struct fields.
+        if (!varDsc->lvNormalizeOnLoad() || varDsc->lvIsParam || varDsc->lvIsStructField)
+            return store;
+    }
 
     if (src->gtOverflow())
         return store;
