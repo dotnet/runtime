@@ -2912,7 +2912,7 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
             {
                 // First, let's see if we can fold BOX+ISINST to just null if ISINST is known to return null
-                // for the given argument.
+                // for the given argument. Don't make inline observations for this case.
                 if ((opts != BoxPatterns::MakeInlineObservation) &&
                     ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
                 {
