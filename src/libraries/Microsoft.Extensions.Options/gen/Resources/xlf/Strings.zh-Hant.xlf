@@ -62,6 +62,16 @@
         <target state="translated">以 'OptionsValidatorAttribute' 附註的類型未實作必要的介面。</target>
         <note />
       </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">
         <source>Can't apply validation attributes to private field or property {0}.</source>
         <target state="translated">無法將驗證屬性套用至私用欄位或屬性 {0}。</target>

@@ -87,14 +87,14 @@ namespace Microsoft.Extensions.Logging
 
             IChangeToken IOptionsChangeTokenSource<ConsoleLoggerOptions>.GetChangeToken() => _settings.ChangeToken ?? NullChangeToken.Instance;
 
-            string IOptionsChangeTokenSource<ConsoleLoggerOptions>.Name => Microsoft.Extensions.Options.Options.DefaultName;
+            string IOptionsChangeTokenSource<ConsoleLoggerOptions>.Name => Options.Options.DefaultName;
 
             void IConfigureOptions<ConsoleLoggerOptions>.Configure(ConsoleLoggerOptions options)
             {
                 options.IncludeScopes = _settings.IncludeScopes;
                 if (_settings is ConfigurationConsoleLoggerSettings configSettings)
                 {
-                    options.Configure(configSettings._configuration);
+                    configSettings._configuration.Bind(options);
                 }
                 else if (_settings is ConsoleLoggerSettings consoleSettings)
                 {
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Logging
             internal static OptionsMonitor<ConsoleLoggerOptions> GetOptionsMonitor(IConsoleLoggerSettings settings)
             {
                 ConsoleLoggerSettingsAdapter adapter = new(settings);
-                OptionsFactory<ConsoleLoggerOptions> factory = new( new IConfigureOptions<ConsoleLoggerOptions>[] { adapter }, Array.Empty<IPostConfigureOptions<ConsoleLoggerOptions>>());
+                OptionsFactory<ConsoleLoggerOptions> factory = new(new IConfigureOptions<ConsoleLoggerOptions>[] { adapter }, Array.Empty<IPostConfigureOptions<ConsoleLoggerOptions>>());
                 IOptionsChangeTokenSource<ConsoleLoggerOptions>[] sources = new IOptionsChangeTokenSource<ConsoleLoggerOptions>[] { adapter };
                 OptionsCache<ConsoleLoggerOptions> cache = new();
 

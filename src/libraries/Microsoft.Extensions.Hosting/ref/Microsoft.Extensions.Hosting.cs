@@ -4,13 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-namespace Microsoft.Extensions.DependencyInjection
-{
-    public static partial class OptionsBuilderExtensions
-    {
-        public static Microsoft.Extensions.Options.OptionsBuilder<TOptions> ValidateOnStart<[System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] TOptions>(this Microsoft.Extensions.Options.OptionsBuilder<TOptions> optionsBuilder) where TOptions : class { throw null; }
-    }
-}
+[assembly: System.Runtime.CompilerServices.TypeForwardedTo(typeof(Microsoft.Extensions.DependencyInjection.OptionsBuilderExtensions))]
+
 namespace Microsoft.Extensions.Hosting
 {
     public enum BackgroundServiceExceptionBehavior

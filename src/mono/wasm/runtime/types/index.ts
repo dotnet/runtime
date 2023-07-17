@@ -14,6 +14,14 @@ export interface DotnetHostBuilder {
     withDebugging(level: number): DotnetHostBuilder
     withMainAssembly(mainAssemblyName: string): DotnetHostBuilder
     withApplicationArgumentsFromQuery(): DotnetHostBuilder
+    withApplicationEnvironment(applicationEnvironment?: string): DotnetHostBuilder;
+    withApplicationCulture(applicationCulture?: string): DotnetHostBuilder;
+
+    /**
+     * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+     * from a custom source, such as an external CDN.
+     */
+    withResourceLoader(loadBootResource?: LoadBootResourceCallback): DotnetHostBuilder;
     create(): Promise<RuntimeAPI>
     run(): Promise<number>
 }
@@ -54,7 +62,7 @@ export type MonoConfig = {
     /**
      * debugLevel > 0 enables debugging and sets the debug log level to debugLevel
      * debugLevel == 0 disables debugging and enables interpreter optimizations
-     * debugLevel < 0 enabled debugging and disables debug logging.
+     * debugLevel < 0 enables debugging and disables debug logging.
      */
     debugLevel?: number,
     /**
@@ -83,7 +91,53 @@ export type MonoConfig = {
      * application environment
      */
     applicationEnvironment?: string,
+
+    /**
+     * Gets the application culture. This is a name specified in the BCP 47 format. See https://tools.ietf.org/html/bcp47
+     */
+    applicationCulture?: string,
+
+    /**
+     * definition of assets to load along with the runtime.
+     */
+    resources?: ResourceGroups;
+
+    /**
+     * config extensions declared in MSBuild items @(WasmBootConfigExtension)
+     */
+    extensions?: { [name: string]: any };
 };
+
+export type ResourceExtensions = { [extensionName: string]: ResourceList };
+
+export interface ResourceGroups {
+    readonly hash?: string;
+    readonly assembly?: ResourceList; // nullable only temporarily
+    readonly lazyAssembly?: ResourceList; // nullable only temporarily
+    readonly pdb?: ResourceList;
+    readonly runtime?: ResourceList; // nullable only temporarily
+    readonly satelliteResources?: { [cultureName: string]: ResourceList };
+    readonly libraryInitializers?: ResourceList,
+    readonly libraryStartupModules?: {
+        readonly onRuntimeConfigLoaded?: ResourceList,
+        readonly onRuntimeReady?: ResourceList
+    },
+    readonly extensions?: ResourceExtensions
+    readonly vfs?: { [virtualPath: string]: ResourceList };
+}
+
+export type ResourceList = { [name: string]: string };
+
+/**
+ * Overrides the built-in boot resource loading mechanism so that boot resources can be fetched
+ * from a custom source, such as an external CDN.
+ * @param type The type of the resource to be loaded.
+ * @param name The name of the resource to be loaded.
+ * @param defaultUri The URI from which the framework would fetch the resource by default. The URI may be relative or absolute.
+ * @param integrity The integrity string representing the expected content in the response.
+ * @returns A URI string or a Response promise to override the loading process, or null/undefined to allow the default loading behavior.
+ */
+export type LoadBootResourceCallback = (type: WebAssemblyBootResourceType, name: string, defaultUri: string, integrity: string) => string | Promise<Response> | null | undefined;
 
 export interface ResourceRequest {
     name: string, // the name of the asset, including extension.
@@ -129,24 +183,81 @@ export interface AssetEntry extends ResourceRequest {
 }
 
 export type AssetBehaviours =
-    "resource" // load asset as a managed resource assembly
-    | "assembly" // load asset as a managed assembly
-    | "pdb" // load asset as a managed debugging information
-    | "heap" // store asset into the native heap
-    | "icu" // load asset as an ICU data archive
-    | "vfs" // load asset into the virtual filesystem (for fopen, File.Open, etc)
-    | "dotnetwasm" // the binary of the dotnet runtime
-    | "js-module-threads" // the javascript module for threads
-    | "js-module-runtime" // the javascript module for threads
-    | "js-module-dotnet" // the javascript module for threads
-    | "js-module-native" // the javascript module for threads
-    | "symbols" // the javascript module for threads
+    /**
+     * Load asset as a managed resource assembly.
+     */
+    "resource"
+    /**
+     * Load asset as a managed assembly.
+     */
+    | "assembly"
+    /**
+     * Load asset as a managed debugging information.
+     */
+    | "pdb"
+    /**
+     * Store asset into the native heap.
+     */
+    | "heap"
+    /**
+     * Load asset as an ICU data archive.
+     */
+    | "icu"
+    /**
+     * Load asset into the virtual filesystem (for fopen, File.Open, etc).
+     */
+    | "vfs"
+    /**
+     * The binary of the dotnet runtime.
+     */
+    | "dotnetwasm"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-threads"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-runtime"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-dotnet"
+    /**
+     * The javascript module for threads.
+     */
+    | "js-module-native"
+    /**
+     * The javascript module that came from nuget package .
+     */
+    | "js-module-library-initializer"
+    /**
+     * The javascript module for threads.
+     */
+    | "symbols" // 
 
-export type GlobalizationMode =
-    "icu" | // load ICU globalization data from any runtime assets with behavior "icu".
-    "invariant" | //  operate in invariant globalization mode.
-    "hybrid" | // operate in hybrid globalization mode with small ICU files, using native platform functions
-    "auto" // (default): if "icu" behavior assets are present, use ICU, otherwise invariant.
+export const enum GlobalizationMode {
+    /**
+     * Load sharded ICU data.
+     */
+    Sharded = "sharded", // 
+    /**
+     * Load all ICU data.
+     */
+    All = "all",
+    /**
+     * Operate in invariant globalization mode.
+     */
+    Invariant = "invariant",
+    /**
+     * Use user defined icu file.
+     */
+    Custom = "custom",
+    /**
+     * Operate in hybrid globalization mode with small ICU files, using native platform functions.
+     */
+    Hybrid = "hybrid"
+}
 
 export type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean,
@@ -170,6 +281,7 @@ export type APIType = {
     getAssemblyExports(assemblyName: string): Promise<any>,
     setModuleImports(moduleName: string, moduleImports: any): void,
     getConfig: () => MonoConfig,
+    invokeLibraryInitializers: (functionName: string, args: any[]) => Promise<void>,
 
     // memory management
     setHeapB32: (offset: NativePointer, value: number | boolean) => void,
