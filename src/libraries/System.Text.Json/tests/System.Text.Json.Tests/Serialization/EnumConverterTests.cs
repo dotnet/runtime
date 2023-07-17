@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -51,6 +52,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(DayOfWeek))]
         [InlineData(typeof(JsonNumberEnumConverter<MyCustomEnum>), typeof(MyCustomEnum))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(JsonNumberEnumConverter<>))]
         public static void JsonNumberEnumConverter_SupportedType_WorksAsExpected(Type converterType, Type supportedType)
         {
             var options = new JsonSerializerOptions();
@@ -68,6 +70,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(JsonStringEnumConverter<MyCustomEnum>))]
         [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(MyCustomEnum))]
         [InlineData(typeof(JsonNumberEnumConverter<MyCustomEnum>), typeof(DayOfWeek))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(JsonNumberEnumConverter<>))]
         public static void JsonNumberEnumConverter_InvalidType_ThrowsArgumentOutOfRangeException(Type converterType, Type unsupportedType)
         {
             var options = new JsonSerializerOptions();
