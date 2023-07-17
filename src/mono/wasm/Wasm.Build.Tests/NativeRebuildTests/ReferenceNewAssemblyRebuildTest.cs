@@ -31,7 +31,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             if (!buildArgs.AOT) // relinking
                 pathsDict.UpdateTo(unchanged: true, "driver-gen.c");
 
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             string programText =
             @$"
@@ -50,7 +50,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText);
 
             Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);

@@ -35,11 +35,11 @@ namespace Wasm.Build.Blazor.NativeRebuild.Tests
 
             var pathsDict = _provider.GetFilesTable(true, objDir);
             pathsDict.Remove("runtime-icall-table.h");
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // build again
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
         }
@@ -64,11 +64,11 @@ namespace Wasm.Build.Blazor.NativeRebuild.Tests
             pathsDict.Remove("runtime-icall-table.h");
             pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js", "emcc-link.rsp");
 
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // build again
             BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O1");
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
         }

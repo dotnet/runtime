@@ -565,20 +565,6 @@ namespace Wasm.Build.Tests
             return new BuildPaths(wasmDir, objDir, GetBinDir(buildArgs.Config), bundleDir);
         }
 
-        internal IDictionary<string, FileStat> StatFiles(IEnumerable<string> fullpaths)
-        {
-            Dictionary<string, FileStat> table = new();
-            foreach (string file in fullpaths)
-            {
-                if (File.Exists(file))
-                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
-                else
-                    table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
-            }
-
-            return table;
-        }
-
         protected static string GetSkiaSharpReferenceItems()
             => @"<PackageReference Include=""SkiaSharp"" Version=""2.88.4-preview.76"" />
                 <PackageReference Include=""SkiaSharp.NativeAssets.WebAssembly"" Version=""2.88.4-preview.76"" />

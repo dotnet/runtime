@@ -33,7 +33,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             if (buildArgs.AOT)
                 pathsDict.UpdateTo(unchanged: false, $"{mainAssembly}.bc", $"{mainAssembly}.o");
 
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // Changes
             string mainResults55 = @"
@@ -47,7 +47,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             // Rebuild
             Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 55, host: host, id: id);

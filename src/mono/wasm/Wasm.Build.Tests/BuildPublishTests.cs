@@ -93,7 +93,7 @@ namespace Wasm.Build.Tests
             var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
 
             string mainDll = $"{buildArgs.ProjectName}.dll";
-            var firstBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var firstBuildStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             Assert.False(firstBuildStat["pinvoke.o"].Exists);
             Assert.False(firstBuildStat[$"{mainDll}.bc"].Exists);
 
@@ -120,7 +120,7 @@ namespace Wasm.Build.Tests
             //                             UseCache: false,
             //                             Label: "first_publish"));
 
-            // var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            // var publishStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             // Assert.True(publishStat["pinvoke.o"].Exists);
             // Assert.True(publishStat[$"{mainDll}.bc"].Exists);
             // CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
@@ -137,7 +137,7 @@ namespace Wasm.Build.Tests
                                             CreateProject: true,
                                             Publish: false,
                                             Label: "second_build"));
-            var secondBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var secondBuildStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // no relinking, or AOT
             CheckOutputForNativeBuild(expectAOT: false, expectRelinking: false, buildArgs, output);

@@ -56,12 +56,12 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
             }
         }
 
-        var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+        var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
         // Rebuild
 
         string output = Rebuild(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: $" {cflags} {ldflags}", verbosity: "normal");
-        var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+        var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
         _provider.CompareStat(originalStat, newStat, pathsDict.Values);
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);

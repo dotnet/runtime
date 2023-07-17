@@ -38,7 +38,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             if (extraLDFlags.Length > 0)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             // Rebuild
 
@@ -46,7 +46,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             string extraBuildArgs = $" {extraCFlags} {extraLDFlags}";
             string output = Rebuild(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: extraBuildArgs, verbosity: "normal");
 
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
 
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o

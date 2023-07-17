@@ -25,10 +25,10 @@ namespace Wasm.Build.NativeRebuild.Tests
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: nativeRelink, invariant: invariant, buildArgs, id);
 
             var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
-            var originalStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var originalStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             Rebuild(nativeRelink, invariant, buildArgs, id);
-            var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            var newStat = _provider.StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
             _provider.CompareStat(originalStat, newStat, pathsDict.Values);
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);

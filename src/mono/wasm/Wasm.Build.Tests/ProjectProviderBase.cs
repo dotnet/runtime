@@ -196,6 +196,20 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             throw new XunitException($"CompareStat failed:{Environment.NewLine}{msg}");
     }
 
+    public IDictionary<string, FileStat> StatFiles(IEnumerable<string> fullpaths)
+    {
+        Dictionary<string, FileStat> table = new();
+        foreach (string file in fullpaths)
+        {
+            if (File.Exists(file))
+                table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: true, LastWriteTimeUtc: File.GetLastWriteTimeUtc(file), Length: new FileInfo(file).Length));
+            else
+                table.Add(Path.GetFileName(file), new FileStat(FullPath: file, Exists: false, LastWriteTimeUtc: DateTime.MinValue, Length: 0));
+        }
+
+        return table;
+    }
+
     public IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(bool unchanged, params string[] baseDirs)
     {
         var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
