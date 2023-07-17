@@ -47,7 +47,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     innerContext,
-                    isInstantiatingStub: _targetMethod.Method.HasInstantiation);
+                    isInstantiatingStub: _targetMethod.Method.HasInstantiation || _targetMethod.Method.OwningType.HasInstantiation || _methodToken.ConstrainedType != null);
 
                 builder.EmitTypeSignature(_delegateType, innerContext);
             }
