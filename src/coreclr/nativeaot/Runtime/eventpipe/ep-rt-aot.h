@@ -11,6 +11,8 @@
 #include <pthread.h>
 #endif
 
+#include <minipal/utf8.h>
+
 #include <eventpipe/ep-rt-config.h>
 #ifdef ENABLE_PERFTRACING
 #include <eventpipe/ep-thread.h>
@@ -1375,6 +1377,8 @@ ep_rt_utf8_string_replace (
     return false;
 }
 
+#define MINIPAL_MB_NO_REPLACE_INVALID_CHARS 0x00000008
+
 static
 ep_char16_t *
 ep_rt_utf8_to_utf16le_string (
@@ -1386,22 +1390,23 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
-    // Shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one.
-    // Assumes that only ASCII is used for ep_char8_t
-    size_t len_utf8 = strlen(str);
-    ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc ((len_utf8 + 1) * sizeof (ep_char16_t)));
-    if (!str_utf16)
+    int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS;
+
+    ep_char16_t* lpDestStr = NULL;
+
+    if (static_cast<int>(len) < 0)
+        len = (size_t)strlen(str) + 1;
+
+    size_t ret = (size_t)minipal_get_length_utf8_to_utf16 (str, len, flags);
+
+    if (ret <= 0)
         return NULL;
 
-    for (size_t i = 0; i < len_utf8; i++)
-    {
-        EP_ASSERT(isascii(str[i]));
-         str_utf16[i] = str[i];
-    }
+    lpDestStr = reinterpret_cast<ep_char16_t *>(malloc((ret + 1) * sizeof(ep_char16_t)));
+    ret = (size_t)minipal_convert_utf8_to_utf16 (str, len, reinterpret_cast<wchar_t *>(lpDestStr), ret, flags);
+    lpDestStr[ret] = '\0';
 
-    str_utf16[len_utf8] = 0;
-    return str_utf16;
+    return lpDestStr;
 }
 
 static
@@ -1450,27 +1455,28 @@ ep_rt_utf16_to_utf8_string (
     size_t len)
 {
     STATIC_CONTRACT_NOTHROW;
-
     if (!str)
         return NULL;
-    
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Simple implementation to create a utf8 string from a utf16 one
-    size_t len_utf16 = len;
-    if(len_utf16 == (size_t)-1)
-        len_utf16 = ep_rt_utf16_string_len (str);
 
-    ep_char8_t *str_utf8 = reinterpret_cast<ep_char8_t *>(malloc ((len_utf16 + 1) * sizeof (ep_char8_t)));
-    if (!str_utf8)
-        return NULL;
+    ep_char8_t* lpDestStr = NULL;
+    if (static_cast<int>(len) < 0) {
+        len = 0;
+        while (str[len])
+            len++;
 
-    for (size_t i = 0; i < len_utf16; i++)
-    {
-         str_utf8[i] = (char)str[i];
+        len++;
     }
 
-    str_utf8[len_utf16] = 0;
-    return str_utf8;
+    size_t ret = (size_t)minipal_get_length_utf16_to_utf8 (reinterpret_cast<const wchar_t *>(str), len, 0);
+
+    if (ret <= 0)
+        return NULL;
+
+    lpDestStr = reinterpret_cast<ep_char8_t *>(malloc((ret + 1) * sizeof(ep_char8_t)));
+    ret = (size_t)minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
+    lpDestStr[ret] = '\0';
+
+    return lpDestStr;
 }
 
 static
