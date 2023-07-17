@@ -29,8 +29,12 @@
 
 #if defined(TARGET_X86)
 #if defined(__APPLE__)
-#define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 typedef struct __darwin_xmm_reg MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x86 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 #elif defined(TARGET_AMD64)
 #if defined(__APPLE__)
