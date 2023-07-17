@@ -386,7 +386,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InheritanceMethodResolution()
     {
         Console.WriteLine($"Running {nameof(Verify_InheritanceMethodResolution)}");
@@ -403,7 +402,6 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InheritanceFieldResolution()
     {
         Console.WriteLine($"Running {nameof(Verify_InheritanceFieldResolution)}");
@@ -453,6 +451,9 @@ static unsafe class UnsafeAccessorsTests
         AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
             isNativeAot ? null : UserDataClass.MethodPointerName,
             () => CallPointerMethod(null, null));
+        AssertExtensions.ThrowsMissingMemberException<MissingMethodException>(
+            isNativeAot ? null : UserDataClass.StaticMethodName,
+            () => { string sr = string.Empty; StaticMethodWithDifferentReturnType(null, null, ref sr, string.Empty); });
 
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
@@ -483,6 +484,8 @@ static unsafe class UnsafeAccessorsTests
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.MethodPointerName)]
         extern static string CallPointerMethod(UserDataClass d, delegate* unmanaged[Stdcall]<void> fptr);
 
+        [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name=UserDataClass.StaticMethodName)]
+        extern static int StaticMethodWithDifferentReturnType(UserDataClass d, string s, ref string sr, in string si);
     }
 
     [Fact]
