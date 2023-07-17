@@ -94,7 +94,7 @@ namespace System.Text.Json.SourceGeneration
                 if (!TryParseJsonSerializerContextAttributes(
                     contextTypeSymbol,
                     out List<TypeToGenerate>? rootSerializableTypes,
-                    out JsonSourceGenerationOptionsAttribute? options))
+                    out SourceGenerationOptionsSpec? options))
                 {
                     // Context does not specify any source gen attributes.
                     return null;
@@ -122,8 +122,6 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                options ??= new JsonSourceGenerationOptionsAttribute();
-
                 // Enqueue attribute data for spec generation
                 foreach (TypeToGenerate rootSerializableType in rootSerializableTypes)
                 {
@@ -150,12 +148,7 @@ namespace System.Text.Json.SourceGeneration
                     GeneratedTypes = _generatedTypes.Values.OrderBy(t => t.TypeRef.FullyQualifiedName).ToImmutableEquatableArray(),
                     Namespace = contextTypeSymbol.ContainingNamespace is { IsGlobalNamespace: false } ns ? ns.ToDisplayString() : null,
                     ContextClassDeclarations = classDeclarationList.ToImmutableEquatableArray(),
-                    DefaultIgnoreCondition = options.DefaultIgnoreCondition,
-                    IgnoreReadOnlyFields = options.IgnoreReadOnlyFields,
-                    IgnoreReadOnlyProperties = options.IgnoreReadOnlyProperties,
-                    IncludeFields = options.IncludeFields,
-                    PropertyNamingPolicy = options.PropertyNamingPolicy,
-                    WriteIndented = options.WriteIndented,
+                    GeneratedOptionsSpec = options,
                 };
 
                 // Clear the caches of generated metadata between the processing of context classes.
@@ -224,9 +217,9 @@ namespace System.Text.Json.SourceGeneration
             }
 
             private bool TryParseJsonSerializerContextAttributes(
-                ITypeSymbol contextClassSymbol,
+                INamedTypeSymbol contextClassSymbol,
                 out List<TypeToGenerate>? rootSerializableTypes,
-                out JsonSourceGenerationOptionsAttribute? options)
+                out SourceGenerationOptionsSpec? options)
             {
                 Debug.Assert(_knownSymbols.JsonSerializableAttributeType != null);
                 Debug.Assert(_knownSymbols.JsonSourceGenerationOptionsAttributeType != null);
@@ -250,47 +243,125 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (SymbolEqualityComparer.Default.Equals(attributeClass, _knownSymbols.JsonSourceGenerationOptionsAttributeType))
                     {
-                        options = ParseJsonSourceGenerationOptionsAttribute(attributeData);
+                        options = ParseJsonSourceGenerationOptionsAttribute(contextClassSymbol, attributeData);
                     }
                 }
 
                 return rootSerializableTypes != null || options != null;
             }
 
-            private static JsonSourceGenerationOptionsAttribute ParseJsonSourceGenerationOptionsAttribute(AttributeData attributeData)
+            private SourceGenerationOptionsSpec ParseJsonSourceGenerationOptionsAttribute(INamedTypeSymbol contextType, AttributeData attributeData)
             {
-                JsonSourceGenerationOptionsAttribute options = new();
+                JsonSourceGenerationMode? generationMode = null;
+                List<TypeRef>? converters = null;
+                JsonSerializerDefaults? defaults = null;
+                bool? allowTrailingCommas = null;
+                int? defaultBufferSize = null;
+                JsonIgnoreCondition? defaultIgnoreCondition = null;
+                JsonKnownNamingPolicy? dictionaryKeyPolicy = null;
+                bool? ignoreReadOnlyFields = null;
+                bool? ignoreReadOnlyProperties = null;
+                bool? includeFields = null;
+                int? maxDepth = null;
+                JsonNumberHandling? numberHandling = null;
+                JsonObjectCreationHandling? preferredObjectCreationHandling = null;
+                bool? propertyNameCaseInsensitive = null;
+                JsonKnownNamingPolicy? propertyNamingPolicy = null;
+                JsonCommentHandling? readCommentHandling = null;
+                JsonUnknownTypeHandling? unknownTypeHandling = null;
+                JsonUnmappedMemberHandling? unmappedMemberHandling = null;
+                bool? writeIndented = null;
+
+                if (attributeData.ConstructorArguments.Length > 0)
+                {
+                    Debug.Assert(attributeData.ConstructorArguments.Length == 1 & attributeData.ConstructorArguments[0].Type?.Name is nameof(JsonSerializerDefaults));
+                    defaults = (JsonSerializerDefaults)attributeData.ConstructorArguments[0].Value!;
+                }
 
                 foreach (KeyValuePair<string, TypedConstant> namedArg in attributeData.NamedArguments)
                 {
                     switch (namedArg.Key)
                     {
+                        case nameof(JsonSourceGenerationOptionsAttribute.AllowTrailingCommas):
+                            allowTrailingCommas = (bool)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.Converters):
+                            converters = new List<TypeRef>();
+                            foreach (TypedConstant element in namedArg.Value.Values)
+                            {
+                                var converterType = (ITypeSymbol?)element.Value;
+                                TypeRef? typeRef = GetConverterTypeFromAttribute(contextType, converterType, contextType, attributeData);
+                                if (typeRef != null)
+                                {
+                                    converters.Add(typeRef);
+                                }
+                            }
+
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.DefaultBufferSize):
+                            defaultBufferSize = (int)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.DefaultIgnoreCondition):
-                            options.DefaultIgnoreCondition = (JsonIgnoreCondition)namedArg.Value.Value!;
+                            defaultIgnoreCondition = (JsonIgnoreCondition)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.DictionaryKeyPolicy):
+                            dictionaryKeyPolicy = (JsonKnownNamingPolicy)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IgnoreReadOnlyFields):
-                            options.IgnoreReadOnlyFields = (bool)namedArg.Value.Value!;
+                            ignoreReadOnlyFields = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IgnoreReadOnlyProperties):
-                            options.IgnoreReadOnlyProperties = (bool)namedArg.Value.Value!;
+                            ignoreReadOnlyProperties = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.IncludeFields):
-                            options.IncludeFields = (bool)namedArg.Value.Value!;
+                            includeFields = (bool)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.MaxDepth):
+                            maxDepth = (int)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.NumberHandling):
+                            numberHandling = (JsonNumberHandling)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.PreferredObjectCreationHandling):
+                            preferredObjectCreationHandling = (JsonObjectCreationHandling)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.PropertyNameCaseInsensitive):
+                            propertyNameCaseInsensitive = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.PropertyNamingPolicy):
-                            options.PropertyNamingPolicy = (JsonKnownNamingPolicy)namedArg.Value.Value!;
+                            propertyNamingPolicy = (JsonKnownNamingPolicy)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.ReadCommentHandling):
+                            readCommentHandling = (JsonCommentHandling)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.UnknownTypeHandling):
+                            unknownTypeHandling = (JsonUnknownTypeHandling)namedArg.Value.Value!;
+                            break;
+
+                        case nameof(JsonSourceGenerationOptionsAttribute.UnmappedMemberHandling):
+                            unmappedMemberHandling = (JsonUnmappedMemberHandling)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.WriteIndented):
-                            options.WriteIndented = (bool)namedArg.Value.Value!;
+                            writeIndented = (bool)namedArg.Value.Value!;
                             break;
 
                         case nameof(JsonSourceGenerationOptionsAttribute.GenerationMode):
-                            options.GenerationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
+                            generationMode = (JsonSourceGenerationMode)namedArg.Value.Value!;
                             break;
 
                         default:
@@ -298,7 +369,28 @@ namespace System.Text.Json.SourceGeneration
                     }
                 }
 
-                return options;
+                return new SourceGenerationOptionsSpec
+                {
+                    GenerationMode = generationMode,
+                    Defaults = defaults,
+                    AllowTrailingCommas = allowTrailingCommas,
+                    DefaultBufferSize = defaultBufferSize,
+                    Converters = converters?.ToImmutableEquatableArray(),
+                    DefaultIgnoreCondition = defaultIgnoreCondition,
+                    DictionaryKeyPolicy = dictionaryKeyPolicy,
+                    IgnoreReadOnlyFields = ignoreReadOnlyFields,
+                    IgnoreReadOnlyProperties = ignoreReadOnlyProperties,
+                    IncludeFields = includeFields,
+                    MaxDepth = maxDepth,
+                    NumberHandling = numberHandling,
+                    PreferredObjectCreationHandling = preferredObjectCreationHandling,
+                    PropertyNameCaseInsensitive = propertyNameCaseInsensitive,
+                    PropertyNamingPolicy = propertyNamingPolicy,
+                    ReadCommentHandling = readCommentHandling,
+                    UnknownTypeHandling = unknownTypeHandling,
+                    UnmappedMemberHandling = unmappedMemberHandling,
+                    WriteIndented = writeIndented,
+                };
             }
 
             private static TypeToGenerate? ParseJsonSerializableAttribute(AttributeData attributeData)
@@ -342,7 +434,7 @@ namespace System.Text.Json.SourceGeneration
                 };
             }
 
-            private TypeGenerationSpec ParseTypeGenerationSpec(in TypeToGenerate typeToGenerate, INamedTypeSymbol contextType, Location contextLocation, JsonSourceGenerationOptionsAttribute options)
+            private TypeGenerationSpec ParseTypeGenerationSpec(in TypeToGenerate typeToGenerate, INamedTypeSymbol contextType, Location contextLocation, SourceGenerationOptionsSpec? options)
             {
                 Debug.Assert(IsSymbolAccessibleWithin(typeToGenerate.Type, within: contextType), "should not generate metadata for inaccessible types.");
 
@@ -481,7 +573,7 @@ namespace System.Text.Json.SourceGeneration
                 {
                     TypeRef = typeRef,
                     TypeInfoPropertyName = typeInfoPropertyName,
-                    GenerationMode = typeToGenerate.Mode ?? options.GenerationMode,
+                    GenerationMode = typeToGenerate.Mode ?? options?.GenerationMode ?? JsonSourceGenerationMode.Default,
                     ClassType = classType,
                     PrimitiveTypeKind = primitiveTypeKind,
                     IsPolymorphic = isPolymorphic,
@@ -546,7 +638,7 @@ namespace System.Text.Json.SourceGeneration
                     }
                     else if (!foundJsonConverterAttribute && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        customConverterType = GetConverterTypeFromAttribute(contextType, typeToGenerate.Type, attributeData);
+                        customConverterType = GetConverterTypeFromJsonConverterAttribute(contextType, typeToGenerate.Type, attributeData);
                         foundJsonConverterAttribute = true;
                     }
 
@@ -735,7 +827,7 @@ namespace System.Text.Json.SourceGeneration
                 INamedTypeSymbol contextType,
                 in TypeToGenerate typeToGenerate,
                 Location typeLocation,
-                JsonSourceGenerationOptionsAttribute options,
+                SourceGenerationOptionsSpec? options,
                 out bool hasExtensionDataProperty)
             {
                 List<PropertyGenerationSpec> properties = new();
@@ -845,7 +937,7 @@ namespace System.Text.Json.SourceGeneration
                 ISymbol memberInfo,
                 ref bool typeHasExtensionDataProperty,
                 JsonSourceGenerationMode? generationMode,
-                JsonSourceGenerationOptionsAttribute options)
+                SourceGenerationOptionsSpec? options)
             {
                 Debug.Assert(memberInfo is IFieldSymbol or IPropertySymbol);
 
@@ -903,9 +995,8 @@ namespace System.Text.Json.SourceGeneration
                     return null;
                 }
 
-                string clrName = memberInfo.Name;
-                string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, options.PropertyNamingPolicy);
-                string propertyNameVarName = DeterminePropNameIdentifier(runtimePropertyName);
+                string effectiveJsonPropertyName = DetermineEffectiveJsonPropertyName(memberInfo.Name, jsonPropertyName, options);
+                string propertyNameFieldName = DeterminePropertyNameFieldName(effectiveJsonPropertyName);
 
                 // Enqueue the property type for generation, unless the member is ignored.
                 TypeRef propertyTypeRef = ignoreCondition != JsonIgnoreCondition.Always
@@ -920,8 +1011,8 @@ namespace System.Text.Json.SourceGeneration
                     IsPublic = isAccessible,
                     IsVirtual = memberInfo.IsVirtual(),
                     JsonPropertyName = jsonPropertyName,
-                    RuntimePropertyName = runtimePropertyName,
-                    PropertyNameVarName = propertyNameVarName,
+                    EffectiveJsonPropertyName = effectiveJsonPropertyName,
+                    PropertyNameFieldName = propertyNameFieldName,
                     IsReadOnly = isReadOnly,
                     IsRequired = isRequired,
                     HasJsonRequiredAttribute = hasJsonRequiredAttribute,
@@ -976,7 +1067,7 @@ namespace System.Text.Json.SourceGeneration
 
                     if (converterType is null && _knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeType))
                     {
-                        converterType = GetConverterTypeFromAttribute(contextType, memberInfo, attributeData);
+                        converterType = GetConverterTypeFromJsonConverterAttribute(contextType, memberInfo, attributeData);
                     }
                     else if (attributeType.ContainingAssembly.Name == SystemTextJsonNamespace)
                     {
@@ -1244,14 +1335,18 @@ namespace System.Text.Json.SourceGeneration
                 return propertyInitializers;
             }
 
-            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
+            private TypeRef? GetConverterTypeFromJsonConverterAttribute(INamedTypeSymbol contextType, ISymbol declaringSymbol, AttributeData attributeData)
             {
                 Debug.Assert(_knownSymbols.JsonConverterAttributeType.IsAssignableFrom(attributeData.AttributeClass));
-                var converterType = (INamedTypeSymbol?)attributeData.ConstructorArguments[0].Value;
+                var converterType = (ITypeSymbol?)attributeData.ConstructorArguments[0].Value;
+                return GetConverterTypeFromAttribute(contextType, converterType, declaringSymbol, attributeData);
+            }
 
-                if (converterType == null ||
-                    !_knownSymbols.JsonConverterType.IsAssignableFrom(converterType) ||
-                    !converterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
+            private TypeRef? GetConverterTypeFromAttribute(INamedTypeSymbol contextType, ITypeSymbol? converterType, ISymbol declaringSymbol, AttributeData attributeData)
+            {
+                if (converterType is not INamedTypeSymbol namedConverterType ||
+                    !_knownSymbols.JsonConverterType.IsAssignableFrom(namedConverterType) ||
+                    !namedConverterType.Constructors.Any(c => c.Parameters.Length == 0 && IsSymbolAccessibleWithin(c, within: contextType)))
                 {
                     ReportDiagnostic(DiagnosticDescriptors.JsonConverterAttributeInvalidType, attributeData.GetDiagnosticLocation(), converterType?.ToDisplayString() ?? "null", declaringSymbol.ToDisplayString());
                     return null;
@@ -1265,30 +1360,24 @@ namespace System.Text.Json.SourceGeneration
                 return new TypeRef(converterType);
             }
 
-            private static string DetermineRuntimePropName(string clrPropName, string? jsonPropName, JsonKnownNamingPolicy namingPolicy)
+            private static string DetermineEffectiveJsonPropertyName(string propertyName, string? jsonPropertyName, SourceGenerationOptionsSpec? options)
             {
-                string runtimePropName;
-
-                if (jsonPropName != null)
+                if (jsonPropertyName != null)
                 {
-                    runtimePropName = jsonPropName;
-                }
-                else
-                {
-                    JsonNamingPolicy? instance = namingPolicy switch
-                    {
-                        JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
-                        JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
-                        JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
-                        JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
-                        JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
-                        _ => null,
-                    };
-
-                    runtimePropName = instance?.ConvertName(clrPropName) ?? clrPropName;
+                    return jsonPropertyName;
                 }
 
-                return runtimePropName;
+                JsonNamingPolicy? instance = options?.GetEffectivePropertyNamingPolicy() switch
+                {
+                    JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
+                    JsonKnownNamingPolicy.SnakeCaseLower => JsonNamingPolicy.SnakeCaseLower,
+                    JsonKnownNamingPolicy.SnakeCaseUpper => JsonNamingPolicy.SnakeCaseUpper,
+                    JsonKnownNamingPolicy.KebabCaseLower => JsonNamingPolicy.KebabCaseLower,
+                    JsonKnownNamingPolicy.KebabCaseUpper => JsonNamingPolicy.KebabCaseUpper,
+                    _ => null,
+                };
+
+                return instance?.ConvertName(propertyName) ?? propertyName;
             }
 
             private static string? DetermineImmutableCollectionFactoryMethod(string? immutableCollectionFactoryTypeFullName)
@@ -1296,7 +1385,7 @@ namespace System.Text.Json.SourceGeneration
                 return immutableCollectionFactoryTypeFullName is not null ? $"global::{immutableCollectionFactoryTypeFullName}.CreateRange" : null;
             }
 
-            private static string DeterminePropNameIdentifier(string runtimePropName)
+            private static string DeterminePropertyNameFieldName(string effectiveJsonPropertyName)
             {
                 const string PropName = "PropName_";
 
@@ -1304,16 +1393,16 @@ namespace System.Text.Json.SourceGeneration
                 // the rare case there is a C# property in a hex format.
                 const string EncodedPropName = "EncodedPropName_";
 
-                if (SyntaxFacts.IsValidIdentifier(runtimePropName))
+                if (SyntaxFacts.IsValidIdentifier(effectiveJsonPropertyName))
                 {
-                    return PropName + runtimePropName;
+                    return PropName + effectiveJsonPropertyName;
                 }
 
                 // Encode the string to a byte[] and then convert to hexadecimal.
                 // To make the generated code more readable, we could use a different strategy in the future
                 // such as including the full class name + the CLR property name when there are duplicates,
                 // but that will create unnecessary JsonEncodedText properties.
-                byte[] utf8Json = Encoding.UTF8.GetBytes(runtimePropName);
+                byte[] utf8Json = Encoding.UTF8.GetBytes(effectiveJsonPropertyName);
 
                 StringBuilder sb = new StringBuilder(
                     EncodedPropName,

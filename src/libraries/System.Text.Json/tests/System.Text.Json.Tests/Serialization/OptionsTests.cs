@@ -860,7 +860,7 @@ namespace System.Text.Json.Serialization.Tests
 
             var newOptions = new JsonSerializerOptions(options);
             Assert.False(newOptions.IsReadOnly);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
 
             // No exception is thrown on mutating the new options instance because it is "unlocked".
             newOptions.ReferenceHandler = ReferenceHandler.Preserve;
@@ -902,7 +902,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             JsonSerializerOptions options = GetFullyPopulatedOptionsInstance();
             var newOptions = new JsonSerializerOptions(options);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
         }
 
         [Fact]
@@ -937,7 +937,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             var options = new JsonSerializerOptions { TypeInfoResolver = JsonSerializerOptions.Default.TypeInfoResolver };
             JsonSerializerOptions optionsSingleton = JsonSerializerOptions.Default;
-            VerifyOptionsEqual(options, optionsSingleton);
+            JsonTestHelper.AssertOptionsEqual(options, optionsSingleton);
         }
 
         [Fact]
@@ -1176,7 +1176,7 @@ namespace System.Text.Json.Serialization.Tests
             var options = new JsonSerializerOptions();
             var newOptions = new JsonSerializerOptions(JsonSerializerDefaults.General);
             Assert.False(newOptions.IsReadOnly);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
         }
 
         [Fact]
@@ -1262,45 +1262,12 @@ namespace System.Text.Json.Serialization.Tests
             return options;
         }
 
-        private static void VerifyOptionsEqual(JsonSerializerOptions options, JsonSerializerOptions newOptions)
-        {
-            foreach (PropertyInfo property in typeof(JsonSerializerOptions).GetProperties(BindingFlags.Public | BindingFlags.Instance))
-            {
-                Type propertyType = property.PropertyType;
-
-                if (property.Name == nameof(JsonSerializerOptions.IsReadOnly))
-                {
-                    continue; // readonly-ness is not a structural property of JsonSerializerOptions.
-                }
-                else if (propertyType == typeof(IList<JsonConverter>))
-                {
-                    var list1 = (IList<JsonConverter>)property.GetValue(options);
-                    var list2 = (IList<JsonConverter>)property.GetValue(newOptions);
-                    Assert.Equal(list1, list2);
-                }
-                else if (propertyType == typeof(IList<IJsonTypeInfoResolver>))
-                {
-                    var list1 = (IList<IJsonTypeInfoResolver>)property.GetValue(options);
-                    var list2 = (IList<IJsonTypeInfoResolver>)property.GetValue(newOptions);
-                    Assert.Equal(list1, list2);
-                }
-                else if (propertyType.IsValueType)
-                {
-                    Assert.Equal(property.GetValue(options), property.GetValue(newOptions));
-                }
-                else
-                {
-                    Assert.Same(property.GetValue(options), property.GetValue(newOptions));
-                }
-            }
-        }
-
         [Fact]
         public static void CopyConstructor_IgnoreNullValuesCopied()
         {
             var options = new JsonSerializerOptions { IgnoreNullValues = true };
             var newOptions = new JsonSerializerOptions(options);
-            VerifyOptionsEqual(options, newOptions);
+            JsonTestHelper.AssertOptionsEqual(options, newOptions);
         }
 
         [Fact]
