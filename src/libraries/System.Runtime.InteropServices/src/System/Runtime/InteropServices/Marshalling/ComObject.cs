@@ -150,7 +150,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
         object ComImportInteropInterfaceDetailsStrategy.IComImportAdapter.GetRuntimeCallableWrapper()
         {
-            return _runtimeCallableWrapper!;
+            Debug.Assert(_runtimeCallableWrapper != null);
+            return _runtimeCallableWrapper;
         }
     }
 }

@@ -9,10 +9,10 @@ using System.Runtime.CompilerServices;
 namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// An interface details strategy that enables discovering both interfaces defined with source-generated COM (i.e. <see cref="GeneratedComInterfaceAttribute"/> and <see cref="IUnknownDerivedAttribute{T, TImpl}"/>) and runtime-implemented COM (i.e. <see cref="ComImportAttribute"/>).
+    /// An interface details strategy that enables discovering both interfaces defined with source-generated COM (i.e. <see cref="GeneratedComInterfaceAttribute"/> and <see cref="IUnknownDerivedAttribute{T, TImpl}"/>) and built-in COM (i.e. <see cref="ComImportAttribute"/>).
     /// </summary>
     /// <remarks>
-    /// This strategy is meant for intermediary adoption scenarios and is not compatible with trimming or NativeAOT by design. Since runtime-implemented COM is not trim friendly or AOT-compatible, these restrictions are okay.
+    /// This strategy is meant for intermediary adoption scenarios and is not compatible with trimming or NativeAOT by design. Since built-in COM is not trim friendly or AOT-compatible, these restrictions are okay.
     /// This strategy only supports "COM Object Wrapper" scenarios, so casting a COM object wrapper to a <see cref="ComImportAttribute"/>-attributed type. It does not support exposing a <see cref="ComImportAttribute"/>-attributed type as an additional interface on a managed object wrapper.
     /// The strategy provides <see cref="DynamicInterfaceCastableImplementationAttribute"/>-based implementations of <see cref="ComImportAttribute"/>-attributed interfaces by dynamically generating an interface using <see cref="System.Reflection.Emit"/> that has the following shape:
     /// <code>
@@ -41,7 +41,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// }
     /// </code>
     ///
-    /// This mechanism allows source-generated COM interop to allow using runtime-implemented COM interfaces with runtime-defined marshalling behavior with minimal work on the source-generated COM interop side.
+    /// This mechanism allows source-generated COM interop to allow using built-in COM interfaces with runtime-defined marshalling behavior with minimal work on the source-generated COM interop side.
     /// Additionally, by scoping the majority of the logic to this class, we make this logic more easily trimmable.
     ///
     /// We emit the <c>IgnoresAccessChecksToAttribute</c> to enable casting to internal <see cref="ComImportAttribute"/> types, which is a very common scenario (most <see cref="ComImportAttribute"/> types are internal).
@@ -67,7 +67,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
             Type implementationType = _forwarderInterfaceCache.GetValue(runtimeType, runtimeType =>
             {
-                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ComImportForwarder"), AssemblyBuilderAccess.RunAndCollect);
+                AssemblyBuilder assembly = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("ComImportForwarder"), runtimeType.IsCollectible ? AssemblyBuilderAccess.RunAndCollect : AssemblyBuilderAccess.Run);
                 ModuleBuilder module = assembly.DefineDynamicModule("ComImportForwarder");
 
                 ConstructorInfo ignoresAccessChecksToAttributeConstructor = GetIgnoresAccessChecksToAttributeConstructor(module);
@@ -83,13 +83,19 @@ namespace System.Runtime.InteropServices.Marshalling
                     assembly.SetCustomAttribute(new CustomAttributeBuilder(ignoresAccessChecksToAttributeConstructor, new object[] { iface.Assembly.GetName().Name! }));
                     foreach (MethodInfo method in iface.GetMethods())
                     {
+                        Type[] returnTypeOptionalModifiers = method.ReturnParameter.GetOptionalCustomModifiers();
+                        Type[] returnTypeRequiredModifiers = method.ReturnParameter.GetRequiredCustomModifiers();
                         ParameterInfo[] parameters = method.GetParameters();
                         var parameterTypes = new Type[parameters.Length];
+                        var parameterOptionalModifiers = new Type[parameters.Length][];
+                        var parameterRequiredModifiers = new Type[parameters.Length][];
                         for (int i = 0; i < parameters.Length; i++)
                         {
                             parameterTypes[i] = parameters[i].ParameterType;
+                            parameterOptionalModifiers[i] = parameters[i].GetOptionalCustomModifiers();
+                            parameterRequiredModifiers[i] = parameters[i].GetRequiredCustomModifiers();
                         }
-                        MethodBuilder builder = implementation.DefineMethod(method.Name, MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.Virtual, method.ReturnType, parameterTypes);
+                        MethodBuilder builder = implementation.DefineMethod(method.Name, MethodAttributes.Private | MethodAttributes.Final | MethodAttributes.HideBySig | MethodAttributes.Virtual, CallingConventions.HasThis, method.ReturnType, returnTypeRequiredModifiers, returnTypeOptionalModifiers, parameterTypes, parameterRequiredModifiers, parameterOptionalModifiers);
                         ILGenerator il = builder.GetILGenerator();
                         il.Emit(OpCodes.Ldarg_0);
                         il.Emit(OpCodes.Castclass, typeof(IComImportAdapter));
@@ -174,7 +180,7 @@ namespace System.Runtime.InteropServices.Marshalling
         }
 
         /// <summary>
-        /// This interface enables a COM Object Wrapper (such as <see cref="ComObject"/>) to provide a runtime-implemented COM object to enable integration between runtime-implemented COM objects and
+        /// This interface enables a COM Object Wrapper (such as <see cref="ComObject"/>) to provide a built-in COM object to enable integration between built-in COM objects and
         /// other COM interop systems like source-generated COM.
         /// </summary>
         internal interface IComImportAdapter
@@ -182,9 +188,9 @@ namespace System.Runtime.InteropServices.Marshalling
             internal static readonly MethodInfo GetRuntimeCallableWrapperMethod = typeof(IComImportAdapter).GetMethod(nameof(GetRuntimeCallableWrapper))!;
 
             /// <summary>
-            /// Gets the runtime-implemented COM object that corresponds to the same underlying COM object as this wrapper.
+            /// Gets the built-in COM object that corresponds to the same underlying COM object as this wrapper.
             /// </summary>
-            /// <returns>The runtime-implemented RCW</returns>
+            /// <returns>The built-in RCW</returns>
             /// <remarks>The returned object must be an object such that a call to <see cref="Marshal.IsComObject(object)"/> would return true.</remarks>
             object GetRuntimeCallableWrapper();
         }
