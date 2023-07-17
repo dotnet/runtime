@@ -270,6 +270,7 @@ namespace System.Text.Json.SourceGeneration
                 JsonCommentHandling? readCommentHandling = null;
                 JsonUnknownTypeHandling? unknownTypeHandling = null;
                 JsonUnmappedMemberHandling? unmappedMemberHandling = null;
+                bool? useStringEnumConverter = null;
                 bool? writeIndented = null;
 
                 if (attributeData.ConstructorArguments.Length > 0)
@@ -356,6 +357,10 @@ namespace System.Text.Json.SourceGeneration
                             unmappedMemberHandling = (JsonUnmappedMemberHandling)namedArg.Value.Value!;
                             break;
 
+                        case nameof(JsonSourceGenerationOptionsAttribute.UseStringEnumConverter):
+                            useStringEnumConverter = (bool)namedArg.Value.Value!;
+                            break;
+
                         case nameof(JsonSourceGenerationOptionsAttribute.WriteIndented):
                             writeIndented = (bool)namedArg.Value.Value!;
                             break;
@@ -389,6 +394,7 @@ namespace System.Text.Json.SourceGeneration
                     ReadCommentHandling = readCommentHandling,
                     UnknownTypeHandling = unknownTypeHandling,
                     UnmappedMemberHandling = unmappedMemberHandling,
+                    UseStringEnumConverter = useStringEnumConverter,
                     WriteIndented = writeIndented,
                 };
             }
@@ -492,7 +498,18 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (type.TypeKind is TypeKind.Enum)
                 {
-                    classType = ClassType.Enum;
+                    if (options?.UseStringEnumConverter == true)
+                    {
+                        Debug.Assert(_knownSymbols.JsonStringEnumConverterOfTType != null);
+                        INamedTypeSymbol converterSymbol = _knownSymbols.JsonStringEnumConverterOfTType.Construct(type);
+
+                        customConverterType = new TypeRef(converterSymbol);
+                        classType = ClassType.TypeWithDesignTimeProvidedCustomConverter;
+                    }
+                    else
+                    {
+                        classType = ClassType.Enum;
+                    }
                 }
                 else if (TryResolveCollectionType(type,
                     out ITypeSymbol? valueType,
