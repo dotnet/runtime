@@ -4369,8 +4369,8 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 			res = init_method (amodule, NULL, method_index, method, NULL, error);
 			if (!res)
 				goto cleanup;
-			else 
-				mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
+			// else 
+			// 	mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
 		}
 	}
 
@@ -5932,12 +5932,14 @@ no_specific_trampoline (void)
 }
 
 void
-mini_nollvm_init_method (guint32 method_index, MonoAotModule* amodule, MonoBitSet* mono_inited)
+mini_nollvm_init_method (MonoAotModule* amodule, guint32 method_index)
 {
+	MonoBitSet *inited_bitset = mono_aot_get_mono_inited(amodule);
+
 	ERROR_DECL (error);
-	if (!mono_bitset_test(mono_inited, method_index)) {
+	if (!mono_bitset_test(inited_bitset, method_index)) {
 		if (init_method (amodule, NULL, method_index, NULL, NULL, error)) {
-			mono_bitset_set (mono_inited, method_index);
+			mono_bitset_set (inited_bitset, method_index);
 		}
 	}
 	mono_error_assert_ok (error);

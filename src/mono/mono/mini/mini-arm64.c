@@ -5731,11 +5731,9 @@ guint8 *
 mono_arch_emit_prolog (MonoCompile *cfg)
 {
 	MonoMethod *method = cfg->method;
-	// MonoAotModule *aot_module = m_class_get_image (method->klass)->aot_module;
 	MonoMethodSignature *sig;
 	MonoBasicBlock *bb;
 	guint8 *code;
-	guint32 token = mono_method_get_token (method);
 	int cfa_offset, max_offset;
 
 	sig = mono_method_signature_internal (method);
@@ -5787,11 +5785,9 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_addx_imm (code, cfg->arch.args_reg, ARMREG_FP, cfg->stack_offset);
 	}
 
-	code = emit_imm (code, ARMREG_R0, cfg->method_index);
-	// code = emit_aotconst (cfg, code, ARMREG_R1, MONO_PATCH_INFO_INIT_BITSET, aot_module);
-	// code = emit_imm (code, ARMREG_R2, token);
-	// code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD, mono_aot_get_mono_inited(aot_module), token, aot_module, method));
-	code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
+	/* Call the init wrapper which check if the methos needs to be initialised or not */
+	// code = emit_imm (code, ARMREG_R0, cfg->method_index);
+	// code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
 
 
 	/* Save return area addr received in R8 */

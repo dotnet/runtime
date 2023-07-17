@@ -279,7 +279,7 @@ void     mono_aot_set_make_unreadable       (gboolean unreadable);
 gboolean mono_aot_is_pagefault              (void *ptr);
 void     mono_aot_handle_pagefault          (void *ptr);
 
-void 	 mini_nollvm_init_method            (guint32 method_index, MonoAotModule* amodule, MonoBitSet* mono_inited);
+void 	 mini_nollvm_init_method            (MonoAotModule* amodule, guint32 method_index);
 
 guint32  mono_aot_find_method_index         (MonoMethod *method);
 gboolean mono_aot_init_llvm_method          (gpointer aot_module, gpointer method_info, MonoClass *init_class, MonoError *error);

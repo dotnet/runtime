@@ -6716,8 +6716,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 
 						/*
 						 * This is a call from a JITted method to the init wrapper emitted by LLVM.
+						 * Disable this assert when nollvm init is enabled
 						 */
-						// g_assert (acfg->aot_opts.llvm && acfg->aot_opts.direct_extern_calls);
+						g_assert (acfg->aot_opts.llvm && acfg->aot_opts.direct_extern_calls);
 
 						const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
 						char *symbol = g_strdup_printf ("%s%s_%s", acfg->user_symbol_prefix, acfg->global_prefix, init_name);
@@ -7215,11 +7216,6 @@ encode_patch (MonoAotCompile *acfg, MonoJumpInfo *patch_info, guint8 *buf, guint
 	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_INIT_BITSET:
 		break;
-		// encode_value (mono_bitset_size (acfg->mono_inited) , p, &p);
-		// for (guint32 i = 0 ; i < mono_bitset_size (acfg->mono_inited); i++) {
-		// 	encode_value (i , p, &p);
-		// }
-		// break;
 	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		encode_signature (acfg, (MonoMethodSignature*)patch_info->data.target, p, &p);
@@ -10813,13 +10809,6 @@ emit_code (MonoAotCompile *acfg)
 	 */
 	emit_padding (acfg, 16);
 
-	// /*
-	//  * Methods init bitset used for initialization during the runtime
-	//  */
-	// acfg->mono_inited = mono_bitset_mem_new (
-    // mono_mempool_alloc0 (acfg->mempool, mono_bitset_alloc_size (acfg->method_order->len, 0)),
-    // acfg->method_order->len, 0);
-
 	for (guint oindex = 0; oindex < acfg->method_order->len; ++oindex) {
 		MonoCompile *cfg;
 		MonoMethod *method;
@@ -13236,7 +13225,7 @@ compile_asm (MonoAotCompile *acfg)
 		g_string_append_printf (str, "%s", acfg->aot_opts.clangxx);
 	else
 		g_string_append_printf (str, "\"%s%s\"", tool_prefix, ld_binary_name);
-	g_string_append_printf (str, " -shared -v");
+	g_string_append_printf (str, " -shared");
 #endif
 	g_string_append_printf (str, " -o %s %s %s %s",
 							wrap_path (tmp_outfile_name), wrap_path (llvm_ofile),
@@ -15094,10 +15083,11 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 			flags = (LLVMModuleFlags)(flags | LLVM_MODULE_FLAG_INTERP);
 		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, acfg->nshared_got_entries, flags);
 
+		/* This will need to be moved outside to enable nollvm init method */
+		add_lazy_init_wrappers (acfg);
 		add_method (acfg, mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL));
 	}
 #endif
-	add_lazy_init_wrappers (acfg);
 
 	if (mono_aot_mode_is_interp (&acfg->aot_opts) && mono_is_corlib_image (acfg->image->assembly->image)) {
 		MonoMethod *wrapper = mini_get_interp_lmf_wrapper ("mono_interp_to_native_trampoline", (gpointer) mono_interp_to_native_trampoline);
