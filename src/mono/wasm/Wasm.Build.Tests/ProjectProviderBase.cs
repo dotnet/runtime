@@ -271,14 +271,14 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         if (!match.Success || match.Groups.Count != 2)
             throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
 
-        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework);
+        string expectedRuntimePackDir = _buildEnv.GetRuntimePackDir(targetFramework);
         string actualPath = match.Groups[1].Value;
         if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
             throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
     }
 
     public static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
-        => TestUtils.AssertFile(Path.Combine(BuildTestBase.s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
+        => TestUtils.AssertFile(Path.Combine(_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
                         Path.Combine(bundleDir, "_framework/dotnet.native.js.symbols"),
                         same: fromRuntimePack);
 

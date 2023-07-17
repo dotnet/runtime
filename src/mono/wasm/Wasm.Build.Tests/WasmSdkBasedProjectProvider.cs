@@ -74,7 +74,7 @@ public class WasmSdkBasedProjectProvider : ProjectProviderBase
                             expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
                             runtimeType: runtimeType);
 
-        string runtimeNativeDir = BuildTestBase.s_buildEnv.GetRuntimeNativeDir(targetFramework, runtimeType);
+        string runtimeNativeDir = _buildEnv.GetRuntimeNativeDir(targetFramework, runtimeType);
 
         string srcDirForNativeFileToCompareAgainst = type switch
         {
