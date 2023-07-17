@@ -33,7 +33,6 @@
   <!-- For API comparison, ApiCompat needs the inbox assemblies (including shims) and to resolve type forwards, the out-of-band assemblies. -->
   <ItemGroup>
     <ProjectReference Include="..\sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
-    <ProjectReference Include="..\shims.proj" OutputItemType="SharedFrameworkAssembly" />
     <ProjectReference Include="..\oob-src.proj" OutputItemType="OOBAssembly" />
   </ItemGroup>
 

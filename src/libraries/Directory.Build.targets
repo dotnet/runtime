@@ -111,10 +111,11 @@
   <Import Project="$(RepositoryEngineeringDir)targetingpacks.targets" />
 
   <PropertyGroup>
-      <!-- Libraries non test projects shouldn't reference compat shims. -->
+      <!-- Libraries ref and source projects which don't bring in dependencies from outside the repository shouldn't reference compat shims. -->
     <SkipTargetingPackShimReferences Condition="'$(UseLocalTargetingRuntimePack)' == 'true' and
                                                 '$(IsTestProject)' != 'true' and
-                                                '$(IsTestSupportProject)' != 'true'">true</SkipTargetingPackShimReferences>
+                                                '$(IsTestSupportProject)' != 'true' and
+                                                '$(IsGeneratorProject)' != 'true'">true</SkipTargetingPackShimReferences>
   </PropertyGroup>
 
   <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
