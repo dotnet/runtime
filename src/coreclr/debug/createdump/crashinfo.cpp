@@ -967,7 +967,7 @@ FormatString(const char* format, ...)
     va_start(args, format);
     int result = vsnprintf(buffer, MAX_LONGPATH, format, args);
     va_end(args);
-    return result > 0 ? std::string(buffer) : std::string();
+    return result > 0 && result < MAX_LONGPATH ? std::string(buffer) : std::string();
 }
 
 //
