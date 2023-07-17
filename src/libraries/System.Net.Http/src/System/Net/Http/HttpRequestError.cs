@@ -9,7 +9,7 @@ namespace System.Net.Http
     public enum HttpRequestError
     {
         /// <summary>
-        /// A generic or unknown error occured.
+        /// A generic or unknown error occurred.
         /// </summary>
         Unknown = 0,
 
@@ -19,17 +19,17 @@ namespace System.Net.Http
         NameResolutionError,
 
         /// <summary>
-        /// A transport-level failure occured while connecting to the remote endpoint.
+        /// A transport-level failure occurred while connecting to the remote endpoint.
         /// </summary>
         ConnectionError,
 
         /// <summary>
-        /// An error occured during the TLS handshake.
+        /// An error occurred during the TLS handshake.
         /// </summary>
         SecureConnectionError,
 
         /// <summary>
-        /// An HTTP/2 or HTTP/3 protocol error occured.
+        /// An HTTP/2 or HTTP/3 protocol error occurred.
         /// </summary>
         HttpProtocolError,
 
@@ -44,12 +44,12 @@ namespace System.Net.Http
         VersionNegotiationError,
 
         /// <summary>
-        /// The authentication failed with the provided credentials.
+        /// The authentication failed.
         /// </summary>
         UserAuthenticationError,
 
         /// <summary>
-        /// An error occured while establishing a connection to the proxy tunnel.
+        /// An error occurred while establishing a connection to the proxy tunnel.
         /// </summary>
         ProxyTunnelError,
 

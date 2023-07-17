@@ -1100,7 +1100,9 @@ namespace System.Net.Http
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
                                     {
-                                        throw new HttpRequestException(SR.net_unsupported_extended_connect, httpRequestError: HttpRequestError.ExtendedConnectNotSupported);
+                                        HttpRequestException exception = new(SR.net_unsupported_extended_connect, httpRequestError: HttpRequestError.ExtendedConnectNotSupported);
+                                        exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
+                                        throw exception;
                                     }
                                 }
 

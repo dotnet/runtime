@@ -77,6 +77,7 @@ namespace System.Net.WebSockets.Client.Tests
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                     HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
                     Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, inner.HttpRequestError);
+                    Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
                 }
             },
             async server =>
@@ -102,6 +103,7 @@ namespace System.Net.WebSockets.Client.Tests
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                     HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
                     Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, inner.HttpRequestError);
+                    Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
                 }
             },
             async server =>

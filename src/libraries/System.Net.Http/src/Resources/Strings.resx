@@ -565,7 +565,7 @@
     <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
   </data>
   <data name="net_http_proxy_tunnel_error" xml:space="preserve">
-    <value>An error occured while establishing a connection to the proxy tunnel.</value>
+    <value>An error occurred while establishing a connection to the proxy tunnel.</value>
   </data>
   <data name="PlatformNotSupported_NetHttp" xml:space="preserve">
     <value>System.Net.Http is not supported on this platform.</value>

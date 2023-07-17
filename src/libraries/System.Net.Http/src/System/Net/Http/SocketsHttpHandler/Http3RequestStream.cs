@@ -261,8 +261,9 @@ namespace System.Net.Http
 
                     default:
                         // Our stream was reset.
-                        var innerException = HttpProtocolException.CreateHttp3StreamException(code, ex);
-                        throw new HttpRequestException(SR.net_http_client_execution_error, innerException, httpRequestError: HttpRequestError.HttpProtocolError);
+                        Exception innerException = _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        HttpRequestError httpRequestError = innerException is HttpProtocolException ? HttpRequestError.HttpProtocolError : HttpRequestError.Unknown;
+                        throw new HttpRequestException(SR.net_http_client_execution_error, innerException, httpRequestError: httpRequestError);
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
