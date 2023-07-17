@@ -9,8 +9,8 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests;
 
-public class TestMainJsProjectProvider(string projectDir, ITestOutputHelper testOutput)
-                : ProjectProviderBase(projectDir, testOutput)
+public class TestMainJsProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
+                : ProjectProviderBase(_testOutput, _projectDir)
 {
     // no fingerprinting
     protected override IReadOnlyDictionary<string, bool> GetAllKnownDotnetFilesToFingerprintMap(RuntimeVariant runtimeType)

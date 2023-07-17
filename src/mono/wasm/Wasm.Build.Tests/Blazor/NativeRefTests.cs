@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class NativeRefTests : BuildTestBase
+public class NativeRefTests : BlazorWasmTestBase
 {
     public NativeRefTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)

@@ -15,8 +15,8 @@ using Microsoft.NET.Sdk.WebAssembly;
 
 namespace Wasm.Build.Tests;
 
-public class BlazorWasmProjectProvider(string projectDir, ITestOutputHelper testOutput)
-                : WasmSdkBasedProjectProvider(projectDir, testOutput)
+public class BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
+                : WasmSdkBasedProjectProvider(_testOutput, _projectDir)
 {
     public void AssertBlazorBootJson(
         string binFrameworkDir,
@@ -24,6 +24,7 @@ public class BlazorWasmProjectProvider(string projectDir, ITestOutputHelper test
         bool isPublish = false,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
+        EnsureProjectDirIsSet();
         string bootJsonPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
         Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
 
@@ -79,6 +80,7 @@ public class BlazorWasmProjectProvider(string projectDir, ITestOutputHelper test
 
     public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework)
     {
+        EnsureProjectDirIsSet();
         string basePath = Path.Combine(ProjectDir, "bin", config, framework);
         if (forPublish)
             basePath = FindSubDirIgnoringCase(basePath, "publish");

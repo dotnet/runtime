@@ -16,7 +16,7 @@ using System.Text;
 namespace Wasm.Build.NativeRebuild.Tests
 {
     // TODO: test for runtime components
-    public class NativeRebuildTestsBase : BuildTestBase
+    public class NativeRebuildTestsBase : TestMainJsTestBase
     {
         public NativeRebuildTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

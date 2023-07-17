@@ -14,7 +14,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class WasmTemplateTests : BuildTestBase
+    public class WasmTemplateTests : WasmTemplateTestBase
     {
         public WasmTemplateTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

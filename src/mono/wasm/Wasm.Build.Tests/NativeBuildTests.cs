@@ -12,7 +12,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests
 {
-    public class NativeBuildTests : BuildTestBase
+    public class NativeBuildTests : TestMainJsTestBase
     {
         public NativeBuildTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)

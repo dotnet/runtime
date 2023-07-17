@@ -5,6 +5,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class ProjectProviderBase(string projectDir, ITestOutputHelper _testOutput)
+public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
     protected const string s_dotnetVersionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
     private static string[] s_dotnetExtensionsToIgnore = new[]
@@ -25,7 +26,7 @@ public abstract class ProjectProviderBase(string projectDir, ITestOutputHelper _
         ".symbols"
     };
 
-    public string ProjectDir { get; } = projectDir;
+    public string? ProjectDir { get; set; } = _projectDir;
 
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string dir,
@@ -48,6 +49,7 @@ public abstract class ProjectProviderBase(string projectDir, ITestOutputHelper _
         IReadOnlyDictionary<string, bool> superSet,
         IReadOnlySet<string>? expected)
     {
+        EnsureProjectDirIsSet();
         var actual = new SortedDictionary<string, DotNetFileName>();
 
         IList<string> dotnetFiles = Directory.EnumerateFiles(dir,
@@ -117,6 +119,7 @@ public abstract class ProjectProviderBase(string projectDir, ITestOutputHelper _
         IDictionary<string, DotNetFileName> actual,
         bool expectFingerprintOnDotnetJs)
     {
+        EnsureProjectDirIsSet();
         foreach (string expectedFilename in expected)
         {
             bool expectFingerprint = superSet[expectedFilename];
@@ -167,4 +170,11 @@ public abstract class ProjectProviderBase(string projectDir, ITestOutputHelper _
 
     public static bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile) =>
         (expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile;
+
+    [MemberNotNull(nameof(ProjectDir))]
+    protected void EnsureProjectDirIsSet()
+    {
+        if (string.IsNullOrEmpty(ProjectDir))
+            throw new Exception($"{nameof(ProjectDir)} is not set");
+    }
 }

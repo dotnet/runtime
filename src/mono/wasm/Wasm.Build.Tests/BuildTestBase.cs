@@ -33,12 +33,12 @@ namespace Wasm.Build.Tests
         protected static readonly char s_unicodeChar = '\u7149';
         protected static readonly bool s_skipProjectCleanup;
         protected static readonly string s_xharnessRunnerCommand;
-        protected string? _projectDir;
         protected readonly ITestOutputHelper _testOutput;
         protected string _logPath;
         protected bool _enablePerTestCleanup = false;
         protected SharedBuildPerTestClassFixture _buildContext;
         protected string _nugetPackagesDir = string.Empty;
+        private ProjectProviderBase _providerOfBaseType;
 
         private static bool s_isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         // changing Windows's language programistically is complicated and Node is using OS's language to determine
@@ -51,8 +51,6 @@ namespace Wasm.Build.Tests
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
-        private static int s_testCounter;
-        private readonly int _testIdx;
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
@@ -62,6 +60,15 @@ namespace Wasm.Build.Tests
                                                                           // targetFramework == "net7.0" ? "nuget7.config" : "nuget8.config");
 
         public const string WebcilInWasmExtension = ".wasm";
+
+        public TProvider GetProvider<TProvider>() where TProvider : ProjectProviderBase
+            => (TProvider)_providerOfBaseType;
+
+        protected string? _projectDir
+        {
+            get => _providerOfBaseType.ProjectDir;
+            set => _providerOfBaseType.ProjectDir = value;
+        }
 
         static BuildTestBase()
         {
@@ -94,13 +101,17 @@ namespace Wasm.Build.Tests
             }
         }
 
-        public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
+        public BuildTestBase(ProjectProviderBase providerBase, ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         {
-            _testIdx = Interlocked.Increment(ref s_testCounter);
             _buildContext = buildContext;
             _testOutput = new TestOutputWrapper(output);
             _logPath = s_buildEnv.LogRootPath; // FIXME:
+            _providerOfBaseType = providerBase;
         }
+
+        // Meant for special case where we *want* to set it to null,
+        // and thus avoid the ArgumentNullException
+        // protected void ResetProjectDir() => _providerOfBaseType.ProjectDir = null;
 
         public static IEnumerable<IEnumerable<object?>> ConfigWithAOTData(bool aot, string? config = null, string? extraArgs = null)
         {
@@ -654,7 +665,7 @@ namespace Wasm.Build.Tests
             string objBuildDir = Path.Combine(_projectDir!, "obj", config, targetFramework, "wasm", forPublish ? "for-publish" : "for-build");
             string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish, framework: targetFramework);
 
-            var dotnetFiles = new WasmSdkBasedProjectProvider(_projectDir!, _testOutput)
+            var dotnetFiles = new WasmSdkBasedProjectProvider(_testOutput, _projectDir)
                                     .FindAndAssertDotnetFiles(
                                         dir: binFrameworkDir,
                                         isPublish: forPublish,
@@ -701,7 +712,7 @@ namespace Wasm.Build.Tests
 
         private void AssertBasicAppBundle(AssertTestMainJsAppBundleOptions options)
         {
-            new TestMainJsProjectProvider(_projectDir!, _testOutput)
+            new TestMainJsProjectProvider(_testOutput, _projectDir)
                     .FindAndAssertDotnetFiles(
                         Path.Combine(options.BundleDir, "_framework"),
                         isPublish: options.IsPublish,
@@ -843,7 +854,7 @@ namespace Wasm.Build.Tests
             bool expectFingerprintOnDotnetJs = false,
             RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
         {
-            new BlazorWasmProjectProvider(_projectDir!, _testOutput)
+            new BlazorWasmProjectProvider(_testOutput, _projectDir)
                     .AssertBlazorBootJson(binFrameworkDir: FindBlazorBinFrameworkDir(config, isPublish, targetFramework),
                                           isPublish: isPublish,
                                           expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
@@ -851,7 +862,7 @@ namespace Wasm.Build.Tests
         }
 
         public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
-            => new BlazorWasmProjectProvider(_projectDir!, _testOutput)
+            => new BlazorWasmProjectProvider(_testOutput, _projectDir)
                     .FindBlazorBinFrameworkDir(config, forPublish, framework);
 
         protected string GetBinDir(string config, string targetFramework = DefaultTargetFramework, string? baseDir = null)
