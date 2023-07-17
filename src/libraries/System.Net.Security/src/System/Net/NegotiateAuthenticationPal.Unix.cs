@@ -19,35 +19,11 @@ namespace System.Net
 {
     internal partial class NegotiateAuthenticationPal
     {
-        private static bool _useManagedNtlm;
-        private static bool _isGssApiAvailable;
-
-#pragma warning disable CA1810 // explicit static cctor
-        static NegotiateAuthenticationPal()
-        {
-            try
-            {
-                if (!Interop.NetSecurityNative.IsNtlmInstalled())
-                {
-                    _useManagedNtlm = !AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) || useManagedNtlm;
-                }
-                else
-                {
-                    _useManagedNtlm = AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) && useManagedNtlm;
-                }
-                _isGssApiAvailable = true;
-            }
-            catch (EntryPointNotFoundException)
-            {
-                // GSSAPI shim may not be available on some platforms (Linux Bionic)
-                _isGssApiAvailable = false;
-            }
-        }
-#pragma warning restore CA1810
+        private static bool UseManagedNtlm { get; } = AppContext.TryGetSwitch("System.Net.Security.UseManagedNtlm", out bool useManagedNtlm) && useManagedNtlm;
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationClientOptions clientOptions)
         {
-            if (_useManagedNtlm)
+            if (UseManagedNtlm)
             {
                 switch (clientOptions.Package)
                 {
@@ -56,11 +32,6 @@ namespace System.Net
 
                     case NegotiationInfoClass.Negotiate:
                         return new ManagedSpnegoNegotiateAuthenticationPal(clientOptions, supportKerberos: true);
-                }
-
-                if (!_isGssApiAvailable)
-                {
-                    return new UnsupportedNegotiateAuthenticationPal(clientOptions);
                 }
             }
 
@@ -76,15 +47,15 @@ namespace System.Net
             {
                 return new UnsupportedNegotiateAuthenticationPal(clientOptions);
             }
+            catch (EntryPointNotFoundException)
+            {
+                // GSSAPI shim may not be available on some platforms (Linux Bionic)
+                return new UnsupportedNegotiateAuthenticationPal(clientOptions);
+            }
         }
 
         public static NegotiateAuthenticationPal Create(NegotiateAuthenticationServerOptions serverOptions)
         {
-            if (!_isGssApiAvailable)
-            {
-                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
-            }
-
             try
             {
                 return new UnixNegotiateAuthenticationPal(serverOptions);
@@ -95,6 +66,11 @@ namespace System.Net
             }
             catch (PlatformNotSupportedException)
             {
+                return new UnsupportedNegotiateAuthenticationPal(serverOptions);
+            }
+            catch (EntryPointNotFoundException)
+            {
+                // GSSAPI shim may not be available on some platforms (Linux Bionic)
                 return new UnsupportedNegotiateAuthenticationPal(serverOptions);
             }
         }
