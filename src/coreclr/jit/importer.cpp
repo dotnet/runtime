@@ -2913,8 +2913,8 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
             {
                 // First, let's see if we can fold BOX+ISINST to just null if ISINST is know to return null
                 // for the given argument.
-                if ((opts != BoxPatterns::MakeInlineObservation) &&
-                    ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
+                if ((opts == BoxPatterns::None) && ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0) &&
+                    (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                 {
                     CORINFO_RESOLVED_TOKEN isInstTok;
                     impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
