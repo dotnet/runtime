@@ -1783,7 +1783,7 @@ namespace System.Net.Http
             catch (Exception e) when (!(e is OperationCanceledException))
             {
                 Debug.Assert(!(e is HttpRequestException));
-                throw new HttpRequestException(SR.net_http_request_aborted, e, httpRequestError: HttpRequestError.ProxyTunnelError);
+                throw new HttpRequestException(SR.net_http_proxy_tunnel_error, e, httpRequestError: HttpRequestError.ProxyTunnelError);
             }
 
             return stream;

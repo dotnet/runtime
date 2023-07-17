@@ -6,15 +6,10 @@ using System.IO;
 namespace System.Net.Http
 {
     /// <summary>
-    /// An exception thrown when an error occurs while reading the response content stream.
+    /// An exception thrown when an error occurs while reading the response.
     /// </summary>
     public class HttpIOException : IOException
     {
-        /// <summary>
-        /// Gets the <see cref="Http.HttpRequestError"/> that caused the exception.
-        /// </summary>
-        public HttpRequestError HttpRequestError { get; }
-
         /// <summary>
         /// Initializes a new instance of the <see cref="HttpIOException"/> class.
         /// </summary>
@@ -26,5 +21,10 @@ namespace System.Net.Http
         {
             HttpRequestError = httpRequestError;
         }
+
+        /// <summary>
+        /// Gets the <see cref="Http.HttpRequestError"/> that caused the exception.
+        /// </summary>
+        public HttpRequestError HttpRequestError { get; }
     }
 }

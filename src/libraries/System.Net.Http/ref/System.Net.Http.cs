@@ -246,7 +246,7 @@ namespace System.Net.Http
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class HttpProtocolException : HttpIOException
+    public sealed class HttpProtocolException : System.Net.Http.HttpIOException
     {
         public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) : base (default(System.Net.Http.HttpRequestError), default(string?), default(System.Exception?)) { }
         public long ErrorCode { get { throw null; } }
@@ -272,7 +272,7 @@ namespace System.Net.Http
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
-        public HttpRequestException(string? message, Exception? inner = null, HttpStatusCode? statusCode = null, HttpRequestError? httpRequestError = null) { }
+        public HttpRequestException(string? message, System.Exception? inner = null, System.Net.HttpStatusCode? statusCode = null, System.Net.Http.HttpRequestError? httpRequestError = null) { }
         public System.Net.Http.HttpRequestError? HttpRequestError { get { throw null; } }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }

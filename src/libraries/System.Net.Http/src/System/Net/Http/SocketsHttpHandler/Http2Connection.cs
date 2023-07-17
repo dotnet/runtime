@@ -531,9 +531,8 @@ namespace System.Net.Http
                 }
                 catch (Exception e)
                 {
-                    var ex = new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
-                    InitialSettingsReceived.TrySetException(ex);
-                    throw ex;
+                    InitialSettingsReceived.TrySetException(new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e));
+                    throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
                 }
 
                 // Keep processing frames as they arrive.

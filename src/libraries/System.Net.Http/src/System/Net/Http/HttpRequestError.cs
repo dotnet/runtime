@@ -16,7 +16,7 @@ namespace System.Net.Http
         /// <summary>
         /// The DNS name resolution failed.
         /// </summary>
-        NameResolutionError,                    // DNS request failed
+        NameResolutionError,
 
         /// <summary>
         /// A transport-level failure occured while connecting to the remote endpoint.
@@ -31,7 +31,7 @@ namespace System.Net.Http
         /// <summary>
         /// An HTTP/2 or HTTP/3 protocol error occured.
         /// </summary>
-        HttpProtocolError,                      // HTTP 2.0/3.0 protocol error occurred
+        HttpProtocolError,
 
         /// <summary>
         /// Extended CONNECT for WebSockets over HTTP/2 is not supported by the peer.
@@ -56,7 +56,7 @@ namespace System.Net.Http
         /// <summary>
         /// An invalid or malformed response has been received.
         /// </summary>
-        InvalidResponse,                        // General error in response/malformed response
+        InvalidResponse,
 
         /// <summary>
         /// The response ended prematurely.
