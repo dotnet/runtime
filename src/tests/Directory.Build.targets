@@ -22,7 +22,7 @@
 
     <CustomMain>true</CustomMain>
   </PropertyGroup>
-  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets" />
+  <Import Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'" Project="$(RepositoryEngineeringDir)testing\tests.targets" />
 
   <Target Name="_SetRunScriptOutputDirectory" Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono' and '$(CustomMain)' == 'true'" BeforeTargets="GenerateRunScript">
     <PropertyGroup>
