@@ -3,7 +3,7 @@
 
 namespace System.Runtime.CompilerServices
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, Inherited = false, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Interface, Inherited = false)]
 #if SYSTEM_PRIVATE_CORELIB
     public
 #else
@@ -29,6 +29,7 @@ namespace System.Runtime.CompilerServices
         public Type BuilderType { get; }
 
         /// <summary>Gets the name of the method on the builder to use to construct the collection.</summary>
+        /// <remarks>This should match the metadata name of the target method. For example, this might be ".ctor" if targeting the type's constructor.</remarks>
         public string MethodName { get; }
     }
 }

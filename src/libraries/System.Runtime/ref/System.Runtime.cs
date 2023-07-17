@@ -12615,7 +12615,7 @@ namespace System.Runtime.CompilerServices
     {
         public CallerMemberNameAttribute() { }
     }
-    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false, AllowMultiple = true)]
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false)]
     public sealed class CollectionBuilderAttribute : Attribute
     {
         public CollectionBuilderAttribute(System.Type builderType, string methodName) { }
