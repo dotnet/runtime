@@ -20,11 +20,12 @@
                             '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
     <UseLocalTargetingRuntimePack Condition="'$(UseLocalTargetingRuntimePack)' == ''">true</UseLocalTargetingRuntimePack>
     <UseLocalAppHostPack Condition="'$(UseLocalAppHostPack)' == ''">$(UseLocalTargetingRuntimePack)</UseLocalAppHostPack>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(UseLocalTargetingRuntimePack)' == 'true'">
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
-    <!-- TODO: Enable when a 8.0.100 SDK is consumed
     <EnableRuntimePackDownload>false</EnableRuntimePackDownload>
     <EnableAppHostPackDownload>false</EnableAppHostPackDownload>
-    -->
     <GenerateErrorForMissingTargetingPacks>false</GenerateErrorForMissingTargetingPacks>
   </PropertyGroup>
 
@@ -90,39 +91,6 @@
       <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
       <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
     </PropertyGroup>
-  </Target>
-
-  <!-- 
-    SDK tries to download runtime packs when RuntimeIdentifier is set, remove them from PackageDownload item.
-    TODO: Remove this target when an 8.0.100 SDK is consumed that respects EnableRuntimePackDownload.
-   -->
-  <Target Name="RemoveRuntimePackFromDownloadItem"
-          Condition="'$(UseLocalTargetingRuntimePack)' == 'true'"
-          AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Runtime'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Runtime'))" />
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').EndsWith('Microsoft.DotNet.ILCompiler'))" />
-    </ItemGroup>
-  </Target>
-
-  <!-- 
-    TODO: Remove this target when an 8.0.100 SDK is consumed that respects EnableAppHostPackDownload.
-   -->
-  <Target Name="RemoveAppHostPackFromDownloadItem"
-          Condition="'$(UseLocalAppHostPack)' == 'true'"
-          AfterTargets="ProcessFrameworkReferences">
-    <ItemGroup>
-      <PackageDownload Remove="@(PackageDownload)"
-                       Condition="'$(UsePackageDownload)' == 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Host'))" />
-      <PackageReference Remove="@(PackageReference)"
-                        Condition="'$(UsePackageDownload)' != 'true' and $([System.String]::Copy('%(Identity)').StartsWith('$(LocalFrameworkOverrideName).Host'))" />
-    </ItemGroup>
   </Target>
 
   <!-- Use local targeting/runtime pack for NetCoreAppCurrent. -->
