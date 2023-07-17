@@ -15,6 +15,11 @@
   <PropertyGroup Condition="'$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">
     <OutputPath>bin\$(Configuration)</OutputPath>
     <RunSampleDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\publish\wwwroot</RunSampleDir>
+    <_WebAssemblyPropsFile>$(MSBuildThisFileDirectory)..\..\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.props</_WebAssemblyPropsFile>
+    <_WebAssemblyTargetsFile>$(MSBuildThisFileDirectory)..\..\nuget\Microsoft.NET.Sdk.WebAssembly.Pack\build\Microsoft.NET.Sdk.WebAssembly.Browser.targets</_WebAssemblyTargetsFile>
+    <_WebAssemblySdkTasksTFM Condition="'$(MSBuildRuntimeType)' == 'Core'">net8.0</_WebAssemblySdkTasksTFM>
+    <_WebAssemblySdkTasksTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net472</_WebAssemblySdkTasksTFM>
+    <_WebAssemblySdkTasksAssembly>$(RepoRoot)\artifacts\bin\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks\$(Configuration)\$(_WebAssemblySdkTasksTFM)\Microsoft.NET.Sdk.WebAssembly.Pack.Tasks.dll</_WebAssemblySdkTasksAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(UsingMicrosoftNETSdkWebAssembly)' != 'true'">
     <OutputPath>bin</OutputPath>
