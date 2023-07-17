@@ -79,9 +79,9 @@ internal static partial class Interop
                     return IntPtr.Zero;
                 }
 
-                // Try loading previous (libldap-2.4.so.2) and next (libldap-2.6.so.0) versions
-                if (NativeLibrary.TryLoad("libldap-2.4.so.2", out IntPtr handle) ||
-                    NativeLibrary.TryLoad("libldap-2.6.so.0", out handle))
+                // Try load next (libldap-2.6.so.0) or previous (libldap-2.4.so.2) versions
+                if (NativeLibrary.TryLoad("libldap-2.6.so.0", out IntPtr handle) ||
+                    NativeLibrary.TryLoad("libldap-2.4.so.2", out handle))
                 {
                     return handle;
                 }
