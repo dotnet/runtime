@@ -521,7 +521,7 @@ namespace System.Text.RegularExpressions
                 int startpos = _pos;
 
                 _pos = _pattern.IndexOf('$', _pos);
-                if (_pos == -1)
+                if (_pos < 0)
                     _pos = _pattern.Length;
 
                 AddToConcatenate(startpos, _pos - startpos, isReplacement: true);
@@ -1052,13 +1052,13 @@ namespace System.Text.RegularExpressions
                 if ((_options & RegexOptions.IgnorePatternWhitespace) != 0 && _pos < _pattern.Length && _pattern[_pos] == '#')
                 {
                     _pos = _pattern.IndexOf('\n', _pos);
-                    if (_pos == -1)
+                    if (_pos < 0)
                         _pos = _pattern.Length;
                 }
                 else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
                 {
                     _pos = _pattern.IndexOf(')', _pos);
-                    if (_pos == -1)
+                    if (_pos < 0)
                     {
                         _pos = _pattern.Length;
                         throw MakeException(RegexParseError.UnterminatedComment, SR.UnterminatedComment);
@@ -1076,6 +1076,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans chars following a '\' (not counting the '\'), and returns a RegexNode for the type of atom scanned</summary>
         private RegexNode? ScanBackslash(bool scanOnly)
         {
+            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
+
             char ch;
             switch (ch = _pattern[_pos])
             {
@@ -1149,6 +1151,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Scans \-style backreferences and character escapes</summary>
         private RegexNode? ScanBasicBackslash(bool scanOnly)
         {
+            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
+
             int backpos = _pos;
             char close = '\0';
             bool angled = false;
@@ -1968,6 +1972,8 @@ namespace System.Text.RegularExpressions
 
         private readonly bool IsTrueQuantifier()
         {
+            Debug.Assert(_pos < _pattern.Length, "The current reading position must not be at the end of the pattern");
+
             int startpos = _pos;
             char ch = _pattern[startpos];
             if (ch != '{')
