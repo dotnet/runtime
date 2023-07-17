@@ -8,7 +8,6 @@
 #include <ctype.h>  // For isspace
 #ifdef TARGET_UNIX
 #include <sys/time.h>
-#include <pthread.h>
 #endif
 
 #include <eventpipe/ep-rt-config.h>
@@ -50,10 +49,6 @@
 
 #define _TEXT(s) #s
 #define STRINGIFY(s) _TEXT(s)
-
-#ifdef TARGET_UNIX
-extern __thread EventPipeThreadHolder* eventpipe_tls_instance;
-#endif
 
 extern void ep_rt_aot_thread_exited (void);
 
@@ -1543,49 +1538,6 @@ thread_holder_free_func (EventPipeThreadHolder * thread_holder)
     }
 }
 
-class EventPipeAotThreadHolderTLS {
-public:
-    EventPipeAotThreadHolderTLS ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-    }
-
-    ~EventPipeAotThreadHolderTLS ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-    }
-
-    static inline void freeThreadHolder ()
-    {
-        if (g_threadHolderTLS.m_threadHolder) {
-            thread_holder_free_func (g_threadHolderTLS.m_threadHolder);
-            g_threadHolderTLS.m_threadHolder = NULL;
-        }
-    }
-
-    static inline EventPipeThreadHolder * getThreadHolder ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        return g_threadHolderTLS.m_threadHolder;
-    }
-
-    static inline EventPipeThreadHolder * createThreadHolder ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-
-        if (g_threadHolderTLS.m_threadHolder) {
-            thread_holder_free_func (g_threadHolderTLS.m_threadHolder);
-            g_threadHolderTLS.m_threadHolder = NULL;
-        }
-        g_threadHolderTLS.m_threadHolder = thread_holder_alloc_func ();
-        return g_threadHolderTLS.m_threadHolder;
-    }
-
-private:
-    EventPipeThreadHolder *m_threadHolder;
-    static thread_local EventPipeAotThreadHolderTLS g_threadHolderTLS;
-};
-
 static
 void
 ep_rt_thread_setup (void)
@@ -1598,42 +1550,6 @@ ep_rt_thread_setup (void)
     // EP_ASSERT (thread_handle != NULL);
 }
 
-#ifdef TARGET_UNIX
-static
-inline
-EventPipeThreadHolder *
-pthread_getThreadHolder (void)
-{
-    void *value = eventpipe_tls_instance;
-    if (value) {
-        EventPipeThreadHolder *thread_holder = static_cast<EventPipeThreadHolder*>(value);    
-        return thread_holder;
-    }
-    return NULL;
-}
-
-static
-inline
-EventPipeThreadHolder *
-pthread_createThreadHolder (void)
-{
-    void *value = eventpipe_tls_instance;
-    if (value) {
-        // we need to do the unallocation here
-        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);
-        thread_holder_free_func(thread_holder_old);
-        eventpipe_tls_instance = NULL;
-
-        value = NULL;
-    }
-    EventPipeThreadHolder *instance = thread_holder_alloc_func();
-    if (instance){
-        eventpipe_tls_instance = instance;
-    }
-    return instance;
-}
-#endif
-
 static
 inline
 EventPipeThread *
@@ -1641,12 +1557,8 @@ ep_rt_thread_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
-    EventPipeThreadHolder *thread_holder = pthread_getThreadHolder ();
-#else
-    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();
-#endif    
-    return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
+    extern EventPipeThread* ep_rt_aot_thread_get (void);
+    return ep_rt_aot_thread_get ();
 }
 
 static
@@ -1657,7 +1569,7 @@ ep_rt_thread_get_or_create (void)
     STATIC_CONTRACT_NOTHROW;
 
     extern EventPipeThread* ep_rt_aot_thread_get_or_create (void);
-    return ep_rt_aot_thread_get_or_create();
+    return ep_rt_aot_thread_get_or_create ();
 }
 
 static

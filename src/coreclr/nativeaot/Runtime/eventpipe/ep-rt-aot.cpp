@@ -17,16 +17,7 @@
 #include <unistd.h>
 #endif
 
-// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
-// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
-// implemented in some manner that doesn't rely on the Thread class.
-
 #include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "holder.h"
-#include "SpinLock.h"
 
 #ifndef DIRECTORY_SEPARATOR_CHAR
 #ifdef TARGET_UNIX
@@ -34,12 +25,6 @@
 #else // TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '\\'
 #endif // TARGET_UNIX
-#endif
-
-#ifdef TARGET_UNIX
-__thread EventPipeThreadHolder* eventpipe_tls_instance;
-#else
-thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
 #endif
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
@@ -179,17 +164,53 @@ ep_rt_aot_diagnostics_command_line_get (void)
 #endif
 }
 
+namespace
+{
+    #ifdef TARGET_UNIX
+    __thread EventPipeThreadHolder* eventpipe_tls_instance;
+    #else
+    thread_local EventPipeThreadHolder* eventpipe_tls_instance;
+    #endif
+
+    void free_thread_holder ()
+    {
+        EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+        if (thread_holder != NULL) {
+            thread_holder_free_func (thread_holder);
+            eventpipe_tls_instance = NULL;
+        }
+    }
+
+    EventPipeThreadHolder* get_thread_holder ()
+    {
+        return eventpipe_tls_instance;
+    }
+
+    EventPipeThreadHolder* create_thread_holder ()
+    {
+        STATIC_CONTRACT_NOTHROW;
+
+        // Free any existing holder
+        free_thread_holder ();
+
+        eventpipe_tls_instance = thread_holder_alloc_func ();
+        return eventpipe_tls_instance;
+    }
+}
+
+EventPipeThread* ep_rt_aot_thread_get (void)
+{
+    EventPipeThreadHolder *thread_holder = get_thread_holder ();
+    return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
+}
+
 EventPipeThread* ep_rt_aot_thread_get_or_create (void)
 {
     EventPipeThread *thread = ep_rt_thread_get ();
     if (thread != NULL)
         return thread;
 
-#ifdef TARGET_UNIX
-    EventPipeThreadHolder *thread_holder = pthread_createThreadHolder ();
-#else
-    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::createThreadHolder ();
-#endif
+    EventPipeThreadHolder *thread_holder = create_thread_holder ();
 
     return ep_thread_holder_get_thread (thread_holder);
 }
@@ -197,15 +218,7 @@ EventPipeThread* ep_rt_aot_thread_get_or_create (void)
 void
 ep_rt_aot_thread_exited (void)
 {
-#ifdef TARGET_UNIX
-    EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
-    if (thread_holder != NULL) {
-        thread_holder_free_func (thread_holder);
-        thread_holder = NULL;
-    }
-#else
-    EventPipeAotThreadHolderTLS::freeThreadHolder ();
-#endif
+    free_thread_holder ();
 }
 
 uint32_t
