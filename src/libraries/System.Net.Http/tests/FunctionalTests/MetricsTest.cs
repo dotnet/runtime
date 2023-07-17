@@ -46,7 +46,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private static void VerifySchemeHostPort(KeyValuePair<string, object?>[] tags, Uri uri)
+        private static void VerifySchemeHostPortTags(KeyValuePair<string, object?>[] tags, Uri uri)
         {
             VerifyOptionalTag(tags, "scheme", uri.Scheme);
             VerifyOptionalTag(tags, "host", uri.Host);
@@ -60,7 +60,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.Equal(InstrumentNames.RequestDuration, instrumentName);
             Assert.InRange(measurement, double.Epsilon, 60);
-            VerifySchemeHostPort(tags, uri);
+            VerifySchemeHostPortTags(tags, uri);
             VerifyOptionalTag(tags, "method", method);
             VerifyOptionalTag(tags, "protocol", protocol);
             VerifyOptionalTag(tags, "status-code", statusCode);
@@ -73,7 +73,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.Equal(InstrumentNames.CurrentRequests, instrumentName);
             Assert.Equal(expectedValue, measurement);
-            VerifySchemeHostPort(tags, uri);
+            VerifySchemeHostPortTags(tags, uri);
         }
 
         protected static void VerifyFailedRequests(Measurement<long> measurement, long expectedValue, Uri uri, string? protocol, int? statusCode, string method = "GET")
@@ -82,7 +82,7 @@ namespace System.Net.Http.Functional.Tests
 
             KeyValuePair<string, object?>[] tags = measurement.Tags.ToArray();
 
-            VerifySchemeHostPort(tags, uri);
+            VerifySchemeHostPortTags(tags, uri);
 
             Assert.Equal(method, tags.Single(t => t.Key == "method").Value);
             VerifyOptionalTag(tags, "protocol", protocol);
@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.Equal(expectedName, actualName);
             Assert.Equal(expectedValue, Assert.IsType<long>(measurement));
-            VerifySchemeHostPort(tags, uri);
+            VerifySchemeHostPortTags(tags, uri);
             VerifyOptionalTag(tags, "protocol", protocol);
         }
 
@@ -101,7 +101,7 @@ namespace System.Net.Http.Functional.Tests
         {
             Assert.InRange(measurement, double.Epsilon, 60);
             Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
-            VerifySchemeHostPort(tags, uri);
+            VerifySchemeHostPortTags(tags, uri);
             VerifyOptionalTag(tags, "protocol", protocol);
         }
 
