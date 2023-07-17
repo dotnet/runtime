@@ -12,7 +12,6 @@ public static class Program
     // Defined in main.m
     [DllImport("__Internal")]
     unsafe private static extern void ios_set_text(byte* value);
-    //private static extern void ios_set_text(string value);
 
     [DllImport("__Internal")]
     unsafe private static extern void ios_register_button_click(delegate* unmanaged<void> callback);
