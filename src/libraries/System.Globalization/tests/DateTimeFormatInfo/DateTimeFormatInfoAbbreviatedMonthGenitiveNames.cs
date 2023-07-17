@@ -293,8 +293,8 @@ namespace System.Globalization.Tests
         {
             // WASM in Hybrid mode does not support NeutralCultures (only "no"), it support is limited to the list:
             // https://github.com/dotnet/icu/blob/dotnet/main/icu-filters/icudt_wasm.json
-            CultureInfo[] cultures = PlatformDetection.IsHybidGlobalizationOnBrowser ?
-                CultureInfo.GetCultures(SpecificCultures | InstalledWin32Cultures) :
+            CultureInfo[] cultures = PlatformDetection.IsHybridGlobalizationOnBrowser ?
+                CultureInfo.GetCultures(CultureTypes.SpecificCultures | CultureTypes.InstalledWin32Cultures) :
                 CultureInfo.GetCultures(CultureTypes.AllCultures);
             DateTime dt = new DateTime(2000, 1, 20);
 
@@ -307,9 +307,6 @@ namespace System.Globalization.Tests
                     if (!ci.DateTimeFormat.MonthNames[i].Equals(ci.DateTimeFormat.MonthGenitiveNames[i]) ||
                         !ci.DateTimeFormat.AbbreviatedMonthNames[i].Equals(ci.DateTimeFormat.AbbreviatedMonthGenitiveNames[i]))
                     {
-                        // We have genitive month names, we expect parsing to work and produce the exact original result.
-                        // fails for lt-LT"
-                        // How ot fix: understand how formattedDate changed its value form '20 01 2000' to '' for lt-LT locale
                         Assert.Equal(dt, DateTime.Parse(formattedDate, ci));
                         break;
                     }
