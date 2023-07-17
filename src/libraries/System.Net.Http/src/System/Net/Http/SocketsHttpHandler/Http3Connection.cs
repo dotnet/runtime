@@ -173,11 +173,6 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
-                        {
-                            queueStartingTimestamp = Stopwatch.GetTimestamp();
-                        }
-
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
@@ -198,9 +193,16 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
+                    if (queueStartingTimestamp != 0)
                     {
-                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
+                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
+
+                        _pool.Settings._metrics!.RequestLeftQueue(Pool, duration, versionMajor: 3);
+
+                        if (HttpTelemetry.Log.IsEnabled())
+                        {
+                            HttpTelemetry.Log.RequestLeftQueue(versionMajor: 3, duration);
+                        }
                     }
                 }
 

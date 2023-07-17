@@ -28,6 +28,7 @@ namespace System.Net.Http.Functional.Tests
             public const string CurrentConnections = "http-client-current-connections";
             public const string IdleConnections = "http-client-current-idle-connections";
             public const string ConnectionDuration = "http-client-connection-duration";
+            public const string RequestsQueueDuration = "http-client-requests-queue-duration";
         }
         
         protected HttpMetricsTestBase(ITestOutputHelper output) : base(output)
@@ -97,10 +98,11 @@ namespace System.Net.Http.Functional.Tests
             VerifyOptionalTag(tags, "protocol", protocol);
         }
 
-        protected static void VerifyConnectionDuration(string instrumentName, double measurement, KeyValuePair<string, object?>[] tags, Uri uri, string protocol)
+        protected static void VerifyConnectionDuration(string expectedName, string instrumentName, object measurement, KeyValuePair<string, object?>[] tags, Uri uri, string protocol)
         {
-            Assert.InRange(measurement, double.Epsilon, 60);
-            Assert.Equal(InstrumentNames.ConnectionDuration, instrumentName);
+            Assert.Equal(expectedName, instrumentName);
+            double value = Assert.IsType<double>(measurement);
+            Assert.InRange(value, double.Epsilon, 60);
             VerifySchemeHostPortTags(tags, uri);
             VerifyOptionalTag(tags, "protocol", protocol);
         }
@@ -152,10 +154,12 @@ namespace System.Net.Http.Functional.Tests
             public void Dispose() => _meterListener.Dispose();
         }
 
+        protected record RecordedCounter(string InstrumentName, object Value, KeyValuePair<string, object?>[] Tags);
+
         protected sealed class MultiInstrumentRecorder : IDisposable
         {
             private readonly MeterListener _meterListener = new();
-            private readonly ConcurrentQueue<(string InstrumentName, object Value, KeyValuePair<string, object?>[] Tags)> _values = new();
+            private readonly ConcurrentQueue<RecordedCounter> _values = new();
 
             public MultiInstrumentRecorder()
                 : this(meter: null)
@@ -176,15 +180,15 @@ namespace System.Net.Http.Functional.Tests
                 };
 
                 _meterListener.SetMeasurementEventCallback<long>((instrument, measurement, tags, _) =>
-                    _values.Enqueue((instrument.Name, measurement, tags.ToArray())));
+                    _values.Enqueue(new RecordedCounter(instrument.Name, measurement, tags.ToArray())));
 
                 _meterListener.SetMeasurementEventCallback<double>((instrument, measurement, tags, _) =>
-                    _values.Enqueue((instrument.Name, measurement, tags.ToArray())));
+                    _values.Enqueue(new RecordedCounter(instrument.Name, measurement, tags.ToArray())));
 
                 _meterListener.Start();
             }
 
-            public IReadOnlyList<(string InstrumentName, object Value, KeyValuePair<string, object?>[] Tags)> GetMeasurements() => _values.ToArray();
+            public IReadOnlyList<RecordedCounter> GetMeasurements() => _values.ToArray();
             public void Dispose() => _meterListener.Dispose();
         }
     }
@@ -452,6 +456,7 @@ namespace System.Net.Http.Functional.Tests
         [ConditionalFact(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
         public async Task AllSocketsHttpHandlerCounters_Success_Recorded()
         {
+            TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
             TaskCompletionSource clientDisposedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -463,26 +468,48 @@ namespace System.Net.Http.Functional.Tests
                     Handler.MeterFactory = _meterFactory;
 
                     using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
-                    using HttpResponseMessage response = await SendAsync(invoker, request);
+                    Task<HttpResponseMessage> sendAsyncTask = SendAsync(invoker, request);
+                    clientWaitingTcs.SetResult();
+                    using HttpResponseMessage response = await sendAsyncTask;
+
                     await WaitForEnvironmentTicksToAdvance();
                 }
 
                 clientDisposedTcs.SetResult();
 
+                Action<RecordedCounter> requestsQueueDuration = m =>
+                    VerifyConnectionDuration(InstrumentNames.RequestsQueueDuration, m.InstrumentName, m.Value, m.Tags, uri, ExpectedProtocolString);
+
+                Action<RecordedCounter> connectionNoLongerIdle = m =>
+                    VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, ExpectedProtocolString);
+
+                Action<RecordedCounter> check1 = requestsQueueDuration;
+                Action<RecordedCounter> check2 = connectionNoLongerIdle;
+
+                if (UseVersion.Major > 1)
+                {
+                    // With HTTP/2 and HTTP/3, the IdleConnections counter is emitted before RequestsQueueDuration.
+                    check1 = connectionNoLongerIdle;
+                    check2 = requestsQueueDuration;
+                }
+
                 Assert.Collection(recorder.GetMeasurements(),
                     m => VerifyCurrentRequest(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
                     m => VerifyConnectionCounter(InstrumentNames.CurrentConnections, m.InstrumentName, m.Value, m.Tags, 1, uri, ExpectedProtocolString),
                     m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, 1, uri, ExpectedProtocolString),
-                    m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, ExpectedProtocolString),
+                    check1, // requestsQueueDuration and connectionNoLongerIdle in the appropriate order.
+                    check2,
                     m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, 1, uri, ExpectedProtocolString),
                     m => VerifyCurrentRequest(m.InstrumentName, (long)m.Value, m.Tags, -1, uri),
                     m => VerifyRequestDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, ExpectedProtocolString, 200),
                     m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, ExpectedProtocolString),
                     m => VerifyConnectionCounter(InstrumentNames.CurrentConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, ExpectedProtocolString),
-                    m => VerifyConnectionDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, ExpectedProtocolString));
+                    m => VerifyConnectionDuration(InstrumentNames.ConnectionDuration, m.InstrumentName, m.Value, m.Tags, uri, ExpectedProtocolString));
             },
             async server =>
             {
+                await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
                 await server.AcceptConnectionAsync(async connection =>
                 {
                     await connection.ReadRequestDataAsync();
@@ -845,6 +872,8 @@ namespace System.Net.Http.Functional.Tests
         {
             RemoteExecutor.Invoke(static async Task () =>
             {
+                TaskCompletionSource clientWaitingTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
                 using HttpMetricsTest_DefaultMeter test = new(null);
                 await test.LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
                 {
@@ -853,7 +882,10 @@ namespace System.Net.Http.Functional.Tests
                     using (HttpClient client = test.CreateHttpClient())
                     {
                         using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = test.UseVersion };
-                        using HttpResponseMessage response = await client.SendAsync(request);
+                        Task<HttpResponseMessage> sendAsyncTask = client.SendAsync(request);
+                        clientWaitingTcs.SetResult();
+                        using HttpResponseMessage response = await sendAsyncTask;
+
                         await WaitForEnvironmentTicksToAdvance();
                     }
 
@@ -861,16 +893,19 @@ namespace System.Net.Http.Functional.Tests
                         m => VerifyCurrentRequest(m.InstrumentName, (long)m.Value, m.Tags, 1, uri),
                         m => VerifyConnectionCounter(InstrumentNames.CurrentConnections, m.InstrumentName, m.Value, m.Tags, 1, uri, "HTTP/1.1"),
                         m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, 1, uri, "HTTP/1.1"),
+                        m => VerifyConnectionDuration(InstrumentNames.RequestsQueueDuration, m.InstrumentName, m.Value, m.Tags, uri, "HTTP/1.1"),
                         m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, "HTTP/1.1"),
                         m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, 1, uri, "HTTP/1.1"),
                         m => VerifyCurrentRequest(m.InstrumentName, (long)m.Value, m.Tags, -1, uri),
                         m => VerifyRequestDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, "HTTP/1.1", 200),
                         m => VerifyConnectionCounter(InstrumentNames.IdleConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, "HTTP/1.1"),
                         m => VerifyConnectionCounter(InstrumentNames.CurrentConnections, m.InstrumentName, m.Value, m.Tags, -1, uri, "HTTP/1.1"),
-                        m => VerifyConnectionDuration(m.InstrumentName, (double)m.Value, m.Tags, uri, "HTTP/1.1"));
+                        m => VerifyConnectionDuration(InstrumentNames.ConnectionDuration, m.InstrumentName, m.Value, m.Tags, uri, "HTTP/1.1"));
                 },
                 async server =>
                 {
+                    await clientWaitingTcs.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
                     await server.AcceptConnectionAsync(async connection =>
                     {
                         await connection.ReadRequestDataAsync();
