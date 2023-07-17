@@ -158,6 +158,26 @@ namespace System.Text.Json.Serialization.Converters
                 buffer[length - 1] = Quote;
                 writer.WriteRawValue(buffer.Slice(0, length));
             }
+            else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
+            {
+
+                if (Half.IsNaN(value))
+                {
+                    writer.WriteNumberValueAsStringUnescaped(JsonConstants.NaNValue);
+                }
+                else if (Half.IsPositiveInfinity(value))
+                {
+                    writer.WriteNumberValueAsStringUnescaped(JsonConstants.PositiveInfinityValue);
+                }
+                else if (Half.IsNegativeInfinity(value))
+                {
+                    writer.WriteNumberValueAsStringUnescaped(JsonConstants.NegativeInfinityValue);
+                }
+                else
+                {
+                    WriteCore(writer, value);
+                }
+            }
             else
             {
                 WriteCore(writer, value);
