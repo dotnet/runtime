@@ -62,18 +62,19 @@ namespace System.Collections
             _version = 0;
         }
 
+        public BitArray(byte[] bytes) : this(bytes == null ? throw new ArgumentNullException(nameof(bytes)) : bytes.AsSpan())
+        {
+        }
+
         /*=========================================================================
         ** Allocates space to hold the bit values in bytes. bytes[0] represents
         ** bits 0 - 7, bytes[1] represents bits 8 - 15, etc. The LSB of each byte
         ** represents the lowest index value; bytes[0] & 1 represents bit 0,
         ** bytes[0] & 2 represents bit 1, bytes[0] & 4 represents bit 2, etc.
         **
-        ** Exceptions: ArgumentException if bytes == null.
         =========================================================================*/
-        public BitArray(byte[] bytes)
+        public BitArray(ReadOnlySpan<byte> bytes)
         {
-            ArgumentNullException.ThrowIfNull(bytes);
-
             // this value is chosen to prevent overflow when computing m_length.
             // m_length is of type int32 and is exposed as a property, so
             // type of m_length can't be changed to accommodate.
@@ -179,18 +180,18 @@ namespace System.Collections
             _version = 0;
         }
 
+        public BitArray(int[] values) : this(values == null ? throw new ArgumentNullException(nameof(values)) : values.AsSpan())
+        {
+        }
+
         /*=========================================================================
         ** Allocates space to hold the bit values in values. values[0] represents
         ** bits 0 - 31, values[1] represents bits 32 - 63, etc. The LSB of each
         ** integer represents the lowest index value; values[0] & 1 represents bit
         ** 0, values[0] & 2 represents bit 1, values[0] & 4 represents bit 2, etc.
-        **
-        ** Exceptions: ArgumentException if values == null.
         =========================================================================*/
-        public BitArray(int[] values)
+        public BitArray(ReadOnlySpan<int> values)
         {
-            ArgumentNullException.ThrowIfNull(values);
-
             // this value is chosen to prevent overflow when computing m_length
             if (values.Length > int.MaxValue / BitsPerInt32)
             {
@@ -198,7 +199,7 @@ namespace System.Collections
             }
 
             m_array = new int[values.Length];
-            Array.Copy(values, m_array, values.Length);
+            values.CopyTo(m_array);
             m_length = values.Length * BitsPerInt32;
 
             _version = 0;
