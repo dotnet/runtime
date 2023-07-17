@@ -36,7 +36,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Associates the builder with the state machine it represents.</summary>
         /// <param name="stateMachine">The heap-allocated state machine object.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="stateMachine"/> argument was null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="InvalidOperationException">The builder is incorrectly initialized.</exception>
         public void SetStateMachine(IAsyncStateMachine stateMachine) =>
             AsyncMethodBuilderCore.SetStateMachine(stateMachine, m_task);
@@ -496,7 +496,7 @@ namespace System.Runtime.CompilerServices
         /// <see cref="TaskStatus">Faulted</see> state with the specified exception.
         /// </summary>
         /// <param name="exception">The <see cref="Exception"/> to use to fault the task.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="exception"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="InvalidOperationException">The task has already completed.</exception>
         public void SetException(Exception exception) => SetException(exception, ref m_task);
 

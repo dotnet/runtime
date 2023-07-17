@@ -1,12 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Quic;
 using System.Security.Authentication;
 using System.Net.Security;
 using System.Net.Sockets;
 using static Microsoft.Quic.MsQuic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System.Net.Quic;
 
@@ -38,21 +38,21 @@ internal static class ThrowHelper
         else if (status == QUIC_STATUS_INVALID_STATE)
         {
             // If status == QUIC_STATUS_INVALID_STATE, we have closed the connection.
-            exception = ThrowHelper.GetOperationAbortedException();
+            exception = GetOperationAbortedException();
             return true;
         }
         else if (StatusFailed(status))
         {
-            exception = ThrowHelper.GetExceptionForMsQuicStatus(status);
+            exception = GetExceptionForMsQuicStatus(status);
             return true;
         }
         exception = null;
         return false;
     }
 
-    internal static Exception GetExceptionForMsQuicStatus(int status, string? message = null)
+    internal static Exception GetExceptionForMsQuicStatus(int status, long? errorCode = default, string? message = null)
     {
-        Exception ex = GetExceptionInternal(status, message);
+        Exception ex = GetExceptionInternal(status, errorCode, message);
         if (status != 0)
         {
             // Include the raw MsQuic status in the HResult property for better diagnostics
@@ -61,17 +61,17 @@ internal static class ThrowHelper
 
         return ex;
 
-        static Exception GetExceptionInternal(int status, string? message)
+        static Exception GetExceptionInternal(int status, long? errorCode, string? message)
         {
             //
             // Start by checking for statuses mapped to QuicError enum
             //
-            if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, SR.net_quic_connection_refused);
-            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, SR.net_quic_timeout);
-            if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, SR.net_quic_ver_neg_error);
-            if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, SR.net_quic_connection_idle);
-            if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.TransportError, null, SR.net_quic_protocol_error);
-            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_CONNECTION_REFUSED) return new QuicException(QuicError.ConnectionRefused, null, errorCode, SR.net_quic_connection_refused);
+            if (status == QUIC_STATUS_CONNECTION_TIMEOUT) return new QuicException(QuicError.ConnectionTimeout, null, errorCode, SR.net_quic_timeout);
+            if (status == QUIC_STATUS_VER_NEG_ERROR) return new QuicException(QuicError.VersionNegotiationError, null, errorCode, SR.net_quic_ver_neg_error);
+            if (status == QUIC_STATUS_CONNECTION_IDLE) return new QuicException(QuicError.ConnectionIdle, null, errorCode, SR.net_quic_connection_idle);
+            if (status == QUIC_STATUS_PROTOCOL_ERROR) return new QuicException(QuicError.TransportError, null, errorCode, SR.net_quic_protocol_error);
+            if (status == QUIC_STATUS_ALPN_IN_USE) return new QuicException(QuicError.AlpnInUse, null, errorCode, SR.net_quic_protocol_error);
 
             //
             // Transport errors will throw SocketException
@@ -81,7 +81,7 @@ internal static class ThrowHelper
             if (status == QUIC_STATUS_UNREACHABLE) return new SocketException((int)SocketError.HostUnreachable);
 
             //
-            // TLS and certificate erros throw AuthenticationException to match SslStream
+            // TLS and certificate errors throw AuthenticationException to match SslStream
             //
             if (status == QUIC_STATUS_TLS_ERROR ||
                 status == QUIC_STATUS_CERT_EXPIRED ||
@@ -125,11 +125,12 @@ internal static class ThrowHelper
         }
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void ThrowIfMsQuicError(int status, string? message = null)
     {
         if (StatusFailed(status))
         {
-            throw GetExceptionForMsQuicStatus(status, message);
+            throw GetExceptionForMsQuicStatus(status, message: message);
         }
     }
 

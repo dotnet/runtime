@@ -11,6 +11,7 @@ using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Numerics;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
@@ -4288,6 +4289,51 @@ namespace System.Net.Http.Functional.Tests
     {
         public SocketsHttpHandler_SocketsHttpHandler_SecurityTest_Http11(ITestOutputHelper output) : base(output) { }
         protected override Version UseVersion => HttpVersion.Version11;
+
+#if DEBUG
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.Linux)]
+        public async Task Https_MultipleRequests_TlsResumed(bool useSocketHandler)
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                HttpMessageHandler handler = useSocketHandler ? CreateSocketsHttpHandler(allowAllCertificates: true) : CreateHttpClientHandler();
+                using (HttpClient client = CreateHttpClient(handler))
+                {
+                    HttpRequestMessage request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    request.Headers.Add("Connection", "close");
+
+                    HttpResponseMessage response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    request = new  HttpRequestMessage(HttpMethod.Get,uri);
+                    request.Headers.Add("Host", "foo.bar");
+                    response = await client.SendAsync(request);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                }
+            },
+            async server =>
+            {
+                await server.AcceptConnectionSendResponseAndCloseAsync();
+                await server.AcceptConnectionAsync(async connection =>
+                {
+                    SslStream ssl = (SslStream)connection.Stream;
+                    object connectionInfo = typeof(SslStream).GetField(
+                                     "_connectionInfo",
+                                     BindingFlags.Instance | BindingFlags.NonPublic).GetValue(ssl);
+
+                    bool resumed = (bool)connectionInfo.GetType().GetProperty("TlsResumed").GetValue(connectionInfo);
+                    Assert.True(resumed);
+
+                    await connection.ReadRequestHeaderAndSendResponseAsync();
+                });
+            },
+            new LoopbackServer.Options { UseSsl = true, SslProtocols = SslProtocols.Tls12 });
+        }
+#endif
     }
 
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.SupportsAlpn))]

@@ -129,9 +129,17 @@ public class ResourcesData
 
     /// <summary>
     /// JavaScript module initializers that Blazor will be in charge of loading.
+    /// Used in .NET < 8
     /// </summary>
     [DataMember(EmitDefaultValue = false)]
     public ResourceHashesByNameDictionary libraryInitializers { get; set; }
+
+    /// <summary>
+    /// JavaScript module initializers that runtime will be in charge of loading.
+    /// Used in .NET >= 8
+    /// </summary>
+    [DataMember(EmitDefaultValue = false)]
+    public TypedLibraryStartupModules libraryStartupModules { get; set; }
 
     /// <summary>
     /// Extensions created by users customizing the initialization process. The format of the file(s)
@@ -151,7 +159,16 @@ public class ResourcesData
 
     [DataMember(EmitDefaultValue = false)]
     public List<string> remoteSources { get; set; }
+}
 
+[DataContract]
+public class TypedLibraryStartupModules
+{
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary onRuntimeConfigLoaded { get; set; }
+
+    [DataMember(EmitDefaultValue = false)]
+    public ResourceHashesByNameDictionary onRuntimeReady { get; set; }
 }
 
 public enum ICUDataMode : int

@@ -99,18 +99,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 if (IsNullable(type, out ITypeSymbol? underlyingType))
                 {
                     spec = TryGetTypeSpec(underlyingType, Diagnostics.NullableUnderlyingTypeNotSupported, out TypeSpec? underlyingTypeSpec)
-                        ? new NullableSpec(type) { Location = location, UnderlyingType = underlyingTypeSpec }
+                        ? new NullableSpec(type, underlyingTypeSpec)
                         : null;
                 }
                 else if (IsParsableFromString(type, out StringParsableTypeKind specialTypeKind))
                 {
-                    ParsableFromStringSpec stringParsableSpec = new(type)
-                    {
-                        Location = location,
-                        StringParsableTypeKind = specialTypeKind
-                    };
+                    ParsableFromStringSpec stringParsableSpec = new(type) { StringParsableTypeKind = specialTypeKind };
 
-                    if (stringParsableSpec.StringParsableTypeKind is not StringParsableTypeKind.ConfigValue)
+                    if (stringParsableSpec.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue)
                     {
                         _sourceGenSpec.PrimitivesForHelperGen.Add(stringParsableSpec);
                     }
@@ -119,17 +115,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
                 else if (IsSupportedArrayType(type, location))
                 {
-                    spec = CreateArraySpec((type as IArrayTypeSymbol)!, location);
-                    RegisterBindCoreGenType(spec);
+                    spec = CreateArraySpec((type as IArrayTypeSymbol));
                 }
                 else if (IsCollection(type))
                 {
                     spec = CreateCollectionSpec((INamedTypeSymbol)type, location);
-                    RegisterBindCoreGenType(spec);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(type, _typeSymbols.IConfigurationSection))
                 {
-                    spec = new ConfigurationSectionSpec(type) { Location = location };
+                    spec = new ConfigurationSectionSpec(type);
                 }
                 else if (type is INamedTypeSymbol namedType)
                 {
@@ -138,7 +132,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     _sourceGenSpec.TypeNamespaces.Add("System.Collections.Generic");
 
                     spec = CreateObjectSpec(namedType, location);
-                    RegisterBindCoreGenType(spec);
                 }
 
                 if (spec is null)
@@ -154,14 +147,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 return _createdSpecs[type] = spec;
-
-                void RegisterBindCoreGenType(TypeSpec? spec)
-                {
-                    if (spec is not null)
-                    {
-                        RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, spec);
-                    }
-                }
             }
 
             private void RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper method, TypeSpec type)
@@ -177,8 +162,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void RegisterTypeForBindCoreUntypedGen(TypeSpec typeSpec)
             {
-                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
-                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCoreUntyped, typeSpec);
+                if (typeSpec.NeedsMemberBinding)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCoreUntyped, typeSpec);
+                }
             }
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
@@ -222,7 +210,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     case SpecialType.System_String:
                     case SpecialType.System_Object:
                         {
-                            typeKind = StringParsableTypeKind.ConfigValue;
+                            typeKind = StringParsableTypeKind.AssignFromSectionValue;
                             return true;
                         }
                     case SpecialType.System_Boolean:
@@ -312,7 +300,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return true;
             }
 
-            private EnumerableSpec? CreateArraySpec(IArrayTypeSymbol arrayType, Location? location)
+            private EnumerableSpec? CreateArraySpec(IArrayTypeSymbol arrayType)
             {
                 if (!TryGetTypeSpec(arrayType.ElementType, Diagnostics.ElementTypeNotSupported, out TypeSpec elementSpec))
                 {
@@ -325,7 +313,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 EnumerableSpec spec = new EnumerableSpec(arrayType)
                 {
-                    Location = location,
                     ElementType = elementSpec,
                     ConcreteType = listSpec,
                     InitializationStrategy = InitializationStrategy.Array,
@@ -334,6 +321,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 };
 
                 Debug.Assert(spec.CanInitialize);
+                RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, spec);
+
                 return spec;
             }
 
@@ -368,6 +357,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (spec is not null)
                 {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, spec);
                     spec.InitExceptionMessage ??= spec.ElementType.InitExceptionMessage;
                 }
 
@@ -436,7 +426,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 DictionarySpec spec = new(type)
                 {
-                    Location = location,
                     KeyType = (ParsableFromStringSpec)keySpec,
                     ElementType = elementSpec,
                     InitializationStrategy = constructionStrategy,
@@ -523,11 +512,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return null;
                 }
 
-                RegisterHasChildrenHelperForGenIfRequired(elementSpec);
+                Register_AsConfigWithChildren_HelperForGen_IfRequired(elementSpec);
 
                 EnumerableSpec spec = new(type)
                 {
-                    Location = location,
                     ElementType = elementSpec,
                     InitializationStrategy = constructionStrategy,
                     PopulationStrategy = populationStrategy,
@@ -544,7 +532,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private ObjectSpec? CreateObjectSpec(INamedTypeSymbol type, Location? location)
             {
                 // Add spec to cache before traversing properties to avoid stack overflow.
-                ObjectSpec objectSpec = new(type) { Location = location };
+                ObjectSpec objectSpec = new(type);
                 _createdSpecs.Add(type, objectSpec);
 
                 string typeName = objectSpec.Name;
@@ -627,7 +615,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             {
                                 PropertySpec spec = new(property) { Type = propertyTypeSpec, ConfigurationKeyName = configKeyName };
                                 objectSpec.Properties[propertyName] = spec;
-                                RegisterHasChildrenHelperForGenIfRequired(propertyTypeSpec);
+                                Register_AsConfigWithChildren_HelperForGen_IfRequired(propertyTypeSpec);
                             }
                         }
                     }
@@ -691,17 +679,22 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 Debug.Assert((objectSpec.CanInitialize && objectSpec.InitExceptionMessage is null) ||
                     (!objectSpec.CanInitialize && objectSpec.InitExceptionMessage is not null));
 
+                if (objectSpec.NeedsMemberBinding)
+                {
+                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, objectSpec);
+                }
+
                 return objectSpec;
             }
 
-            private void RegisterHasChildrenHelperForGenIfRequired(TypeSpec type)
+            private void Register_AsConfigWithChildren_HelperForGen_IfRequired(TypeSpec type)
             {
                 if (type.SpecKind is TypeSpecKind.Object or
                                         TypeSpecKind.Enumerable or
                                         TypeSpecKind.Dictionary)
                 {
 
-                    _sourceGenSpec.ShouldEmitHasChildren = true;
+                    _sourceGenSpec.MethodsToGen_CoreBindingHelper |= MethodsToGen_CoreBindingHelper.AsConfigWithChildren;
                 }
             }
 

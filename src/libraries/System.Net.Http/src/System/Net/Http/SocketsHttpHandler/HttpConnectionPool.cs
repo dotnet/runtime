@@ -32,7 +32,7 @@ namespace System.Net.Http
         private readonly Uri? _proxyUri;
 
         /// <summary>The origin authority used to construct the <see cref="HttpConnectionPool"/>.</summary>
-        private readonly HttpAuthority? _originAuthority;
+        private readonly HttpAuthority _originAuthority;
 
         /// <summary>Initially set to null, this can be set to enable HTTP/3 based on Alt-Svc.</summary>
         private volatile HttpAuthority? _http3Authority;
@@ -138,10 +138,9 @@ namespace System.Net.Http
             _proxyUri = proxyUri;
             _maxHttp11Connections = Settings._maxConnectionsPerServer;
 
-            if (host != null)
-            {
-                _originAuthority = new HttpAuthority(host, port);
-            }
+            // The only case where 'host' will not be set is if this is a Proxy connection pool.
+            Debug.Assert(host is not null || (kind == HttpConnectionKind.Proxy && proxyUri is not null));
+            _originAuthority = new HttpAuthority(host ?? proxyUri!.IdnHost, port);
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
 
@@ -233,14 +232,13 @@ namespace System.Net.Http
             }
 
             string? hostHeader = null;
-            if (_originAuthority != null)
+            if (host is not null)
             {
                 // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
-                hostHeader =
-                    (_originAuthority.Port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
-                    $"{_originAuthority.HostValue}:{_originAuthority.Port}" :
-                    _originAuthority.HostValue;
+                hostHeader = IsDefaultPort
+                    ? _originAuthority.HostValue
+                    : $"{_originAuthority.HostValue}:{_originAuthority.Port}";
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 byte[] hostHeaderLine = new byte[6 + hostHeader.Length + 2]; // Host: foo\r\n
@@ -327,6 +325,15 @@ namespace System.Net.Http
 
             SslClientAuthenticationOptions sslOptions = poolManager.Settings._sslOptions?.ShallowClone() ?? new SslClientAuthenticationOptions();
 
+            // This is only set if we are underlying handler for HttpClientHandler
+            if (poolManager.Settings._clientCertificateOptions == ClientCertificateOption.Manual && sslOptions.LocalCertificateSelectionCallback != null &&
+                    (sslOptions.ClientCertificates == null || sslOptions.ClientCertificates.Count == 0))
+            {
+                // If we have no client certificates do not set callback when internal selection is used.
+                // It breaks TLS resume on Linux
+                sslOptions.LocalCertificateSelectionCallback = null;
+            }
+
             // Set TargetHost for SNI
             sslOptions.TargetHost = sslHostName;
 
@@ -347,7 +354,7 @@ namespace System.Net.Http
             return sslOptions;
         }
 
-        public HttpAuthority? OriginAuthority => _originAuthority;
+        public HttpAuthority OriginAuthority => _originAuthority;
         public HttpConnectionSettings Settings => _poolManager.Settings;
         public HttpConnectionKind Kind => _kind;
         public bool IsSecure => _kind == HttpConnectionKind.Https || _kind == HttpConnectionKind.SslProxyTunnel || _kind == HttpConnectionKind.SslSocksTunnel;
@@ -355,6 +362,7 @@ namespace System.Net.Http
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderLineBytes => _hostHeaderLineBytes;
         public CredentialCache? PreAuthCredentials { get; }
+        public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpPort);
 
         /// <summary>
         /// An ASCII origin string per RFC 6454 Section 6.2, in format &lt;scheme&gt;://&lt;host&gt;[:&lt;port&gt;]
@@ -370,11 +378,10 @@ namespace System.Net.Http
                 {
                     var sb = new StringBuilder();
 
-                    Debug.Assert(_originAuthority != null);
                     sb.Append(IsSecure ? "https://" : "http://")
                       .Append(_originAuthority.IdnHost);
 
-                    if (_originAuthority.Port != (IsSecure ? DefaultHttpsPort : DefaultHttpPort))
+                    if (!IsDefaultPort)
                     {
                         sb.Append(CultureInfo.InvariantCulture, $":{_originAuthority.Port}");
                     }
@@ -947,7 +954,7 @@ namespace System.Net.Http
                 }
 #endif
                 // if the authority was sent as an option through alt-svc then include alt-used header
-                http3Connection = new Http3Connection(this, _originAuthority, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
+                http3Connection = new Http3Connection(this, authority, quicConnection, includeAltUsedHeader: _http3Authority == authority);
                 _http3Connection = http3Connection;
 
                 if (NetEventSource.Log.IsEnabled())
@@ -991,15 +998,9 @@ namespace System.Net.Http
                     ThrowGetVersionException(request, 3, reasonException);
                 }
 
-                long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+                long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
 
                 ValueTask<Http3Connection> connectionTask = GetHttp3ConnectionAsync(request, authority, cancellationToken);
-
-                if (HttpTelemetry.Log.IsEnabled() && connectionTask.IsCompleted)
-                {
-                    // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
-                    queueStartingTimestamp = 0;
-                }
 
                 Http3Connection connection = await connectionTask.ConfigureAwait(false);
 
@@ -1082,7 +1083,7 @@ namespace System.Net.Http
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
                             {
-                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
+                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             Debug.Assert(connection is not null || !_http2Enabled);
@@ -1114,7 +1115,7 @@ namespace System.Net.Http
                             // Use HTTP/1.x.
                             if (!TryGetPooledHttp11Connection(request, async, out HttpConnection? connection, out http11ConnectionWaiter))
                             {
-                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
+                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
@@ -1192,6 +1193,7 @@ namespace System.Net.Http
         }
 
         private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter, bool requestCancelled)
+            where T : HttpConnectionBase?
         {
             int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
             if (waiter?.ConnectionCancellationTokenSource is null ||
@@ -1261,7 +1263,7 @@ namespace System.Net.Http
 
                     if (nextAuthority == null && value != null && value.AlpnProtocolName == "h3")
                     {
-                        var authority = new HttpAuthority(value.Host ?? _originAuthority!.IdnHost, value.Port);
+                        var authority = new HttpAuthority(value.Host ?? _originAuthority.IdnHost, value.Port);
                         if (IsAltSvcBlocked(authority, out _))
                         {
                             // Skip authorities in our blocklist.
@@ -1534,7 +1536,6 @@ namespace System.Net.Http
                 case HttpConnectionKind.Http:
                 case HttpConnectionKind.Https:
                 case HttpConnectionKind.ProxyConnect:
-                    Debug.Assert(_originAuthority != null);
                     stream = await ConnectToTcpHostAsync(_originAuthority.IdnHost, _originAuthority.Port, request, async, cancellationToken).ConfigureAwait(false);
                     if (_kind == HttpConnectionKind.ProxyConnect && _sslOptionsProxy != null)
                     {
@@ -1744,8 +1745,6 @@ namespace System.Net.Http
 
         private async ValueTask<Stream> EstablishProxyTunnelAsync(bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(_originAuthority != null);
-
             // Send a CONNECT request to the proxy server to establish a tunnel.
             HttpRequestMessage tunnelRequest = new HttpRequestMessage(HttpMethod.Connect, _proxyUri);
             tunnelRequest.Headers.Host = $"{_originAuthority.IdnHost}:{_originAuthority.Port}";    // This specifies destination host/port to connect to
@@ -1776,7 +1775,6 @@ namespace System.Net.Http
 
         private async ValueTask<Stream> EstablishSocksTunnel(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
-            Debug.Assert(_originAuthority != null);
             Debug.Assert(_proxyUri != null);
 
             Stream stream = await ConnectToTcpHostAsync(_proxyUri.IdnHost, _proxyUri.Port, request, async, cancellationToken).ConfigureAwait(false);
@@ -1949,6 +1947,7 @@ namespace System.Net.Http
                     {
                         // Add connection to the pool.
                         added = true;
+                        connection.MarkConnectionAsIdle();
                         _availableHttp11Connections.Add(connection);
                     }
 
@@ -2412,10 +2411,10 @@ namespace System.Net.Http
             (_proxyUri == null ?
                 (_sslOptionsHttp11 == null ?
                     $"http://{_originAuthority}" :
-                    $"https://{_originAuthority}" + (_sslOptionsHttp11.TargetHost != _originAuthority!.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)) :
+                    $"https://{_originAuthority}" + (_sslOptionsHttp11.TargetHost != _originAuthority.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)) :
                 (_sslOptionsHttp11 == null ?
                     $"Proxy {_proxyUri}" :
-                    $"https://{_originAuthority}/ tunnelled via Proxy {_proxyUri}" + (_sslOptionsHttp11.TargetHost != _originAuthority!.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)));
+                    $"https://{_originAuthority}/ tunnelled via Proxy {_proxyUri}" + (_sslOptionsHttp11.TargetHost != _originAuthority.IdnHost ? $", SSL TargetHost={_sslOptionsHttp11.TargetHost}" : null)));
 
         private void Trace(string? message, [CallerMemberName] string? memberName = null) =>
             NetEventSource.Log.HandlerMessage(
@@ -2426,6 +2425,7 @@ namespace System.Net.Http
                 message);                    // message
 
         private struct RequestQueue<T>
+            where T : HttpConnectionBase?
         {
             public struct QueueItem
             {
@@ -2595,6 +2595,7 @@ namespace System.Net.Http
         }
 
         private sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
+            where T : HttpConnectionBase?
         {
             // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
             // or completes on a different connection.
@@ -2603,8 +2604,17 @@ namespace System.Net.Http
             // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
             public bool CancelledByOriginatingRequestCompletion { get; set; }
 
-            public async ValueTask<T> WaitForConnectionAsync(bool async, CancellationToken requestCancellationToken)
+            public ValueTask<T> WaitForConnectionAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
             {
+                return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
+                    ? WaitForConnectionWithTelemetryAsync(pool, async, requestCancellationToken)
+                    : WaitWithCancellationAsync(async, requestCancellationToken);
+            }
+
+            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            {
+                Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
+
                 long startingTimestamp = Stopwatch.GetTimestamp();
                 try
                 {
@@ -2612,12 +2622,14 @@ namespace System.Net.Http
                 }
                 finally
                 {
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
+                    int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
+
+                    pool.Settings._metrics!.RequestLeftQueue(pool, duration, versionMajor);
+
                     if (HttpTelemetry.Log.IsEnabled())
                     {
-                        if (typeof(T) == typeof(HttpConnection))
-                            HttpTelemetry.Log.Http11RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
-                        else if (typeof(T) == typeof(Http2Connection))
-                            HttpTelemetry.Log.Http20RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                        HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
                     }
                 }
             }

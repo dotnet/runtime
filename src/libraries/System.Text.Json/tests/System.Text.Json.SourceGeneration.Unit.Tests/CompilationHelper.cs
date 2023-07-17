@@ -480,6 +480,8 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         internal int internalField = 2;
                         [JsonInclude]
                         private int privateField = 4;
+                        [JsonInclude]
+                        protected int protectedField = 8;
 
                         [JsonInclude]
                         public int Id { get; private set; }
@@ -491,6 +493,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                         public string PhoneNumber { internal get; set; }
                         [JsonInclude]
                         public string Country { private get; set; }
+                        [JsonInclude]
+                        internal string InternalProperty { get; set; }
+                        [JsonInclude]
+                        protected string ProtectedProperty { get; set; }
+                        [JsonInclude]
+                        internal string InternalPropertyWithPrivateGetter { private get; set; }
+                        [JsonInclude]
+                        internal string InternalPropertyWithPrivateSetter { get; private set; }
 
                         public int GetPrivateField() => privateField;
                     }
@@ -716,6 +726,50 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     [JsonSerializable(typeof(BogusType))]
                     [JsonSerializable(typeof(BogusType<int>))]
                     internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithJsonConstructorAttributeAnnotations()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {                
+                    public class ClassWithPublicCtor
+                    {
+                        [JsonConstructor]
+                        public ClassWithPublicCtor() { }
+                    }
+
+                    public class ClassWithInternalCtor
+                    {
+                        [JsonConstructor]
+                        internal ClassWithInternalCtor() { }
+                    }
+
+                    public class ClassWithProtectedCtor
+                    {
+                        [JsonConstructor]
+                        protected ClassWithProtectedCtor() { }
+                    }
+
+                    public class ClassWithPrivateCtor
+                    {
+                        [JsonConstructor]
+                        private ClassWithPrivateCtor() { }
+                    }
+
+                    [JsonSerializable(typeof(ClassWithPublicCtor))]
+                    [JsonSerializable(typeof(ClassWithInternalCtor))]
+                    [JsonSerializable(typeof(ClassWithProtectedCtor))]
+                    [JsonSerializable(typeof(ClassWithPrivateCtor))]
+                    public partial class MyJsonContext : JsonSerializerContext
                     {
                     }
                 }

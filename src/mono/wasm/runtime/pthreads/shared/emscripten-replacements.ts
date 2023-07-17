@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 import { afterLoadWasmModuleToWorker } from "../browser";
 import { afterThreadInitTLS } from "../worker";
 import Internals from "./emscripten-internals";
-import { loaderHelpers } from "../../globals";
+import { loaderHelpers, mono_assert } from "../../globals";
 import { PThreadReplacements } from "../../types/internal";
 import { mono_log_debug } from "../../logging";
 

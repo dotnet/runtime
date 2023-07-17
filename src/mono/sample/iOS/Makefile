@@ -53,6 +53,7 @@ run-sim: clean appbuilder
 	/p:TargetOS=iossimulator \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:MonoEnableLLVM=$(USE_LLVM) \
+	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:RuntimeComponents="$(RUNTIME_COMPONENTS)" \
 	/p:DiagnosticPorts="$(DIAGNOSTIC_PORTS)" \
@@ -76,6 +77,7 @@ run-catalyst: clean appbuilder
 	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
 	/p:MonoEnableLLVM=false \
+	/p:MonoForceInterpreter=false \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
 	/bl
@@ -85,7 +87,7 @@ run-catalyst-interp: clean appbuilder
 	-c $(MONO_CONFIG) \
 	/p:TargetOS=maccatalyst \
 	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:MonoEnableLLVM=False \
+	/p:MonoEnableLLVM=false \
 	/p:MonoForceInterpreter=true \
 	/p:DeployAndRun=$(DEPLOY_AND_RUN) \
 	/p:EnableAppSandbox=$(APP_SANDBOX) \
