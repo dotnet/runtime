@@ -972,6 +972,22 @@ fail:
 	return NULL;
 }
 
+MonoMethod*
+mono_unsafe_accessor_find_ctor (MonoClass *in_class, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
+{
+	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
+	//return find_method (in_class, /*ic*/NULL, name, sig, from_class, error);
+	return find_method_in_class (in_class, ".ctor", /*qname*/NULL, /*fqname*/NULL, sig, from_class, error);
+}
+
+MonoMethod*
+mono_unsafe_accessor_find_method (MonoClass *in_class, const char *name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
+{
+	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
+	return find_method (in_class, /*ic*/NULL, name, sig, from_class, error);
+}
+
+
 static MonoMethod *
 method_from_methodspec (MonoImage *image, MonoGenericContext *context, guint32 idx, MonoError *error)
 {
