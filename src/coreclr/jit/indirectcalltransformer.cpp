@@ -905,11 +905,10 @@ private:
                 context = MAKE_METHODCONTEXT(methodHnd);
             }
 
-            if (call->IsVirtual() || call->IsDelegateInvoke())
-            {
-                // Rare case currently happening only in R2R/ILC
-                JITDUMP("Failed to devirtualize the candidate, sorry.");
-            }
+            // We know this call can devirtualize or we would not have set up GDV here.
+            // So above code should succeed in devirtualizing.
+            //
+            assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
