@@ -56,6 +56,18 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
     /// </summary>
     public bool IsCompleted => (State)Volatile.Read(ref Unsafe.As<State, byte>(ref _state)) == State.Completed;
 
+    // TODO: Revisit this with https://github.com/dotnet/runtime/issues/79818 and https://github.com/dotnet/runtime/issues/79911
+    public bool KeepAliveReleased
+    {
+        get
+        {
+            lock (this)
+            {
+                return !_keepAlive.IsAllocated;
+            }
+        }
+    }
+
     /// <summary>
     /// Tries to get a value task representing this task source. If this task source is <see cref="State.None"/>, it'll also transition it into <see cref="State.Awaiting"/> state.
     /// It prevents concurrent operations from being invoked since it'll return <c>false</c> if the task source was already in <see cref="State.Awaiting"/> state.
@@ -153,7 +165,7 @@ internal sealed class ResettableValueTaskSource : IValueTaskSource
                     // Unblock the current task source and in case of a final also the final task source.
                     if (exception is not null)
                     {
-                        // Set up the exception stack strace for the caller.
+                        // Set up the exception stack trace for the caller.
                         exception = exception.StackTrace is null ? ExceptionDispatchInfo.SetCurrentStackTrace(exception) : exception;
                         if (state == State.None ||
                             state == State.Awaiting)

@@ -121,12 +121,8 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #endif
 
 #ifdef UNICODE
-#define _tcslen wcslen
-#define _tcscpy wcscpy
 #define _tfopen _wfopen
 #else
-#define _tcslen strlen
-#define _tcscpy strcpy
 #define _tfopen fopen
 #endif
 

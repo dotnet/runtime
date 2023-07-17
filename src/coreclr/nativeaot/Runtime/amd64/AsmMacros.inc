@@ -235,11 +235,11 @@ Name    dq      offset AddressToExport
 _tls_array     equ 58h     ;; offsetof(TEB, ThreadLocalStoragePointer)
 
 ;;
-;; __declspec(thread) version
+;; __declspec(thread) variable
 ;;
-INLINE_GETTHREAD macro destReg, trashReg
+INLINE_GET_TLS_VAR macro destReg, trashReg, variable
     EXTERN _tls_index : DWORD
-    EXTERN tls_CurrentThread:DWORD
+    EXTERN variable:DWORD
 
 ;;
 ;; construct 'eax' from 'rax' so that the register size and data size match
@@ -255,9 +255,16 @@ endif
     mov         destRegDWORD, [_tls_index]
     mov         trashReg, gs:[_tls_array]
     mov         trashReg, [trashReg + destReg * 8]
-    mov         destRegDWORD, SECTIONREL tls_CurrentThread
+    mov         destRegDWORD, SECTIONREL variable
     add         destReg, trashReg
 
+endm
+
+;;
+;; __declspec(thread) tls_CurrentThread
+;;
+INLINE_GETTHREAD macro destReg, trashReg
+    INLINE_GET_TLS_VAR destReg, trashReg, tls_CurrentThread
 endm
 
 INLINE_THREAD_UNHIJACK macro threadReg, trashReg1, trashReg2

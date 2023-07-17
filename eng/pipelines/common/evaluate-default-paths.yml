@@ -13,11 +13,14 @@ parameters:
         eng/testing/tests.browser.targets
         eng/testing/tests.was*.targets
         eng/testing/was*provisioning.targets
+        eng/testing/workloads-testing.targets
         src/libraries/sendtohelix-wasm.targets
         src/libraries/sendtohelix-wasi.targets
         src/mono/mono/**/*wasm*
         src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+        src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
         src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
+        src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
         src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
         src/mono/nuget/Microsoft.NET.Workload*
         src/mono/sample/wasm/*
@@ -27,6 +30,7 @@ parameters:
         src/tasks/WasmAppBuilder/*
         src/tasks/WasmBuildTasks/*
         src/tasks/WorkloadBuildTasks/*
+        src/tasks/Microsoft.NET.Sdk.WebAssembly.Pack.Tasks/*
         src/tests/Common/wasm-test-runner/*
     ]
     _wasm_pipelines: [
@@ -185,6 +189,8 @@ jobs:
       - src/mono/nuget/Microsoft.NET.Runtime.MonoAOTCompiler.Task/*
       - src/mono/nuget/Microsoft.NET.Runtime.MonoTargets.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Wasi.Sdk/*
+      - src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
@@ -248,6 +254,7 @@ jobs:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/Wasm.Build.Tests/*
       - src/mono/nuget/Microsoft.NET.Runtime*
+        src/mono/nuget/Microsoft.NET.Sdk.WebAssembly.Pack/*
       - src/mono/nuget/Microsoft.NET.Workload*
       - src/mono/nuget/Microsoft.NETCore.BrowserDebugHost.Transport/*
       - ${{ parameters._const_paths._always_exclude }}

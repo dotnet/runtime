@@ -56,11 +56,7 @@ jobs:
 
     # iOS devices
     - ${{ if in(parameters.platform, 'ios_arm64') }}:
-      # split traffic for runtime-extra-platforms (which mostly runs on rolling builds)
-      - ${{ if ne(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1015.Amd64.Iphone.Open
-      - ${{ if eq(parameters.jobParameters.isExtraPlatforms, true) }}:
-        - OSX.1200.Amd64.Iphone.Open
+      - OSX.1200.Amd64.Iphone.Open
 
     # tvOS devices
     - ${{ if in(parameters.platform, 'tvos_arm64') }}:
@@ -139,13 +135,6 @@ jobs:
         - Windows.10.Amd64.Open
       - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         - Windows.10.Amd64.X86.Rt
-
-    # windows arm
-    - ${{ if eq(parameters.platform, 'windows_arm') }}:
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - Windows.11.Arm64.Open
-      - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-        - Windows.11.Arm64
 
     # windows arm64
     - ${{ if eq(parameters.platform, 'windows_arm64') }}:

@@ -904,35 +904,3 @@ g_strnlen (const char* s, gsize n)
 	for (i = 0; i < n && s [i]; ++i) ;
 	return i;
 }
-
-/**
- * Loads a chunk of data from the file pointed to by the
- * @fd starting at the file offset @offset for @size bytes
- * and returns an allocated version of that string, or NULL
- * on error.
- */
-char *
-g_str_from_file_region (int fd, guint64 offset, gsize size)
-{
-	char *buffer;
-	off_t loc;
-	int status;
-
-	do {
-		loc = lseek (fd, GUINT64_TO_LONG (offset), SEEK_SET);
-	} while (loc == -1 && errno == EINTR);
-	if (loc == -1)
-		return NULL;
-	buffer = (char *)g_malloc (size + 1);
-	if (buffer == NULL)
-		return NULL;
-	buffer [size] = 0;
-	do {
-		status = g_read (fd, buffer, size);
-	} while (status == -1 && errno == EINTR);
-	if (status == -1){
-		g_free (buffer);
-		return NULL;
-	}
-	return buffer;
-}

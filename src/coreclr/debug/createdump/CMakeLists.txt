@@ -14,6 +14,7 @@ if(CLR_CMAKE_HOST_WIN32)
 
     set(CREATEDUMP_SOURCES
         main.cpp
+        createdumpmain.cpp
         dumpname.cpp
         createdumpwindows.cpp
         createdump.rc
@@ -55,7 +56,7 @@ else(CLR_CMAKE_HOST_WIN32)
     include_directories(${CMAKE_BINARY_DIR})
 
     set(CREATEDUMP_SOURCES
-        main.cpp
+        createdumpmain.cpp
         dumpname.cpp
         createdumpunix.cpp
         crashinfo.cpp
@@ -66,18 +67,26 @@ else(CLR_CMAKE_HOST_WIN32)
     )
 
 if(CLR_CMAKE_HOST_OSX)
-    add_executable_clr(createdump
+    add_library_clr(createdump_static
+        STATIC
         crashinfomac.cpp
         threadinfomac.cpp
         dumpwritermacho.cpp
         ${CREATEDUMP_SOURCES}
     )
-else()
     add_executable_clr(createdump
+        main.cpp
+    )
+else()
+    add_library_clr(createdump_static
+        STATIC
         crashinfounix.cpp
         threadinfounix.cpp
         dumpwriterelf.cpp
         ${CREATEDUMP_SOURCES}
+    )
+    add_executable_clr(createdump
+        main.cpp
         ${PAL_REDEFINES_FILE}
     )
     add_dependencies(createdump pal_redefines_file)
@@ -85,6 +94,7 @@ endif(CLR_CMAKE_HOST_OSX)
 
     target_link_libraries(createdump
         PRIVATE
+        createdump_static
         corguids
         dbgutil
         # share the PAL in the dac module

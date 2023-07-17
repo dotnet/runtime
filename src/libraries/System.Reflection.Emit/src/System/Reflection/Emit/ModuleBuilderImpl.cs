@@ -119,6 +119,8 @@ namespace System.Reflection.Emit
 
             WriteCustomAttributes(_customAttributes, moduleHandle);
 
+            // All generic parameters for all types and methods should be written in specific order
+            List<GenericTypeParameterBuilderImpl> genericParams = new();
             // Add each type definition to metadata table.
             foreach (TypeBuilderImpl typeBuilder in _typeDefinitions)
             {
@@ -128,61 +130,127 @@ namespace System.Reflection.Emit
                     parent = GetTypeHandle(typeBuilder.BaseType);
                 }
 
-                TypeDefinitionHandle typeDefinitionHandle = AddTypeDefinition(typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
-                Debug.Assert(typeBuilder._handle.Equals(typeDefinitionHandle));
-                WriteCustomAttributes(typeBuilder._customAttributes, typeDefinitionHandle);
+                TypeDefinitionHandle typeHandle = AddTypeDefinition(typeBuilder, parent, _nextMethodDefRowId, _nextFieldDefRowId);
+                Debug.Assert(typeBuilder._handle.Equals(typeHandle));
 
-                foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
+                if (typeBuilder.IsGenericType)
                 {
-                    MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
-                    WriteCustomAttributes(method._customAttributes, methodHandle);
-                    _nextMethodDefRowId++;
-
-                    if (method._parameters != null)
+                    foreach (GenericTypeParameterBuilderImpl param in typeBuilder.GenericTypeParameters)
                     {
-                        foreach (ParameterBuilderImpl parameter in method._parameters)
-                        {
-                            if (parameter != null)
-                            {
-                                ParameterHandle parameterHandle = AddParameter(parameter);
-                                WriteCustomAttributes(parameter._customAttributes, parameterHandle);
-                                _nextParameterRowId++;
-
-                                if (parameter._marshallingData != null)
-                                {
-                                    AddMarshalling(parameterHandle, parameter._marshallingData.SerializeMarshallingData());
-                                }
-
-                                if (parameter._defaultValue != DBNull.Value)
-                                {
-                                    AddDefaultValue(parameterHandle, parameter._defaultValue);
-                                }
-                            }
-                        }
-                    }
-
-                    if (method._dllImportData != null)
-                    {
-                        AddMethodImport(methodHandle, method._dllImportData.EntryPoint ?? method.Name,
-                            method._dllImportData.Flags, GetModuleReference(method._dllImportData.ModuleName));
+                        genericParams.Add(param);
                     }
                 }
 
-                foreach (FieldBuilderImpl field in typeBuilder._fieldDefinitions)
+                if ((typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
                 {
-                    FieldDefinitionHandle fieldHandle = AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
-                    WriteCustomAttributes(field._customAttributes, fieldHandle);
-                    _nextFieldDefRowId++;
+                    _metadataBuilder.AddTypeLayout(typeHandle, (ushort)typeBuilder.PackingSize, (uint)typeBuilder.Size);
+                }
 
-                    if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
+                if (typeBuilder._interfaces != null)
+                {
+                    foreach (Type iface in typeBuilder._interfaces)
                     {
-                        AddFieldLayout(fieldHandle, field._offset);
+                        _metadataBuilder.AddInterfaceImplementation(typeHandle, GetTypeHandle(iface));
+                        // TODO: need to add interface mapping between interface method and implemented method
                     }
+                }
 
-                    if (field._marshallingData != null)
+                if (typeBuilder.DeclaringType != null)
+                {
+                    _metadataBuilder.AddNestedType(typeHandle, (TypeDefinitionHandle)GetTypeHandle(typeBuilder.DeclaringType));
+                }
+
+                WriteCustomAttributes(typeBuilder._customAttributes, typeHandle);
+                WriteMethods(typeBuilder, genericParams);
+                WriteFields(typeBuilder);
+            }
+
+            // Now write all generic parameters in order
+            genericParams.Sort((x, y) => {
+                int primary = CodedIndex.TypeOrMethodDef(x._parentHandle).CompareTo(CodedIndex.TypeOrMethodDef(y._parentHandle));
+                if (primary != 0)
+                    return primary;
+
+                return x.GenericParameterPosition.CompareTo(y.GenericParameterPosition);
+            });
+
+            foreach (GenericTypeParameterBuilderImpl param in genericParams)
+            {
+                AddGenericTypeParametersAndConstraintsCustomAttributes(param._parentHandle, param);
+            }
+        }
+
+        private void WriteMethods(TypeBuilderImpl typeBuilder, List<GenericTypeParameterBuilderImpl> genericParams)
+        {
+            foreach (MethodBuilderImpl method in typeBuilder._methodDefinitions)
+            {
+                MethodDefinitionHandle methodHandle = AddMethodDefinition(method, method.GetMethodSignatureBlob(), _nextParameterRowId);
+                WriteCustomAttributes(method._customAttributes, methodHandle);
+                _nextMethodDefRowId++;
+
+                if (method.IsGenericMethodDefinition)
+                {
+                    Type[] gParams = method.GetGenericArguments();
+                    for (int i = 0; i < gParams.Length; i++)
                     {
-                        AddMarshalling(fieldHandle, field._marshallingData.SerializeMarshallingData());
+                        GenericTypeParameterBuilderImpl param = (GenericTypeParameterBuilderImpl)gParams[i];
+                        param._parentHandle = methodHandle;
+                        genericParams.Add(param);
                     }
+                }
+
+                if (method._parameters != null)
+                {
+                    foreach (ParameterBuilderImpl parameter in method._parameters)
+                    {
+                        if (parameter != null)
+                        {
+                            ParameterHandle parameterHandle = AddParameter(parameter);
+                            WriteCustomAttributes(parameter._customAttributes, parameterHandle);
+                            _nextParameterRowId++;
+
+                            if (parameter._marshallingData != null)
+                            {
+                                AddMarshalling(parameterHandle, parameter._marshallingData.SerializeMarshallingData());
+                            }
+
+                            if (parameter._defaultValue != DBNull.Value)
+                            {
+                                AddDefaultValue(parameterHandle, parameter._defaultValue);
+                            }
+                        }
+                    }
+                }
+
+                if (method._dllImportData != null)
+                {
+                    AddMethodImport(methodHandle, method._dllImportData.EntryPoint ?? method.Name,
+                        method._dllImportData.Flags, GetModuleReference(method._dllImportData.ModuleName));
+                }
+            }
+        }
+
+        private void WriteFields(TypeBuilderImpl typeBuilder)
+        {
+            foreach (FieldBuilderImpl field in typeBuilder._fieldDefinitions)
+            {
+                FieldDefinitionHandle fieldHandle = AddFieldDefinition(field, MetadataSignatureHelper.FieldSignatureEncoder(field.FieldType, this));
+                WriteCustomAttributes(field._customAttributes, fieldHandle);
+                _nextFieldDefRowId++;
+
+                if (field._offset > 0 && (typeBuilder.Attributes & TypeAttributes.ExplicitLayout) != 0)
+                {
+                    AddFieldLayout(fieldHandle, field._offset);
+                }
+
+                if (field._marshallingData != null)
+                {
+                    AddMarshalling(fieldHandle, field._marshallingData.SerializeMarshallingData());
+                }
+
+                if (field._defaultValue != DBNull.Value)
+                {
+                    AddDefaultValue(fieldHandle, field._defaultValue);
                 }
             }
         }
@@ -247,8 +315,23 @@ namespace System.Reflection.Emit
             return handle;
         }
 
-        private void AddDefaultValue(ParameterHandle parameterHandle, object? defaultValue) =>
-            _metadataBuilder.AddConstant(parameterHandle, defaultValue);
+        private void AddGenericTypeParametersAndConstraintsCustomAttributes(EntityHandle parentHandle, GenericTypeParameterBuilderImpl gParam)
+        {
+            GenericParameterHandle handle = _metadataBuilder.AddGenericParameter(
+                parent: parentHandle,
+                attributes: gParam.GenericParameterAttributes,
+                name: _metadataBuilder.GetOrAddString(gParam.Name),
+                index: gParam.GenericParameterPosition);
+
+            WriteCustomAttributes(gParam._customAttributes, handle);
+            foreach (Type constraint in gParam.GetGenericParameterConstraints())
+            {
+                _metadataBuilder.AddGenericParameterConstraint(handle, GetTypeHandle(constraint));
+            }
+        }
+
+        private void AddDefaultValue(EntityHandle parentHandle, object? defaultValue) =>
+            _metadataBuilder.AddConstant(parent: parentHandle, value: defaultValue);
 
         private FieldDefinitionHandle AddFieldDefinition(FieldBuilderImpl field, BlobBuilder fieldSignature) =>
             _metadataBuilder.AddFieldDefinition(
@@ -303,8 +386,8 @@ namespace System.Reflection.Emit
         private void AddFieldLayout(FieldDefinitionHandle fieldHandle, int offset) =>
             _metadataBuilder.AddFieldLayout(field: fieldHandle, offset: offset);
 
-        private void AddMarshalling(EntityHandle fieldHandle, BlobBuilder builder) =>
-            _metadataBuilder.AddMarshallingDescriptor(fieldHandle, _metadataBuilder.GetOrAddBlob(builder));
+        private void AddMarshalling(EntityHandle parent, BlobBuilder builder) =>
+            _metadataBuilder.AddMarshallingDescriptor(parent: parent, descriptor: _metadataBuilder.GetOrAddBlob(builder));
 
         private ParameterHandle AddParameter(ParameterBuilderImpl parameter) =>
             _metadataBuilder.AddParameter(
@@ -329,7 +412,21 @@ namespace System.Reflection.Emit
                 return tb._handle;
             }
 
+            if (type is EnumBuilderImpl eb && Equals(eb.Module))
+            {
+                return eb._typeBuilder._handle;
+            }
+
             return GetTypeReference(type);
+        }
+
+        internal TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent,
+            Type[]? interfaces, PackingSize packingSize, int typesize, TypeBuilderImpl? enclosingType)
+        {
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, interfaces, packingSize, typesize, enclosingType);
+            _typeDefinitions.Add(_type);
+            return _type;
         }
 
         [RequiresAssemblyFiles("Returns <Unknown> for modules with no file path")]
@@ -342,18 +439,28 @@ namespace System.Reflection.Emit
         public override int GetStringMetadataToken(string stringConstant) => throw new NotImplementedException();
         public override int GetTypeMetadataToken(Type type) => throw new NotImplementedException();
         protected override void CreateGlobalFunctionsCore() => throw new NotImplementedException();
-        protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType) => throw new NotImplementedException();
+
+        protected override EnumBuilder DefineEnumCore(string name, TypeAttributes visibility, Type underlyingType)
+        {
+            TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
+            EnumBuilderImpl enumBuilder = new EnumBuilderImpl(name, underlyingType, visibility, this, typeHandle);
+            _typeDefinitions.Add(enumBuilder._typeBuilder);
+            return enumBuilder;
+        }
         protected override MethodBuilder DefineGlobalMethodCore(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers) => throw new NotImplementedException();
         protected override FieldBuilder DefineInitializedDataCore(string name, byte[] data, FieldAttributes attributes) => throw new NotImplementedException();
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         protected override MethodBuilder DefinePInvokeMethodCore(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet) => throw new NotImplementedException();
-        protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr, [DynamicallyAccessedMembers((DynamicallyAccessedMemberTypes)(-1))] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
+
+        protected override TypeBuilder DefineTypeCore(string name, TypeAttributes attr,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
             TypeDefinitionHandle typeHandle = MetadataTokens.TypeDefinitionHandle(++_nextTypeDefRowId);
-            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, packingSize, typesize);
+            TypeBuilderImpl _type = new TypeBuilderImpl(name, attr, parent, this, typeHandle, interfaces, packingSize, typesize, null);
             _typeDefinitions.Add(_type);
             return _type;
         }
+
         protected override FieldBuilder DefineUninitializedDataCore(string name, int size, FieldAttributes attributes) => throw new NotImplementedException();
         protected override MethodInfo GetArrayMethodCore(Type arrayClass, string methodName, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes) => throw new NotImplementedException();
         protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)

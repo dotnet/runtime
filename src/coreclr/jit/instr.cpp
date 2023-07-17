@@ -335,6 +335,22 @@ bool CodeGenInterface::instIsFP(instruction ins)
 #endif
 }
 
+#if defined(TARGET_XARCH)
+/*****************************************************************************
+ *
+ *  Returns non-zero if the given CPU instruction is an embedded broadcast
+ *  compatible instruction.
+ */
+
+// static inline
+bool CodeGenInterface::instIsEmbeddedBroadcastCompatible(instruction ins)
+{
+    assert((unsigned)ins < ArrLen(instInfo));
+
+    return (instInfo[ins] & INS_Flags_EmbeddedBroadcastSupported) != 0;
+}
+#endif // TARGET_XARCH
+
 /*****************************************************************************
  *
  *  Generate a set instruction.
@@ -749,7 +765,7 @@ void CodeGen::inst_RV_SH(
 // logic for determining what "kind" of operand "op" is.
 //
 // Arguments:
-//    op - The operand node for which to obtain the descriptor
+//    op - The operand node for which to obtain the descriptor.
 //
 // Return Value:
 //    The operand descriptor for "op".
@@ -795,11 +811,69 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
             assert(op->OperIsHWIntrinsic());
 
 #if defined(FEATURE_HW_INTRINSICS)
-            GenTreeHWIntrinsic* hwintrinsic = op->AsHWIntrinsic();
-            NamedIntrinsic      intrinsicId = hwintrinsic->GetHWIntrinsicId();
-
+            GenTreeHWIntrinsic* hwintrinsic  = op->AsHWIntrinsic();
+            NamedIntrinsic      intrinsicId  = hwintrinsic->GetHWIntrinsicId();
+            var_types           simdBaseType = hwintrinsic->GetSimdBaseType();
             switch (intrinsicId)
             {
+                case NI_AVX_BroadcastScalarToVector128:
+                case NI_AVX_BroadcastScalarToVector256:
+                {
+                    // we have the assumption that AVX_BroadcastScalarToVector*
+                    // only take the memory address as the operand.
+                    assert(hwintrinsic->isContained());
+                    assert(hwintrinsic->OperIsMemoryLoad());
+                    assert(hwintrinsic->GetOperandCount() == 1);
+                    assert(varTypeIsFloating(simdBaseType));
+                    GenTree* hwintrinsicChild = hwintrinsic->Op(1);
+                    assert(hwintrinsicChild->isContained());
+                    if (hwintrinsicChild->OperIs(GT_LCL_ADDR, GT_CLS_VAR_ADDR, GT_CNS_INT, GT_LEA))
+                    {
+                        addr = hwintrinsic->Op(1);
+                        break;
+                    }
+                    else
+                    {
+                        assert(hwintrinsicChild->OperIs(GT_LCL_VAR));
+                        return OperandDesc(simdBaseType, hwintrinsicChild);
+                    }
+                }
+
+                case NI_SSE3_MoveAndDuplicate:
+                case NI_AVX2_BroadcastScalarToVector128:
+                case NI_AVX2_BroadcastScalarToVector256:
+                case NI_AVX512F_BroadcastScalarToVector512:
+                {
+                    assert(hwintrinsic->isContained());
+                    if (intrinsicId == NI_SSE3_MoveAndDuplicate)
+                    {
+                        assert(simdBaseType == TYP_DOUBLE);
+                    }
+                    // If broadcast node is contained, should mean that we have some forms like
+                    // Broadcast -> CreateScalarUnsafe -> Scalar.
+                    // If so, directly emit scalar.
+                    // In the codes below, we specially handle the `Broadcast -> CNS_INT` form and
+                    // handle other cases recursively.
+                    GenTree* hwintrinsicChild = hwintrinsic->Op(1);
+                    assert(hwintrinsicChild->isContained());
+                    if (hwintrinsicChild->OperIs(GT_CNS_INT))
+                    {
+                        // a special case is when the operand of CreateScalarUnsafe is in integer type,
+                        // CreateScalarUnsafe node will be fold, so we directly match a pattern of
+                        // broadcast -> LCL_VAR(TYP_(U)INT)
+                        ssize_t        scalarValue = hwintrinsicChild->AsIntCon()->IconValue();
+                        UNATIVE_OFFSET cnum        = emit->emitDataConst(&scalarValue, genTypeSize(simdBaseType),
+                                                                  genTypeSize(simdBaseType), simdBaseType);
+                        return OperandDesc(compiler->eeFindJitDataOffs(cnum));
+                    }
+                    else
+                    {
+                        // If the operand of broadcast is not a constant integer,
+                        // we handle all the other cases recursively.
+                        return genOperandDesc(hwintrinsicChild);
+                    }
+                    break;
+                }
                 case NI_Vector128_CreateScalarUnsafe:
                 case NI_Vector256_CreateScalarUnsafe:
                 case NI_Vector512_CreateScalarUnsafe:
@@ -865,8 +939,10 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 return OperandDesc(emit->emitFltOrDblConst(op->AsDblCon()->DconValue(), emitTypeSize(op)));
 
             case GT_CNS_INT:
+            {
                 assert(op->isContainedIntOrIImmed());
                 return OperandDesc(op->AsIntCon()->IconValue(), op->AsIntCon()->ImmedValNeedsReloc(compiler));
+            }
 
             case GT_CNS_VEC:
             {
@@ -1097,18 +1173,48 @@ void CodeGen::inst_RV_TT_IV(instruction ins, emitAttr attr, regNumber reg1, GenT
 }
 
 //------------------------------------------------------------------------
+// IsEmbeddedBroadcastEnabled: determine if embedded broadcast can be enabled
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    op        -- The second operand of the instruction.
+//
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+bool CodeGenInterface::IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op)
+{
+    // To enable embedded broadcast, we need 3 things,
+    // 1. EVEX enabled.
+    // 2. Embedded broadcast compatible intrinsics
+    // 3. A contained broadcast scalar node
+    if (!GetEmitter()->UseEvexEncoding())
+    {
+        return false;
+    }
+    if (!instIsEmbeddedBroadcastCompatible(ins))
+    {
+        return false;
+    }
+    if (!op->isContained() || !op->OperIsHWIntrinsic())
+    {
+        return false;
+    }
+
+    return op->AsHWIntrinsic()->OperIsBroadcastScalar();
+}
+#endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
+
+//------------------------------------------------------------------------
 // inst_RV_RV_TT: Generates an instruction that takes 2 operands:
 //                a register operand and an operand that may be in memory or register
 //                the result is returned in register
 //
 // Arguments:
-//    ins       -- The instruction being emitted
-//    size      -- The emit size attribute
-//    targetReg -- The target register
-//    op1Reg    -- The first operand register
-//    op2       -- The second operand, which may be a memory node or a node producing a register
-//    isRMW     -- true if the instruction is RMW; otherwise, false
-//
+//    ins          -- The instruction being emitted
+//    size         -- The emit size attribute
+//    targetReg    -- The target register
+//    op1Reg       -- The first operand register
+//    op2          -- The second operand, which may be a memory node or a node producing a register
+//    isRMW        -- true if the instruction is RMW; otherwise, false
 void CodeGen::inst_RV_RV_TT(
     instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, bool isRMW)
 {
@@ -1118,15 +1224,49 @@ void CodeGen::inst_RV_RV_TT(
     // TODO-XArch-CQ: Commutative operations can have op1 be contained
     // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
 
+    insOpts instOptions = INS_OPTS_NONE;
+#if defined(TARGET_XARCH) && defined(FEATURE_HW_INTRINSICS)
+    bool IsEmbBroadcast = CodeGenInterface::IsEmbeddedBroadcastEnabled(ins, op2);
+    if (IsEmbBroadcast)
+    {
+        instOptions = INS_OPTS_EVEX_b;
+        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        {
+            switch (ins)
+            {
+                case INS_pand:
+                    ins = INS_vpandq;
+                    break;
+
+                case INS_pandn:
+                    ins = INS_vpandnq;
+                    break;
+
+                case INS_por:
+                    ins = INS_vporq;
+                    break;
+
+                case INS_pxor:
+                    ins = INS_vpxorq;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
+    }
+#endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
     OperandDesc op2Desc = genOperandDesc(op2);
     switch (op2Desc.GetKind())
     {
         case OperandKind::ClsVar:
-            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0);
+        {
+            emit->emitIns_SIMD_R_R_C(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, instOptions);
             break;
-
+        }
         case OperandKind::Local:
-            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset());
+            emit->emitIns_SIMD_R_R_S(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(),
+                                     instOptions);
             break;
 
         case OperandKind::Indir:
@@ -1135,7 +1275,7 @@ void CodeGen::inst_RV_RV_TT(
             // temporary GT_IND to generate code with.
             GenTreeIndir  indirForm;
             GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
-            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir);
+            emit->emitIns_SIMD_R_R_A(ins, size, targetReg, op1Reg, indir, instOptions);
         }
         break;
 
@@ -1157,6 +1297,76 @@ void CodeGen::inst_RV_RV_TT(
             }
 
             emit->emitIns_SIMD_R_R_R(ins, size, targetReg, op1Reg, op2Reg);
+        }
+        break;
+
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// inst_RV_RV_TT_IV: Generates an instruction that takes 3 operands:
+//                   a register operand, an operand that may be in memory or register,
+//                   and an immediate value. The result is returned in register
+//
+// Arguments:
+//    ins       -- The instruction being emitted
+//    size      -- The emit size attribute
+//    targetReg -- The target register
+//    op1Reg    -- The first operand register
+//    op2       -- The second operand, which may be a memory node or a node producing a register
+//    ival      -- The immediate operand
+//    isRMW     -- true if the instruction is RMW; otherwise, false
+//
+void CodeGen::inst_RV_RV_TT_IV(
+    instruction ins, emitAttr size, regNumber targetReg, regNumber op1Reg, GenTree* op2, int8_t ival, bool isRMW)
+{
+    emitter* emit = GetEmitter();
+    noway_assert(emit->emitVerifyEncodable(ins, EA_SIZE(size), op1Reg));
+
+    // TODO-XArch-CQ: Commutative operations can have op1 be contained
+    // TODO-XArch-CQ: Non-VEX encoded instructions can have both ops contained
+
+    OperandDesc op2Desc = genOperandDesc(op2);
+    switch (op2Desc.GetKind())
+    {
+        case OperandKind::ClsVar:
+            emit->emitIns_SIMD_R_R_C_I(ins, size, targetReg, op1Reg, op2Desc.GetFieldHnd(), 0, ival);
+            break;
+
+        case OperandKind::Local:
+            emit->emitIns_SIMD_R_R_S_I(ins, size, targetReg, op1Reg, op2Desc.GetVarNum(), op2Desc.GetLclOffset(), ival);
+            break;
+
+        case OperandKind::Indir:
+        {
+            // Until we improve the handling of addressing modes in the emitter, we'll create a
+            // temporary GT_IND to generate code with.
+            GenTreeIndir  indirForm;
+            GenTreeIndir* indir = op2Desc.GetIndirForm(&indirForm);
+            emit->emitIns_SIMD_R_R_A_I(ins, size, targetReg, op1Reg, indir, ival);
+        }
+        break;
+
+        case OperandKind::Reg:
+        {
+            regNumber op2Reg = op2Desc.GetReg();
+
+            if ((op1Reg != targetReg) && (op2Reg == targetReg) && isRMW)
+            {
+                // We have "reg2 = reg1 op reg2" where "reg1 != reg2" on a RMW intrinsic.
+                //
+                // For non-commutative intrinsics, we should have ensured that op2 was marked
+                // delay free in order to prevent it from getting assigned the same register
+                // as target. However, for commutative intrinsics, we can just swap the operands
+                // in order to have "reg2 = reg2 op reg1" which will end up producing the right code.
+
+                op2Reg = op1Reg;
+                op1Reg = targetReg;
+            }
+
+            emit->emitIns_SIMD_R_R_R_I(ins, size, targetReg, op1Reg, op2Reg, ival);
         }
         break;
 
@@ -2094,7 +2304,10 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
-    // AVX: For now we support only conversion from Int/Long -> float
+    // AVX: Supports following conversions
+    //   srcType = int16/int64                     castToType = float
+    // AVX512: Supports following conversions
+    //   srcType = ulong                           castToType = double/float
 
     switch (from)
     {
@@ -2163,6 +2376,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     unreached();
             }
             break;
+
+        case TYP_ULONG:
+            switch (to)
+            {
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
+                case TYP_FLOAT:
+                    return INS_vcvtusi2ss64;
+                default:
+                    unreached();
+            }
 
         default:
             unreached();

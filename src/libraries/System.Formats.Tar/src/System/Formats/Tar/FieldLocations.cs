@@ -49,5 +49,9 @@ namespace System.Formats.Tar
         internal const ushort V7Padding = LinkName + FieldLengths.LinkName;
         internal const ushort PosixPadding = Prefix + FieldLengths.Prefix;
         internal const ushort GnuPadding = RealSize + FieldLengths.RealSize;
+
+        internal const ushort V7Data = V7Padding + FieldLengths.V7Padding;
+        internal const ushort PosixData = PosixPadding + FieldLengths.PosixPadding;
+        internal const ushort GnuData = GnuPadding + FieldLengths.GnuPadding;
     }
 }

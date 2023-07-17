@@ -1760,15 +1760,6 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 
             if (insertKind != DispatchCache::IK_NONE)
             {
-                // Because the TransparentProxy MT is process-global, we cannot cache targets for
-                // unshared interfaces because there is the possibility of caching a
-                // <token, TPMT, target> entry where target is in AD1, and then matching against
-                // this entry from AD2 which happens to be using the same token, perhaps for a
-                // completely different interface.
-            }
-
-            if (insertKind != DispatchCache::IK_NONE)
-            {
                 VirtualCallStubManager * pMgrForCacheElem = this;
 
                 // If we're calling from shared to unshared, make sure the cache element is
@@ -1999,7 +1990,7 @@ VirtualCallStubManager::Resolver(
         GCStress<cfg_any>::MaybeTrigger();
 
         // In case of ICastable, instead of trying to find method implementation in the real object type
-        // we call pObj.GetValueInternal() and call Resolver() again with whatever type it returns.
+        // we call Resolver() again with whatever type it returns.
         // It allows objects that implement ICastable to mimic behavior of other types.
         MethodTable * pTokenMT = GetTypeFromToken(token);
 

@@ -86,9 +86,9 @@ const emitJumpKind emitReverseJumpKinds[] = {
  *  Return the allocated size (in bytes) of the given instruction descriptor.
  */
 
-size_t emitter::emitSizeOfInsDsc(instrDesc* id)
+size_t emitter::emitSizeOfInsDsc(instrDesc* id) const
 {
-    if (emitIsScnsInsDsc(id))
+    if (emitIsSmallInsDsc(id))
         return SMALL_IDSC_SIZE;
 
     assert((unsigned)id->idInsFmt() < emitFmtCount);
@@ -937,7 +937,7 @@ void emitter::emitInsSanityCheck(instrDesc* id)
         case IF_SI_0B: // SI_0B   ................ ....bbbb........               imm4 - barrier
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             datasize = id->idOpSize();
             assert(isGeneralRegister(id->idReg1()));
             assert(datasize == EA_8BYTE);
@@ -1352,7 +1352,7 @@ static const char * const  bRegNames[] =
 // Return value:
 //    A string that represents a general-purpose register name or SIMD and floating-point scalar register name.
 //
-const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName)
+const char* emitter::emitRegName(regNumber reg, emitAttr size, bool varName) const
 {
     assert(reg < REG_COUNT);
 
@@ -3736,6 +3736,12 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
         case INS_dczva:
             assert(isGeneralRegister(reg));
             assert(attr == EA_8BYTE);
+            id = emitNewInstrSmall(attr);
+            id->idReg1(reg);
+            fmt = IF_SR_1A;
+            break;
+
+        case INS_mrs_tpid0:
             id = emitNewInstrSmall(attr);
             id->idReg1(reg);
             fmt = IF_SR_1A;
@@ -6524,7 +6530,7 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
                                        int         varx1,
                                        int         varx2,
                                        int         offs1,
-                                       int         offs2)
+                                       int offs2 DEBUG_ARG(unsigned var1RefsOffs) DEBUG_ARG(unsigned var2RefsOffs))
 {
     assert((ins == INS_stp) || (ins == INS_ldp));
     emitAttr  size  = EA_SIZE(attr);
@@ -6619,6 +6625,10 @@ void emitter::emitIns_R_R_R_I_LdStPair(instruction ins,
         id->idGCrefReg2(GCT_NONE);
     }
 
+#ifdef DEBUG
+    id->idDebugOnlyInfo()->idVarRefOffs  = var1RefsOffs;
+    id->idDebugOnlyInfo()->idVarRefOffs2 = var2RefsOffs;
+#endif
     dispIns(id);
     appendToCurIG(id);
 }
@@ -10218,10 +10228,10 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             assert(fmt == IF_BI_0A);
             assert((distVal & 1) == 0);
-            code_t     code             = emitInsCode(ins, fmt);
-            const bool recordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
+            code_t     code               = emitInsCode(ins, fmt);
+            const bool doRecordRelocation = emitComp->opts.compReloc && emitJumpCrossHotColdBoundary(srcOffs, dstOffs);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 // dst isn't an actual final target location, just some intermediate
                 // location.  Thus we cannot make any guarantees about distVal (not
@@ -10242,7 +10252,7 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 
             const unsigned instrSize = emitOutput_Instr(dst, code);
 
-            if (recordRelocation)
+            if (doRecordRelocation)
             {
                 assert(id->idjKeepLong);
                 if (emitComp->info.compMatchedVM)
@@ -11789,7 +11799,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             dst += emitOutput_Instr(dst, code);
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
             assert(insOptsNone(id->idInsOpt()));
             code = emitInsCode(ins, fmt);
             code |= insEncodeReg_Rt(id->idReg1()); // ttttt
@@ -12591,6 +12601,11 @@ void emitter::emitDispAddrRRExt(regNumber reg1, regNumber reg2, insOpts opt, boo
 
 void emitter::emitDispInsHex(instrDesc* id, BYTE* code, size_t sz)
 {
+    if (!emitComp->opts.disCodeBytes)
+    {
+        return;
+    }
+
     // We do not display the instruction hex if we want diff-able disassembly
     if (!emitComp->opts.disDiffable)
     {
@@ -13912,8 +13927,16 @@ void emitter::emitDispInsHelp(
             emitDispBarrier((insBarrier)emitGetInsSC(id));
             break;
 
-        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva)
-            emitDispReg(id->idReg1(), size, false);
+        case IF_SR_1A: // SR_1A   ................ ...........ttttt      Rt       (dc zva, mrs)
+            if (ins == INS_mrs_tpid0)
+            {
+                emitDispReg(id->idReg1(), size, true);
+                printf("tpidr_el0");
+            }
+            else
+            {
+                emitDispReg(id->idReg1(), size, false);
+            }
             break;
 
         default:
@@ -13922,11 +13945,18 @@ void emitter::emitDispInsHelp(
             break;
     }
 
-    if (id->idDebugOnlyInfo()->idVarRefOffs)
+    if (id->idIsLclVar())
     {
         printf("\t// ");
         emitDispFrameRef(id->idAddr()->iiaLclVar.lvaVarNum(), id->idAddr()->iiaLclVar.lvaOffset(),
                          id->idDebugOnlyInfo()->idVarRefOffs, asmfm);
+        if (id->idIsLclVarPair())
+        {
+            printf(", ");
+            emitLclVarAddr* iiaLclVar2 = emitGetLclVarPairLclVar2(id);
+            emitDispFrameRef(iiaLclVar2->lvaVarNum(), iiaLclVar2->lvaOffset(), id->idDebugOnlyInfo()->idVarRefOffs2,
+                             asmfm);
+        }
     }
 
     printf("\n");
@@ -13954,7 +13984,7 @@ void emitter::emitDispFrameRef(int varx, int disp, int offs, bool asmfm)
 
     printf("]");
 
-    if (varx >= 0 && emitComp->opts.varNames)
+    if ((varx >= 0) && emitComp->opts.varNames && (((IL_OFFSET)offs) != BAD_IL_OFFSET))
     {
         const char* varName = emitComp->compLocalVarName(varx, offs);
 
@@ -16463,6 +16493,10 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     }
 
     regNumber prevReg1 = emitLastIns->idReg1();
+#ifdef DEBUG
+    unsigned prevVarRefsOffs = emitLastIns->idDebugOnlyInfo()->idVarRefOffs;
+    unsigned newVarRefsOffs  = emitVarRefOffs;
+#endif
 
     ssize_t     prevImm = emitGetInsSC(emitLastIns);
     instruction optIns  = (ins == INS_ldr) ? INS_ldp : INS_stp;
@@ -16513,12 +16547,12 @@ bool emitter::ReplaceLdrStrWithPairInstr(instruction ins,
     if (optimizationOrder == eRO_ascending)
     {
         emitIns_R_R_R_I_LdStPair(optIns, prevReg1Attr, reg1Attr, prevReg1, reg1, reg2, prevImmSize, prevLclVarNum, varx,
-                                 prevOffset, offs);
+                                 prevOffset, offs DEBUG_ARG(prevVarRefsOffs) DEBUG_ARG(newVarRefsOffs));
     }
     else
     {
         emitIns_R_R_R_I_LdStPair(optIns, reg1Attr, prevReg1Attr, reg1, prevReg1, reg2, newImmSize, varx, prevLclVarNum,
-                                 offs, prevOffset);
+                                 offs, prevOffset DEBUG_ARG(newVarRefsOffs) DEBUG_ARG(prevVarRefsOffs));
     }
 
     return true;
@@ -16645,18 +16679,12 @@ emitter::RegisterOrder emitter::IsOptimizableLdrStrWithPair(
         return eRO_none;
     }
 
-    // Don't remove instructions whilst in prologs or epilogs, as these contain  "unwindable"
-    // parts, where we need to report unwind codes to the OS,
-    if (emitIGisInProlog(emitCurIG) || emitIGisInEpilog(emitCurIG))
+    if (emitComp->compGeneratingUnwindProlog || emitComp->compGeneratingUnwindEpilog)
     {
+        // Don't remove instructions while generating "unwind" part of prologs or epilogs,
+        // because for those instructions, we need to report unwind codes to the OS.
         return eRO_none;
     }
-#ifdef FEATURE_EH_FUNCLETS
-    if (emitIGisInFuncletProlog(emitCurIG) || emitIGisInFuncletEpilog(emitCurIG))
-    {
-        return eRO_none;
-    }
-#endif
 
     return optimisationOrder;
 }
@@ -16739,4 +16767,32 @@ bool emitter::IsOptimizableLdrToMov(
 
     return true;
 }
+
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
+//
+// Arguments:
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//
+void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isVectorRegister(dataReg));
+
+    // store lower 8 bytes
+    emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
+
+    // Extract upper 4-bytes from data
+    regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
+
+    // 4-byte write
+    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
+}
+#endif // FEATURE_SIMD
+
 #endif // defined(TARGET_ARM64)

@@ -11,7 +11,7 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net
 {
-    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Security", LocalizationResources = "FxResources.System.Net.Security.SR")]
+    [EventSource(Name = "Private.InternalDiagnostics.System.Net.Security")]
     internal sealed partial class NetEventSource
     {
 #if WINDOWS

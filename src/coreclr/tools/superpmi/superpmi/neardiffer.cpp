@@ -81,7 +81,7 @@ bool NearDiffer::InitAsmDiff()
             return false;
         }
 
-        WCHAR* ptr = ::wcsrchr(coreCLRLoadedPath, '/');
+        WCHAR* ptr = (WCHAR*)u16_strrchr(coreCLRLoadedPath, '/');
 
         // Move past the / character.
         ptr = ptr + 1;
@@ -452,7 +452,7 @@ bool NearDiffer::compareOffsets(
     //
     // Since the mov/movk sequence is specific to the replay address constant, we don't assume the baseline
     // and diff have the same number of instructions (e.g., it's possible to skip a `movk` if it is zero).
-    // 
+    //
     // Some version of this logic might apply to ARM as well.
     //
     if (targetArch == SPMI_TARGET_ARCHITECTURE_ARM64)
@@ -736,9 +736,9 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
         disasm_1->CchFormatInstr(instrMnemonic_1, 64);
         WCHAR instrMnemonic_2[64]; // I never know how much to allocate...
         disasm_2->CchFormatInstr(instrMnemonic_2, 64);
-        if (wcscmp(instrMnemonic_1, L"ret") == 0)
+        if (u16_strcmp(instrMnemonic_1, L"ret") == 0)
             haveSeenRet = true;
-        if (wcscmp(instrMnemonic_1, L"rep ret") == 0)
+        if (u16_strcmp(instrMnemonic_1, L"rep ret") == 0)
             haveSeenRet = true;
 
         // First, check to see if these instructions are actually identical.

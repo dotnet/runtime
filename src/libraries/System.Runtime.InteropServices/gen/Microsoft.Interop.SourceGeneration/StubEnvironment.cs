@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Interop
@@ -11,5 +10,62 @@ namespace Microsoft.Interop
         Compilation Compilation,
         TargetFramework TargetFramework,
         Version TargetFrameworkVersion,
-        bool ModuleSkipLocalsInit);
+        bool ModuleSkipLocalsInit)
+    {
+        private Optional<INamedTypeSymbol?> _lcidConversionAttrType;
+        public INamedTypeSymbol? LcidConversionAttrType
+        {
+            get
+            {
+                if (_lcidConversionAttrType.HasValue)
+                {
+                    return _lcidConversionAttrType.Value;
+                }
+                _lcidConversionAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.LCIDConversionAttribute));
+                return _lcidConversionAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _suppressGCTransitionAttrType;
+        public INamedTypeSymbol? SuppressGCTransitionAttrType
+        {
+            get
+            {
+                if (_suppressGCTransitionAttrType.HasValue)
+                {
+                    return _suppressGCTransitionAttrType.Value;
+                }
+                _suppressGCTransitionAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.SuppressGCTransitionAttribute));
+                return _suppressGCTransitionAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _unmanagedCallConvAttrType;
+        public INamedTypeSymbol? UnmanagedCallConvAttrType
+        {
+            get
+            {
+                if (_unmanagedCallConvAttrType.HasValue)
+                {
+                    return _unmanagedCallConvAttrType.Value;
+                }
+                _unmanagedCallConvAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.UnmanagedCallConvAttribute));
+                return _unmanagedCallConvAttrType.Value;
+            }
+        }
+
+        private Optional<INamedTypeSymbol?> _defaultDllImportSearchPathsAttrType;
+        public INamedTypeSymbol? DefaultDllImportSearchPathsAttrType
+        {
+            get
+            {
+                if (_defaultDllImportSearchPathsAttrType.HasValue)
+                {
+                    return _defaultDllImportSearchPathsAttrType.Value;
+                }
+                _defaultDllImportSearchPathsAttrType = new Optional<INamedTypeSymbol?>(Compilation.GetTypeByMetadataName(TypeNames.DefaultDllImportSearchPathsAttribute));
+                return _defaultDllImportSearchPathsAttrType.Value;
+            }
+        }
+    }
 }

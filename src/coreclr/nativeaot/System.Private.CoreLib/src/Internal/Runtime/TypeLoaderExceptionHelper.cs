@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 using Internal.TypeSystem;
@@ -63,6 +64,11 @@ namespace Internal.Runtime
             throw new MarshalDirectiveException(GetFormatString(id));
         }
 
+        public static Exception CreateAmbiguousMatchException(ExceptionStringID id)
+        {
+            return new AmbiguousMatchException(GetFormatString(id));
+        }
+
         // TODO: move to a place where we can share this with the compiler
         private static string GetFormatString(ExceptionStringID id)
         {
@@ -112,6 +118,8 @@ namespace Internal.Runtime
                     return SR.Arg_BadImageFormatException;
                 case ExceptionStringID.MarshalDirectiveGeneric:
                     return SR.Arg_MarshalDirectiveException;
+                case ExceptionStringID.AmbiguousMatchUnsafeAccessor:
+                    return SR.Arg_AmbiguousMatchException_UnsafeAccessor;
                 default:
                     Debug.Assert(false);
                     return "";

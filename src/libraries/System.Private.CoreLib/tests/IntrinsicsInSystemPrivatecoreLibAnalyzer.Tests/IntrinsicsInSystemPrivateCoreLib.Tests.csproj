@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Analyzer.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing.XUnit" Version="$(CompilerPlatformTestingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\gen\System.Private.CoreLib.Generators.csproj" />
+    <Compile Include="IntrinsicsInSystemPrivateCoreLibUnitTests.cs" />
+    <Compile Include="CSharpAnalyzerVerifier`1.cs" />
+    <Compile Include="CSharpAnalyzerVerifier`1+Test.cs" />
+  </ItemGroup>
+
+</Project>

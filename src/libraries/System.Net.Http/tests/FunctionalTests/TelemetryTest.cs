@@ -21,6 +21,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest(ITestOutputHelper output) : base(output) { }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/71877", typeof(PlatformDetection), nameof(PlatformDetection.IsBrowser), nameof(PlatformDetection.IsMonoAOT))]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(HttpClient).Assembly.GetType("System.Net.Http.HttpTelemetry", throwOnError: true, ignoreCase: false);

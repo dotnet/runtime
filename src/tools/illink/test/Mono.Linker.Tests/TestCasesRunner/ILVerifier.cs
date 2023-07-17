@@ -46,7 +46,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			var allResults = _verifier.Verify (Resolve (assemblyName))
 				?? Enumerable.Empty<VerificationResult> ();
 
-			Results = allResults.Where (r => r.Code switch {
+			Results = allResults.Where (r => r.Code is not (
 				ILVerify.VerifierError.None
 				// Static interface methods cause this warning
 				or ILVerify.VerifierError.CallAbstract
@@ -57,10 +57,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				// ref returning a ref local causes this warning but is okay
 				or VerifierError.ReturnPtrToStack
 				// Span indexing with indexer (ex. span[^4]) causes this warning
-				or VerifierError.InitOnly
-				=> false,
-				_ => true
-			});
+				or VerifierError.InitOnly));
 		}
 
 		PEReader LoadAssembly (string assemblyName)

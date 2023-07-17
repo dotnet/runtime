@@ -40,11 +40,11 @@ namespace System.Reflection
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
+            return GetMethodImpl(name, DefaultLookup, null, CallingConventions.Any, null, null);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
+        public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, DefaultLookup, null, CallingConventions.Any, types, null);
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
@@ -62,17 +62,17 @@ namespace System.Reflection
         protected virtual MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo[] GetMethods() => GetMethods(Module.DefaultLookup);
+        public MethodInfo[] GetMethods() => GetMethods(DefaultLookup);
         [RequiresUnreferencedCode("Methods might be removed")]
         public virtual MethodInfo[] GetMethods(BindingFlags bindingFlags) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Fields might be removed")]
-        public FieldInfo? GetField(string name) => GetField(name, Module.DefaultLookup);
+        public FieldInfo? GetField(string name) => GetField(name, DefaultLookup);
         [RequiresUnreferencedCode("Fields might be removed")]
         public virtual FieldInfo? GetField(string name, BindingFlags bindingAttr) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Fields might be removed")]
-        public FieldInfo[] GetFields() => GetFields(Module.DefaultLookup);
+        public FieldInfo[] GetFields() => GetFields(DefaultLookup);
         [RequiresUnreferencedCode("Fields might be removed")]
         public virtual FieldInfo[] GetFields(BindingFlags bindingFlags) { throw NotImplemented.ByDesign; }
 

@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_LocallocCnstB5
 {
     const int Pass = 100;
@@ -33,7 +34,8 @@ public class BringUpTest_LocallocCnstB5
         return -1;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int ret;
 

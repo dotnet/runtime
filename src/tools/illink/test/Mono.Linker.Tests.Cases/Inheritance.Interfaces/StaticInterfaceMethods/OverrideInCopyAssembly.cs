@@ -2,10 +2,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 using Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods.Dependencies;
@@ -18,7 +14,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.StaticInterfaceMethods
 	[SetupLinkerAction ("copy", "test")]
 	/// <summary>
 	///	Regression test for issue: https://github.com/dotnet/runtime/issues/81746
-	///	OverridesStaticInterfaceMethods.Method() (and Property.set/get) has an entry in .overrides pointing to ISataticAbstractMethods.Method.
+	///	OverridesStaticInterfaceMethods.Method() (and Property.set/get) has an entry in .overrides pointing to IStaticAbstractMethods.Method.
 	///	IStaticAbstractMethods.Method() isn't referenced anywhere else and isn't otherwise needed.
 	///	Usually the interface method could be removed, and the pointer to it in the .overrides metadata would be removed
 	///	However, since OverridesStaticInterfaceMethods is in a 'copy' assembly, the .overrides metadata isn't swept. If we remove the method from the interface,

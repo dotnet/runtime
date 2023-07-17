@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.Interop.Analyzers;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 [assembly: System.Resources.NeutralResourcesLanguage("en-US")]
@@ -77,7 +76,7 @@ namespace Microsoft.Interop
                 .WithTrackingName(StepNames.CalculateStubInformation);
 
             // Generate the code for the managed-to-unmangaed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateManagedToNativeStub = generateStubInformation
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateManagedToNativeStub = generateStubInformation
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional)
                 .Select(
                     static (data, ct) => GenerateManagedToNativeStub(data)
@@ -95,7 +94,7 @@ namespace Microsoft.Interop
                 .Where(data => data.VtableIndexData.Direction is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional);
 
             // Generate the code for the unmanaged-to-managed stubs and the diagnostics from code-generation.
-            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<Diagnostic>)> generateNativeToManagedStub = nativeToManagedStubContexts
+            IncrementalValuesProvider<(MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>)> generateNativeToManagedStub = nativeToManagedStubContexts
                 .Select(
                     static (data, ct) => GenerateNativeToManagedStub(data)
                 )
@@ -127,34 +126,6 @@ namespace Microsoft.Interop
             context.RegisterConcatenatedSyntaxOutputs(populateVTable, "PopulateVTable.g.cs");
         }
 
-        internal static ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> GenerateCallConvSyntaxFromAttributes(AttributeData? suppressGCTransitionAttribute, AttributeData? unmanagedCallConvAttribute)
-        {
-            const string CallConvsField = "CallConvs";
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Builder callingConventions = ImmutableArray.CreateBuilder<FunctionPointerUnmanagedCallingConventionSyntax>();
-
-            if (suppressGCTransitionAttribute is not null)
-            {
-                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier("SuppressGCTransition")));
-            }
-            if (unmanagedCallConvAttribute is not null)
-            {
-                foreach (KeyValuePair<string, TypedConstant> arg in unmanagedCallConvAttribute.NamedArguments)
-                {
-                    if (arg.Key == CallConvsField)
-                    {
-                        foreach (TypedConstant callConv in arg.Value.Values)
-                        {
-                            ITypeSymbol callConvSymbol = (ITypeSymbol)callConv.Value!;
-                            if (callConvSymbol.Name.StartsWith("CallConv", StringComparison.Ordinal))
-                            {
-                                callingConventions.Add(FunctionPointerUnmanagedCallingConvention(Identifier(callConvSymbol.Name.Substring("CallConv".Length))));
-                            }
-                        }
-                    }
-                }
-            }
-            return callingConventions.ToImmutable();
-        }
         private static VirtualMethodIndexCompilationData? ProcessVirtualMethodIndexAttribute(AttributeData attrData)
         {
             // Found the attribute, but it has an error so report the error.
@@ -259,7 +230,8 @@ namespace Microsoft.Interop
 
             Debug.Assert(virtualMethodIndexAttr is not null);
 
-            var generatorDiagnostics = new GeneratorDiagnostics();
+            var locations = new MethodSignatureDiagnosticLocations(syntax);
+            var generatorDiagnostics = new GeneratorDiagnosticsBag(new DiagnosticDescriptorProvider(), locations, SR.ResourceManager, typeof(FxResources.Microsoft.Interop.ComInterfaceGenerator.SR));
 
             // Process the LibraryImport attribute
             VirtualMethodIndexCompilationData? virtualMethodIndexData = ProcessVirtualMethodIndexAttribute(virtualMethodIndexAttr!);
@@ -306,9 +278,9 @@ namespace Microsoft.Interop
 
             var containingSyntaxContext = new ContainingSyntaxContext(syntax);
 
-            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripAccessibilityModifiers().StripTriviaFromTokens(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
+            var methodSyntaxTemplate = new ContainingSyntax(syntax.Modifiers.StripAccessibilityModifiers(), SyntaxKind.MethodDeclaration, syntax.Identifier, syntax.TypeParameterList);
 
-            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute);
+            ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax> callConv = VirtualMethodPointerStubGenerator.GenerateCallConvSyntaxFromAttributes(suppressGCTransitionAttribute, unmanagedCallConvAttribute, defaultCallingConventions: ImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>.Empty);
 
             var interfaceType = ManagedTypeInfo.CreateTypeInfoForTypeSymbol(symbol.ContainingType);
 
@@ -333,18 +305,19 @@ namespace Microsoft.Interop
                 signatureContext,
                 containingSyntaxContext,
                 methodSyntaxTemplate,
-                new MethodSignatureDiagnosticLocations(syntax),
+                locations,
                 new SequenceEqualImmutableArray<FunctionPointerUnmanagedCallingConventionSyntax>(callConv, SyntaxEquivalentComparer.Instance),
                 VirtualMethodIndexData.From(virtualMethodIndexData),
                 exceptionMarshallingInfo,
                 VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.ManagedToUnmanaged),
                 VtableIndexStubGeneratorHelpers.CreateGeneratorFactory(environment, MarshalDirection.UnmanagedToManaged),
                 interfaceType,
-                new SequenceEqualImmutableArray<Diagnostic>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
+                interfaceType,
+                new SequenceEqualImmutableArray<DiagnosticInfo>(generatorDiagnostics.Diagnostics.ToImmutableArray()),
                 new ObjectUnwrapperInfo(unwrapperSyntax));
         }
 
-        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnostics diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
+        private static MarshallingInfo CreateExceptionMarshallingInfo(AttributeData virtualMethodIndexAttr, ISymbol symbol, Compilation compilation, GeneratorDiagnosticsBag diagnostics, VirtualMethodIndexCompilationData virtualMethodIndexData)
         {
             if (virtualMethodIndexData.ExceptionMarshallingDefined)
             {
@@ -385,7 +358,7 @@ namespace Microsoft.Interop
             return NoMarshallingInfo.Instance;
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateManagedToNativeStub(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateManagedToNativeStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
             var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateManagedToNativeStub(methodStub);
@@ -398,7 +371,7 @@ namespace Microsoft.Interop
                 methodStub.Diagnostics.Array.AddRange(diagnostics));
         }
 
-        private static (MemberDeclarationSyntax, ImmutableArray<Diagnostic>) GenerateNativeToManagedStub(
+        private static (MemberDeclarationSyntax, ImmutableArray<DiagnosticInfo>) GenerateNativeToManagedStub(
             IncrementalMethodStubGenerationContext methodStub)
         {
             var (stub, diagnostics) = VirtualMethodPointerStubGenerator.GenerateNativeToManagedStub(methodStub);

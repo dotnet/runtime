@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Xml
                     {
                         // the Uri is required
                         string? uri = Utils.GetAttribute(elem, "URI", Consts.XmlDecryptionTransformNamespaceUrl);
-                        if (uri == null || uri.Length == 0 || uri[0] != '#')
+                        if (string.IsNullOrEmpty(uri) || uri[0] != '#')
                             throw new CryptographicException(SR.Cryptography_Xml_UriRequired);
                         if (!Utils.VerifyAttributes(elem, "URI"))
                         {

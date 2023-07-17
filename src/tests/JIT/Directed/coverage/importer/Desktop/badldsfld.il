@@ -3,7 +3,7 @@
 
 .assembly extern mscorlib {}
 .assembly extern xunit.core {}
-.assembly 'badldsfld' { }
+.assembly ASSEMBLY_NAME { }
 .class public Test_badldsfld extends [mscorlib]System.Object
 {
 .field int32 i

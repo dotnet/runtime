@@ -675,58 +675,55 @@ namespace Microsoft.Win32
             get
             {
                 EnsureNotDisposed();
-                return IsSystemKey() ? SystemKeyHandle : _hkey;
+                return IsSystemKey() ? GetSystemKeyHandle() : _hkey;
             }
         }
 
-        private SafeRegistryHandle SystemKeyHandle
+        private SafeRegistryHandle GetSystemKeyHandle()
         {
-            get
+            Debug.Assert(IsSystemKey());
+
+            int ret = Interop.Errors.ERROR_INVALID_HANDLE;
+            IntPtr baseKey = 0;
+            switch (_keyName)
             {
-                Debug.Assert(IsSystemKey());
-
-                int ret = Interop.Errors.ERROR_INVALID_HANDLE;
-                IntPtr baseKey = 0;
-                switch (_keyName)
-                {
-                    case "HKEY_CLASSES_ROOT":
-                        baseKey = HKEY_CLASSES_ROOT;
-                        break;
-                    case "HKEY_CURRENT_USER":
-                        baseKey = HKEY_CURRENT_USER;
-                        break;
-                    case "HKEY_LOCAL_MACHINE":
-                        baseKey = HKEY_LOCAL_MACHINE;
-                        break;
-                    case "HKEY_USERS":
-                        baseKey = HKEY_USERS;
-                        break;
-                    case "HKEY_PERFORMANCE_DATA":
-                        baseKey = HKEY_PERFORMANCE_DATA;
-                        break;
-                    case "HKEY_CURRENT_CONFIG":
-                        baseKey = HKEY_CURRENT_CONFIG;
-                        break;
-                    default:
-                        Win32Error(ret, null);
-                        break;
-                }
-
-                // open the base key so that RegistryKey.Handle will return a valid handle
-                ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
-                    null,
-                    0,
-                    GetRegistryKeyAccess(IsWritable()) | (int)_regView,
-                    out SafeRegistryHandle result);
-
-                if (ret != 0 || result.IsInvalid)
-                {
-                    result.Dispose();
+                case "HKEY_CLASSES_ROOT":
+                    baseKey = HKEY_CLASSES_ROOT;
+                    break;
+                case "HKEY_CURRENT_USER":
+                    baseKey = HKEY_CURRENT_USER;
+                    break;
+                case "HKEY_LOCAL_MACHINE":
+                    baseKey = HKEY_LOCAL_MACHINE;
+                    break;
+                case "HKEY_USERS":
+                    baseKey = HKEY_USERS;
+                    break;
+                case "HKEY_PERFORMANCE_DATA":
+                    baseKey = HKEY_PERFORMANCE_DATA;
+                    break;
+                case "HKEY_CURRENT_CONFIG":
+                    baseKey = HKEY_CURRENT_CONFIG;
+                    break;
+                default:
                     Win32Error(ret, null);
-                }
-
-                return result;
+                    break;
             }
+
+            // open the base key so that RegistryKey.Handle will return a valid handle
+            ret = Interop.Advapi32.RegOpenKeyEx(baseKey,
+                null,
+                0,
+                GetRegistryKeyAccess(IsWritable()) | (int)_regView,
+                out SafeRegistryHandle result);
+
+            if (ret != 0 || result.IsInvalid)
+            {
+                result.Dispose();
+                Win32Error(ret, null);
+            }
+
+            return result;
         }
 
         private static int GetRegistryKeyAccess(RegistryKeyPermissionCheck mode)

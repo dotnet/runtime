@@ -53,6 +53,7 @@ namespace System.Diagnostics.Tests
         public static bool HasAssemblyFilesIsElevatedAndSupportsEventLogs => PlatformDetection.HasAssemblyFiles && Helpers.IsElevatedAndSupportsEventLogs;
 
         [ConditionalFact(nameof(HasAssemblyFilesIsElevatedAndSupportsEventLogs))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/88224", typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version22000OrGreater))]
         public void CanReadAndWriteMessages()
         {
             string messageDllPath = Path.Combine(Path.GetDirectoryName(typeof(EventLog).Assembly.Location), "System.Diagnostics.EventLog.Messages.dll");

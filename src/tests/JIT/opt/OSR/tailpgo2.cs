@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class X
+public class X
 {
     static int s;
     static int N;
@@ -16,7 +17,7 @@ class X
     // the return to happen before the
     // tail calls.
     //
-    public static void T(int x, int[] a)
+    internal static void T(int x, int[] a)
     {
         for (int j = 0; j < N; j++)
         {
@@ -37,7 +38,8 @@ class X
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int[] a = new int[1000];
         N = 100;

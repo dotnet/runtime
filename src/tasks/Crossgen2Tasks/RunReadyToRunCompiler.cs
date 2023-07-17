@@ -346,7 +346,7 @@ namespace Microsoft.NET.Build.Tasks
 
             if (!string.IsNullOrEmpty(Crossgen2ExtraCommandLineArgs))
             {
-                foreach (string extraArg in Crossgen2ExtraCommandLineArgs.Split(new char[]{';'}, StringSplitOptions.RemoveEmptyEntries))
+                foreach (string extraArg in Crossgen2ExtraCommandLineArgs.Split(';', StringSplitOptions.RemoveEmptyEntries))
                 {
                     result.AppendLine(extraArg);
                 }

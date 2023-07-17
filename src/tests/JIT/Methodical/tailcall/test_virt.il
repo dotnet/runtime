@@ -6,7 +6,7 @@
 .assembly extern System.Runtime.Extensions { auto }
 .assembly extern mscorlib { auto }
 
-.assembly test_virt { }
+.assembly ASSEMBLY_NAME { }
 .assembly extern xunit.core {}
 .namespace JitTest_test_virt
 {

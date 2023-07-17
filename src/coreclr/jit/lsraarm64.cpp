@@ -797,11 +797,6 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(dstCount == 0);
             break;
 
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
-            break;
-
         case GT_ADD:
         case GT_SUB:
             if (varTypeIsFloating(tree->TypeGet()))
@@ -878,6 +873,9 @@ int LinearScan::BuildNode(GenTree* tree)
             {
                 case NI_System_Math_Max:
                 case NI_System_Math_Min:
+                case NI_System_Math_MaxNumber:
+                case NI_System_Math_MinNumber:
+                {
                     assert(varTypeIsFloating(tree->gtGetOp1()));
                     assert(varTypeIsFloating(tree->gtGetOp2()));
                     assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
@@ -886,6 +884,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
+                }
 
                 case NI_System_Math_Abs:
                 case NI_System_Math_Ceiling:
@@ -893,6 +892,7 @@ int LinearScan::BuildNode(GenTree* tree)
                 case NI_System_Math_Truncate:
                 case NI_System_Math_Round:
                 case NI_System_Math_Sqrt:
+                {
                     assert(varTypeIsFloating(tree->gtGetOp1()));
                     assert(tree->gtGetOp1()->TypeIs(tree->TypeGet()));
 
@@ -901,6 +901,7 @@ int LinearScan::BuildNode(GenTree* tree)
                     assert(dstCount == 1);
                     BuildDef(tree);
                     break;
+                }
 
                 default:
                     unreached();
@@ -1174,44 +1175,10 @@ int LinearScan::BuildNode(GenTree* tree)
         break;
 
         case GT_ARR_ELEM:
-            // These must have been lowered to GT_ARR_INDEX
+            // These must have been lowered
             noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
             srcCount = 0;
             assert(dstCount == 0);
-            break;
-
-        case GT_ARR_INDEX:
-        {
-            srcCount = 2;
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            setInternalRegsDelayFree = true;
-
-            // For GT_ARR_INDEX, the lifetime of the arrObj must be extended because it is actually used multiple
-            // times while the result is being computed.
-            RefPosition* arrObjUse = BuildUse(tree->AsArrIndex()->ArrObj());
-            setDelayFree(arrObjUse);
-            BuildUse(tree->AsArrIndex()->IndexExpr());
-            buildInternalRegisterUses();
-            BuildDef(tree);
-        }
-        break;
-
-        case GT_ARR_OFFSET:
-            // This consumes the offset, if any, the arrObj and the effective index,
-            // and produces the flattened offset for this dimension.
-            srcCount = 2;
-            if (!tree->AsArrOffs()->gtOffset->isContained())
-            {
-                BuildUse(tree->AsArrOffs()->gtOffset);
-                srcCount++;
-            }
-            BuildUse(tree->AsArrOffs()->gtIndex);
-            BuildUse(tree->AsArrOffs()->gtArrObj);
-            assert(dstCount == 1);
-            buildInternalIntRegisterDefForNode(tree);
-            buildInternalRegisterUses();
-            BuildDef(tree);
             break;
 
         case GT_LEA:
@@ -1807,7 +1774,27 @@ int LinearScan::BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwN
     }
     else
     {
-        srcCount += BuildOperandUses(treeNode);
+        RefPositionIterator refPositionMark   = refPositions.backPosition();
+        int                 refPositionsAdded = BuildOperandUses(treeNode);
+
+        if (rmwNode != nullptr)
+        {
+            // Check all the newly created Refpositions for delay free
+            RefPositionIterator iter = refPositionMark;
+
+            for (iter++; iter != refPositions.end(); iter++)
+            {
+                RefPosition* refPositionAdded = &(*iter);
+
+                // If we have rmwNode, determine if the refPositionAdded should be set to delay-free.
+                if ((refPositionAdded->getInterval() != rmwInterval) || (!rmwIsLastUse && !refPositionAdded->lastUse))
+                {
+                    setDelayFree(refPositionAdded);
+                }
+            }
+        }
+
+        srcCount += refPositionsAdded;
     }
 
     return srcCount;

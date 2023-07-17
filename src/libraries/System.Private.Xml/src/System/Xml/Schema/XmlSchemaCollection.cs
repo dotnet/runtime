@@ -95,7 +95,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
-            if (uri == null || uri.Length == 0)
+            if (string.IsNullOrEmpty(uri))
                 throw new ArgumentNullException(nameof(uri));
             XmlTextReader reader = new XmlTextReader(uri, _nameTable);
             reader.XmlResolver = _xmlResolver;

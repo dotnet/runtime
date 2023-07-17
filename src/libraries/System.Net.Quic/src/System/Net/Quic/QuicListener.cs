@@ -212,7 +212,7 @@ public sealed partial class QuicListener : IAsyncDisposable
         CancellationToken cancellationToken = default;
         try
         {
-            CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
+            using CancellationTokenSource linkedCts = CancellationTokenSource.CreateLinkedTokenSource(_disposeCts.Token);
             linkedCts.CancelAfter(QuicDefaults.HandshakeTimeout);
             cancellationToken = linkedCts.Token;
             QuicServerConnectionOptions options = await _connectionOptionsCallback(connection, clientHello, cancellationToken).ConfigureAwait(false);
@@ -333,7 +333,7 @@ public sealed partial class QuicListener : IAsyncDisposable
             // Process the event.
             if (NetEventSource.Log.IsEnabled())
             {
-                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type}");
+                NetEventSource.Info(instance, $"{instance} Received event {listenerEvent->Type} {listenerEvent->ToString()}");
             }
             return instance.HandleListenerEvent(ref *listenerEvent);
         }

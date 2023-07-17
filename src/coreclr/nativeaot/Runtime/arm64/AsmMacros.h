@@ -211,18 +211,16 @@ $ReturnAddressName
 
 ;; -----------------------------------------------------------------------------
 ;;
-;; Macro to get a pointer to the Thread* object for the currently executing thread
+;; Macro to get a pointer to a threadlocal symbol for the currently executing thread
 ;;
 
 __tls_array     equ 0x58    ;; offsetof(TEB, ThreadLocalStoragePointer)
 
-    EXTERN _tls_index
-
-    GBLS __SECTIONREL_tls_CurrentThread
-__SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
-
     MACRO
-        INLINE_GETTHREAD $destReg, $trashReg
+        INLINE_GET_TLS_VAR $destReg, $trashReg, $variable
+
+        EXTERN _tls_index
+        EXTERN $variable
 
         ;; The following macro variables are just some assembler magic to get the name of the 32-bit version
         ;; of $trashReg. It does it by string manipulation. Replaces something like x3 with w3.
@@ -230,31 +228,26 @@ __SECTIONREL_tls_CurrentThread SETS "SECTIONREL_tls_CurrentThread"
 TrashRegister32Bit SETS "$trashReg"
 TrashRegister32Bit SETS "w":CC:("$TrashRegister32Bit":RIGHT:((:LEN:TrashRegister32Bit) - 1))
 
-        ldr         $trashReg, =_tls_index
-        ldr         $TrashRegister32Bit, [$trashReg]
+        adrp        $destReg, _tls_index
+        ldr         $TrashRegister32Bit, [$destReg, _tls_index]
         ldr         $destReg, [xpr, #__tls_array]
-        ldr         $destReg, [$destReg, $trashReg lsl #3]
-        ldr         $trashReg, =$__SECTIONREL_tls_CurrentThread
-        ldr         $trashReg, [$trashReg]
-        add         $destReg, $destReg, $trashReg
+        ldr         $destReg, [$destReg, $TrashRegister32Bit uxtw #3]
+        add         $destReg, $destReg, #0, lsl #0xC
+        RELOC       0xA, $variable                          ;; IMAGE_REL_ARM64_SECREL_HIGH12A
+        add         $destReg, $destReg, #0, lsl #0
+        RELOC       0x9, $variable                          ;; IMAGE_REL_ARM64_SECREL_LOW12A
     MEND
 
-    ;; INLINE_GETTHREAD_CONSTANT_POOL macro has to be used after the last function in the .asm file that used
-    ;; INLINE_GETTHREAD. Optionally, it can be also used after any function that used INLINE_GETTHREAD
-    ;; to improve density, or to reduce distance between the constant pool and its use.
+;; -----------------------------------------------------------------------------
+;;
+;; Macro to get a pointer to the Thread* object for the currently executing thread
+;;
     MACRO
-        INLINE_GETTHREAD_CONSTANT_POOL
-        EXTERN tls_CurrentThread
+        INLINE_GETTHREAD $destReg, $trashReg
 
-    ;; Section relocs are 32 bits. Using an extra DCD initialized to zero for 8-byte alignment.
-$__SECTIONREL_tls_CurrentThread
-        DCD tls_CurrentThread
-        RELOC 8, tls_CurrentThread      ;; SECREL
-        DCD 0
-
-__SECTIONREL_tls_CurrentThread SETS "$__SECTIONREL_tls_CurrentThread":CC:"_"
-
+        INLINE_GET_TLS_VAR $destReg, $trashReg, tls_CurrentThread
     MEND
+
 
     MACRO
         INLINE_THREAD_UNHIJACK $threadReg, $trashReg1, $trashReg2

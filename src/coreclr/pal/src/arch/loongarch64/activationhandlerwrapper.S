@@ -11,7 +11,7 @@ C_FUNC(ActivationHandlerReturnOffset):
 
 NESTED_ENTRY ActivationHandlerWrapper, _TEXT, NoHandler
     //                           $fp,$ra
-    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, -(16 + CONTEXT_Size)
+    PROLOG_SAVE_REG_PAIR_INDEXED 22, 1, (16 + CONTEXT_Size)
     // Should never actually run
     EMIT_BREAKPOINT
     bl      EXTERNAL_C_FUNC(ActivationHandler)

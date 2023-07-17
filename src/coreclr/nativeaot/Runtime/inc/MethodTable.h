@@ -65,7 +65,6 @@ enum EETypeElementType : uint8_t
 // GetFieldOffset() APIs.
 enum EETypeField
 {
-    ETF_InterfaceMap,
     ETF_TypeManagerIndirection,
     ETF_WritableData,
     ETF_Finalizer,

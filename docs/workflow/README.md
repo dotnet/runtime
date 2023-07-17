@@ -17,8 +17,8 @@ The repo can be built for the following platforms, using the provided setup and 
 | :---- | :------: | :------: | :------: | :------: |
 | x64   | &#x2714; | &#x2714; | &#x2714; | &#x2714; |
 | x86   | &#x2714; |          |          |          |
-| ARM   | &#x2714; | &#x2714; |          |          |
-| ARM64 | &#x2714; | &#x2714; | &#x2714; |          |
+| Arm32 |          | &#x2714; |          |          |
+| Arm64 | &#x2714; | &#x2714; | &#x2714; |          |
 |       | [Requirements](requirements/windows-requirements.md) | [Requirements](requirements/linux-requirements.md) | [Requirements](requirements/macos-requirements.md) | [Requirements](requirements/freebsd-requirements.md)
 
 Additionally, keep in mind that cloning the full history of this repo takes roughly 400-500 MB of network transfer, inflating to a repository that can consume somewhere between 1 to 1.5 GB. A build of the repo can take somewhere between 10 and 20 GB of space for a single OS and Platform configuration depending on the portions of the product built. This might increase over time, so consider this to be a minimum bar for working with this codebase.

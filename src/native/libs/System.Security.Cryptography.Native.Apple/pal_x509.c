@@ -3,14 +3,6 @@
 
 #include "pal_x509.h"
 #include "pal_utilities.h"
-#include <dlfcn.h>
-#include <pthread.h>
-
-#if !defined(TARGET_MACCATALYST)
-static pthread_once_t once = PTHREAD_ONCE_INIT;
-static SecKeyRef (*secCertificateCopyKey)(SecCertificateRef);
-static OSStatus (*secCertificateCopyPublicKey)(SecCertificateRef, SecKeyRef*);
-#endif
 
 int32_t
 AppleCryptoNative_X509DemuxAndRetainHandle(CFTypeRef handle, SecCertificateRef* pCertOut, SecIdentityRef* pIdentityOut)

@@ -25,10 +25,7 @@ namespace System.Reflection.Emit
 
             name = (AssemblyName)name.Clone();
 
-            if (string.IsNullOrEmpty(name.Name))
-            {
-                throw new ArgumentException(SR.Argument_NullOrEmptyAssemblyName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name.Name, "AssemblyName.Name");
 
             _assemblyName = name;
             _coreAssembly = coreAssembly;

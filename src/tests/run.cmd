@@ -45,7 +45,6 @@ if /i "%1" == "-help" goto Usage
 
 if /i "%1" == "x64"                                     (set __BuildArch=x64&shift&goto Arg_Loop)
 if /i "%1" == "x86"                                     (set __BuildArch=x86&shift&goto Arg_Loop)
-if /i "%1" == "arm"                                     (set __BuildArch=arm&shift&goto Arg_Loop)
 if /i "%1" == "arm64"                                   (set __BuildArch=arm64&shift&goto Arg_Loop)
 
 if /i "%1" == "debug"                                   (set __BuildType=Debug&shift&goto Arg_Loop)
@@ -200,7 +199,7 @@ echo.
 echo where:
 echo.
 echo./? -? /h -h /help -help   - View this message.
-echo ^<build_architecture^>      - Specifies build architecture: x64, x86, arm, or arm64 ^(default: x64^).
+echo ^<build_architecture^>      - Specifies build architecture: x64, x86, or arm64 ^(default: x64^).
 echo ^<build_type^>              - Specifies build type: Debug, Release, or Checked ^(default: Debug^).
 echo TestEnv ^<test_env_script^> - Run a custom script before every test to set custom test environment settings.
 echo sequential                - Run tests sequentially ^(no parallelism^).

@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Config
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Abstractions", "..\Microsoft.Extensions.Configuration.Abstractions\src\Microsoft.Extensions.Configuration.Abstractions.csproj", "{B5018015-F6E7-404B-99C5-980FF8298832}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder.SourceGeneration", "..\Microsoft.Extensions.Configuration.Binder\gen\Microsoft.Extensions.Configuration.Binder.SourceGeneration.csproj", "{D011C341-C474-499C-B262-4C57C6D64901}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "..\Microsoft.Extensions.Configuration.Binder\ref\Microsoft.Extensions.Configuration.Binder.csproj", "{0D650281-5B86-4A2C-9D09-41BD3846B072}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Extensions.Configuration.Binder", "..\Microsoft.Extensions.Configuration.Binder\src\Microsoft.Extensions.Configuration.Binder.csproj", "{01CEF916-5FF9-4566-A507-08FD019E04F9}"
@@ -48,6 +50,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections", "..\System.Collections\ref\System.Collections.csproj", "{5EC10ED6-ADE5-4532-94A1-43E30CA88605}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Memory", "..\System.Memory\ref\System.Memory.csproj", "{AD67583A-B755-4225-970B-F983BD33BD32}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{DC7A797D-9D21-4D38-8611-BE0E3D7BA541}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{774F9552-3770-461E-BAAA-9D50222497BA}"
 EndProject
@@ -103,6 +107,10 @@ Global
 		{B5018015-F6E7-404B-99C5-980FF8298832}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B5018015-F6E7-404B-99C5-980FF8298832}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B5018015-F6E7-404B-99C5-980FF8298832}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D011C341-C474-499C-B262-4C57C6D64901}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D011C341-C474-499C-B262-4C57C6D64901}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D011C341-C474-499C-B262-4C57C6D64901}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D011C341-C474-499C-B262-4C57C6D64901}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0D650281-5B86-4A2C-9D09-41BD3846B072}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0D650281-5B86-4A2C-9D09-41BD3846B072}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D650281-5B86-4A2C-9D09-41BD3846B072}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -183,6 +191,10 @@ Global
 		{AD67583A-B755-4225-970B-F983BD33BD32}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD67583A-B755-4225-970B-F983BD33BD32}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD67583A-B755-4225-970B-F983BD33BD32}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DC7A797D-9D21-4D38-8611-BE0E3D7BA541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DC7A797D-9D21-4D38-8611-BE0E3D7BA541}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DC7A797D-9D21-4D38-8611-BE0E3D7BA541}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DC7A797D-9D21-4D38-8611-BE0E3D7BA541}.Release|Any CPU.Build.0 = Release|Any CPU
 		{774F9552-3770-461E-BAAA-9D50222497BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{774F9552-3770-461E-BAAA-9D50222497BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{774F9552-3770-461E-BAAA-9D50222497BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -258,6 +270,8 @@ Global
 		{B1723D4C-15E3-4A39-8976-C3E1740E5F00} = {1789A282-9C08-40AB-9FD0-0FB1FAB99621}
 		{BD19B1E7-CAFF-4009-874A-760D5A466E28} = {1789A282-9C08-40AB-9FD0-0FB1FAB99621}
 		{A49023C8-173A-4B8F-84B3-2FF37FE8344A} = {1789A282-9C08-40AB-9FD0-0FB1FAB99621}
+		{D011C341-C474-499C-B262-4C57C6D64901} = {B4A09B09-2C03-4FC7-B12F-5DD6FC10A5B1}
+		{DC7A797D-9D21-4D38-8611-BE0E3D7BA541} = {B4A09B09-2C03-4FC7-B12F-5DD6FC10A5B1}
 		{774F9552-3770-461E-BAAA-9D50222497BA} = {B4A09B09-2C03-4FC7-B12F-5DD6FC10A5B1}
 		{AFEFC5C1-C952-45EE-BCF9-DC246ADE43DF} = {B4A09B09-2C03-4FC7-B12F-5DD6FC10A5B1}
 		{CC3E9E0A-4417-4678-87CC-1D2B001C3232} = {B4A09B09-2C03-4FC7-B12F-5DD6FC10A5B1}

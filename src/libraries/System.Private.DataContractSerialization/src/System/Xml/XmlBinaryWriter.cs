@@ -1074,7 +1074,7 @@ namespace System.Xml
                     _captureXText = null;
                 }
 
-                if (_captureText == null || _captureText.Length == 0)
+                if (string.IsNullOrEmpty(_captureText))
                 {
                     _captureText = s;
                 }

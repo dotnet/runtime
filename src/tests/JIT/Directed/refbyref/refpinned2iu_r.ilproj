@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+    <Optimize>False</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="refpinned2iu_r.il" />
+    <Compile Include="refpinned2iu.il" />
+  </ItemGroup>
+</Project>

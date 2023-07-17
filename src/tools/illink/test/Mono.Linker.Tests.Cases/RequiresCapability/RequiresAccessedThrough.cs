@@ -2,14 +2,10 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
@@ -30,6 +26,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedMethod ();
 			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedType ();
 			AccessThroughLdToken.Test ();
+			AccessThroughDelegate.Test ();
 		}
 
 		class TestType { }
@@ -230,9 +227,98 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = Tool.NativeAot)]
-			public static void Test ()
+			static void TestPropertyLdToken ()
 			{
 				Expression<Func<bool>> getter = () => PropertyWithLdToken;
+			}
+
+			[RequiresUnreferencedCode ("Message for --MethodWithLdToken--")]
+			[RequiresAssemblyFiles ("Message for --MethodWithLdToken--")]
+			[RequiresDynamicCode ("Message for --MethodWithLdToken--")]
+			static void MethodWithLdToken ()
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "--MethodWithLdToken--")]
+			[ExpectedWarning ("IL3002", "--MethodWithLdToken--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithLdToken--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestMethodLdToken ()
+			{
+				Expression<Action> e = () => MethodWithLdToken ();
+			}
+
+			[RequiresUnreferencedCode ("--FieldWithLdToken--")]
+			[RequiresDynamicCode ("--FieldWithLdToken--")]
+			class FieldWithLdTokenType
+			{
+				public static int Field = 0;
+			}
+
+			[ExpectedWarning ("IL2026", "--FieldWithLdToken--")]
+			[ExpectedWarning ("IL3050", "--FieldWithLdToken--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestFieldLdToken ()
+			{
+				Expression<Func<int>> f = () => FieldWithLdTokenType.Field;
+			}
+
+			public static void Test ()
+			{
+				TestPropertyLdToken ();
+				TestMethodLdToken ();
+				TestFieldLdToken ();
+			}
+		}
+
+		class AccessThroughDelegate
+		{
+			[RequiresUnreferencedCode ("Message for --MethodWithDelegate--")]
+			[RequiresAssemblyFiles ("Message for --MethodWithDelegate--")]
+			[RequiresDynamicCode ("Message for --MethodWithDelegate--")]
+			static void MethodWithDelegate ()
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "--MethodWithDelegate--")]
+			[ExpectedWarning ("IL3002", "--MethodWithDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestMethodWithDelegate ()
+			{
+				Action a = MethodWithDelegate;
+			}
+
+			[ExpectedWarning ("IL2026", "--LambdaThroughDelegate--")]
+			[ExpectedWarning ("IL3002", "--LambdaThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--LambdaThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void LambdaThroughDelegate ()
+			{
+				Action a =
+				[RequiresUnreferencedCode ("--LambdaThroughDelegate--")]
+				[RequiresAssemblyFiles ("--LambdaThroughDelegate--")]
+				[RequiresDynamicCode ("--LambdaThroughDelegate--")]
+				() => { };
+
+				a ();
+			}
+
+			[ExpectedWarning ("IL2026", "--LocalFunctionThroughDelegate--")]
+			[ExpectedWarning ("IL3002", "--LocalFunctionThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--LocalFunctionThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void LocalFunctionThroughDelegate ()
+			{
+				Action a = Local;
+
+				[RequiresUnreferencedCode ("--LocalFunctionThroughDelegate--")]
+				[RequiresAssemblyFiles ("--LocalFunctionThroughDelegate--")]
+				[RequiresDynamicCode ("--LocalFunctionThroughDelegate--")]
+				void Local ()
+				{ }
+			}
+
+			public static void Test ()
+			{
+				TestMethodWithDelegate ();
+				LambdaThroughDelegate ();
+				LocalFunctionThroughDelegate ();
 			}
 		}
 	}

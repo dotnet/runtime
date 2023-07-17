@@ -98,7 +98,7 @@ namespace System.Xml.Serialization
                 }
                 else if (attrs[i] is XmlAnyElementAttribute any)
                 {
-                    if ((any.Name == null || any.Name.Length == 0) && any.GetNamespaceSpecified() && any.Namespace == null)
+                    if (string.IsNullOrEmpty(any.Name) && any.GetNamespaceSpecified() && any.Namespace == null)
                     {
                         // ignore duplicate wildcards
                         wildcard = any;

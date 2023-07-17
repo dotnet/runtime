@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk.IL">
+  <PropertyGroup>
+    <RestorePackages>true</RestorePackages>
+    <CLRTestPriority>1</CLRTestPriority>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DebugType>PdbOnly</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="i4u1_r.il" />
+    <Compile Include="i4u1.il" />
+  </ItemGroup>
+</Project>

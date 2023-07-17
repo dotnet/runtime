@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using Newtonsoft.Json.Bson;
+using Xunit;
 
 namespace Serialization
 {
@@ -137,7 +138,8 @@ public class JsonBenchmarks
         }
     }
 
-    public static int Main() {
+    [Fact]
+    public static int TestEntryPoint() {
         var tests = new JsonBenchmarks();
         bool result = tests.Serialize();
         return result ? 100 : -1;

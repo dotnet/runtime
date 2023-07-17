@@ -946,7 +946,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
     MulticoreJitTrace(("StartProfile('%s', '%s', %d)", pRootUtf8, pFileUtf8, suffix));
 #endif // MULTICOREJIT_LOGGING
 
-    size_t lenFile = wcslen(pFile);
+    size_t lenFile = u16_strlen(pFile);
 
     // Options (only AutoStartProfile using environment variable, for testing)
     // ([d|D]main-thread-delay)

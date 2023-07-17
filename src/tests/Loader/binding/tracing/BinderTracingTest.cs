@@ -190,10 +190,8 @@ namespace BinderTracingTests
 
         private static bool RunTestInSeparateProcess(MethodInfo method)
         {
-            var startInfo = new ProcessStartInfo()
+            var startInfo = new ProcessStartInfo(Process.GetCurrentProcess().MainModule.FileName, new[] { Assembly.GetExecutingAssembly().Location, method.Name })
             {
-                FileName = Process.GetCurrentProcess().MainModule.FileName,
-                Arguments = $"{Assembly.GetExecutingAssembly().Location} {method.Name}",
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true

@@ -130,7 +130,7 @@ namespace System.Text.Unicode
                         // bit for 1-byte or 2-byte elements. The 0x0080 bit will already have been set for non-ASCII (2-byte
                         // and 3-byte) elements.
 
-                        if (AdvSimd.IsSupported)
+                        if (AdvSimd.Arm64.IsSupported)
                         {
                             charIsThreeByteUtf8Encoded = AdvSimd.AddSaturate(utf16Data, vector7800);
                             mask = GetNonAsciiBytes(AdvSimd.Or(charIsNonAscii, charIsThreeByteUtf8Encoded).AsByte(), bitMask128);
@@ -489,6 +489,7 @@ namespace System.Text.Unicode
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         private static uint GetNonAsciiBytes(Vector128<byte> value, Vector128<byte> bitMask128)
         {
             Debug.Assert(AdvSimd.Arm64.IsSupported);

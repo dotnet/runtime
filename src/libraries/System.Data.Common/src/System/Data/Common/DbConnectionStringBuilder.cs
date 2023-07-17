@@ -15,6 +15,9 @@ namespace System.Data.Common
     [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2113:ReflectionToRequiresUnreferencedCode",
         Justification = "The use of GetType preserves ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
             + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
+    [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2112:ReflectionToRequiresUnreferencedCode",
+        Justification = "The use of GetType preserves implementation of ICustomTypeDescriptor members with RequiresUnreferencedCode, but the GetType callsites either "
+            + "occur in RequiresUnreferencedCode scopes, or have individually justified suppressions.")]
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
     public class DbConnectionStringBuilder : IDictionary, ICustomTypeDescriptor
     {

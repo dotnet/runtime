@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'huge_i4'
+.assembly ASSEMBLY_NAME
 {
 
 

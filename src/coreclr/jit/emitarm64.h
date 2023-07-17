@@ -873,7 +873,8 @@ void emitIns_R_R_R_I_LdStPair(instruction ins,
                               int         varx1 = -1,
                               int         varx2 = -1,
                               int         offs1 = -1,
-                              int         offs2 = -1);
+                              int offs2 = -1 DEBUG_ARG(unsigned var1RefsOffs = BAD_IL_OFFSET)
+                                              DEBUG_ARG(unsigned var2RefsOffs = BAD_IL_OFFSET));
 
 void emitIns_R_S(instruction ins, emitAttr attr, regNumber ireg, int varx, int offs);
 
@@ -1001,31 +1002,5 @@ inline bool emitIsLoadConstant(instrDesc* jmp)
     return ((jmp->idInsFmt() == IF_LS_1A) || // ldr
             (jmp->idInsFmt() == IF_LARGELDC));
 }
-
-#if defined(FEATURE_SIMD)
-//-----------------------------------------------------------------------------------
-// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
-//
-// Arguments:
-//     varNum  - the variable on the stack to use as a base;
-//     offset  - the offset from the varNum;
-//     dataReg - the src reg with SIMD12 value;
-//     tmpReg  - a tmp reg to use for the write, can be general or float.
-//
-void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, regNumber tmpReg)
-{
-    assert(varNum != BAD_VAR_NUM);
-    assert(isVectorRegister(dataReg));
-
-    // store lower 8 bytes
-    emitIns_S_R(INS_str, EA_8BYTE, dataReg, varNum, offset);
-
-    // Extract upper 4-bytes from data
-    emitIns_R_R_I(INS_mov, EA_4BYTE, tmpReg, dataReg, 2);
-
-    // 4-byte write
-    emitIns_S_R(INS_str, EA_4BYTE, tmpReg, varNum, offset + 8);
-}
-#endif // FEATURE_SIMD
 
 #endif // TARGET_ARM64

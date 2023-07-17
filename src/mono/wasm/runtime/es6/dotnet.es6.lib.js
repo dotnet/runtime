@@ -7,11 +7,12 @@
 
 // because we can't pass custom define symbols to acorn optimizer, we use environment variables to pass other build options
 const DISABLE_LEGACY_JS_INTEROP = process.env.DISABLE_LEGACY_JS_INTEROP === "1";
+const ENABLE_BROWSER_PROFILER = process.env.ENABLE_BROWSER_PROFILER === "1";
+const ENABLE_AOT_PROFILER = process.env.ENABLE_AOT_PROFILER === "1";
 
-function setup(disableLegacyJsInterop) {
+function setup(linkerSetup) {
     const pthreadReplacements = {};
     const dotnet_replacements = {
-        scriptUrl: import.meta.url,
         fetch: globalThis.fetch,
         require,
         updateMemoryViews,
@@ -27,30 +28,21 @@ function setup(disableLegacyJsInterop) {
     #else
     const ENVIRONMENT_IS_PTHREAD = false;
     #endif
-    if (ENVIRONMENT_IS_NODE) {
-        dotnet_replacements.requirePromise = import(/* webpackIgnore: true */'module').then(mod => mod.createRequire(import.meta.url));
-        dotnet_replacements.requirePromise.then(someRequire => {
-            require = someRequire;
-        });
-    }
 
-    __dotnet_runtime.passEmscriptenInternals({
-        isWorker: ENVIRONMENT_IS_WORKER,
-        isShell: ENVIRONMENT_IS_SHELL,
+    Module.__dotnet_runtime.passEmscriptenInternals({
         isPThread: ENVIRONMENT_IS_PTHREAD,
-        disableLegacyJsInterop,
-        quit_, ExitStatus
+        quit_, ExitStatus,
+        ...linkerSetup
     });
+    Module.__dotnet_runtime.initializeReplacements(dotnet_replacements);
 
     #if USE_PTHREADS
     if (ENVIRONMENT_IS_PTHREAD) {
         Module.config = {};
-        __dotnet_runtime.initializeReplacements(dotnet_replacements);
-        __dotnet_runtime.configureWorkerStartup(Module);
+        Module.__dotnet_runtime.configureWorkerStartup(Module);
     } else {
         #endif
-        __dotnet_runtime.initializeReplacements(dotnet_replacements);
-        __dotnet_runtime.configureEmscriptenStartup(Module);
+        Module.__dotnet_runtime.configureEmscriptenStartup(Module);
         #if USE_PTHREADS
     }
     #endif
@@ -58,6 +50,7 @@ function setup(disableLegacyJsInterop) {
     updateMemoryViews = dotnet_replacements.updateMemoryViews;
     noExitRuntime = dotnet_replacements.noExitRuntime;
     fetch = dotnet_replacements.fetch;
+    require = dotnet_replacements.require;
     _scriptDir = __dirname = scriptDirectory = dotnet_replacements.scriptDirectory;
     #if USE_PTHREADS
     PThread.loadWasmModuleToWorker = pthreadReplacements.loadWasmModuleToWorker;
@@ -67,7 +60,11 @@ function setup(disableLegacyJsInterop) {
 }
 
 const postset = `
-    DOTNET.setup(${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"});
+    DOTNET.setup({ `+
+    `linkerDisableLegacyJsInterop: ${DISABLE_LEGACY_JS_INTEROP ? "true" : "false"},` +
+    `linkerEnableAotProfiler: ${ENABLE_AOT_PROFILER ? "true" : "false"}, ` +
+    `linkerEnableBrowserProfiler: ${ENABLE_BROWSER_PROFILER ? "true" : "false"}` +
+    `});
 `;
 
 const DotnetSupportLib = {
@@ -79,7 +76,7 @@ const DotnetSupportLib = {
 // --- keep in sync with exports.ts ---
 let linked_functions = [
     // mini-wasm.c
-    "mono_set_timeout",
+    "mono_wasm_schedule_timer",
 
     // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
@@ -120,22 +117,43 @@ let linked_functions = [
     "mono_wasm_compare_string",
     "mono_wasm_starts_with",
     "mono_wasm_ends_with",
+    "mono_wasm_index_of",
 
     "icudt68_dat",
 ];
 
 #if USE_PTHREADS
 linked_functions = [...linked_functions,
-    /// mono-threads-wasm.c
+    // mono-threads-wasm.c
     "mono_wasm_pthread_on_pthread_attached",
+    "mono_wasm_pthread_on_pthread_detached",
     // threads.c
     "mono_wasm_eventloop_has_unsettled_interop_promises",
     // diagnostics_server.c
     "mono_wasm_diagnostic_server_on_server_thread_created",
     "mono_wasm_diagnostic_server_on_runtime_server_init",
     "mono_wasm_diagnostic_server_stream_signal_work_available",
+    // corebindings.c
+    "mono_wasm_install_js_worker_interop",
+    "mono_wasm_uninstall_js_worker_interop",
 ]
 #endif
+
+if (ENABLE_AOT_PROFILER) {
+    linked_functions = [...linked_functions,
+        "mono_wasm_invoke_js_with_args_ref",
+        "mono_wasm_get_object_property_ref",
+        "mono_wasm_set_object_property_ref",
+        "mono_wasm_get_by_index_ref",
+        "mono_wasm_set_by_index_ref",
+        "mono_wasm_get_global_object_ref",
+        "mono_wasm_create_cs_owned_object_ref",
+        "mono_wasm_typed_array_to_array_ref",
+        "mono_wasm_typed_array_from_ref",
+        "mono_wasm_invoke_js_blazor",
+    ]
+}
+
 if (!DISABLE_LEGACY_JS_INTEROP) {
     linked_functions = [...linked_functions,
         "mono_wasm_invoke_js_with_args_ref",

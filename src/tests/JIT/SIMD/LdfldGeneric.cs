@@ -3,10 +3,11 @@
 using System;
 using System.Collections.Generic;
 using Point = System.Numerics.Vector<int>;
+using Xunit;
 
 namespace VectorMathTests
 {
-    class Program
+    public class Program
     {
         static float Do(Point p)
         {
@@ -23,7 +24,8 @@ namespace VectorMathTests
             public Point p;
         }
 
-        static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Point p = new Point(1);
 

@@ -23,21 +23,21 @@ namespace System.Net.Http
         [NonEvent]
         public void Http11RequestLeftQueue(double timeOnQueueMilliseconds)
         {
-            _http11RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            _http11RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 1, versionMinor: 1);
         }
 
         [NonEvent]
         public void Http20RequestLeftQueue(double timeOnQueueMilliseconds)
         {
-            _http20RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            _http20RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 2, versionMinor: 0);
         }
 
         [NonEvent]
         public void Http30RequestLeftQueue(double timeOnQueueMilliseconds)
         {
-            _http30RequestsQueueDurationCounter!.WriteMetric(timeOnQueueMilliseconds);
+            _http30RequestsQueueDurationCounter?.WriteMetric(timeOnQueueMilliseconds);
             RequestLeftQueue(timeOnQueueMilliseconds, versionMajor: 3, versionMinor: 0);
         }
 

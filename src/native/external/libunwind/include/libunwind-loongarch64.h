@@ -88,7 +88,7 @@ typedef enum
     UNW_LOONGARCH64_R30,
     UNW_LOONGARCH64_R31,
 
-    UNW_LOONGARCH64_PC = 32,
+    UNW_LOONGARCH64_PC = 33,
 
     /* FIXME: Other registers!  */
 

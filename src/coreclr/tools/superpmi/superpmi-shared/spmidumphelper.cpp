@@ -183,7 +183,6 @@ std::string SpmiDumpHelper::DumpCorInfoFlag(CorInfoFlag flags)
     AddFlag(CORINFO_FLG_ARRAY);
     AddFlag(CORINFO_FLG_OVERLAPPING_FIELDS);
     AddFlag(CORINFO_FLG_INTERFACE);
-    AddFlag(CORINFO_FLG_CUSTOMLAYOUT);
     AddFlag(CORINFO_FLG_CONTAINS_GC_PTR);
     AddFlag(CORINFO_FLG_DELEGATE);
     AddFlag(CORINFO_FLG_BYREF_LIKE);
@@ -233,48 +232,38 @@ std::string SpmiDumpHelper::DumpJitFlags(unsigned long long flags)
     AddFlag(DEBUG_EnC);
     AddFlag(DEBUG_INFO);
     AddFlag(MIN_OPT);
-
-    AddFlag(MCJIT_BACKGROUND);
-
-    // x86 only
-    //
-    AddFlagNumeric(PINVOKE_RESTORE_ESP, 8);
-    AddFlagNumeric(TARGET_P4, 9);
-    AddFlagNumeric(USE_FCOMI, 10);
-    AddFlagNumeric(USE_CMOV, 11);
-
+    AddFlag(ENABLE_CFG);
     AddFlag(OSR);
     AddFlag(ALT_JIT);
-
+    AddFlag(FROZEN_ALLOC_ALLOWED);
     AddFlag(MAKEFINALCODE);
     AddFlag(READYTORUN);
     AddFlag(PROF_ENTERLEAVE);
-
     AddFlag(PROF_NO_PINVOKE_INLINE);
-    AddFlag(SKIP_VERIFICATION);
     AddFlag(PREJIT);
     AddFlag(RELOC);
-    AddFlag(IMPORT_ONLY);
     AddFlag(IL_STUB);
     AddFlag(PROCSPLIT);
     AddFlag(BBINSTR);
+    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(BBOPT);
     AddFlag(FRAMED);
-    AddFlag(BBINSTR_IF_LOOPS);
     AddFlag(PUBLISH_SECRET_PARAM);
-
-    AddFlag(SAMPLING_JIT_BACKGROUND);
     AddFlag(USE_PINVOKE_HELPERS);
     AddFlag(REVERSE_PINVOKE);
     AddFlag(TRACK_TRANSITIONS);
     AddFlag(TIER0);
     AddFlag(TIER1);
+    AddFlag(NO_INLINING);
 
     // arm32 only
     //
-    AddFlagNumeric(RELATIVE_CODE_RELOCS, 41);
+    AddFlagNumeric(RELATIVE_CODE_RELOCS, 29);
+    AddFlagNumeric(SOFTFP_ABI, 30);
 
-    AddFlag(NO_INLINING);
+    // xarch only
+    //
+    AddFlagNumeric(VECTOR512_THROTTLING, 31);
 
     // "Extra jit flag" support
     //

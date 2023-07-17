@@ -236,6 +236,31 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="IImmutableList{T}"/> interface.
         /// </summary>
+        internal ImmutableList<T> AddRange(ReadOnlySpan<T> items)
+        {
+            if (this.IsEmpty)
+            {
+                if (items.IsEmpty)
+                {
+                    return Empty;
+                }
+
+                return new ImmutableList<T>(Node.NodeTreeFromList(items));
+            }
+            else
+            {
+                if (items.IsEmpty)
+                {
+                    return this;
+                }
+
+                return this.Wrap(_root.AddRange(items));
+            }
+        }
+
+        /// <summary>
+        /// See the <see cref="IImmutableList{T}"/> interface.
+        /// </summary>
         public ImmutableList<T> Insert(int index, T item)
         {
             Requires.Range(index >= 0 && index <= this.Count, nameof(index));

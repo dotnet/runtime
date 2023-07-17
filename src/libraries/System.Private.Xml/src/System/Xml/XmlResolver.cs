@@ -52,7 +52,7 @@ namespace System.Xml
             }
             else
             {
-                if (relativeUri == null || relativeUri.Length == 0)
+                if (string.IsNullOrEmpty(relativeUri))
                 {
                     return baseUri;
                 }

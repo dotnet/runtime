@@ -152,32 +152,16 @@ namespace System.Runtime.CompilerServices
                 // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry._version);
-
-#if CORECLR
-                // in CoreCLR we do ordinary reads of the entry parts and
-                // Interlocked.ReadMemoryBarrier() before reading the version
                 nuint entrySource = pEntry._source;
-#else
-                // must read this before reading the version again
-                nuint entrySource = Volatile.Read(ref pEntry._source);
-#endif
-
                 // mask the lower version bit to make it even.
                 // This way we can check if version is odd or changing in just one compare.
                 version &= unchecked((uint)~1);
 
                 if (entrySource == source)
                 {
-
-#if CORECLR
                     // in CoreCLR we do ordinary reads of the entry parts and
                     // Interlocked.ReadMemoryBarrier() before reading the version
                     nuint entryTargetAndResult = pEntry._targetAndResult;
-#else
-                    // must read this before reading the version again
-                    nuint entryTargetAndResult = Volatile.Read(ref pEntry._targetAndResult);
-#endif
-
                     // target never has its lower bit set.
                     // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
                     entryTargetAndResult ^= target;
@@ -189,10 +173,7 @@ namespace System.Runtime.CompilerServices
                         // - use acquires for both _source and _targetAndResults or
                         // - issue a load barrier before reading _version
                         // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-
-#if CORECLR
                         Interlocked.ReadMemoryBarrier();
-#endif
 
                         if (version != pEntry._version)
                         {

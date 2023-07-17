@@ -297,7 +297,7 @@ namespace System.Xml
             if (_trackTextContent && _inTextContent) { ChangeTextContentMark(false); }
 
             _bufChars[_bufPos++] = (char)'<';
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 RawText(prefix);
                 _bufChars[_bufPos++] = (char)':';
@@ -334,7 +334,7 @@ namespace System.Xml
                 _bufChars[_bufPos++] = (char)'<';
                 _bufChars[_bufPos++] = (char)'/';
 
-                if (prefix != null && prefix.Length != 0)
+                if (!string.IsNullOrEmpty(prefix))
                 {
                     RawText(prefix);
                     _bufChars[_bufPos++] = (char)':';
@@ -363,7 +363,7 @@ namespace System.Xml
             _bufChars[_bufPos++] = (char)'<';
             _bufChars[_bufPos++] = (char)'/';
 
-            if (prefix != null && prefix.Length != 0)
+            if (!string.IsNullOrEmpty(prefix))
             {
                 RawText(prefix);
                 _bufChars[_bufPos++] = (char)':';
@@ -1960,7 +1960,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(!string.IsNullOrEmpty(localName) && prefix != null && ns != null);
 
             // Add indentation
             if (!_mixedContent && base._textPos != base._bufPos)

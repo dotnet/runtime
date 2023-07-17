@@ -298,7 +298,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         // We will try VT_DISPATCH and then call GetNativeVariantForObject.
         private const VarEnum VT_DEFAULT = VarEnum.VT_RECORD;
 
-        private VarEnum GetComType(ref Type argumentType)
+        private static VarEnum GetComType(ref Type argumentType)
         {
             if (argumentType == typeof(Missing))
             {
@@ -378,7 +378,7 @@ namespace Microsoft.CSharp.RuntimeBinder.ComInterop
         /// Get the COM Variant type that argument should be marshaled as for a call to COM
         /// </summary>
         [RequiresUnreferencedCode(Binder.TrimmerWarning)]
-        private VariantBuilder GetVariantBuilder(Type argumentType)
+        private static VariantBuilder GetVariantBuilder(Type argumentType)
         {
             //argumentType is coming from MarshalType, null means the dynamic object holds
             //a null value and not byref

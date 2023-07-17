@@ -58,8 +58,6 @@ ASM_OFFSET(    0,    78, Thread, m_uHijackedReturnValueFlags)
 ASM_OFFSET(   48,    80, Thread, m_pExInfoStackHead)
 ASM_OFFSET(   4c,    88, Thread, m_threadAbortException)
 
-ASM_OFFSET(   50,    90, Thread, m_pThreadLocalModuleStatics)
-
 ASM_SIZEOF(   14,    20, EHEnum)
 
 ASM_OFFSET(    0,     0, gc_alloc_context, alloc_ptr)
@@ -72,16 +70,6 @@ ASM_OFFSET(    8,     0, InterfaceDispatchCache, m_pCell)
 #endif
 ASM_OFFSET(   10,    20, InterfaceDispatchCache, m_rgEntries)
 ASM_SIZEOF(    8,    10, InterfaceDispatchCacheEntry)
-#endif
-
-#ifdef FEATURE_DYNAMIC_CODE
-ASM_OFFSET(    0,     0, CallDescrData, pSrc)
-ASM_OFFSET(    4,     8, CallDescrData, numStackSlots)
-ASM_OFFSET(    8,     C, CallDescrData, fpReturnSize)
-ASM_OFFSET(    C,    10, CallDescrData, pArgumentRegisters)
-ASM_OFFSET(   10,    18, CallDescrData, pFloatArgumentRegisters)
-ASM_OFFSET(   14,    20, CallDescrData, pTarget)
-ASM_OFFSET(   18,    28, CallDescrData, pReturnBuffer)
 #endif
 
 // Undefine macros that are only used in this header for convenience.

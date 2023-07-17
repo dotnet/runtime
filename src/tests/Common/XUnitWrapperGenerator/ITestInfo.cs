@@ -309,7 +309,7 @@ public sealed class OutOfProcessTest : ITestInfo
         ExecutionStatement.AppendLine("if (TestLibrary.OutOfProcessTest.OutOfProcessTestsSupported)");
         using (ExecutionStatement.NewBracesScope())
         {
-            ExecutionStatement.AppendLine($@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(typeof(Program).Assembly.Location, @""{relativeAssemblyPath}"");");
+            ExecutionStatement.AppendLine($@"TestLibrary.OutOfProcessTest.RunOutOfProcessTest(@""{relativeAssemblyPath}"");");
         }
     }
 

@@ -38,6 +38,9 @@
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsDir">
       <Value>$(ArtifactsDir)</Value>
     </RuntimeHostConfigurationOption>
+    <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ILToolsDir">
+      <Value>$(CoreCLRArtifactsPath)</Value>
+    </RuntimeHostConfigurationOption>
     <RuntimeHostConfigurationOption Include="Mono.Linker.Tests.ArtifactsBinDir">
       <Value>$(ArtifactsBinDir)</Value>
     </RuntimeHostConfigurationOption>

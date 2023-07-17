@@ -202,6 +202,8 @@ public:
 
     int StartNoGCRegion(uint64_t totalSize, bool lohSizeKnown, uint64_t lohSize, bool disallowFullBlockingGC);
     int EndNoGCRegion();
+    enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold);
+    FinalizerWorkItem* GetExtraWorkForFinalization();
 
     unsigned GetGcCount();
 

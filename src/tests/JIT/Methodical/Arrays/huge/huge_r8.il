@@ -19,7 +19,7 @@
            
   
 }
-.assembly 'huge_r8'
+.assembly ASSEMBLY_NAME
 {
 
 

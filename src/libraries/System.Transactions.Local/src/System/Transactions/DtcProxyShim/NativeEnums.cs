@@ -115,7 +115,7 @@ internal enum OletxTransactionHeuristic : uint
     XACTHEURISTIC_DANGER = 4
 }
 
-internal enum OletxXactStat
+internal enum OletxXactStat : int
 {
     XACTSTAT_NONE = 0,
     XACTSTAT_OPENNORMAL = 0x1,

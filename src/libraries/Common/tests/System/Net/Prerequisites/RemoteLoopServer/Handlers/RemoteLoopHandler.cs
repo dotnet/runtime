@@ -37,7 +37,7 @@ namespace RemoteLoopServer
             }
             catch (Exception ex)
             {
-                logger.LogError("RemoteLoopHandler failed", ex);
+                logger.LogError(ex, "RemoteLoopHandler failed");
             }
         }
 
@@ -147,14 +147,14 @@ namespace RemoteLoopServer
                     }
                     catch (WebSocketException ex)
                     {
-                        logger.LogWarning("RemoteLoopHandler.ProcessWebSocketRequest closing failed", ex);
+                        logger.LogWarning(ex, "RemoteLoopHandler.ProcessWebSocketRequest closing failed");
                     }
                 }
                 cts.Cancel();
             }
             catch (Exception ex)
             {
-                logger.LogError("RemoteLoopHandler.ProcessWebSocketRequest failed", ex);
+                logger.LogError(ex, "RemoteLoopHandler.ProcessWebSocketRequest failed");
             }
             finally
             {

@@ -46,7 +46,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)gcHandle.Target;
             if (holder == null) throw new InvalidOperationException(SR.FailedToMarshalTaskCallback);
 
-            TaskCompletionSource tcs = new TaskCompletionSource(gcHandle);
+            TaskCompletionSource tcs = new TaskCompletionSource(holder);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSHostImplementation.TaskCallback? holder = (JSHostImplementation.TaskCallback?)gcHandle.Target;
             if (holder == null) throw new InvalidOperationException(SR.FailedToMarshalTaskCallback);
 
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(gcHandle);
+            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>(holder);
             JSHostImplementation.ToManagedCallback callback = (JSMarshalerArgument* arguments_buffer) =>
             {
                 ref JSMarshalerArgument arg_2 = ref arguments_buffer[3]; // set by caller when this is SetException call
@@ -139,16 +139,18 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
+            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
             task.GetAwaiter().OnCompleted(Complete);
-
-            /* TODO multi-threading
-             * tasks could resolve on any thread and so this code will have race condition between task.IsCompleted and OnCompleted(Complete) callback
-             * This probably needs SynchronizationContext to marshal this call to main thread
-             */
-            Debug.Assert(!task.IsCompleted, "multithreading race condition");
+#endif
 
             void Complete()
             {
+#if FEATURE_WASM_THREADS
+                JSObject.AssertThreadAffinity(promise);
+#endif
+
                 // When this task was never resolved/rejected
                 // promise (held by this lambda) would be collected by GC after the Task is collected
                 // and would also allow the JS promise to be collected
@@ -218,13 +220,11 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
+            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
             task.GetAwaiter().OnCompleted(Complete);
-
-            /* TODO multi-threading
-             * tasks could resolve on any thread and so this code will have race condition between task.IsCompleted and OnCompleted(Complete) callback
-             * This probably needs SynchronizationContext to marshal this call to main thread
-             */
-            Debug.Assert(!task.IsCompleted, "multithreading race condition");
+#endif
 
             void Complete()
             {
@@ -298,13 +298,11 @@ namespace System.Runtime.InteropServices.JavaScript
             slot.JSHandle = jsHandle;
             JSObject promise = JSHostImplementation.CreateCSOwnedProxy(jsHandle);
 
+#if FEATURE_WASM_THREADS
+            task.ContinueWith(_ => Complete(), TaskScheduler.FromCurrentSynchronizationContext());
+#else
             task.GetAwaiter().OnCompleted(Complete);
-
-            /* TODO multi-threading
-             * tasks could resolve on any thread and so this code will have race condition between task.IsCompleted and OnCompleted(Complete) callback
-             * This probably needs SynchronizationContext to marshal this call to main thread
-             */
-            Debug.Assert(!task.IsCompleted, "multithreading race condition");
+#endif
 
             void Complete()
             {
