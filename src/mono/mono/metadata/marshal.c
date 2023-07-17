@@ -2986,13 +2986,13 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_OTHER);
 
-#if ENABLE_LLVM
+// #if ENABLE_LLVM
 	// Just stub out the method with a "CEE_RET"
 	// Our codegen backend generates other code here
 	get_marshal_cb ()->emit_return (mb);
-#else
-	get_marshal_cb ()->emit_method_init(mb);
-#endif
+// #else
+	// get_marshal_cb ()->emit_method_init(mb);
+// #endif
 
 	info = mono_wrapper_info_create (mb, WRAPPER_SUBTYPE_AOT_INIT);
 	info->d.aot_init.subtype = subtype;
