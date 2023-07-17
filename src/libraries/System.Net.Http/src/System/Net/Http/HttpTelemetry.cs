@@ -93,14 +93,14 @@ namespace System.Net.Http
         [NonEvent]
         private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, string scheme, string host, int port, IPEndPoint? remoteEndPoint)
         {
-            string? socketAddress = remoteEndPoint?.Address?.ToString();
-            ConnectionEstablished(versionMajor, versionMinor, connectionId, scheme, host, port, socketAddress);
+            string? remoteAddress = remoteEndPoint?.Address?.ToString();
+            ConnectionEstablished(versionMajor, versionMinor, connectionId, scheme, host, port, remoteAddress);
         }
 
         [Event(4, Level = EventLevel.Informational, Version = 1)]
-        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, string scheme, string host, int port, string? socketAddress)
+        private void ConnectionEstablished(byte versionMajor, byte versionMinor, long connectionId, string scheme, string host, int port, string? remoteAddress)
         {
-            WriteEvent(eventId: 4, versionMajor, versionMinor, connectionId, scheme, host, port, socketAddress);
+            WriteEvent(eventId: 4, versionMajor, versionMinor, connectionId, scheme, host, port, remoteAddress);
         }
 
         [Event(5, Level = EventLevel.Informational, Version = 1)]

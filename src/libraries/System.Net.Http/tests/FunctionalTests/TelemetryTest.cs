@@ -464,7 +464,7 @@ namespace System.Net.Http.Functional.Tests
             foreach (EventWrittenEventArgs connectionEstablished in connectionsEstablished)
             {
                 Assert.Equal(7, connectionEstablished.Payload.Count);
-                Assert.Equal(new[] { "versionMajor", "versionMinor", "connectionId", "scheme", "host", "port", "socketAddress" }, connectionEstablished.PayloadNames);
+                Assert.Equal(new[] { "versionMajor", "versionMinor", "connectionId", "scheme", "host", "port", "remoteAddress" }, connectionEstablished.PayloadNames);
                 Assert.Equal(version.Major, (byte)connectionEstablished.Payload[0]);
                 Assert.Equal(version.Minor, (byte)connectionEstablished.Payload[1]);
                 long connectionId = (long)connectionEstablished.Payload[2];
