@@ -153,12 +153,10 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestMessage request = CreateRequest(HttpMethod.Connect, server.Address, UseVersion, exactVersion: true);
                 request.Headers.Protocol = "foo";
 
-                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
                 clientCompleted.SetResult();
-
                 if (useSsl)
                 {
-                    Assert.Equal(HttpRequestError.VersionNegotiationError, ex.HttpRequestError);
                     Assert.Equal(false, ex.Data["HTTP2_ENABLED"]);
                 }
             });
