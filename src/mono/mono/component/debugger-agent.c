@@ -7483,7 +7483,7 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			unsigned int symfile_size = 0;
 			MonoAssembly* assembly = NULL;
 			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
-			if (!CHECK_PROTOCOL_VERSION(2, 62))	{
+			if (!CHECK_PROTOCOL_VERSION(2, 62)) {
 				mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
 			}
 			else {
@@ -7507,7 +7507,8 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			}
 			m_dbgprot_buffer_init (buf, assembly_size + symfile_size + 1024);
 			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) assembly_bytes, assembly_size);
-			m_dbgprot_buffer_add_int (buf, ppdb_size);
+			if (CHECK_PROTOCOL_VERSION(2, 62))
+				m_dbgprot_buffer_add_int (buf, ppdb_size);
 			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) pdb_bytes, symfile_size);
 			if (assembly)
 				send_debug_information (assembly, buf);
