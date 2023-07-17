@@ -20,7 +20,7 @@
     <_AOTBuildCommand>$(_AOTBuildCommand) </_AOTBuildCommand>
 
     <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">--reset-simulator</_ResetSimulatorSwitch>
-    <_SignalAppEndSwitch Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">--signal-app-end</_SignalAppEndSwitch>
+    <_SignalAppEndSwitch>--signal-app-end</_SignalAppEndSwitch>
     <_AppleSignCommand Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">sign &quot;$app&quot;</_AppleSignCommand>
 
     <_AfterBuildCommands>
