@@ -9,7 +9,7 @@ using Xunit.Abstractions;
 
 #nullable enable
 
-namespace Wasm.Build.Blazor.NativeRebuild.Tests
+namespace Wasm.Build.Tests.Blazor
 {
     public class NoopNativeRebuildTest : BlazorWasmTestBase
     {
