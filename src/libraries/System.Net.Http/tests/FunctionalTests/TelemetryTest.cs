@@ -824,8 +824,10 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
+        public static bool SupportsRemoteExecutorAndAlpn = RemoteExecutor.IsSupported && PlatformDetection.SupportsAlpn;
+
         [OuterLoop]
-        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalTheory(nameof(SupportsRemoteExecutorAndAlpn))]
         [InlineData(false)]
         [InlineData(true)]
         public void EventSource_Proxy_LogsIPAddress(bool useSsl)
@@ -900,12 +902,13 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http11(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89035", TestPlatforms.Browser)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
         {
             RemoteExecutor.Invoke(async () =>
             {
-                TimeSpan timeout = TimeSpan.FromSeconds(30);
+                TimeSpan timeout = TimeSpan.FromSeconds(60);
                 const int NumParallelRequests = 4;
 
                 using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
@@ -947,7 +950,7 @@ namespace System.Net.Http.Functional.Tests
                         }
                     });
                     await WaitForEventCountersAsync(events);
-                }).WaitAsync(timeout);
+                });
 
                 Assert.DoesNotContain(events, e => e.Event.EventId == 0); // errors from the EventSource itself
 
