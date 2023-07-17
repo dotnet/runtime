@@ -637,7 +637,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync();
+                    var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(20_000);
                     connection.Socket.Close();
                 }
                 catch { }
