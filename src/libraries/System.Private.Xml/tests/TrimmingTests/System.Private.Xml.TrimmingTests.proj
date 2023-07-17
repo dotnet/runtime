@@ -8,11 +8,11 @@
                                ExtraTrimmerArgs="--enable-opt sealer" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Serialize.cs" />
     <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
-    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.DisallowResolvingUrlsByDefault.cs">
-      <DisabledFeatureSwitches>System.Xml.AllowResolvingUrlsByDefault</DisabledFeatureSwitches>
+    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.Disabled.IsNetworkingEnabledByDefault.cs">
+      <DisabledFeatureSwitches>System.Xml.XmlResolver.IsNetworkingEnabledByDefault</DisabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
-    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.AllowResolvingUrlsByDefault.cs">
-      <EnabledFeatureSwitches>System.Xml.AllowResolvingUrlsByDefault</EnabledFeatureSwitches>
+    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.IsNetworkingEnabledByDefault.cs">
+      <EnabledFeatureSwitches>System.Xml.XmlResolver.IsNetworkingEnabledByDefault</EnabledFeatureSwitches>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 

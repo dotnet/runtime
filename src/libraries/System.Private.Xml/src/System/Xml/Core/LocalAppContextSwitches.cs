@@ -36,9 +36,9 @@ namespace System.Xml
             ? value : false;
 
 
-        public static bool AllowResolvingUrlsByDefault { get; } =
+        public static bool IsNetworkingEnabledByDefault { get; } =
             AppContext.TryGetSwitch(
-                switchName: "System.Xml.AllowResolvingUrlsByDefault",
+                switchName: "System.Xml.XmlResolver.IsNetworkingEnabledByDefault",
                 isEnabled: out bool value)
             ? value : true;
     }
