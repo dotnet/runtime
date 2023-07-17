@@ -44,6 +44,26 @@ namespace Microsoft.Interop
                         IdentifierName(indexerIdentifier))));
         }
 
+        public static LocalDeclarationStatementSyntax DeclareWithModifiers(TypePositionInfo typeSyntax, string identifier, ExpressionSyntax? initializer = null)
+        {
+            VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
+            if (initializer is not null)
+            {
+                decl = decl.WithInitializer(
+                    EqualsValueClause(
+                        initializer));
+            }
+
+            // <type> <identifier>;
+            // or
+            // <type> <identifier> = <initializer>;
+            return LocalDeclarationStatement(
+                typeSyntax.IsByRef ? TokenList(Token(SyntaxKind.RefKeyword)) : TokenList(),
+                VariableDeclaration(
+                    typeSyntax.ManagedType.Syntax,
+                    SingletonSeparatedList(decl)));
+        }
+
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
             return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);

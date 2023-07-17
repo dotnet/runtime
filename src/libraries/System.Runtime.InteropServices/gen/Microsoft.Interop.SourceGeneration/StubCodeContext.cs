@@ -118,13 +118,19 @@ namespace Microsoft.Interop
         public const string GeneratedNativeIdentifierSuffix = "_native";
 
         /// <summary>
+        /// Suffix for all generated managed identifiers.
+        /// </summary>
+        public const string GeneratedManagedIdentifierSuffix = "_managed";
+
+        /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>
         /// </summary>
         /// <param name="info">Object for which to get identifiers</param>
         /// <returns>Managed and native identifiers</returns>
         public virtual (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
-            return ($"__{info.InstanceIdentifier}_managed", $"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedNativeIdentifierSuffix}");
+            return ($"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedManagedIdentifierSuffix}",
+                $"__{info.InstanceIdentifier.TrimStart('@')}{GeneratedNativeIdentifierSuffix}");
         }
 
         public virtual (string local, string parameter) GetAssignInOutIdentifiers(TypePositionInfo info)

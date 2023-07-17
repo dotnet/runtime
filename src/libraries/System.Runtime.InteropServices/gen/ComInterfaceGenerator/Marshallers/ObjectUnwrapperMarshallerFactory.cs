@@ -29,11 +29,19 @@ namespace Microsoft.Interop
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
                 Debug.Assert(info.MarshallingAttributeInfo is ObjectUnwrapperInfo);
-                TypeSyntax unwrapperType = ((ObjectUnwrapperInfo)info.MarshallingAttributeInfo).UnwrapperType;
+                if (context.CurrentStage == StubCodeContext.Stage.Setup)
+                {
+                    var (local, param) = context.GetAssignInOutIdentifiers(info);
+                    yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                        IdentifierName(local),
+                        IdentifierName(param)));
+                    yield break;
+                }
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;
                 }
+                TypeSyntax unwrapperType = ((ObjectUnwrapperInfo)info.MarshallingAttributeInfo).UnwrapperType;
 
                 (string managedIdentifier, string nativeIdentifier) = context.GetIdentifiers(info);
 

@@ -4,12 +4,12 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.CSharp;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
-using Microsoft.CodeAnalysis;
 using System.Diagnostics;
+using System.Linq;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -79,7 +79,7 @@ namespace Microsoft.Interop
 
             BlockSyntax code = stubGenerator.GenerateStubBody(
                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                    IdentifierName(ThisParameterIdentifier),
+                    IdentifierName("__this_managed"),
                     IdentifierName(methodStub.StubMethodSyntaxTemplate.Identifier)));
 
             (ParameterListSyntax unmanagedParameterList, TypeSyntax returnType, _) = stubGenerator.GenerateAbiMethodSignatureData();

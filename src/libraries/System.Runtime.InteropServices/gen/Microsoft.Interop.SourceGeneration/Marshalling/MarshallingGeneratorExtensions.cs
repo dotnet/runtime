@@ -60,7 +60,7 @@ namespace Microsoft.Interop
             SignatureBehavior behavior = generator.GetNativeSignatureBehavior(info);
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
             {
-                return GenerateForwardingParameter(info, context.GetIdentifiers(info).managed);
+                return GenerateForwardingParameter(info, info.InstanceIdentifier);
             }
             string identifierName;
             if (context.Direction == MarshalDirection.ManagedToUnmanaged)
@@ -90,6 +90,10 @@ namespace Microsoft.Interop
             else
             {
                 throw new ArgumentException("Context direction must be ManagedToUnmanaged or UnmanagedToManaged");
+            }
+            if (!info.IsManagedReturnPosition)
+            {
+                identifierName = info.InstanceIdentifier;
             }
             return Parameter(Identifier(identifierName))
                 .WithType(behavior switch
@@ -155,7 +159,7 @@ namespace Microsoft.Interop
                     CustomTypeMarshallerData defaultMarshallerData = collectionMarshalling.Marshallers.GetModeOrDefault(MarshalMode.Default);
                     if ((defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_ArrayMarshaller}<")
                         || defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller}<"))
-                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo {  UnmanagedType: not UnmanagedType.CustomMarshaler })
+                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler })
                     {
                         countInfo = collectionMarshalling.ElementCountInfo;
                         elementMarshallingInfo = defaultMarshallerData.CollectionElementMarshallingInfo;

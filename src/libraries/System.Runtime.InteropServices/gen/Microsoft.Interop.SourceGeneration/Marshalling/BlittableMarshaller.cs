@@ -69,6 +69,12 @@ namespace Microsoft.Interop
             switch (context.CurrentStage)
             {
                 case StubCodeContext.Stage.Setup:
+                    var (local, param) = context.GetAssignInOutIdentifiers(info);
+                    yield return ExpressionStatement(
+                        AssignmentExpression(
+                            SyntaxKind.SimpleAssignmentExpression,
+                            IdentifierName(local),
+                            IdentifierName(param)));
                     break;
                 case StubCodeContext.Stage.Marshal:
                     if (elementMarshalling is MarshalDirection.ManagedToUnmanaged or MarshalDirection.Bidirectional && info.IsByRef)

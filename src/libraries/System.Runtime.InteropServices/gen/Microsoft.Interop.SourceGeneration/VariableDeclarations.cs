@@ -22,6 +22,10 @@ namespace Microsoft.Interop
                 TypePositionInfo info = marshaller.TypeInfo;
                 if (info.IsManagedReturnPosition)
                     continue;
+                initializations.Add(MarshallerHelpers.DeclareWithModifiers(
+                    info,
+                    context.GetIdentifiers(info).managed,
+                    LiteralExpression(CodeAnalysis.CSharp.SyntaxKind.DefaultLiteralExpression)));
 
                 if (info.RefKind == RefKind.Out)
                 {
@@ -80,6 +84,15 @@ namespace Microsoft.Interop
             ImmutableArray<StatementSyntax>.Builder initializations = ImmutableArray.CreateBuilder<StatementSyntax>();
             ImmutableArray<LocalDeclarationStatementSyntax>.Builder variables = ImmutableArray.CreateBuilder<LocalDeclarationStatementSyntax>();
 
+            foreach (var marshaller in marshallers.SignatureMarshallers)
+            {
+                TypePositionInfo info = marshaller.TypeInfo;
+                if (info.IsNativeReturnPosition || info.IsManagedReturnPosition)
+                    continue;
+                // Initialize <param>_native
+                TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
+                initializations.Add(MarshallerHelpers.Declare(localType, context.GetIdentifiers(info).native, true));
+            }
             foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
@@ -152,10 +165,10 @@ namespace Microsoft.Interop
                         }
                         else
                         {
-                            // To simplify propogating back the value to the "byref" parameter,
+                            // To simplify propagating back the value to the "byref" parameter,
                             // we'll just declare the native identifier as a ref to its type.
                             // The rest of the code we generate will work as expected, and we don't need
-                            // to manually propogate back the updated values after the call.
+                            // to manually propagate back the updated values after the call.
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
                                 RefType(localType),
                                 native,
