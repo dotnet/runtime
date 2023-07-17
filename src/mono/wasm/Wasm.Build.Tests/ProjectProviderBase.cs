@@ -18,6 +18,7 @@ namespace Wasm.Build.Tests;
 
 public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string? _projectDir)
 {
+    public const string WebcilInWasmExtension = ".wasm";
     protected const string s_dotnetVersionHashRegex = @"\.(?<version>.+)\.(?<hash>[a-zA-Z0-9]+)\.";
     private static string[] s_dotnetExtensionsToIgnore = new[]
     {
@@ -25,8 +26,12 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
         ".br",
         ".symbols"
     };
+    private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
+    private static Regex s_runtimePackPathRegex = new Regex(s_runtimePackPathPattern);
 
     public string? ProjectDir { get; set; } = _projectDir;
+    protected ITestOutputHelper _testOutput = _testOutput;
+    protected BuildEnvironment _buildEnv = BuildTestBase.s_buildEnv;
 
     public IReadOnlyDictionary<string, DotNetFileName> FindAndAssertDotnetFiles(
         string dir,
@@ -259,6 +264,23 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
 
     public static bool ShouldCheckFingerprint(string expectedFilename, bool expectFingerprintOnDotnetJs, bool expectFingerprintForThisFile) =>
         (expectedFilename == "dotnet.js" && expectFingerprintOnDotnetJs) || expectFingerprintForThisFile;
+
+    public static void AssertRuntimePackPath(string buildOutput, string targetFramework)
+    {
+        var match = s_runtimePackPathRegex.Match(buildOutput);
+        if (!match.Success || match.Groups.Count != 2)
+            throw new XunitException($"Could not find the pattern in the build output: '{s_runtimePackPathPattern}'.{Environment.NewLine}Build output: {buildOutput}");
+
+        string expectedRuntimePackDir = BuildTestBase.s_buildEnv.GetRuntimePackDir(targetFramework);
+        string actualPath = match.Groups[1].Value;
+        if (string.Compare(actualPath, expectedRuntimePackDir) != 0)
+            throw new XunitException($"Runtime pack path doesn't match.{Environment.NewLine}Expected: '{expectedRuntimePackDir}'{Environment.NewLine}Actual:   '{actualPath}'");
+    }
+
+    public static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
+        => TestUtils.AssertFile(Path.Combine(BuildTestBase.s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
+                        Path.Combine(bundleDir, "_framework/dotnet.native.js.symbols"),
+                        same: fromRuntimePack);
 
     [MemberNotNull(nameof(ProjectDir))]
     protected void EnsureProjectDirIsSet()

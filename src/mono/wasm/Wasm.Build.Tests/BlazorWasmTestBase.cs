@@ -14,11 +14,11 @@ using Xunit.Sdk;
 
 namespace Wasm.Build.Tests;
 
-public abstract class BlazorWasmTestBase : BuildTestBase
+public abstract class BlazorWasmTestBase : WasmTemplateTestBase
 {
     protected BlazorWasmProjectProvider _provider;
     protected BlazorWasmTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
-                : base(new BlazorWasmProjectProvider(output), output, buildContext)
+                : base(output, buildContext, new BlazorWasmProjectProvider(output))
     {
         _provider = GetProvider<BlazorWasmProjectProvider>();
     }
@@ -128,30 +128,6 @@ public abstract class BlazorWasmTestBase : BuildTestBase
         AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
         return projectFile;
-    }
-
-    public void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
-    {
-        string additionalCode = $$"""
-            <p role="{{methodName}}">Output: @outputText</p>
-            <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
-
-            @code {
-                private string outputText = string.Empty;
-                public void {{methodName}}()
-                {
-                    {{customCode}}
-                }
-            }
-        """;
-
-        // find blazor's Counter.razor
-        string counterRazorPath = Path.Combine(_projectDir!, razorPage);
-        if (!File.Exists(counterRazorPath))
-            throw new FileNotFoundException($"Could not find {counterRazorPath}");
-
-        string oldContent = File.ReadAllText(counterRazorPath);
-        File.WriteAllText(counterRazorPath, oldContent + additionalCode);
     }
 
     // Keeping these methods with explicit Build/Publish in the name
