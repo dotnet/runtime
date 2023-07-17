@@ -1,6 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk.WebAssembly">
   <Import Project="..\DefaultBrowserSample.targets" />
+
+  <PropertyGroup>
+    <!-- <UsingBrowserRuntimeWorkload>true</UsingBrowserRuntimeWorkload> -->
+  </PropertyGroup>
+
   <ItemGroup>
-    <WasmExtraFilesToDeploy Include="main.js" />
+    <WasmExtraFilesToDeploy Remove="index.html" />
   </ItemGroup>
 </Project>
