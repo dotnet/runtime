@@ -457,7 +457,7 @@ namespace System.Globalization.Tests
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
         [InlineData("zh_CN", "zh_cn")]
         [InlineData("km_KH", "km_kh")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);
