@@ -6977,7 +6977,7 @@ void emitter::emitIns_R_R_C(instruction          ins,
 void emitter::emitIns_R_R_R(instruction ins, emitAttr attr, regNumber targetReg, regNumber reg1, regNumber reg2)
 {
     assert(IsAvx512OrPriorInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
 
     instrDesc* id = emitNewInstr(attr);
     id->idIns(ins);
@@ -11557,7 +11557,7 @@ void emitter::emitDispIns(
         case IF_RWR_RWR_RRD:
         {
             assert(IsVexOrEvexEncodableInstruction(ins));
-            assert(IsThreeOperandAVXInstruction(ins));
+            assert(IsThreeOperandAVXInstruction(ins) || IsKInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
             if (ins == INS_bextr || ins == INS_bzhi
@@ -14956,7 +14956,7 @@ BYTE* emitter::emitOutputRRR(BYTE* dst, instrDesc* id)
 
     instruction ins = id->idIns();
     assert(IsVexOrEvexEncodableInstruction(ins));
-    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins));
+    assert(IsThreeOperandAVXInstruction(ins) || isAvxBlendv(ins) || isAvx512Blendv(ins) || IsKInstruction(ins));
     regNumber targetReg = id->idReg1();
     regNumber src1      = id->idReg2();
     regNumber src2      = id->idReg3();

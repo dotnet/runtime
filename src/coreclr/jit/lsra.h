@@ -73,14 +73,6 @@ inline bool useFloatReg(var_types type)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Check to see if two RegisterTypes are equivalent
-//
-inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
-{
-    return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
-}
-
-//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -2031,8 +2023,6 @@ private:
 #endif // FEATURE_ARG_SPLIT
     int BuildLclHeap(GenTree* tree);
 
-#if defined(TARGET_XARCH)
-
 #if defined(TARGET_AMD64)
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
@@ -2047,6 +2037,18 @@ private:
     }
 #endif // TARGET_AMD64
 
+#if defined(TARGET_XARCH)
+    regMaskTP rbmAllMask;
+    regMaskTP rbmMskCalleeTrash;
+
+    regMaskTP get_RBM_ALLMASK() const
+    {
+        return this->rbmAllMask;
+    }
+    regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
 #endif // TARGET_XARCH
 
     unsigned availableRegCount;
@@ -2064,7 +2066,21 @@ private:
     //
     static regMaskTP calleeSaveRegs(RegisterType rt)
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+        if (varTypeIsIntegralOrI(rt))
+        {
+            return RBM_INT_CALLEE_SAVED;
+        }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        else if (varTypeIsMask(rt))
+        {
+            return RBM_MSK_CALLEE_SAVED;
+        }
+#endif // TARGET_XARCH && FEATURE_SIMD
+        else
+        {
+            assert(varTypeIsFloating(rt) || varTypeIsSIMD(rt));
+            return RBM_FLT_CALLEE_SAVED;
+        }
     }
 
     //------------------------------------------------------------------------
@@ -2072,7 +2088,21 @@ private:
     //
     regMaskTP callerSaveRegs(RegisterType rt) const
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+        if (varTypeIsIntegralOrI(rt))
+        {
+            return RBM_INT_CALLEE_TRASH;
+        }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+        else if (varTypeIsMask(rt))
+        {
+            return RBM_MSK_CALLEE_TRASH;
+        }
+#endif // TARGET_XARCH && FEATURE_SIMD
+        else
+        {
+            assert(varTypeIsFloating(rt) || varTypeIsSIMD(rt));
+            return RBM_FLT_CALLEE_TRASH;
+        }
     }
 };
 

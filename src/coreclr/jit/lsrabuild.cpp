@@ -1923,6 +1923,11 @@ static const regNumber lsraRegOrderFltEvex[]   = {REG_VAR_ORDER_FLT_EVEX};
 const unsigned         lsraRegOrderFltEvexSize = ArrLen(lsraRegOrderFltEvex);
 #endif //  TARGET_AMD64
 
+#if defined(TARGET_XARCH)
+static const regNumber lsraRegOrderMsk[]   = {REG_VAR_ORDER_MSK};
+const unsigned         lsraRegOrderMskSize = ArrLen(lsraRegOrderMsk);
+#endif // TARGET_XARCH
+
 //------------------------------------------------------------------------
 // buildPhysRegRecords: Make an interval for each physical register
 //
@@ -1978,6 +1983,20 @@ void LinearScan::buildPhysRegRecords()
         RegRecord* curr = &physRegs[reg];
         curr->regOrder  = (unsigned char)i;
     }
+
+#if defined(TARGET_XARCH)
+    // xarch has mask registers available when EVEX is supported
+
+    if (compiler->canUseEvexEncoding())
+    {
+        for (unsigned int i = 0; i < lsraRegOrderMskSize; i++)
+        {
+            regNumber  reg  = lsraRegOrderMsk[i];
+            RegRecord* curr = &physRegs[reg];
+            curr->regOrder  = (unsigned char)i;
+        }
+    }
+#endif // TARGET_XARCH
 }
 
 //------------------------------------------------------------------------
@@ -2715,6 +2734,12 @@ void           LinearScan::buildIntervals()
                     {
                         calleeSaveCount = CNT_CALLEE_ENREG;
                     }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+                    else if (varTypeUsesMaskReg(interval->registerType))
+                    {
+                        calleeSaveCount = CNT_CALLEE_SAVED_MASK;
+                    }
+#endif // TARGET_XARCH && FEATURE_SIMD
                     else
                     {
                         assert(varTypeUsesFloatReg(interval->registerType));
@@ -3968,6 +3993,12 @@ int LinearScan::BuildReturn(GenTree* tree)
                             {
                                 buildInternalIntRegisterDefForNode(tree, dstRegMask);
                             }
+#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
+                            else if (varTypeUsesMaskReg(dstType))
+                            {
+                                buildInternalMaskRegisterDefForNode(tree, dstRegMask);
+                            }
+#endif // TARGET_XARCH && FEATURE_SIMD
                             else
                             {
                                 assert(varTypeUsesFloatReg(dstType));

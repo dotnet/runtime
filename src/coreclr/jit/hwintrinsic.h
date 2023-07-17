@@ -200,9 +200,13 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is a PermuteVar2x intrinsic
     HW_Flag_PermuteVar2x = 0x4000000,
-#endif // TARGET_XARCH
+
     // The intrinsic is an embedded broadcast compatiable intrinsic
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
+
+    // The intrinsic can consume or produce an AVX512 mask register
+    HW_Flag_WithAvx512Mask = 0x10000000,
+#endif // TARGET_XARCH
 };
 
 #if defined(TARGET_XARCH)
@@ -580,11 +584,19 @@ struct HWIntrinsicInfo
         return (flags & HW_Flag_Commutative) != 0;
     }
 
+#if defined(TARGET_XARCH)
     static bool IsEmbBroadcastCompatible(NamedIntrinsic id)
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
     }
+
+    static bool WithAvx512Mask(NamedIntrinsic id)
+    {
+        HWIntrinsicFlag flags = lookupFlags(id);
+        return (flags & HW_Flag_WithAvx512Mask) != 0;
+    }
+#endif // TARGET_XARCH
 
     static bool IsMaybeCommutative(NamedIntrinsic id)
     {

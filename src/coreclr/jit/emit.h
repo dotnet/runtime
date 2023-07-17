@@ -2311,6 +2311,15 @@ private:
     }
 #endif // TARGET_AMD64
 
+#if defined(TARGET_XARCH)
+    regMaskTP rbmMskCalleeTrash;
+
+    regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    {
+        return this->rbmMskCalleeTrash;
+    }
+#endif // TARGET_AMD64
+
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
 #if defined(FEATURE_SIMD)
     CORINFO_FIELD_HANDLE emitSimd8Const(simd8_t constValue);

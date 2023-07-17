@@ -25213,7 +25213,11 @@ bool GenTreeHWIntrinsic::OperIsMemoryStoreOrBarrier() const
 //
 bool GenTreeHWIntrinsic::OperIsEmbBroadcastCompatible() const
 {
+#if defined(TARGET_XARCH)
     return HWIntrinsicInfo::IsEmbBroadcastCompatible(GetHWIntrinsicId());
+#else
+    return false;
+#endif // TARGET_XARCH
 }
 
 //------------------------------------------------------------------------

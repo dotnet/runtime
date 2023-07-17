@@ -3375,9 +3375,22 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         rbmFltCalleeTrash |= RBM_HIGHFLOAT;
         cntCalleeTrashFloat += CNT_CALLEE_TRASH_HIGHFLOAT;
     }
+#endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmAllMask         = RBM_ALLMASK_INIT;
+    rbmMskCalleeTrash  = RBM_MSK_CALLEE_TRASH_INIT;
+    cntCalleeTrashMask = CNT_CALLEE_TRASH_MASK_INIT;
+
+    if (canUseEvexEncoding())
+    {
+        rbmAllMask |= RBM_ALLMASK_EVEX;
+        rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
+        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK;
+    }
 
     codeGen->CopyRegisterInfo();
-#endif // TARGET_AMD64
+#endif // TARGET_XARCH
 }
 
 #ifdef DEBUG

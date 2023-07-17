@@ -708,12 +708,14 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableRegCount       = ACTUAL_REG_COUNT;
     needNonIntegerRegisters = false;
 
-#if defined(TARGET_XARCH)
-
 #if defined(TARGET_AMD64)
     rbmAllFloat       = compiler->rbmAllFloat;
     rbmFltCalleeTrash = compiler->rbmFltCalleeTrash;
 #endif // TARGET_AMD64
+
+#if defined(TARGET_XARCH)
+    rbmAllMask        = compiler->rbmAllMask;
+    rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
 
     if (!compiler->canUseEvexEncoding())
     {
