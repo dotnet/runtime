@@ -617,6 +617,7 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task FailedRequests_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
+            using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
@@ -626,9 +627,10 @@ namespace System.Net.Http.Functional.Tests
                 Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
                     // Getting a cancellation is also good if we are unable to detect the peer shutdown.
-                    using CancellationTokenSource cts = new CancellationTokenSource(1000);
+                    using CancellationTokenSource cts = new CancellationTokenSource(10_000);
                     using HttpResponseMessage response = await SendAsync(client, request, cts.Token);
                 });
+                cancelServerCts.Cancel();
                 Assert.True(ex is HttpRequestException or TaskCanceledException);
 
                 Measurement<long> m = recorder.GetMeasurements().Single();
@@ -637,7 +639,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 try
                 {
-                    var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(20_000);
+                    var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(cancelServerCts.Token);
                     connection.Socket.Close();
                 }
                 catch { }
