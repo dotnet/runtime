@@ -104,6 +104,8 @@ extends:
           jobTemplate: /eng/pipelines/common/global-build-job.yml
           buildConfig: release
           platforms:
+          - osx_x64
+          - osx_arm64
           - maccatalyst_x64
           - maccatalyst_arm64
           - tvossimulator_x64
