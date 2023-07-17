@@ -92,7 +92,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				compilationRoots.Add (new ILCompiler.DependencyAnalysis.TrimmingDescriptorNode (descriptor));
 			}
 			
-			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches);
+			ilProvider = new FeatureSwitchManager (ilProvider, logger, options.FeatureSwitches, default);
 
 			CompilerGeneratedState compilerGeneratedState = new CompilerGeneratedState (ilProvider, logger);
 
@@ -100,7 +100,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				compilationGroup,
 				typeSystemContext,
 				new NoMetadataBlockingPolicy (),
-				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches),
+				new ManifestResourceBlockingPolicy (logger, options.FeatureSwitches, new Dictionary<ModuleDesc, IReadOnlySet<string>>()),
 				logFile: null,
 				new NoStackTraceEmissionPolicy (),
 				new NoDynamicInvokeThunkGenerationPolicy (),
@@ -108,7 +108,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				UsageBasedMetadataGenerationOptions.ReflectionILScanning,
 				options: default,
 				logger,
-				Array.Empty<KeyValuePair<string, bool>> (),
+				options.FeatureSwitches,
 				Array.Empty<string> (),
 				options.AdditionalRootAssemblies.ToArray (),
 				options.TrimAssemblies.ToArray (),

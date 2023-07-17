@@ -1414,11 +1414,11 @@ static void* GetTlsIndexObjectAddress()
     return GetThreadStaticDescriptor(p);
 }
 
-#elif TARGET_ARM64
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
 extern "C" size_t GetThreadStaticsVariableOffset();
 
-#endif  // TARGET_ARM64
+#endif // TARGET_ARM64 || TARGET_LOONGARCH64
 #endif // TARGET_WINDOWS
 
 
@@ -1452,10 +1452,11 @@ void CEEInfo::getThreadLocalStaticBlocksInfo (CORINFO_THREAD_STATIC_BLOCKS_INFO*
     pInfo->tlsGetAddrFtnPtr = reinterpret_cast<void*>(&__tls_get_addr);
     pInfo->tlsIndexObject = GetTlsIndexObjectAddress();
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
-    // For Linux/arm64, just get the offset of thread static variable, and during execution,
-    // this offset, taken from trpid_elp0 system register gives back the thread variable address.
+    // For Linux arm64/loongarch64, just get the offset of thread static variable, and during execution,
+    // this offset, arm64 taken from trpid_elp0 system register gives back the thread variable address.
+    // this offset, loongarch64 taken from $tp register gives back the thread variable address.
     threadStaticBaseOffset = GetThreadStaticsVariableOffset();
 
 #else
@@ -1587,6 +1588,8 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
                 // Optimization is disabled for linux/x86
 #elif defined(TARGET_LINUX_MUSL) && defined(TARGET_ARM64)
                 // Optimization is disabled for linux musl arm64
+#elif defined(TARGET_RISCV64)
+                // Optimization is disabled for riscv64
 #else
                 bool optimizeThreadStaticAccess = true;
 #if !defined(TARGET_OSX) && defined(TARGET_UNIX) && defined(TARGET_AMD64)
@@ -1598,7 +1601,7 @@ void CEEInfo::getFieldInfo (CORINFO_RESOLVED_TOKEN * pResolvedToken,
 
                 if (optimizeThreadStaticAccess)
                 {
-                    // For windows x64/x86/arm64, linux x64/arm64:
+                    // For windows x64/x86/arm64, linux x64/arm64/loongarch64:
                     // We convert the TLS access to the optimized helper where we will store
                     // the static blocks in TLS directly and access them via inline code.
                     if ((pResult->helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR) ||
@@ -5066,6 +5069,7 @@ void CEEInfo::getCallInfo(
 
     BOOL fResolvedConstraint = FALSE;
     BOOL fForceUseRuntimeLookup = FALSE;
+    BOOL fAbstractSVM = FALSE;
 
     MethodDesc * pMDAfterConstraintResolution = pMD;
     if (constrainedType.IsNull())
@@ -5146,11 +5150,21 @@ void CEEInfo::getCallInfo(
 #ifdef FEATURE_DEFAULT_INTERFACES
         else if (directMethod && pMD->IsStatic())
         {
-            // Default interface implementation of static virtual method
-            pMDAfterConstraintResolution = directMethod;
-            fResolvedConstraint = TRUE;
-            pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
-            exactType = directMethod->GetMethodTable();
+            if (directMethod->IsAbstract())
+            {
+                // This is the result when we call a SVM which is abstract, or re-abstracted
+                directMethod = NULL;
+                pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+                fAbstractSVM = true;
+            }
+            else
+            {
+                // Default interface implementation of static virtual method
+                pMDAfterConstraintResolution = directMethod;
+                fResolvedConstraint = TRUE;
+                pResult->thisTransform = CORINFO_NO_THIS_TRANSFORM;
+                exactType = directMethod->GetMethodTable();
+            }
         }
 #endif
         else  if (constrainedType.IsValueType())
@@ -5647,7 +5661,14 @@ void CEEInfo::getCallInfo(
             // shared generics is covered by the ConstrainedMethodEntrySlot dictionary entry.
             pResult->kind = CORINFO_CALL;
             pResult->accessAllowed = CORINFO_ACCESS_ILLEGAL;
-            pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION;
+            if (fAbstractSVM)
+            {
+                pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_ENTRYPOINT_NOT_FOUND_EXCEPTION;
+            }
+            else
+            {
+                pResult->callsiteCalloutHelper.helperNum = CORINFO_HELP_THROW_AMBIGUOUS_RESOLUTION_EXCEPTION;
+            }
             pResult->callsiteCalloutHelper.numArgs = 3;
             pResult->callsiteCalloutHelper.args[0].methodHandle = (CORINFO_METHOD_HANDLE)pMD;
             pResult->callsiteCalloutHelper.args[0].argType = CORINFO_HELPER_ARG_TYPE_Method;

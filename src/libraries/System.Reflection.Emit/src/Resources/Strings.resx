@@ -171,4 +171,16 @@
   <data name="InvalidOperation_GenericParametersAlreadySet" xml:space="preserve">
     <value>The generic parameters are already defined on this MethodBuilder.</value>
   </data>
+  <data name="Argument_ShouldOnlySetVisibilityFlags" xml:space="preserve">
+    <value>Should only set visibility flags when creating EnumBuilder.</value>
+  </data>
+  <data name="Argument_ConstantDoesntMatch" xml:space="preserve">
+    <value>Constant does not match the defined type.</value>
+  </data>
+  <data name="Argument_ConstantNull" xml:space="preserve">
+    <value>Null is not a valid constant value for this type.</value>
+  </data>
+  <data name="InvalidOperation_NoUnderlyingTypeOnEnum" xml:space="preserve">
+    <value>Underlying type information on enumeration is not specified.</value>
+  </data>
 </root>

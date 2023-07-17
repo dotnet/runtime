@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Json;
 using System.Text;
-using System.Xml;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 using ResourceHashesByNameDictionary = System.Collections.Generic.Dictionary<string, string>;
@@ -29,6 +28,8 @@ public class GenerateWasmBootJson : Task
 
     [Required]
     public bool DebugBuild { get; set; }
+
+    public string DebugLevel { get; set; }
 
     [Required]
     public bool LinkerEnabled { get; set; }
@@ -55,6 +56,13 @@ public class GenerateWasmBootJson : Task
     public string RuntimeOptions { get; set; }
 
     [Required]
+    public string TargetFrameworkVersion { get; set; }
+
+    public ITaskItem[] LibraryInitializerOnRuntimeConfigLoaded { get; set; }
+
+    public ITaskItem[] LibraryInitializerOnRuntimeReady { get; set; }
+
+    [Required]
     public string OutputPath { get; set; }
 
     public ITaskItem[] LazyLoadedAssemblies { get; set; }
@@ -79,35 +87,16 @@ public class GenerateWasmBootJson : Task
     // Internal for tests
     public void WriteBootJson(Stream output, string entryAssemblyName)
     {
-        var icuDataMode = ICUDataMode.Sharded;
-
-        if (string.Equals(InvariantGlobalization, "true", StringComparison.OrdinalIgnoreCase))
-        {
-            icuDataMode = ICUDataMode.Invariant;
-        }
-        else if (IsHybridGlobalization)
-        {
-            icuDataMode = ICUDataMode.Hybrid;
-        }
-        else if (LoadAllICUData)
-        {
-            icuDataMode = ICUDataMode.All;
-        }
-        else if (LoadCustomIcuData)
-        {
-            icuDataMode = ICUDataMode.Custom;
-        }
-
         var result = new BootJsonData
         {
             entryAssembly = entryAssemblyName,
             cacheBootResources = CacheBootResources,
             debugBuild = DebugBuild,
-            debugLevel = DebugBuild ? 1 : 0,
+            debugLevel = ParseOptionalInt(DebugLevel) ?? (DebugBuild ? 1 : 0),
             linkerEnabled = LinkerEnabled,
             resources = new ResourcesData(),
             config = new List<string>(),
-            icuDataMode = icuDataMode,
+            icuDataMode = GetIcuDataMode(),
             startupMemoryCache = ParseOptionalBool(StartupMemoryCache),
         };
 
@@ -137,6 +126,9 @@ public class GenerateWasmBootJson : Task
 
             result.runtimeOptions = runtimeOptions.ToArray();
         }
+
+        string[] libraryInitializerOnRuntimeConfigLoadedFullPaths = LibraryInitializerOnRuntimeConfigLoaded?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
+        string[] libraryInitializerOnRuntimeReadyFullPath = LibraryInitializerOnRuntimeReady?.Select(s => s.GetMetadata("FullPath")).ToArray() ?? Array.Empty<string>();
 
         // Build a two-level dictionary of the form:
         // - assembly:
@@ -211,14 +203,45 @@ public class GenerateWasmBootJson : Task
                     resourceList = resourceData.runtime;
                 }
                 else if (string.Equals("JSModule", assetTraitName, StringComparison.OrdinalIgnoreCase) &&
-                            string.Equals(assetTraitValue, "JSLibraryModule", StringComparison.OrdinalIgnoreCase))
+                    string.Equals(assetTraitValue, "JSLibraryModule", StringComparison.OrdinalIgnoreCase))
                 {
                     Log.LogMessage(MessageImportance.Low, "Candidate '{0}' is defined as a library initializer resource.", resource.ItemSpec);
-                    resourceData.libraryInitializers ??= new();
-                    resourceList = resourceData.libraryInitializers;
+
                     var targetPath = resource.GetMetadata("TargetPath");
                     Debug.Assert(!string.IsNullOrEmpty(targetPath), "Target path for '{0}' must exist.", resource.ItemSpec);
+
+                    resourceList = resourceData.libraryInitializers ??= new ResourceHashesByNameDictionary();
                     AddResourceToList(resource, resourceList, targetPath);
+
+                    if (IsTargeting80OrLater())
+                    {
+                        var libraryStartupModules = resourceData.libraryStartupModules ??= new TypedLibraryStartupModules();
+
+                        if (libraryInitializerOnRuntimeConfigLoadedFullPaths.Contains(resource.ItemSpec))
+                        {
+                            resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
+                        }
+                        else if (libraryInitializerOnRuntimeReadyFullPath.Contains(resource.ItemSpec))
+                        {
+                            resourceList = libraryStartupModules.onRuntimeReady ??= new();
+                        }
+                        else if (File.Exists(resource.ItemSpec))
+                        {
+                            string fileContent = File.ReadAllText(resource.ItemSpec);
+                            if (fileContent.Contains("onRuntimeConfigLoaded") || fileContent.Contains("beforeStart") || fileContent.Contains("afterStarted"))
+                                resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
+                            else
+                                resourceList = libraryStartupModules.onRuntimeReady ??= new();
+                        }
+                        else
+                        {
+                            resourceList = libraryStartupModules.onRuntimeConfigLoaded ??= new();
+                        }
+
+                        string newTargetPath = "../" + targetPath; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+                        AddResourceToList(resource, resourceList, newTargetPath);
+                    }
+
                     continue;
                 }
                 else if (string.Equals("WasmResource", assetTraitName, StringComparison.OrdinalIgnoreCase) &&
@@ -281,7 +304,11 @@ public class GenerateWasmBootJson : Task
         {
             foreach (var configFile in ConfigurationFiles)
             {
-                result.config.Add(Path.GetFileName(configFile.ItemSpec));
+                string configUrl = Path.GetFileName(configFile.ItemSpec);
+                if (IsTargeting80OrLater())
+                    configUrl = "../" + configUrl; // This needs condition once WasmRuntimeAssetsLocation is supported in Wasm SDK
+
+                result.config.Add(configUrl);
             }
         }
 
@@ -304,7 +331,9 @@ public class GenerateWasmBootJson : Task
 
         var serializer = new DataContractJsonSerializer(typeof(BootJsonData), new DataContractJsonSerializerSettings
         {
-            UseSimpleDictionaryFormat = true
+            UseSimpleDictionaryFormat = true,
+            KnownTypes = new[] { typeof(TypedLibraryStartupModules) },
+            EmitTypeInformation = EmitTypeInformation.Never
         });
 
         using var writer = JsonReaderWriterFactory.CreateJsonWriter(output, Encoding.UTF8, ownsStream: false, indent: true);
@@ -320,12 +349,34 @@ public class GenerateWasmBootJson : Task
         }
     }
 
+    private ICUDataMode GetIcuDataMode()
+    {
+        if (string.Equals(InvariantGlobalization, "true", StringComparison.OrdinalIgnoreCase))
+            return ICUDataMode.Invariant;
+        else if (IsHybridGlobalization)
+            return ICUDataMode.Hybrid;
+        else if (LoadAllICUData)
+            return ICUDataMode.All;
+        else if (LoadCustomIcuData)
+            return ICUDataMode.Custom;
+
+        return ICUDataMode.Sharded;
+    }
+
     private static bool? ParseOptionalBool(string value)
     {
         if (string.IsNullOrEmpty(value) || !bool.TryParse(value, out var boolValue))
             return null;
 
         return boolValue;
+    }
+
+    private static int? ParseOptionalInt(string value)
+    {
+        if (string.IsNullOrEmpty(value) || !int.TryParse(value, out var intValue))
+            return null;
+
+        return intValue;
     }
 
     private void AddToAdditionalResources(ITaskItem resource, Dictionary<string, AdditionalAsset> additionalResources, string resourceName, string behavior)
@@ -344,5 +395,22 @@ public class GenerateWasmBootJson : Task
     private bool TryGetLazyLoadedAssembly(string fileName, out ITaskItem lazyLoadedAssembly)
     {
         return (lazyLoadedAssembly = LazyLoadedAssemblies?.SingleOrDefault(a => a.ItemSpec == fileName)) != null;
+    }
+
+    private Version? parsedTargetFrameworkVersion;
+    private static readonly Version version80 = new Version(8, 0);
+
+    private bool IsTargeting80OrLater()
+    {
+        if (parsedTargetFrameworkVersion == null)
+        {
+            string tfv = TargetFrameworkVersion;
+            if (tfv.StartsWith("v"))
+                tfv = tfv.Substring(1);
+
+            parsedTargetFrameworkVersion = Version.Parse(tfv);
+        }
+
+        return parsedTargetFrameworkVersion >= version80;
     }
 }
