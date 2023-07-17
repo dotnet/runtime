@@ -228,7 +228,7 @@ namespace System.Net.Sockets.Tests
 
             await ConnectAsync(s, new IPEndPoint(listenAt, ((IPEndPoint)listener.LocalEndPoint).Port));
             Assert.True(s.Connected);
-
+            // According to the OSX man page, it's enough connecting to an invalid address to dissolve the connection. (0 port connection returns error on OSX)
             await ConnectAsync(s, new IPEndPoint(secondConnection, PlatformDetection.IsOSX ? 1 : 0));
             Assert.True(s.Connected);
         }
