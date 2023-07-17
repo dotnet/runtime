@@ -26,5 +26,8 @@ namespace System.Net.Http
         /// Gets the <see cref="Http.HttpRequestError"/> that caused the exception.
         /// </summary>
         public HttpRequestError HttpRequestError { get; }
+
+        /// <inheritdoc />
+        public override string Message => $"{base.Message} ({HttpRequestError})";
     }
 }
