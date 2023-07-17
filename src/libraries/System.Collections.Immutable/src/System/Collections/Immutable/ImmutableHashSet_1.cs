@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -11,6 +12,7 @@ namespace System.Collections.Immutable
     /// An immutable unordered hash set implementation.
     /// </summary>
     /// <typeparam name="T">The type of elements in the set.</typeparam>
+    [CollectionBuilder(typeof(ImmutableHashSet), nameof(ImmutableHashSet.Create))]
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(ImmutableEnumerableDebuggerProxy<>))]
 #if NETCOREAPP

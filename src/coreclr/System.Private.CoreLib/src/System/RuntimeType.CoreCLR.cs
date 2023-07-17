@@ -1895,8 +1895,8 @@ namespace System
                 else if (!declaredType.IsAssignableFrom(reflectedType))
                 {
                     // declaredType is not Array, not generic, and not assignable from reflectedType
-                    throw new ArgumentException(string.Format(
-                        CultureInfo.CurrentCulture, SR.Argument_ResolveMethodHandle,
+                    throw new ArgumentException(SR.Format(
+                        SR.Argument_ResolveMethodHandle,
                         reflectedType.ToString(), declaredType.ToString()));
                 }
             }

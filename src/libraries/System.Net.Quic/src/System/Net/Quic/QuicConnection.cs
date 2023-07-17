@@ -42,7 +42,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// <summary>
     /// The actual secret structure wrapper passed to MsQuic.
     /// </summary>
-    private MsQuicTlsSecret? _tlsSecret;
+    private readonly MsQuicTlsSecret? _tlsSecret;
 #endif
 
     /// <summary>
@@ -304,7 +304,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals
             // DNI mapping is handled by MsQuic
-            var hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
+            string hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
                 ? string.Empty
                 : options.ClientAuthenticationOptions.TargetHost ?? string.Empty;
 
@@ -492,9 +492,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
-        // TODO: we should propagate transport error code.
-        // https://github.com/dotnet/runtime/issues/72666
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
