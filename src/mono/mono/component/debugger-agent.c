@@ -7482,23 +7482,27 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			const unsigned char* pdb_bytes = NULL;
 			unsigned int symfile_size = 0;
 			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
-			MonoAssembly* assembly = find_assembly_by_name (assembly_name);
-			assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
-			assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
-			if (symfile_size == 0) //try to send embedded pdb data
-			{
-				guint8 pe_guid [16];
-				gint32 pe_age;
-				gint32 pe_timestamp;
-				guint8 *ppdb_data = NULL;
-				int ppdb_compressed_size = 0;
-				char *ppdb_path;
-				mono_get_pe_debug_info_full (assembly->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, NULL, NULL);
-				if (ppdb_compressed_size > 0)
-				{
-					symfile_size = ppdb_compressed_size;
-					pdb_bytes = ppdb_data;
-				}
+			if (!CHECK_PROTOCOL_VERSION(2, 62))	{
+				mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
+			}
+			else {
+				MonoAssembly* assembly = find_assembly_by_name (assembly_name);
+				assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
+				assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
+				if (symfile_size == 0) { //try to send embedded pdb data
+					guint8 pe_guid [16];
+					gint32 pe_age;
+					gint32 pe_timestamp;
+					guint8 *ppdb_data = NULL;
+					int ppdb_compressed_size = 0;
+					char *ppdb_path;
+					mono_get_pe_debug_info_full (assembly->image, pe_guid, &pe_age, &pe_timestamp, &ppdb_data, &ppdb_size, &ppdb_compressed_size, &ppdb_path, NULL, NULL);
+					if (ppdb_compressed_size > 0)
+					{
+						symfile_size = ppdb_compressed_size;
+						pdb_bytes = ppdb_data;
+					}
+				}				
 			}
 			m_dbgprot_buffer_init (buf, assembly_size + symfile_size + 1024);
 			m_dbgprot_buffer_add_byte_array (buf, (uint8_t *) assembly_bytes, assembly_size);
