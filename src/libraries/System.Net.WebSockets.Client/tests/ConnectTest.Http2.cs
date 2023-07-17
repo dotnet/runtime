@@ -124,6 +124,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
 
                 var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
+                Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
                 HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
                 Assert.Equal(HttpRequestError.SecureConnectionError, inner.HttpRequestError);
                 Assert.Equal(WebSocketState.Closed, cws.State);

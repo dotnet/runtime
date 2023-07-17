@@ -159,6 +159,7 @@ namespace System.Net.Http.Functional.Tests
                 if (useSsl)
                 {
                     Assert.Equal(HttpRequestError.VersionNegotiationError, ex.HttpRequestError);
+                    Assert.Equal(false, ex.Data["HTTP2_ENABLED"]);
                 }
             });
 

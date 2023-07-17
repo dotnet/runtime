@@ -447,7 +447,13 @@ namespace System.Net.Http
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner, httpRequestError: HttpRequestError.VersionNegotiationError);
+            HttpRequestException ex = new(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner, httpRequestError: HttpRequestError.VersionNegotiationError);
+            if (request.IsExtendedConnectRequest && desiredVersion == 2)
+            {
+                ex.Data["HTTP2_ENABLED"] = false;
+            }
+
+            throw ex;
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
