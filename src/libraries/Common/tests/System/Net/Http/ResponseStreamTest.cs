@@ -275,7 +275,9 @@ namespace System.Net.Http.Functional.Tests
         {
             await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
             {
-                await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(uri));
+                HttpIOException exception = await Assert.ThrowsAsync<HttpIOException>(() => ReadAsStreamHelper(uri));
+                _output.WriteLine(exception.Message);
+                Assert.Equal(HttpRequestError.ResponseEnded, exception.HttpRequestError);
             });
         }
 

@@ -209,7 +209,7 @@ namespace System.Net.Http
                                 {
                                     isNewConnection = false;
                                     connection.Dispose();
-                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode), null, HttpStatusCode.Unauthorized);
+                                    throw new HttpRequestException(SR.Format(SR.net_http_authvalidationfailure, statusCode), null, HttpStatusCode.Unauthorized, HttpRequestError.UserAuthenticationError);
                                 }
                                 break;
                             }

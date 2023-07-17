@@ -359,6 +359,7 @@ namespace System.Net.Http
 
             if (bytesRead < buffer.Length)
             {
+                // TODO: How should we categorize this? Seems more like a connection establishment than than InvalidResponse
                 throw new IOException(SR.net_http_invalid_response_premature_eof);
             }
         }

@@ -447,13 +447,7 @@ namespace System.Net.Http
         {
             Debug.Assert(desiredVersion == 2 || desiredVersion == 3);
 
-            HttpRequestException ex = new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner);
-            if (request.IsExtendedConnectRequest && desiredVersion == 2)
-            {
-                ex.Data["HTTP2_ENABLED"] = false;
-            }
-
-            throw ex;
+            throw new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, desiredVersion), inner, httpRequestError: HttpRequestError.VersionNegotiationError);
         }
 
         private bool CheckExpirationOnGet(HttpConnectionBase connection)
@@ -1100,9 +1094,7 @@ namespace System.Net.Http
                                     await connection.InitialSettingsReceived.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
                                     if (!connection.IsConnectEnabled)
                                     {
-                                        HttpRequestException exception = new(SR.net_unsupported_extended_connect);
-                                        exception.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"] = false;
-                                        throw exception;
+                                        throw new HttpRequestException(SR.net_unsupported_extended_connect, httpRequestError: HttpRequestError.ExtendedConnectNotSupported);
                                     }
                                 }
 
@@ -1764,7 +1756,7 @@ namespace System.Net.Http
             if (tunnelResponse.StatusCode != HttpStatusCode.OK)
             {
                 tunnelResponse.Dispose();
-                throw new HttpRequestException(SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode));
+                throw new HttpRequestException(SR.Format(SR.net_http_proxy_tunnel_returned_failure_status_code, _proxyUri, (int)tunnelResponse.StatusCode), httpRequestError: HttpRequestError.ProxyTunnelError);
             }
 
             try
@@ -1791,7 +1783,7 @@ namespace System.Net.Http
             catch (Exception e) when (!(e is OperationCanceledException))
             {
                 Debug.Assert(!(e is HttpRequestException));
-                throw new HttpRequestException(SR.net_http_request_aborted, e);
+                throw new HttpRequestException(SR.net_http_request_aborted, e, httpRequestError: HttpRequestError.ProxyTunnelError);
             }
 
             return stream;

@@ -75,8 +75,8 @@ namespace System.Net.WebSockets.Client.Tests
                     Task t = cws.ConnectAsync(uri, GetInvoker(), cts.Token);
 
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                    Assert.IsType<HttpRequestException>(ex.InnerException);
-                    Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
+                    HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                    Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, inner.HttpRequestError);
                 }
             },
             async server =>
@@ -100,8 +100,8 @@ namespace System.Net.WebSockets.Client.Tests
                     Task t = cws.ConnectAsync(uri, GetInvoker(), cts.Token);
 
                     var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                    Assert.IsType<HttpRequestException>(ex.InnerException);
-                    Assert.True(ex.InnerException.Data.Contains("SETTINGS_ENABLE_CONNECT_PROTOCOL"));
+                    HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                    Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, inner.HttpRequestError);
                 }
             },
             async server =>
@@ -124,8 +124,8 @@ namespace System.Net.WebSockets.Client.Tests
                 Task t = cws.ConnectAsync(Test.Common.Configuration.WebSockets.SecureRemoteEchoServer, GetInvoker(), cts.Token);
 
                 var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
-                Assert.IsType<HttpRequestException>(ex.InnerException);
-                Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
+                HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
+                Assert.Equal(HttpRequestError.SecureConnectionError, inner.HttpRequestError);
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }

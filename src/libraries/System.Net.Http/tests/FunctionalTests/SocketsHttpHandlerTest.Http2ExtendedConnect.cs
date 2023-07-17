@@ -90,8 +90,7 @@ namespace System.Net.Http.Functional.Tests
                 request.Headers.Protocol = "foo";
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
-
-                Assert.Equal(false, ex.Data["SETTINGS_ENABLE_CONNECT_PROTOCOL"]);
+                Assert.Equal(HttpRequestError.ExtendedConnectNotSupported, ex.HttpRequestError);
 
                 clientCompleted.SetResult();
             },
@@ -154,12 +153,12 @@ namespace System.Net.Http.Functional.Tests
                 HttpRequestMessage request = CreateRequest(HttpMethod.Connect, server.Address, UseVersion, exactVersion: true);
                 request.Headers.Protocol = "foo";
 
-                Exception ex = await Assert.ThrowsAnyAsync<Exception>(() => client.SendAsync(request));
+                HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
                 clientCompleted.SetResult();
 
                 if (useSsl)
                 {
-                    Assert.Equal(false, ex.Data["HTTP2_ENABLED"]);
+                    Assert.Equal(HttpRequestError.VersionNegotiationError, ex.HttpRequestError);
                 }
             });
 
