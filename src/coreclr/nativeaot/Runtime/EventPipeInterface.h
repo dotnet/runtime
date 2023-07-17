@@ -6,7 +6,6 @@
 
 // Initialize EventPipe
 void EventPipeAdapter_Initialize();
-bool EventPipeAdapter_Enabled();
 
 // Initialize DS
 bool DiagnosticServerAdapter_Initialize();
@@ -18,4 +17,5 @@ void EventPipeAdapter_FinishInitialize();
 void EventPipeAdapter_Shutdown();
 bool DiagnosticServerAdapter_Shutdown();
 
+void EventTracing_Initialize();
 #endif //EVENTPIPE_INTERFACE_H

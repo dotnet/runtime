@@ -5,7 +5,7 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 
-import { Module, ENVIRONMENT_IS_PTHREAD } from "../../globals";
+import { Module, ENVIRONMENT_IS_PTHREAD, mono_assert } from "../../globals";
 import { makeChannelCreatedMonoMessage, set_thread_info } from "../shared";
 import type { pthreadPtr } from "../shared/types";
 import { is_nullish } from "../../types/internal";
@@ -17,7 +17,7 @@ import {
     dotnetPthreadAttached,
     WorkerThreadEventTarget
 } from "./events";
-import { preRunWorker } from "../../startup";
+import { postRunWorker, preRunWorker } from "../../startup";
 import { mono_log_debug } from "../../logging";
 import { mono_set_thread_id } from "../../logging";
 
@@ -94,6 +94,7 @@ export function mono_wasm_pthread_on_pthread_attached(pthread_id: number): void 
 /// Called in the worker thread (not main thread) from mono when a pthread becomes detached from the mono runtime.
 export function mono_wasm_pthread_on_pthread_detached(pthread_id: number): void {
     mono_log_debug("detaching pthread from mono runtime 0x" + pthread_id.toString(16));
+    postRunWorker();
     set_thread_info(pthread_id, false, false, false);
     mono_set_thread_id("");
 }

@@ -11310,6 +11310,17 @@ namespace System.Reflection
         public static bool operator ==(System.Reflection.ConstructorInfo? left, System.Reflection.ConstructorInfo? right) { throw null; }
         public static bool operator !=(System.Reflection.ConstructorInfo? left, System.Reflection.ConstructorInfo? right) { throw null; }
     }
+    public sealed partial class ConstructorInvoker
+    {
+        internal ConstructorInvoker() { }
+        public object? Invoke(System.Span<object?> arguments) { throw null; }
+        public object? Invoke() { throw null; }
+        public object? Invoke(object? arg1) { throw null; }
+        public object? Invoke(object? arg1, object? arg2) { throw null; }
+        public object? Invoke(object? arg1, object? arg2, object? arg3) { throw null; }
+        public object? Invoke(object? arg1, object? arg2, object? arg3, object? arg4) { throw null; }
+        public static System.Reflection.ConstructorInvoker Create(System.Reflection.ConstructorInfo constructor) { throw null; }
+    }    
     public partial class CustomAttributeData
     {
         protected CustomAttributeData() { }
@@ -11777,6 +11788,17 @@ namespace System.Reflection
         public virtual System.Reflection.MethodInfo MakeGenericMethod(params System.Type[] typeArguments) { throw null; }
         public static bool operator ==(System.Reflection.MethodInfo? left, System.Reflection.MethodInfo? right) { throw null; }
         public static bool operator !=(System.Reflection.MethodInfo? left, System.Reflection.MethodInfo? right) { throw null; }
+    }
+    public sealed partial class MethodInvoker
+    {
+        internal MethodInvoker() { }
+        public object? Invoke(object? obj, System.Span<object?> arguments) { throw null; }
+        public object? Invoke(object? obj) { throw null; }
+        public object? Invoke(object? obj, object? arg1) { throw null; }
+        public object? Invoke(object? obj, object? arg1, object? arg2) { throw null; }
+        public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3) { throw null; }
+        public object? Invoke(object? obj, object? arg1, object? arg2, object? arg3, object? arg4) { throw null; }
+        public static System.Reflection.MethodInvoker Create(System.Reflection.MethodBase method) { throw null; }
     }
     public sealed partial class Missing : System.Runtime.Serialization.ISerializable
     {

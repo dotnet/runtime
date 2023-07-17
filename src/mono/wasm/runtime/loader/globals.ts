@@ -3,10 +3,10 @@
 
 import type { AssetEntryInternal, GlobalObjects, LoaderHelpers, RuntimeHelpers } from "../types/internal";
 import type { MonoConfig, RuntimeAPI } from "../types";
-import { abort_startup, mono_exit } from "./exit";
+import { assert_runtime_running, is_exited, is_runtime_running, mono_exit } from "./exit";
 import { assertIsControllablePromise, createPromiseController, getPromiseController } from "./promise-controller";
 import { mono_download_assets, resolve_asset_path } from "./assets";
-import { setup_proxy_console } from "./logging";
+import { mono_log_error, setup_proxy_console } from "./logging";
 import { hasDebuggingEnabled } from "./blazor/_Polyfill";
 import { invokeLibraryInitializers } from "./libraryInitializers";
 
@@ -65,6 +65,7 @@ export function setLoaderGlobals(
 
         maxParallelDownloads: 16,
         enableDownloadRetry: true,
+        assertAfterExit: !ENVIRONMENT_IS_WEB,
 
         _loaded_files: [],
         loadedFiles: [],
@@ -79,7 +80,9 @@ export function setLoaderGlobals(
         wasmDownloadPromise: createPromiseController<AssetEntryInternal>(),
         runtimeModuleLoaded: createPromiseController<void>(),
 
-        abort_startup,
+        is_exited,
+        is_runtime_running,
+        assert_runtime_running,
         mono_exit,
         createPromiseController,
         getPromiseController,
@@ -92,4 +95,20 @@ export function setLoaderGlobals(
         invokeLibraryInitializers,
 
     } as Partial<LoaderHelpers>);
+}
+
+// this will abort the program if the condition is false
+// see src\mono\wasm\runtime\rollup.config.js
+// we inline the condition, because the lambda could allocate closure on hot path otherwise
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+    if (condition) return;
+    const message = "Assert failed: " + (typeof messageFactory === "function"
+        ? messageFactory()
+        : messageFactory);
+    const abort = globalObjectsRoot.runtimeHelpers.mono_wasm_abort;
+    if (abort) {
+        mono_log_error(message);
+        abort();
+    }
+    throw new Error(message);
 }
