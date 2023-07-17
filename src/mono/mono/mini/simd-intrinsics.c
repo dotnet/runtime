@@ -5285,15 +5285,15 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_CompareLessThan, OP_XCOMPARE, CMP_LT, OP_XCOMPARE, CMP_LT_UN, OP_XCOMPARE_FP, CMP_LT},
 	{SN_CompareLessThanOrEqual, OP_XCOMPARE, CMP_LE, OP_XCOMPARE, CMP_LE_UN, OP_XCOMPARE_FP, CMP_LE},
 	{SN_CompareNotEqual, OP_XCOMPARE, CMP_NE, OP_XCOMPARE, CMP_NE, OP_XCOMPARE_FP, CMP_NE},
-	{SN_ConvertNarrowingSignedSaturate},
-	{SN_ConvertNarrowingUnsignedSaturate},
+	{SN_ConvertNarrowingSaturateSigned},
+	{SN_ConvertNarrowingSaturateUnsigned},
 	{SN_ConvertToDoubleLower, OP_CVTDQ2PD, 0, OP_WASM_SIMD_CONV_U4_TO_R8_LOW, 0, OP_CVTPS2PD},
 	{SN_ConvertToInt32Saturate},
 	{SN_ConvertToSingle, OP_CVT_SI_FP, 0, OP_CVT_UI_FP, 0, OP_WASM_SIMD_CONV_R8_TO_R4},
-	{SN_ConvertToUnsignedInt32Saturate},
+	{SN_ConvertToUInt32Saturate},
 	{SN_Divide},
 	{SN_Dot, OP_XOP_X_X_X, INTRINS_WASM_DOT},
-	{SN_ExtractLane},
+	{SN_ExtractScalar},
 	{SN_Floor, OP_XOP_OVR_X_X, INTRINS_SIMD_FLOOR},
 	{SN_LoadScalarAndInsert, OP_WASM_SIMD_LOAD_SCALAR_INSERT},
 	{SN_LoadScalarAndSplatVector128, OP_WASM_SIMD_LOAD_SCALAR_SPLAT},
@@ -5312,7 +5312,7 @@ static SimdIntrinsic packedsimd_methods [] = {
 	{SN_PopCount, OP_XOP_OVR_X_X, INTRINS_SIMD_POPCNT},
 	{SN_PseudoMax, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMAX},
 	{SN_PseudoMin, OP_XOP_OVR_X_X_X, INTRINS_WASM_PMIN},
-	{SN_ReplaceLane},
+	{SN_ReplaceScalar},
 	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_SIMD_NEAREST},
 	{SN_ShiftLeft, OP_SIMD_SHL},
 	{SN_ShiftRightArithmetic, OP_SIMD_SSHR},
@@ -5557,7 +5557,7 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
-			case SN_ConvertNarrowingSignedSaturate: {
+			case SN_ConvertNarrowingSaturateSigned: {
 				op = OP_XOP_X_X_X;
 
 				switch (arg0_type) {
@@ -5575,7 +5575,7 @@ emit_wasm_supported_intrinsics (
 
 				return NULL;
 			}
-			case SN_ConvertNarrowingUnsignedSaturate: {
+			case SN_ConvertNarrowingSaturateUnsigned: {
 				op = OP_XOP_X_X_X;
 
 				switch (arg0_type) {
@@ -5609,7 +5609,7 @@ emit_wasm_supported_intrinsics (
 				// continue with default emit
 				break;
 			}
-			case SN_ConvertToUnsignedInt32Saturate: {
+			case SN_ConvertToUInt32Saturate: {
 				switch (arg0_type) {
 					case MONO_TYPE_R4:
 						op = OP_CVT_FP_UI;
@@ -5625,7 +5625,7 @@ emit_wasm_supported_intrinsics (
 				// continue with default emit
 				break;
 			}
-			case SN_ExtractLane: {
+			case SN_ExtractScalar: {
 				op = type_to_xextract_op (arg0_type);
 				break;
 			}
@@ -5651,7 +5651,7 @@ emit_wasm_supported_intrinsics (
 				// continue with default emit
 				break;
 			}
-			case SN_ReplaceLane: {
+			case SN_ReplaceScalar: {
 				int insert_op = type_to_xinsert_op (arg0_type);
 				MonoInst *ins = emit_simd_ins (cfg, klass, insert_op, args [0]->dreg, args [2]->dreg);
 				ins->sreg3 = args [1]->dreg;

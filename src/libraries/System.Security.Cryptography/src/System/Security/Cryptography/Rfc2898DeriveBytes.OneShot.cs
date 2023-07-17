@@ -149,10 +149,10 @@ namespace System.Security.Cryptography
         ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        /// <paramref name="password" /> contains text that cannot be converted to UTF8.
+        /// <paramref name="password" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        /// The <paramref name="password" /> will be converted to bytes using the UTF8 encoding. For
+        /// The <paramref name="password" /> will be converted to bytes using the UTF-8 encoding. For
         /// other encodings, convert the password string to bytes using the appropriate <see cref="System.Text.Encoding" />
         /// and use <see cref="Pbkdf2(byte[], byte[], int, HashAlgorithmName, int)" />.
         /// </remarks>
@@ -192,10 +192,10 @@ namespace System.Security.Cryptography
         ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        /// <paramref name="password" /> contains text that cannot be converted to UTF8.
+        /// <paramref name="password" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        /// The <paramref name="password" /> will be converted to bytes using the UTF8 encoding. For
+        /// The <paramref name="password" /> will be converted to bytes using the UTF-8 encoding. For
         /// other encodings, convert the password string to bytes using the appropriate <see cref="System.Text.Encoding" />
         /// and use <see cref="Pbkdf2(ReadOnlySpan{byte}, ReadOnlySpan{byte}, int, HashAlgorithmName, int)" />.
         /// </remarks>
@@ -237,10 +237,10 @@ namespace System.Security.Cryptography
         ///   <see cref="HashAlgorithmName.SHA384" />, and <see cref="HashAlgorithmName.SHA512" />.
         /// </exception>
         /// <exception cref="EncoderFallbackException">
-        /// <paramref name="password" /> contains text that cannot be converted to UTF8.
+        /// <paramref name="password" /> contains text that cannot be converted to UTF-8.
         /// </exception>
         /// <remarks>
-        /// The <paramref name="password" /> will be converted to bytes using the UTF8 encoding. For
+        /// The <paramref name="password" /> will be converted to bytes using the UTF-8 encoding. For
         /// other encodings, convert the password string to bytes using the appropriate <see cref="System.Text.Encoding" />
         /// and use <see cref="Pbkdf2(ReadOnlySpan{byte}, ReadOnlySpan{byte}, Span{byte}, int, HashAlgorithmName)" />.
         /// </remarks>

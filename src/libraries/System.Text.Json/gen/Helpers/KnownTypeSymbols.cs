@@ -141,6 +141,18 @@ namespace System.Text.Json.SourceGeneration
 
         private Option<IArrayTypeSymbol?> _ByteArrayType;
 
+        public INamedTypeSymbol? MemoryByteType => _MemoryByteType.HasValue
+            ? _MemoryByteType.Value
+            : (_MemoryByteType = new(MemoryType?.Construct(Compilation.GetSpecialType(SpecialType.System_Byte)))).Value;
+
+        private Option<INamedTypeSymbol?> _MemoryByteType;
+
+        public INamedTypeSymbol? ReadOnlyMemoryByteType => _ReadOnlyMemoryByteType.HasValue
+            ? _ReadOnlyMemoryByteType.Value
+            : (_ReadOnlyMemoryByteType = new(ReadOnlyMemoryType?.Construct(Compilation.GetSpecialType(SpecialType.System_Byte)))).Value;
+
+        private Option<INamedTypeSymbol?> _ReadOnlyMemoryByteType;
+
         public INamedTypeSymbol? GuidType => GetOrResolveType(typeof(Guid), ref _GuidType);
         private Option<INamedTypeSymbol?> _GuidType;
 

@@ -107,6 +107,9 @@ static bool InitDLL(HANDLE hPalInstance)
     DiagnosticServerAdapter_Initialize();
     DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
 #endif
+#ifdef FEATURE_EVENT_TRACE
+    EventTracing_Initialize();
+#endif
 
     //
     // Initialize support for registering GC and HandleTable callouts.

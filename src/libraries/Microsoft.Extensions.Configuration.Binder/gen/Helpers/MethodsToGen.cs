@@ -14,6 +14,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         GetCore = 0x4,
         GetValueCore = 0x8,
         Initialize = 0x10,
+        AsConfigWithChildren = 0x20,
     }
 
     /// <summary>

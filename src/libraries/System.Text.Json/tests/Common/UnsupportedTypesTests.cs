@@ -129,8 +129,6 @@ namespace System.Text.Json.Serialization.Tests
             yield return WrapArgs((IntPtr)123);
             yield return WrapArgs<IntPtr?>(new IntPtr(123)); // One nullable variation.
             yield return WrapArgs((UIntPtr)123);
-            yield return WrapArgs((Memory<byte>)new byte[] { 1, 2, 3 });
-            yield return WrapArgs((ReadOnlyMemory<byte>)new byte[] { 1, 2, 3 });
 
             static object[] WrapArgs<T>(T value) => new object[] { new ValueWrapper<T>(value) };
         }

@@ -534,6 +534,7 @@ namespace System.Diagnostics.Tests
         [InlineData(100, 102)]
         [InlineData(100, 103)]
         [InlineData(100, 104)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/79906", TestRuntimes.Mono)]
         public void AllSubscriberStress(int numThreads, int numListenersPerThread)
         {
             // No listeners have been created yet

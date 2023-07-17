@@ -522,12 +522,15 @@
     <!-- Works around "Error: Native compilation can run on x64 and arm64 hosts only" -->
     <DisableUnsupportedError>true</DisableUnsupportedError>
 
+    <!-- IL projects often have mismatches assembly names vs file names and that breaks Win32 resource generation option -->
+    <IlcGenerateWin32Resources Condition="'$(Language)' == 'IL'">false</IlcGenerateWin32Resources>
+
     <!-- The default TrimMode in the SDK is full. But trimming most of the tests would just make them fail,
          so the default for the test tree is partial. -->
     <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
 
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>

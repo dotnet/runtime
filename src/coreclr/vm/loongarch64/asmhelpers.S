@@ -1079,3 +1079,17 @@ NESTED_ENTRY OnCallCountThresholdReachedStub, _TEXT, NoHandler
 NESTED_END OnCallCountThresholdReachedStub, _TEXT
 
 #endif // FEATURE_TIERED_COMPILATION
+
+// ------------------------------------------------------------------
+// size_t GetThreadStaticsVariableOffset()
+
+// Helper to calculate the offset of native thread local variable `t_ThreadStatics` in TCB. The offset has to be found at runtime
+// once linker does its relocation and fixup of thread locals. The offset, after calculation is returned in `$a0` register.
+
+LEAF_ENTRY GetThreadStaticsVariableOffset, _TEXT
+        PROLOG_SAVE_REG_PAIR_INDEXED   22, 1, 16
+        la.tls.ie   $a0, t_ThreadStatics
+        EPILOG_RESTORE_REG_PAIR_INDEXED 22, 1, 16
+        EPILOG_RETURN
+LEAF_END GetThreadStaticsVariableOffset, _TEXT
+// ------------------------------------------------------------------
