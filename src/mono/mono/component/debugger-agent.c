@@ -7481,12 +7481,13 @@ vm_commands (int command, int id, guint8 *p, guint8 *end, Buffer *buf)
 			unsigned int assembly_size = 0;
 			const unsigned char* pdb_bytes = NULL;
 			unsigned int symfile_size = 0;
+			MonoAssembly* assembly = NULL;
 			mono_bundled_resources_get_assembly_resource_symbol_values (assembly_name, &pdb_bytes, &symfile_size);
 			if (!CHECK_PROTOCOL_VERSION(2, 62))	{
 				mono_bundled_resources_get_assembly_resource_values (assembly_name, &assembly_bytes, &assembly_size);
 			}
 			else {
-				MonoAssembly* assembly = find_assembly_by_name (assembly_name);
+				assembly = find_assembly_by_name (assembly_name);
 				assembly_size = assembly->image->image_info->cli_cli_header.ch_metadata.size;
 				assembly_bytes = (const unsigned char*) assembly->image->raw_metadata;
 				if (symfile_size == 0) { //try to send embedded pdb data
