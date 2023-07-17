@@ -1,0 +1,25 @@
+<Project>
+
+  <PropertyGroup>
+    <OutDirName>$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)fake</OutDirName>
+  </PropertyGroup>
+
+  <Import Project="..\Directory.Build.props" />
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- Opt out of some features which are on by default. -->
+    <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
+    <ApiCompatValidateAssemblies>false</ApiCompatValidateAssemblies>
+    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
+    <AddOSPlatformAttributes>false</AddOSPlatformAttributes>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <HasMatchingContract>false</HasMatchingContract>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" PrivateAssets="all" Condition="'$(DisableImplicitFrameworkReferences)' == 'true'" />
+  </ItemGroup>
+
+</Project>

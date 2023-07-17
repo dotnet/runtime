@@ -1,0 +1,61 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.DataAccessKind" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.Format" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.IBinarySerialize" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.InvalidUdtException" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlDataRecord" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlFacetAttribute" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlFunctionAttribute" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlMetaData" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlMethodAttribute" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlUserDefinedAggregateAttribute" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SqlUserDefinedTypeAttribute" />
+    <TypeForwardedType Include="Microsoft.SqlServer.Server.SystemDataAccessKind" />
+    <TypeForwardedType Include="System.Data.OperationAbortedException" />
+    <TypeForwardedType Include="System.Data.Sql.SqlNotificationRequest" />
+    <TypeForwardedType Include="System.Data.SqlClient.ApplicationIntent" />
+    <TypeForwardedType Include="System.Data.SqlClient.OnChangeEventHandler" />
+    <TypeForwardedType Include="System.Data.SqlClient.PoolBlockingPeriod" />
+    <TypeForwardedType Include="System.Data.SqlClient.SortOrder" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlBulkCopy" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlBulkCopyColumnMapping" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlBulkCopyColumnMappingCollection" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlBulkCopyOptions" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlClientFactory" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlClientMetaDataCollectionNames" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlCommand" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlCommandBuilder" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlConnection" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlConnectionStringBuilder" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlCredential" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlDataAdapter" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlDataReader" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlDependency" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlError" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlErrorCollection" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlException" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlInfoMessageEventArgs" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlInfoMessageEventHandler" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlNotificationEventArgs" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlNotificationInfo" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlNotificationSource" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlNotificationType" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlParameter" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlParameterCollection" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlRowUpdatedEventArgs" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlRowUpdatedEventHandler" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlRowUpdatingEventArgs" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlRowUpdatingEventHandler" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlRowsCopiedEventArgs" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlRowsCopiedEventHandler" />
+    <TypeForwardedType Include="System.Data.SqlClient.SqlTransaction" />
+    <TypeForwardedType Include="System.Data.SqlTypes.SqlFileStream" />
+  </ItemGroup>
+
+</Project>

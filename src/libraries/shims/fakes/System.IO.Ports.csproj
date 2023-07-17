@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <TypeForwardedType Include="System.IO.Ports.Handshake" />
+    <TypeForwardedType Include="System.IO.Ports.Parity" />
+    <TypeForwardedType Include="System.IO.Ports.SerialData" />
+    <TypeForwardedType Include="System.IO.Ports.SerialDataReceivedEventArgs" />
+    <TypeForwardedType Include="System.IO.Ports.SerialDataReceivedEventHandler" />
+    <TypeForwardedType Include="System.IO.Ports.SerialError" />
+    <TypeForwardedType Include="System.IO.Ports.SerialErrorReceivedEventArgs" />
+    <TypeForwardedType Include="System.IO.Ports.SerialErrorReceivedEventHandler" />
+    <TypeForwardedType Include="System.IO.Ports.SerialPinChange" />
+    <TypeForwardedType Include="System.IO.Ports.SerialPinChangedEventArgs" />
+    <TypeForwardedType Include="System.IO.Ports.SerialPinChangedEventHandler" />
+    <TypeForwardedType Include="System.IO.Ports.SerialPort" />
+    <TypeForwardedType Include="System.IO.Ports.StopBits" />
+  </ItemGroup>
+
+</Project>

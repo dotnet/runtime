@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <TypeForwardedType Include="System.Data.OleDb.OleDbCommand" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbCommandBuilder" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbConnection" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbConnectionStringBuilder" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbDataAdapter" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbDataReader" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbEnumerator" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbError" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbErrorCollection" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbException" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbFactory" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbInfoMessageEventArgs" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbInfoMessageEventHandler" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbLiteral" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbMetaDataCollectionNames" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbMetaDataColumnNames" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbParameter" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbParameterCollection" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbRowUpdatedEventArgs" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbRowUpdatedEventHandler" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbRowUpdatingEventArgs" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbRowUpdatingEventHandler" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbSchemaGuid" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbTransaction" />
+    <TypeForwardedType Include="System.Data.OleDb.OleDbType" />
+  </ItemGroup>
+
+</Project>

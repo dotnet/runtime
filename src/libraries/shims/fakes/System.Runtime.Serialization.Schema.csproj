@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TypeForwardedType Include="System.Runtime.Serialization.ImportOptions" />
+    <TypeForwardedType Include="System.Runtime.Serialization.XsdDataContractImporter" />
+  </ItemGroup>
+
+</Project>

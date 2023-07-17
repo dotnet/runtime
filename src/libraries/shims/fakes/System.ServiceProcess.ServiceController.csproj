@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TypeForwardedType Include="System.ServiceProcess.PowerBroadcastStatus" />
+    <TypeForwardedType Include="System.ServiceProcess.ServiceBase" />
+    <TypeForwardedType Include="System.ServiceProcess.ServiceController" />
+    <TypeForwardedType Include="System.ServiceProcess.ServiceControllerStatus" />
+    <TypeForwardedType Include="System.ServiceProcess.ServiceProcessDescriptionAttribute" />
+    <TypeForwardedType Include="System.ServiceProcess.ServiceStartMode" />
+    <TypeForwardedType Include="System.ServiceProcess.ServiceType" />
+    <TypeForwardedType Include="System.ServiceProcess.SessionChangeDescription" />
+    <TypeForwardedType Include="System.ServiceProcess.SessionChangeReason" />
+    <TypeForwardedType Include="System.ServiceProcess.TimeoutException" />
+  </ItemGroup>
+
+</Project>

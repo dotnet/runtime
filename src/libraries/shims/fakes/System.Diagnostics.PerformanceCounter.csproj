@@ -1,0 +1,60 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <TypeForwardedType Include="System.Diagnostics.CounterCreationData" />
+    <TypeForwardedType Include="System.Diagnostics.CounterCreationDataCollection" />
+    <TypeForwardedType Include="System.Diagnostics.CounterSample" />
+    <TypeForwardedType Include="System.Diagnostics.CounterSampleCalculator" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventBookmark" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventKeyword" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLevel" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogConfiguration" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogException" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogInformation" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogInvalidDataException" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogIsolation" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogLink" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogMode" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogNotFoundException" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogPropertySelector" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogProviderDisabledException" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogQuery" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogReader" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogReadingException" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogRecord" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogSession" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogStatus" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogType" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventLogWatcher" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventMetadata" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventOpcode" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventProperty" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventRecord" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventRecordWrittenEventArgs" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.EventTask" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.PathType" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.ProviderMetadata" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.SessionAuthentication" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventKeywords" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventLevel" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventOpcode" />
+    <TypeForwardedType Include="System.Diagnostics.Eventing.Reader.StandardEventTask" />
+    <TypeForwardedType Include="System.Diagnostics.ICollectData" />
+    <TypeForwardedType Include="System.Diagnostics.InstanceData" />
+    <TypeForwardedType Include="System.Diagnostics.InstanceDataCollection" />
+    <TypeForwardedType Include="System.Diagnostics.InstanceDataCollectionCollection" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceCounter" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceCounterCategory" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceCounterCategoryType" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceCounterInstanceLifetime" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceCounterManager" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceCounterType" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceData.CounterData" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceData.CounterSet" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceData.CounterSetInstance" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceData.CounterSetInstanceCounterDataSet" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceData.CounterSetInstanceType" />
+    <TypeForwardedType Include="System.Diagnostics.PerformanceData.CounterType" />
+  </ItemGroup>
+
+</Project>

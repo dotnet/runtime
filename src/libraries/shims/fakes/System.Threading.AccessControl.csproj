@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <StrongNameKeyId>Microsoft</StrongNameKeyId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <TypeForwardedType Include="System.Security.AccessControl.EventWaitHandleAccessRule" />
+    <TypeForwardedType Include="System.Security.AccessControl.EventWaitHandleAuditRule" />
+    <TypeForwardedType Include="System.Security.AccessControl.EventWaitHandleRights" />
+    <TypeForwardedType Include="System.Security.AccessControl.EventWaitHandleSecurity" />
+    <TypeForwardedType Include="System.Security.AccessControl.MutexAccessRule" />
+    <TypeForwardedType Include="System.Security.AccessControl.MutexAuditRule" />
+    <TypeForwardedType Include="System.Security.AccessControl.MutexRights" />
+    <TypeForwardedType Include="System.Security.AccessControl.MutexSecurity" />
+    <TypeForwardedType Include="System.Security.AccessControl.SemaphoreAccessRule" />
+    <TypeForwardedType Include="System.Security.AccessControl.SemaphoreAuditRule" />
+    <TypeForwardedType Include="System.Security.AccessControl.SemaphoreRights" />
+    <TypeForwardedType Include="System.Security.AccessControl.SemaphoreSecurity" />
+  </ItemGroup>
+
+</Project>
