@@ -6456,7 +6456,6 @@ namespace
                 pMT,
                 FALSE,                  // forceBoxedEntryPoint
                 candidateMaybe->HasMethodInstantiation() ?
-// TODO SHOULD WE CHANGE THIS TO                 candidateMaybe->HasMethodInstantiation() && instantiateMethodInstantiation ?
                 candidateMaybe->AsInstantiatedMethodDesc()->IMD_GetMethodInstantiation() :
                 Instantiation(),        // for method themselves that are generic
                 FALSE,                  // allowInstParam
@@ -9037,7 +9036,7 @@ MethodTable::ResolveVirtualStaticMethod(
         }
 
         // Default implementation logic, which only kicks in for default implementations when looking up on an exact interface target
-        if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations() && instantiateMethodParameters)
+        if (!pInterfaceMD->IsAbstract() && !(this == g_pCanonMethodTableClass) && !IsSharedByGenericInstantiations())
         {
             return pInterfaceMD->FindOrCreateAssociatedMethodDesc(pInterfaceMD, pInterfaceType, FALSE, pInterfaceMD->GetMethodInstantiation(), FALSE);
         }
