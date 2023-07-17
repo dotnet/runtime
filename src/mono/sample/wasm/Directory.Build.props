@@ -12,10 +12,14 @@
 
   <Import Project="..\Directory.Build.props"/>
 
-  <PropertyGroup>
-    <OutputPath Condition="'$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">bin\$(Configuration)</OutputPath>
-    <OutputPath Condition="'$(UsingMicrosoftNETSdkWebAssembly)' != 'true'">bin</OutputPath>
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">
+    <OutputPath>bin\$(Configuration)</OutputPath>
+    <RunSampleDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\publish\wwwroot</RunSampleDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdkWebAssembly)' != 'true'">
+    <OutputPath>bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
+    <RunSampleDir>$(WasmAppDir)</RunSampleDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <WasmNativeStrip>false</WasmNativeStrip>
