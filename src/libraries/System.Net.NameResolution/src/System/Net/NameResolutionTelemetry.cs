@@ -1,10 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
-using System.Net.Sockets;
 using System.Threading;
 
 namespace System.Net
@@ -62,14 +60,10 @@ namespace System.Net
         [NonEvent]
         public long BeforeResolution(object hostNameOrAddress)
         {
-            Debug.Assert(hostNameOrAddress != null);
-            Debug.Assert(
-                hostNameOrAddress is string ||
-                hostNameOrAddress is IPAddress ||
-                hostNameOrAddress is KeyValuePair<string, AddressFamily> ||
-                hostNameOrAddress is KeyValuePair<IPAddress, AddressFamily>,
-                $"Unknown hostNameOrAddress type: {hostNameOrAddress.GetType().Name}");
+            // System.Diagnostics.Metrics part
+            NameResolutionMetrics.BeforeResolution(hostNameOrAddress, out string? host);
 
+            // System.Diagnostics.Tracing part
             if (IsEnabled())
             {
                 Interlocked.Increment(ref _lookupsRequested);
@@ -77,14 +71,8 @@ namespace System.Net
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {
-                    string host = hostNameOrAddress switch
-                    {
-                        string h => h,
-                        KeyValuePair<string, AddressFamily> t => t.Key,
-                        IPAddress a => a.ToString(),
-                        KeyValuePair<IPAddress, AddressFamily> t => t.Key.ToString(),
-                        _ => null!
-                    };
+                    host ??= NameResolutionMetrics.GetHostnameFromStateObject(hostNameOrAddress);
+
                     ResolutionStart(host);
                 }
 
@@ -95,13 +83,15 @@ namespace System.Net
         }
 
         [NonEvent]
-        public void AfterResolution(long startingTimestamp, bool successful)
+        public void AfterResolution(long? startingTimestamp, bool successful)
         {
+            Debug.Assert(startingTimestamp.HasValue);
+
             if (startingTimestamp != 0)
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
+                _lookupsDuration?.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp.Value).TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {

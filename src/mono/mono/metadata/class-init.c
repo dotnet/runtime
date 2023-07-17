@@ -816,7 +816,7 @@ has_inline_array_attribute_value_func (MonoImage *image, uint32_t method_token, 
 		MonoDecodeCustomAttr *decoded_attr = mono_reflection_create_custom_attr_data_args_noalloc (image, ctor, (guchar*)data, data_size, &error);
 		mono_error_assert_ok (&error);
 		g_assert (decoded_attr->named_args_num == 0 && decoded_attr->typed_args_num == 1);
-		attr->value = *(gpointer*)decoded_attr->typed_args [0]->value.primitive;
+		attr->value = GUINT_TO_POINTER (*(guint32 *)decoded_attr->typed_args [0]->value.primitive);
 		g_free (decoded_attr);
 	} else {
 		g_warning ("Can't find custom attr constructor image: %s mtoken: 0x%08x due to: %s", image->name, method_token, mono_error_get_message (&error));

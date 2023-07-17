@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// Represents zero/null, one, or many strings in an efficient way.
     /// </summary>
+    [DebuggerDisplay("{ToString()}")]
+    [DebuggerTypeProxy(typeof(StringValuesDebugView))]
     public readonly struct StringValues : IList<string?>, IReadOnlyList<string?>, IEquatable<StringValues>, IEquatable<string?>, IEquatable<string?[]?>
     {
         /// <summary>
@@ -824,6 +826,12 @@ namespace Microsoft.Extensions.Primitives
             public void Dispose()
             {
             }
+        }
+
+        private sealed class StringValuesDebugView(StringValues values)
+        {
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public string?[] Items => values.ToArray();
         }
     }
 }

@@ -1904,8 +1904,7 @@ var_types Compiler::StructPromotionHelper::TryPromoteValueClassAsPrimitive(CORIN
         const char* className = compiler->info.compCompHnd->getClassNameFromMetadata(node.simdTypeHnd, &namespaceName);
 
 #ifdef FEATURE_SIMD
-        if (compiler->usesSIMDTypes() &&
-            (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName)))
+        if (compiler->isRuntimeIntrinsicsNamespace(namespaceName) || compiler->isNumericsNamespace(namespaceName))
         {
             unsigned    simdSize;
             CorInfoType simdBaseJitType = compiler->getBaseJitTypeAndSizeOfSIMDType(node.simdTypeHnd, &simdSize);
@@ -7636,6 +7635,19 @@ void Compiler::lvaDumpEntry(unsigned lclNum, FrameLayoutState curState, size_t r
             case PROMOTION_TYPE_INDEPENDENT:
                 printf(" P-INDEP");
                 break;
+        }
+    }
+
+    if (varDsc->lvClassHnd != NO_CLASS_HANDLE)
+    {
+        printf(" <%s>", eeGetClassName(varDsc->lvClassHnd));
+    }
+    else if (varTypeIsStruct(varDsc->TypeGet()))
+    {
+        ClassLayout* layout = varDsc->GetLayout();
+        if (layout != nullptr && !layout->IsBlockLayout())
+        {
+            printf(" <%s>", layout->GetClassName());
         }
     }
 

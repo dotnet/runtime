@@ -1104,7 +1104,7 @@ extern "C" MethodDesc* QCALLTYPE RuntimeTypeHandle_GetInterfaceMethodImplementat
             pMD,
             /* allowNullResult */ TRUE,
             /* verifyImplemented*/ FALSE,
-            /*allowVariantMatches */ TRUE);
+            /* allowVariantMatches */ TRUE);
     }
     else
     {

@@ -259,6 +259,7 @@ function configureRuntime(dotnet, runArgs) {
         .withExitOnUnhandledError()
         .withExitCodeLogging()
         .withElementOnExit()
+        .withAssertAfterExit()
         .withConfig({
             loadAllSatelliteResources: true
         });
@@ -308,7 +309,6 @@ async function dry_run(runArgs) {
             appendElementOnExit: false,
             logExitCode: false,
             pthreadPoolSize: 0,
-            assetUniqueQuery: "?dry_run=true",
             // this just means to not continue startup after the snapshot is taken. 
             // If there was previously a matching snapshot, it will be used.
             exitAfterSnapshot: true

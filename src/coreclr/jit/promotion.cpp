@@ -2404,6 +2404,14 @@ void ReplaceVisitor::ReplaceLocal(GenTree** use, GenTree* user)
         {
             lcl->gtFlags |= GTF_VAR_DEATH;
             CheckForwardSubForLastUse(lclNum);
+
+            // Relying on the values in the struct local after this struct use
+            // would effectively introduce another use of the struct, so
+            // indicate that no replacements are up to date.
+            for (Replacement& rep : replacements)
+            {
+                SetNeedsWriteBack(rep);
+            }
         }
         return;
     }

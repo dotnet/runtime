@@ -1,8 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis;
-
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     public sealed partial class ConfigurationBindingGenerator
@@ -18,11 +16,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                EmitBlankLineIfRequired();
-
-                _writer.WriteLine("/// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>");
-                _writer.WriteBlockStart($"internal static class {Identifier.GeneratedServiceCollectionBinder}");
-                _precedingBlockExists = false;
+                EmitRootBindingClassBlockStart(Identifier.GeneratedServiceCollectionBinder);
 
                 const string defaultNameExpr = "string.Empty";
                 const string configureMethodString = $"global::{Identifier.GeneratedServiceCollectionBinder}.{Identifier.Configure}";
@@ -52,7 +46,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 string optionsNamespaceName = "global::Microsoft.Extensions.Options";
-                string bindCoreUntypedDisplayString = GetHelperMethodDisplayString(Identifier.BindCoreUntyped);
+                string bindCoreUntypedDisplayString = GetHelperMethodDisplayString(nameof(MethodsToGen_CoreBindingHelper.BindCoreUntyped));
 
                 EmitBlockStart(paramList: $"string? {Identifier.name}, " + configParam + $", {FullyQualifiedDisplayString.ActionOfBinderOptions}? {Identifier.configureOptions}");
 
@@ -67,7 +61,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 """);
 
                 _writer.WriteBlockEnd();
-                _precedingBlockExists = true;
+                _emitBlankLineBeforeNextStatement = true;
             }
 
             private void EmitBlockStart(string paramList)

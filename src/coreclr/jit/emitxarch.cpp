@@ -1487,7 +1487,6 @@ bool emitter::TakesRexWPrefix(const instrDesc* id) const
             case INS_vcvtsd2usi:
             case INS_vcvtss2usi:
             case INS_vcvttsd2usi:
-            case INS_vcvttss2usi:
             {
                 if (attr == EA_8BYTE)
                 {
@@ -2692,7 +2691,8 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_vcvtsd2usi:
         case INS_vcvtss2usi:
         case INS_vcvttsd2usi:
-        case INS_vcvttss2usi:
+        case INS_vcvttss2usi32:
+        case INS_vcvttss2usi64:
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -5648,6 +5648,43 @@ void emitter::emitIns_R(instruction ins, emitAttr attr, regNumber reg)
     emitAdjustStackDepthPushPop(ins);
 }
 
+#if defined(FEATURE_SIMD)
+//-----------------------------------------------------------------------------------
+// emitStoreSimd12ToLclOffset: store SIMD12 value from dataReg to varNum+offset.
+//
+// Arguments:
+//     varNum         - the variable on the stack to use as a base;
+//     offset         - the offset from the varNum;
+//     dataReg        - the src reg with SIMD12 value;
+//     tmpRegProvider - a tree to grab a tmp reg from if needed.
+//
+void emitter::emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider)
+{
+    assert(varNum != BAD_VAR_NUM);
+    assert(isFloatReg(dataReg));
+
+    // Store lower 8 bytes
+    emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offset);
+
+    if (emitComp->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // Extract and store upper 4 bytes
+        emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offset + 8, dataReg, 2);
+    }
+    else
+    {
+        regNumber tmpReg = tmpRegProvider->GetSingleTempReg();
+        assert(isFloatReg(tmpReg));
+
+        // Extract upper 4 bytes from data
+        emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
+
+        // Store upper 4 bytes
+        emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offset + 8);
+    }
+}
+#endif // FEATURE_SIMD
+
 /*****************************************************************************
  *
  *  Add an instruction referencing a register and a constant.
@@ -6081,6 +6118,30 @@ bool emitter::IsJmpInstruction(instruction ins)
     return (ins == INS_i_jmp) || (ins == INS_jmp) || (ins == INS_l_jmp) || (ins == INS_tail_i_jmp);
 }
 
+//------------------------------------------------------------------------
+// IsBitwiseInstruction: Determine if an instruction is a bit-wise instruction.
+//
+// Arguments:
+//    ins       -- The instruction being checked
+//
+// Return Value:
+//    true if the instruction qualifies; otherwise, false
+//
+bool emitter::IsBitwiseInstruction(instruction ins)
+{
+    switch (ins)
+    {
+        case INS_pand:
+        case INS_pandn:
+        case INS_por:
+        case INS_pxor:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
 // TODO-XArch-CQ: There are places where the fact that an instruction zero-extends
 // is not an important detail, such as when "regular" floating-point code is generated
 //
@@ -6131,6 +6192,18 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
             break;
         }
 
+        case INS_vmovdqa64:
+        case INS_vmovdqu8:
+        case INS_vmovdqu16:
+        case INS_vmovdqu64:
+        {
+            // These EVEX instructions merges/masks based on k-register
+            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
+            assert(UseEvexEncoding());
+            hasSideEffect = (size != EA_64BYTE);
+            break;
+        }
+
         case INS_movd:
         {
             // Clears the upper bits
@@ -6159,18 +6232,6 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         {
             // Clears the upper bits
             hasSideEffect = true;
-            break;
-        }
-
-        case INS_vmovdqa64:
-        case INS_vmovdqu8:
-        case INS_vmovdqu16:
-        case INS_vmovdqu64:
-        {
-            // These EVEX instructions merges/masks based on k-register
-            // TODO-XArch-AVX512 : Handle merge/masks scenarios once k-mask support is added for these.
-            assert(UseEvexEncoding());
-            hasSideEffect = (size != EA_64BYTE);
             break;
         }
 
@@ -11418,9 +11479,15 @@ void emitter::emitDispIns(
                 case INS_vcvtsd2usi:
                 case INS_vcvtss2usi:
                 case INS_vcvttsd2usi:
-                case INS_vcvttss2usi:
                 {
                     printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_16BYTE));
+                    break;
+                }
+
+                case INS_vcvttss2usi32:
+                case INS_vcvttss2usi64:
+                {
+                    printf(" %s, %s", emitRegName(id->idReg1(), attr), emitRegName(id->idReg2(), EA_4BYTE));
                     break;
                 }
 
@@ -18682,21 +18749,30 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
         case INS_cvtsi2sd64:
         case INS_cvtsi2ss64:
         case INS_vcvtsd2usi:
-        case INS_vcvttsd2usi:
-        case INS_vcvtusi2sd32:
-        case INS_vcvtusi2sd64:
         case INS_vcvtusi2ss32:
         case INS_vcvtusi2ss64:
+        case INS_vcvttsd2usi:
+        case INS_vcvttss2usi32:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += PERFSCORE_LATENCY_7C;
+            break;
+
+        case INS_vcvtusi2sd64:
+        case INS_vcvtusi2sd32:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_5C;
             break;
 
         case INS_cvttss2si:
         case INS_cvtss2si:
         case INS_vcvtss2usi:
-        case INS_vcvttss2usi:
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;
             result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_8C : PERFSCORE_LATENCY_7C;
+            break;
+
+        case INS_vcvttss2usi64:
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_8C;
             break;
 
         case INS_cvtss2sd:

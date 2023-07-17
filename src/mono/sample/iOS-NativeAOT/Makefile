@@ -23,21 +23,17 @@ world: build-deps all
 
 # build all dependencies: runtime, nativeAot and all the libs
 ifeq ($(USE_RUNTIME_PACKS),false)
-build-deps: build-runtime-ilc build-libs-all
+build-deps: build-runtime-libs-ilc
 else
 build-deps: build-runtime-ilc-packs build-libs-all-packs
 endif
 
 # building for host
-build-runtime-ilc:
-	$(BUILD_SCRIPT) clr+clr.aot -c $(BUILD_CONFIG)
+build-runtime-libs-ilc:
+	$(BUILD_SCRIPT) --cross -s clr.alljits+clr.tools+clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(BUILD_CONFIG) -os $(TARGET_OS) -arch $(TARGET_ARCH)
 
 build-runtime-ilc-packs:
 	$(BUILD_SCRIPT) clr+clr.aot+libs+packs -c $(BUILD_CONFIG)
-
-# building for target platform
-build-libs-all:
-	$(BUILD_SCRIPT) clr.nativeaotruntime+clr.nativeaotlibs+libs -c $(BUILD_CONFIG) -os $(TARGET_OS) -arch $(TARGET_ARCH)
 
 build-libs-all-packs:
 	$(BUILD_SCRIPT) clr.nativeaotruntime+clr.nativeaotlibs+libs+packs -c $(BUILD_CONFIG) -os $(TARGET_OS) -arch $(TARGET_ARCH) /p:BuildNativeAOTRuntimePack=true
