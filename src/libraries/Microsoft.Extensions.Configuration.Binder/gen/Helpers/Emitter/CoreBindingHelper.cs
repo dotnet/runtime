@@ -731,7 +731,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                                 """);
                         }
 
-                        EmitBindCoreCall(elementType, $"{Identifier.element}!", Identifier.section, InitializationKind.None);
+                        EmitBindCoreCall(elementType, $"{Identifier.element}", Identifier.section, InitializationKind.None);
                         _writer.WriteLine($"{objIdentifier}[{parsedKeyExpr}] = {Identifier.element};");
                     }
 
