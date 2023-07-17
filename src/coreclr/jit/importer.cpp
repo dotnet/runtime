@@ -2911,20 +2911,24 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         case CEE_ISINST:
             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
             {
-                // First, let's see if we can fold BOX+ISINST to just null if ISINST is know to return null
+                // First, let's see if we can fold BOX+ISINST to just null if ISINST is known to return null
                 // for the given argument.
-                if ((opts == BoxPatterns::None) && ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0) &&
-                    (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
+                if ((opts != BoxPatterns::MakeInlineObservation) &&
+                    ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0))
                 {
-                    CORINFO_RESOLVED_TOKEN isInstTok;
-                    impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
-                    if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass) ==
-                        TypeCompareState::MustNot)
+                    if ((opts == BoxPatterns::IsByRefLike) ||
+                        (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
                     {
-                        JITDUMP("\n Importing BOX; ISINST; as null\n");
-                        impPopStack();
-                        impPushOnStack(gtNewNull(), typeInfo(TYP_REF));
-                        return 1 + sizeof(mdToken);
+                        CORINFO_RESOLVED_TOKEN isInstTok;
+                        impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
+                        if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass) ==
+                            TypeCompareState::MustNot)
+                        {
+                            JITDUMP("\n Importing BOX; ISINST; as null\n");
+                            impPopStack();
+                            impPushOnStack(gtNewNull(), typeInfo(TYP_REF));
+                            return 1 + sizeof(mdToken);
+                        }
                     }
                 }
 
