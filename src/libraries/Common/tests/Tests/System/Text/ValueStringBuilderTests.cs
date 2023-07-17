@@ -276,7 +276,7 @@ namespace System.Text.Tests
             Assert.Equal('b', vsb[3]);
             vsb[3] = 'c';
             Assert.Equal('c', vsb[3]);
-            vsb.ToString();
+            vsb.Dispose();
         }
 
         [Fact]
@@ -299,7 +299,7 @@ namespace System.Text.Tests
             builder.EnsureCapacity(33);
 
             Assert.Equal(64, builder.Capacity);
-            builder.ToString();
+            builder.Dispose();
         }
 
         [Fact]
@@ -312,7 +312,7 @@ namespace System.Text.Tests
             builder.EnsureCapacity(16);
 
             Assert.Equal(64, builder.Capacity);
-            builder.ToString();
+            builder.Dispose();
         }
     }
 }

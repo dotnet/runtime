@@ -231,7 +231,7 @@ namespace System.MemoryTests
         [Fact]
         public static void ExtraDisposesAreIgnored()
         {
-            using IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
             block.Dispose();
             block.Dispose();
         }
@@ -239,7 +239,7 @@ namespace System.MemoryTests
         [Fact]
         public static void NoMemoryAfterDispose()
         {
-            using IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
+            IMemoryOwner<int> block = MemoryPool<int>.Shared.Rent(42);
             block.Dispose();
             Assert.Throws<ObjectDisposedException>(() => block.Memory);
         }
