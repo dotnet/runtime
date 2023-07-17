@@ -180,7 +180,7 @@
     <RunCommand Condition="'$(RunCommand)' == ''">dotnet</RunCommand>
 
     <_RuntimeConfigJsonPath>$([MSBuild]::NormalizePath($(_AppBundleDirForRunCommand), '$(AssemblyName).runtimeconfig.json'))</_RuntimeConfigJsonPath>
-    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments) --target-path &quot;$(TargetPath)&quot;</RunArguments>
+    <RunArguments Condition="'$(RunArguments)' == ''">exec &quot;$([MSBuild]::NormalizePath($(WasmAppHostDir), 'WasmAppHost.dll'))&quot; --runtime-config &quot;$(_RuntimeConfigJsonPath)&quot; $(WasmHostArguments)</RunArguments>
     <RunWorkingDirectory Condition="'$(RunWorkingDirectory)' == ''">$(_AppBundleDirForRunCommand)</RunWorkingDirectory>
   </PropertyGroup>
 
