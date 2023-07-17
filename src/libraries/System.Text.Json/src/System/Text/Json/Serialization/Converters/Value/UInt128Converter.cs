@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
@@ -8,7 +9,6 @@ namespace System.Text.Json.Serialization.Converters
     internal sealed class UInt128Converter : JsonPrimitiveConverter<UInt128>
     {
         private const int MaxFormatLength = 39;
-        private const int MaxEscapedFormatLength = MaxFormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
 
         public UInt128Converter()
         {
@@ -32,23 +32,44 @@ namespace System.Text.Json.Serialization.Converters
 
         private static UInt128 ReadCore(ref Utf8JsonReader reader)
         {
-            if (reader.ValueLength > MaxEscapedFormatLength)
-            {
-                ThrowHelper.ThrowFormatException(NumericType.UInt128);
-            }
+            int bufferLength = reader.ValueLength;
 
 #if NET8_0_OR_GREATER
-            Span<byte> buffer = stackalloc byte[MaxFormatLength];
+            byte[]? rentedBuffer = null;
 #else
-            Span<char> buffer = stackalloc char[MaxFormatLength];
+            char[]? rentedBuffer = null;
 #endif
-            int written = reader.CopyString(buffer);
-            if (!UInt128.TryParse(buffer.Slice(0, written), out UInt128 result))
+            try
             {
-                ThrowHelper.ThrowFormatException(NumericType.UInt128);
-            }
+#if NET8_0_OR_GREATER
+                Span<byte> buffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                    ? stackalloc byte[JsonConstants.StackallocByteThreshold]
+                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
+#else
+                // UInt128.TryParse(ROS<byte>) is not available on .NET 7, only UInt128.TryParse(ROS<char>).
+                Span<char> buffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                    ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                    : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+#endif
+                int written = reader.CopyValue(buffer);
+                if (!UInt128.TryParse(buffer.Slice(0, written), out UInt128 result))
+                {
+                    ThrowHelper.ThrowFormatException(NumericType.UInt128);
+                }
 
-            return result;
+                return result;
+            }
+            finally
+            {
+                if (rentedBuffer != null)
+                {
+#if NET8_0_OR_GREATER
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
+#else
+                    ArrayPool<char>.Shared.Return(rentedBuffer);
+#endif
+                }
+            }
         }
 
         private static void WriteCore(Utf8JsonWriter writer, UInt128 value)

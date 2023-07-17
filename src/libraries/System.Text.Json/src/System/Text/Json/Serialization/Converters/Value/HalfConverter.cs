@@ -1,14 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers;
 using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class HalfConverter : JsonPrimitiveConverter<Half>
     {
-        private const int MaxFormatLength = 16;
-        private const int MaxEscapedFormatLength = MaxFormatLength * JsonConstants.MaxExpansionFactorWhileEscaping;
+        private const int MaxFormatLength = 20;
 
         public HalfConverter()
         {
@@ -34,36 +34,57 @@ namespace System.Text.Json.Serialization.Converters
         {
             Half result;
 
-            if (reader.ValueLength > MaxEscapedFormatLength)
-            {
-                ThrowHelper.ThrowFormatException(NumericType.Half);
-            }
+            byte[]? rentedByteBuffer = null;
+            char[]? rentedCharBuffer = null;
+            int bufferLength = reader.ValueLength;
 
-            Span<byte> buffer = stackalloc byte[MaxFormatLength];
-            int written = reader.CopyString(buffer);
-            buffer = buffer.Slice(0, written);
-
-            if (reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName)
+            try
             {
-                if (JsonReaderHelper.TryGetFloatingPointConstant(buffer, out result))
+                Span<byte> byteBuffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                    ? stackalloc byte[JsonConstants.StackallocCharThreshold]
+                    : (rentedByteBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
+
+                int written = reader.CopyValue(byteBuffer);
+                byteBuffer = byteBuffer.Slice(0, written);
+
+                if (reader.TokenType is JsonTokenType.String or JsonTokenType.PropertyName)
                 {
-                    return result;
+                    if (JsonReaderHelper.TryGetFloatingPointConstant(byteBuffer, out result))
+                    {
+                        return result;
+                    }
                 }
-            }
 
 #if NET8_0_OR_GREATER
-            bool success = Half.TryParse(buffer, out result);
+                bool success = Half.TryParse(byteBuffer, out result);
 #else
-            Span<char> charBuffer = stackalloc char[MaxFormatLength];
-            written = JsonReaderHelper.TranscodeHelper(buffer, charBuffer);
-            bool success = Half.TryParse(charBuffer.Slice(0, written), out result);
-#endif
-            if (!success)
-            {
-                ThrowHelper.ThrowFormatException(NumericType.Half);
-            }
+                // Half.TryParse(ROS<byte>) is not available on .NET 7, only Half.TryParse(ROS<char>);
+                // we need to transcode here instead of letting CopyValue do it for us because
+                // TryGetFloatingPointConstant only accepts ROS<byte>.
 
-            return result;
+                Span<char> charBuffer = stackalloc char[MaxFormatLength];
+                written = JsonReaderHelper.TranscodeHelper(byteBuffer, charBuffer);
+                bool success = Half.TryParse(charBuffer.Slice(0, written), out result);
+#endif
+                if (!success)
+                {
+                    ThrowHelper.ThrowFormatException(NumericType.Half);
+                }
+
+                return result;
+            }
+            finally
+            {
+                if (rentedByteBuffer != null)
+                {
+                    ArrayPool<byte>.Shared.Return(rentedByteBuffer);
+                }
+
+                if (rentedCharBuffer != null)
+                {
+                    ArrayPool<char>.Shared.Return(rentedCharBuffer);
+                }
+            }
         }
 
         private static void WriteCore(Utf8JsonWriter writer, Half value)
