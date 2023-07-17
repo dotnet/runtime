@@ -14,8 +14,37 @@
   </assembly>
 
   <assembly fullname="*">
+
     <!-- Internal attributes shared as implementation, so they could be in any assembly -->
     <type fullname="System.Runtime.Versioning.NonVersionableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+
+    <!-- [EditorBrowsable] is only relevant for IDE scenarios -->
+    <type fullname="System.ComponentModel.EditorBrowsableAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+
+    <!-- [CompilerGenerated] and [GeneratedCode] are often added by source generators, but don't really do anything -->
+    <type fullname="System.Runtime.CompilerServices.CompilerGeneratedAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.CodeDom.Compiler.GeneratedCodeAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+
+    <!-- [ExcludeFromCodeAnalysis] is only relevant when doing local development or running tests -->
+    <type fullname="System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverageAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+  </assembly>
+
+  <!-- Debugger support attributes, not used when debug support is disabled -->
+  <assembly fullname="*" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
+    <type fullname="System.Diagnostics.DebuggerNonUserCodeAttribute">
+      <attribute internal="RemoveAttributeInstances" />
+    </type>
+    <type fullname="System.Diagnostics.DebuggerStepThroughAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
   </assembly>
