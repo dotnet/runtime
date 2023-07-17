@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning(disable:4244)
-
 #include <minipal/utf8.h>
 
 #include <errno.h>
@@ -534,7 +532,7 @@ static size_t GetCharCount(UTF8Encoding* self, unsigned char* bytes, size_t coun
 
     EncodeChar:
 
-        availableBytes = pEnd - pSrc;
+        availableBytes = (int)(pEnd - pSrc);
 
         // don't fall into the fast decoding loop if we don't have enough bytes
         if (availableBytes <= 13)
@@ -984,8 +982,8 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
         *pTarget = (CHAR16_T)ch;
         ENSURE_BUFFER_INC
 
-        int availableChars = pAllocatedBufferEnd - pTarget;
-        int availableBytes = pEnd - pSrc;
+        int availableChars = (int)(pAllocatedBufferEnd - pTarget);
+        int availableBytes = (int)(pEnd - pSrc);
 
         // don't fall into the fast decoding loop if we don't have enough bytes
         // Test for availableChars is done because pStop would be <= pTarget.
@@ -1291,7 +1289,7 @@ static int GetChars(UTF8Encoding* self, unsigned char* bytes, size_t byteCount, 
         return 0;
     }
 
-    return pTarget - chars;
+    return (int)(pTarget - chars);
 }
 
 static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, unsigned char* bytes, size_t byteCount)
@@ -1512,8 +1510,8 @@ static size_t GetBytes(UTF8Encoding* self, CHAR16_T* chars, size_t charCount, un
         if (fallbackUsed && (ch = EncoderReplacementFallbackBuffer_InternalGetNextChar(&self->buffer.encoder)) != 0)
             goto ProcessChar;
 
-        int availableChars = pEnd - pSrc;
-        int availableBytes = pAllocatedBufferEnd - pTarget;
+        int availableChars = (int)(pEnd - pSrc);
+        int availableBytes = (int)(pAllocatedBufferEnd - pTarget);
 
         // don't fall into the fast decoding loop if we don't have enough characters
         // Note that if we don't have enough bytes, pStop will prevent us from entering the fast loop.
@@ -1891,7 +1889,7 @@ static size_t GetByteCount(UTF8Encoding* self, CHAR16_T *chars, size_t count)
             goto ProcessChar;
         }
 
-        int availableChars = pEnd - pSrc;
+        int availableChars = (int)(pEnd - pSrc);
 
         // don't fall into the fast decoding loop if we don't have enough characters
         if (availableChars <= 13)
