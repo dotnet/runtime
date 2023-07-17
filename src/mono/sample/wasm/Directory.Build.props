@@ -13,7 +13,8 @@
   <Import Project="..\Directory.Build.props"/>
 
   <PropertyGroup>
-    <OutputPath>bin</OutputPath>
+    <OutputPath Condition="'$(UsingMicrosoftNETSdkWebAssembly)' == 'true'">bin\$(Configuration)</OutputPath>
+    <OutputPath Condition="'$(UsingMicrosoftNETSdkWebAssembly)' != 'true'">bin</OutputPath>
     <WasmAppDir>$(MSBuildProjectDirectory)\bin\$(Configuration)\AppBundle\</WasmAppDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)' == 'Debug'">

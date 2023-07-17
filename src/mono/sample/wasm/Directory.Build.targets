@@ -1,6 +1,6 @@
 <Project>
   <Import Project="../Directory.Build.targets" />
-  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" />
+  <Import Project="$(MonoProjectRoot)\wasm\build\WasmApp.InTree.targets" Condition="'$(UsingMicrosoftNETSdkWebAssembly)' != 'true'" />
 
   <PropertyGroup>
     <RunScriptInputName Condition="'$(TargetOS)' == 'browser' and '$(OS)' != 'Windows_NT'">WasmRunnerTemplate.sh</RunScriptInputName>
