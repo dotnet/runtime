@@ -1484,14 +1484,12 @@ namespace System.Text.RegularExpressions
             {
                 for (; c > 0; c -= 1)
                 {
-                    int d;
                     char ch = _pattern[_pos++];
-                    if ((uint)(d = ch - '0') <= 9)
-                        i = (i * 0x10) + d;
-                    else if ((uint)(d = (ch | 0x20) - 'a') <= 5)
-                        i = (i * 0x10) + d + 0xa;
-                    else
+                    int result = HexConverter.FromChar(ch);
+                    if (result == 0xFF)
                         break;
+
+                    i = (i * 0x10) + result;
                 }
             }
 
