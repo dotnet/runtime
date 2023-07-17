@@ -2982,6 +2982,10 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 	int nargs = csignature->param_count + !!csignature->hasthis;
 	InterpInst *prev_last_ins;
 
+	if (header->code_size == 0)
+		/* IL stripped */
+		return FALSE;
+
 	if (csignature->is_inflated)
 		generic_context = mono_method_get_context (target_method);
 	else {
