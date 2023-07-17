@@ -998,15 +998,9 @@ namespace System.Net.Http
                     ThrowGetVersionException(request, 3, reasonException);
                 }
 
-                long? queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : null;
+                long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : 0;
 
                 ValueTask<Http3Connection> connectionTask = GetHttp3ConnectionAsync(request, authority, cancellationToken);
-
-                if (queueStartingTimestamp.HasValue && connectionTask.IsCompleted)
-                {
-                    // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
-                    queueStartingTimestamp = 0;
-                }
 
                 Http3Connection connection = await connectionTask.ConfigureAwait(false);
 

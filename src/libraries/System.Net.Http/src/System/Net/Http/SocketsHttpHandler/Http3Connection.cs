@@ -160,7 +160,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long? queueStartingTimestamp, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -173,12 +173,6 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        // queueStartingTimestamp may be null if the metrics/telemetry are not enabled
-                        if (queueStartingTimestamp == 0)
-                        {
-                            queueStartingTimestamp = Stopwatch.GetTimestamp();
-                        }
-
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
@@ -199,9 +193,9 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
-                    if (queueStartingTimestamp.HasValue && queueStartingTimestamp != 0)
+                    if (queueStartingTimestamp != 0)
                     {
-                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp.Value);
+                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
 
                         _pool.Settings._metrics!.RequestLeftQueue(Pool, duration, versionMajor: 3);
 
