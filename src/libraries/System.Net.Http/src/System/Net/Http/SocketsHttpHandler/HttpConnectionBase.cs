@@ -59,8 +59,7 @@ namespace System.Net.Http
                     protocol,
                     pool.IsSecure ? "https" : "http",
                     pool.OriginAuthority.HostValue,
-                    port == defaultPort ? null : port,
-                    remoteEndPoint?.Address?.ToString());
+                    port == defaultPort ? null : port);
 
                 _connectionMetrics.ConnectionEstablished();
 
