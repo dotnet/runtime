@@ -902,7 +902,7 @@ namespace System.Net.Http.Functional.Tests
         public TelemetryTest_Http11(ITestOutputHelper output) : base(output) { }
 
         [OuterLoop]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/89035", TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/89035", TestPlatforms.OSX)]
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void EventSource_ParallelRequests_LogsNewConnectionIdForEachRequest()
         {
