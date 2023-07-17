@@ -41,7 +41,7 @@
   <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'browser-wasm' and '$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <!-- $(WasmBuildNative)==true is needed to enable workloads, when using native references, without AOT -->
     <!-- FIXME: is the blazor condition here correct? -->
-    <_WasmNativeWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmEnableLegacyJsInterop)' == 'false' or '$(WasmBuildNative)' == 'true' or
+    <_WasmNativeWorkloadNeeded Condition="'$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true' or '$(WasmEnableSIMD)' == 'true' or '$(WasmEnableLegacyJsInterop)' == 'false' or '$(WasmBuildNative)' == 'true' or
       '$(WasmGenerateAppBundle)' == 'true' or '$(_UsingBlazorOrWasmSdk)' != 'true'" >true</_WasmNativeWorkloadNeeded>
 
     <UsingBrowserRuntimeWorkload Condition="'$(_BrowserWorkloadNotSupportedForTFM)' == 'true'">false</UsingBrowserRuntimeWorkload>
@@ -67,9 +67,13 @@
     <UsingBlazorAOTWorkloadManifest>true</UsingBlazorAOTWorkloadManifest>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true'">
+    <PublishAotUsingMonoRuntime Condition="'$(PublishAotUsingMonoRuntime)' == '' and '$(PublishAot)' == 'true'">true</PublishAotUsingMonoRuntime>
+  </PropertyGroup>
+
   <!-- TFM specific -->
 
-  <Import Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
+  <Import Condition="'$(TargetsCurrent)' == 'true' and ('$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')) and ('$(UsingBrowserRuntimeWorkload)' == 'true' or '$(UsingMobileWorkload)' == 'true')" Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoAOTCompiler.Task" />
 
   <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.MonoTargets.Sdk" />
@@ -79,7 +83,7 @@
     <Import Project="Sdk.props" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk" />
     <Import Project="Sdk.targets" Sdk="Microsoft.NET.Runtime.LibraryBuilder.Sdk" />
   </ImportGroup>
-  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and '$(RunAOTCompilation)' == 'true' and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
+  <ImportGroup Condition="'$(TargetsCurrent)' == 'true' and ('$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')) and ('$(TargetPlatformIdentifier)' == 'android' or '$(_IsAndroidLibraryMode)' == 'true')">
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x86" />
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-x64" />
     <Import Project="Sdk.props" Sdk="Microsoft.NETCore.App.Runtime.AOT.Cross.android-arm" />

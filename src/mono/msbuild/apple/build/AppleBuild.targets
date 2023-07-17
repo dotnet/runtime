@@ -11,7 +11,7 @@
   <UsingTask Condition="'$(AppleGenerateAppBundle)' == 'true'"
              TaskName="AppleAppBuilderTask" 
              AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')"
              TaskName="ILStrip"
              AssemblyFile="$(MonoTargetsTasksAssemblyPath)" />
 
@@ -111,7 +111,7 @@
   </Target>
 
   <Target Name="_AppleAotCompile"
-          Condition="'$(RunAOTCompilation)' == 'true'">
+          Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')">
 
     <PropertyGroup>
       <_AOTMode Condition="'$(UseMonoJustInterp)' != 'true'">Full</_AOTMode>
@@ -199,7 +199,7 @@
       <DirectPInvokes Include="libSystem.Security.Cryptography.Native.Apple" />
     </ItemGroup>
 
-    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
+    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')"
         AotModulesTablePath="$(_AotModuleTablePath)"
         AotModulesTableLanguage="ObjC"
         Assemblies="@(_AotInputAssemblies)"
@@ -238,6 +238,10 @@
 
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
+    <PropertyGroup>
+      <_ForceAOT Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')">true</_ForceAOT>
+    </PropertyGroup>
+
     <AppleAppBuilderTask
       UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
       NativeDependencies="$(NativeDependencies)"
@@ -249,7 +253,7 @@
       DiagnosticPorts="$(DiagnosticPorts)"
       EnableAppSandbox="$(EnableAppSandbox)"
       ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
-      ForceAOT="$(RunAOTCompilation)"
+      ForceAOT="$(_ForceAOT)"
       ForceInterpreter="$(MonoForceInterpreter)"
       GenerateCMakeProject="$(GenerateCMakeProject)"
       GenerateXcodeProject="$(GenerateXcodeProject)"

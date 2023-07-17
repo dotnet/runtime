@@ -8,7 +8,7 @@
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
 
-  <UsingTask Condition="'$(RunAOTCompilation)' == 'true'"
+  <UsingTask Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')"
              TaskName="NdkToolFinderTask"
              AssemblyFile="$(MobileBuildTasksAssemblyPath)" />
   <UsingTask Condition="'$(AndroidGenerateAppBundle)' == 'true'"
@@ -190,7 +190,7 @@
   </Target>
 
   <Target Name="_AndroidAotCompile"
-          Condition="'$(RunAOTCompilation)' == 'true'"
+          Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')"
           DependsOnTargets="_AndroidBeforeAotCompile">
 
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
@@ -249,13 +249,17 @@
       <_NativeDependencies Include="$(LibraryOutputPath)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_ForceAOT Condition="'$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')">true</_ForceAOT>
+    </PropertyGroup>
+
     <AndroidAppBuilderTask
         AppDir="$(AndroidBuildDir)"
         Assemblies="@(_AssembliesToBundleInternal)"
         DiagnosticPorts="$(DiagnosticPorts)"
         EnvironmentVariables="@(AndroidEnv)"
         ExtraLinkerArguments="@(ExtraAppLinkerArgs)"
-        ForceAOT="$(RunAOTCompilation)"
+        ForceAOT="$(_ForceAOT)"
         ForceFullAOT="$(ForceFullAOT)"
         ForceInterpreter="$(MonoForceInterpreter)"
         IsLibraryMode="$(_IsLibraryMode)"

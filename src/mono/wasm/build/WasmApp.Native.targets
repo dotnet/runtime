@@ -104,13 +104,13 @@
     <Error Condition="'$(WasmBuildNative)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for building native files." />
 
-    <Error Condition="'$(RunAOTCompilation)' == 'true' and '$(_IsEMSDKMissing)' == 'true'"
+    <Error Condition="('$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true') and '$(_IsEMSDKMissing)' == 'true'"
            Text="$(_EMSDKMissingErrorMessage) Emscripten SDK is required for AOT'ing assemblies." />
 
     <!-- When Building -->
     <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' != 'true'">
       <!-- build AOT, only if explicitly requested -->
-      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="('$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true') and '$(RunAOTCompilationAfterBuild)' == 'true'">true</WasmBuildNative>
 
       <!-- removing legacy interop needs relink -->
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and '$(WasmEnableLegacyJsInterop)' == 'false'" >true</WasmBuildNative>
@@ -127,7 +127,7 @@
     <!-- When Publishing -->
     <PropertyGroup Condition="'$(WasmBuildingForNestedPublish)' == 'true'">
       <!-- AOT==true overrides WasmBuildNative -->
-      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true'">true</WasmBuildNative>
+      <WasmBuildNative Condition="'$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true'">true</WasmBuildNative>
       <WasmBuildNative Condition="'$(WasmBuildNative)' == '' and @(NativeFileReference->Count()) > 0" >true</WasmBuildNative>
 
       <!-- removing legacy interop needs relink -->

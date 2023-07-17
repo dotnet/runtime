@@ -131,12 +131,12 @@
     <WasmGenerateAppBundle Condition="'$(WasmGenerateAppBundle)' == ''">false</WasmGenerateAppBundle>
     <UseAppHost>false</UseAppHost>
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and ('$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true')">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
     <_ExtraTrimmerArgs Condition="'$(WasmEnableLegacyJsInterop)' == 'false'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MSBuildThisFileDirectory)ILLink.Substitutions.LegacyJsInterop.xml&quot;</_ExtraTrimmerArgs>
 
     <!-- Temporarily `false`, till sdk gets a fix for supporting the new file -->
-    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true'">false</WasmEmitSymbolMap>
+    <WasmEmitSymbolMap Condition="'$(WasmEmitSymbolMap)' == '' and '$(RunAOTCompilation)' != 'true' and '$(PublishAot)' != 'true'">false</WasmEmitSymbolMap>
 
     <!-- if DebuggerSupport==true, then ensure that WasmDebugLevel isn't disabling debugging -->
     <WasmDebugLevel Condition="('$(WasmDebugLevel)' == '' or '$(WasmDebugLevel)' == '0') and ('$(DebuggerSupport)' == 'true' or '$(Configuration)' == 'Debug')">-1</WasmDebugLevel>
@@ -262,8 +262,8 @@
       <_WasmIntermediateOutputPath Condition="'$(WasmBuildingForNestedPublish)' != ''">$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'wasm', 'for-publish'))</_WasmIntermediateOutputPath>
 
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
-      <_WasmShouldAOT Condition="'$(WasmBuildingForNestedPublish)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
-      <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and '$(RunAOTCompilation)' == 'true'">true</_WasmShouldAOT>
+      <_WasmShouldAOT Condition="'$(WasmBuildingForNestedPublish)' == 'true' and ('$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true')">true</_WasmShouldAOT>
+      <_WasmShouldAOT Condition="'$(RunAOTCompilationAfterBuild)' == 'true' and ('$(RunAOTCompilation)' == 'true' or '$(PublishAot)' == 'true')">true</_WasmShouldAOT>
       <_WasmShouldAOT Condition="'$(_WasmShouldAOT)' == ''">false</_WasmShouldAOT>
     </PropertyGroup>
 

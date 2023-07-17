@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RuntimeIdentifier>$(TargetOS)-$(TargetArchitecture.ToLowerInvariant())</RuntimeIdentifier>
     <UseMonoRuntime>true</UseMonoRuntime>
-    <UseMonoJustInterp Condition="'$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
+    <UseMonoJustInterp Condition="('$(RunAOTCompilation)' == 'true' or ('$(PublishAot)' == 'true' and '$(PublishAotUsingMonoRuntime)' == 'true')) and '$(MonoForceInterpreter)' == 'true'">true</UseMonoJustInterp>
 
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('Windows'))">windows</_HostOS>
     <_HostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_HostOS>
