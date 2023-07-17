@@ -188,9 +188,13 @@ namespace Tracing.Tests.ProcessInfoValidation
             {
                 expectedOSValue = "Android";
             }
-            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            else if (OperatingSystem.IsIOS())
             {
                 expectedOSValue = "iOS";
+            }
+            else if (OperatingSystem.IsTvOS())
+            {
+                expectedOSValue = "tvOS";
             }
             else
             {
