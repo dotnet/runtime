@@ -101,6 +101,7 @@ namespace System.Net.Internals
             size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
 #endif
             Buffer = new byte[size];
+            Buffer[0] = (byte)InternalSize;
 
             SocketAddressPal.SetAddressFamily(Buffer, family);
         }
