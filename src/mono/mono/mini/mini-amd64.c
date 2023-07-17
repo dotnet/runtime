@@ -1429,7 +1429,7 @@ void
 mono_arch_cpu_init (void)
 {
 #ifndef _MSC_VER
-#if defined(HOST_AMD64)
+#if !defined(MONO_CROSS_COMPILE)
 	guint16 fpcw;
 
 	/* spec compliance requires running with double precision */
