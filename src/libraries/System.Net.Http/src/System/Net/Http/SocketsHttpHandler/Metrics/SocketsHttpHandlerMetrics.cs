@@ -34,6 +34,7 @@ namespace System.Net.Http.Metrics
             {
                 TagList tags = default;
 
+                // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
                 tags.Add("protocol", versionMajor switch
                 {
                     1 => "HTTP/1.1",
@@ -50,11 +51,6 @@ namespace System.Net.Http.Metrics
                 }
 
                 RequestsQueueDuration.Record(duration.TotalSeconds, tags);
-            }
-
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
             }
         }
     }

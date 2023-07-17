@@ -998,12 +998,11 @@ namespace System.Net.Http
                     ThrowGetVersionException(request, 3, reasonException);
                 }
 
-                bool requestsQueueDurationEnabled = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled;
-                long queueStartingTimestamp = requestsQueueDurationEnabled ? Stopwatch.GetTimestamp() : 0;
+                long? queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled ? Stopwatch.GetTimestamp() : null;
 
                 ValueTask<Http3Connection> connectionTask = GetHttp3ConnectionAsync(request, authority, cancellationToken);
 
-                if (requestsQueueDurationEnabled && connectionTask.IsCompleted)
+                if (queueStartingTimestamp.HasValue && connectionTask.IsCompleted)
                 {
                     // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
                     queueStartingTimestamp = 0;
@@ -1011,7 +1010,7 @@ namespace System.Net.Http
 
                 Http3Connection connection = await connectionTask.ConfigureAwait(false);
 
-                HttpResponseMessage response = await connection.SendAsync(request, requestsQueueDurationEnabled, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -2629,7 +2628,15 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    pool.Settings._metrics!.RequestLeftQueue(pool, Stopwatch.GetElapsedTime(startingTimestamp), versionMajor: typeof(T) == typeof(HttpConnection) ? 1 : 2);
+                    TimeSpan duration = Stopwatch.GetElapsedTime(startingTimestamp);
+                    int versionMajor = typeof(T) == typeof(HttpConnection) ? 1 : 2;
+
+                    pool.Settings._metrics!.RequestLeftQueue(pool, duration, versionMajor);
+
+                    if (HttpTelemetry.Log.IsEnabled())
+                    {
+                        HttpTelemetry.Log.RequestLeftQueue(versionMajor, duration);
+                    }
                 }
             }
         }

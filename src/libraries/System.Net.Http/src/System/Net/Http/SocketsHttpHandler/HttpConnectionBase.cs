@@ -42,6 +42,7 @@ namespace System.Net.Http
                 metrics.IdleConnections.Enabled ||
                 metrics.ConnectionDuration.Enabled)
             {
+                // While requests may report HTTP/1.0 as the protocol, we treat all HTTP/1.X connections as HTTP/1.1.
                 string protocol =
                     this is HttpConnection ? "HTTP/1.1" :
                     this is Http2Connection ? "HTTP/2" :
