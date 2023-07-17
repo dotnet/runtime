@@ -346,9 +346,11 @@ extends:
             buildArgs: -s clr.aot+clr.iltools+libs+clr.toolstests -c $(_BuildConfig) -test
             enablePublishTestResults: true
             testResultsFormat: 'xunit'
+            # We want to run AOT tests when illink changes because there's share code and tests from illink which are used by AOT
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
+                eq(dependencies.evaluate_paths.outputs['SetPathVars_tools_illink.containsChange'], true),
                 eq(variables['isRollingBuild'], true))
 
       # Build Mono AOT offset headers once, for consumption elsewhere
