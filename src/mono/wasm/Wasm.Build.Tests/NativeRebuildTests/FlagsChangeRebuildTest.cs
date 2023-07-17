@@ -34,7 +34,7 @@ namespace Wasm.Build.NativeRebuild.Tests
         {
             buildArgs = buildArgs with { ProjectName = $"rebuild_flags_{buildArgs.Config}" };
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink: true, invariant: false, buildArgs, id);
-            var pathsDict = GetFilesTable(buildArgs, paths, unchanged: true);
+            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
             if (extraLDFlags.Length > 0)
                 pathsDict.UpdateTo(unchanged: false, "dotnet.native.wasm", "dotnet.native.js");
 
@@ -47,7 +47,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             string output = Rebuild(nativeRelink: true, invariant: false, buildArgs, id, extraBuildArgs: extraBuildArgs, verbosity: "normal");
 
             var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-            CompareStat(originalStat, newStat, pathsDict.Values);
+            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
 
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking

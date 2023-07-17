@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
         protected static RunHost s_hostsForOSLocaleSensitiveTests = RunHost.Chrome;
         // FIXME: use an envvar to override this
         protected static int s_defaultPerTestTimeoutMs = s_isWindows ? 30 * 60 * 1000 : 15 * 60 * 1000;
-        protected static BuildEnvironment s_buildEnv;
+        public static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : '([^ ']*)'";
         private const string s_nugetInsertionTag = "<!-- TEST_RESTORE_SOURCES_INSERTION_LINE -->";
         private static Regex s_runtimePackPathRegex;
@@ -511,23 +511,7 @@ namespace Wasm.Build.Tests
             }
         }
 
-        public void InitBlazorWasmProjectDir(string id, string targetFramework = DefaultTargetFrameworkForBlazor)
-        {
-            InitPaths(id);
-            if (Directory.Exists(_projectDir))
-                Directory.Delete(_projectDir, recursive: true);
-            Directory.CreateDirectory(_projectDir);
-
-            File.WriteAllText(Path.Combine(_projectDir, "nuget.config"),
-                                GetNuGetConfigWithLocalPackagesPath(
-                                            GetNuGetConfigPathFor(targetFramework),
-                                            s_buildEnv.BuiltNuGetsPath));
-
-            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.props"), Path.Combine(_projectDir, "Directory.Build.props"));
-            File.Copy(Path.Combine(BuildEnvironment.TestDataPath, "Blazor.Directory.Build.targets"), Path.Combine(_projectDir, "Directory.Build.targets"));
-        }
-
-        private static string GetNuGetConfigWithLocalPackagesPath(string templatePath, string localNuGetsPath)
+        protected static string GetNuGetConfigWithLocalPackagesPath(string templatePath, string localNuGetsPath)
         {
             string contents = File.ReadAllText(templatePath);
             if (contents.IndexOf(s_nugetInsertionTag, StringComparison.InvariantCultureIgnoreCase) < 0)
@@ -574,128 +558,6 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectfile, extraProperties, extraItems);
 
             return projectfile;
-        }
-
-        public string CreateBlazorWasmTemplateProject(string id)
-        {
-            InitBlazorWasmProjectDir(id);
-            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
-                    .WithWorkingDirectory(_projectDir!)
-                    .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                    .ExecuteWithCapturedOutput("new blazorwasm")
-                    .EnsureSuccessful();
-
-            string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-            if (!UseWebcil)
-                AddItemsPropertiesToProject(projectFile, "<WasmEnableWebcil>false</WasmEnableWebcil>");
-            return projectFile;
-        }
-
-        protected (CommandResult, string) BlazorBuild(BlazorBuildOptions options, params string[] extraArgs)
-        {
-            if (options.WarnAsError)
-                extraArgs = extraArgs.Append("/warnaserror").ToArray();
-
-            var res = BlazorBuildInternal(options.Id, options.Config, publish: false, setWasmDevel: false, extraArgs);
-            AssertBlazorBundle(options, isPublish: false);
-
-            return res;
-        }
-
-        protected (CommandResult, string) BlazorPublish(BlazorBuildOptions options, params string[] extraArgs)
-        {
-            var res = BlazorBuildInternal(options.Id, options.Config, publish: true, setWasmDevel: false, extraArgs);
-            AssertBlazorBundle(options, isPublish: true);
-
-            if (options.ExpectedFileType == NativeFilesType.AOT)
-            {
-                // check for this too, so we know the format is correct for the negative
-                // test for jsinterop.webassembly.dll
-                Assert.Contains("Microsoft.JSInterop.dll -> Microsoft.JSInterop.dll.bc", res.Item1.Output);
-
-                // make sure this assembly gets skipped
-                Assert.DoesNotContain("Microsoft.JSInterop.WebAssembly.dll -> Microsoft.JSInterop.WebAssembly.dll.bc", res.Item1.Output);
-            }
-
-            string objBuildDir = Path.Combine(_projectDir!, "obj", options.Config, options.TargetFramework, "wasm", "for-build");
-            // Check that we linked only for publish
-            if (options.ExpectRelinkDirWhenPublishing)
-                Assert.True(Directory.Exists(objBuildDir), $"Could not find expected {objBuildDir}, which gets created when relinking during Build. This is likely a test authoring error");
-            else
-                Assert.False(Directory.Exists(objBuildDir), $"Found unexpected {objBuildDir}, which gets created when relinking during Build");
-
-            return res;
-        }
-
-        protected (CommandResult, string) BlazorBuildInternal(string id, string config, bool publish = false, bool setWasmDevel = true, params string[] extraArgs)
-        {
-            string label = publish ? "publish" : "build";
-            _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
-
-            string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{label}.binlog");
-            string[] combinedArgs = new[]
-            {
-                label, // same as the command name
-                $"-bl:{logPath}",
-                $"-p:Configuration={config}",
-                !UseWebcil ? "-p:WasmEnableWebcil=false" : string.Empty,
-                "-p:BlazorEnableCompression=false",
-                "-nr:false",
-                setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
-            }.Concat(extraArgs).ToArray();
-
-            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(_projectDir!)
-                                        .WithEnvironmentVariable("NUGET_PACKAGES", _nugetPackagesDir)
-                                        .ExecuteWithCapturedOutput(combinedArgs)
-                                        .EnsureSuccessful();
-
-            return (res, logPath);
-        }
-
-        private void AssertBlazorDotNetNativeFiles(
-            NativeFilesType type,
-            string config,
-            bool forPublish,
-            string targetFramework,
-            bool expectFingerprintOnDotnetJs,
-            RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-        {
-            string label = forPublish ? "publish" : "build";
-            string objBuildDir = Path.Combine(_projectDir!, "obj", config, targetFramework, "wasm", forPublish ? "for-publish" : "for-build");
-            string binFrameworkDir = FindBlazorBinFrameworkDir(config, forPublish, framework: targetFramework);
-
-            var dotnetFiles = new WasmSdkBasedProjectProvider(_testOutput, _projectDir)
-                                    .FindAndAssertDotnetFiles(
-                                        dir: binFrameworkDir,
-                                        isPublish: forPublish,
-                                        expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
-                                        runtimeType: runtimeType);
-
-            string runtimeNativeDir = s_buildEnv.GetRuntimeNativeDir(targetFramework, runtimeType);
-
-            string srcDirForNativeFileToCompareAgainst = type switch
-            {
-                NativeFilesType.FromRuntimePack => runtimeNativeDir,
-                NativeFilesType.Relinked => objBuildDir,
-                NativeFilesType.AOT => objBuildDir,
-                _ => throw new ArgumentOutOfRangeException(nameof(type))
-            };
-            foreach (string nativeFilename in new[] { "dotnet.native.wasm", "dotnet.native.js" })
-            {
-                // For any *type*, check against the expected path
-                TestUtils.AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
-                               dotnetFiles[nativeFilename].ActualPath,
-                               label);
-
-                if (type != NativeFilesType.FromRuntimePack)
-                {
-                    // Confirm that it doesn't match the file from the runtime pack
-                    TestUtils.AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
-                                       dotnetFiles[nativeFilename].ActualPath,
-                                       label);
-                }
-            }
         }
 
         static void AssertRuntimePackPath(string buildOutput, string targetFramework)
@@ -825,42 +687,6 @@ namespace Wasm.Build.Tests
             return result;
         }
 
-        protected void AssertBlazorBundle(
-            BlazorBuildOptions options,
-            bool isPublish,
-            string? binFrameworkDir = null)
-        {
-            if (options.TargetFramework is null)
-                options = options with { TargetFramework = DefaultTargetFrameworkForBlazor };
-
-            AssertBlazorDotNetNativeFiles(options.ExpectedFileType,
-                                          options.Config,
-                                          forPublish: isPublish,
-                                          targetFramework: options.TargetFramework,
-                                          expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
-                                          runtimeType: options.RuntimeType);
-
-            AssertBlazorBootJson(config: options.Config,
-                                 isPublish: isPublish,
-                                 targetFramework: options.TargetFramework,
-                                 expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
-                                 runtimeType: options.RuntimeType);
-        }
-
-        protected void AssertBlazorBootJson(
-            string config,
-            bool isPublish,
-            string targetFramework = DefaultTargetFrameworkForBlazor,
-            bool expectFingerprintOnDotnetJs = false,
-            RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
-        {
-            new BlazorWasmProjectProvider(_testOutput, _projectDir)
-                    .AssertBlazorBootJson(binFrameworkDir: FindBlazorBinFrameworkDir(config, isPublish, targetFramework),
-                                          isPublish: isPublish,
-                                          expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
-                                          runtimeType: runtimeType);
-        }
-
         public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework = DefaultTargetFrameworkForBlazor)
             => new BlazorWasmProjectProvider(_testOutput, _projectDir)
                     .FindBlazorBinFrameworkDir(config, forPublish, framework);
@@ -877,91 +703,6 @@ namespace Wasm.Build.Tests
             var dir = baseDir ?? _projectDir;
             Assert.NotNull(dir);
             return Path.Combine(dir!, "obj", config, targetFramework, "browser-wasm");
-        }
-
-        protected string CreateProjectWithNativeReference(string id)
-        {
-            CreateBlazorWasmTemplateProject(id);
-
-            string extraItems = @$"
-                {GetSkiaSharpReferenceItems()}
-                <WasmFilesToIncludeInFileSystem Include=""{Path.Combine(BuildEnvironment.TestAssetsPath, "mono.png")}"" />
-            ";
-            string projectFile = Path.Combine(_projectDir!, $"{id}.csproj");
-            AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
-
-            return projectFile;
-        }
-
-        public void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
-        {
-            string additionalCode = $$"""
-                <p role="{{methodName}}">Output: @outputText</p>
-                <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
-
-                @code {
-                    private string outputText = string.Empty;
-                    public void {{methodName}}()
-                    {
-                        {{customCode}}
-                    }
-                }
-            """;
-
-            // find blazor's Counter.razor
-            string counterRazorPath = Path.Combine(_projectDir!, razorPage);
-            if (!File.Exists(counterRazorPath))
-                throw new FileNotFoundException($"Could not find {counterRazorPath}");
-
-            string oldContent = File.ReadAllText(counterRazorPath);
-            File.WriteAllText(counterRazorPath, oldContent + additionalCode);
-        }
-
-        // Keeping these methods with explicit Build/Publish in the name
-        // so in the test code it is evident which is being run!
-        public Task BlazorRunForBuildWithDotnetRun(string config, Func<IPage, Task>? test = null, string extraArgs = "--no-build", Action<IConsoleMessage>? onConsoleMessage = null)
-            => BlazorRunTest($"run -c {config} {extraArgs}", _projectDir!, test, onConsoleMessage);
-
-        public Task BlazorRunForPublishWithWebServer(string config, Func<IPage, Task>? test = null, string extraArgs = "", Action<IConsoleMessage>? onConsoleMessage = null)
-            => BlazorRunTest($"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files {extraArgs}",
-                             Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(config, forPublish: true), "..")),
-                             test, onConsoleMessage);
-
-        public async Task BlazorRunTest(string runArgs,
-                                        string workingDirectory,
-                                        Func<IPage, Task>? test = null,
-                                        Action<IConsoleMessage>? onConsoleMessage = null,
-                                        bool detectRuntimeFailures = true)
-        {
-            using var runCommand = new RunCommand(s_buildEnv, _testOutput)
-                                        .WithWorkingDirectory(workingDirectory);
-
-            await using var runner = new BrowserRunner(_testOutput);
-            var page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage);
-
-            await page.Locator("text=Counter").ClickAsync();
-            var txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 0", txt);
-
-            await page.Locator("text=\"Click me\"").ClickAsync();
-            txt = await page.Locator("p[role='status']").InnerHTMLAsync();
-            Assert.Equal("Current count: 1", txt);
-
-            if (test is not null)
-                await test(page);
-
-            void OnConsoleMessage(IConsoleMessage msg)
-            {
-                _testOutput.WriteLine($"[{msg.Type}] {msg.Text}");
-
-                onConsoleMessage?.Invoke(msg);
-
-                if (detectRuntimeFailures)
-                {
-                    if (msg.Text.Contains("[MONO] * Assertion") || msg.Text.Contains("Error: [MONO] "))
-                        throw new XunitException($"Detected a runtime failure at line: {msg.Text}");
-                }
-            }
         }
 
         public static (int exitCode, string buildOutput) RunProcess(string path,
@@ -1191,8 +932,8 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
-    internal record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    internal record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
+    public record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
+    public record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
 
     public record BlazorBuildOptions
     (

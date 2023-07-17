@@ -26,7 +26,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             (buildArgs, BuildPaths paths) = FirstNativeBuild(s_mainReturns42, nativeRelink, invariant: invariant, buildArgs, id);
 
             string mainAssembly = $"{buildArgs.ProjectName}.dll";
-            var pathsDict = GetFilesTable(buildArgs, paths, unchanged: true);
+            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: true);
             pathsDict.UpdateTo(unchanged: false, mainAssembly);
             pathsDict.UpdateTo(unchanged: !buildArgs.AOT, "dotnet.native.wasm", "dotnet.native.js");
 
@@ -49,7 +49,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             Rebuild(nativeRelink, invariant, buildArgs, id);
             var newStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
 
-            CompareStat(originalStat, newStat, pathsDict.Values);
+            _provider.CompareStat(originalStat, newStat, pathsDict.Values);
             RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 55, host: host, id: id);
         }
     }

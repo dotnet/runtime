@@ -90,7 +90,7 @@ namespace Wasm.Build.Tests
                                         Label: "first_build"));
 
             BuildPaths paths = GetBuildPaths(buildArgs);
-            var pathsDict = GetFilesTable(buildArgs, paths, unchanged: false);
+            var pathsDict = _provider.GetFilesTable(buildArgs, paths, unchanged: false);
 
             string mainDll = $"{buildArgs.ProjectName}.dll";
             var firstBuildStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));

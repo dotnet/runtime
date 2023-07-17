@@ -15,76 +15,45 @@ using Microsoft.NET.Sdk.WebAssembly;
 
 namespace Wasm.Build.Tests;
 
-public class BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
-                : WasmSdkBasedProjectProvider(_testOutput, _projectDir)
+public class BlazorWasmProjectProvider : WasmSdkBasedProjectProvider
 {
+    public BlazorWasmProjectProvider(ITestOutputHelper _testOutput, string? _projectDir = null)
+            : base(_testOutput, _projectDir)
+    {}
+
     public void AssertBlazorBootJson(
-        string binFrameworkDir,
+        string config,
+        bool isPublish,
+        string targetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
         bool expectFingerprintOnDotnetJs = false,
-        bool isPublish = false,
         RuntimeVariant runtimeType = RuntimeVariant.SingleThreaded)
     {
-        EnsureProjectDirIsSet();
-        string bootJsonPath = Path.Combine(binFrameworkDir, "blazor.boot.json");
-        Assert.True(File.Exists(bootJsonPath), $"Expected to find {bootJsonPath}");
-
-        BootJsonData bootJson = ParseBootData(bootJsonPath);
-        var bootJsonEntries = bootJson.resources.runtime.Keys.Where(k => k.StartsWith("dotnet.", StringComparison.Ordinal)).ToArray();
-
-        var expectedEntries = new SortedDictionary<string, Action<string>>();
-        IReadOnlySet<string> expected = GetDotNetFilesExpectedSet(runtimeType, isPublish);
-
-        var knownSet = GetAllKnownDotnetFilesToFingerprintMap(runtimeType);
-        foreach (string expectedFilename in expected)
-        {
-            if (Path.GetExtension(expectedFilename) == ".map")
-                continue;
-
-            bool expectFingerprint = knownSet[expectedFilename];
-            expectedEntries[expectedFilename] = item =>
-            {
-                string prefix = Path.GetFileNameWithoutExtension(expectedFilename);
-                string extension = Path.GetExtension(expectedFilename).Substring(1);
-
-                if (ShouldCheckFingerprint(expectedFilename: expectedFilename,
-                                           expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
-                                           expectFingerprintForThisFile: expectFingerprint))
-                {
-                    Assert.Matches($"{prefix}{s_dotnetVersionHashRegex}{extension}", item);
-                }
-                else
-                {
-                    Assert.Equal(expectedFilename, item);
-                }
-
-                string absolutePath = Path.Combine(binFrameworkDir, item);
-                Assert.True(File.Exists(absolutePath), $"Expected to find '{absolutePath}'");
-            };
-        }
-        // FIXME: maybe use custom code so the details can show up in the log
-        Assert.Collection(bootJsonEntries.Order(), expectedEntries.Values.ToArray());
+        AssertBootJson(binFrameworkDir: FindBlazorBinFrameworkDir(config, isPublish, targetFramework),
+                      isPublish: isPublish,
+                      expectFingerprintOnDotnetJs: expectFingerprintOnDotnetJs,
+                      runtimeType: runtimeType);
     }
 
-    public static BootJsonData ParseBootData(string bootJsonPath)
-    {
-        using FileStream stream = File.OpenRead(bootJsonPath);
-        stream.Position = 0;
-        var serializer = new DataContractJsonSerializer(
-            typeof(BootJsonData),
-            new DataContractJsonSerializerSettings { UseSimpleDictionaryFormat = true });
-
-        var config = (BootJsonData?)serializer.ReadObject(stream);
-        Assert.NotNull(config);
-        return config;
-    }
-
-    public string FindBlazorBinFrameworkDir(string config, bool forPublish, string framework)
+    public void AssertBlazorBundle(
+        BlazorBuildOptions options,
+        bool isPublish,
+        string? binFrameworkDir = null)
     {
         EnsureProjectDirIsSet();
-        string basePath = Path.Combine(ProjectDir, "bin", config, framework);
-        if (forPublish)
-            basePath = FindSubDirIgnoringCase(basePath, "publish");
+        if (options.TargetFramework is null)
+            options = options with { TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor };
 
-        return Path.Combine(basePath, "wwwroot", "_framework");
+        AssertDotNetNativeFiles(options.ExpectedFileType,
+                                      options.Config,
+                                      forPublish: isPublish,
+                                      targetFramework: options.TargetFramework,
+                                      expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
+                                      runtimeType: options.RuntimeType);
+
+        AssertBlazorBootJson(config: options.Config,
+                             isPublish: isPublish,
+                             targetFramework: options.TargetFramework,
+                             expectFingerprintOnDotnetJs: options.ExpectFingerprintOnDotnetJs,
+                             runtimeType: options.RuntimeType);
     }
 }

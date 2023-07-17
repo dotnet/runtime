@@ -39,7 +39,7 @@ public class MiscTests : BlazorWasmTestBase
 
         var expectedFileType = nativeRelink ? NativeFilesType.Relinked : NativeFilesType.AOT;
 
-        AssertBlazorBundle(new BlazorBuildOptions
+        _provider.AssertBlazorBundle(new BlazorBuildOptions
             (
                 Id: id,
                 Config: config,
