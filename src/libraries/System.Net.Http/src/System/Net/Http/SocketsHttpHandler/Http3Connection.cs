@@ -160,7 +160,7 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool requestsQueueDurationEnabled, long queueStartingTimestamp, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
@@ -173,7 +173,7 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
+                        if (requestsQueueDurationEnabled && queueStartingTimestamp == 0)
                         {
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
@@ -198,9 +198,9 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
+                    if (requestsQueueDurationEnabled && queueStartingTimestamp != 0)
                     {
-                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
+                        _pool.Settings._metrics!.RequestLeftQueue(Pool, Stopwatch.GetElapsedTime(queueStartingTimestamp), versionMajor: 3);
                     }
                 }
 

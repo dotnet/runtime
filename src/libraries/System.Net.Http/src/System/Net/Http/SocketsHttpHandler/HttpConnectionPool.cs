@@ -363,6 +363,7 @@ namespace System.Net.Http
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderLineBytes => _hostHeaderLineBytes;
         public CredentialCache? PreAuthCredentials { get; }
+        public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpsPort);
 
         /// <summary>
         /// An ASCII origin string per RFC 6454 Section 6.2, in format &lt;scheme&gt;://&lt;host&gt;[:&lt;port&gt;]
@@ -998,11 +999,12 @@ namespace System.Net.Http
                     ThrowGetVersionException(request, 3, reasonException);
                 }
 
-                long queueStartingTimestamp = HttpTelemetry.Log.IsEnabled() ? Stopwatch.GetTimestamp() : 0;
+                bool requestsQueueDurationEnabled = HttpTelemetry.Log.IsEnabled() || Settings._metrics!.RequestsQueueDuration.Enabled;
+                long queueStartingTimestamp = requestsQueueDurationEnabled ? Stopwatch.GetTimestamp() : 0;
 
                 ValueTask<Http3Connection> connectionTask = GetHttp3ConnectionAsync(request, authority, cancellationToken);
 
-                if (HttpTelemetry.Log.IsEnabled() && connectionTask.IsCompleted)
+                if (requestsQueueDurationEnabled && connectionTask.IsCompleted)
                 {
                     // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
                     queueStartingTimestamp = 0;
@@ -1010,7 +1012,7 @@ namespace System.Net.Http
 
                 Http3Connection connection = await connectionTask.ConfigureAwait(false);
 
-                HttpResponseMessage response = await connection.SendAsync(request, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
+                HttpResponseMessage response = await connection.SendAsync(request, requestsQueueDurationEnabled, queueStartingTimestamp, cancellationToken).ConfigureAwait(false);
 
                 // If an Alt-Svc authority returns 421, it means it can't actually handle the request.
                 // An authority is supposed to be able to handle ALL requests to the origin, so this is a server bug.
@@ -1089,7 +1091,7 @@ namespace System.Net.Http
                             if (!TryGetPooledHttp2Connection(request, out Http2Connection? connection, out http2ConnectionWaiter) &&
                                 http2ConnectionWaiter != null)
                             {
-                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
+                                connection = await http2ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             Debug.Assert(connection is not null || !_http2Enabled);
@@ -1121,7 +1123,7 @@ namespace System.Net.Http
                             // Use HTTP/1.x.
                             if (!TryGetPooledHttp11Connection(request, async, out HttpConnection? connection, out http11ConnectionWaiter))
                             {
-                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(async, cancellationToken).ConfigureAwait(false);
+                                connection = await http11ConnectionWaiter.WaitForConnectionAsync(this, async, cancellationToken).ConfigureAwait(false);
                             }
 
                             connection.Acquire(); // In case we are doing Windows (i.e. connection-based) auth, we need to ensure that we hold on to this specific connection while auth is underway.
@@ -1199,6 +1201,7 @@ namespace System.Net.Http
         }
 
         private void CancelIfNecessary<T>(HttpConnectionWaiter<T>? waiter, bool requestCancelled)
+            where T : HttpConnectionBase?
         {
             int timeout = GlobalHttpSettings.SocketsHttpHandler.PendingConnectionTimeoutOnRequestCompletion;
             if (waiter?.ConnectionCancellationTokenSource is null ||
@@ -2430,6 +2433,7 @@ namespace System.Net.Http
                 message);                    // message
 
         private struct RequestQueue<T>
+            where T : HttpConnectionBase?
         {
             public struct QueueItem
             {
@@ -2599,6 +2603,7 @@ namespace System.Net.Http
         }
 
         private sealed class HttpConnectionWaiter<T> : TaskCompletionSourceWithCancellation<T>
+            where T : HttpConnectionBase?
         {
             // When a connection attempt is pending, reference the connection's CTS, so we can tear it down if the initiating request is cancelled
             // or completes on a different connection.
@@ -2607,8 +2612,17 @@ namespace System.Net.Http
             // Distinguish connection cancellation that happens because the initiating request is cancelled or completed on a different connection.
             public bool CancelledByOriginatingRequestCompletion { get; set; }
 
-            public async ValueTask<T> WaitForConnectionAsync(bool async, CancellationToken requestCancellationToken)
+            public ValueTask<T> WaitForConnectionAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
             {
+                return HttpTelemetry.Log.IsEnabled() || pool.Settings._metrics!.RequestsQueueDuration.Enabled
+                    ? WaitForConnectionWithTelemetryAsync(pool, async, requestCancellationToken)
+                    : WaitWithCancellationAsync(async, requestCancellationToken);
+            }
+
+            private async ValueTask<T> WaitForConnectionWithTelemetryAsync(HttpConnectionPool pool, bool async, CancellationToken requestCancellationToken)
+            {
+                Debug.Assert(typeof(T) == typeof(HttpConnection) || typeof(T) == typeof(Http2Connection));
+
                 long startingTimestamp = Stopwatch.GetTimestamp();
                 try
                 {
@@ -2616,13 +2630,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled())
-                    {
-                        if (typeof(T) == typeof(HttpConnection))
-                            HttpTelemetry.Log.Http11RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
-                        else if (typeof(T) == typeof(Http2Connection))
-                            HttpTelemetry.Log.Http20RequestLeftQueue(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
-                    }
+                    pool.Settings._metrics!.RequestLeftQueue(pool, Stopwatch.GetElapsedTime(startingTimestamp), versionMajor: typeof(T) == typeof(HttpConnection) ? 1 : 2);
                 }
             }
         }
