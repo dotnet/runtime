@@ -1,6 +1,6 @@
 <Project>
 
-  <Import Project="..\Directory.Build.targets" />
+  <Import Project="..\..\Directory.Build.targets" />
 
   <PropertyGroup>
     <TypeForwardedTypesCompilePath>$(IntermediateOutputPath)$(MSBuildProjectName).TypeForwardedTypes.cs</TypeForwardedTypesCompilePath>
