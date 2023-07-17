@@ -291,7 +291,11 @@ namespace System.Globalization.Tests
         [Fact]
         public void TestAbbreviatedGenitiveNamesWithAllCultures()
         {
-            CultureInfo[] cultures = CultureInfo.GetCultures(CultureTypes.AllCultures);
+            // WASM in Hybrid mode does not support NeutralCultures (only "no"), it support is limited to the list:
+            // https://github.com/dotnet/icu/blob/dotnet/main/icu-filters/icudt_wasm.json
+            CultureInfo[] cultures = PlatformDetection.IsHybidGlobalizationOnBrowser ?
+                CultureInfo.GetCultures(SpecificCultures | InstalledWin32Cultures) :
+                CultureInfo.GetCultures(CultureTypes.AllCultures);
             DateTime dt = new DateTime(2000, 1, 20);
 
             foreach (CultureInfo ci in cultures)

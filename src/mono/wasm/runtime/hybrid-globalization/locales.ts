@@ -16,9 +16,9 @@ export function mono_wasm_get_locale_info(culture: MonoStringRef, localeNumberDa
         const cultureName = monoStringToString(cultureRoot);
         const locale : any = cultureName ? cultureName : undefined;
         if (localeNumberData == 0x0000100C)
-            return get_first_day_of_week(locale);
+            return getFirstDayOfWeek(locale);
         if (localeNumberData == 0x0000100D)
-            return get_first_week_of_year(locale);
+            return getFirstWeeOfYear(locale);
         // other functions are still supported by ICU, this function should not be called for them
         throw new Error(`LocaleNumberData of value ${localeNumberData} should be supported by ICU.`);
     }
@@ -32,9 +32,9 @@ export function mono_wasm_get_locale_info(culture: MonoStringRef, localeNumberDa
     }
 }
 
-function get_first_day_of_week(locale: string)
+function getFirstDayOfWeek(locale: string)
 {
-    const weekInfo = get_week_info(locale);
+    const weekInfo = getWeekInfo(locale);
     if (weekInfo)
     {
         // JS's Sunday == 7 while dotnet's Sunday == 0
@@ -57,9 +57,9 @@ function get_first_day_of_week(locale: string)
     return 1;
 }
 
-function get_first_week_of_year(locale: string)
+function getFirstWeeOfYear(locale: string)
 {
-    const weekInfo = get_week_info(locale);
+    const weekInfo = getWeekInfo(locale);
     if (weekInfo)
     {
         // enum CalendarWeekRule
@@ -81,7 +81,7 @@ function get_first_week_of_year(locale: string)
     return 0;
 }
 
-function get_week_info(locale: string)
+function getWeekInfo(locale: string)
 {
     try {
         // most tools have it implemented as property

@@ -81,14 +81,14 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
 }
 
 function getCalendarName(locale: any){
-    const calendars = get_calendar_info(locale);
+    const calendars = getCalendarInfo(locale);
     if (!calendars || calendars.length == 0)
         return "";
     return calendars[0];
 }
 
 
-function get_calendar_info(locale: string)
+function getCalendarInfo(locale: string)
 {
     try {
         // most tools have it implemented as property
@@ -329,7 +329,7 @@ function getMonthNames(locale: string | undefined) : { long: string[], abbreviat
 // So for other calendars, only return the latest era.
 function getEraNames(date: Date, locale: string | undefined, calendarId: number) : { eraNames: string, abbreviatedEraNames: string}
 {
-    if (ShouldBePopulatedByManagedCode(calendarId))
+    if (shouldBePopulatedByManagedCode(calendarId))
     {
         // managed code already handles these calendars,
         // so empty strings will get overwritten in 
@@ -345,15 +345,15 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
     const shortEraDate = date.toLocaleDateString(locale, { era: "narrow" });
     
     const eraDateParts = eraDate.includes(yearStr) ?
-        GetEraDateParts(yearStr) :
-        GetEraDateParts(date.getFullYear().toString());
+        getEraDateParts(yearStr) :
+        getEraDateParts(date.getFullYear().toString());
 
     return {
         eraNames: GetEraFromDateParts(eraDateParts.eraDateParts, eraDateParts.ignoredPart),
         abbreviatedEraNames: GetEraFromDateParts(eraDateParts.abbrEraDateParts, eraDateParts.ignoredPart)
     };
 
-    function ShouldBePopulatedByManagedCode(calendarId: number)
+    function shouldBePopulatedByManagedCode(calendarId: number)
     {
         return (calendarId > 1 && calendarId < 15) || calendarId == 22 || calendarId == 23;
     }
@@ -367,7 +367,7 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         return filteredEra[0].trim();
     }
 
-    function GetEraDateParts(yearStr: string)
+    function getEraDateParts(yearStr: string)
     {
         if (eraDate.startsWith(yearStr) || eraDate.endsWith(yearStr))
         {
