@@ -862,9 +862,9 @@ namespace System.Text.RegularExpressions
                                 {
                                     string capname = ScanCapname();
 
-                                    if (_capnames != null && _capnames.ContainsKey(capname))
+                                    if (_capnames?[capname] is int tmpCapnum)
                                     {
-                                        capnum = (int)_capnames![capname]!;
+                                        capnum = tmpCapnum;
                                     }
 
                                     // check if we have bogus character after the name
@@ -909,9 +909,9 @@ namespace System.Text.RegularExpressions
                                     {
                                         string uncapname = ScanCapname();
 
-                                        if (_capnames != null && _capnames.ContainsKey(uncapname))
+                                        if (_capnames?[uncapname] is int tmpCapnum)
                                         {
-                                            uncapnum = (int)_capnames![uncapname]!;
+                                            uncapnum = tmpCapnum;
                                         }
                                         else
                                         {
@@ -969,9 +969,9 @@ namespace System.Text.RegularExpressions
                             {
                                 string capname = ScanCapname();
 
-                                if (_capnames != null && _capnames.ContainsKey(capname) && _pos < _pattern.Length && _pattern[_pos++] == ')')
+                                if (_capnames?[capname] is int tmpCapnum && _pos < _pattern.Length && _pattern[_pos++] == ')')
                                 {
-                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, (int)_capnames![capname]!);
+                                    return new RegexNode(RegexNodeKind.BackreferenceConditional, _options, tmpCapnum);
                                 }
                             }
                         }
@@ -1265,7 +1265,7 @@ namespace System.Text.RegularExpressions
                 {
                     return
                         scanOnly ? null :
-                        _capnames != null && _capnames.ContainsKey(capname) ? new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!) :
+                        _capnames?[capname] is int tmpCapnum ? new RegexNode(RegexNodeKind.Backreference, _options, tmpCapnum) :
                         throw MakeException(RegexParseError.UndefinedNamedReference, SR.Format(SR.UndefinedNamedReference, capname));
                 }
             }
@@ -1361,9 +1361,9 @@ namespace System.Text.RegularExpressions
                 string capname = ScanCapname();
                 if (_pos < _pattern.Length && _pattern[_pos++] == '}')
                 {
-                    if (_capnames != null && _capnames.ContainsKey(capname))
+                    if (_capnames?[capname] is int tmpCapnum)
                     {
-                        return new RegexNode(RegexNodeKind.Backreference, _options, (int)_capnames![capname]!);
+                        return new RegexNode(RegexNodeKind.Backreference, _options, tmpCapnum);
                     }
                 }
             }
