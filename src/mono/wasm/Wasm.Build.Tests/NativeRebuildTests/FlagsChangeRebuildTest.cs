@@ -51,10 +51,10 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             // cflags: pinvoke get's compiled, but doesn't overwrite pinvoke.o
             // and thus doesn't cause relinking
-            AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
+            TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", output, contains: extraCFlags.Length > 0);
 
             // ldflags: link step args change, so it should trigger relink
-            AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
+            TestUtils.AssertSubstring("Linking with emcc", output, contains: extraLDFlags.Length > 0);
 
             if (buildArgs.AOT)
             {
@@ -63,7 +63,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             }
 
             string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-            AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
+            TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
                                 contains: buildArgs.AOT);
         }
     }

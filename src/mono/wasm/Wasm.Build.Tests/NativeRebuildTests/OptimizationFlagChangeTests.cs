@@ -65,7 +65,7 @@ public class OptimizationFlagChangeTests : NativeRebuildTestsBase
         CompareStat(originalStat, newStat, pathsDict.Values);
 
         string runOutput = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 42, host: host, id: id);
-        AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
+        TestUtils.AssertSubstring($"Found statically linked AOT module '{Path.GetFileNameWithoutExtension(mainAssembly)}'", runOutput,
                             contains: buildArgs.AOT);
     }
 }

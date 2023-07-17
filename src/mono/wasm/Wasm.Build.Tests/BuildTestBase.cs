@@ -186,8 +186,8 @@ namespace Wasm.Build.Tests
                                 useWasmConsoleOutput: useWasmConsoleOutput
                                 );
 
-            AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
-            AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
+            TestUtils.AssertSubstring("AOT: image 'System.Private.CoreLib' found.", output, contains: buildArgs.AOT);
+            TestUtils.AssertSubstring($"AOT: image '{buildArgs.ProjectName}' found.", output, contains: buildArgs.AOT);
 
             if (test != null)
                 test(output);
@@ -673,14 +673,14 @@ namespace Wasm.Build.Tests
             foreach (string nativeFilename in new[] { "dotnet.native.wasm", "dotnet.native.js" })
             {
                 // For any *type*, check against the expected path
-                AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
+                TestUtils.AssertSameFile(Path.Combine(srcDirForNativeFileToCompareAgainst, nativeFilename),
                                dotnetFiles[nativeFilename].ActualPath,
                                label);
 
                 if (type != NativeFilesType.FromRuntimePack)
                 {
                     // Confirm that it doesn't match the file from the runtime pack
-                    AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
+                    TestUtils.AssertNotSameFile(Path.Combine(runtimeNativeDir, nativeFilename),
                                        dotnetFiles[nativeFilename].ActualPath,
                                        label);
                 }
@@ -719,15 +719,15 @@ namespace Wasm.Build.Tests
             if (options.IsBrowserProject)
                 filesToExist.Add("index.html");
 
-            AssertFilesExist(options.BundleDir, filesToExist);
+            TestUtils.AssertFilesExist(options.BundleDir, filesToExist);
 
-            AssertFilesExist(options.BundleDir, new[] { "run-v8.sh" }, expectToExist: options.HasV8Script);
+            TestUtils.AssertFilesExist(options.BundleDir, new[] { "run-v8.sh" }, expectToExist: options.HasV8Script);
             AssertIcuAssets();
 
             string managedDir = Path.Combine(options.BundleDir, "_framework");
             string bundledMainAppAssembly =
                 options.UseWebcil ? $"{options.ProjectName}{WebcilInWasmExtension}" : $"{options.ProjectName}.dll";
-            AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
+            TestUtils.AssertFilesExist(managedDir, new[] { bundledMainAppAssembly });
 
             bool is_debug = options.Config == "Debug";
             if (is_debug)
@@ -763,7 +763,7 @@ namespace Wasm.Build.Tests
                     case GlobalizationMode.PredefinedIcu:
                         if (string.IsNullOrEmpty(options.PredefinedIcudt))
                             throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                        AssertFilesExist(options.BundleDir, new[] { Path.Combine("_framework", options.PredefinedIcudt) }, expectToExist: true);
+                        TestUtils.AssertFilesExist(options.BundleDir, new[] { Path.Combine("_framework", options.PredefinedIcudt) }, expectToExist: true);
                         // predefined ICU name can be identical with the icu files from runtime pack
                         switch (options.PredefinedIcudt)
                         {
@@ -790,55 +790,18 @@ namespace Wasm.Build.Tests
                 }
 
                 var frameworkDir = Path.Combine(options.BundleDir, "_framework");
-                AssertFilesExist(frameworkDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
-                AssertFilesExist(frameworkDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
-                AssertFilesExist(frameworkDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
-                AssertFilesExist(frameworkDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
-                AssertFilesExist(frameworkDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
+                TestUtils.AssertFilesExist(frameworkDir, new[] { "icudt.dat" }, expectToExist: expectFULL);
+                TestUtils.AssertFilesExist(frameworkDir, new[] { "icudt_EFIGS.dat" }, expectToExist: expectEFIGS);
+                TestUtils.AssertFilesExist(frameworkDir, new[] { "icudt_CJK.dat" }, expectToExist: expectCJK);
+                TestUtils.AssertFilesExist(frameworkDir, new[] { "icudt_no_CJK.dat" }, expectToExist: expectNOCJK);
+                TestUtils.AssertFilesExist(frameworkDir, new[] { "icudt_hybrid.dat" }, expectToExist: expectHYBRID);
             }
         }
 
         protected static void AssertDotNetJsSymbols(string bundleDir, bool fromRuntimePack, string targetFramework)
-            => AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
+            => TestUtils.AssertFile(Path.Combine(s_buildEnv.GetRuntimeNativeDir(targetFramework), "dotnet.native.js.symbols"),
                             Path.Combine(bundleDir, "_framework/dotnet.native.js.symbols"),
                             same: fromRuntimePack);
-
-        protected static void AssertFilesDontExist(string dir, string[] filenames, string? label = null)
-            => AssertFilesExist(dir, filenames, label, expectToExist: false);
-
-        protected static void AssertFilesExist(string dir, IEnumerable<string> filenames, string? label = null, bool expectToExist = true)
-        {
-            string prefix = label != null ? $"{label}: " : string.Empty;
-            if (!Directory.Exists(dir))
-                throw new XunitException($"[{label}] {dir} not found");
-            foreach (string filename in filenames)
-            {
-                string path = Path.Combine(dir, filename);
-                if (expectToExist && !File.Exists(path))
-                    throw new XunitException($"{prefix}Expected the file to exist: {path}");
-
-                if (!expectToExist && File.Exists(path))
-                    throw new XunitException($"{prefix}Expected the file to *not* exist: {path}");
-            }
-        }
-
-        protected static void AssertSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: true);
-        protected static void AssertNotSameFile(string file0, string file1, string? label = null) => AssertFile(file0, file1, label, same: false);
-
-        protected static void AssertFile(string file0, string file1, string? label = null, bool same = true)
-        {
-            Assert.True(File.Exists(file0), $"{label}: Expected to find {file0}");
-            Assert.True(File.Exists(file1), $"{label}: Expected to find {file1}");
-
-            FileInfo finfo0 = new(file0);
-            FileInfo finfo1 = new(file1);
-
-            if (same && finfo0.Length != finfo1.Length)
-                throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
-
-            if (!same && finfo0.Length == finfo1.Length)
-                throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
-        }
 
         protected (int exitCode, string buildOutput) AssertBuild(string args, string label = "build", bool expectSuccess = true, IDictionary<string, string>? envVars = null, int? timeoutMs = null)
         {
@@ -1209,24 +1172,6 @@ namespace Wasm.Build.Tests
             RunHost.NodeJS => new NodeJSHostRunner(),
             _ => new BrowserHostRunner(),
         };
-
-        protected void AssertSubstring(string substring, string full, bool contains)
-        {
-            if (contains)
-                Assert.Contains(substring, full);
-            else
-                Assert.DoesNotContain(substring, full);
-        }
-
-        public static void AssertEqual(object expected, object actual, string label)
-        {
-            if (expected?.Equals(actual) == true)
-                return;
-
-            throw new AssertActualExpectedException(
-                expected, actual,
-                $"[{label}]\n");
-        }
     }
 
     public record BuildArgs(string ProjectName,

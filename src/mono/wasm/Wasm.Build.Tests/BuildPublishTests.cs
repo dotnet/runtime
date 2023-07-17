@@ -156,13 +156,12 @@ namespace Wasm.Build.Tests
 
         void CheckOutputForNativeBuild(bool expectAOT, bool expectRelinking, BuildArgs buildArgs, string buildOutput)
         {
-            AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, contains: expectAOT);
-            AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, contains: expectAOT);
+            TestUtils.AssertSubstring($"{buildArgs.ProjectName}.dll -> {buildArgs.ProjectName}.dll.bc", buildOutput, contains: expectAOT);
+            TestUtils.AssertSubstring($"{buildArgs.ProjectName}.dll.bc -> {buildArgs.ProjectName}.dll.o", buildOutput, contains: expectAOT);
 
-            AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
+            TestUtils.AssertSubstring("pinvoke.c -> pinvoke.o", buildOutput, contains: expectRelinking || expectAOT);
         }
-        
-        
+
         // appending UTF-8 char makes sure project build&publish under all types of paths is supported
         string GetTestProjectPath(string prefix, string config) => $"{prefix}_{config}_{s_unicodeChar}";
     }
