@@ -824,6 +824,52 @@ namespace System.Net.Http.Functional.Tests
             }, UseVersion.ToString()).Dispose();
         }
 
+        [OuterLoop]
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void EventSource_Proxy_LogsIPAddress(bool useSsl)
+        {
+            if (UseVersion.Major == 3)
+            {
+                return;
+            }
+
+            RemoteExecutor.Invoke(static async (string useVersionString, string useSslString) =>
+            {
+                using var listener = new TestEventListener("System.Net.Http", EventLevel.Verbose, eventCounterInterval: 0.1d);
+                listener.AddActivityTracking();
+                var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
+
+                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                {
+                    using LoopbackProxyServer proxyServer = LoopbackProxyServer.Create();
+
+                    await LoopbackServer.CreateClientAndServerAsync(async uri =>
+                    {
+                        using (HttpClientHandler handler = CreateHttpClientHandler(useVersionString))
+                        using (HttpClient client = CreateHttpClient(handler, useVersionString))
+                        {
+                            handler.Proxy = new WebProxy(proxyServer.Uri);
+                            await client.GetAsync(uri);
+                        }
+                    }, server => server.HandleRequestAsync(), options: new LoopbackServer.Options() { UseSsl = bool.Parse(useSslString) });
+
+                    await WaitForEventCountersAsync(events);
+                });
+
+                EventWrittenEventArgs[] connectionsEstablishedEvents = events.Select(e => e.Event).Where(e => e.EventName == "ConnectionEstablished").ToArray();
+
+                foreach (EventWrittenEventArgs e in connectionsEstablishedEvents)
+                {
+                    IPAddress ip = IPAddress.Parse((string)e.Payload[6]);
+                    Assert.True(ip.Equals(IPAddress.Loopback.MapToIPv6()) ||
+                        ip.Equals(IPAddress.Loopback) ||
+                        ip.Equals(IPAddress.IPv6Loopback));
+                }
+            }, UseVersion.ToString(), useSsl.ToString()).Dispose();
+        }
+
         protected static async Task WaitForEventCountersAsync(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events)
         {
             DateTime startTime = DateTime.UtcNow;

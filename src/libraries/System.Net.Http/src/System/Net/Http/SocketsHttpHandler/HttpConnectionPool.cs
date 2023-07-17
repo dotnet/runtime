@@ -1565,6 +1565,12 @@ namespace System.Net.Http
                 case HttpConnectionKind.ProxyTunnel:
                 case HttpConnectionKind.SslProxyTunnel:
                     stream = await EstablishProxyTunnelAsync(async, cancellationToken).ConfigureAwait(false);
+
+                    if (stream is HttpContentStream contentStream && contentStream._connection?._stream is Stream innerStream)
+                    {
+                        remoteEndPoint = GetRemoteEndPoint(innerStream);
+                    }
+
                     break;
 
                 case HttpConnectionKind.SocksTunnel:

@@ -43,7 +43,7 @@ namespace System.Net.Http
         private static readonly ulong s_http11Bytes = BitConverter.ToUInt64("HTTP/1.1"u8);
 
         private readonly HttpConnectionPool _pool;
-        private readonly Stream _stream;
+        internal readonly Stream _stream;
         private readonly TransportContext? _transportContext;
 
         private HttpRequestMessage? _currentRequest;
