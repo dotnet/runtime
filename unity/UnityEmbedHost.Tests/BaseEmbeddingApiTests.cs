@@ -682,6 +682,21 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(isGeneric, Is.EqualTo(expectedResult));
     }
 
+    [TestCase(typeof(Animal),                        false)]
+    [TestCase(typeof(List<>),                        false)]
+    [TestCase(typeof(List<string>),                   true)]
+    [TestCase(typeof(GenericAnimal<, >),             false)]
+    [TestCase(typeof(GenericAnimal<int, string>),     true)]
+#pragma warning disable CS8500
+    [TestCase(typeof(GenericAnimal<int, string>*),   false)]
+#pragma warning restore CS8500
+    [TestCase(typeof(GenericAnimal<int, string>[]),  false)]
+    public void ClassIsInflatedReturnsProperValue(Type klass, bool expectedResult)
+    {
+        bool isInflated = ClrHost.class_is_inflated(klass);
+        Assert.That(isInflated, Is.EqualTo(expectedResult));
+    }
+
     [TestCase(typeof(Classification),                    true)]
     [TestCase(typeof(Classification*),                  false)]
     [TestCase(typeof(Classification[]),                 false)]

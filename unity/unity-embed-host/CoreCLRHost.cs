@@ -584,6 +584,14 @@ static unsafe partial class CoreCLRHost
     }
 
     [return: NativeCallbackType("gboolean")]
+    public static bool class_is_inflated(
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Type t = klass.TypeFromHandleIntPtr();
+        return !t.IsGenericTypeDefinition && t.IsGenericType;
+    }
+
+    [return: NativeCallbackType("gboolean")]
     public static bool class_is_enum(
         [NativeCallbackType("MonoClass*")] IntPtr klass)
     {
