@@ -126,7 +126,10 @@ namespace System.Net.WebSockets.Client.Tests
                 var ex = await Assert.ThrowsAnyAsync<WebSocketException>(() => t);
                 Assert.True(ex.InnerException.Data.Contains("HTTP2_ENABLED"));
                 HttpRequestException inner = Assert.IsType<HttpRequestException>(ex.InnerException);
-                Assert.Equal(HttpRequestError.SecureConnectionError, inner.HttpRequestError);
+                HttpRequestError expectedError = PlatformDetection.SupportsAlpn ?
+                    HttpRequestError.SecureConnectionError :
+                    HttpRequestError.VersionNegotiationError;
+                Assert.Equal(expectedError, inner.HttpRequestError);
                 Assert.Equal(WebSocketState.Closed, cws.State);
             }
         }
