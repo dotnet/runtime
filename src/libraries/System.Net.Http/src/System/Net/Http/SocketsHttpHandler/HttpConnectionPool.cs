@@ -236,10 +236,9 @@ namespace System.Net.Http
             {
                 // Precalculate ASCII bytes for Host header
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
-                hostHeader =
-                    (_originAuthority.Port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
-                    $"{_originAuthority.HostValue}:{_originAuthority.Port}" :
-                    _originAuthority.HostValue;
+                hostHeader = IsDefaultPort
+                    ? _originAuthority.HostValue
+                    : $"{_originAuthority.HostValue}:{_originAuthority.Port}";
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 byte[] hostHeaderLine = new byte[6 + hostHeader.Length + 2]; // Host: foo\r\n
@@ -363,7 +362,7 @@ namespace System.Net.Http
         public ICredentials? ProxyCredentials => _poolManager.ProxyCredentials;
         public byte[]? HostHeaderLineBytes => _hostHeaderLineBytes;
         public CredentialCache? PreAuthCredentials { get; }
-        public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpsPort);
+        public bool IsDefaultPort => OriginAuthority.Port == (IsSecure ? DefaultHttpsPort : DefaultHttpPort);
 
         /// <summary>
         /// An ASCII origin string per RFC 6454 Section 6.2, in format &lt;scheme&gt;://&lt;host&gt;[:&lt;port&gt;]
@@ -382,7 +381,7 @@ namespace System.Net.Http
                     sb.Append(IsSecure ? "https://" : "http://")
                       .Append(_originAuthority.IdnHost);
 
-                    if (_originAuthority.Port != (IsSecure ? DefaultHttpsPort : DefaultHttpPort))
+                    if (!IsDefaultPort)
                     {
                         sb.Append(CultureInfo.InvariantCulture, $":{_originAuthority.Port}");
                     }
