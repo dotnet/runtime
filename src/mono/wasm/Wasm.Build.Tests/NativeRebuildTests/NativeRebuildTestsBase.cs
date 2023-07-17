@@ -16,7 +16,7 @@ using System.Text;
 namespace Wasm.Build.NativeRebuild.Tests
 {
     // TODO: test for runtime components
-    public class NativeRebuildTestsBase : BuildTestBase
+    public class NativeRebuildTestsBase : TestMainJsTestBase
     {
         public NativeRebuildTestsBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
             : base(output, buildContext)
@@ -103,94 +103,5 @@ namespace Wasm.Build.NativeRebuild.Tests
             return ExpandBuildArgs(buildArgs, propertiesBuilder.ToString());
         }
 
-        internal void CompareStat(IDictionary<string, FileStat> oldStat, IDictionary<string, FileStat> newStat, IEnumerable<(string fullpath, bool unchanged)> expected)
-        {
-            StringBuilder msg = new();
-            foreach (var expect in expected)
-            {
-                string expectFilename = Path.GetFileName(expect.fullpath);
-                if (!oldStat.TryGetValue(expectFilename, out FileStat? oldFs))
-                {
-                    msg.AppendLine($"Could not find an entry for {expectFilename} in old files");
-                    continue;
-                }
-
-                if (!newStat.TryGetValue(expectFilename, out FileStat? newFs))
-                {
-                    msg.AppendLine($"Could not find an entry for {expectFilename} in new files");
-                    continue;
-                }
-
-                bool actualUnchanged = oldFs == newFs;
-                if (expect.unchanged && !actualUnchanged)
-                {
-                    msg.AppendLine($"[Expected unchanged file: {expectFilename}]{Environment.NewLine}" +
-                                   $"   old: {oldFs}{Environment.NewLine}" +
-                                   $"   new: {newFs}");
-                }
-                else if (!expect.unchanged && actualUnchanged)
-                {
-                    msg.AppendLine($"[Expected changed file: {expectFilename}]{Environment.NewLine}" +
-                                   $"   {newFs}");
-                }
-            }
-
-            if (msg.Length > 0)
-                throw new XunitException($"CompareStat failed:{Environment.NewLine}{msg}");
-        }
-
-        internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(bool unchanged, params string[] baseDirs)
-        {
-            var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
-            foreach (var baseDir in baseDirs)
-            {
-                foreach (var file in Directory.EnumerateFiles(baseDir, "*", new EnumerationOptions { RecurseSubdirectories = true }))
-                    dict[Path.GetFileName(file)] = (file, unchanged);
-            }
-
-            return dict;
-        }
-
-        internal IDictionary<string, (string fullPath, bool unchanged)> GetFilesTable(BuildArgs buildArgs, BuildPaths paths, bool unchanged)
-        {
-            List<string> files = new()
-            {
-                Path.Combine(paths.BinDir, "publish", $"{buildArgs.ProjectName}.dll"),
-                Path.Combine(paths.ObjWasmDir, "driver.o"),
-                Path.Combine(paths.ObjWasmDir, "corebindings.o"),
-                Path.Combine(paths.ObjWasmDir, "pinvoke.o"),
-
-                Path.Combine(paths.ObjWasmDir, "icall-table.h"),
-                Path.Combine(paths.ObjWasmDir, "pinvoke-table.h"),
-                Path.Combine(paths.ObjWasmDir, "driver-gen.c"),
-
-                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.wasm"),
-                Path.Combine(paths.BundleDir, "_framework", "dotnet.native.js"),
-            };
-
-            if (buildArgs.AOT)
-            {
-                files.AddRange(new[]
-                {
-                    Path.Combine(paths.ObjWasmDir, $"{buildArgs.ProjectName}.dll.bc"),
-                    Path.Combine(paths.ObjWasmDir, $"{buildArgs.ProjectName}.dll.o"),
-
-                    Path.Combine(paths.ObjWasmDir, "System.Private.CoreLib.dll.bc"),
-                    Path.Combine(paths.ObjWasmDir, "System.Private.CoreLib.dll.o"),
-                });
-            }
-
-            var dict = new Dictionary<string, (string fullPath, bool unchanged)>();
-            foreach (var file in files)
-                dict[Path.GetFileName(file)] = (file, unchanged);
-
-            // those files do not change on re-link
-            dict["dotnet.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js"), true);
-            dict["dotnet.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.js.map"), true);
-            dict["dotnet.runtime.js"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js"), true);
-            dict["dotnet.runtime.js.map"]=(Path.Combine(paths.BundleDir, "_framework", "dotnet.runtime.js.map"), true);
-
-            return dict;
-        }
     }
 }
