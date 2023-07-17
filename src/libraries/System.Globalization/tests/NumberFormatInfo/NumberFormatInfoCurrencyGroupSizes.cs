@@ -19,34 +19,11 @@ namespace System.Globalization.Tests
             }
         }
 
-        private static bool ArrayEqual<T>(T[] a, T[] b)
-        {
-            if (a == null || b == null)
-            {
-                return a == b;
-            }
-
-            if (a.Length != b.Length)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < a.Length; ++i)
-            {
-                if (!a[i].Equals(b[i]))
-                {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
         [Theory]
         [MemberData(nameof(CurrencyGroupSizes_TestData))]
         public void CurrencyGroupSizes_Get_ReturnsExpected(NumberFormatInfo format, int[] expected, int [] expectedAlternative)
         {
-            Assert.True(ArrayEqual(expected, format.CurrencyGroupSizes) || ArrayEqual(expectedAlternative, format.CurrencyGroupSizes),
+            Assert.True(format.CurrencyGroupSizes.AsSpan().SequenceEqual(expected.AsSpan()) || format.CurrencyGroupSizes.AsSpan().SequenceEqual(expectedAlternative.AsSpan()),
             $"Expected {string.Join(", ", expected)} or {string.Join(", ", expectedAlternative ?? Array.Empty<int>())}, got {string.Join(", ", format.CurrencyGroupSizes)}");
         }
 
