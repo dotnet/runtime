@@ -10,7 +10,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class AppsettingsTests : BuildTestBase
+public class AppsettingsTests : BlazorWasmTestBase
 {
     public AppsettingsTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)

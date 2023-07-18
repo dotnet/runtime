@@ -11,9 +11,9 @@ using Xunit.Sdk;
 
 #nullable enable
 
-namespace Wasm.Build.Tests;
+namespace Wasm.Build.Tests.Blazor;
 
-public class CleanTests : NativeRebuildTestsBase
+public class CleanTests : BlazorWasmTestBase
 {
     public CleanTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)

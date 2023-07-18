@@ -218,6 +218,9 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? JsonStringEnumConverterType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter", ref _JsonStringEnumConverterType);
         private Option<INamedTypeSymbol?> _JsonStringEnumConverterType;
 
+        public INamedTypeSymbol? JsonStringEnumConverterOfTType => GetOrResolveType("System.Text.Json.Serialization.JsonStringEnumConverter`1", ref _JsonStringEnumConverterOfTType);
+        private Option<INamedTypeSymbol?> _JsonStringEnumConverterOfTType;
+
         public INamedTypeSymbol? IJsonOnSerializingType => GetOrResolveType(JsonConstants.IJsonOnSerializingFullName, ref _IJsonOnSerializingType);
         private Option<INamedTypeSymbol?> _IJsonOnSerializingType;
 
