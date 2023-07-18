@@ -160,8 +160,8 @@ jobs:
       displayName: Explicitly set DOTNET_ROOT (Non-Windows)
       condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
     - powershell: |
-        Write-Host "##vso[task.setvariable variable=DOTNET_ROOT;]$(PayloadDirectory)/dotnet"
-        Write-Host "Set DOTNET_ROOT to $(PayloadDirectory)/dotnet"
+        Write-Host "##vso[task.setvariable variable=DOTNET_ROOT;]$(PayloadDirectory)\dotnet"
+        Write-Host "Set DOTNET_ROOT to $(PayloadDirectory)\dotnet"
       displayName: Explicitly set DOTNET_ROOT (Windows)
       condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
     # build Startup
