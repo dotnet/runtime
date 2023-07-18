@@ -5084,7 +5084,7 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 
         // Conditional to Switch conversion
         //
-        DoPhase(this, PHASE_Find_Specific_Pattern, &Compiler::optFindSpecificPattern);
+        DoPhase(this, PHASE_SWITCH_RECOGNITION, &Compiler::optSwitchRecognition);
     }
 
     // Determine start of cold region if we are hot/cold splitting

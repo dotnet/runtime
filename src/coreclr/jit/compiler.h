@@ -6316,7 +6316,7 @@ private:
 
 public:
     PhaseStatus optOptimizeBools();
-    PhaseStatus optFindSpecificPattern();
+    PhaseStatus optSwitchRecognition();
 
 public:
     PhaseStatus optInvertLoops();    // Invert loops so they're entered at top and tested at bottom.
