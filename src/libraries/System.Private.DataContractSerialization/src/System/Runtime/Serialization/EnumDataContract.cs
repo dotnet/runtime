@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization.DataContracts
                             DataMember memberContract = new DataMember(field);
                             if (memberAttribute.IsValueSetExplicitly)
                             {
-                                if (memberAttribute.Value == null || memberAttribute.Value.Length == 0)
+                                if (string.IsNullOrEmpty(memberAttribute.Value))
                                     ThrowInvalidDataContractException(SR.Format(SR.InvalidEnumMemberValue, field.Name, DataContract.GetClrTypeFullName(type)));
                                 memberContract.Name = memberAttribute.Value;
                             }
@@ -253,6 +253,7 @@ namespace System.Runtime.Serialization.DataContracts
                     }
                     else
                     {
+#pragma warning disable SYSLIB0050 // FieldInfo.IsNotSerialized is obsolete
                         if (!field.IsNotSerialized)
                         {
                             DataMember memberContract = new DataMember(field) { Name = field.Name };
@@ -260,6 +261,7 @@ namespace System.Runtime.Serialization.DataContracts
                             ClassDataContract.CheckAndAddMember(tempMembers, memberContract, memberValuesTable);
                             enumMemberValid = true;
                         }
+#pragma warning restore SYSLIB0050
                     }
 
                     if (enumMemberValid)

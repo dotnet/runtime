@@ -117,7 +117,7 @@ internal static partial class Interop
                     int cchStr);
 
         [LibraryImport("kernel32.dll")]
-        internal static unsafe partial Interop.BOOL GetUserPreferredUILanguages(uint dwFlags, uint* pulNumLanguages, char* pwszLanguagesBuffer, uint* pcchLanguagesBuffer);
+        internal static unsafe partial BOOL GetUserPreferredUILanguages(uint dwFlags, uint* pulNumLanguages, char* pwszLanguagesBuffer, uint* pcchLanguagesBuffer);
 
         [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int GetLocaleInfoEx(string lpLocaleName, uint LCType, void* lpLCData, int cchData);

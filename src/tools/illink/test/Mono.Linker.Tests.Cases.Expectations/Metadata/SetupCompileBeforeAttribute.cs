@@ -11,7 +11,7 @@ namespace Mono.Linker.Tests.Cases.Expectations.Metadata
 	[AttributeUsage (AttributeTargets.Class, AllowMultiple = true)]
 	public class SetupCompileBeforeAttribute : BaseMetadataAttribute
 	{
-		public SetupCompileBeforeAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, object[] resources = null, string additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false, string outputSubFolder = null)
+		public SetupCompileBeforeAttribute (string outputName, string[] sourceFiles, string[] references = null, string[] defines = null, object[] resources = null, string[] additionalArguments = null, string compilerToUse = null, bool addAsReference = true, bool removeFromLinkerInput = false, string outputSubFolder = null)
 		{
 			ArgumentNullException.ThrowIfNull (sourceFiles);
 

@@ -282,14 +282,14 @@ void CordbRegisterSet::InternalCopyRDToContext(DT_CONTEXT *pInputContext)
             *pDest++ = *pSrc++;
         }
 
-        pInputContext->TP = m_rd->TP;
-        pInputContext->RA = m_rd->RA;
+        pInputContext->Tp = m_rd->TP;
+        pInputContext->Ra = m_rd->RA;
     }
 
     if ((pInputContext->ContextFlags & DT_CONTEXT_CONTROL) == DT_CONTEXT_CONTROL)
     {
-        pInputContext->SP = m_rd->SP;
-        pInputContext->PC = m_rd->PC;
-        pInputContext->FP = m_rd->FP;
+        pInputContext->Sp = m_rd->SP;
+        pInputContext->Pc = m_rd->PC;
+        pInputContext->Fp = m_rd->FP;
     }
 }

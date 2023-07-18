@@ -121,7 +121,7 @@ namespace System
                 return null;
             CustomAttributeData result = enumerator.Current;
             if (enumerator.MoveNext())
-                throw new AmbiguousMatchException();
+                throw ThrowHelper.GetAmbiguousMatchException(result);
             return result.Instantiate();
         }
 

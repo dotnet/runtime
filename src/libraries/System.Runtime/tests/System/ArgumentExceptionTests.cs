@@ -87,5 +87,35 @@ namespace System.Tests
             someString = "abc";
             ArgumentException.ThrowIfNullOrEmpty(someString);
         }
+
+        [Fact]
+        public static void ThrowIfNullOrWhiteSpace_ThrowsForInvalidInput()
+        {
+            AssertExtensions.Throws<ArgumentNullException>(null, () => ArgumentException.ThrowIfNullOrWhiteSpace(null, null));
+            AssertExtensions.Throws<ArgumentNullException>("something", () => ArgumentException.ThrowIfNullOrWhiteSpace(null, "something"));
+
+            AssertExtensions.Throws<ArgumentException>(null, () => ArgumentException.ThrowIfNullOrWhiteSpace("", null));
+            AssertExtensions.Throws<ArgumentException>("something", () => ArgumentException.ThrowIfNullOrWhiteSpace("", "something"));
+
+            string allWhitespace = "\u0009\u000A\u000B\u000C\u000D\u0020\u0085\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200A\u2028\u2029\u202F\u205F\u3000";
+            AssertExtensions.Throws<ArgumentException>("something", () => ArgumentException.ThrowIfNullOrWhiteSpace(" ", "something"));
+            AssertExtensions.Throws<ArgumentException>("something", () => ArgumentException.ThrowIfNullOrWhiteSpace(allWhitespace, "something"));
+            ArgumentException.ThrowIfNullOrWhiteSpace("a" + allWhitespace, "something");
+            ArgumentException.ThrowIfNullOrWhiteSpace(allWhitespace + "a", "something");
+            ArgumentException.ThrowIfNullOrWhiteSpace(allWhitespace.Substring(0, 5) + "a" + allWhitespace.Substring(5), "something");
+        }
+
+        [Fact]
+        public static void ThrowIfNullOrWhiteSpace_UsesArgumentExpression_ParameterNameMatches()
+        {
+            string someString = null;
+            AssertExtensions.Throws<ArgumentNullException>(nameof(someString), () => ArgumentException.ThrowIfNullOrWhiteSpace(someString));
+
+            someString = "";
+            AssertExtensions.Throws<ArgumentException>(nameof(someString), () => ArgumentException.ThrowIfNullOrWhiteSpace(someString));
+
+            someString = "    ";
+            AssertExtensions.Throws<ArgumentException>(nameof(someString), () => ArgumentException.ThrowIfNullOrWhiteSpace(someString));
+        }
     }
 }

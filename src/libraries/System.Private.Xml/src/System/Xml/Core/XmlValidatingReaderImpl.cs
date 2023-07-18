@@ -1013,7 +1013,7 @@ namespace System.Xml
             Debug.Assert(_parserContext != null);
             Debug.Assert(_coreReaderImpl.DtdInfo == null);
 
-            if (_parserContext.DocTypeName == null || _parserContext.DocTypeName.Length == 0)
+            if (string.IsNullOrEmpty(_parserContext.DocTypeName))
             {
                 return;
             }
@@ -1082,7 +1082,7 @@ namespace System.Xml
             if (tempResolver == null && !_coreReaderImpl.IsResolverSet)
             {
                 // it is safe to return valid resolver as it'll be used in the schema validation
-                return s_tempResolver ??= new XmlUrlResolver();
+                return s_tempResolver ??= XmlReaderSettings.GetDefaultPermissiveResolver();
             }
 
             return tempResolver;

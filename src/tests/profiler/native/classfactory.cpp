@@ -7,6 +7,7 @@
 #include "eventpipeprofiler/eventpipewritingprofiler.h"
 #include "getappdomainstaticaddress/getappdomainstaticaddress.h"
 #include "gcallocateprofiler/gcallocateprofiler.h"
+#include "nongcheap/nongcheap.h"
 #include "gcbasicprofiler/gcbasicprofiler.h"
 #include "gcprofiler/gcprofiler.h"
 #include "handlesprofiler/handlesprofiler.h"
@@ -68,6 +69,10 @@ HRESULT STDMETHODCALLTYPE ClassFactory::CreateInstance(IUnknown *pUnkOuter, REFI
     if (clsid == GCAllocateProfiler::GetClsid())
     {
         profiler = new GCAllocateProfiler();
+    }
+    else if (clsid == NonGcHeapProfiler::GetClsid())
+    {
+        profiler = new NonGcHeapProfiler();
     }
     else if (clsid == GCBasicProfiler::GetClsid())
     {

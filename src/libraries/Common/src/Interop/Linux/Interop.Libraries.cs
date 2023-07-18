@@ -9,7 +9,7 @@ internal static partial class Interop
         internal const string Liblog = "liblog";
 
         internal const string Odbc32 = "libodbc.so.2";
-        internal const string OpenLdap = "libldap-2.4.so.2";
+        internal const string OpenLdap = "libldap-2.5.so.0";
         internal const string MsQuic = "libmsquic.so";
     }
 }

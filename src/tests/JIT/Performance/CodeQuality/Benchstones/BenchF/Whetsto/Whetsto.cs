@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 namespace Benchstone.BenchF
 {
@@ -212,7 +213,8 @@ public static class Whetsto
         e1[s_l] = e1[s_j];
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool result = Bench();
         return (result ? 100 : -1);

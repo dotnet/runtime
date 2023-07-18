@@ -472,7 +472,7 @@ namespace Microsoft.Extensions.Options.Tests
         /// Tests the fix for https://github.com/dotnet/runtime/issues/61086
         /// </summary>
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67611", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67611", TestRuntimes.Mono)]
         public void TestCurrentValueDoesNotAllocateOnceValueIsCached()
         {
             var monitor = new OptionsMonitor<FakeOptions>(

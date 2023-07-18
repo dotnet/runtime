@@ -1147,7 +1147,7 @@ namespace System.Xml.Serialization
                 prefix = XmlConvert.DecodeName(prefix);
                 localName = XmlConvert.DecodeName(localName);
             }
-            if (prefix == null || prefix.Length == 0)
+            if (string.IsNullOrEmpty(prefix))
             {
                 return new XmlQualifiedName(_r.NameTable.Add(value), _r.LookupNamespace(string.Empty));
             }
@@ -1375,7 +1375,7 @@ namespace System.Xml.Serialization
             string str = _r.ReadString();
             if (str != null && trim)
                 str = str.Trim();
-            if (value == null || value.Length == 0)
+            if (string.IsNullOrEmpty(value))
                 return str;
             return value + str;
         }
@@ -3319,7 +3319,7 @@ namespace System.Xml.Serialization
                         // find anyElement if present.
                         for (int j = 0; j < mapping.Elements!.Length; j++)
                         {
-                            if (mapping.Elements[j].Any && (mapping.Elements[j].Name == null || mapping.Elements[j].Name.Length == 0))
+                            if (mapping.Elements[j].Any && string.IsNullOrEmpty(mapping.Elements[j].Name))
                             {
                                 anyElement = member;
                                 break;
@@ -3979,7 +3979,7 @@ namespace System.Xml.Serialization
                 {
                     ElementAccessor e = elements[j];
                     string? ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
-                    if (e.Any && (e.Name == null || e.Name.Length == 0)) continue;
+                    if (e.Any && string.IsNullOrEmpty(e.Name)) continue;
 
                     if (!firstElement)
                         qnames += ", ";
@@ -4198,7 +4198,7 @@ namespace System.Xml.Serialization
                 {
                     ElementAccessor e = elements[j];
                     string? ns = e.Form == XmlSchemaForm.Qualified ? e.Namespace : "";
-                    if (!isSequence && e.Any && (e.Name == null || e.Name.Length == 0)) continue;
+                    if (!isSequence && e.Any && string.IsNullOrEmpty(e.Name)) continue;
                     if (!isSequence)
                     {
                         if (firstElement && count == 0)

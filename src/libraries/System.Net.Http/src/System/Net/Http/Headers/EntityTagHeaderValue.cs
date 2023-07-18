@@ -35,10 +35,8 @@ namespace System.Net.Http.Headers
 
         public EntityTagHeaderValue(string tag, bool isWeak)
         {
-            if (string.IsNullOrEmpty(tag))
-            {
-                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(tag));
-            }
+            ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+
             int length;
             if ((HttpRuleParser.GetQuotedStringLength(tag, 0, out length) != HttpParseResult.Parsed) ||
                 (length != tag.Length))
@@ -148,7 +146,7 @@ namespace System.Net.Http.Headers
 
                 int tagStartIndex = current;
                 int tagLength;
-                if (HttpRuleParser.GetQuotedStringLength(input, current, out tagLength) != HttpParseResult.Parsed)
+                if (current == input.Length || HttpRuleParser.GetQuotedStringLength(input, current, out tagLength) != HttpParseResult.Parsed)
                 {
                     return 0;
                 }

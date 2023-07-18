@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -16,9 +15,25 @@ namespace System.Text.Json
     internal struct ReadStack
     {
         /// <summary>
-        /// Exposes the stackframe that is currently active.
+        /// Exposes the stack frame that is currently active.
         /// </summary>
         public ReadStackFrame Current;
+
+        /// <summary>
+        /// Gets the parent stack frame, if it exists.
+        /// </summary>
+        public readonly ref ReadStackFrame Parent
+        {
+            get
+            {
+                Debug.Assert(_count > 1);
+                Debug.Assert(_stack is not null);
+                return ref _stack[_count - 2];
+            }
+        }
+
+        public readonly JsonPropertyInfo? ParentProperty
+            => Current.HasParentObject ? Parent.JsonPropertyInfo : null;
 
         /// <summary>
         /// Buffer containing all frames in the stack. For performance it is only populated for serialization depths > 1.

@@ -16,12 +16,18 @@ namespace ILCompiler.DependencyAnalysis
     public class ThreadStaticsNode : EmbeddedObjectNode, ISymbolDefinitionNode
     {
         private MetadataType _type;
+        private InlinedThreadStatics _inlined;
 
         public ThreadStaticsNode(MetadataType type, NodeFactory factory)
         {
             Debug.Assert(!type.IsCanonicalSubtype(CanonicalFormKind.Specific));
             Debug.Assert(!type.IsGenericDefinition);
             _type = type;
+        }
+
+        public ThreadStaticsNode(InlinedThreadStatics inlined, NodeFactory factory)
+        {
+            _inlined = inlined;
         }
 
         protected override string GetName(NodeFactory factory) => this.GetMangledName(factory.NameMangler);
@@ -42,12 +48,20 @@ namespace ILCompiler.DependencyAnalysis
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
-            sb.Append(GetMangledName(_type, nameMangler));
+            string mangledName = _type == null ? "_inlinedThreadStatics" : GetMangledName(_type, nameMangler);
+            sb.Append(mangledName);
         }
 
         private ISymbolNode GetGCStaticEETypeNode(NodeFactory factory)
         {
-            GCPointerMap map = GCPointerMap.FromThreadStaticLayout(_type);
+            GCPointerMap map = _type != null ?
+                GCPointerMap.FromThreadStaticLayout(_type) :
+                GCPointerMap.FromInlinedThreadStatics(
+                    _inlined.GetTypes(),
+                    _inlined.GetOffsets(),
+                    _inlined.GetSize(),
+                    factory.Target.PointerSize);
+
             return factory.GCStaticEEType(map);
         }
 
@@ -57,20 +71,41 @@ namespace ILCompiler.DependencyAnalysis
 
             result.Add(new DependencyListEntry(GetGCStaticEETypeNode(factory), "ThreadStatic MethodTable"));
 
-            if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
+            if (_type != null)
             {
-                result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
-            }
 
-            ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
+                if (factory.PreinitializationManager.HasEagerStaticConstructor(_type))
+                {
+                    result.Add(new DependencyListEntry(factory.EagerCctorIndirection(_type.GetStaticConstructor()), "Eager .cctor"));
+                }
+
+                ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, _type.Module);
+            }
+            else
+            {
+                foreach (var type in _inlined.GetTypes())
+                {
+                    if (factory.PreinitializationManager.HasEagerStaticConstructor(type))
+                    {
+                        result.Add(new DependencyListEntry(factory.EagerCctorIndirection(type.GetStaticConstructor()), "Eager .cctor"));
+                    }
+
+                    ModuleUseBasedDependencyAlgorithm.AddDependenciesDueToModuleUse(ref result, factory, type.Module);
+                }
+            }
 
             return result;
         }
 
-        public override bool HasConditionalStaticDependencies => _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type;
+        public override bool HasConditionalStaticDependencies =>
+            _type != null ?
+                _type.ConvertToCanonForm(CanonicalFormKind.Specific) != _type:
+                false;
 
         public override IEnumerable<CombinedDependencyListEntry> GetConditionalStaticDependencies(NodeFactory factory)
         {
+            Debug.Assert(_type != null);
+
             // If we have a type loader template for this type, we need to keep track of the generated
             // bases in the type info hashtable. The type symbol node does such accounting.
             return new CombinedDependencyListEntry[]
@@ -91,10 +126,21 @@ namespace ILCompiler.DependencyAnalysis
             builder.EmitPointerReloc(GetGCStaticEETypeNode(factory));
         }
 
+        public MetadataType Type => _type;
+
         public override int ClassCode => 2091208431;
 
         public override int CompareToImpl(ISortableNode other, CompilerComparer comparer)
         {
+            // force the type of the storage block for inlined threadstatics to be "less"
+            // than other storage blocks, - to ensure it is serialized as the item #0
+            if (_type == null)
+            {
+                // there should only be at most one inlined storage type.
+                Debug.Assert(other != null);
+                return -1;
+            }
+
             return comparer.Compare(_type, ((ThreadStaticsNode)other)._type);
         }
     }

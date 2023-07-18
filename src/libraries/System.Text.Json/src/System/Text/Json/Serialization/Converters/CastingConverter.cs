@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Reflection;
 
 namespace System.Text.Json.Serialization.Converters
@@ -19,9 +19,9 @@ namespace System.Text.Json.Serialization.Converters
         public override bool HandleNull { get; }
         internal override bool SupportsCreateObjectDelegate => _sourceConverter.SupportsCreateObjectDelegate;
 
-        internal CastingConverter(JsonConverter sourceConverter, bool handleNull, bool handleNullOnRead, bool handleNullOnWrite)
+        internal CastingConverter(JsonConverter sourceConverter)
         {
-            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(sourceConverter.TypeToConvert));
+            Debug.Assert(typeof(T).IsInSubtypeRelationshipWith(sourceConverter.Type!));
             Debug.Assert(sourceConverter.SourceConverterForCastingConverter is null, "casting converters should not be layered.");
 
             _sourceConverter = sourceConverter;
@@ -31,9 +31,9 @@ namespace System.Text.Json.Serialization.Converters
             CanBePolymorphic = sourceConverter.CanBePolymorphic;
 
             // Ensure HandleNull values reflect the exact configuration of the source converter
-            HandleNullOnRead = handleNullOnRead;
-            HandleNullOnWrite = handleNullOnWrite;
-            HandleNull = handleNull;
+            HandleNullOnRead = sourceConverter.HandleNullOnRead;
+            HandleNullOnWrite = sourceConverter.HandleNullOnWrite;
+            HandleNull = sourceConverter.HandleNullOnWrite;
         }
 
         internal override JsonConverter? SourceConverterForCastingConverter => _sourceConverter;
@@ -60,7 +60,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override T ReadAsPropertyNameCore(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadAsPropertyNameCoreAsObject(ref reader, typeToConvert, options))!;
 
-        public override void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
+        public override void WriteAsPropertyName(Utf8JsonWriter writer, [DisallowNull] T value, JsonSerializerOptions options)
             => _sourceConverter.WriteAsPropertyNameAsObject(writer, value, options);
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, T value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
@@ -69,7 +69,7 @@ namespace System.Text.Json.Serialization.Converters
         internal override T ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling, JsonSerializerOptions options)
             => JsonSerializer.UnboxOnRead<T>(_sourceConverter.ReadNumberWithCustomHandlingAsObject(ref reader, handling, options))!;
 
-        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T value, JsonNumberHandling handling)
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, T? value, JsonNumberHandling handling)
             => _sourceConverter.WriteNumberWithCustomHandlingAsObject(writer, value, handling);
     }
 }

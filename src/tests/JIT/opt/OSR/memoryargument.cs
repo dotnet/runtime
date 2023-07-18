@@ -3,10 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // OSR method must access memory argument
 
-class MemoryArgument
+public class MemoryArgument
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static int F(int a, int b, int c, int d, int from, int to)
@@ -19,7 +20,8 @@ class MemoryArgument
         return result;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int final = 1_000_000;
         int result = F(0, 0, 0, 0, 0, final);

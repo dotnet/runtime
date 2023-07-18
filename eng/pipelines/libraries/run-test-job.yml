@@ -189,7 +189,7 @@ jobs:
               - gcstress0xc_jitstress2
               - gcstress0xc_jitminopts_heapverify1
             ${{ if in(parameters.coreclrTestGroup, 'pgo') }}:
-              ${{ if and(eq(parameters.osGroup, 'windows'), or(eq(parameters.archType, 'arm64'), eq(parameters.archType, 'arm'))) }}:
+              ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
                 scenarios:
                 - defaultpgo
               ${{ else }}:

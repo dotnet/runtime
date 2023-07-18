@@ -243,6 +243,59 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        public void DataTable_HonorsGloballyDefinedAllowListForSqlTypes()
+        {
+            // Arrange
+
+            DataTable table = new DataTable("MyTable");
+            table.Columns.Add("MyNullableColumn", typeof(MyCustomNullable1));
+            table.Rows.Add(new MyCustomNullable1());
+            table.AcceptChanges();
+
+            var asXml = @$"<NewDataSet>
+  <xs:schema id=""NewDataSet"" xmlns="""" xmlns:xs=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"">
+    <xs:element name=""NewDataSet"" msdata:IsDataSet=""true"" msdata:MainDataTable=""MyTable"" msdata:UseCurrentLocale=""true"">
+      <xs:complexType>
+        <xs:choice minOccurs=""0"" maxOccurs=""unbounded"">
+          <xs:element name=""MyTable"">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name=""MyNullableColumn"" msdata:DataType=""{typeof(MyCustomNullable1).AssemblyQualifiedName}"" type=""xs:anyType"" minOccurs=""0"" />
+              </xs:sequence>
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <MyTable>
+    <MyNullableColumn xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:msdata=""urn:schemas-microsoft-com:xml-msdata"" msdata:InstanceType=""{typeof(MyCustomNullable2).AssemblyQualifiedName}"">
+      <IsNull>false</IsNull>
+    </MyNullableColumn>
+  </MyTable>
+</NewDataSet>";
+
+            // Act & assert
+            // Deserialization should fail since MyCustomNullable2 is not on the allow list,
+            // even though MyCustomNullable1 is on the allow list.
+
+            try
+            {
+                AppDomain.CurrentDomain.SetData(AppDomainDataSetDefaultAllowedTypesKey, new Type[]
+                {
+                    typeof(MyCustomNullable1)
+                });
+
+                table = new DataTable();
+                Assert.Throws<InvalidOperationException>(() => table.ReadXml(new StringReader(asXml)));
+            }
+            finally
+            {
+                AppDomain.CurrentDomain.SetData(AppDomainDataSetDefaultAllowedTypesKey, null);
+            }
+        }
+
+        [Fact]
         public void DataColumn_ConvertExpression_SubjectToAllowList_Success()
         {
             // Arrange
@@ -399,6 +452,20 @@ namespace System.Data.Tests
 
         private sealed class MyCustomClass
         {
+        }
+
+        public sealed class MyCustomNullable1 : INullable
+        {
+            public static MyCustomNullable1 Null { get; } = new MyCustomNullable1();
+
+            public bool IsNull => false;
+        }
+
+        public sealed class MyCustomNullable2 : INullable
+        {
+            public static MyCustomNullable2 Null { get; } = new MyCustomNullable2();
+
+            public bool IsNull => false;
         }
 
         public sealed class MyXmlSerializableClass : IXmlSerializable

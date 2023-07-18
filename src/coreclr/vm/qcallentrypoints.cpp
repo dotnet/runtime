@@ -220,6 +220,8 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_UnregisterFrozenSegment)
 #endif
     DllImportEntry(GCInterface_EnumerateConfigurationValues)
+    DllImportEntry(GCInterface_RefreshMemoryLimit)
+    DllImportEntry(GCInterface_EnableNoGCRegionCallback)
     DllImportEntry(MarshalNative_Prelink)
     DllImportEntry(MarshalNative_IsBuiltInComSupported)
     DllImportEntry(MarshalNative_GetHINSTANCE)
@@ -273,6 +275,9 @@ static const Entry s_QCall[] =
     DllImportEntry(LogThreadPoolIODequeue)
     DllImportEntry(LogThreadPoolIOPack)
     DllImportEntry(LogThreadPoolWorkingThreadCount)
+    DllImportEntry(LogContentionLockCreated)
+    DllImportEntry(LogContentionStart)
+    DllImportEntry(LogContentionStop)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)
     DllImportEntry(EventPipeInternal_GetSessionInfo)

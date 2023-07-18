@@ -58,12 +58,6 @@ namespace Internal.IL
                             return UnsafeIntrinsics.EmitIL(method);
                     }
                     break;
-                case "Volatile":
-                    {
-                        if (owningType.Namespace == "System.Threading")
-                            return VolatileIntrinsics.EmitIL(method);
-                    }
-                    break;
                 case "Debug":
                     {
                         if (owningType.Namespace == "System.Diagnostics" && method.Name == "DebugBreak")
@@ -308,6 +302,10 @@ namespace Internal.IL
                 }
 
                 MethodIL methodIL = EcmaMethodIL.Create(ecmaMethod);
+                if (methodIL != null)
+                    return methodIL;
+
+                methodIL = UnsafeAccessors.TryGetIL(ecmaMethod);
                 if (methodIL != null)
                     return methodIL;
 

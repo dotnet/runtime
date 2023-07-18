@@ -50,6 +50,7 @@ namespace DebuggerTests
 
         [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData("GetTestData")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
         public async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue, string methodName)
         {
             await SetBreakpointInMethod("debugger-test", "DebuggerTests." + clazz, "Prepare", 2);

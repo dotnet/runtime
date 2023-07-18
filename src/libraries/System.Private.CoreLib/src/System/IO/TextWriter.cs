@@ -652,6 +652,18 @@ namespace System.IO
             return Task.Factory.StartNew(static state => ((TextWriter)state!).Flush(), this,
                 CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
+
+        /// <summary>
+        /// Asynchronously clears all buffers for the current writer and causes any buffered data to
+        /// be written to the underlying device.
+        /// </summary>
+        /// <param name="cancellationToken">The <see cref="CancellationToken"/> to monitor for cancellation requests.</param>
+        /// <returns>A <see cref="Task"/> that represents the asynchronous flush operation.</returns>
+        /// <exception cref="ObjectDisposedException">The text writer is disposed.</exception>
+        /// <exception cref="InvalidOperationException">The writer is currently in use by a previous write operation.</exception>
+        public virtual Task FlushAsync(CancellationToken cancellationToken) =>
+            cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
+            FlushAsync();
         #endregion
 
         private sealed class NullTextWriter : TextWriter
@@ -665,6 +677,7 @@ namespace System.IO
 
             public override void Flush() { }
             public override Task FlushAsync() => Task.CompletedTask;
+            public override Task FlushAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
             public override void Write(char value) { }
             public override void Write(char[]? buffer) { }
@@ -989,6 +1002,18 @@ namespace System.IO
             [MethodImpl(MethodImplOptions.Synchronized)]
             public override Task FlushAsync()
             {
+                Flush();
+                return Task.CompletedTask;
+            }
+
+            [MethodImpl(MethodImplOptions.Synchronized)]
+            public override Task FlushAsync(CancellationToken cancellationToken)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    return Task.FromCanceled(cancellationToken);
+                }
+
                 Flush();
                 return Task.CompletedTask;
             }

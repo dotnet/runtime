@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace System.Text.Json.Serialization.Converters
 {
-    internal sealed class StringConverter : JsonPrimitiveConverter<string>
+    internal sealed class StringConverter : JsonPrimitiveConverter<string?>
     {
         public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
@@ -33,6 +33,11 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override void WriteAsPropertyNameCore(Utf8JsonWriter writer, string value, JsonSerializerOptions options, bool isWritingExtensionDataProperty)
         {
+            if (value is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(value));
+            }
+
             if (options.DictionaryKeyPolicy != null && !isWritingExtensionDataProperty)
             {
                 value = options.DictionaryKeyPolicy.ConvertName(value);

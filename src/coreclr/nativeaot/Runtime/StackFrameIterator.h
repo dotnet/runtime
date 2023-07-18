@@ -79,10 +79,6 @@ private:
     // NOTE: This function always publishes a non-NULL conservative stack range lower bound.
     void UnwindUniversalTransitionThunk();
 
-    // If our control PC indicates that we're in the call descr thunk that we use to call an arbitrary managed
-    // function with an arbitrary signature from a normal managed function handle the stack walk specially.
-    void UnwindCallDescrThunk();
-
     void EnterInitialInvalidState(Thread * pThreadToWalk);
 
     void InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransitionFrame pFrame, uint32_t dwFlags); // GC stackwalk
@@ -114,7 +110,7 @@ private:
         InManagedCode,
         InThrowSiteThunk,
         InFuncletInvokeThunk,
-        InCallDescrThunk,
+        InFilterFuncletInvokeThunk,
         InUniversalTransitionThunk,
     };
 

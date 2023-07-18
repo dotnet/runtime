@@ -153,7 +153,7 @@ unsigned GetDoubleW(_In_ __nullterminated char* begNum, unsigned L, double** ppR
     memcpy(dbuff,begNum,L);
     dbuff[L] = 0;
     dbuff[L+1] = 0;
-    *ppRes = new double(wcstod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
+    *ppRes = new double(u16_strtod((const WCHAR*)dbuff, (WCHAR**)&pdummy));
     return ((unsigned)(pdummy - dbuff));
 }
 /*--------------------------------------------------------------------------*/
@@ -978,9 +978,9 @@ Its_An_Id:
                             if(wzFile != NULL)
                             {
                                 if((parser->wzIncludePath != NULL)
-                                 &&(wcschr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
+                                 &&(u16_strchr(wzFile,DIRECTORY_SEPARATOR_CHAR_A)==NULL)
 #ifdef TARGET_WINDOWS
-                                 &&(wcschr(wzFile,':')==NULL)
+                                 &&(u16_strchr(wzFile,':')==NULL)
 #endif
                                 )
                                 {

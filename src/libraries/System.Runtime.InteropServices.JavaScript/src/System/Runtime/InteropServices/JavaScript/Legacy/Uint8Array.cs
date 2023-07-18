@@ -11,12 +11,18 @@ namespace System.Runtime.InteropServices.JavaScript
         public Uint8Array(int length)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { length }))
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
         public Uint8Array(ArrayBuffer buffer)
             : base(JavaScriptImports.CreateCSOwnedObject(nameof(Uint8Array), new object[] { buffer }))
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             LegacyHostImplementation.RegisterCSOwnedObject(this);
         }
 
@@ -49,6 +55,9 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static unsafe Uint8Array From(ReadOnlySpan<byte> span)
         {
+#if FEATURE_WASM_THREADS
+            LegacyHostImplementation.ThrowIfLegacyWorkerThread();
+#endif
             // source has to be instantiated.
             if (span == null)
             {
@@ -65,7 +74,6 @@ namespace System.Runtime.InteropServices.JavaScript
                 r.ReleaseInFlight();
                 return r;
             }
-
         }
 
         public enum TypedArrayTypeCode

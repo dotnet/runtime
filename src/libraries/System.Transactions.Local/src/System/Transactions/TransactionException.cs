@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using System.Runtime.Serialization;
 using System.Transactions.Configuration;
 
@@ -88,6 +89,8 @@ namespace System.Transactions
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected TransactionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -211,6 +214,8 @@ namespace System.Transactions
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected TransactionAbortedException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -272,6 +277,8 @@ namespace System.Transactions
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected TransactionInDoubtException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -332,6 +339,8 @@ namespace System.Transactions
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected TransactionManagerCommunicationException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }
@@ -370,6 +379,8 @@ namespace System.Transactions
         /// </summary>
         /// <param name="info"></param>
         /// <param name="context"></param>
+        [Obsolete(Obsoletions.LegacyFormatterImplMessage, DiagnosticId = Obsoletions.LegacyFormatterImplDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected TransactionPromotionException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
         }

@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
 
 namespace System.Reflection.Internal
@@ -45,7 +46,7 @@ namespace System.Reflection.Internal
             {
                 if (_pinned == null)
                 {
-                    var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array)!);
+                    var newPinned = new PinnedObject(ImmutableCollectionsMarshal.AsArray(_array)!);
 
                     if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
                     {

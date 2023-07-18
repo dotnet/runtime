@@ -73,7 +73,7 @@ HIDDEN int
 x86_handle_signal_frame (unw_cursor_t *cursor)
 {
   struct cursor *c = (struct cursor *) cursor;
-  int ret;
+  int i, ret;
 
   /* c->esp points at the arguments to the handler.  Without
      SA_SIGINFO, the arguments consist of a signal number
@@ -123,6 +123,9 @@ x86_handle_signal_frame (unw_cursor_t *cursor)
       return 0;
     }
 
+  for (i = 0; i < DWARF_NUM_PRESERVED_REGS; ++i)
+    c->dwarf.loc[i] = DWARF_NULL_LOC;
+
   c->dwarf.loc[EAX] = DWARF_LOC (sc_addr + LINUX_SC_EAX_OFF, 0);
   c->dwarf.loc[ECX] = DWARF_LOC (sc_addr + LINUX_SC_ECX_OFF, 0);
   c->dwarf.loc[EDX] = DWARF_LOC (sc_addr + LINUX_SC_EDX_OFF, 0);
@@ -130,9 +133,6 @@ x86_handle_signal_frame (unw_cursor_t *cursor)
   c->dwarf.loc[EBP] = DWARF_LOC (sc_addr + LINUX_SC_EBP_OFF, 0);
   c->dwarf.loc[ESI] = DWARF_LOC (sc_addr + LINUX_SC_ESI_OFF, 0);
   c->dwarf.loc[EDI] = DWARF_LOC (sc_addr + LINUX_SC_EDI_OFF, 0);
-  c->dwarf.loc[EFLAGS] = DWARF_NULL_LOC;
-  c->dwarf.loc[TRAPNO] = DWARF_NULL_LOC;
-  c->dwarf.loc[ST0] = DWARF_NULL_LOC;
   c->dwarf.loc[EIP] = DWARF_LOC (sc_addr + LINUX_SC_EIP_OFF, 0);
   c->dwarf.loc[ESP] = DWARF_LOC (sc_addr + LINUX_SC_ESP_OFF, 0);
 

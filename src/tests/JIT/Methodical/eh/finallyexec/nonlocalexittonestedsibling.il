@@ -10,7 +10,7 @@
 }
  .assembly extern mscorlib {}
  .assembly extern eh_common{}
- .assembly 'nonlocalexittonestedsibling' {}
+ .assembly ASSEMBLY_NAME {}
 .assembly extern xunit.core {}
  
  

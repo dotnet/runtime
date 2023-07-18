@@ -70,7 +70,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>^(?&lt;proto&gt;\\w+)://[^/]+?(?&lt;port&gt;:\\d+)?/</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match if at the beginning of the string.<br/>
                     /// ○ "proto" capture group.<br/>
@@ -431,7 +433,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>href\\s*=\\s*(?:["'](?&lt;1&gt;[^"']*)["']|(?&lt;1&gt;[^&gt;\\s]+))</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match the string "href".<br/>
                     /// ○ Match a whitespace character atomically any number of times.<br/>
@@ -660,7 +664,7 @@ namespace System.Text.RegularExpressions.Tests
                                                 // Match a character in the set [^>\s] atomically at least once.
                                                 {
                                                     int iteration3 = 0;
-                                                    while ((uint)iteration3 < (uint)slice.Length && ((ch = slice[iteration3]) < 128 ? ("쇿\uffff\ufffe뿿\uffff\uffff\uffff\uffff"[ch >> 4] & (1 << (ch & 0xF))) != 0 : Utilities.Base.CharInClass((char)ch, "\u0001\u0002\u0001>?d")))
+                                                    while ((uint)iteration3 < (uint)slice.Length && ((ch = slice[iteration3]) < 128 ? ("쇿\uffff\ufffe뿿\uffff\uffff\uffff\uffff"[ch >> 4] & (1 << (ch & 0xF))) != 0 : RegexRunner.CharInClass((char)ch, "\u0001\u0002\u0001>?d")))
                                                     {
                                                         iteration3++;
                                                     }
@@ -702,16 +706,6 @@ namespace System.Text.RegularExpressions.Tests
 
                     }
 
-                    /// <summary>Helper methods used by generated <see cref="Regex"/>-derived implementations.</summary>
-                    [GeneratedCodeAttribute("System.Text.RegularExpressions.Generator", "42.42.42.42")]
-                    file static class Utilities
-                    {
-                        internal class Base : RegexRunner
-                        {
-                            /// <summary>Determines whether the specified character in is in the specified character class.</summary>
-                            internal static new bool CharInClass(char ch, string charClass) => RegexRunner.CharInClass(ch, charClass);
-                        }
-                    }
                 }
                 """
             };
@@ -737,7 +731,9 @@ namespace System.Text.RegularExpressions.Tests
                 partial class C
                 {
                     /// <remarks>
-                    /// Pattern explanation:<br/>
+                    /// Pattern:<br/>
+                    /// <code>[A-Za-z]+</code><br/>
+                    /// Explanation:<br/>
                     /// <code>
                     /// ○ Match a character in the set [A-Za-z] atomically at least once.<br/>
                     /// </code>
@@ -875,7 +871,7 @@ namespace System.Text.RegularExpressions.Tests
                         internal static readonly bool s_hasTimeout = s_defaultTimeout != Regex.InfiniteMatchTimeout;
 
                         /// <summary>Supports searching for characters in or not in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".</summary>
-                        internal static readonly IndexOfAnyValues<char> s_asciiLetters = IndexOfAnyValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+                        internal static readonly SearchValues<char> s_asciiLetters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
                     }
                 }
                 """

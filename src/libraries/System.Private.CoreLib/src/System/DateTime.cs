@@ -53,7 +53,8 @@ namespace System
           IComparable<DateTime>,
           IEquatable<DateTime>,
           ISerializable,
-          ISpanParsable<DateTime>
+          ISpanParsable<DateTime>,
+          IUtf8SpanFormattable
     {
         // Number of 100ns ticks per time unit
         internal const int MicrosecondsPerMillisecond = 1000;
@@ -1804,6 +1805,10 @@ namespace System
 
         public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             DateTimeFormat.TryFormat(this, destination, out charsWritten, format, provider);
+
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
+        public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+            DateTimeFormat.TryFormat(this, utf8Destination, out bytesWritten, format, provider);
 
         public DateTime ToUniversalTime()
         {

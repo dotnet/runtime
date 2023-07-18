@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace CgTest
 {
@@ -9,7 +10,8 @@ namespace CgTest
     {
         public static string ActualResult;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string ExpectedResult = "031239120363364365121366367368122369370371401233723733741243753763771253783793804" +
                 "11263813823831273843853861283873883891342129390391392130393394395131396397398431" +
@@ -64,6 +66,7 @@ namespace CgTest
             return retVal;
         }
 
+#pragma warning disable xUnit1013
         public static void foo0()
         {
             ActualResult = (ActualResult + "0");
@@ -7704,5 +7707,6 @@ namespace CgTest
             ActualResult = (ActualResult + "1091");
             return;
         }
+#pragma warning restore xUnit1013
     }
 }

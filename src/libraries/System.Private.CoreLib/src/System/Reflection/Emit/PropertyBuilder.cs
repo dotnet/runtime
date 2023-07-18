@@ -27,15 +27,14 @@ namespace System.Reflection.Emit
             SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
-            SetCustomAttributeCore(customBuilder);
-        }
 
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
+        }
 
         public void SetGetMethod(MethodBuilder mdBuilder)
             => SetGetMethodCore(mdBuilder);

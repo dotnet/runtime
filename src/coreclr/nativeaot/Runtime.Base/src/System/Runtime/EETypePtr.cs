@@ -44,13 +44,5 @@ namespace System
         {
             throw new NotImplementedException();
         }
-
-        internal unsafe uint BaseSize
-        {
-            get
-            {
-                return ToPointer()->BaseSize;
-            }
-        }
     }
 }

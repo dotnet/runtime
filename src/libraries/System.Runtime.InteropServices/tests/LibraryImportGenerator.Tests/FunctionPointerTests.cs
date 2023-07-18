@@ -115,5 +115,17 @@ namespace LibraryImportGenerator.IntegrationTests
                 return Callback(a, b);
             }
         }
+
+        [UnmanagedCallersOnly]
+        public static int Increment (int i) {
+            return i + 1;
+        }
+
+        [Fact]
+        public unsafe void CalliUnmanaged()
+        {
+            delegate* unmanaged<int, int> callbackProc = (delegate* unmanaged<int, int>)&Increment;
+            Assert.Equal(6, callbackProc(5));
+        }
     }
 }

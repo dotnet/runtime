@@ -39,6 +39,9 @@ Object* FrozenObjectHeapManager::TryAllocateObject(PTR_MethodTable type, size_t 
         _ASSERT(type != nullptr);
         _ASSERT(FOH_COMMIT_SIZE >= MIN_OBJECT_SIZE);
 
+        // Currently we don't support frozen objects with special alignment requirements
+        // TODO: We should also give up on arrays of doubles on 32-bit platforms.
+        // (we currently never allocate them on frozen segments)
     #ifdef FEATURE_64BIT_ALIGNMENT
         if (type->RequiresAlign8())
         {
@@ -161,6 +164,7 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
 {
     _ASSERT(m_pStart != nullptr && m_Size > 0 && m_SegmentHandle != nullptr); // Expected to be inited
     _ASSERT(IS_ALIGNED(m_pCurrent, DATA_ALIGNMENT));
+    _ASSERT(IS_ALIGNED(objectSize, DATA_ALIGNMENT));
     _ASSERT(objectSize <= FOH_COMMIT_SIZE);
     _ASSERT(m_pCurrent >= m_pStart + sizeof(ObjHeader));
 
@@ -201,4 +205,31 @@ Object* FrozenObjectSegment::TryAllocateObject(PTR_MethodTable type, size_t obje
     GCHeapUtilities::GetGCHeap()->UpdateFrozenSegment(m_SegmentHandle, m_pCurrent, m_pStart + m_SizeCommitted);
 
     return object;
+}
+
+Object* FrozenObjectSegment::GetFirstObject() const
+{
+    if (m_pStart + sizeof(ObjHeader) == m_pCurrent)
+    {
+        // Segment is empty
+        return nullptr;
+    }
+    return reinterpret_cast<Object*>(m_pStart + sizeof(ObjHeader));
+}
+
+Object* FrozenObjectSegment::GetNextObject(Object* obj) const
+{
+    // Input must not be null and should be within the segment
+    _ASSERT(obj != nullptr);
+    _ASSERT((uint8_t*)obj >= m_pStart + sizeof(ObjHeader) && (uint8_t*)obj < m_pCurrent);
+
+    // FOH doesn't support objects with non-DATA_ALIGNMENT alignment yet.
+    uint8_t* nextObj = (reinterpret_cast<uint8_t*>(obj) + ALIGN_UP(obj->GetSize(), DATA_ALIGNMENT));
+    if (nextObj < m_pCurrent)
+    {
+        return reinterpret_cast<Object*>(nextObj);
+    }
+
+    // Current object is the last one in the segment
+    return nullptr;
 }

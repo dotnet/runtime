@@ -4,10 +4,11 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 // Example from the OSR doc
 
-class OSR_Example
+public class OSR_Example
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static double F(int from, int to)
@@ -20,9 +21,10 @@ class OSR_Example
         return result;
     }
 
-    public static int Main(string[] args)
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static int Test(int? arg)
     {
-        int final = args.Length <= 0 ? 1_000_000 : Int32.Parse(args[0]);
+        int final = arg ?? 1_000_000;
         long frequency = Stopwatch.Frequency;
         long nanosecPerTick = (1000L*1000L*1000L) / frequency;
         // Console.WriteLine($"computing sum over {final} ints");
@@ -38,5 +40,11 @@ class OSR_Example
         double elapsedTime = 1000.0 * (double) s.ElapsedTicks / (double) frequency;
         Console.WriteLine($"{final} iterations took {elapsedTime:F2}ms");
         return result == 499999500000 ? 100 : -1;
-    }  
+    }
+
+    [Fact]
+    public static int TestEntryPoint()
+    {
+        return Test(null);
+    }
 }

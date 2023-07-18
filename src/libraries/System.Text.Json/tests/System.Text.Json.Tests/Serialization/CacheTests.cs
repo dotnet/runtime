@@ -361,6 +361,7 @@ namespace System.Text.Json.Serialization.Tests
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreNullValues)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.DefaultIgnoreCondition)), JsonIgnoreCondition.WhenWritingDefault);
                 yield return (GetProp(nameof(JsonSerializerOptions.NumberHandling)), JsonNumberHandling.AllowReadingFromString);
+                yield return (GetProp(nameof(JsonSerializerOptions.PreferredObjectCreationHandling)), JsonObjectCreationHandling.Populate);
                 yield return (GetProp(nameof(JsonSerializerOptions.UnmappedMemberHandling)), JsonUnmappedMemberHandling.Disallow);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyProperties)), true);
                 yield return (GetProp(nameof(JsonSerializerOptions.IgnoreReadOnlyFields)), true);

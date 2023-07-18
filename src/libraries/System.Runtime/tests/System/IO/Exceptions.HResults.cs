@@ -17,7 +17,6 @@ namespace System.IO.Tests
         public const int COR_E_EXCEPTION = unchecked((int)0x80131500);
 
         public const int COR_E_FILELOAD = unchecked((int)0x80131621);
-        public const int FUSION_E_CACHEFILE_FAILED = unchecked((int)0x80131052);
         public const int FUSION_E_INVALID_NAME = unchecked((int)0x80131047);
         public const int FUSION_E_PRIVATE_ASM_DISALLOWED = unchecked((int)0x80131044);
         public const int FUSION_E_REF_DEF_MISMATCH = unchecked((int)0x80131040);

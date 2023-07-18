@@ -27,6 +27,7 @@ namespace ILCompiler
 
         public override TypeDesc FieldType => _fieldType;
         public override EmbeddedSignatureData[] GetEmbeddedSignatureData() => null;
+        public override bool HasEmbeddedSignatureData => false;
 
         public override bool IsStatic => true;
 

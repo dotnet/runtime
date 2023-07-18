@@ -15,6 +15,7 @@ parameters:
   steps: []
   dependsOn: []
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   variables: {}
   name: ''
   displayName: ''
@@ -40,8 +41,8 @@ jobs:
       helixRepo: dotnet/runtime
       pool: ${{ parameters.pool }}
 
-      # Component governance does not work on musl machines
-      ${{ if eq(parameters.osSubGroup, '_musl') }}:
+      # Disable component governance if requested or on musl machines where it does not work well
+      ${{ if or(eq(parameters.disableComponentGovernance, true), eq(parameters.osSubGroup, '_musl')) }}:
         disableComponentGovernance: true
 
       variables:

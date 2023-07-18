@@ -4,8 +4,9 @@
 //Unit test for typeof assertion.
 
 using System;
+using Xunit;
 
-internal class Sample10
+public class Sample10
 {
     private static int s_s = 1;
 
@@ -25,7 +26,8 @@ internal class Sample10
         return 0;
     }
 
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

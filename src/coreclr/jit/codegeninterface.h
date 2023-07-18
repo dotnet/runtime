@@ -127,7 +127,9 @@ private:
 #define INST_FP 0x01 // is it a FP instruction?
 public:
     static bool instIsFP(instruction ins);
-
+#if defined(TARGET_XARCH)
+    static bool instIsEmbeddedBroadcastCompatible(instruction ins);
+#endif // TARGET_XARCH
     //-------------------------------------------------------------------------
     // Liveness-related fields & methods
 public:
@@ -299,9 +301,6 @@ protected:
 #endif
 
 public:
-    unsigned InferStructOpSizeAlign(GenTree* op, unsigned* alignmentWB);
-    unsigned InferOpSizeAlign(GenTree* op, unsigned* alignmentWB);
-
     // Methods to abstract target information
 
     bool validImmForInstr(instruction ins, target_ssize_t val, insFlags flags = INS_FLAGS_DONT_CARE);
@@ -767,6 +766,10 @@ public:
 
     virtual const char* siStackVarName(size_t offs, size_t size, unsigned reg, unsigned stkOffs) = 0;
 #endif // LATE_DISASM
+
+#if defined(TARGET_XARCH)
+    bool IsEmbeddedBroadcastEnabled(instruction ins, GenTree* op);
+#endif
 };
 
 #endif // _CODEGEN_INTERFACE_H_

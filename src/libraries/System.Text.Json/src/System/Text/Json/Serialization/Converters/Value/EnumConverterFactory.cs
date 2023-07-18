@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Text.Json.Serialization.Converters
@@ -18,7 +19,10 @@ namespace System.Text.Json.Serialization.Converters
         }
 
         public override JsonConverter CreateConverter(Type type, JsonSerializerOptions options)
-            => Create(type, EnumConverterOptions.AllowNumbers, namingPolicy: null, options);
+        {
+            Debug.Assert(CanConvert(type));
+            return Create(type, EnumConverterOptions.AllowNumbers, namingPolicy: null, options);
+        }
 
         internal static JsonConverter Create(Type enumType, EnumConverterOptions converterOptions, JsonNamingPolicy? namingPolicy, JsonSerializerOptions options)
         {

@@ -699,7 +699,7 @@ namespace System.Net.Sockets
         ~TcpClient() { }
         public System.Net.Sockets.NetworkStream GetStream() { throw null; }
     }
-    public partial class TcpListener
+    public partial class TcpListener : System.IDisposable
     {
         [System.ObsoleteAttribute("This constructor has been deprecated. Use TcpListener(IPAddress localaddr, int port) instead.")]
         public TcpListener(int port) { }
@@ -720,6 +720,7 @@ namespace System.Net.Sockets
         public System.IAsyncResult BeginAcceptSocket(System.AsyncCallback? callback, object? state) { throw null; }
         public System.IAsyncResult BeginAcceptTcpClient(System.AsyncCallback? callback, object? state) { throw null; }
         public static System.Net.Sockets.TcpListener Create(int port) { throw null; }
+        public void Dispose() { }
         public System.Net.Sockets.Socket EndAcceptSocket(System.IAsyncResult asyncResult) { throw null; }
         public System.Net.Sockets.TcpClient EndAcceptTcpClient(System.IAsyncResult asyncResult) { throw null; }
         public bool Pending() { throw null; }

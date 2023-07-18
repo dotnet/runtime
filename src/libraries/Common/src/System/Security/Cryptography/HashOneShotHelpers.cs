@@ -12,28 +12,18 @@ namespace System.Security.Cryptography
     {
         internal static byte[] HashData(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> source)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            return hashAlgorithm.Name switch
             {
-                return SHA256.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.HashData(source);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.HashData(source);
-            }
-
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+                HashAlgorithmNames.SHA256 => SHA256.HashData(source),
+                HashAlgorithmNames.SHA1 => SHA1.HashData(source),
+                HashAlgorithmNames.SHA512 => SHA512.HashData(source),
+                HashAlgorithmNames.SHA384 => SHA384.HashData(source),
+                HashAlgorithmNames.SHA3_256 => SHA3_256.HashData(source),
+                HashAlgorithmNames.SHA3_384 => SHA3_384.HashData(source),
+                HashAlgorithmNames.SHA3_512 => SHA3_512.HashData(source),
+                HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.HashData(source),
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
+            };
         }
 
         internal static bool TryHashData(
@@ -42,54 +32,34 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            return hashAlgorithm.Name switch
             {
-                return SHA256.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.TryHashData(source, destination, out bytesWritten);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.TryHashData(source, destination, out bytesWritten);
-            }
-
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+                HashAlgorithmNames.SHA256 => SHA256.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.SHA1 => SHA1.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.SHA512 => SHA512.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.SHA384 => SHA384.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.SHA3_256 => SHA3_256.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.SHA3_384 => SHA3_384.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.SHA3_512 => SHA3_512.TryHashData(source, destination, out bytesWritten),
+                HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.TryHashData(source, destination, out bytesWritten),
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
+            };
         }
 
         internal static byte[] HashData(HashAlgorithmName hashAlgorithm, Stream source)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            return hashAlgorithm.Name switch
             {
-                return SHA256.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return SHA1.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return SHA512.HashData(source);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return SHA384.HashData(source);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return MD5.HashData(source);
-            }
-
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+                HashAlgorithmNames.SHA256 => SHA256.HashData(source),
+                HashAlgorithmNames.SHA1 => SHA1.HashData(source),
+                HashAlgorithmNames.SHA512 => SHA512.HashData(source),
+                HashAlgorithmNames.SHA384 => SHA384.HashData(source),
+                HashAlgorithmNames.SHA3_256 => SHA3_256.HashData(source),
+                HashAlgorithmNames.SHA3_384 => SHA3_384.HashData(source),
+                HashAlgorithmNames.SHA3_512 => SHA3_512.HashData(source),
+                HashAlgorithmNames.MD5 when Helpers.HasMD5 => MD5.HashData(source),
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
+            };
         }
 
         internal static int MacData(
@@ -98,28 +68,18 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination)
         {
-            if (hashAlgorithm == HashAlgorithmName.SHA256)
+            return hashAlgorithm.Name switch
             {
-                return HMACSHA256.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA1)
-            {
-                return HMACSHA1.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA512)
-            {
-                return HMACSHA512.HashData(key, source, destination);
-            }
-            else if (hashAlgorithm == HashAlgorithmName.SHA384)
-            {
-                return HMACSHA384.HashData(key, source, destination);
-            }
-            else if (Helpers.HasMD5 && hashAlgorithm == HashAlgorithmName.MD5)
-            {
-                return HMACMD5.HashData(key, source, destination);
-            }
-
-            throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name));
+                HashAlgorithmNames.SHA256 => HMACSHA256.HashData(key, source, destination),
+                HashAlgorithmNames.SHA1 => HMACSHA1.HashData(key, source, destination),
+                HashAlgorithmNames.SHA512 => HMACSHA512.HashData(key, source, destination),
+                HashAlgorithmNames.SHA384 => HMACSHA384.HashData(key, source, destination),
+                HashAlgorithmNames.SHA3_256 => HMACSHA3_256.HashData(key, source, destination),
+                HashAlgorithmNames.SHA3_384 => HMACSHA3_384.HashData(key, source, destination),
+                HashAlgorithmNames.SHA3_512 => HMACSHA3_512.HashData(key, source, destination),
+                HashAlgorithmNames.MD5 when Helpers.HasMD5 => HMACMD5.HashData(key, source, destination),
+                _ => throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name)),
+            };
         }
     }
 }

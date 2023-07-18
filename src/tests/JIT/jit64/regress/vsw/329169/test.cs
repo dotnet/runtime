@@ -4,9 +4,11 @@
 // Regression test for consecutive compare optimization.
 
 using System;
-internal class Foo
+using Xunit;
+public class Foo
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string s1 = "NonNull";
         string s2 = null;

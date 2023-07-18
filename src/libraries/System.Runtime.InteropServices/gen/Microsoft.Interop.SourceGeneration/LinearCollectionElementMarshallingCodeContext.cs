@@ -34,6 +34,7 @@ namespace Microsoft.Interop
             _managedSpanIdentifier = managedSpanIdentifier;
             _nativeSpanIdentifier = nativeSpanIdentifier;
             ParentContext = parentContext;
+            Direction = ParentContext.Direction;
         }
 
         public override (TargetFramework framework, Version version) GetTargetFramework()

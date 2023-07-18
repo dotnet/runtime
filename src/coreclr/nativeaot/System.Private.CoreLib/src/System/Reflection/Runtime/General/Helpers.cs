@@ -62,11 +62,6 @@ namespace System.Reflection.Runtime.General
             return typeInfos;
         }
 
-        public static string LastResortString(this RuntimeTypeHandle typeHandle)
-        {
-            return ReflectionCoreExecution.ExecutionEnvironment.GetLastResortString(typeHandle);
-        }
-
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static RuntimeNamedTypeInfo CastToRuntimeNamedTypeInfo(this Type type)
         {

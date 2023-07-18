@@ -24,5 +24,7 @@ namespace System.Text.Json.Tests.SourceGenRegressionTests.Net60
         private static readonly global::System.Text.Json.JsonEncodedText PropName_SummaryWords = global::System.Text.Json.JsonEncodedText.Encode("SummaryWords");
         private static readonly global::System.Text.Json.JsonEncodedText PropName_High = global::System.Text.Json.JsonEncodedText.Encode("High");
         private static readonly global::System.Text.Json.JsonEncodedText PropName_Low = global::System.Text.Json.JsonEncodedText.Encode("Low");
+        private static readonly global::System.Text.Json.JsonEncodedText PropName_Value = global::System.Text.Json.JsonEncodedText.Encode("Value");
+        private static readonly global::System.Text.Json.JsonEncodedText PropName_Nested = global::System.Text.Json.JsonEncodedText.Encode("Nested");
     }
 }

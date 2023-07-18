@@ -277,20 +277,48 @@ namespace System.Reflection.Emit
             SetCustomAttributeCore(con, binaryAttribute);
         }
 
-        protected abstract void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute);
+        protected abstract void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute);
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
             ArgumentNullException.ThrowIfNull(customBuilder);
 
-            SetCustomAttributeCore(customBuilder);
+            SetCustomAttributeCore(customBuilder.Ctor, customBuilder.Data);
         }
-
-        protected abstract void SetCustomAttributeCore(CustomAttributeBuilder customBuilder);
 
         public void SetParent([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent)
             => SetParentCore(parent);
 
         protected abstract void SetParentCore([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent);
+
+        public override Type MakePointerType()
+        {
+            return SymbolType.FormCompoundType("*", this, 0)!;
+        }
+
+        public override Type MakeByRefType()
+        {
+            return SymbolType.FormCompoundType("&", this, 0)!;
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType()
+        {
+            return SymbolType.FormCompoundType("[]", this, 0)!;
+        }
+
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
+        public override Type MakeArrayType(int rank)
+        {
+            string s = GetRankString(rank);
+            return SymbolType.FormCompoundType(s, this, 0)!;
+        }
+
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
+        [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
+        public override Type MakeGenericType(params Type[] typeArguments)
+        {
+            return TypeBuilderInstantiation.MakeGenericType(this, typeArguments);
+        }
     }
 }

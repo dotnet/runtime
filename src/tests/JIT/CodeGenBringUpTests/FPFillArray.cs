@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 public class BringUpTest_FPFillArray
 {
     const int Pass = 100;
@@ -29,7 +30,8 @@ public class BringUpTest_FPFillArray
        return end-start;
     }    
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         float []arr = new float[5];
         if (FPFillArray(arr, 0, arr.Length, 1f) != arr.Length) return Fail;

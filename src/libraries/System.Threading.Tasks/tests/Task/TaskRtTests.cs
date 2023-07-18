@@ -470,70 +470,45 @@ namespace System.Threading.Tasks.Tests
 
             // Cached
 
-            foreach (bool result in new[] { false, true })
-            {
-                Assert.Same(Task.FromResult(result), Task.FromResult(result));
-                Assert.Equal(result, Task.FromResult(result).Result);
-            }
+            AssertCached(false);
+            AssertCached(true);
 
             for (int i = -1; i <= 8; i++)
             {
-                Assert.Same(Task.FromResult(i), Task.FromResult(i));
-                Assert.Equal(i, Task.FromResult(i).Result);
+                AssertCached(i);
             }
 
-            Assert.Same(Task.FromResult('\0'), Task.FromResult('\0'));
-            Assert.Equal('\0', Task.FromResult('\0').Result);
+            AssertCached<byte>();
+            AssertCached<sbyte>();
+            AssertCached<char>();
+            AssertCached<ushort>();
+            AssertCached<short>();
+            AssertCached<uint>();
+            AssertCached<int>();
+            AssertCached<ulong>();
+            AssertCached<long>();
+            AssertCached<nuint>();
+            AssertCached<nint>();
+            AssertCached<Half>();
+            AssertCached<float>();
+            AssertCached<double>();
+            AssertCached<decimal>();
+            AssertCached<TimeSpan>();
+            AssertCached<DateTime>();
+            AssertCached<Guid>();
+            AssertCached<Int128>();
+            AssertCached<UInt128>();
+            AssertCached<DayOfWeek>();
+            AssertCached<string>();
+            AssertCached<object>();
 
-            Assert.Same(Task.FromResult((byte)0), Task.FromResult((byte)0));
-            Assert.Equal(0, Task.FromResult((byte)0).Result);
+            static void AssertCached<T>(T value = default)
+            {
+                Assert.Same(Task.FromResult(value), Task.FromResult(value));
+                Assert.Equal(value, Task.FromResult(value).Result);
+            }
 
-            Assert.Same(Task.FromResult((ushort)0), Task.FromResult((ushort)0));
-            Assert.Equal(0, Task.FromResult((ushort)0).Result);
-
-            Assert.Same(Task.FromResult((uint)0), Task.FromResult((uint)0));
-            Assert.Equal(0u, Task.FromResult((uint)0).Result);
-
-            Assert.Same(Task.FromResult((ulong)0), Task.FromResult((ulong)0));
-            Assert.Equal(0ul, Task.FromResult((ulong)0).Result);
-
-            Assert.Same(Task.FromResult((sbyte)0), Task.FromResult((sbyte)0));
-            Assert.Equal(0, Task.FromResult((sbyte)0).Result);
-
-            Assert.Same(Task.FromResult((short)0), Task.FromResult((short)0));
-            Assert.Equal(0, Task.FromResult((short)0).Result);
-
-            Assert.Same(Task.FromResult((long)0), Task.FromResult((long)0));
-            Assert.Equal(0, Task.FromResult((long)0).Result);
-
-            Assert.Same(Task.FromResult(IntPtr.Zero), Task.FromResult(IntPtr.Zero));
-            Assert.Equal(IntPtr.Zero, Task.FromResult(IntPtr.Zero).Result);
-
-            Assert.Same(Task.FromResult(UIntPtr.Zero), Task.FromResult(UIntPtr.Zero));
-            Assert.Equal(UIntPtr.Zero, Task.FromResult(UIntPtr.Zero).Result);
-
-            Assert.Same(Task.FromResult((Half)default), Task.FromResult((Half)default));
-            Assert.Equal((Half)default, Task.FromResult((Half)default).Result);
-
-            Assert.Same(Task.FromResult((float)default), Task.FromResult((float)default));
-            Assert.Equal((float)default, Task.FromResult((float)default).Result);
-
-            Assert.Same(Task.FromResult((double)default), Task.FromResult((double)default));
-            Assert.Equal((double)default, Task.FromResult((double)default).Result);
-
-            Assert.Same(Task.FromResult((TimeSpan)default), Task.FromResult((TimeSpan)default));
-            Assert.Equal((TimeSpan)default, Task.FromResult((TimeSpan)default).Result);
-
-            Assert.Same(Task.FromResult((DateTime)default), Task.FromResult((DateTime)default));
-            Assert.Equal((DateTime)default, Task.FromResult((DateTime)default).Result);
-
-            Assert.Same(Task.FromResult((object)null), Task.FromResult((object)null));
-            Assert.Null(Task.FromResult((object)null).Result);
-
-            Assert.Same(Task.FromResult((string)null), Task.FromResult((string)null));
-            Assert.Null(Task.FromResult((string)null).Result);
-
-            // Not cached
+            // Not currently cached
 
             foreach (int i in new[] { -2, 9, int.MinValue, int.MaxValue })
             {
@@ -541,11 +516,11 @@ namespace System.Threading.Tasks.Tests
                 Assert.Equal(i, Task.FromResult(i).Result);
             }
 
+            // Should never return the same task
+
             Assert.NotSame(Task.FromResult((double)(+0.0)), Task.FromResult((double)(-0.0)));
             Assert.NotSame(Task.FromResult((float)(+0.0)), Task.FromResult((float)(-0.0)));
             Assert.NotSame(Task.FromResult((Half)(+0.0)), Task.FromResult((Half)(-0.0)));
-
-            Assert.NotSame(Task.FromResult((decimal)default), Task.FromResult((decimal)default));
         }
 
         [Fact]

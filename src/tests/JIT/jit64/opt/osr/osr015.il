@@ -11,7 +11,7 @@
 .assembly 'osr015' {}
 
 
-.class private auto ansi beforefieldinit test
+.class public auto ansi beforefieldinit test
        extends [mscorlib]System.Object
 {
 

@@ -8,7 +8,7 @@
 }
 .assembly extern xunit.core {}
 .assembly extern legacy library mscorlib {}
-.assembly 'refpinned2iu' {}
+.assembly ASSEMBLY_NAME {}
 .class public auto ansi refpinned2iu {
 .method public static int32 Main()
 {

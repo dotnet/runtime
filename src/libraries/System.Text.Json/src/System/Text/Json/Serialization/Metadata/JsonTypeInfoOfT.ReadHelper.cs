@@ -78,67 +78,12 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private JsonTypeInfo<Queue<T>>? _asuncEnumerableQueueTypeInfo;
-        internal IAsyncEnumerable<T> DeserializeAsyncEnumerable(Stream utf8Json, CancellationToken cancellationToken)
-        {
-            Debug.Assert(IsConfigured);
-
-            JsonTypeInfo<Queue<T>>? queueTypeInfo = _asuncEnumerableQueueTypeInfo;
-            if (queueTypeInfo is null)
-            {
-                var queueConverter = new QueueOfTConverter<Queue<T>, T>();
-                queueTypeInfo = new JsonTypeInfo<Queue<T>>(queueConverter, Options)
-                {
-                    CreateObject = static () => new Queue<T>(),
-                    ElementTypeInfo = this,
-                    NumberHandling = Options.NumberHandling,
-                };
-
-                queueTypeInfo.EnsureConfigured();
-                _asuncEnumerableQueueTypeInfo = queueTypeInfo;
-            }
-
-            return CreateAsyncEnumerableDeserializer(utf8Json, queueTypeInfo, cancellationToken);
-
-            static async IAsyncEnumerable<T> CreateAsyncEnumerableDeserializer(
-                Stream utf8Json,
-                JsonTypeInfo<Queue<T>> queueTypeInfo,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                Debug.Assert(queueTypeInfo.IsConfigured);
-                JsonSerializerOptions options = queueTypeInfo.Options;
-                var bufferState = new ReadBufferState(options.DefaultBufferSize);
-                ReadStack readStack = default;
-                readStack.Initialize(queueTypeInfo, supportContinuation: true);
-
-                var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-
-                try
-                {
-                    do
-                    {
-                        bufferState = await bufferState.ReadFromStreamAsync(utf8Json, cancellationToken, fillBuffer: false).ConfigureAwait(false);
-                        queueTypeInfo.ContinueDeserialize(
-                            ref bufferState,
-                            ref jsonReaderState,
-                            ref readStack);
-
-                        if (readStack.Current.ReturnValue is Queue<T> queue)
-                        {
-                            while (queue.Count > 0)
-                            {
-                                yield return queue.Dequeue();
-                            }
-                        }
-                    }
-                    while (!bufferState.IsFinalBlock);
-                }
-                finally
-                {
-                    bufferState.Dispose();
-                }
-            }
-        }
+        /// <summary>
+        /// Caches a JsonTypeInfo&lt;Queue&lt;T&gt;&gt; instance used by the DeserializeAsyncEnumerable method.
+        /// Store as a non-generic type to avoid triggering generic recursion in the AOT compiler.
+        /// cf. https://github.com/dotnet/runtime/issues/85184
+        /// </summary>
+        internal JsonTypeInfo? _asyncEnumerableQueueTypeInfo;
 
         internal sealed override object? DeserializeAsObject(ref Utf8JsonReader reader, ref ReadStack state)
             => Deserialize(ref reader, ref state);
@@ -152,23 +97,7 @@ namespace System.Text.Json.Serialization.Metadata
         internal sealed override object? DeserializeAsObject(Stream utf8Json)
             => Deserialize(utf8Json);
 
-        internal sealed override IAsyncEnumerable<object?> DeserializeAsyncEnumerableAsObject(Stream utf8Json, CancellationToken cancellationToken)
-        {
-            IAsyncEnumerable<T> typedSource = DeserializeAsyncEnumerable(utf8Json, cancellationToken);
-            return AsObjectEnumerable(typedSource, cancellationToken);
-
-            static async IAsyncEnumerable<object?> AsObjectEnumerable(
-                IAsyncEnumerable<T> source,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                await foreach (T elem in source.WithCancellation(cancellationToken).ConfigureAwait(false))
-                {
-                    yield return elem;
-                }
-            }
-        }
-
-        private T? ContinueDeserialize(
+        internal T? ContinueDeserialize(
             ref ReadBufferState bufferState,
             ref JsonReaderState jsonReaderState,
             ref ReadStack readStack)

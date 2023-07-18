@@ -1758,7 +1758,7 @@ DWORD ReadResourceDirectory(const PEDecoder *pDecoder, DWORD rvaOfResourceSectio
                 return 0;
 
             size_t entryNameLen = *(WORD*)pDecoder->GetRvaData(entryNameRva);
-            if (wcslen(name) != entryNameLen)
+            if (u16_strlen(name) != entryNameLen)
                 continue;
 
             if (!pDecoder->CheckRva(entryNameRva, (COUNT_T)(sizeof(WORD) * (1 + entryNameLen))))
@@ -1926,7 +1926,7 @@ bool DoesResourceNameMatch(LPCWSTR nameA, LPCWSTR nameB)
         if (IS_INTRESOURCE(nameB))
             return false;
         else
-            foundEntry = !wcscmp(nameB, nameA);
+            foundEntry = !u16_strcmp(nameB, nameA);
     }
 
     return foundEntry;

@@ -63,7 +63,7 @@ public:
     VOID Fixup(mdFieldDef token)
     {
         WRAPPER_NO_CONTRACT;
-        EEClass::FixupFieldDescForEnC(GetEnclosingMethodTable(), this, token);
+        EEClass::FixupFieldDescForEnC(GetApproxEnclosingMethodTable(), this, token);
         m_bNeedsFixup = FALSE;
     }
 
@@ -195,9 +195,6 @@ class EditAndContinueModule : public Module
     // function itself has been edited.
     int m_applyChangesCount;
 
-    // Holds a table of EnCEEClassData object for classes in this module that have been modified
-    CUnorderedArray<EnCEEClassData*, 5> m_ClassList;
-
 #ifndef DACCESS_COMPILE
     // Return the minimum permissable address for new IL to be stored at
     // This can't be less than the current load address because then we'd
@@ -266,7 +263,6 @@ public:
     PTR_CBYTE ResolveOrAllocateField(OBJECTREF      thisPointer,
                                      EnCFieldDesc * pFD);
 
-
     // Get class-specific EnC data for a class in this module
     // Note: For DAC build, getOnly must be TRUE
     PTR_EnCEEClassData GetEnCEEClassData(MethodTable * pMT, BOOL getOnly = FALSE);
@@ -276,11 +272,6 @@ public:
     {
         return m_applyChangesCount;
     }
-
-#ifdef DACCESS_COMPILE
-    virtual void EnumMemoryRegions(CLRDataEnumMemoryFlags flags,
-                                   bool enumThis);
-#endif
 };
 
 // Information about an instance field value added by EnC
@@ -397,12 +388,26 @@ private:
 //    ApproxFieldDescIterator because none of our clients need it.  But it would
 //    be easy to add this using the data from m_classData
 //
-class EncApproxFieldDescIterator
+class EncApproxFieldDescIterator final
 {
 public:
+    enum Flags
+    {
+        None,
+
+        // If set, then any partially-initialized EnC FieldDescs will be fixed up
+        // to be a completely initialized FieldDescs as they are returned by Next().
+        // This may load types and do other things to trigger a GC.
+        // If an EnC FieldDesc is not fixed up, an assert will fire prior to return.
+        FixUpEncFields,
+
+        // Only iterate over EnC FieldDescs
+        OnlyEncFields,
+    };
+
 #ifdef EnC_SUPPORTED
     // Create and initialize the iterator
-    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, BOOL fixupEnC);
+    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags = None);
 
     // Get the next fieldDesc (either EnC or non-EnC)
     PTR_FieldDesc Next();
@@ -410,7 +415,7 @@ public:
     int Count();
 #else
     // Non-EnC version - simple wrapper
-    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, BOOL fixupEnC) :
+    EncApproxFieldDescIterator(MethodTable *pMT, int iteratorType, uint32_t flags = None) :
       m_nonEnCIter( pMT, iteratorType ) {}
 
     PTR_FieldDesc Next() { WRAPPER_NO_CONTRACT; return m_nonEnCIter.Next(); }
@@ -434,11 +439,10 @@ private:
     // Return the next available EnC FieldDesc or NULL when done
     PTR_EnCFieldDesc NextEnC();
 
-    // True if our client wants us to fixup any EnC fieldDescs before handing them back
-    BOOL m_fixupEnC;
+    uint32_t m_flags;
 
     // A count of how many EnC fields have been returned so far
-    int m_encFieldsReturned;
+    int32_t m_encFieldsReturned;
 
     // The current pointer into one of the EnC field lists when enumerating EnC fields
     PTR_EnCAddedFieldElement m_pCurrListElem;

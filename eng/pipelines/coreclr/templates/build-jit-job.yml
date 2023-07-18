@@ -10,6 +10,7 @@ parameters:
   timeoutInMinutes: ''
   variables: {}
   dependOnEvaluatePaths: false
+  disableComponentGovernance: false
   uploadAs: 'azureBlob'
 
 ### Product build
@@ -25,6 +26,7 @@ jobs:
     enableMicrobuild: true
     pool: ${{ parameters.pool }}
     dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
+    disableComponentGovernance: ${{ parameters.disableComponentGovernance }}
 
     # Compute job name from template parameters
     name: ${{ format('coreclr_jit_build_{0}{1}_{2}_{3}', parameters.osGroup, parameters.osSubgroup, parameters.archType, parameters.buildConfig) }}
@@ -53,17 +55,6 @@ jobs:
 
     - name: compilerArg
       value: ''
-    - ${{ if ne(parameters.osGroup, 'windows') }}:
-      - name: compilerArg
-        value: '-clang9'
-      # We need to use the stable version available on Alpine Linux
-      - ${{ if and(eq(parameters.osGroup, 'linux'), eq(parameters.osSubgroup, '_musl')) }}:
-        - name: compilerArg
-          value: ''
-      # AppleClang has different version scheme, so we let compiler introspection pick up the available clang from PATH
-      - ${{ if eq(parameters.osGroup, 'osx') }}:
-        - name: compilerArg
-          value: ''
 
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: PythonScript
@@ -108,6 +99,13 @@ jobs:
         displayName: Build CoreCLR JIT
 
     - ${{ if eq(parameters.uploadAs, 'azureBlob') }}:
+      # Add authenticated pip feed
+      - task: PipAuthenticate@1
+        displayName: 'Pip Authenticate'
+        inputs:
+          artifactFeeds: public/dotnet-public-pypi
+          onlyAddExtraIndex: false
+
       # Ensure the Python azure-storage-blob package is installed before doing the upload.
       - script: $(PipScript) install --user --upgrade pip && $(PipScript) install --user azure.storage.blob==12.5.0 --force-reinstall
         displayName: Upgrade Pip to latest and install azure-storage-blob Python package

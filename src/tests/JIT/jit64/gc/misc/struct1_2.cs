@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct S
 {
@@ -12,14 +13,15 @@ struct S
     public String str;
 }
 
-class Test_struct1_2
+public class Test_struct1_2
 {
-    public static void c(S s1)
+    private static void c(S s1)
     {
         Console.WriteLine(s1.str);
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S sM;
 

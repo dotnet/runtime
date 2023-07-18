@@ -15,6 +15,7 @@
     <Configurations>Debug;Release;Checked</Configurations>
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <EventSourceSupport>true</EventSourceSupport>
+    <OptimizationPreference>Speed</OptimizationPreference>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
@@ -41,18 +42,9 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <TargetOSComponent>unix</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'windows'">win</TargetOSComponent>
-    <TargetOSComponent Condition="'$(TargetOS)' == 'osx' and '$(TargetArchitecture)' == 'arm64'">unix_osx</TargetOSComponent>
-
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' == ''">$(TargetArchitecture)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(CrossHostArch)' != ''">$(CrossHostArch)</TargetArchitectureForSharedLibraries>
     <TargetArchitectureForSharedLibraries Condition="'$(TargetArchitectureForSharedLibraries)'=='armel'">arm</TargetArchitectureForSharedLibraries>
-
-    <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitectureForLocalJitBuild)' == ''">$(TargetArchitecture)</TargetArchitectureForLocalJitBuild>
-    <TargetArchitectureForLocalJitBuild Condition="'$(TargetArchitecture)'=='armel'">arm</TargetArchitectureForLocalJitBuild>
-
-    <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForLocalJitBuild)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
 
     <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
     <!-- This will be provided when using the liveBuild, and unset otherwise. -->

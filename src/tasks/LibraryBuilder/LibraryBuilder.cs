@@ -85,6 +85,19 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     public string? AssembliesLocation { get; set; }
 
+    /// <summary>
+    /// Determines whether or not assemblies are bundled into the library
+    /// </summary>
+    public bool BundlesResources { get; set; }
+
+    /// <summary>
+    /// An Item containing the bundled runtimeconfig.bin metadata detailing
+    /// DataSymbol - Symbol corresponding to the runtimeconfig.bin byte array data
+    /// DataLenSymbol - Symbol corresponding to the runtimeconfig.bin byte array size
+    /// DataLenSymbolValue - Literal size of the runtimeconfig.bin byte array data
+    /// </summary>
+    public ITaskItem? BundledRuntimeConfig { get; set; }
+
     public bool StripDebugSymbols { get; set; }
 
     /// <summary>
@@ -92,6 +105,12 @@ public class LibraryBuilderTask : AppBuilderTask
     /// </summary>
     [Output]
     public string OutputPath { get; set; } = ""!;
+
+    /// <summary>
+    /// The set of exported symbols identified by the aot compiler.
+    /// </summary>
+    [Output]
+    public string[] ExportedSymbols { get; set; } = Array.Empty<string>();
 
     private string MobileSymbolFileName
     {
@@ -152,7 +171,6 @@ public class LibraryBuilderTask : AppBuilderTask
     private void GatherAotSourcesObjects(StringBuilder aotSources, StringBuilder aotObjects, StringBuilder extraSources, StringBuilder linkerArgs)
     {
         List<string> exportedSymbols = new List<string>();
-        bool hasExports = false;
 
         foreach (CompiledAssembly compiledAssembly in CompiledAssemblies)
         {
@@ -173,42 +191,46 @@ public class LibraryBuilderTask : AppBuilderTask
 
             if (!string.IsNullOrEmpty(compiledAssembly.ExportsFile))
             {
-                hasExports = true;
-
                 int symbolsAdded = GatherExportedSymbols(compiledAssembly.ExportsFile, exportedSymbols);
 
                 if (symbolsAdded > 0)
                 {
-                    exportedAssemblies.Add(Path.GetFileNameWithoutExtension(compiledAssembly.Path));
+                    exportedAssemblies.Add(Path.GetFileName(compiledAssembly.Path));
                 }
             }
         }
-        if (IsSharedLibrary && exportedAssemblies.Count == 0)
+
+        if (exportedAssemblies.Count == 0)
         {
-            throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. Resulting shared library would be unusable.");
+            throw new LogAsErrorException($"None of the compiled assemblies contain exported symbols. The library must export only symbols resulting from [UnmanageCallersOnly(Entrypoint = )]Resulting shared library would be unusable.");
         }
 
-        // for android, all symbols to keep go in one linker script
-        //
-        // for ios, multiple files can be specified
-        if (hasExports && TargetOS == "android")
+        if (IsSharedLibrary)
         {
-            WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
-            WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
-        }
-        else if (hasExports && exportedSymbols.Count > 0)
-        {
-            File.WriteAllText(
-                MobileSymbolFileName,
-                string.Join("\n", exportedSymbols.Select(symbol => symbol))
-            );
-            WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
+            // for android, all symbols to keep go in one linker script
+            //
+            // for ios, multiple files can be specified
+            if (TargetOS == "android")
+            {
+                WriteLinkerScriptFile(MobileSymbolFileName, exportedSymbols);
+                WriteLinkerScriptArg(MobileSymbolFileName, linkerArgs);
+            }
+            else
+            {
+                File.WriteAllText(
+                    MobileSymbolFileName,
+                    string.Join("\n", exportedSymbols.Select(symbol => symbol))
+                );
+                WriteExportedSymbolsArg(MobileSymbolFileName, linkerArgs);
+            }
         }
 
         foreach (ITaskItem item in ExtraSources)
         {
             extraSources.AppendLine($"    {item.ItemSpec}");
         }
+
+        ExportedSymbols = exportedSymbols.ToArray();
     }
 
     private void GatherLinkerArgs(StringBuilder linkerArgs)
@@ -264,10 +286,41 @@ public class LibraryBuilderTask : AppBuilderTask
 
     private void WriteAutoInitializationFromTemplate()
     {
-        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"),
-            Utils.GetEmbeddedResource("autoinit.c")
+        string autoInitialization = Utils.GetEmbeddedResource("autoinit.c")
                 .Replace("%ASSEMBLIES_LOCATION%", !string.IsNullOrEmpty(AssembliesLocation) ? AssembliesLocation : "DOTNET_LIBRARY_ASSEMBLY_PATH")
-                .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier));
+                .Replace("%RUNTIME_IDENTIFIER%", RuntimeIdentifier);
+
+        if (BundlesResources)
+        {
+            string dataSymbol = "NULL";
+            string dataLenSymbol = "0";
+            StringBuilder externBundledResourcesSymbols = new ("#if defined(BUNDLED_RESOURCES)\nextern void mono_register_resources_bundle (void);");
+            if (BundledRuntimeConfig?.ItemSpec != null)
+            {
+                dataSymbol = BundledRuntimeConfig.GetMetadata("DataSymbol");
+                if (string.IsNullOrEmpty(dataSymbol))
+                {
+                    throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataSymbol' metadata.");
+                }
+                dataLenSymbol = BundledRuntimeConfig.GetMetadata("DataLenSymbol");
+                if (string.IsNullOrEmpty(dataLenSymbol))
+                {
+                    throw new LogAsErrorException($"'{nameof(BundledRuntimeConfig)}' does not contain 'DataLenSymbol' metadata.");
+                }
+                externBundledResourcesSymbols.AppendLine();
+                externBundledResourcesSymbols.AppendLine($"extern uint8_t {dataSymbol}[];");
+                externBundledResourcesSymbols.AppendLine($"extern const uint32_t {dataLenSymbol};");
+            }
+
+            externBundledResourcesSymbols.AppendLine("#endif");
+
+            autoInitialization = autoInitialization
+                .Replace("%EXTERN_BUNDLED_RESOURCES_SYMBOLS%", externBundledResourcesSymbols.ToString())
+                .Replace("%RUNTIME_CONFIG_DATA%", dataSymbol)
+                .Replace("%RUNTIME_CONFIG_DATA_LEN%", dataLenSymbol);
+        }
+
+        File.WriteAllText(Path.Combine(OutputDirectory, "autoinit.c"), autoInitialization);
     }
 
     private void GenerateAssembliesLoader()
@@ -307,6 +360,11 @@ public class LibraryBuilderTask : AppBuilderTask
         if (usesAOTDataFile)
         {
             extraDefinitions.AppendLine("add_definitions(-DUSES_AOT_DATA=1)");
+        }
+
+        if (BundlesResources)
+        {
+            extraDefinitions.AppendLine("add_definitions(-DBUNDLED_RESOURCES=1)");
         }
 
         return extraDefinitions.ToString();

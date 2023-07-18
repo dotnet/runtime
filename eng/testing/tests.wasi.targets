@@ -40,7 +40,7 @@
     <_XHarnessArgs Condition="'$(WasmSingleFileBundle)' != 'true'" >$(_XHarnessArgs) --engine-arg=--dir=.</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(IsFunctionalTest)' == 'true'"     >$(_XHarnessArgs) --expected-exit-code=$(ExpectedExitCode)</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgs)' != ''"         >$(_XHarnessArgs) $(WasmXHarnessArgs)</_XHarnessArgs>
-    <_XHarnessArgs Condition="'$(_XHarnessTestsTimeout)' != ''   " >$(_XHarnessArgs) &quot;--timeout=$(_XHarnessTestsTimeout)&quot;</_XHarnessArgs>
+    <_XHarnessArgs Condition="'$(WasmXHarnessTestsTimeout)' != ''" >$(_XHarnessArgs) &quot;--timeout=$(WasmXHarnessTestsTimeout)&quot;</_XHarnessArgs>
     <_XHarnessArgs Condition="'$(WasmXHarnessArgsCli)' != ''"      >$(_XHarnessArgs) $(WasmXHarnessArgsCli)</_XHarnessArgs>
     
     <_InvariantGlobalization Condition="'$(InvariantGlobalization)' == 'true'">--env=DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=true</_InvariantGlobalization>
@@ -90,7 +90,16 @@
       <WasmInvariantGlobalization>$(InvariantGlobalization)</WasmInvariantGlobalization>
 
       <WasmNativeDebugSymbols Condition="'$(DebuggerSupport)' == 'true' and '$(WasmNativeDebugSymbols)' == ''">true</WasmNativeDebugSymbols>
-      <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(WasmDebugLevel)' == ''">-1</WasmDebugLevel>
+      <!--
+        Do this *after* importing WasmApp.targets. tests.wasm.targets sets this to `reset-to-zero` to indicate
+        that we want to force this value to zero.
+
+        WasmApp.targets *overrides* `WasmDebugLevel` when `DebuggerSupport=true`, but for the library tests
+        we explicitly want to:
+        1. build with DebuggerSupport=true so the debugger attributes are preserved by the linker;
+        2. *debugging* is disabled at run time so the interpreter optimizations don't get disabled.
+      -->
+      <WasmDebugLevel Condition="'$(WasmDebugLevel)' == 'reset-to-zero'">0</WasmDebugLevel>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(IncludeSatelliteAssembliesInVFS)' == 'true' and '$(BuildAOTTestsOnHelix)' != 'true'">

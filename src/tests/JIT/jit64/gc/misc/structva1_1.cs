@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 
 struct Pad
 {
@@ -85,9 +86,9 @@ struct S
     }
 }
 
-class Test_structva1_1
+public class Test_structva1_1
 {
-    public static void c(params object[] pp)
+    private static void c(params object[] pp)
     {
         for (int i = 0; i < pp.GetLength(0); i++)
         {
@@ -95,7 +96,8 @@ class Test_structva1_1
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         S sM = new S("test");
 

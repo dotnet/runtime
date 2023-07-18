@@ -32,14 +32,8 @@ namespace JIT.HardwareIntrinsics.X86
                 // Validates calling via reflection works, using Unsafe.ReadUnaligned
                 test.RunReflectionScenario_UnsafeRead();
 
-                // Validates passing a static member works
-                test.RunClsVarScenario();
-
                 // Validates passing a local works, using Unsafe.ReadUnaligned
                 test.RunLclVarScenario_UnsafeRead();
-
-                // Validates passing the field of a local class works
-                test.RunClassLclFldScenario();
 
                 // Validates passing an instance member of a class works
                 test.RunClassFldScenario();
@@ -86,20 +80,13 @@ namespace JIT.HardwareIntrinsics.X86
 
         private static {Op1BaseType} _data;
 
-        private static {Op1BaseType} _clsVar;
-
         private {Op1BaseType} _fld;
-
-        static ScalarUnaryOpTest__{Method}{RetBaseType}()
-        {
-            _clsVar = {NextValueOp1};
-        }
 
         public ScalarUnaryOpTest__{Method}{RetBaseType}()
         {
             Succeeded = true;
 
-            
+
             _fld = {NextValueOp1};
             _data = {NextValueOp1};
         }
@@ -131,17 +118,6 @@ namespace JIT.HardwareIntrinsics.X86
             ValidateResult(_data, ({RetBaseType})result);
         }
 
-        public void RunClsVarScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
-
-            var result = {Isa}.{Method}(
-                _clsVar
-            );
-
-            ValidateResult(_clsVar, result);
-        }
-
         public void RunLclVarScenario_UnsafeRead()
         {
             TestLibrary.TestFramework.BeginScenario(nameof(RunLclVarScenario_UnsafeRead));
@@ -150,16 +126,6 @@ namespace JIT.HardwareIntrinsics.X86
             var result = {Isa}.{Method}(data);
 
             ValidateResult(data, result);
-        }
-
-        public void RunClassLclFldScenario()
-        {
-            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
-
-            var test = new ScalarUnaryOpTest__{Method}{RetBaseType}();
-            var result = {Isa}.{Method}(test._fld);
-
-            ValidateResult(test._fld, result);
         }
 
         public void RunClassFldScenario()

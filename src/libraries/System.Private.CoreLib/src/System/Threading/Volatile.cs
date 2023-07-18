@@ -10,8 +10,8 @@ namespace System.Threading
     /// <summary>Methods for accessing memory with volatile semantics.</summary>
     public static unsafe class Volatile
     {
-        // The VM may replace these implementations with more efficient ones in some cases.
-        // In coreclr, for example, see getILIntrinsicImplementationForVolatile() in jitinterface.cpp.
+        // The runtime may replace these implementations with more efficient ones in some cases.
+        // In coreclr, for example, see importercalls.cpp.
 
         #region Boolean
         private struct VolatileBoolean { public volatile bool Value; }

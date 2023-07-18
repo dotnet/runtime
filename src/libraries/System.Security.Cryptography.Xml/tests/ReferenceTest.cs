@@ -10,9 +10,11 @@
 // (C) 2004 Novell (http://www.novell.com)
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.IO;
 using System.Text;
 using System.Xml;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Security.Cryptography.Xml.Tests
@@ -126,9 +128,15 @@ namespace System.Security.Cryptography.Xml.Tests
             Assert.Equal(1, reference.TransformChain.Count);
         }
 
-        [Fact]
+        [ConditionalFact]
         public void LoadXsltTransforms()
         {
+#if NETCOREAPP
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                throw new SkipTestException("XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389");
+            }
+#endif
             string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms>";
             test += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
             test += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
@@ -151,13 +159,23 @@ namespace System.Security.Cryptography.Xml.Tests
         public void LoadAllTransforms()
         {
             string test = "<Reference xmlns=\"http://www.w3.org/2000/09/xmldsig#\"><Transforms><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#base64\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315\" /><Transform Algorithm=\"http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments\" /><Transform Algorithm=\"http://www.w3.org/2000/09/xmldsig#enveloped-signature\" /><Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xpath-19991116\"><XPath /></Transform>";
-            test += "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
-            test += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
-            test += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
-            test += "<xsl:template match=\"/\"><html><head><title>Notaries</title>";
-            test += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
-            test += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
-            test += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
+            string xsltTransform = "<Transform Algorithm=\"http://www.w3.org/TR/1999/REC-xslt-19991116\">";
+            xsltTransform += "<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" xmlns=\"http://www.w3.org/TR/xhtml1/strict\" exclude-result-prefixes=\"foo\" version=\"1.0\">";
+            xsltTransform += "<xsl:output encoding=\"UTF-8\" indent=\"no\" method=\"xml\" />";
+            xsltTransform += "<xsl:template match=\"/\"><html><head><title>Notaries</title>";
+            xsltTransform += "</head><body><table><xsl:for-each select=\"Notaries/Notary\">";
+            xsltTransform += "<tr><th><xsl:value-of select=\"@name\" /></th></tr></xsl:for-each>";
+            xsltTransform += "</table></body></html></xsl:template></xsl:stylesheet></Transform>";
+            int expectedTransformsCount = 6;
+#if NETCOREAPP
+            if (!RuntimeFeature.IsDynamicCodeSupported)
+            {
+                // XSLTs are only supported when dynamic code is supported. See https://github.com/dotnet/runtime/issues/84389
+                xsltTransform = "";
+                expectedTransformsCount = 5;
+            }
+#endif
+            test += xsltTransform;
             test += "</Transforms><DigestMethod Algorithm=\"http://www.w3.org/2000/09/xmldsig#sha1\" /><DigestValue>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</DigestValue></Reference>";
             Reference reference = new Reference();
             XmlDocument doc = new XmlDocument();
@@ -165,7 +183,7 @@ namespace System.Security.Cryptography.Xml.Tests
             reference.LoadXml(doc.DocumentElement);
             string result = reference.GetXml().OuterXml;
             Assert.Equal(test, result);
-            Assert.Equal(6, reference.TransformChain.Count);
+            Assert.Equal(expectedTransformsCount, reference.TransformChain.Count);
         }
 
         [Fact]

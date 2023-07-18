@@ -65,7 +65,7 @@ static HRESULT appendStrW(CQuickBytes *out, const WCHAR* str)
     }
     CONTRACTL_END
 
-    SIZE_T len = wcslen(str) * sizeof(WCHAR);
+    SIZE_T len = u16_strlen(str) * sizeof(WCHAR);
     SIZE_T oldSize = out->Size();
     if (FAILED(out->ReSizeNoThrow(oldSize + len)))
         return E_OUTOFMEMORY;

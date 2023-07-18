@@ -16,12 +16,7 @@ namespace System.Xml
 
         protected internal XmlProcessingInstruction(string target, string? data, XmlDocument doc) : base(doc)
         {
-            ArgumentNullException.ThrowIfNull(target);
-
-            if (target.Length == 0)
-            {
-                throw new ArgumentException(SR.Xml_EmptyName, nameof(target));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(target);
 
             _target = target;
             _data = data ?? string.Empty;

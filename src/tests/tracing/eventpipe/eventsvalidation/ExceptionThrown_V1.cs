@@ -20,16 +20,22 @@ namespace Tracing.Tests.ExceptionThrown_V1
                 new EventPipeProvider("Microsoft-Windows-DotNETRuntime", EventLevel.Warning, 0b1000_0000_0000_0000)
             };
 
-            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024);
+            bool enableRundown = TestLibrary.Utilities.IsNativeAot? false: true;
+            Dictionary<string, ExpectedEventCount> _expectedEventCounts = TestLibrary.Utilities.IsNativeAot? _expectedEventCountsNativeAOT: _expectedEventCountsCoreCLR;
+
+            return IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, 1024, enableRundownProvider:enableRundown);
         }
 
-        private static Dictionary<string, ExpectedEventCount> _expectedEventCounts = new Dictionary<string, ExpectedEventCount>()
+        private static Dictionary<string, ExpectedEventCount> _expectedEventCountsCoreCLR = new Dictionary<string, ExpectedEventCount>()
         {
             { "Microsoft-Windows-DotNETRuntime", new ExpectedEventCount(1000, 0.2f) },
             { "Microsoft-Windows-DotNETRuntimeRundown", -1 },
             { "Microsoft-DotNETCore-SampleProfiler", -1 }
         };
-
+        private static Dictionary<string, ExpectedEventCount> _expectedEventCountsNativeAOT = new Dictionary<string, ExpectedEventCount>()
+        {
+            { "Microsoft-Windows-DotNETRuntime", new ExpectedEventCount(1000, 0.2f) }
+        };
         private static Action _eventGeneratingAction = () =>
         {
             for (int i = 0; i < 1000; i++)

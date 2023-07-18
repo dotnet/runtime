@@ -336,10 +336,7 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
             // Use a double indirection
             GenTree* addr =
                 gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)pAddrOfCaptureThreadGlobal, GTF_ICON_CONST_PTR, true);
-
-            value = gtNewOperNode(GT_IND, TYP_INT, addr);
-            // This indirection won't cause an exception.
-            value->gtFlags |= GTF_IND_NONFAULTING;
+            value = gtNewIndir(TYP_INT, addr, GTF_IND_NONFAULTING);
         }
         else
         {
@@ -434,347 +431,6 @@ BasicBlock* Compiler::fgCreateGCPoll(GCPollType pollType, BasicBlock* block)
     }
 
     return createdPollBlocks ? bottom : block;
-}
-
-//------------------------------------------------------------------------------
-// fgExpandStaticInit: Partially expand static initialization calls, e.g.:
-//
-//    tmp = CORINFO_HELP_X_NONGCSTATIC_BASE();
-//
-// into:
-//
-//    if (isClassAlreadyInited)
-//        CORINFO_HELP_X_NONGCSTATIC_BASE();
-//    tmp = fastPath;
-//
-// Returns:
-//    PhaseStatus indicating what, if anything, was changed.
-//
-PhaseStatus Compiler::fgExpandStaticInit()
-{
-    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
-
-    if (!doesMethodHaveStaticInit())
-    {
-        // TP: nothing to expand in the current method
-        JITDUMP("Nothing to expand.\n")
-        return result;
-    }
-
-    if (opts.OptimizationDisabled())
-    {
-        JITDUMP("Optimizations aren't allowed - bail out.\n")
-        return result;
-    }
-
-    // TODO: Replace with opts.compCodeOpt once it's fixed
-    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
-    if (preferSize)
-    {
-        // The optimization comes with a codegen size increase
-        JITDUMP("Optimized for size - bail out.\n")
-        return result;
-    }
-
-    for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
-    {
-        if (block->isRunRarely())
-        {
-            // It's just an optimization - don't waste time on rarely executed blocks
-            continue;
-        }
-
-        // Expand and visit the last block again to find more candidates
-        while (fgExpandStaticInitForBlock(block))
-        {
-            result = PhaseStatus::MODIFIED_EVERYTHING;
-        }
-    }
-    return result;
-}
-
-//------------------------------------------------------------------------------
-// fgExpandStaticInitForCall: Partially expand given static initialization call.
-//    Also, see fgExpandStaticInit's comments.
-//
-// Arguments:
-//    block  - call's block
-//    stmt   - call's statement
-//    call   - call that represents a static initialization
-//
-// Returns:
-//    true if a static initialization was expanded
-//
-bool Compiler::fgExpandStaticInitForCall(BasicBlock* block, Statement* stmt, GenTreeCall* call)
-{
-    bool                    isGc       = false;
-    StaticHelperReturnValue retValKind = {};
-    if (!IsStaticHelperEligibleForExpansion(call, &isGc, &retValKind))
-    {
-        return false;
-    }
-
-    assert(!call->IsTailCall());
-
-    if (call->gtInitClsHnd == NO_CLASS_HANDLE)
-    {
-        assert(!"helper call was created without gtInitClsHnd or already visited");
-        return false;
-    }
-
-    int                  isInitOffset = 0;
-    CORINFO_CONST_LOOKUP flagAddr     = {};
-    if (!info.compCompHnd->getIsClassInitedFlagAddress(call->gtInitClsHnd, &flagAddr, &isInitOffset))
-    {
-        JITDUMP("getIsClassInitedFlagAddress returned false - bail out.\n")
-        return false;
-    }
-
-    CORINFO_CONST_LOOKUP staticBaseAddr = {};
-    if ((retValKind == SHRV_STATIC_BASE_PTR) &&
-        !info.compCompHnd->getStaticBaseAddress(call->gtInitClsHnd, isGc, &staticBaseAddr))
-    {
-        JITDUMP("getStaticBaseAddress returned false - bail out.\n")
-        return false;
-    }
-
-    JITDUMP("Expanding static initialization for '%s', call: [%06d] in " FMT_BB "\n",
-            eeGetClassName(call->gtInitClsHnd), dspTreeID(call), block->bbNum)
-
-    DebugInfo debugInfo = stmt->GetDebugInfo();
-
-    // Split block right before the call tree
-    BasicBlock* prevBb       = block;
-    GenTree**   callUse      = nullptr;
-    Statement*  newFirstStmt = nullptr;
-    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
-    assert(prevBb != nullptr && block != nullptr);
-
-    // Block ops inserted by the split need to be morphed here since we are after morph.
-    // We cannot morph stmt yet as we may modify it further below, and the morphing
-    // could invalidate callUse.
-    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
-    {
-        fgMorphStmtBlockOps(block, newFirstStmt);
-        newFirstStmt = newFirstStmt->GetNextStmt();
-    }
-
-    //
-    // Create new blocks. Essentially, we want to transform this:
-    //
-    //   staticBase = helperCall();
-    //
-    // into:
-    //
-    //   if (!isInitialized)
-    //   {
-    //       helperCall(); // we don't use its return value
-    //   }
-    //   staticBase = fastPath;
-    //
-
-    // The initialization check looks like this for JIT:
-    //
-    // *  JTRUE     void
-    // \--*  EQ        int
-    //    +--*  AND       int
-    //    |  +--*  IND       int
-    //    |  |  \--*  CNS_INT(h) long   0x.... const ptr
-    //    |  \--*  CNS_INT   int    1 (bit mask)
-    //    \--*  CNS_INT   int    1
-    //
-    // For NativeAOT it's:
-    //
-    // *  JTRUE     void
-    // \--*  EQ        int
-    //    +--*  IND       nint
-    //    |  \--*  ADD       long
-    //    |     +--*  CNS_INT(h) long   0x.... const ptr
-    //    |     \--*  CNS_INT   int    -8 (offset)
-    //    \--*  CNS_INT   int    0
-    //
-    assert(flagAddr.accessType == IAT_VALUE);
-
-    GenTree* cachedStaticBase = nullptr;
-    GenTree* isInitedActualValueNode;
-    GenTree* isInitedExpectedValue;
-    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
-    {
-        GenTree* baseAddr = gtNewIconHandleNode((size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR);
-
-        // Save it to a temp - we'll be using its value for the replacementNode.
-        // This leads to some size savings on NativeAOT
-        if ((staticBaseAddr.addr == flagAddr.addr) && (staticBaseAddr.accessType == flagAddr.accessType))
-        {
-            cachedStaticBase = fgInsertCommaFormTemp(&baseAddr);
-        }
-
-        // Don't fold ADD(CNS1, CNS2) here since the result won't be reloc-friendly for AOT
-        GenTree* offsetNode     = gtNewOperNode(GT_ADD, TYP_I_IMPL, baseAddr, gtNewIconNode(isInitOffset));
-        isInitedActualValueNode = gtNewIndir(TYP_I_IMPL, offsetNode, GTF_IND_NONFAULTING);
-        isInitedActualValueNode->gtFlags |= GTF_GLOB_REF;
-
-        // 0 means "initialized" on NativeAOT
-        isInitedExpectedValue = gtNewIconNode(0, TYP_I_IMPL);
-    }
-    else
-    {
-        assert(isInitOffset == 0);
-
-        isInitedActualValueNode = gtNewIndOfIconHandleNode(TYP_INT, (size_t)flagAddr.addr, GTF_ICON_GLOBAL_PTR, false);
-
-        // Check ClassInitFlags::INITIALIZED_FLAG bit
-        isInitedActualValueNode = gtNewOperNode(GT_AND, TYP_INT, isInitedActualValueNode, gtNewIconNode(1));
-        isInitedExpectedValue   = gtNewIconNode(1);
-    }
-
-    GenTree* isInitedCmp = gtNewOperNode(GT_EQ, TYP_INT, isInitedActualValueNode, isInitedExpectedValue);
-    isInitedCmp->gtFlags |= GTF_RELOP_JMP_USED;
-    BasicBlock* isInitedBb =
-        fgNewBBFromTreeAfter(BBJ_COND, prevBb, gtNewOperNode(GT_JTRUE, TYP_VOID, isInitedCmp), debugInfo);
-
-    // Fallback basic block
-    // TODO-CQ: for JIT we can replace the original call with CORINFO_HELP_INITCLASS
-    // that only accepts a single argument
-    BasicBlock* helperCallBb = fgNewBBFromTreeAfter(BBJ_NONE, isInitedBb, call, debugInfo, true);
-
-    GenTree* replacementNode = nullptr;
-    if (retValKind == SHRV_STATIC_BASE_PTR)
-    {
-        // Replace the call with a constant pointer to the statics base
-        assert(staticBaseAddr.addr != nullptr);
-
-        // Use local if the addressed is already materialized and cached
-        if (cachedStaticBase != nullptr)
-        {
-            assert(staticBaseAddr.accessType == IAT_VALUE);
-            replacementNode = cachedStaticBase;
-        }
-        else if (staticBaseAddr.accessType == IAT_VALUE)
-        {
-            replacementNode = gtNewIconHandleNode((size_t)staticBaseAddr.addr, GTF_ICON_STATIC_HDL);
-        }
-        else
-        {
-            assert(staticBaseAddr.accessType == IAT_PVALUE);
-            replacementNode =
-                gtNewIndOfIconHandleNode(TYP_I_IMPL, (size_t)staticBaseAddr.addr, GTF_ICON_GLOBAL_PTR, false);
-        }
-    }
-
-    if (replacementNode == nullptr)
-    {
-        (*callUse)->gtBashToNOP();
-    }
-    else
-    {
-        *callUse = replacementNode;
-    }
-
-    fgMorphStmtBlockOps(block, stmt);
-    gtUpdateStmtSideEffects(stmt);
-
-    // Final block layout looks like this:
-    //
-    // prevBb(BBJ_NONE):                    [weight: 1.0]
-    //     ...
-    //
-    // isInitedBb(BBJ_COND):                [weight: 1.0]
-    //     if (isInited)
-    //         goto block;
-    //
-    // helperCallBb(BBJ_NONE):              [weight: 0.0]
-    //     helperCall();
-    //
-    // block(...):                          [weight: 1.0]
-    //     use(staticBase);
-    //
-    // Whether we use helperCall's value or not depends on the helper itself.
-
-    //
-    // Update preds in all new blocks
-    //
-
-    // Unlink block and prevBb
-    fgRemoveRefPred(block, prevBb);
-
-    // Block has two preds now: either isInitedBb or helperCallBb
-    fgAddRefPred(block, isInitedBb);
-    fgAddRefPred(block, helperCallBb);
-
-    // prevBb always flow into isInitedBb
-    fgAddRefPred(isInitedBb, prevBb);
-
-    // Both fastPathBb and helperCallBb have a single common pred - isInitedBb
-    fgAddRefPred(helperCallBb, isInitedBb);
-
-    // helperCallBb unconditionally jumps to the last block (jumps over fastPathBb)
-    isInitedBb->bbJumpDest = block;
-
-    //
-    // Re-distribute weights
-    //
-
-    block->inheritWeight(prevBb);
-    isInitedBb->inheritWeight(prevBb);
-    helperCallBb->bbSetRunRarely();
-
-    //
-    // Update loop info if loop table is known to be valid
-    //
-
-    isInitedBb->bbNatLoopNum   = prevBb->bbNatLoopNum;
-    helperCallBb->bbNatLoopNum = prevBb->bbNatLoopNum;
-
-    // All blocks are expected to be in the same EH region
-    assert(BasicBlock::sameEHRegion(prevBb, block));
-    assert(BasicBlock::sameEHRegion(prevBb, isInitedBb));
-
-    // Extra step: merge prevBb with isInitedBb if possible
-    if (fgCanCompactBlocks(prevBb, isInitedBb))
-    {
-        fgCompactBlocks(prevBb, isInitedBb);
-    }
-
-    // Clear gtInitClsHnd as a mark that we've already visited this call
-    call->gtInitClsHnd = NO_CLASS_HANDLE;
-    return true;
-}
-
-//------------------------------------------------------------------------------
-// fgExpandStaticInitForBlock: Partially expand static initialization calls, in
-//    the given block. Also, see fgExpandStaticInit's comments
-//
-// Arguments:
-//    block   - block to scan for static initializations
-//
-// Returns:
-//    true if a static initialization was found and expanded
-//
-bool Compiler::fgExpandStaticInitForBlock(BasicBlock* block)
-{
-    for (Statement* const stmt : block->NonPhiStatements())
-    {
-        if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
-        {
-            // TP: Stmt has no calls - bail out
-            continue;
-        }
-
-        for (GenTree* const tree : stmt->TreeList())
-        {
-            if (!tree->IsHelperCall())
-            {
-                continue;
-            }
-
-            if (fgExpandStaticInitForCall(block, stmt, tree->AsCall()))
-            {
-                return true;
-            }
-        }
-    }
-    return false;
 }
 
 //------------------------------------------------------------------------
@@ -1035,7 +691,20 @@ bool Compiler::fgIsCommaThrow(GenTree* tree, bool forFolding /* = false */)
     return false;
 }
 
-GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper)
+//------------------------------------------------------------------------
+// fgGetStaticsCCtorHelper: Creates a BasicBlock from the `tree` node.
+//
+// Arguments:
+//    cls       - The class handle
+//    helper    - The helper function
+//    typeIndex - The static block type index. Used only for
+//                CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED or
+//                CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED to cache
+//                the static block in an array at index typeIndex.
+//
+// Return Value:
+//    The call node corresponding to the helper
+GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper, uint32_t typeIndex)
 {
     bool         bNeedClassID = true;
     GenTreeFlags callFlags    = GTF_EMPTY;
@@ -1047,6 +716,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
     switch (helper)
     {
         case CORINFO_HELP_GETSHARED_GCSTATIC_BASE_NOCTOR:
+        case CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
             bNeedClassID = false;
             FALLTHROUGH;
 
@@ -1063,6 +733,7 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
             // type = TYP_BYREF;
             break;
 
+        case CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED:
         case CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE_NOCTOR:
             bNeedClassID = false;
             FALLTHROUGH;
@@ -1125,6 +796,12 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         }
 
         result = gtNewHelperCallNode(helper, type, opModuleIDArg, opClassIDArg);
+    }
+    else if ((helper == CORINFO_HELP_GETSHARED_NONGCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED) ||
+             (helper == CORINFO_HELP_GETSHARED_GCTHREADSTATIC_BASE_NOCTOR_OPTIMIZED))
+    {
+        result = gtNewHelperCallNode(helper, type, gtNewIconNode(typeIndex));
+        result->SetExpTLSFieldAccess();
     }
     else
     {
@@ -1221,6 +898,9 @@ bool Compiler::fgAddrCouldBeNull(GenTree* addr)
 
         case GT_COMMA:
             return fgAddrCouldBeNull(addr->AsOp()->gtOp2);
+
+        case GT_CALL:
+            return !addr->IsHelperCall() || !s_helperCallProperties.NonNullReturn(addr->AsCall()->GetHelperNum());
 
         case GT_ADD:
             if (addr->AsOp()->gtOp1->gtOper == GT_CNS_INT)
@@ -1548,47 +1228,6 @@ bool Compiler::fgCastNeeded(GenTree* tree, var_types toType)
     // Looks like we will need the cast
     //
     return true;
-}
-
-// If assigning to a local var, add a cast if the target is
-// marked as NormalizedOnStore. Returns true if any change was made
-GenTree* Compiler::fgDoNormalizeOnStore(GenTree* tree)
-{
-    //
-    // Only normalize the stores in the global morph phase
-    //
-    if (fgGlobalMorph)
-    {
-        noway_assert(tree->OperGet() == GT_ASG);
-
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->AsOp()->gtOp2;
-
-        if (op1->gtOper == GT_LCL_VAR && genActualType(op1->TypeGet()) == TYP_INT)
-        {
-            // Small-typed arguments and aliased locals are normalized on load.
-            // Other small-typed locals are normalized on store.
-            // If it is an assignment to one of the latter, insert the cast on RHS
-            LclVarDsc* varDsc = lvaGetDesc(op1->AsLclVarCommon()->GetLclNum());
-
-            if (varDsc->lvNormalizeOnStore())
-            {
-                noway_assert(op1->gtType <= TYP_INT);
-                op1->gtType = TYP_INT;
-
-                if (fgCastNeeded(op2, varDsc->TypeGet()))
-                {
-                    op2                 = gtNewCastNode(TYP_INT, op2, false, varDsc->TypeGet());
-                    tree->AsOp()->gtOp2 = op2;
-
-                    // Propagate GTF_COLON_COND
-                    op2->gtFlags |= (tree->gtFlags & GTF_COLON_COND);
-                }
-            }
-        }
-    }
-
-    return tree;
 }
 
 /*****************************************************************************
@@ -2043,9 +1682,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     //
     if (!opts.IsOSR())
     {
-        GenTree* zero     = gtNewZeroConNode(genActualType(typeMonAcquired));
-        GenTree* varNode  = gtNewLclvNode(lvaMonAcquired, typeMonAcquired);
-        GenTree* initNode = gtNewAssignNode(varNode, zero);
+        GenTree* zero     = gtNewZeroConNode(typeMonAcquired);
+        GenTree* initNode = gtNewStoreLclVarNode(lvaMonAcquired, zero);
 
         fgNewStmtAtEnd(fgFirstBB, initNode);
 
@@ -2070,9 +1708,8 @@ void Compiler::fgAddSyncMethodEnterExit()
         lvaCopyThis                  = lvaGrabTemp(true DEBUGARG("Synchronized method copy of this for handler"));
         lvaTable[lvaCopyThis].lvType = TYP_REF;
 
-        GenTree* thisNode = gtNewLclvNode(info.compThisArg, TYP_REF);
-        GenTree* copyNode = gtNewLclvNode(lvaCopyThis, TYP_REF);
-        GenTree* initNode = gtNewAssignNode(copyNode, thisNode);
+        GenTree* thisNode = gtNewLclVarNode(info.compThisArg);
+        GenTree* initNode = gtNewStoreLclVarNode(lvaCopyThis, thisNode);
 
         fgNewStmtAtEnd(tryBegBB, initNode);
     }
@@ -2137,8 +1774,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 
     if (block->bbJumpKind == BBJ_RETURN && block->lastStmt()->GetRootNode()->gtOper == GT_RETURN)
     {
-        GenTree* retNode = block->lastStmt()->GetRootNode();
-        GenTree* retExpr = retNode->AsOp()->gtOp1;
+        GenTreeUnOp* retNode = block->lastStmt()->GetRootNode()->AsUnOp();
+        GenTree*     retExpr = retNode->gtOp1;
 
         if (retExpr != nullptr)
         {
@@ -2146,25 +1783,16 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
             // ret(...) ->
             // ret(comma(comma(tmp=...,call mon_exit), tmp))
             //
-            //
-            // Before morph stage, it is possible to have a case of GT_RETURN(TYP_LONG, op1) where op1's type is
-            // TYP_STRUCT (of 8-bytes) and op1 is call node. See the big comment block in impReturnInstruction()
-            // for details for the case where info.compRetType is not the same as info.compRetNativeType.  For
-            // this reason pass compMethodInfo->args.retTypeClass which is guaranteed to be a valid class handle
-            // if the return type is a value class.  Note that fgInsertCommFormTemp() in turn uses this class handle
-            // if the type of op1 is TYP_STRUCT to perform lvaSetStruct() on the new temp that is created, which
-            // in turn passes it to VM to know the size of value type.
-            GenTree* temp = fgInsertCommaFormTemp(&retNode->AsOp()->gtOp1, info.compMethodInfo->args.retTypeClass);
+            TempInfo tempInfo = fgMakeTemp(retExpr);
+            GenTree* lclVar   = tempInfo.load;
 
-            GenTree* lclVar = retNode->AsOp()->gtOp1->AsOp()->gtOp2;
-
-            // The return can't handle all of the trees that could be on the right-hand-side of an assignment,
-            // especially in the case of a struct. Therefore, we need to propagate GTF_DONT_CSE.
-            // If we don't, assertion propagation may, e.g., change a return of a local to a return of "CNS_INT   struct
-            // 0",
-            // which downstream phases can't handle.
+            // TODO-1stClassStructs: delete this NO_CSE propagation. Requires handling multi-regs in copy prop.
             lclVar->gtFlags |= (retExpr->gtFlags & GTF_DONT_CSE);
-            retNode->AsOp()->gtOp1->AsOp()->gtOp2 = gtNewOperNode(GT_COMMA, retExpr->TypeGet(), tree, lclVar);
+
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tree, lclVar);
+            retExpr        = gtNewOperNode(GT_COMMA, lclVar->TypeGet(), tempInfo.store, retExpr);
+            retNode->gtOp1 = retExpr;
+            retNode->AddAllEffectsFlags(retExpr);
         }
         else
         {
@@ -2891,32 +2519,15 @@ PhaseStatus Compiler::fgAddInternal()
             noway_assert(lvaTable[lvaArg0Var].IsAddressExposed() || lvaTable[lvaArg0Var].lvHasILStoreOp ||
                          lva0CopiedForGenericsCtxt);
 
-            var_types thisType = lvaTable[info.compThisArg].TypeGet();
-
-            // Now assign the original input "this" to the temp
-
-            GenTree* tree;
-
-            tree = gtNewLclvNode(lvaArg0Var, thisType);
-
-            tree = gtNewAssignNode(tree,                                     // dst
-                                   gtNewLclvNode(info.compThisArg, thisType) // src
-                                   );
-
-            /* Create a new basic block and stick the assignment in it */
+            // Now assign the original input "this" to the temp.
+            GenTree* store = gtNewStoreLclVarNode(lvaArg0Var, gtNewLclVarNode(info.compThisArg));
 
             fgEnsureFirstBBisScratch();
+            fgNewStmtAtEnd(fgFirstBB, store);
 
-            fgNewStmtAtEnd(fgFirstBB, tree);
-
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
-                gtDispTree(tree);
-                printf("\n");
-            }
-#endif
+            JITDUMP("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
+            DISPTREE(store);
+            JITDUMP("\n");
 
             madeChanges = true;
         }
@@ -3030,7 +2641,7 @@ PhaseStatus Compiler::fgAddInternal()
     {
         // Test the JustMyCode VM global state variable
         GenTree* embNode        = gtNewIconEmbHndNode(dbgHandle, pDbgHandle, GTF_ICON_GLOBAL_PTR, info.compMethodHnd);
-        GenTree* guardCheckVal  = gtNewOperNode(GT_IND, TYP_INT, embNode);
+        GenTree* guardCheckVal  = gtNewIndir(TYP_INT, embNode);
         GenTree* guardCheckCond = gtNewOperNode(GT_EQ, TYP_INT, guardCheckVal, gtNewZeroConNode(TYP_INT));
 
         // Create the callback which will yield the final answer
@@ -3183,13 +2794,6 @@ PhaseStatus Compiler::fgFindOperOrder()
 // Notes:
 //    Lowers GT_ARR_LENGTH, GT_MDARR_LENGTH, GT_MDARR_LOWER_BOUND, GT_BOUNDS_CHECK.
 //
-//    For target ABIs with fixed out args area, computes upper bound on
-//    the size of this area from the calls in the IR.
-//
-//    Outgoing arg area size is computed here because we want to run it
-//    after optimization (in case calls are removed) and need to look at
-//    all possible calls in the method.
-//
 PhaseStatus Compiler::fgSimpleLowering()
 {
     bool madeChanges = false;
@@ -3264,8 +2868,8 @@ PhaseStatus Compiler::fgSimpleLowering()
                     }
 
                     // Change to a GT_IND.
-                    tree->ChangeOperUnchecked(GT_IND);
-                    tree->AsOp()->gtOp1 = addr;
+                    tree->ChangeOper(GT_IND);
+                    tree->AsIndir()->Addr() = addr;
 
                     JITDUMP("After Lower %s:\n", GenTree::OpName(tree->OperGet()));
                     DISPRANGE(LIR::ReadOnlyRange(arr, tree));

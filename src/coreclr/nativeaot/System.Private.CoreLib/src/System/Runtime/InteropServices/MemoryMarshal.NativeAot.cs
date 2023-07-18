@@ -34,6 +34,7 @@ namespace System.Runtime.InteropServices
         /// This technique does not perform array variance checks. The caller must manually perform any array variance checks
         /// if the caller wishes to write to the returned reference.
         /// </remarks>
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref byte GetArrayDataReference(Array array)
         {
@@ -41,7 +42,7 @@ namespace System.Runtime.InteropServices
             // to special-case arrays of known type and dimension.
 
             // See comment on RawArrayData (in RuntimeHelpers.CoreCLR.cs) for details
-            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)array.GetEETypePtr().BaseSize - (nuint)(2 * sizeof(IntPtr)));
+            return ref Unsafe.AddByteOffset(ref Unsafe.As<RawData>(array).Data, (nuint)array.GetMethodTable()->BaseSize - (nuint)(2 * sizeof(IntPtr)));
         }
     }
 }

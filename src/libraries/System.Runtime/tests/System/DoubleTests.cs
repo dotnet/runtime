@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.IO.Tests;
 using System.Linq;
+using System.Text;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -324,6 +325,12 @@ namespace System.Tests
             Assert.Equal(0xFFF00000_00000000u, BitConverter.DoubleToUInt64Bits(double.NegativeInfinity));
         }
 
+        [Fact]
+        public static void NegativeZero()
+        {
+            Assert.Equal(0x80000000_00000000u, BitConverter.DoubleToUInt64Bits(double.NegativeZero));
+        }
+
         public static IEnumerable<object[]> Parse_Valid_TestData()
         {
             NumberStyles defaultStyle = NumberStyles.Float | NumberStyles.AllowThousands;
@@ -615,6 +622,49 @@ namespace System.Tests
             }
         }
 
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, double expected)
+        {
+            bool isDefaultProvider = provider == null || provider == NumberFormatInfo.CurrentInfo;
+
+            double result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            if ((style & ~(NumberStyles.Float | NumberStyles.AllowThousands)) == 0 && style != NumberStyles.None)
+            {
+                // Use Parse(string) or Parse(string, IFormatProvider)
+                if (isDefaultProvider)
+                {
+                    Assert.True(double.TryParse(valueUtf8, out result));
+                    Assert.Equal(expected, result);
+
+                    Assert.Equal(expected, double.Parse(valueUtf8));
+                }
+
+                Assert.Equal(expected, double.Parse(valueUtf8, provider: provider));
+            }
+
+            Assert.Equal(expected, double.Parse(valueUtf8, style, provider));
+
+            Assert.True(double.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+                Assert.Throws(exceptionType, () => double.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(double.TryParse(valueUtf8, style, provider, out double result));
+                Assert.Equal(0, result);
+            }
+        }
+
         [Fact]
         public static void PositiveInfinity()
         {
@@ -842,6 +892,7 @@ namespace System.Tests
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.Is64BitProcess))] // Requires a lot of memory
         [OuterLoop("Takes a long time, allocates a lot of memory")]
+        [SkipOnMono("Frequently throws OOM on Mono")]
         public static void ToString_ValidLargeFormat()
         {
             double d = 123.0;
@@ -941,28 +992,7 @@ namespace System.Tests
 
                     try
                     {
-                        char[] actual;
-                        int charsWritten;
-
-                        // Just right
-                        actual = new char[localExpected.Length];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual));
-
-                        // Longer than needed
-                        actual = new char[localExpected.Length + 1];
-                        Assert.True(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                        Assert.Equal(localExpected.Length, charsWritten);
-                        Assert.Equal(localExpected, new string(actual, 0, charsWritten));
-
-                        // Too short
-                        if (localExpected.Length > 0)
-                        {
-                            actual = new char[localExpected.Length - 1];
-                            Assert.False(localI.TryFormat(actual.AsSpan(), out charsWritten, localFormat, localProvider));
-                            Assert.Equal(0, charsWritten);
-                        }
+                        NumberFormatTestHelper.TryFormatNumberTest(localI, localFormat, localProvider, localExpected, formatCasingMatchesOutput: false);
                     }
                     catch (Exception exc)
                     {
@@ -1654,6 +1684,66 @@ namespace System.Tests
         {
             AssertExtensions.Equal(+expectedResult, double.Lerp(+value1, +value2, amount), 0);
             AssertExtensions.Equal((expectedResult == 0.0) ? expectedResult : -expectedResult, double.Lerp(-value1, -value2, amount), 0);
+        }
+
+        [Theory]
+        [InlineData(double.NaN,               double.NaN,               0.0)]
+        [InlineData(0.0,                      0.0,                      0.0)]
+        [InlineData(0.31830988618379067,      0.005555555555555556,     CrossPlatformMachineEpsilon)]       // value:  (1 / pi)
+        [InlineData(0.43429448190325183,      0.007579868632454674,     CrossPlatformMachineEpsilon)]       // value:  (log10(e))
+        [InlineData(0.5,                      0.008726646259971648,     CrossPlatformMachineEpsilon)]
+        [InlineData(0.63661977236758134,      0.011111111111111112,     CrossPlatformMachineEpsilon)]       // value:  (2 / pi)
+        [InlineData(0.69314718055994531,      0.01209770050168668,      CrossPlatformMachineEpsilon)]       // value:  (ln(2))
+        [InlineData(0.70710678118654752,      0.012341341494884351,     CrossPlatformMachineEpsilon)]       // value:  (1 / sqrt(2))
+        [InlineData(0.78539816339744831,      0.013707783890401885,     CrossPlatformMachineEpsilon)]       // value:  (pi / 4)
+        [InlineData(1.0,                      0.017453292519943295,     CrossPlatformMachineEpsilon)]
+        [InlineData(1.1283791670955126,       0.019693931676727953,     CrossPlatformMachineEpsilon)]       // value:  (2 / sqrt(pi))
+        [InlineData(1.4142135623730950,       0.024682682989768702,     CrossPlatformMachineEpsilon)]       // value:  (sqrt(2))
+        [InlineData(1.4426950408889634,       0.02517977856570663,      CrossPlatformMachineEpsilon)]       // value:  (log2(e))
+        [InlineData(1.5,                      0.02617993877991494,      CrossPlatformMachineEpsilon)]
+        [InlineData(1.5707963267948966,       0.02741556778080377,      CrossPlatformMachineEpsilon)]       // value:  (pi / 2)
+        [InlineData(2.0,                      0.03490658503988659,      CrossPlatformMachineEpsilon)]
+        [InlineData(2.3025850929940457,       0.040187691180085916,     CrossPlatformMachineEpsilon)]       // value:  (ln(10))
+        [InlineData(2.5,                      0.04363323129985824,      CrossPlatformMachineEpsilon)]
+        [InlineData(2.7182818284590452,       0.047442967903742035,     CrossPlatformMachineEpsilon)]       // value:  (e)
+        [InlineData(3.0,                      0.05235987755982988,      CrossPlatformMachineEpsilon)]
+        [InlineData(3.1415926535897932,       0.05483113556160754,      CrossPlatformMachineEpsilon)]       // value:  (pi)
+        [InlineData(3.5,                      0.061086523819801536,     CrossPlatformMachineEpsilon)]
+        [InlineData(double.PositiveInfinity,  double.PositiveInfinity,  0.0)]
+        public static void DegreesToRadiansTest(double value, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, double.DegreesToRadians(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, double.DegreesToRadians(+value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData(double.NaN,               double.NaN,               0.0)]
+        [InlineData(0.0,                      0.0,                      0.0)]
+        [InlineData(0.0055555555555555567,    0.3183098861837906,       CrossPlatformMachineEpsilon)]       // expected:  (1 / pi)
+        [InlineData(0.0075798686324546743,    0.4342944819032518,       CrossPlatformMachineEpsilon)]       // expected:  (log10(e))
+        [InlineData(0.008726646259971648,     0.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.0111111111111111124,    0.6366197723675813,       CrossPlatformMachineEpsilon)]       // expected:  (2 / pi)
+        [InlineData(0.0120977005016866801,    0.6931471805599453,       CrossPlatformMachineEpsilon)]       // expected:  (ln(2))
+        [InlineData(0.0123413414948843512,    0.7071067811865475,       CrossPlatformMachineEpsilon)]       // expected:  (1 / sqrt(2))
+        [InlineData(0.0137077838904018851,    0.7853981633974483,       CrossPlatformMachineEpsilon)]       // expected:  (pi / 4)
+        [InlineData(0.017453292519943295,     1.0,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.019693931676727953,     1.1283791670955126,       CrossPlatformMachineEpsilon)]       // expected:  (2 / sqrt(pi))
+        [InlineData(0.024682682989768702,     1.4142135623730950,       CrossPlatformMachineEpsilon)]       // expected:  (sqrt(2))
+        [InlineData(0.025179778565706630,     1.4426950408889634,       CrossPlatformMachineEpsilon)]       // expected:  (log2(e))
+        [InlineData(0.026179938779914940,     1.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.027415567780803770,     1.5707963267948966,       CrossPlatformMachineEpsilon)]       // expected:  (pi / 2)
+        [InlineData(0.034906585039886590,     2.0,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.040187691180085916,     2.3025850929940457,       CrossPlatformMachineEpsilon)]       // expected:  (ln(10))
+        [InlineData(0.043633231299858240,     2.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.047442967903742035,     2.7182818284590452,       CrossPlatformMachineEpsilon)]       // expected:  (e)
+        [InlineData(0.052359877559829880,     3.0,                      CrossPlatformMachineEpsilon)]
+        [InlineData(0.054831135561607540,     3.1415926535897932,       CrossPlatformMachineEpsilon)]       // expected:  (pi)
+        [InlineData(0.061086523819801536,     3.5,                      CrossPlatformMachineEpsilon)]
+        [InlineData(double.PositiveInfinity,  double.PositiveInfinity,  0.0)]
+        public static void RadiansToDegreesTest(double value, double expectedResult, double allowedVariance)
+        {
+            AssertExtensions.Equal(-expectedResult, double.RadiansToDegrees(-value), allowedVariance);
+            AssertExtensions.Equal(+expectedResult, double.RadiansToDegrees(+value), allowedVariance);
         }
     }
 }

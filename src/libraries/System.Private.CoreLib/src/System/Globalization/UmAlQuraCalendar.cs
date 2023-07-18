@@ -341,7 +341,7 @@ namespace System.Globalization
             // Find the index where we should start our search by quessing the Hijri year that we will be in HijriYearInfo.
             // A Hijri year is 354 or 355 days.  Use 355 days so that we will search from a lower index.
 
-            int index = (int)((time.Ticks - s_minDate.Ticks) / Calendar.TicksPerDay) / 355;
+            int index = (int)((time.Ticks - s_minDate.Ticks) / TicksPerDay) / 355;
             do
             {
             } while (time.CompareTo(s_hijriYearInfo[++index].GregorianDate) > 0); // while greater
@@ -445,7 +445,7 @@ namespace System.Globalization
 
             CheckYearRange(y, UmAlQuraEra);
             DateTime dt = new DateTime(GetAbsoluteDateUmAlQura(y, m, d) * TicksPerDay + time.Ticks % TicksPerDay);
-            Calendar.CheckAddResult(dt.Ticks, MinSupportedDateTime, MaxSupportedDateTime);
+            CheckAddResult(dt.Ticks, MinSupportedDateTime, MaxSupportedDateTime);
             return dt;
         }
 
@@ -591,7 +591,7 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException(null, SR.ArgumentOutOfRange_BadYearMonthDay);
             }
 
-            return new DateTime(lDate * GregorianCalendar.TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
+            return new DateTime(lDate * TicksPerDay + TimeToTicks(hour, minute, second, millisecond));
         }
 
         private const int DefaultTwoDigitYearMax = 1451;

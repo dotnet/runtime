@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 
 namespace System.Runtime
 {
-    [ReflectionBlocked]
     public static class TypeLoaderExports
     {
         public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
@@ -111,10 +110,19 @@ namespace System.Runtime
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot);
-            entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), *(IntPtr*)&slot,
+            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot));
+            if (entry != null)
+                return entry.Result;
+
+            return GVMLookupForSlotSlow(obj, slot);
+        }
+
+        private static unsafe IntPtr GVMLookupForSlotSlow(object obj, RuntimeMethodHandle slot)
+        {
+            Entry entry = CacheMiss((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
+
             return entry.Result;
         }
 
@@ -133,7 +141,11 @@ namespace System.Runtime
         private static Entry LookupInCache(Entry[] cache, IntPtr context, IntPtr signature)
         {
             int key = ((context.GetHashCode() >> 4) ^ signature.GetHashCode()) & (cache.Length - 1);
+#if DEBUG
             Entry entry = cache[key];
+#else
+            Entry entry = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(cache), key);
+#endif
             while (entry != null)
             {
                 if (entry.Context == context && entry.Signature == signature)
@@ -318,7 +330,6 @@ namespace System.Runtime
         }
     }
 
-    [ReflectionBlocked]
     public delegate IntPtr RuntimeObjectFactory(IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult);
 
     internal static unsafe class RawCalliHelper

@@ -61,7 +61,7 @@
 #undef DS_EXIT_BLOCKING_PAL_SECTION
 #define DS_EXIT_BLOCKING_PAL_SECTION \
 	MONO_REQ_GC_SAFE_MODE \
-	MONO_EXIT_GC_SAFE \
+	MONO_EXIT_GC_SAFE; \
 	MONO_REQ_GC_UNSAFE_MODE
 
 bool
@@ -214,8 +214,8 @@ static
 uint32_t
 ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *value)
 {
-	gchar *nameNarrow = ep_rt_utf16le_to_utf8_string (name, ep_rt_utf16_string_len (name));
-	gchar *valueNarrow = ep_rt_utf16le_to_utf8_string (value, ep_rt_utf16_string_len (value));
+	gchar *nameNarrow = ep_rt_utf16le_to_utf8_string (name, -1);
+	gchar *valueNarrow = ep_rt_utf16le_to_utf8_string (value, -1);
 
 	gboolean success = g_setenv(nameNarrow, valueNarrow, true);
 
@@ -223,6 +223,28 @@ ds_rt_set_environment_variable (const ep_char16_t *name, const ep_char16_t *valu
 	g_free (valueNarrow);
 
 	return success ? DS_IPC_S_OK : DS_IPC_E_FAIL;
+}
+
+static
+uint32_t
+ds_rt_enable_perfmap (uint32_t type)
+{
+	return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_disable_perfmap (void)
+{
+	return DS_IPC_E_NOTSUPPORTED;
+}
+
+static
+uint32_t
+ds_rt_apply_startup_hook (const ep_char16_t *startup_hook_path)
+{
+	// TODO: Implement.
+	return DS_IPC_E_NOTSUPPORTED;
 }
 
 /*

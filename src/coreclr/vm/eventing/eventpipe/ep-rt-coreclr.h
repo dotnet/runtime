@@ -1498,7 +1498,7 @@ ep_rt_utf16_string_len (const ep_char16_t *str)
 	STATIC_CONTRACT_NOTHROW;
 	EP_ASSERT (str != NULL);
 
-	return wcslen (reinterpret_cast<LPCWSTR>(str));
+	return u16_strlen (reinterpret_cast<LPCWSTR>(str));
 }
 
 static
