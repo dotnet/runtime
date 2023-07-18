@@ -24,7 +24,7 @@ namespace System.Xml
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreEmptyKeySequencess", ref s_ignoreEmptyKeySequences);
+                return SwitchesHelpers.GetCachedSwitchValue("Switch.System.Xml.IgnoreEmptyKeySequences", ref s_ignoreEmptyKeySequences);
             }
         }
 
