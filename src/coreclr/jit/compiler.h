@@ -540,10 +540,11 @@ public:
     unsigned char lvIsTemp : 1; // Short-lifetime compiler temp
 
 #if FEATURE_IMPLICIT_BYREFS
-    unsigned char lvIsImplicitByRef : 1;              // Set if the argument is an implicit byref.
-    unsigned char lvLastUseCopyOmissionCandidate : 1; // Set if the local appears as a last use that will be passed as
-                                                      // an implicit byref.
-#endif                                                // FEATURE_IMPLICIT_BYREFS
+    // Set if the argument is an implicit byref.
+    unsigned char lvIsImplicitByRef : 1;
+    // Set if the local appears as a last use that will be passed as an implicit byref.
+    unsigned char lvIsLastUseCopyOmissionCandidate : 1;
+#endif // FEATURE_IMPLICIT_BYREFS
 
 #if defined(TARGET_LOONGARCH64)
     unsigned char lvIs4Field1 : 1; // Set if the 1st field is int or float within struct for LA-ABI64.

@@ -3993,7 +3993,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgGlobalMorph)
             {
-                omitCopy = (varDsc->lvLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) &&
+                omitCopy = (varDsc->lvIsLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) &&
                            !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
@@ -4643,7 +4643,7 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     // address.
     if (varDsc->IsAddressExposed()
 #if FEATURE_IMPLICIT_BYREFS
-        || varDsc->lvLastUseCopyOmissionCandidate
+        || varDsc->lvIsLastUseCopyOmissionCandidate
 #endif
         )
     {
@@ -8391,7 +8391,12 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac, bool* optA
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         {
-            if (lvaGetDesc(tree->AsLclVarCommon())->IsAddressExposed())
+            LclVarDsc* lclDsc = lvaGetDesc(tree->AsLclVarCommon());
+            if (lclDsc->IsAddressExposed()
+#if FEATURE_IMPLICIT_BYREFS
+                || lclDsc->lvIsLastUseCopyOmissionCandidate
+#endif
+                )
             {
                 tree->AddAllEffectsFlags(GTF_GLOB_REF);
             }
@@ -14773,7 +14778,7 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                 unsigned   lclNum = argNode->AsLclVarCommon()->GetLclNum();
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
-                if (varDsc->lvLastUseCopyOmissionCandidate)
+                if (varDsc->lvIsLastUseCopyOmissionCandidate)
                 {
                     // Already a candidate.
                     continue;
@@ -14809,7 +14814,7 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                 }
 
                 JITDUMP("Marking V%02u as a candidate for last-use copy omission [%06u]\n", lclNum, dspTreeID(argNode));
-                varDsc->lvLastUseCopyOmissionCandidate = 1;
+                varDsc->lvIsLastUseCopyOmissionCandidate = 1;
             }
 
             return WALK_CONTINUE;
