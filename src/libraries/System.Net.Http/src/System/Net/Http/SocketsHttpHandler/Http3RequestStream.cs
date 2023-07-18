@@ -256,11 +256,14 @@ namespace System.Net.Http
 
                     case Http3ErrorCode.RequestRejected:
                         // The server is rejecting the request without processing it, retry it on a different connection.
-                        throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+                        HttpProtocolException rejectedException = HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        throw new HttpRequestException(SR.net_http_request_aborted, rejectedException, RequestRetryType.RetryOnConnectionFailure, httpRequestError: HttpRequestError.HttpProtocolError);
 
                     default:
                         // Our stream was reset.
-                        throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code));
+                        Exception innerException = _connection.AbortException ?? HttpProtocolException.CreateHttp3StreamException(code, ex);
+                        HttpRequestError httpRequestError = innerException is HttpProtocolException ? HttpRequestError.HttpProtocolError : HttpRequestError.Unknown;
+                        throw new HttpRequestException(SR.net_http_client_execution_error, innerException, httpRequestError: httpRequestError);
                 }
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.ConnectionAborted)
@@ -270,12 +273,12 @@ namespace System.Net.Http
                 Http3ErrorCode code = (Http3ErrorCode)ex.ApplicationErrorCode.Value;
 
                 Exception abortException = _connection.Abort(HttpProtocolException.CreateHttp3ConnectionException(code, SR.net_http_http3_connection_close));
-                throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
+                throw new HttpRequestException(SR.net_http_client_execution_error, abortException, httpRequestError: HttpRequestError.HttpProtocolError);
             }
             catch (QuicException ex) when (ex.QuicError == QuicError.OperationAborted && _connection.AbortException != null)
             {
                 // we close the connection, propagate the AbortException
-                throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException);
+                throw new HttpRequestException(SR.net_http_client_execution_error, _connection.AbortException, httpRequestError: HttpRequestError.Unknown);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
             catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
@@ -289,14 +292,13 @@ namespace System.Net.Http
                 else
                 {
                     Debug.Assert(_requestBodyCancellationSource.IsCancellationRequested);
-                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure, httpRequestError: HttpRequestError.Unknown);
                 }
             }
-            catch (HttpProtocolException ex)
+            catch (HttpIOException ex)
             {
-                // A connection-level protocol error has occurred on our stream.
                 _connection.Abort(ex);
-                throw new HttpRequestException(SR.net_http_client_execution_error, ex);
+                throw new HttpRequestException(SR.net_http_client_execution_error, ex, httpRequestError: ex.HttpRequestError);
             }
             catch (Exception ex)
             {
@@ -305,7 +307,7 @@ namespace System.Net.Http
                 {
                     throw;
                 }
-                throw new HttpRequestException(SR.net_http_client_execution_error, ex);
+                throw new HttpRequestException(SR.net_http_client_execution_error, ex, httpRequestError: HttpRequestError.Unknown);
             }
             finally
             {
@@ -342,7 +344,7 @@ namespace System.Net.Http
                     {
                         Trace($"Expected HEADERS as first response frame; received {frameType}.");
                     }
-                    throw new HttpRequestException(SR.net_http_invalid_response);
+                    throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response);
                 }
 
                 await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
@@ -528,7 +530,7 @@ namespace System.Net.Http
                             {
                                 Trace("Response content exceeded Content-Length.");
                             }
-                            throw new HttpRequestException(SR.net_http_invalid_response);
+                            throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response);
                         }
                         break;
                     default:
@@ -824,7 +826,7 @@ namespace System.Net.Http
                     else
                     {
                         // Our buffer has partial frame data in it but not enough to complete the read: bail out.
-                        throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
+                        throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
                     }
                 }
 
@@ -868,7 +870,7 @@ namespace System.Net.Http
             if (headersLength > _headerBudgetRemaining)
             {
                 _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.ExcessiveLoad);
-                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength));
+                throw new HttpRequestException(SR.Format(SR.net_http_response_headers_exceeded_length, _connection.Pool.Settings.MaxResponseHeadersByteLength), httpRequestError: HttpRequestError.ConfigurationLimitExceeded);
             }
 
             _headerBudgetRemaining -= (int)headersLength;
@@ -887,7 +889,7 @@ namespace System.Net.Http
                     else
                     {
                         if (NetEventSource.Log.IsEnabled()) Trace($"Server closed response stream before entire header payload could be read. {headersLength:N0} bytes remaining.");
-                        throw new HttpRequestException(SR.net_http_invalid_response_premature_eof);
+                        throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_premature_eof);
                     }
                 }
 
@@ -909,7 +911,7 @@ namespace System.Net.Http
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
                 // Invalid header name
-                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)));
+                throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(name)), httpRequestError: HttpRequestError.InvalidResponse);
             }
             OnHeader(staticIndex: null, descriptor, staticValue: default, literalValue: value);
         }
@@ -1147,7 +1149,7 @@ namespace System.Net.Http
 
                         if (bytesRead == 0 && buffer.Length != 0)
                         {
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
+                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
 
                         totalBytesRead += bytesRead;
@@ -1219,7 +1221,7 @@ namespace System.Net.Http
 
                         if (bytesRead == 0 && buffer.Length != 0)
                         {
-                            throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
+                            throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, _responseDataPayloadRemaining));
                         }
 
                         totalBytesRead += bytesRead;
@@ -1254,7 +1256,7 @@ namespace System.Net.Http
                 case QuicException e when (e.QuicError == QuicError.StreamAborted):
                     // Peer aborted the stream
                     Debug.Assert(e.ApplicationErrorCode.HasValue);
-                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value);
+                    throw HttpProtocolException.CreateHttp3StreamException((Http3ErrorCode)e.ApplicationErrorCode.Value, e);
 
                 case QuicException e when (e.QuicError == QuicError.ConnectionAborted):
                     // Our connection was reset. Start aborting the connection.
@@ -1263,8 +1265,7 @@ namespace System.Net.Http
                     _connection.Abort(exception);
                     throw exception;
 
-                case HttpProtocolException:
-                    // A connection-level protocol error has occurred on our stream.
+                case HttpIOException:
                     _connection.Abort(ex);
                     ExceptionDispatchInfo.Throw(ex); // Rethrow.
                     return; // Never reached.
@@ -1276,7 +1277,7 @@ namespace System.Net.Http
             }
 
             _stream.Abort(QuicAbortDirection.Read, (long)Http3ErrorCode.InternalError);
-            throw new IOException(SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
+            throw new HttpIOException(HttpRequestError.Unknown, SR.net_http_client_execution_error, new HttpRequestException(SR.net_http_client_execution_error, ex));
         }
 
         private async ValueTask<bool> ReadNextDataFrameAsync(HttpResponseMessage response, CancellationToken cancellationToken)
