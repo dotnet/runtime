@@ -46,7 +46,10 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
-      <_CommonLinkerArgs Include="-l:libz.so;-l:liblog.so;-l:libc.so;-l:libm.so;" />
+      <_CommonLinkerArgs Include="-l:libz.so" />
+      <_CommonLinkerArgs Include="-l:liblog.so" />
+      <_CommonLinkerArgs Include="-l:libc.so" />
+      <_CommonLinkerArgs Include="-l:libm.so" />
       <_CommonLinkerArgs Include="--build-id=sha1" />
 
       <!-- add all non stub libs first -->
