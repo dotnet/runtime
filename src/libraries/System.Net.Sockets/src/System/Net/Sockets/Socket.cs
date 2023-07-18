@@ -1382,20 +1382,20 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="buffer">A span of bytes that contains the data to be sent.</param>
         /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
-        /// <param name="remoteSA">The <see cref="EndPoint"/> that represents the destination for the data.</param>
+        /// <param name="socketAddress">The <see cref="EndPoint"/> that represents the destination for the data.</param>
         /// <returns>The number of bytes sent.</returns>
         /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
-        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, SocketAddress remoteSA)
+        public int SendTo(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress)
         {
             ThrowIfDisposed();
-            ArgumentNullException.ThrowIfNull(remoteSA);
+            ArgumentNullException.ThrowIfNull(socketAddress);
 
             ValidateBlockingMode();
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, remoteSA.SocketBuffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.SocketBuffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1886,19 +1886,19 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
         /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
-        /// <param name="remoteSA">An <see cref="SocketAddress"/>, passed by reference, that represents the remote server.</param>
+        /// <param name="socketAddress">An <see cref="SocketAddress"/>, passed by reference, that represents the remote server.</param>
         /// <returns>The number of bytes received.</returns>
         /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
-        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress remoteSA)
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress)
         {
             ThrowIfDisposed();
 
             ValidateBlockingMode();
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, remoteSA.SocketBuffer, out int socketAddressSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.SocketBuffer, out int socketAddressSize, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -1925,7 +1925,7 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            remoteSA.Size = socketAddressSize;
+            socketAddress.Size = socketAddressSize;
 
             return bytesTransferred;
         }

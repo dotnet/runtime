@@ -400,7 +400,7 @@ namespace System.Net.Sockets
         public int ReceiveFrom(byte[] buffer, System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP) { throw null; }
         public int ReceiveFrom(System.Span<byte> buffer, ref System.Net.EndPoint remoteEP) { throw null; }
         public int ReceiveFrom(System.Span<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, ref System.Net.EndPoint remoteEP) { throw null; }
-        public int ReceiveFrom(System.Span<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.SocketAddress remoteSA) { throw null; }
+        public int ReceiveFrom(System.Span<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.SocketAddress socketAddress) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.SocketReceiveFromResult> ReceiveFromAsync(System.ArraySegment<byte> buffer, System.Net.EndPoint remoteEndPoint) { throw null; }
         public System.Threading.Tasks.Task<System.Net.Sockets.SocketReceiveFromResult> ReceiveFromAsync(System.ArraySegment<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEndPoint) { throw null; }
         public System.Threading.Tasks.ValueTask<System.Net.Sockets.SocketReceiveFromResult> ReceiveFromAsync(System.Memory<byte> buffer, System.Net.EndPoint remoteEndPoint, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
@@ -445,7 +445,7 @@ namespace System.Net.Sockets
         public int SendTo(byte[] buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(System.ReadOnlySpan<byte> buffer, System.Net.EndPoint remoteEP) { throw null; }
         public int SendTo(System.ReadOnlySpan<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
-        public int SendTo(System.ReadOnlySpan<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.SocketAddress remoteSA) { throw null; }
+        public int SendTo(System.ReadOnlySpan<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.SocketAddress socketAddress) { throw null; }
         public System.Threading.Tasks.Task<int> SendToAsync(System.ArraySegment<byte> buffer, System.Net.EndPoint remoteEP) { throw null; }
         public System.Threading.Tasks.Task<int> SendToAsync(System.ArraySegment<byte> buffer, System.Net.Sockets.SocketFlags socketFlags, System.Net.EndPoint remoteEP) { throw null; }
         public bool SendToAsync(System.Net.Sockets.SocketAsyncEventArgs e) { throw null; }

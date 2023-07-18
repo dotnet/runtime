@@ -53,6 +53,7 @@ namespace System.Net.Internals
             set
             {
                 ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Buffer.Length);
+                ArgumentOutOfRangeException.ThrowIfLessThan(value, MinSize);
                 InternalSize = value;
             }
         }
@@ -145,6 +146,10 @@ namespace System.Net.Internals
             SocketAddressPal.SetAddressFamily(Buffer, addressFamily);
         }
 
+        /// <summary>This represents underlying memory that can be passed to native OS calls.</summary>
+        /// <remarks>
+        /// This memory can be invalidated if <see cref="Size"/> is changed or if the SocketAddress is used in another receive call.
+        /// </remarks>
         public Memory<byte> SocketBuffer
         {
             get
