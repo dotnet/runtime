@@ -83,25 +83,26 @@ namespace System.Text
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ulong ReadUInt32Widening(ref byte source)
         {
-            uint num = Unsafe.ReadUnaligned<uint>(ref source);
-
             if (AdvSimd.Arm64.IsSupported)
             {
-                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(num).AsByte();
+                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(Unsafe.ReadUnaligned<uint>(ref source)).AsByte();
                 Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
                 return vecWide.ToScalar();
             }
             else if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<byte> vecNarrow = Vector128.CreateScalar(num).AsByte();
+                Vector128<byte> vecNarrow = Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref source)).AsByte();
                 Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
                 return vecWide.ToScalar();
             }
             else
             {
 #if TARGET_64BIT
-                ulong temp = (ushort)num | ((ulong)(num >> 16) << 32);
-                return (temp | (temp << 8)) & 0x00FF00FF_00FF00FFuL;
+                ulong num = Unsafe.ReadUnaligned<uint>(ref source);
+                num |= num << 16;
+                num &= 0x0000FFFF_0000FFFFuL;
+                num |= num << 8;
+                return num & 0x00FF00FF_00FF00FFuL;
 #else
                 return ReadUInt32WideningLower(ref Unsafe.As<uint, byte>(ref num))
                     | ((ulong)ReadUInt32WideningUpper(ref Unsafe.As<uint, byte>(ref num)) << 32);
