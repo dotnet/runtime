@@ -3,7 +3,7 @@
 
 import { MonoMethod } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { getU16, getU32_unaligned, localHeapViewU8 } from "./memory";
 import { WasmOpcode, getOpcodeName } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
@@ -778,7 +778,7 @@ function generate_wasm(
 
         builder.generateTypeSection();
 
-        const traceLocals : any = {
+        const traceLocals: any = {
             "disp": WasmValtype.i32,
             "cknull_ptr": WasmValtype.i32,
             "dest_ptr": WasmValtype.i32,

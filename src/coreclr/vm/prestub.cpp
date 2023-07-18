@@ -1274,7 +1274,8 @@ namespace
                 continue;
 
             // Check signature
-            MetaSig::CompareState state{};
+            TokenPairList list { nullptr };
+            MetaSig::CompareState state{ &list };
             state.IgnoreCustomModifiers = ignoreCustomModifiers;
             if (!DoesMethodMatchUnsafeAccessorDeclaration(cxt, curr, state))
                 continue;
@@ -1492,6 +1493,15 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         // Method access requires a target type.
         if (firstArgType.IsNull())
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+
+        // If the non-static method access is for a
+        // value type, the instance must be byref.
+        if (kind == UnsafeAccessorKind::Method
+            && firstArgType.IsValueType()
+            && !firstArgType.IsByRef())
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+        }
 
         context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;

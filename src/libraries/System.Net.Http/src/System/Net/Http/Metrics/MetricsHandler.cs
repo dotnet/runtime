@@ -15,11 +15,11 @@ namespace System.Net.Http.Metrics
         private readonly Counter<long> _failedRequests;
         private readonly Histogram<double> _requestsDuration;
 
-        public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory)
+        public MetricsHandler(HttpMessageHandler innerHandler, IMeterFactory? meterFactory, out Meter meter)
         {
             _innerHandler = innerHandler;
 
-            Meter meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
+            meter = meterFactory?.Create("System.Net.Http") ?? SharedMeter.Instance;
 
             // Meter has a cache for the instruments it owns
             _currentRequests = meter.CreateUpDownCounter<long>(

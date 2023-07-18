@@ -17,6 +17,8 @@
 
 #include <sal.h>
 #include <stdarg.h>
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "gcenv.structs.h" // CRITICAL_SECTION
 #include "IntrinsicConstants.h"
 #include "PalRedhawkCommon.h"
@@ -90,13 +92,6 @@ typedef union _LARGE_INTEGER {
     } u;
     int64_t QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
-
-typedef struct _GUID {
-    uint32_t Data1;
-    uint16_t Data2;
-    uint16_t Data3;
-    uint8_t Data4[8];
-} GUID;
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
 

@@ -7,6 +7,7 @@ using System.Net.Quic;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
+using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -88,7 +89,7 @@ namespace System.Net.Http
                     throw CancellationHelper.CreateOperationCanceledException(e, cancellationToken);
                 }
 
-                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e);
+                HttpRequestException ex = new HttpRequestException(SR.net_http_ssl_connection_failed, e, httpRequestError: HttpRequestError.SecureConnectionError);
                 if (request.IsExtendedConnectRequest)
                 {
                     // Extended connect request is negotiating strictly for ALPN = "h2" because HttpClient is unaware of a possible downgrade.
@@ -134,11 +135,27 @@ namespace System.Net.Http
             }
         }
 
-        internal static Exception CreateWrappedException(Exception error, string host, int port, CancellationToken cancellationToken)
+        internal static Exception CreateWrappedException(Exception exception, string host, int port, CancellationToken cancellationToken)
         {
-            return CancellationHelper.ShouldWrapInOperationCanceledException(error, cancellationToken) ?
-                CancellationHelper.CreateOperationCanceledException(error, cancellationToken) :
-                new HttpRequestException($"{error.Message} ({host}:{port})", error, RequestRetryType.RetryOnNextProxy);
+            return CancellationHelper.ShouldWrapInOperationCanceledException(exception, cancellationToken) ?
+                CancellationHelper.CreateOperationCanceledException(exception, cancellationToken) :
+                new HttpRequestException($"{exception.Message} ({host}:{port})", exception, RequestRetryType.RetryOnNextProxy, DeduceError(exception));
+
+            static HttpRequestError DeduceError(Exception exception)
+            {
+                // TODO: Deduce quic errors from QuicException.TransportErrorCode once https://github.com/dotnet/runtime/issues/87262 is implemented.
+                if (exception is AuthenticationException)
+                {
+                    return HttpRequestError.SecureConnectionError;
+                }
+
+                if (exception is SocketException socketException && socketException.SocketErrorCode == SocketError.HostNotFound)
+                {
+                    return HttpRequestError.NameResolutionError;
+                }
+
+                return HttpRequestError.ConnectionError;
+            }
         }
     }
 }

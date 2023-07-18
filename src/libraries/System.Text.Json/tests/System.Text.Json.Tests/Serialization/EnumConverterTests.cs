@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
@@ -26,9 +27,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.True(factory.CanConvert(supportedType));
 
             JsonConverter converter = factory.CreateConverter(supportedType, options);
-            // TODO use https://github.com/dotnet/runtime/issues/63898 once implemented
-            Type expectedConverterType = typeof(JsonConverter<>).MakeGenericType(supportedType);
-            Assert.IsAssignableFrom(expectedConverterType, converter);
+            Assert.Equal(supportedType, converter.Type);
         }
 
         [Theory]
@@ -41,6 +40,38 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(JsonStringEnumConverter<DayOfWeek>), typeof(MyCustomEnum))]
         [InlineData(typeof(JsonStringEnumConverter<MyCustomEnum>), typeof(DayOfWeek))]
         public static void JsonStringEnumConverter_InvalidType_ThrowsArgumentOutOfRangeException(Type converterType, Type unsupportedType)
+        {
+            var options = new JsonSerializerOptions();
+            var factory = (JsonConverterFactory)Activator.CreateInstance(converterType);
+
+            Assert.False(factory.CanConvert(unsupportedType));
+            ArgumentOutOfRangeException ex = Assert.Throws<ArgumentOutOfRangeException>(() => factory.CreateConverter(unsupportedType, options));
+            Assert.Contains(unsupportedType.FullName, ex.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(DayOfWeek))]
+        [InlineData(typeof(JsonNumberEnumConverter<MyCustomEnum>), typeof(MyCustomEnum))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(JsonNumberEnumConverter<>))]
+        public static void JsonNumberEnumConverter_SupportedType_WorksAsExpected(Type converterType, Type supportedType)
+        {
+            var options = new JsonSerializerOptions();
+            var factory = (JsonConverterFactory)Activator.CreateInstance(converterType);
+
+            Assert.True(factory.CanConvert(supportedType));
+
+            JsonConverter converter = factory.CreateConverter(supportedType, options);
+            Assert.Equal(supportedType, converter.Type);
+        }
+
+        [Theory]
+        [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(int))]
+        [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(string))]
+        [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(JsonStringEnumConverter<MyCustomEnum>))]
+        [InlineData(typeof(JsonNumberEnumConverter<DayOfWeek>), typeof(MyCustomEnum))]
+        [InlineData(typeof(JsonNumberEnumConverter<MyCustomEnum>), typeof(DayOfWeek))]
+        [DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(JsonNumberEnumConverter<>))]
+        public static void JsonNumberEnumConverter_InvalidType_ThrowsArgumentOutOfRangeException(Type converterType, Type unsupportedType)
         {
             var options = new JsonSerializerOptions();
             var factory = (JsonConverterFactory)Activator.CreateInstance(converterType);

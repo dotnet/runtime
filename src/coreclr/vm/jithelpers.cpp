@@ -5626,6 +5626,7 @@ HCIMPL1(VOID, JIT_PartialCompilationPatchpoint, int ilOffset)
     ::SetLastError(dwLastError);
 
     // Transition!
+    __asan_handle_no_return();
     RtlRestoreContext(&frameContext, NULL);
 }
 HCIMPLEND
