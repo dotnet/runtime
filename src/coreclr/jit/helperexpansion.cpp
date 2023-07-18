@@ -1218,7 +1218,7 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    assert(call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC);
+    assert((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0);
     NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
     if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
     {
@@ -1446,14 +1446,14 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         // -----------         |  \--*  CNS_INT   int
         // -----------         \--*  CNS_VEC   simd16
 
-        GenTreeIntCon* offsetNode = gtNewIconNode(offset);
+        GenTreeIntCon* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
         fgValueNumberTreeConst(offsetNode);
 
         // Grab a chunk from srcUtf8cnsData for the given offset and width
         GenTree* utf8cnsChunkNode = gtNewGenericCon(maxLoadType, buffer + offset);
         fgValueNumberTreeConst(utf8cnsChunkNode);
 
-        GenTree*   dstAddOffsetNode = gtNewOperNode(GT_ADD, TYP_BYREF, gtCloneExpr(dstPtr), offsetNode);
+        GenTree*   dstAddOffsetNode = gtNewOperNode(GT_ADD, dstPtr->TypeGet(), gtCloneExpr(dstPtr), offsetNode);
         GenTreeOp* storeInd         = gtNewStoreIndNode(maxLoadType, dstAddOffsetNode, utf8cnsChunkNode);
         fgInsertStmtAtEnd(fastpathBb, fgNewStmtFromTree(storeInd, debugInfo));
     }

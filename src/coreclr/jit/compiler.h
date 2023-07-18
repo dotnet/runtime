@@ -8978,7 +8978,7 @@ public:
         switch (min(nearestPow2, REGSIZE_BYTES))
         {
             case 1:
-                return TYP_BYTE;
+                return TYP_UBYTE;
             case 2:
                 return TYP_USHORT;
             case 4:
