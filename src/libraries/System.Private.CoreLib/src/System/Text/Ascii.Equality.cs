@@ -55,7 +55,7 @@ namespace System.Text
                     uint valueA = uint.CreateTruncating(Unsafe.Add(ref left, i));
                     uint valueB = uint.CreateTruncating(Unsafe.Add(ref right, i));
 
-                    if (valueA != valueB || !UnicodeUtility.IsAsciiCodePoint(valueA | valueB))
+                    if (valueA != valueB || !UnicodeUtility.IsAsciiCodePoint(valueA))
                     {
                         return false;
                     }
@@ -108,7 +108,7 @@ namespace System.Text
                     leftValues = TLoader.Load128(ref currentLeftSearchSpace);
                     rightValues = Vector128.LoadUnsafe(ref currentRightSearchSpace);
 
-                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues))
                     {
                         return false;
                     }
@@ -124,7 +124,7 @@ namespace System.Text
                     leftValues = TLoader.Load128(ref oneVectorAwayFromLeftEnd);
                     rightValues = Vector128.LoadUnsafe(ref oneVectorAwayFromRightEnd);
 
-                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues | rightValues))
+                    if (leftValues != rightValues || !AllCharsInVectorAreAscii(leftValues))
                     {
                         return false;
                     }

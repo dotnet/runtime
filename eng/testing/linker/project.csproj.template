@@ -82,4 +82,5 @@
     </PropertyGroup>
   </Target>
 
+  <Import Project="{NativeSanitizersTargets}" />
 </Project>
