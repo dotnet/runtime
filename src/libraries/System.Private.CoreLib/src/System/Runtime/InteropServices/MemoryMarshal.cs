@@ -257,10 +257,10 @@ namespace System.Runtime.InteropServices
             value != null ? new ReadOnlySpan<char>(value, string.wcslen(value)) :
             default;
 
-        /// <summary>Creates a new read-only span for a null-terminated UTF8 string.</summary>
+        /// <summary>Creates a new read-only span for a null-terminated UTF-8 string.</summary>
         /// <param name="value">The pointer to the null-terminated string of bytes.</param>
         /// <returns>A read-only span representing the specified null-terminated string, or an empty span if the pointer is null.</returns>
-        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF8 data.</remarks>
+        /// <remarks>The returned span does not include the null terminator, nor does it validate the well-formedness of the UTF-8 data.</remarks>
         /// <exception cref="ArgumentException">The string is longer than <see cref="int.MaxValue"/>.</exception>
         [CLSCompliant(false)]
         public static unsafe ReadOnlySpan<byte> CreateReadOnlySpanFromNullTerminated(byte* value) =>

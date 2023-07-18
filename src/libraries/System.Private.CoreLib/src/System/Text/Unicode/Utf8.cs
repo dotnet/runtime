@@ -330,7 +330,7 @@ namespace System.Text.Unicode
             }
         }
 
-        /// <summary>Writes the specified interpolated string to the UTF8 byte span.</summary>
+        /// <summary>Writes the specified interpolated string to the UTF-8 byte span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="handler">The interpolated string.</param>
         /// <param name="bytesWritten">The number of characters written to the span.</param>
@@ -349,7 +349,7 @@ namespace System.Text.Unicode
             return false;
         }
 
-        /// <summary>Writes the specified interpolated string to the UTF8 byte span.</summary>
+        /// <summary>Writes the specified interpolated string to the UTF-8 byte span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="provider">An object that supplies culture-specific formatting information.</param>
         /// <param name="handler">The interpolated string.</param>
@@ -360,12 +360,12 @@ namespace System.Text.Unicode
             // is the same as the non-provider overload.
             TryWrite(destination, ref handler, out bytesWritten);
 
-        /// <summary>Provides a handler used by the language compiler to format interpolated strings into UTF8 byte spans.</summary>
+        /// <summary>Provides a handler used by the language compiler to format interpolated strings into UTF-8 byte spans.</summary>
         [EditorBrowsable(EditorBrowsableState.Never)]
         [InterpolatedStringHandler]
         public ref struct TryWriteInterpolatedStringHandler
         {
-            /// <summary>The destination UTF8 buffer.</summary>
+            /// <summary>The destination UTF-8 buffer.</summary>
             private readonly Span<byte> _destination;
             /// <summary>Optional provider to pass to IFormattable.ToString, ISpanFormattable.TryFormat, and IUtf8SpanFormattable.TryFormat calls.</summary>
             private readonly IFormatProvider? _provider;
@@ -376,7 +376,7 @@ namespace System.Text.Unicode
             /// <summary>Whether <see cref="_provider"/> provides an ICustomFormatter.</summary>
             private readonly bool _hasCustomFormatter;
 
-            /// <summary>Creates a handler used to write an interpolated string into a UTF8 <see cref="Span{Byte}"/>.</summary>
+            /// <summary>Creates a handler used to write an interpolated string into a UTF-8 <see cref="Span{Byte}"/>.</summary>
             /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
             /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
             /// <param name="destination">The destination buffer.</param>
@@ -391,7 +391,7 @@ namespace System.Text.Unicode
                 _hasCustomFormatter = false;
             }
 
-            /// <summary>Creates a handler used to write an interpolated string into a UTF8 <see cref="Span{Byte}"/>.</summary>
+            /// <summary>Creates a handler used to write an interpolated string into a UTF-8 <see cref="Span{Byte}"/>.</summary>
             /// <param name="literalLength">The number of constant characters outside of interpolation expressions in the interpolated string.</param>
             /// <param name="formattedCount">The number of interpolation expressions in the interpolated string.</param>
             /// <param name="destination">The destination buffer.</param>
@@ -588,7 +588,7 @@ namespace System.Text.Unicode
                 return Fail();
             }
 
-            /// <summary>Writes the specified span of UTF8 bytes to the handler.</summary>
+            /// <summary>Writes the specified span of UTF-8 bytes to the handler.</summary>
             /// <param name="utf8Value">The span to write.</param>
             public bool AppendFormatted(scoped ReadOnlySpan<byte> utf8Value)
             {
@@ -601,7 +601,7 @@ namespace System.Text.Unicode
                 return Fail();
             }
 
-            /// <summary>Writes the specified span of UTF8 bytes to the handler.</summary>
+            /// <summary>Writes the specified span of UTF-8 bytes to the handler.</summary>
             /// <param name="utf8Value">The span to write.</param>
             /// <param name="alignment">Minimum number of characters that should be written for this value.  If the value is negative, it indicates left-aligned and the required minimum is the absolute value.</param>
             /// <param name="format">The format string.</param>

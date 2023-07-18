@@ -417,7 +417,7 @@ CLRTestExitCode=$?
 CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
-      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator')">
+      <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' and ('$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator' or '$(TargetOS)' == 'maccatalyst')">
       <![CDATA[
 __Command=""
 if [ ! -z ${__TestDotNetCmd+x} ] %3B then

@@ -80,6 +80,10 @@ jobs:
         - name: runtimeFlavorArgs
           value: '-mono'
 
+      - ${{ if and(eq(parameters.runtimeFlavor, 'coreclr'), in(parameters.osGroup, 'ios', 'iossimulator', 'tvos', 'tvossimulator', 'maccatalyst')) }}:
+        - name: runtimeFlavorArgs
+          value: '-nativeaot'
+
       - name: testTreeFilterArg
         value: ''
 
