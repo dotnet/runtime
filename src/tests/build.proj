@@ -306,6 +306,10 @@
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
       <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
       <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
+      <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
+        <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
+      </ExtraDlls>
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
     <RemoveDir Directories="$(BundleDir)" />
@@ -321,8 +325,14 @@
         SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(BuildDir)" />
     <Copy
+        SourceFiles="@(TestTargetingPathLibs)"
+        DestinationFolder="$(BuildDir)" />
+    <Copy
         SourceFiles="%(TestDlls.Identity)"
         DestinationFolder="$(BuildDir)/testdir-%(TestDlls.Filename)" />
+    <Copy
+        SourceFiles="%(ExtraDlls.Identity)"
+        DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
 
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
