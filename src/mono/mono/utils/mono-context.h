@@ -63,8 +63,13 @@ typedef __m128d MonoContextSimdReg;
 typedef struct _libc_xmmreg MonoContextSimdReg;
 #elif defined(__linux__) || defined(__OpenBSD__)
 #define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 #include <emmintrin.h>
 typedef __m128d MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x64 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #endif
 #elif defined(TARGET_ARM64)
 /* We need a definition for MonoContextSimdReg even when cross-compiling
