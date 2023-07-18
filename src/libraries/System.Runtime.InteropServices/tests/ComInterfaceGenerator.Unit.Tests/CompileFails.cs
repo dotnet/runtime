@@ -744,9 +744,6 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(1)
                     .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
             // Pinned arrays cannot be [In]
-            var inAttributeNotSupportedOnBlittableArray = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
-                    .WithLocation(0)
-                    .WithArguments(SR.InAttributeNotSupportedWithoutOutBlittableArray, paramName);
             var inAttributeNotSupportedOnPinnedParameter = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
@@ -792,45 +789,26 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                //https://github.com/dotnet/runtime/issues/88708
                 new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
             };
 
-            // [Out] Should not warn
-            // https://github.com/dotnet/runtime/issues/88708
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
-            //    new DiagnosticResult[] { }
-            //};
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "int[]", paramNameWithLocation),
+                new DiagnosticResult[] { }
+            };
 
-            // https://github.com/dotnet/runtime/issues/88708
-            //yield return new object[] {
-            //    ID(),
-            //    codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-            //    new DiagnosticResult[] { }
-            //};
-        }
-
-        public static IEnumerable<object[]> DirectedTestCase()
-        {
-            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
-            const string inAttribute = "[{|#1:InAttribute|}]";
-            const string paramName = "p";
-            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
-            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
-                    .WithLocation(0)
-                    .WithLocation(1)
-                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
-
-
-            // [In] is default for all non-pinned marshalled types
-            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U2)]", "char", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeIsDefaultDiagnostic } };
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                new DiagnosticResult[] { }
+            };
         }
 
         [Theory]
-        [MemberData(nameof(DirectedTestCase))]
+        [MemberData(nameof(ByValueMarshalAttributeOnValueTypes))]
+        [MemberData(nameof(ByValueMarshalAttributeOnReferenceTypes))]
+        [MemberData(nameof(ByValueMarshalAttributeOnPinnedMarshalledTypes))]
         public async Task VerifyByValueMarshallingAttributeUsage(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
