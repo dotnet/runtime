@@ -19,7 +19,6 @@
 #include <mono/metadata/reflection.h>
 #include <mono/metadata/method-builder.h>
 #include <mono/utils/mono-error.h>
-#include <mono/metadata/unsafe-accessor.h>
 #include <mono/metadata/icalls.h>
 #include <mono/metadata/marshal-lightweight.h>
 
@@ -136,8 +135,7 @@ typedef enum {
 	WRAPPER_SUBTYPE_INTERP_IN,
 	WRAPPER_SUBTYPE_INTERP_LMF,
 	WRAPPER_SUBTYPE_AOT_INIT,
-	WRAPPER_SUBTYPE_LLVM_FUNC,
-	WRAPPER_SUBTYPE_UNSAFE_ACCESSOR,
+	WRAPPER_SUBTYPE_LLVM_FUNC
 } WrapperSubtype;
 
 typedef struct {
@@ -241,12 +239,6 @@ typedef struct {
 	MonoMethodSignature *sig;
 } NativeFuncWrapperInfo;
 
-typedef struct {
-	MonoMethod *method;
-	MonoUnsafeAccessorKind kind;
-	const char *member_name; /* the member we're accessing */
-} UnsafeAccessorWrapperInfo;
-
 /*
  * This structure contains additional information to uniquely identify a given wrapper
  * method. It can be retrieved by mono_marshal_get_wrapper_info () for certain types
@@ -293,8 +285,6 @@ typedef struct {
 		LLVMFuncWrapperInfo llvm_func;
 		/* NATIVE_FUNC_INDIRECT */
 		NativeFuncWrapperInfo native_func;
-		/* UNSAFE_ACCESSOR */
-		UnsafeAccessorWrapperInfo unsafe_accessor;
 	} d;
 } WrapperInfo;
 
@@ -342,7 +332,6 @@ typedef struct {
 	void (*emit_synchronized_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoGenericContext *ctx, MonoGenericContainer *container, MonoMethod *enter_method, MonoMethod *exit_method, MonoMethod *gettypefromhandle_method);
 	void (*emit_unbox_wrapper) (MonoMethodBuilder *mb, MonoMethod *method);
 	void (*emit_array_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *sig, MonoGenericContext *ctx);
-	void (*emit_unsafe_accessor_wrapper) (MonoMethodBuilder *mb, MonoMethod *accessor_method, MonoMethodSignature *sig, MonoGenericContext *ctx, MonoUnsafeAccessorKind kind, const char *member_name);
 	void (*emit_generic_array_helper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_thunk_invoke_wrapper) (MonoMethodBuilder *mb, MonoMethod *method, MonoMethodSignature *csig);
 	void (*emit_create_string_hack) (MonoMethodBuilder *mb, MonoMethodSignature *csig, MonoMethod *res);
@@ -598,9 +587,6 @@ mono_marshal_get_gsharedvt_in_wrapper (void);
 
 MonoMethod*
 mono_marshal_get_gsharedvt_out_wrapper (void);
-
-MonoMethod*
-mono_marshal_get_unsafe_accessor_wrapper (MonoMethod *accessor_method, MonoUnsafeAccessorKind kind, const char *member_name);
 
 void
 mono_marshal_free_dynamic_wrappers (MonoMethod *method);

@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -23,8 +24,7 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterIn(info, context);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterOut(info, context);
+
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateCleanupStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
@@ -90,8 +90,6 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterIn(info, context);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterOut(info, context);
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {

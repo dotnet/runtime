@@ -720,7 +720,6 @@ public:
     void EmitCGT_UN     ();
     void EmitCLT        ();
     void EmitCLT_UN     ();
-    void EmitCONSTRAINED(int token);
     void EmitCONV_I     ();
     void EmitCONV_I1    ();
     void EmitCONV_I2    ();

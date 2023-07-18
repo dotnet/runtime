@@ -9,10 +9,8 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Diagnostics.Metrics;
-#if TARGET_BROWSER
 using System.Diagnostics;
-using System.Net.Http.Metrics;
+#if TARGET_BROWSER
 using HttpHandlerType = System.Net.Http.BrowserHttpHandler;
 #else
 using HttpHandlerType = System.Net.Http.SocketsHttpHandler;
@@ -25,33 +23,7 @@ namespace System.Net.Http
         private readonly HttpHandlerType _underlyingHandler;
 
 #if TARGET_BROWSER
-        private IMeterFactory? _meterFactory;
-        private MetricsHandler? _metricsHandler;
-
-        private MetricsHandler Handler
-        {
-            get
-            {
-                if (_metricsHandler != null)
-                {
-                    return _metricsHandler;
-                }
-
-                HttpMessageHandler handler = _underlyingHandler;
-                if (DiagnosticsHandler.IsGloballyEnabled())
-                {
-                    handler = new DiagnosticsHandler(handler, DistributedContextPropagator.Current);
-                }
-                MetricsHandler metricsHandler = new MetricsHandler(handler, _meterFactory);
-
-                // Ensure a single handler is used for all requests.
-                if (Interlocked.CompareExchange(ref _metricsHandler, metricsHandler, null) != null)
-                {
-                    metricsHandler.Dispose();
-                }
-                return _metricsHandler;
-            }
-        }
+        private HttpMessageHandler Handler { get; }
 #else
         private HttpHandlerType Handler => _underlyingHandler;
 #endif
@@ -61,6 +33,14 @@ namespace System.Net.Http
         public HttpClientHandler()
         {
             _underlyingHandler = new HttpHandlerType();
+
+#if TARGET_BROWSER
+            Handler = _underlyingHandler;
+            if (DiagnosticsHandler.IsGloballyEnabled())
+            {
+                Handler = new DiagnosticsHandler(Handler, DistributedContextPropagator.Current);
+            }
+#endif
 
             ClientCertificateOptions = ClientCertificateOption.Manual;
         }
@@ -79,33 +59,6 @@ namespace System.Net.Http
         public virtual bool SupportsAutomaticDecompression => HttpHandlerType.SupportsAutomaticDecompression;
         public virtual bool SupportsProxy => HttpHandlerType.SupportsProxy;
         public virtual bool SupportsRedirectConfiguration => HttpHandlerType.SupportsRedirectConfiguration;
-
-        /// <summary>
-        /// Gets or sets the <see cref="IMeterFactory"/> to create a custom <see cref="Meter"/> for the <see cref="HttpClientHandler"/> instance.
-        /// </summary>
-        /// <remarks>
-        /// When <see cref="MeterFactory"/> is set to a non-<see langword="null"/> value, all metrics emitted by the <see cref="HttpClientHandler"/> instance
-        /// will be recorded using the <see cref="Meter"/> provided by the <see cref="IMeterFactory"/>.
-        /// </remarks>
-        [CLSCompliant(false)]
-        public IMeterFactory? MeterFactory
-        {
-#if TARGET_BROWSER
-            get => _meterFactory;
-            set
-            {
-                ObjectDisposedException.ThrowIf(_disposed, this);
-                if (_metricsHandler != null)
-                {
-                    throw new InvalidOperationException(SR.net_http_operation_started);
-                }
-                _meterFactory = value;
-            }
-#else
-            get => _underlyingHandler.MeterFactory;
-            set => _underlyingHandler.MeterFactory = value;
-#endif
-        }
 
         [UnsupportedOSPlatform("browser")]
         public bool UseCookies
@@ -343,21 +296,11 @@ namespace System.Net.Http
         [UnsupportedOSPlatform("browser")]
         //[UnsupportedOSPlatform("ios")]
         //[UnsupportedOSPlatform("tvos")]
-        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-#if TARGET_BROWSER
-            throw new PlatformNotSupportedException();
-#else
-            ArgumentNullException.ThrowIfNull(request);
-            return Handler.Send(request, cancellationToken);
-#endif
-        }
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Handler.Send(request, cancellationToken);
 
-        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            ArgumentNullException.ThrowIfNull(request);
-            return Handler.SendAsync(request, cancellationToken);
-        }
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) =>
+            Handler.SendAsync(request, cancellationToken);
 
         // lazy-load the validator func so it can be trimmed by the ILLinker if it isn't used.
         private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>? s_dangerousAcceptAnyServerCertificateValidator;

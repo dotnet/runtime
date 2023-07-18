@@ -138,29 +138,6 @@ namespace Microsoft.Interop
         {
             return Array.Empty<StatementSyntax>();
         }
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-        {
-            var ids = context.GetAssignInOutIdentifiers(info);
-            var assignment = AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.local), IdentifierName(ids.parameter));
-            if (_unmanagedType is PointerTypeInfo pointer)
-            {
-                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
-                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
-            }
-            yield return ExpressionStatement(assignment);
-        }
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            var ids = context.GetAssignInOutIdentifiers(info);
-            var assignment = AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.parameter), IdentifierName(ids.local));
-            if (_unmanagedType is PointerTypeInfo pointer)
-            {
-                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
-                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
-            }
-            yield return ExpressionStatement(assignment);
-        }
     }
 
     /// <summary>
@@ -274,8 +251,6 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterIn(info, context);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterOut(info, context);
     }
 
     internal sealed class StatelessFreeMarshalling : ICustomTypeMarshallingStrategy
@@ -290,21 +265,6 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-            => _innerMarshaller.GenerateAssignParameterIn(info, context);
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            List<StatementSyntax> statements = new List<StatementSyntax>();
-            // In unmanaged to managed, we take ownership of the parameter and should clean up
-            if (context.Direction == MarshalDirection.UnmanagedToManaged)
-            {
-                statements.AddRange(GenerateCleanupStatements(info, new NativeIdIsParameterContext(context)));
-            }
-            statements.AddRange(_innerMarshaller.GenerateAssignParameterOut(info, context));
-            return statements;
-        }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -333,16 +293,10 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
     }
 
-
-    internal interface ILinearCollectionSpaceAllocator : ICustomTypeMarshallingStrategy
-    {
-
-    }
-
     /// <summary>
     /// Marshaller type that enables allocating space for marshalling a linear collection using a marshaller that implements the LinearCollection marshalling spec.
     /// </summary>
-    internal sealed class StatelessLinearCollectionSpaceAllocator : ILinearCollectionSpaceAllocator
+    internal sealed class StatelessLinearCollectionSpaceAllocator : ICustomTypeMarshallingStrategy
     {
         private readonly TypeSyntax _marshallerTypeSyntax;
         private readonly ManagedTypeInfo _unmanagedType;
@@ -357,78 +311,9 @@ namespace Microsoft.Interop
             _numElementsExpression = numElementsExpression;
         }
 
-        /// <summary>
-        /// <nativeIdentifier> = <marshallerType>.AllocateContainerForUnmanagedElements(<managedIdentifier>, out <numElements>);
-        /// </summary>
-        private ExpressionStatementSyntax GetAllocateContainerForUnmanagedElements(string nativeIdentifier, string managedIdentifier, string numElementsIdentifier)
-        {
-            // <nativeIdentifier> = <marshallerType>.AllocateContainerForUnmanagedElements(<managedIdentifier>, out <numElements>);
-            return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(nativeIdentifier),
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            _marshallerTypeSyntax,
-                            IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForUnmanagedElements)),
-                        ArgumentList(SeparatedList(new ArgumentSyntax[]
-                        {
-                                Argument(IdentifierName(managedIdentifier)),
-                                Argument(IdentifierName(numElementsIdentifier))
-                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword))
-                        })))));
-
-        }
-        /// <summary>
-        /// <managedIdentifier> = <marshallerType>.AllocateContainerForManagedElements(<nativeIdentifier>, <numElements>);
-        /// </summary>
-        private ExpressionStatementSyntax GetAllocateContainerForManagedElements(string managedIdentifier, string nativeIdentifier, string numElementsIdentifier)
-        {
-            // <managedIdentifier> = <marshallerType>.AllocateContainerForManagedElements(<nativeIdentifier>, <numElements>);
-            return ExpressionStatement(
-                AssignmentExpression(
-                    SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName(managedIdentifier),
-                    InvocationExpression(
-                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            _marshallerTypeSyntax,
-                            IdentifierName(ShapeMemberNames.LinearCollection.Stateless.AllocateContainerForManagedElements)),
-                        ArgumentList(SeparatedList(new ArgumentSyntax[]
-                        {
-                            Argument(IdentifierName(nativeIdentifier)),
-                            Argument(IdentifierName(numElementsIdentifier))
-                        })))));
-        }
-
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return _unmanagedType;
-        }
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-        {
-            // For ByValue arrays, we need to allocate a container to copy the array contents
-            var ids = context.GetIdentifiers(info);
-            string numElementsIdentifier = MarshallerHelpers.GetNumElementsIdentifier(info, context);
-            switch (context.Direction)
-            {
-                case MarshalDirection.UnmanagedToManaged:
-                    var allocateStatement = GetAllocateContainerForUnmanagedElements(ids.native, ids.managed, numElementsIdentifier);
-                    yield return allocateStatement;
-                    yield break;
-                case MarshalDirection.ManagedToUnmanaged:
-                    var allocatestatement = GetAllocateContainerForManagedElements(ids.managed, ids.native, numElementsIdentifier);
-                    yield return allocatestatement;
-                    yield break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            // We shouldn't need to allocate for assign out, the marshal / unmarshal has already allocated
-            yield break;
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
@@ -644,7 +529,7 @@ namespace Microsoft.Interop
     /// </summary>
     internal sealed class StatelessLinearCollectionMarshalling : ICustomTypeMarshallingStrategy
     {
-        private readonly ILinearCollectionSpaceAllocator _spaceMarshallingStrategy;
+        private readonly ICustomTypeMarshallingStrategy _spaceMarshallingStrategy;
         private readonly ElementsMarshalling _elementsMarshalling;
         private readonly ManagedTypeInfo _unmanagedType;
         private readonly MarshallerShape _shape;
@@ -652,7 +537,7 @@ namespace Microsoft.Interop
         private readonly bool _cleanupElementsAndSpace;
 
         public StatelessLinearCollectionMarshalling(
-            ILinearCollectionSpaceAllocator spaceMarshallingStrategy,
+            ICustomTypeMarshallingStrategy spaceMarshallingStrategy,
             ElementsMarshalling elementsMarshalling,
             ManagedTypeInfo unmanagedType,
             MarshallerShape shape,
@@ -668,50 +553,6 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-        {
-            // If we need to marshal the contents back out, we should make a copy of the elements in a new array. Otherwise they won't be modified.
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
-            {
-                _spaceMarshallingStrategy.GenerateAssignParameterIn(info, context);
-                if (context.Direction == MarshalDirection.ManagedToUnmanaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                else if (context.Direction == MarshalDirection.UnmanagedToManaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                throw new UnreachableException();
-            }
-
-            // Otherwise, we can just assign the native identifier to be the parameter
-            var ids = context.GetAssignInOutIdentifiers(info);
-            yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.local), IdentifierName(ids.parameter)));
-        }
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
-            {
-                if (context.Direction == MarshalDirection.ManagedToUnmanaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                else if (context.Direction == MarshalDirection.UnmanagedToManaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                throw new UnreachableException();
-            }
-
-            // Otherwise, we can just assign the native identifier to be the parameter
-            var ids = context.GetAssignInOutIdentifiers(info);
-            yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.local), IdentifierName(ids.parameter)));
-        }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -824,31 +665,5 @@ namespace Microsoft.Interop
         }
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-    }
-
-    /// <summary>
-    /// Context that treats the parameter identifier as the "native" identifier. Used to make GenerateCleanupStatements clean the value passed in.
-    /// </summary>
-    /// <param name="inner"></param>
-    internal sealed record NativeIdIsParameterContext(StubCodeContext inner) : StubCodeContext
-    {
-        public override bool SingleFrameSpansNativeContext => inner.SingleFrameSpansNativeContext;
-
-        public override bool AdditionalTemporaryStateLivesAcrossStages => inner.AdditionalTemporaryStateLivesAcrossStages;
-
-        public override (TargetFramework framework, Version version) GetTargetFramework() => inner.GetTargetFramework();
-
-        public override (string managed, string native) GetIdentifiers(TypePositionInfo info) => (inner.GetIdentifiers(info).managed, inner.GetAssignInOutIdentifiers(info).parameter);
-    }
-
-    internal sealed record ManagedIdIsParameterContext(StubCodeContext inner) : StubCodeContext
-    {
-        public override bool SingleFrameSpansNativeContext => inner.SingleFrameSpansNativeContext;
-
-        public override bool AdditionalTemporaryStateLivesAcrossStages => inner.AdditionalTemporaryStateLivesAcrossStages;
-
-        public override (TargetFramework framework, Version version) GetTargetFramework() => inner.GetTargetFramework();
-
-        public override (string managed, string native) GetIdentifiers(TypePositionInfo info) => (inner.GetAssignInOutIdentifiers(info).parameter, inner.GetIdentifiers(info).native);
     }
 }

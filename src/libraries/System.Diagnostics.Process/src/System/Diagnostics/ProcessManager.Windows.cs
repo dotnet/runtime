@@ -522,7 +522,7 @@ namespace System.Diagnostics
                         }
                         else
                         {
-                            if (!processInfos.TryAdd(processInfo.ProcessId, processInfo))
+                            if (processInfos.ContainsKey(processInfo.ProcessId))
                             {
                                 // We've found two entries in the perfcounters that claim to be the
                                 // same process.  We throw an exception.  Is this really going to be
@@ -549,6 +549,7 @@ namespace System.Diagnostics
                                     }
                                 }
                                 processInfo.ProcessName = instanceName.ToString();
+                                processInfos.Add(processInfo.ProcessId, processInfo);
                             }
                         }
                     }

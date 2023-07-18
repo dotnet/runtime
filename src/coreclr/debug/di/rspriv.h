@@ -5349,8 +5349,7 @@ class CordbFunction : public CordbBase,
                       public ICorDebugFunction,
                       public ICorDebugFunction2,
                       public ICorDebugFunction3,
-                      public ICorDebugFunction4,
-                      public ICorDebugFunction5
+                      public ICorDebugFunction4
 {
 public:
     //-----------------------------------------------------------
@@ -5412,12 +5411,6 @@ public:
     // ICorDebugFunction4
     //-----------------------------------------------------------
     COM_METHOD CreateNativeBreakpoint(ICorDebugFunctionBreakpoint **ppBreakpoint);
-
-    //-----------------------------------------------------------
-    // ICorDebugFunction5
-    //-----------------------------------------------------------
-    COM_METHOD AreOptimizationsDisabled(BOOL *pOptimizationsDisabled);
-    COM_METHOD DisableOptimizations();
 
     //-----------------------------------------------------------
     // Internal members

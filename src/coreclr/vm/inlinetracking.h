@@ -149,29 +149,7 @@ public:
 typedef DPTR(InlineTrackingMap) PTR_InlineTrackingMap;
 
 
-#ifndef DACCESS_COMPILE
-// Used to walk the NGEN/R2R inlining data
-class NativeImageInliningIterator
-{
-public:
-    NativeImageInliningIterator();
 
-    HRESULT Reset(Module* pInlinerModule, MethodInModule inlinee);
-    BOOL Next();
-    MethodInModule GetMethod();
-
-private:
-    Module *m_pModule;
-    MethodInModule m_inlinee;
-    NewArrayHolder<MethodInModule> m_dynamicBuffer;
-    COUNT_T m_dynamicBufferSize;
-    COUNT_T m_dynamicAvailable;
-    COUNT_T m_currentPos;
-
-    const COUNT_T s_bufferSize = 10;
-    const COUNT_T s_failurePos = -2;
-};
-#endif // DACCESS_COMPILE
 
 // ------------------------------------ Persistance support ----------------------------------------------------------
 
@@ -414,7 +392,7 @@ public:
         CONTRACTL
         {
             NOTHROW;
-            GC_NOTRIGGER;
+            GC_TRIGGERS;
             CAN_TAKE_LOCK;
             MODE_ANY;
         }
@@ -435,7 +413,7 @@ public:
     static void StaticInitialize()
     {
         WRAPPER_NO_CONTRACT;
-        s_mapCrst.Init(CrstJitInlineTrackingMap, CrstFlags(CRST_DEBUGGER_THREAD));
+        s_mapCrst.Init(CrstJitInlineTrackingMap);
     }
 
     static CrstBase *GetMapCrst() { return &s_mapCrst; }

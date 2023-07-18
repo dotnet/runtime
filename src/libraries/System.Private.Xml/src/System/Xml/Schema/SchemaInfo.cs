@@ -299,7 +299,10 @@ namespace System.Xml.Schema
 
             foreach (string tns in sinfo.TargetNamespaces.Keys)
             {
-                _targetNamespaces.TryAdd(tns, true);
+                if (!_targetNamespaces.ContainsKey(tns))
+                {
+                    _targetNamespaces.Add(tns, true);
+                }
             }
 
             foreach (KeyValuePair<XmlQualifiedName, SchemaElementDecl> entry in sinfo._elementDecls)
@@ -318,11 +321,17 @@ namespace System.Xml.Schema
             }
             foreach (SchemaAttDef attdef in sinfo.AttributeDecls.Values)
             {
-                _attributeDecls.TryAdd(attdef.Name, attdef);
+                if (!_attributeDecls.ContainsKey(attdef.Name))
+                {
+                    _attributeDecls.Add(attdef.Name, attdef);
+                }
             }
             foreach (SchemaNotation notation in sinfo.Notations.Values)
             {
-                Notations.TryAdd(notation.Name.Name, notation);
+                if (!Notations.ContainsKey(notation.Name.Name))
+                {
+                    Notations.Add(notation.Name.Name, notation);
+                }
             }
         }
 

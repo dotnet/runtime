@@ -88,7 +88,6 @@ typedef struct {
 	GHashTable *cominterop_invoke_cache;
 	GHashTable *cominterop_wrapper_cache; /* LOCKING: marshal lock */
 	GHashTable *thunk_invoke_cache;
-	GHashTable *unsafe_accessor_cache;
 } MonoWrapperCaches;
 
 /* Lock-free allocator */

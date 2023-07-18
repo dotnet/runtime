@@ -40,7 +40,6 @@ bool IsInCantAllocStressLogRegion()
 
 #include <stddef.h>
 #include "../../../inc/stresslog.h"
-#include "StressMsgReader.h"
 
 size_t StressLog::writing_base_address;
 size_t StressLog::reading_base_address;
@@ -68,7 +67,7 @@ void GcHistClear()
 {
 }
 
-void GcHistAddLog(LPCSTR msg, StressMsgReader stressMsg)
+void GcHistAddLog(LPCSTR msg, StressMsg* stressMsg)
 {
 }
 
@@ -532,7 +531,7 @@ bool FilterMessage(StressLog::StressLogHeader* hdr, ThreadStressLog* tsl, uint32
 struct StressThreadAndMsg
 {
     uint64_t    threadId;
-    StressMsgReader msg;
+    StressMsg* msg;
     uint64_t    msgId;
 };
 
@@ -541,9 +540,9 @@ int CmpMsg(const void* p1, const void* p2)
     const StressThreadAndMsg* msg1 = (const StressThreadAndMsg*)p1;
     const StressThreadAndMsg* msg2 = (const StressThreadAndMsg*)p2;
 
-    if (msg1->msg.GetTimeStamp() < msg2->msg.GetTimeStamp())
+    if (msg1->msg->GetTimeStamp() < msg2->msg->GetTimeStamp())
         return 1;
-    if (msg1->msg.GetTimeStamp() > msg2->msg.GetTimeStamp())
+    if (msg1->msg->GetTimeStamp() > msg2->msg->GetTimeStamp())
         return -11;
 
     if (msg1->threadId < msg2->threadId)
@@ -565,7 +564,7 @@ struct ThreadStressLogDesc
     volatile LONG workStarted;
     volatile LONG workFinished;
     ThreadStressLog* tsl;
-    StressMsgReader earliestMessage;
+    StressMsg* earliestMessage;
 
     ThreadStressLogDesc() : workStarted(0), workFinished(0), tsl(nullptr), earliestMessage(nullptr)
     {
@@ -585,7 +584,7 @@ static double s_timeFilterStart = 0;
 static double s_timeFilterEnd = 0;
 static const char* s_outputFileName = nullptr;
 
-StressLog::StressLogHeader* s_hdr;
+static StressLog::StressLogHeader* s_hdr;
 
 static bool s_fPrintFormatStrings;
 
@@ -1057,7 +1056,7 @@ bool ParseOptions(int argc, char* argv[])
     return true;
 }
 
-static void IncludeMessage(uint64_t threadId, StressMsgReader msg)
+static void IncludeMessage(uint64_t threadId, StressMsg* msg)
 {
     LONGLONG msgCount = InterlockedIncrement64(&s_msgCount) - 1;
     if (msgCount < MAX_MESSAGE_COUNT)
@@ -1090,10 +1089,10 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
             wrappedWriteThreadCount++;
         }
         // printf("thread: %zx\n", tsl->threadId);
-        void* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
+        StressMsg* msg = StressLog::TranslateMemoryMappedPointer(tsl->curPtr);
         StressLogChunk* slc = StressLog::TranslateMemoryMappedPointer(tsl->curWriteChunk);
         int chunkCount = 0;
-        void* prevMsg = nullptr;
+        StressMsg* prevMsg = nullptr;
         while (true)
         {
             // printf("stress log chunk %zx\n", (size_t)slc);
@@ -1136,15 +1135,14 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
             {
                 while (p < end && *p == 0)
                     p++;
-                msg = (void*)p;
+                msg = (StressMsg*)p;
             }
-            void* endMsg = (void*)end;
+            StressMsg* endMsg = (StressMsg*)end;
             while (msg < endMsg)
             {
-                StressMsgReader msgReader(msg);
                 totalMsgCount++;
-                char* format = (char*)(hdr->moduleImage + msgReader.GetFormatOffset());
-                double deltaTime = ((double)(msgReader.GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
+                char* format = (char*)(hdr->moduleImage + msg->GetFormatOffset());
+                double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
                 bool fIgnoreMessage = false;
                 if (fTimeFilter)
                 {
@@ -1158,17 +1156,17 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                         fIgnoreMessage = true;
                     }
                 }
-                int numberOfArgs = msgReader.GetNumberOfArgs();
+                int numberOfArgs = msg->GetNumberOfArgs();
                 if (!fIgnoreMessage)
                 {
-                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msgReader.GetFacility(), format, deltaTime, numberOfArgs, msgReader.GetArgs());
+                    bool fIncludeMessage = s_showAllMessages || FilterMessage(hdr, tsl, msg->GetFacility(), format, deltaTime, numberOfArgs, msg->args);
                     if (!fIncludeMessage && s_valueFilterCount > 0)
                     {
                         for (int i = 0; i < numberOfArgs; i++)
                         {
                             for (int j = 0; j < s_valueFilterCount; j++)
                             {
-                                if (s_valueFilter[j].start <= (size_t)msgReader.GetArgs()[i] && (size_t)msgReader.GetArgs()[i] <= s_valueFilter[j].end)
+                                if (s_valueFilter[j].start <= (size_t)msg->args[i] && (size_t)msg->args[i] <= s_valueFilter[j].end)
                                 {
                                     fIncludeMessage = true;
                                     break;
@@ -1184,7 +1182,7 @@ DWORD WINAPI ProcessStresslogWorker(LPVOID)
                     }
                 }
                 prevMsg = msg;
-                msg = (StressMsg*)&msgReader.GetArgs()[numberOfArgs];
+                msg = (StressMsg*)&msg->args[numberOfArgs];
             }
             if (slc == StressLog::TranslateMemoryMappedPointer(tsl->chunkListTail) && !tsl->writeHasWrapped)
                 break;
@@ -1235,16 +1233,16 @@ static void PrintFriendlyNumber(LONGLONG n)
         printf("%11.9f billion", n / 1000000000.0);
 }
 
-static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t threadId, StressMsgReader msg)
+static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t threadId, StressMsg* msg)
 {
     void* argBuffer[StressMsg::maxArgCnt];
-    char* format = (char*)(s_hdr->moduleImage + msg.GetFormatOffset());
-    int numberOfArgs = msg.GetNumberOfArgs();
+    char* format = (char*)(s_hdr->moduleImage + msg->GetFormatOffset());
+    int numberOfArgs = msg->GetNumberOfArgs();
     for (int i = 0; i < numberOfArgs; i++)
     {
-        argBuffer[i] = msg.GetArgs()[i];
+        argBuffer[i] = msg->args[i];
     }
-    double deltaTime = ((double)(msg.GetTimeStamp() - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
+    double deltaTime = ((double)(msg->GetTimeStamp() - s_hdr->startTimeStamp)) / s_hdr->tickFrequency;
     if (!s_printHexTidForGcThreads)
     {
         GcThread gcThread;
@@ -1257,7 +1255,7 @@ static void PrintMessage(CorClrData& corClrData, FILE *outputFile, uint64_t thre
                 threadId |= 0x4000000000000000;
         }
     }
-    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg.GetFacility(), argBuffer, s_fPrintFormatStrings);
+    formatOutput(&corClrData, outputFile, format, threadId, deltaTime, msg->GetFacility(), argBuffer, s_fPrintFormatStrings);
 }
 
 int ProcessStressLog(void* baseAddress, int argc, char* argv[])
@@ -1303,8 +1301,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     StressLog::StressLogHeader* hdr = (StressLog::StressLogHeader*)baseAddress;
     if (hdr->headerSize != sizeof(*hdr) ||
         hdr->magic != *(uint32_t*)"LRTS" ||
-        (hdr->version != 0x00010001 &&
-            hdr->version != 0x00010002))
+        hdr->version != 0x00010001)
     {
         printf("Unrecognized file format\n");
         return 1;
@@ -1386,8 +1383,8 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         int remMsgCount = 0;
         for (int msgIndex = 0; msgIndex < s_msgCount; msgIndex++)
         {
-            StressMsgReader msg = s_threadMsgBuf[msgIndex].msg;
-            double deltaTime = ((double)(msg.GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
+            StressMsg* msg = s_threadMsgBuf[msgIndex].msg;
+            double deltaTime = ((double)(msg->GetTimeStamp() - hdr->startTimeStamp)) / hdr->tickFrequency;
             if (startTime <= deltaTime && deltaTime <= endTime)
             {
                 s_threadMsgBuf[remMsgCount] = s_threadMsgBuf[msgIndex];
@@ -1466,7 +1463,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
     for (LONGLONG i = 0; i < s_msgCount; i++)
     {
         uint64_t threadId = (unsigned)s_threadMsgBuf[i].threadId;
-        StressMsgReader msg = s_threadMsgBuf[i].msg;
+        StressMsg* msg = s_threadMsgBuf[i].msg;
         PrintMessage(corClrData, outputFile, threadId, msg);
     }
 
@@ -1503,7 +1500,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         LONGLONG earliestStartCount = s_msgCount;
         for (int threadStressLogIndex = 0; threadStressLogIndex < s_threadStressLogCount; threadStressLogIndex++)
         {
-            StressMsgReader msg = s_threadStressLogDesc[threadStressLogIndex].earliestMessage;
+            StressMsg* msg = s_threadStressLogDesc[threadStressLogIndex].earliestMessage;
             if (msg == nullptr)
                 continue;
             bool fIncludeMessage = s_printEarliestMessages;
@@ -1528,7 +1525,7 @@ int ProcessStressLog(void* baseAddress, int argc, char* argv[])
         for (LONGLONG i = earliestStartCount; i < s_msgCount; i++)
         {
             uint64_t threadId = (unsigned)s_threadMsgBuf[i].threadId;
-            StressMsgReader msg = s_threadMsgBuf[i].msg;
+            StressMsg* msg = s_threadMsgBuf[i].msg;
             PrintMessage(corClrData, outputFile, threadId, msg);
         }
     }

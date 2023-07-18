@@ -861,11 +861,17 @@ namespace System.Xml
 
                     if (isParamEntity)
                     {
-                        _schemaInfo.ParameterEntities.TryAdd(entityName, entity);
+                        if (!_schemaInfo.ParameterEntities.ContainsKey(entityName))
+                        {
+                            _schemaInfo.ParameterEntities.Add(entityName, entity);
+                        }
                     }
                     else
                     {
-                        _schemaInfo.GeneralEntities.TryAdd(entityName, entity);
+                        if (!_schemaInfo.GeneralEntities.ContainsKey(entityName))
+                        {
+                            _schemaInfo.GeneralEntities.Add(entityName, entity);
+                        }
                     }
                     entity.DeclaredInExternal = !ParsingInternalSubset;
                     entity.ParsingInProgress = true;

@@ -12,18 +12,8 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public readonly struct ContainingSyntax(SyntaxTokenList modifiers, SyntaxKind typeKind, SyntaxToken identifier, TypeParameterListSyntax? typeParameters) : IEquatable<ContainingSyntax>
+    public readonly record struct ContainingSyntax(SyntaxTokenList Modifiers, SyntaxKind TypeKind, SyntaxToken Identifier, TypeParameterListSyntax? TypeParameters)
     {
-        public SyntaxTokenList Modifiers { get; init; } = modifiers.StripTriviaFromTokens();
-
-        public SyntaxToken Identifier { get; init; } = identifier.WithoutTrivia();
-
-        public SyntaxKind TypeKind { get; init; } = typeKind;
-
-        public TypeParameterListSyntax? TypeParameters { get; init; } = typeParameters;
-
-        public override bool Equals(object obj) => obj is ContainingSyntax other && Equals(other);
-
         public bool Equals(ContainingSyntax other)
         {
             return Modifiers.SequenceEqual(other.Modifiers, SyntaxEquivalentComparer.Instance)
@@ -52,12 +42,8 @@ namespace Microsoft.Interop
             ImmutableArray<ContainingSyntax>.Builder containingTypeInfoBuilder = ImmutableArray.CreateBuilder<ContainingSyntax>();
             for (SyntaxNode? parent = memberDeclaration.Parent; parent is TypeDeclarationSyntax typeDeclaration; parent = parent.Parent)
             {
-                containingTypeInfoBuilder.Add(
-                    new ContainingSyntax(
-                        typeDeclaration.Modifiers,
-                        typeDeclaration.Kind(),
-                        typeDeclaration.Identifier,
-                        typeDeclaration.TypeParameterList));
+                containingTypeInfoBuilder.Add(new ContainingSyntax(typeDeclaration.Modifiers.StripTriviaFromTokens(), typeDeclaration.Kind(), typeDeclaration.Identifier.WithoutTrivia(),
+                    typeDeclaration.TypeParameterList));
             }
 
             return containingTypeInfoBuilder.ToImmutable();

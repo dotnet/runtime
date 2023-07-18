@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
+  <PropertyGroup> 
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -8,6 +8,13 @@
   <ItemGroup>
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
+
+<Target Name="DisableComInterfaceGenerator"
+        BeforeTargets="CoreCompile">
+  <ItemGroup>
+  <Analyzer Remove="@(Analyzer)" Condition="'%(FileName)' == 'Microsoft.Interop.ComInterfaceGenerator'" />
+  </ItemGroup>
+</Target>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Ancillary.Interop\Ancillary.Interop.csproj" />

@@ -60,7 +60,7 @@ namespace Microsoft.Interop
             SignatureBehavior behavior = generator.GetNativeSignatureBehavior(info);
             if (behavior == SignatureBehavior.ManagedTypeAndAttributes)
             {
-                return GenerateForwardingParameter(info, info.InstanceIdentifier);
+                return GenerateForwardingParameter(info, context.GetIdentifiers(info).managed);
             }
             string identifierName;
             if (context.Direction == MarshalDirection.ManagedToUnmanaged)
@@ -90,10 +90,6 @@ namespace Microsoft.Interop
             else
             {
                 throw new ArgumentException("Context direction must be ManagedToUnmanaged or UnmanagedToManaged");
-            }
-            if (!info.IsManagedReturnPosition)
-            {
-                identifierName = info.InstanceIdentifier;
             }
             return Parameter(Identifier(identifierName))
                 .WithType(behavior switch

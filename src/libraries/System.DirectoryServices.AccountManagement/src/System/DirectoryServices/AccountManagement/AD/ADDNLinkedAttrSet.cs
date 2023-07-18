@@ -667,10 +667,11 @@ namespace System.DirectoryServices.AccountManagement
                     if (null == foreignSid.sidIssuerName)
                     {
                         // create and return the unknown principal if it is not yet present in usersVisited
-                        if (_usersVisited.TryAdd(foreignSid.name, true))
+                        if (!_usersVisited.ContainsKey(foreignSid.name))
                         {
                             byte[] sid = Utils.ConvertNativeSidToByteArray(foreignSid.pSid);
                             UnknownPrincipal unknownPrincipal = UnknownPrincipal.CreateUnknownPrincipal(_storeCtx.OwningContext, sid, foreignSid.name);
+                            _usersVisited.Add(foreignSid.name, true);
                             this.current = null;
                             _currentForeignDE = null;
                             _currentForeignPrincipal = unknownPrincipal;

@@ -4,9 +4,12 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text;
+using static SharedTypes.IntWrapperWithNotificationMarshaller;
 
 namespace SharedTypes
 {
@@ -340,7 +343,7 @@ namespace SharedTypes
         {
             private IntWrapperWithNotification _managed;
 
-            public void FromManaged(IntWrapperWithNotification managed) => _managed = managed;
+            public void FromManaged(IntWrapperWithNotification managed) =>_managed = managed;
 
             public int ToUnmanaged() => _managed.Value;
 

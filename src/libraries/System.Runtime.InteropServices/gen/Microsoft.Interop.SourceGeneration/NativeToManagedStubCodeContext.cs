@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
 {
@@ -33,7 +35,7 @@ namespace Microsoft.Interop
         }
 
         public override (TargetFramework framework, Version version) GetTargetFramework()
-            => (_framework, _frameworkVersion);
+            =>  (_framework, _frameworkVersion);
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
         {
@@ -47,7 +49,7 @@ namespace Microsoft.Interop
                 // the name of the exception variable specified in the catch clause.
                 if (info.IsManagedExceptionPosition)
                 {
-                    return (base.GetIdentifiers(info).managed, _nativeReturnIdentifier);
+                    return (info.InstanceIdentifier, _nativeReturnIdentifier);
                 }
                 return (_returnIdentifier, _nativeReturnIdentifier);
             }

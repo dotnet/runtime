@@ -65,8 +65,8 @@ namespace Microsoft.Interop
                 setupStatements.Add(MarshallerHelpers.Declare(PredefinedType(Token(SyntaxKind.BoolKeyword)), InvokeSucceededIdentifier, initializeToDefault: true));
             }
 
-            setupStatements.AddRange(declarations.Initializations);
             setupStatements.AddRange(declarations.Variables);
+            setupStatements.AddRange(declarations.Initializations);
             setupStatements.AddRange(statements.Setup);
 
             List<StatementSyntax> tryStatements = new();

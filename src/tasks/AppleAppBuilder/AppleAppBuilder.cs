@@ -223,7 +223,7 @@ public class AppleAppBuilderTask : Task
 
     public override bool Execute()
     {
-        bool shouldStaticLink = !EnableAppSandbox;
+        bool shouldStaticLink = true;
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         ValidateRuntimeSelection();

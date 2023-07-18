@@ -44,26 +44,6 @@ namespace Microsoft.Interop
                         IdentifierName(indexerIdentifier))));
         }
 
-        public static LocalDeclarationStatementSyntax DeclareWithModifiers(TypePositionInfo typeSyntax, string identifier, ExpressionSyntax? initializer = null)
-        {
-            VariableDeclaratorSyntax decl = VariableDeclarator(identifier);
-            if (initializer is not null)
-            {
-                decl = decl.WithInitializer(
-                    EqualsValueClause(
-                        initializer));
-            }
-
-            // <type> <identifier>;
-            // or
-            // <type> <identifier> = <initializer>;
-            return LocalDeclarationStatement(
-                typeSyntax.IsByRef ? TokenList(Token(SyntaxKind.RefKeyword)) : TokenList(),
-                VariableDeclaration(
-                    typeSyntax.ManagedType.Syntax,
-                    SingletonSeparatedList(decl)));
-        }
-
         public static LocalDeclarationStatementSyntax Declare(TypeSyntax typeSyntax, string identifier, bool initializeToDefault)
         {
             return Declare(typeSyntax, identifier, initializeToDefault ? LiteralExpression(SyntaxKind.DefaultLiteralExpression) : null);
@@ -414,5 +394,17 @@ namespace Microsoft.Interop
             }
             throw new UnreachableException("An element is either a return value or passed by value or by ref.");
         }
+
+        /// <summary>
+        /// Returns whether a parameter has MIDL '[out]' behavior should be unmarshalled into a local variable and only assigned to the parameter at the end of the function call.
+        /// </summary>
+        public static bool IsMidlOutBehavior(TypePositionInfo info, StubCodeContext context)
+            => context.Direction is MarshalDirection.UnmanagedToManaged
+                && (info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref
+                    || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
+                    || info.IsManagedReturnPosition);
+
+        internal static StatementSyntax CreateDiscardStatement(string identifier)
+            => ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName("_"), IdentifierName(identifier)));
     }
 }

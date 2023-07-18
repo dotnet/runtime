@@ -34,14 +34,6 @@ namespace Microsoft.Interop
                     IsFunctionPointer: false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
-                if (context.CurrentStage == StubCodeContext.Stage.Setup)
-                {
-                    var (local, param) = context.GetAssignInOutIdentifiers(info);
-                    yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(local),
-                        IdentifierName(param)));
-                    yield break;
-                }
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;

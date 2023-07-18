@@ -75,14 +75,9 @@ private:
 
 private:
     void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
-    HRESULT DeoptimizeMethodHelper(Module* pModule, mdMethodDef methodDef);
-    
     NativeCodeVersion GetNextMethodToOptimize();
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
-public:
-    HRESULT DeoptimizeMethod(Module* pModule, mdMethodDef methodDef);
-    HRESULT IsMethodDeoptimized(Module *pModule, mdMethodDef methodDef, BOOL *pResult);
 
 #ifndef DACCESS_COMPILE
 public:

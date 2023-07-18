@@ -566,24 +566,74 @@ namespace Internal.Reflection.Execution
         // ldftn reverse lookup hash. Must be cleared and reset if the module list changes. (All sets to
         // this variable must happen under a lock)
         private volatile KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] _ldftnReverseLookup_InvokeMap;
+        private Func<NativeFormatModuleInfo, FunctionPointersToOffsets> _computeLdFtnLookupInvokeMapInvokeMap = ComputeLdftnReverseLookup_InvokeMap;
 
         /// <summary>
-        /// Initialize a lookup array of module to function pointer/parser offset pair arrays.
+        /// Initialize a lookup array of module to function pointer/parser offset pair arrays. Do so in a manner that will allow
+        /// future work which will invalidate the cache (by setting it to null)
         /// </summary>
+        /// <param name="ldftnReverseLookupStatic">pointer to static which holds cache value. This is treated as a volatile variable</param>
+        /// <param name="lookupComputer"></param>
+        /// <returns></returns>
+        private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_Helper(ref KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldftnReverseLookupStatic, Func<NativeFormatModuleInfo, FunctionPointersToOffsets> lookupComputer)
+        {
+            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = Volatile.Read(ref ldftnReverseLookupStatic);
+
+            if (ldFtnReverseLookup != null)
+                return ldFtnReverseLookup;
+            else
+            {
+                lock (this)
+                {
+                    ldFtnReverseLookup = Volatile.Read(ref ldftnReverseLookupStatic);
+
+                    // double checked lock, safe due to use of volatile on s_ldftnReverseHashes
+                    if (ldFtnReverseLookup != null)
+                        return ldFtnReverseLookup;
+
+                    // FUTURE: add a module load callback to invalidate this cache if a new module is loaded.
+                    while (true)
+                    {
+                        int size = 0;
+                        foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+                        {
+                            size++;
+                        }
+
+                        ldFtnReverseLookup = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[size];
+                        int index = 0;
+                        bool restart = false;
+                        foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
+                        {
+                            // If the module list changes during execution of this code, rebuild from scratch
+                            if (index >= ldFtnReverseLookup.Length)
+                            {
+                                restart = true;
+                                break;
+                            }
+
+                            ldFtnReverseLookup[index] = new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, lookupComputer(module));
+                            index++;
+                        }
+
+                        if (restart)
+                            continue;
+
+                        // unless we need to repeat the module enumeration, only execute the body of this while loop once.
+                        break;
+                    }
+
+                    Volatile.Write(ref ldftnReverseLookupStatic, ldFtnReverseLookup);
+                    return ldFtnReverseLookup;
+                }
+            }
+        }
+
         private KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] GetLdFtnReverseLookups_InvokeMap()
         {
-            KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>[] ldFtnReverseLookup = _ldftnReverseLookup_InvokeMap;
-            if (ldFtnReverseLookup == null)
-            {
-                var ldFtnReverseLookupBuilder = new ArrayBuilder<KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>>();
-                foreach (NativeFormatModuleInfo module in ModuleList.EnumerateModules())
-                {
-                    ldFtnReverseLookupBuilder.Add(new KeyValuePair<NativeFormatModuleInfo, FunctionPointersToOffsets>(module, ComputeLdftnReverseLookup_InvokeMap(module)));
-                }
-                ldFtnReverseLookup = ldFtnReverseLookupBuilder.ToArray();
-                _ldftnReverseLookup_InvokeMap = ldFtnReverseLookup;
-            }
-            return ldFtnReverseLookup;
+#pragma warning disable 0420 // GetLdFtnReverseLookups_Helper treats its first parameter as volatile by using explicit Volatile operations
+            return GetLdFtnReverseLookups_Helper(ref _ldftnReverseLookup_InvokeMap, _computeLdFtnLookupInvokeMapInvokeMap);
+#pragma warning restore 0420
         }
 
         internal unsafe void GetFunctionPointerAndInstantiationArgumentForOriginalLdFtnResult(IntPtr originalLdFtnResult, out IntPtr canonOriginalLdFtnResult, out IntPtr instantiationArgument)

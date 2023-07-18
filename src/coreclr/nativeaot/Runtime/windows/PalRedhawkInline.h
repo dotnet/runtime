@@ -158,8 +158,3 @@ FORCEINLINE void PalYieldProcessor()
 #endif
 
 #define PalDebugBreak() __debugbreak()
-
-FORCEINLINE int32_t PalOsPageSize()
-{
-    return 0x1000;
-}

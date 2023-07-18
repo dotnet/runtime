@@ -530,12 +530,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowInvalidOperationException_InvalidUtf8()
-        {
-            throw new InvalidOperationException(SR.InvalidOperation_InvalidUtf8);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowFormatException_BadFormatSpecifier()
         {
             throw new FormatException(SR.Argument_BadFormatSpecifier);

@@ -353,7 +353,8 @@ namespace ILCompiler
             lock (this)
             {
                 // Ensure that name is unique and update our tables accordingly.
-                _mangledTypeNames.TryAdd(type, mangledName);
+                if (!_mangledTypeNames.ContainsKey(type))
+                    _mangledTypeNames.Add(type, mangledName);
             }
 
             return mangledName;
@@ -385,7 +386,8 @@ namespace ILCompiler
 
                 lock (this)
                 {
-                    _mangledMethodNames.TryAdd(method, utf8MangledName);
+                    if (!_mangledMethodNames.ContainsKey(method))
+                        _mangledMethodNames.Add(method, utf8MangledName);
                 }
 
                 return utf8MangledName;
@@ -555,7 +557,8 @@ namespace ILCompiler
             {
                 lock (this)
                 {
-                    _unqualifiedMangledMethodNames.TryAdd(method, utf8MangledName);
+                    if (!_unqualifiedMangledMethodNames.ContainsKey(method))
+                        _unqualifiedMangledMethodNames.Add(method, utf8MangledName);
                 }
             }
 
@@ -619,7 +622,8 @@ namespace ILCompiler
 
             lock (this)
             {
-                _mangledFieldNames.TryAdd(field, utf8MangledName);
+                if (!_mangledFieldNames.ContainsKey(field))
+                    _mangledFieldNames.Add(field, utf8MangledName);
             }
 
             return utf8MangledName;
@@ -640,7 +644,8 @@ namespace ILCompiler
 
             lock (this)
             {
-                _mangledStringLiterals.TryAdd(literal, mangledName);
+                if (!_mangledStringLiterals.ContainsKey(literal))
+                    _mangledStringLiterals.Add(literal, mangledName);
             }
 
             return mangledName;

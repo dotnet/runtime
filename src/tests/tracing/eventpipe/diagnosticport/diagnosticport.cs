@@ -403,9 +403,10 @@ namespace Tracing.Tests.DiagnosticPortValidation
                     }
                     else if (TestLibrary.Utilities.IsNativeAot)
                     {
-                        string expectedName = System.Reflection.Assembly.GetExecutingAssembly().GetName().Name;
-                        Utils.Assert(expectedName.Equals(processInfo2.ManagedEntrypointAssemblyName),
-                            $"ManagedEntrypointAssemblyName must match. Expected: {expectedName}, Received: {processInfo2.ManagedEntrypointAssemblyName}");
+                        // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
+                        // https://github.com/dotnet/runtime/issues/83051
+                        // NativeAOT currently always returns empty string
+                        Utils.Assert(processInfo2.ManagedEntrypointAssemblyName == string.Empty);
                     }
                     else
                     {

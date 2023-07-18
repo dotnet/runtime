@@ -55,11 +55,17 @@ namespace System.Text.Json.Serialization
 
             JsonSerializerOptions? generatedSerializerOptions = GeneratedSerializerOptions;
 
+            if (ReferenceEquals(options, generatedSerializerOptions))
+            {
+                // Fast path for the 99% case
+                return true;
+            }
+
             return
                 generatedSerializerOptions is not null &&
                 // Guard against unsupported features
                 options.Converters.Count == 0 &&
-                options.Encoder is null &&
+                options.Encoder == null &&
                 // Disallow custom number handling we'd need to honor when writing.
                 // AllowReadingFromString and Strict are fine since there's no action to take when writing.
                 !JsonHelpers.RequiresSpecialNumberHandlingOnWrite(options.NumberHandling) &&
@@ -74,7 +80,8 @@ namespace System.Text.Json.Serialization
                 options.IgnoreReadOnlyProperties == generatedSerializerOptions.IgnoreReadOnlyProperties &&
                 options.IncludeFields == generatedSerializerOptions.IncludeFields &&
                 options.PropertyNamingPolicy == generatedSerializerOptions.PropertyNamingPolicy &&
-                options.DictionaryKeyPolicy is null;
+                options.DictionaryKeyPolicy == generatedSerializerOptions.DictionaryKeyPolicy &&
+                options.WriteIndented == generatedSerializerOptions.WriteIndented;
         }
 
         /// <summary>

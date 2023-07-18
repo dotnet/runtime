@@ -20,7 +20,7 @@ namespace Microsoft.Interop
 
     internal abstract class ElementsMarshalling
     {
-        internal IElementsMarshallingCollectionSource CollectionSource { get; }
+        protected IElementsMarshallingCollectionSource CollectionSource { get; }
 
         protected ElementsMarshalling(IElementsMarshallingCollectionSource collectionSource)
         {

@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Logging
                 return;
             }
 
-            options.CaptureScopes = _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
+            options.CaptureScopes = GetCaptureScopesValue(options);
 
             foreach (IConfigurationSection configurationSection in _configuration.GetChildren())
             {
@@ -50,6 +50,8 @@ namespace Microsoft.Extensions.Logging
                     }
                 }
             }
+
+            bool GetCaptureScopesValue(LoggerFilterOptions options) => _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
         }
 
         private static void LoadRules(LoggerFilterOptions options, IConfigurationSection configurationSection, string? logger)

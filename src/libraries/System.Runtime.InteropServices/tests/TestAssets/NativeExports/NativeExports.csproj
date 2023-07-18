@@ -18,6 +18,13 @@
       '$(TargetOS)' == 'tvossimulator'">true</_TargetsAppleOS>
   </PropertyGroup>
 
+<Target Name="DisableComInterfaceGenerator"
+        BeforeTargets="CoreCompile">
+  <ItemGroup>
+  <Analyzer Remove="@(Analyzer)" Condition="'%(FileName)' == 'Microsoft.Interop.ComInterfaceGenerator'" />
+  </ItemGroup>
+</Target>
+
   <ItemGroup>
     <Compile Include="..\..\TestAssets\SharedTypes\ComInterfaces\**\*.cs" Link="ComInterfaceGenerator\ComInterfaces\%(RecursiveDir)\%(FileName).cs" />
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs" Link="Common\DisableRuntimeMarshalling.cs" />

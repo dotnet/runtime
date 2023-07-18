@@ -159,7 +159,6 @@ End
 Crst DebuggerMutex
     AcquiredBefore AvailableParamTypes
                    DynamicIL LoaderHeap ModuleLookupTable
-                   MethodDescBackpatchInfoTracker JitInlineTrackingMap CodeVersioning
 
     // Disabled per bug 581892
     // AcquiredBefore DebuggerController
@@ -490,7 +489,6 @@ Crst ThreadStore
                    DebuggerHeapLock DebuggerJitInfo DynamicIL ExecuteManRangeLock HandleTable IbcProfile
                    JitGenericHandleCache JumpStubCache LoaderHeap ModuleLookupTable ProfilerGCRefDataFreeList
                    SingleUseLock SyncBlockCache SystemDomainDelayedUnloadList ThreadIdDispenser DebuggerMutex
-                   JitInlineTrackingMap
 End
 
 Crst TypeIDMap
@@ -542,7 +540,7 @@ Crst InlineTrackingMap
 End
 
 Crst JitInlineTrackingMap
-    AcquiredBefore CodeVersioning MethodDescBackpatchInfoTracker
+    AcquiredBefore CodeVersioning ThreadStore MethodDescBackpatchInfoTracker
 End
 
 Crst EventPipe

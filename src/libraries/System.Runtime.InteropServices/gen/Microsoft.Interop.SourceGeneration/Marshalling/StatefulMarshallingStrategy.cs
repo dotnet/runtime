@@ -190,30 +190,6 @@ namespace Microsoft.Interop
         {
             return context.GetAdditionalIdentifier(info, MarshallerIdentifier);
         }
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-        {
-            var ids = context.GetAssignInOutIdentifiers(info);
-            var assignment = AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.local), IdentifierName(ids.parameter));
-            if (_unmanagedType is PointerTypeInfo pointer)
-            {
-                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
-                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
-            }
-            yield return ExpressionStatement(assignment);
-        }
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            var ids = context.GetAssignInOutIdentifiers(info);
-            var assignment = AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.parameter), IdentifierName(ids.local));
-            if (_unmanagedType is PointerTypeInfo pointer)
-            {
-                var rewriter = new PointerNativeTypeAssignmentRewriter(assignment.Right.ToString(), (PointerTypeSyntax)pointer.Syntax);
-                assignment = (AssignmentExpressionSyntax)rewriter.Visit(assignment);
-            }
-            yield return ExpressionStatement(assignment);
-        }
     }
 
     /// <summary>
@@ -308,8 +284,6 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterIn(info, context);
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateAssignParameterOut(info, context);
     }
 
     internal sealed class StatefulLinearCollectionSource : IElementsMarshallingCollectionSource
@@ -514,50 +488,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-        {
-            // If we need to marshal the contents back out, we should make a copy of the elements in a new array
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
-            {
-                //TODO: Allocate space to hold the temporary contents
-                if (context.Direction == MarshalDirection.ManagedToUnmanaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                else if (context.Direction == MarshalDirection.UnmanagedToManaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                throw new UnreachableException();
-            }
-
-            // Otherwise, we can just assign the native identifier to be the parameter
-            var ids = context.GetAssignInOutIdentifiers(info);
-            yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.local), IdentifierName(ids.parameter)));
-        }
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            if (!info.IsByRef && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
-            {
-                if (context.Direction == MarshalDirection.ManagedToUnmanaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                else if (context.Direction == MarshalDirection.UnmanagedToManaged)
-                {
-                    //TODO: copy the contents
-                    yield break;
-                }
-                throw new UnreachableException();
-            }
-
-            // Otherwise, we can just assign the native identifier to be the parameter
-            var ids = context.GetAssignInOutIdentifiers(info);
-            yield return ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName(ids.local), IdentifierName(ids.parameter)));
-        }
     }
 
     /// <summary>
@@ -573,22 +503,6 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterIn(TypePositionInfo info, StubCodeContext context)
-            => _innerMarshaller.GenerateAssignParameterIn(info, context);
-
-        public IEnumerable<StatementSyntax> GenerateAssignParameterOut(TypePositionInfo info, StubCodeContext context)
-        {
-            List<StatementSyntax> statements = new List<StatementSyntax>();
-            // In unmanaged to managed, we take ownership of the parameter and should clean up
-            if (context.Direction == MarshalDirection.UnmanagedToManaged)
-            {
-                statements.AddRange(GenerateCleanupStatements(info, new NativeIdIsParameterContext(context)));
-            }
-            statements.AddRange(_innerMarshaller.GenerateAssignParameterOut(info, context));
-            return statements;
-        }
-
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {

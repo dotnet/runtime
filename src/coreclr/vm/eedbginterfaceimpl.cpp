@@ -1572,4 +1572,5 @@ BOOL EEDbgInterfaceImpl::AdjustContextForJITHelpersForDebugger(CONTEXT* context)
     return AdjustContextForJITHelpers(nullptr, context);
 }
 #endif
+
 #endif // DEBUGGING_SUPPORTED

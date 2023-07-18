@@ -71,7 +71,13 @@ namespace Microsoft.Interop
             ImmutableArray<StatementSyntax>.Builder statementsToUpdate = ImmutableArray.CreateBuilder<StatementSyntax>();
             foreach (BoundGenerator marshaller in marshallers.SignatureMarshallers)
             {
-                statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, context));
+                var localContext = context;
+                if (context.CurrentStage is StubCodeContext.Stage.Marshal
+                    && MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                {
+                    localContext = new MarshalToLocalContext(context);
+                }
+                statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, localContext));
             }
 
             if (statementsToUpdate.Count > 0)

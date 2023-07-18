@@ -15,6 +15,5 @@
   <ItemGroup>
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="../common/common.csproj" />
-    <ProjectReference Include="$(TestSourceDir)Common\CoreCLRTestLibrary\CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

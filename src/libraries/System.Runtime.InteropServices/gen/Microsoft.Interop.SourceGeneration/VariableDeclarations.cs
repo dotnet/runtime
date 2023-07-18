@@ -22,10 +22,6 @@ namespace Microsoft.Interop
                 TypePositionInfo info = marshaller.TypeInfo;
                 if (info.IsManagedReturnPosition)
                     continue;
-                initializations.Add(MarshallerHelpers.DeclareWithModifiers(
-                    info,
-                    context.GetIdentifiers(info).managed,
-                    LiteralExpression(CodeAnalysis.CSharp.SyntaxKind.DefaultLiteralExpression)));
 
                 if (info.RefKind == RefKind.Out)
                 {
@@ -84,29 +80,54 @@ namespace Microsoft.Interop
             ImmutableArray<StatementSyntax>.Builder initializations = ImmutableArray.CreateBuilder<StatementSyntax>();
             ImmutableArray<LocalDeclarationStatementSyntax>.Builder variables = ImmutableArray.CreateBuilder<LocalDeclarationStatementSyntax>();
 
-            foreach (var marshaller in marshallers.SignatureMarshallers)
-            {
-                TypePositionInfo info = marshaller.TypeInfo;
-                if (info.IsNativeReturnPosition || info.IsManagedReturnPosition)
-                    continue;
-                // Initialize <param>_native
-                TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
-                initializations.Add(MarshallerHelpers.Declare(localType, context.GetIdentifiers(info).native, true));
-            }
             foreach (BoundGenerator marshaller in marshallers.NativeParameterMarshallers)
             {
                 TypePositionInfo info = marshaller.TypeInfo;
-                if (info.IsNativeReturnPosition || info.IsManagedReturnPosition)
+                if (info.IsNativeReturnPosition)
+                    continue;
+
+                if (info.IsManagedReturnPosition)
                     continue;
 
                 // Declare variables for parameters
                 AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
+
+                {
+                    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
+                    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
+                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                        && boundaryBehavior is not
+                            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
+                    {
+                        if (MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                        {
+                            string outlocal = context.GetAdditionalIdentifier(info, "out");
+                            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
+                        }
+                    }
+                }
             }
 
             if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
+                {
+                    var marshaller = marshallers.ManagedReturnMarshaller;
+                    var info = marshaller.TypeInfo;
+                    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
+                    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
+                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                        && boundaryBehavior is not
+                            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
+                    {
+                        if (MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                        {
+                            string outlocal = context.GetAdditionalIdentifier(info, "out");
+                            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
+                        }
+                    }
+                }
             }
 
             if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
@@ -125,6 +146,7 @@ namespace Microsoft.Interop
             {
                 (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
 
+                var info = marshaller.TypeInfo;
                 // Declare variable for return value
                 if (marshaller.TypeInfo.IsNativeReturnPosition)
                 {
@@ -156,19 +178,32 @@ namespace Microsoft.Interop
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
                         TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
-                        if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
+                        if (MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
                         {
+                            string outlocal = context.GetAdditionalIdentifier(info, "out");
+                            // <nativeType> __param_native_out;
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
-                                localType,
-                                native,
-                                false));
+                                marshaller.Generator.AsNativeType(info).Syntax,
+                                outlocal,
+                                true));
                         }
-                        else
+                        //if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
+                        //{
+                        // <nativeType> __param_native;
+                        //else
+                        //{
+                        //    statementsToUpdate.Add(MarshallerHelpers.Declare(
+                        //        localType,
+                        //        native,
+                        //        false));
+                        //}
+                        //}
+                        if (boundaryBehavior is ValueBoundaryBehavior.AddressOfNativeIdentifier)
                         {
-                            // To simplify propagating back the value to the "byref" parameter,
+                            // To simplify propogating back the value to the "byref" parameter,
                             // we'll just declare the native identifier as a ref to its type.
                             // The rest of the code we generate will work as expected, and we don't need
-                            // to manually propagate back the updated values after the call.
+                            // to manually propogate back the updated values after the call.
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
                                 RefType(localType),
                                 native,

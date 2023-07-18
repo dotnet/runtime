@@ -28,8 +28,7 @@
 
 static_assert((THUNK_SIZE % 4) == 0, "Thunk stubs size not aligned correctly. This will cause runtime failures.");
 
-// 32 K or OS page
-#define THUNKS_MAP_SIZE (max(0x8000, OS_PAGE_SIZE))
+#define THUNKS_MAP_SIZE 0x8000     // 32 K
 
 #ifdef TARGET_ARM
 //*****************************************************************************
@@ -57,7 +56,7 @@ void EncodeThumb2Mov32(uint16_t * pCode, uint32_t value, uint8_t rDestination)
 
 COOP_PINVOKE_HELPER(int, RhpGetNumThunkBlocksPerMapping, ())
 {
-    ASSERT_MSG((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
+    static_assert((THUNKS_MAP_SIZE % OS_PAGE_SIZE) == 0, "Thunks map size should be in multiples of pages");
 
     return THUNKS_MAP_SIZE / OS_PAGE_SIZE;
 }
