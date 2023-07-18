@@ -3,8 +3,15 @@
 
 #pragma once
 
-#include "pal_compiler.h"
-#include "pal_types.h"
+#include <libs/Common/pal_compiler.h>
+#ifdef __cplusplus
+extern "C"
+{
+#endif // __cplusplus
 
 PALEXPORT void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);
 PALEXPORT int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus

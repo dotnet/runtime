@@ -21,6 +21,8 @@
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
+#include <minipal/random.h>
+
 // The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
 // class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
 // implemented in some manner that doesn't rely on the Thread class.
@@ -706,80 +708,6 @@ void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
 #endif
 }
 
-// Generate cryptographically strong random bytes.
-// Return 0 on success, -1 on failure.
-// copying code from SystemNative_GetCryptographicallySecureRandomBytes with slight modification
-int32_t aot_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength)
-{
-    assert(buffer != NULL);
-#ifdef __linux__
-    static volatile int rand_des = -1;
-    static bool sMissingDevURandom;
-
-    if (!sMissingDevURandom)
-    {
-        if (rand_des == -1)
-        {
-            int fd;
-
-            do
-            {
-                fd = open("/dev/urandom", O_RDONLY);
-                fcntl(fd, F_SETFD, FD_CLOEXEC);
-            }
-            while ((fd == -1) && (errno == EINTR));
-
-            if (fd != -1)
-            {
-                int expected = -1;
-                if (!__atomic_compare_exchange_n(&rand_des, &expected, fd, false, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
-                {
-                    // Another thread has already set the rand_des
-                    close(fd);
-                }
-            }
-            else if (errno == ENOENT)
-            {
-                sMissingDevURandom = true;
-            }
-        }
-
-        if (rand_des != -1)
-        {
-            int32_t offset = 0;
-            do
-            {
-                ssize_t n = read(rand_des, buffer + offset , (size_t)(bufferLength - offset));
-                if (n == -1)
-                {
-                    if (errno == EINTR)
-                    {
-                        continue;
-                    }
-                    return -1;
-                }
-
-                offset += n;
-            }
-            while (offset != bufferLength);
-            return 0;
-        }
-    }
-#elif defined(__APPLE__) && __APPLE__
-    CCRNGStatus status = CCRandomGenerateBytes(buffer, bufferLength);
-
-    if (status == kCCSuccess)
-    {
-        return 0;
-    }
-    else
-    {
-        return -1;
-    }
-#endif
-    return -1;
-}
-
 void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_len)
 {
     // We call CoCreateGuid for windows, and use a random generator for non-windows
@@ -789,7 +717,7 @@ void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_le
 #ifdef HOST_WIN32
     CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
 #else
-    if(aot_get_cryptographically_secure_random_bytes(activity_id, activity_id_len)==-1)
+    if(SystemNative_GetCryptographicallySecureRandomBytes(activity_id, activity_id_len)==-1)
     {
         *activity_id=0;
         return;

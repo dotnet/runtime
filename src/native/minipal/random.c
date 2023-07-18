@@ -14,8 +14,8 @@
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
-#include "pal_config.h"
-#include "pal_random.h"
+// #include "pal_config.h"
+#include "random.h"
 
 /*
 

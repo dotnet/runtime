@@ -20,7 +20,7 @@
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
 #include "pal_process.h"
-#include "pal_random.h"
+#include <minipal/random.h>
 #include "pal_runtimeinformation.h"
 #include "pal_searchpath.h"
 #include "pal_signal.h"
