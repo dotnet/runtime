@@ -21,12 +21,12 @@ namespace System.Formats.Tar
 
             bool isDirectory = (attributes & FileAttributes.Directory) != 0;
 
-            Interop.Kernel32.WIN32_FIND_DATA data = default;
-            Interop.Kernel32.GetFindData(fullPath, isDirectory, ignoreAccessDenied: false, ref data);
-
             TarEntryType entryType;
             if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
+                Interop.Kernel32.WIN32_FIND_DATA data = default;
+                Interop.Kernel32.GetFindData(fullPath, isDirectory, ignoreAccessDenied: false, ref data);
+
                 if (data.dwReserved0 is Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK or
                                         Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
                 {
