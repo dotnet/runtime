@@ -3993,7 +3993,8 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgGlobalMorph)
             {
-                omitCopy = (varDsc->lvLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) && !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
+                omitCopy = (varDsc->lvLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) &&
+                           !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
             if (omitCopy)
@@ -14710,12 +14711,12 @@ PhaseStatus Compiler::fgPromoteStructs()
 //   to end up with
 //
 //     [000015] --CXG+-----             ▌  CALL      void   Program:Foo(int,int)
-//     [000037] DACXG------ arg1 setup  ├──▌  STORE_LCL_VAR int    V04 tmp3         
+//     [000037] DACXG------ arg1 setup  ├──▌  STORE_LCL_VAR int    V04 tmp3
 //     [000012] --CXG+-----             │  └──▌  CALL      int    Program:Bar(S):int
 //     [000011] -----+----- arg0 in rcx │     └──▌  LCL_ADDR  long   V00 loc0         [+0]
-//     [000038] ----------- arg1 in rdx ├──▌  LCL_VAR   int    V04 tmp3         
+//     [000038] ----------- arg1 in rdx ├──▌  LCL_VAR   int    V04 tmp3
 //     [000010] -----+----- arg0 in rcx └──▌  LCL_FLD   int   (AX) V00 loc0         [+0]
-// 
+//
 //   If Bar mutates V00 then this is a problem.
 //
 // Returns:
@@ -14733,7 +14734,7 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
     {
         enum
         {
-            DoPreOrder = true,
+            DoPreOrder        = true,
             UseExecutionOrder = true,
         };
 
@@ -14769,7 +14770,7 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                     continue;
                 }
 
-                unsigned lclNum = argNode->AsLclVarCommon()->GetLclNum();
+                unsigned   lclNum = argNode->AsLclVarCommon()->GetLclNum();
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
                 if (varDsc->lvLastUseCopyOmissionCandidate)
@@ -14795,10 +14796,12 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                     continue;
                 }
 
-                unsigned structSize = argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(m_compiler)->GetSize() : genTypeSize(argNode);
+                unsigned structSize =
+                    argNode->TypeIs(TYP_STRUCT) ? argNode->GetLayout(m_compiler)->GetSize() : genTypeSize(argNode);
 
                 Compiler::structPassingKind passKind;
-                m_compiler->getArgTypeForStruct(arg.GetSignatureClassHandle(), &passKind, call->IsVarargs(), structSize);
+                m_compiler->getArgTypeForStruct(arg.GetSignatureClassHandle(), &passKind, call->IsVarargs(),
+                                                structSize);
 
                 if (passKind != SPK_ByReference)
                 {
