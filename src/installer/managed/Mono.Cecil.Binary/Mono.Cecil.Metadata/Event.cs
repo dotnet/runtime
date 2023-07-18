@@ -33,7 +33,7 @@ namespace Mono.Cecil.Metadata
 {
     using Mono.Cecil;
 
-    internal sealed class EventTable : IMetadataTable
+    public sealed class EventTable : IMetadataTable
     {
         public const int RId = 0x14;
 
@@ -67,7 +67,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class EventRow : IMetadataRow
+    public sealed class EventRow : IMetadataRow
     {
         public EventAttributes EventFlags;
         public uint Name;

@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum AssemblyFlags : uint
+    public enum AssemblyFlags : uint
     {
         PublicKey = 0x0001,
         SideBySideCompatible = 0x0000,

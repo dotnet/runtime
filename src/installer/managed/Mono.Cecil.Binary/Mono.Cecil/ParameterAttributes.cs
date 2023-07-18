@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum ParameterAttributes : ushort
+    public enum ParameterAttributes : ushort
     {
         None = 0x0000,
         In = 0x0001, // Param is [In]

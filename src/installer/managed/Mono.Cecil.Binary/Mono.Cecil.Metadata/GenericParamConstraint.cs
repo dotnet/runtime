@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class GenericParamConstraintTable : IMetadataTable
+    public sealed class GenericParamConstraintTable : IMetadataTable
     {
         public const int RId = 0x2c;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class GenericParamConstraintRow : IMetadataRow
+    public sealed class GenericParamConstraintRow : IMetadataRow
     {
         public uint Owner;
         public MetadataToken Constraint;

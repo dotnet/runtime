@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class ModuleTable : IMetadataTable
+    public sealed class ModuleTable : IMetadataTable
     {
         public const int RId = 0x00;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class ModuleRow : IMetadataRow
+    public sealed class ModuleRow : IMetadataRow
     {
         public ushort Generation;
         public uint Name;

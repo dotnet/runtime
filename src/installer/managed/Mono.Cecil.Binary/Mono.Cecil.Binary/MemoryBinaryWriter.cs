@@ -31,7 +31,7 @@ namespace Mono.Cecil.Binary
     using System.IO;
     using System.Text;
 
-    internal sealed class MemoryBinaryWriter : BinaryWriter
+    public sealed class MemoryBinaryWriter : BinaryWriter
     {
         public MemoryStream MemoryStream
         {

@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal sealed class PEOptionalHeader : IHeader, IBinaryVisitable
+    public sealed class PEOptionalHeader : IHeader, IBinaryVisitable
     {
         public StandardFieldsHeader StandardFields;
         public NTSpecificFieldsHeader NTSpecificFields;
@@ -54,7 +54,7 @@ namespace Mono.Cecil.Binary
             DataDirectories.Accept(visitor);
         }
 
-        internal sealed class StandardFieldsHeader : IHeader, IBinaryVisitable
+        public sealed class StandardFieldsHeader : IHeader, IBinaryVisitable
         {
             public ushort Magic;
             public byte LMajor;
@@ -95,7 +95,7 @@ namespace Mono.Cecil.Binary
             }
         }
 
-        internal sealed class NTSpecificFieldsHeader : IHeader, IBinaryVisitable
+        public sealed class NTSpecificFieldsHeader : IHeader, IBinaryVisitable
         {
             public ulong ImageBase;
             public uint SectionAlignment;
@@ -152,7 +152,7 @@ namespace Mono.Cecil.Binary
             }
         }
 
-        internal sealed class DataDirectoriesHeader : IHeader, IBinaryVisitable
+        public sealed class DataDirectoriesHeader : IHeader, IBinaryVisitable
         {
             public DataDirectory ExportTable;
             public DataDirectory ImportTable;

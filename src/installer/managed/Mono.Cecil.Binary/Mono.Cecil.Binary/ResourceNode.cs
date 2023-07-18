@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal abstract class ResourceNode
+    public abstract class ResourceNode
     {
         public int Offset;
 

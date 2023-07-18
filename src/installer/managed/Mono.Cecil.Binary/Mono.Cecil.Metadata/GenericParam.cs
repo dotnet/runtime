@@ -33,7 +33,7 @@ namespace Mono.Cecil.Metadata
 {
     using Mono.Cecil;
 
-    internal sealed class GenericParamTable : IMetadataTable
+    public sealed class GenericParamTable : IMetadataTable
     {
         public const int RId = 0x2a;
 
@@ -67,7 +67,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class GenericParamRow : IMetadataRow
+    public sealed class GenericParamRow : IMetadataRow
     {
         public ushort Number;
         public GenericParameterAttributes Flags;

@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal sealed class Section : IHeader, IBinaryVisitable
+    public sealed class Section : IHeader, IBinaryVisitable
     {
         public const string Text = ".text";
         public const string Resources = ".rsrc";

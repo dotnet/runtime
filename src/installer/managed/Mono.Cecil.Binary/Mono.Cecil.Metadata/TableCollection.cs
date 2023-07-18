@@ -31,7 +31,7 @@ namespace Mono.Cecil.Metadata
     using System;
     using System.Collections;
 
-    internal class TableCollection : ICollection, IMetadataTableVisitable
+    public class TableCollection : ICollection, IMetadataTableVisitable
     {
         IMetadataTable[] m_tables = new IMetadataTable [TablesHeap.MaxTableCount];
 

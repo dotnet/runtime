@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class TypeSpecTable : IMetadataTable
+    public sealed class TypeSpecTable : IMetadataTable
     {
         public const int RId = 0x1b;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class TypeSpecRow : IMetadataRow
+    public sealed class TypeSpecRow : IMetadataRow
     {
         public uint Signature;
 

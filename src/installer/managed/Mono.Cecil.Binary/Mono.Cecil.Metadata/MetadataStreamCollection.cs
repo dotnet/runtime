@@ -31,7 +31,7 @@ namespace Mono.Cecil.Metadata
     using System;
     using System.Collections;
 
-    internal class MetadataStreamCollection : ICollection, IMetadataVisitable
+    public class MetadataStreamCollection : ICollection, IMetadataVisitable
     {
         IList m_items;
 

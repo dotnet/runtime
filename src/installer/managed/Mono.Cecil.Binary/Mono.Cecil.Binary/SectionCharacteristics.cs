@@ -31,7 +31,7 @@ namespace Mono.Cecil.Binary
     using System;
 
     [Flags]
-    internal enum SectionCharacteristics : uint
+    public enum SectionCharacteristics : uint
     {
         TypeNoPad = 0x0000008,
         ContainsCode = 0x00000020,

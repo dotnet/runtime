@@ -32,7 +32,7 @@ namespace Mono.Cecil.Metadata
     using System.Collections;
     using System.IO;
 
-    internal class BlobHeap : MetadataHeap
+    public class BlobHeap : MetadataHeap
     {
         internal BlobHeap(MetadataStream stream) : base(stream, MetadataStream.Blob)
         {

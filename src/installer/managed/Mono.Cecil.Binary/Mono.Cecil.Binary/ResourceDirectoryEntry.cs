@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal class ResourceDirectoryEntry : ResourceNode
+    public class ResourceDirectoryEntry : ResourceNode
     {
         private bool m_idByName;
 

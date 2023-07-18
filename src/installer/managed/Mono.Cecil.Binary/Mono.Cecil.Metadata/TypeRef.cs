@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class TypeRefTable : IMetadataTable
+    public sealed class TypeRefTable : IMetadataTable
     {
         public const int RId = 0x01;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class TypeRefRow : IMetadataRow
+    public sealed class TypeRefRow : IMetadataRow
     {
         public MetadataToken ResolutionScope;
         public uint Name;

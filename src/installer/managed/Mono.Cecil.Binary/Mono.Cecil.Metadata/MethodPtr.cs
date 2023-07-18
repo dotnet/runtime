@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class MethodPtrTable : IMetadataTable
+    public sealed class MethodPtrTable : IMetadataTable
     {
         public const int RId = 0x05;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class MethodPtrRow : IMetadataRow
+    public sealed class MethodPtrRow : IMetadataRow
     {
         public uint Method;
 

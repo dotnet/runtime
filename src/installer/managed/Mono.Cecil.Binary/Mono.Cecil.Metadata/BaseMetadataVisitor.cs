@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal abstract class BaseMetadataVisitor : IMetadataVisitor
+    public abstract class BaseMetadataVisitor : IMetadataVisitor
     {
         public virtual void VisitMetadataRoot(MetadataRoot root)
         {
@@ -78,7 +78,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal abstract class BaseMetadataTableVisitor : IMetadataTableVisitor
+    public abstract class BaseMetadataTableVisitor : IMetadataTableVisitor
     {
         public virtual void VisitTableCollection(TableCollection coll)
         {

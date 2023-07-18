@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum PInvokeAttributes : ushort
+    public enum PInvokeAttributes : ushort
     {
         NoMangle = 0x0001, // PInvoke is to use the member name as specified
 

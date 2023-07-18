@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum GenericParameterAttributes : ushort
+    public enum GenericParameterAttributes : ushort
     {
         VarianceMask = 0x0003,
         NonVariant = 0x0000,

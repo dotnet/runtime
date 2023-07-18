@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal struct DataDirectory
+    public struct DataDirectory
     {
         public static readonly DataDirectory Zero = new DataDirectory(RVA.Zero, 0);
 

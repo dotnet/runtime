@@ -31,7 +31,7 @@ namespace Mono.Cecil.Metadata
     using System.Collections;
     using System.Text;
 
-    internal class UserStringsHeap : MetadataHeap
+    public class UserStringsHeap : MetadataHeap
     {
         readonly IDictionary m_strings;
 

@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class ClassLayoutTable : IMetadataTable
+    public sealed class ClassLayoutTable : IMetadataTable
     {
         public const int RId = 0x0f;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class ClassLayoutRow : IMetadataRow
+    public sealed class ClassLayoutRow : IMetadataRow
     {
         public ushort PackingSize;
         public uint ClassSize;

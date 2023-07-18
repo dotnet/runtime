@@ -32,7 +32,7 @@ namespace Mono.Cecil.Binary
     using System.IO;
     using Mono.Cecil.Metadata;
 
-    internal sealed class Image : IBinaryVisitable
+    public sealed class Image : IBinaryVisitable
     {
         DOSHeader m_dosHeader;
         PEFileHeader m_peFileHeader;
@@ -124,7 +124,7 @@ namespace Mono.Cecil.Binary
             set { m_exportTable = value; }
         }
 
-        internal ResourceDirectoryTable ResourceDirectoryRoot
+        public ResourceDirectoryTable ResourceDirectoryRoot
         {
             get { return m_rsrcRoot; }
             set { m_rsrcRoot = value; }
@@ -163,7 +163,7 @@ namespace Mono.Cecil.Binary
                     return rva + sect.PointerToRawData - sect.VirtualAddress;
             }
 
-            throw new ArgumentOutOfRangeException("Cannot map the rva to any section");
+            throw new ArgumentOutOfRangeException(nameof(rva), "Cannot map the rva to any section");
         }
 
         internal Section GetSectionAtVirtualAddress(RVA rva)

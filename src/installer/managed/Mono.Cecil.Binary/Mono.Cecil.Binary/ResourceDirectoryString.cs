@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal class ResourceDirectoryString : ResourceNode
+    public class ResourceDirectoryString : ResourceNode
     {
         public string String;
 

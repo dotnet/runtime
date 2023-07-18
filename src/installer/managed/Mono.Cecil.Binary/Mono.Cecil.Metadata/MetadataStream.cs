@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal class MetadataStream : IMetadataVisitable
+    public class MetadataStream : IMetadataVisitable
     {
         public const string Strings = "#Strings";
         public const string Tables = "#~";
@@ -66,7 +66,7 @@ namespace Mono.Cecil.Metadata
                 m_heap.Accept(visitor);
         }
 
-        internal class MetadataStreamHeader : IMetadataVisitable
+        public class MetadataStreamHeader : IMetadataVisitable
         {
             public uint Offset;
             public uint Size;

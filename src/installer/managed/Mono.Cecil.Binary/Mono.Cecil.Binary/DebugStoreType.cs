@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal enum DebugStoreType : uint
+    public enum DebugStoreType : uint
     {
         Unknown = 0x00000000,
         COFF = 0x00000001,

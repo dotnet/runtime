@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal sealed class CLIHeader : IHeader, IBinaryVisitable
+    public sealed class CLIHeader : IHeader, IBinaryVisitable
     {
         public uint Cb;
         public ushort MajorRuntimeVersion;

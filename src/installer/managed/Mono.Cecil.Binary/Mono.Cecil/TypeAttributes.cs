@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum TypeAttributes : uint
+    public enum TypeAttributes : uint
     {
         // Visibility attributes
         VisibilityMask = 0x00000007, // Use this mask to retrieve visibility information

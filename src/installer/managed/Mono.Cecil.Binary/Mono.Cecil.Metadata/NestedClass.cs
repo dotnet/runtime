@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class NestedClassTable : IMetadataTable
+    public sealed class NestedClassTable : IMetadataTable
     {
         public const int RId = 0x29;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class NestedClassRow : IMetadataRow
+    public sealed class NestedClassRow : IMetadataRow
     {
         public uint NestedClass;
         public uint EnclosingClass;

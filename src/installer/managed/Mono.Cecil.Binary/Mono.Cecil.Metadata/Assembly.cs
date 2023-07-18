@@ -33,7 +33,7 @@ namespace Mono.Cecil.Metadata
 {
     using Mono.Cecil;
 
-    internal sealed class AssemblyTable : IMetadataTable
+    public sealed class AssemblyTable : IMetadataTable
     {
         public const int RId = 0x20;
 
@@ -67,7 +67,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class AssemblyRow : IMetadataRow
+    public sealed class AssemblyRow : IMetadataRow
     {
         public AssemblyHashAlgorithm HashAlgId;
         public ushort MajorVersion;

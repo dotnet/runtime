@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class AssemblyProcessorTable : IMetadataTable
+    public sealed class AssemblyProcessorTable : IMetadataTable
     {
         public const int RId = 0x21;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class AssemblyProcessorRow : IMetadataRow
+    public sealed class AssemblyProcessorRow : IMetadataRow
     {
         public uint Processor;
 

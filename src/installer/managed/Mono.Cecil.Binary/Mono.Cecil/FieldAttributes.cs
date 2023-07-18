@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum FieldAttributes : ushort
+    public enum FieldAttributes : ushort
     {
         FieldAccessMask = 0x0007,
         Compilercontrolled = 0x0000, // Member not referenceable

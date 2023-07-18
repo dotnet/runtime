@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal sealed class PEFileHeader : IHeader, IBinaryVisitable
+    public sealed class PEFileHeader : IHeader, IBinaryVisitable
     {
         public ushort Machine;
         public ushort NumberOfSections;

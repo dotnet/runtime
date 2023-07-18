@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal interface IBinaryVisitor
+    public interface IBinaryVisitor
     {
         void VisitImage(Image img);
         void VisitDOSHeader(DOSHeader header);

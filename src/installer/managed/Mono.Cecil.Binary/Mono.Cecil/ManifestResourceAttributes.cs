@@ -31,7 +31,7 @@ namespace Mono.Cecil
     using System;
 
     [Flags]
-    internal enum ManifestResourceAttributes
+    public enum ManifestResourceAttributes
     {
         VisibilityMask = 0x0007,
         Public = 0x0001, // The resource is exported from the Assembly

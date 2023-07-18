@@ -31,7 +31,7 @@ namespace Mono.Cecil.Metadata
     using System;
     using System.Collections;
 
-    internal class RowCollection : ICollection, IMetadataRowVisitable
+    public class RowCollection : ICollection, IMetadataRowVisitable
     {
         ArrayList m_items;
 

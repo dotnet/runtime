@@ -33,7 +33,7 @@ namespace Mono.Cecil.Metadata
     using System.Text;
     using Mono.Cecil.Binary;
 
-    sealed class MetadataReader : BaseMetadataVisitor
+    public sealed class MetadataReader : BaseMetadataVisitor
     {
         ImageReader m_ir;
         BinaryReader m_binaryReader;

@@ -30,7 +30,7 @@ namespace Mono.Cecil.Binary
 {
     using System;
 
-    internal sealed class DebugHeader : IHeader, IBinaryVisitable
+    public sealed class DebugHeader : IHeader, IBinaryVisitable
     {
         public uint Characteristics;
         public uint TimeDateStamp;

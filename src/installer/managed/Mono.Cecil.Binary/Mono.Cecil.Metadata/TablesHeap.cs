@@ -31,7 +31,7 @@ namespace Mono.Cecil.Metadata
     using System;
     using System.Collections;
 
-    internal class TablesHeap : MetadataHeap
+    public class TablesHeap : MetadataHeap
     {
         public uint Reserved;
         public byte MajorVersion;

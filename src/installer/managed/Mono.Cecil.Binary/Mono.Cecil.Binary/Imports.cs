@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal sealed class ImportAddressTable : IBinaryVisitable
+    public sealed class ImportAddressTable : IBinaryVisitable
     {
         public RVA HintNameTableRVA;
 
@@ -42,7 +42,7 @@ namespace Mono.Cecil.Binary
         }
     }
 
-    internal sealed class ImportTable : IBinaryVisitable
+    public sealed class ImportTable : IBinaryVisitable
     {
         public RVA ImportLookupTable;
         public uint DateTimeStamp;
@@ -60,7 +60,7 @@ namespace Mono.Cecil.Binary
         }
     }
 
-    internal sealed class ImportLookupTable : IBinaryVisitable
+    public sealed class ImportLookupTable : IBinaryVisitable
     {
         public RVA HintNameRVA;
 
@@ -74,7 +74,7 @@ namespace Mono.Cecil.Binary
         }
     }
 
-    internal sealed class HintNameTable : IBinaryVisitable
+    public sealed class HintNameTable : IBinaryVisitable
     {
         public const string RuntimeMainExe = "_CorExeMain";
         public const string RuntimeMainDll = "_CorDllMain";

@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal struct RVA
+    public struct RVA
     {
         public static readonly RVA Zero = new RVA(0);
 

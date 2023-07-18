@@ -31,7 +31,7 @@
 
 namespace Mono.Cecil.Metadata
 {
-    internal sealed class ConstantTable : IMetadataTable
+    public sealed class ConstantTable : IMetadataTable
     {
         public const int RId = 0x0b;
 
@@ -65,7 +65,7 @@ namespace Mono.Cecil.Metadata
         }
     }
 
-    internal sealed class ConstantRow : IMetadataRow
+    public sealed class ConstantRow : IMetadataRow
     {
         public ElementType Type;
         public MetadataToken Parent;

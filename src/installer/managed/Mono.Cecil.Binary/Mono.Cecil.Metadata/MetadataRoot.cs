@@ -30,7 +30,7 @@ namespace Mono.Cecil.Metadata
 {
     using Mono.Cecil.Binary;
 
-    internal sealed class MetadataRoot : IMetadataVisitable
+    public sealed class MetadataRoot : IMetadataVisitable
     {
         MetadataRootHeader m_header;
         Image m_image;
@@ -59,7 +59,8 @@ namespace Mono.Cecil.Metadata
             return m_image;
         }
 
-        public void Accept(IMetadataVisitor visitor)
+        void IMetadataVisitable.Accept(IMetadataVisitor visitor) => Accept(visitor);
+        internal void Accept(IMetadataVisitor visitor)
         {
             visitor.VisitMetadataRoot(this);
 
@@ -69,7 +70,7 @@ namespace Mono.Cecil.Metadata
             visitor.TerminateMetadataRoot(this);
         }
 
-        internal sealed class MetadataRootHeader : IHeader, IMetadataVisitable
+        public sealed class MetadataRootHeader : IHeader, IMetadataVisitable
         {
             public const uint StandardSignature = 0x424a5342;
 

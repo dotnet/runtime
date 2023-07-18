@@ -31,7 +31,7 @@ namespace Mono.Cecil.Binary
     using System;
     using System.Collections;
 
-    internal sealed class SectionCollection : ICollection, IBinaryVisitable
+    public sealed class SectionCollection : ICollection, IBinaryVisitable
     {
         IList m_items;
 

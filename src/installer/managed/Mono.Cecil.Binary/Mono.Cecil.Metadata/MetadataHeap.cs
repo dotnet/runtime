@@ -31,7 +31,7 @@ namespace Mono.Cecil.Metadata
     using System;
     using Mono.Cecil;
 
-    internal abstract class MetadataHeap : IMetadataVisitable
+    public abstract class MetadataHeap : IMetadataVisitable
     {
         MetadataStream m_stream;
         string m_name;

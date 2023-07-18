@@ -28,7 +28,7 @@
 
 namespace Mono.Cecil.Binary
 {
-    internal abstract class BaseImageVisitor : IBinaryVisitor
+    public abstract class BaseImageVisitor : IBinaryVisitor
     {
         public virtual void VisitImage(Image img)
         {
