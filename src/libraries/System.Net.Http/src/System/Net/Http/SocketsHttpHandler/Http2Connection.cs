@@ -2104,11 +2104,11 @@ namespace System.Net.Http
             }
             catch (HttpIOException e)
             {
-                throw new HttpRequestException(e.Message, e, httpRequestError: e.HttpRequestError);
+                throw new HttpRequestException(e.HttpRequestError, e.Message, e);
             }
             catch (Exception e) when (e is IOException || e is ObjectDisposedException || e is InvalidOperationException)
             {
-                throw new HttpRequestException(SR.net_http_client_execution_error, e, httpRequestError: HttpRequestError.Unknown);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, e);
             }
         }
 
