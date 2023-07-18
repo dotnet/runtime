@@ -180,27 +180,11 @@ namespace
             eventpipe_tls_instance = NULL;
         }
     }
-
-    EventPipeThreadHolder* get_thread_holder ()
-    {
-        return eventpipe_tls_instance;
-    }
-
-    EventPipeThreadHolder* create_thread_holder ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-
-        // Free any existing holder
-        free_thread_holder ();
-
-        eventpipe_tls_instance = thread_holder_alloc_func ();
-        return eventpipe_tls_instance;
-    }
 }
 
 EventPipeThread* ep_rt_aot_thread_get (void)
 {
-    EventPipeThreadHolder *thread_holder = get_thread_holder ();
+    EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
     return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
 }
 
@@ -210,9 +194,8 @@ EventPipeThread* ep_rt_aot_thread_get_or_create (void)
     if (thread != NULL)
         return thread;
 
-    EventPipeThreadHolder *thread_holder = create_thread_holder ();
-
-    return ep_thread_holder_get_thread (thread_holder);
+    eventpipe_tls_instance = thread_holder_alloc_func ();
+    return ep_thread_holder_get_thread (eventpipe_tls_instance);
 }
 
 void
