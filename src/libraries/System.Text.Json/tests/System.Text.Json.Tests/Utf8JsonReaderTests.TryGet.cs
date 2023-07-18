@@ -1189,97 +1189,11 @@ namespace System.Text.Json.Tests
             }
         }
 
-#if NET8_0_OR_GREATER
-        [Theory]
-        [MemberData(nameof(CopyString_JsonNumber_Utf8_TheoryData))]
-        public static void CopyString_JsonNumber_Utf8_SuccessPath(string jsonNumber, byte[] expectedOutputUtf8)
-        {
-            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(jsonNumber, Test);
-
-            void Test(ref Utf8JsonReader reader)
-            {
-                Assert.True(reader.Read());
-                Span<byte> destination = new byte[40];
-                int bytesWritten = reader.CopyString(destination);
-                Assert.Equal(expectedOutputUtf8.Length, bytesWritten);
-                AssertExtensions.SequenceEqual(expectedOutputUtf8, destination.Slice(0, bytesWritten));
-            }
-        }
-
-        [Theory]
-        [MemberData(nameof(CopyString_JsonNumber_Utf16_TheoryData))]
-        public static void CopyString_JsonNumber_Utf16_SuccessPath(string jsonNumber, char[] expectedOutputUtf16)
-        {
-            JsonTestHelper.AssertWithSingleAndMultiSegmentReader(jsonNumber, Test);
-
-            void Test(ref Utf8JsonReader reader)
-            {
-                Assert.True(reader.Read());
-                Span<char> destination = new char[40];
-                int charsWritten = reader.CopyString(destination);
-                Assert.Equal(expectedOutputUtf16.Length, charsWritten);
-                AssertExtensions.SequenceEqual(expectedOutputUtf16, destination.Slice(0, charsWritten));
-            }
-        }
-
-        public static IEnumerable<object[]> CopyString_JsonNumber_Utf8_TheoryData()
-            => CopyString_JsonNumber_TheoryData(useUtf8: true);
-
-        public static IEnumerable<object[]> CopyString_JsonNumber_Utf16_TheoryData()
-            => CopyString_JsonNumber_TheoryData(useUtf8: false);
-
-        private static IEnumerable<object[]> CopyString_JsonNumber_TheoryData(bool useUtf8)
-        {
-            // Signed
-            yield return GetStringAndFormatFromNumber(int.MaxValue);
-            yield return GetStringAndFormatFromNumber(int.MinValue);
-            yield return GetStringAndFormatFromNumber(long.MaxValue);
-            yield return GetStringAndFormatFromNumber(long.MinValue);
-            yield return GetStringAndFormatFromNumber(Int128.MaxValue);
-            yield return GetStringAndFormatFromNumber(Int128.MinValue);
-            // Unsigned
-            yield return GetStringAndFormatFromNumber(uint.MaxValue);
-            yield return GetStringAndFormatFromNumber(uint.MinValue);
-            yield return GetStringAndFormatFromNumber(ulong.MaxValue);
-            yield return GetStringAndFormatFromNumber(ulong.MinValue);
-            yield return GetStringAndFormatFromNumber(UInt128.MaxValue);
-            yield return GetStringAndFormatFromNumber(UInt128.MinValue);
-            // Floating point
-            yield return GetStringAndFormatFromNumber(Half.MaxValue);
-            yield return GetStringAndFormatFromNumber(Half.MinValue);
-            yield return GetStringAndFormatFromNumber(float.MaxValue);
-            yield return GetStringAndFormatFromNumber(float.MinValue);
-            yield return GetStringAndFormatFromNumber(double.MaxValue);
-            yield return GetStringAndFormatFromNumber(double.MinValue);
-
-            object[] GetStringAndFormatFromNumber<T>(T number)
-            {
-                if (useUtf8)
-                {
-                    IUtf8SpanFormattable numberAsUtf8SpanFormattable = Assert.IsAssignableFrom<IUtf8SpanFormattable>(number);
-                    Span<byte> destination = stackalloc byte[40];
-                    bool formattedSuccessfully = numberAsUtf8SpanFormattable.TryFormat(destination, out int bytesWritten, format: default, provider: null);
-                    Assert.True(formattedSuccessfully);
-
-                    return new object[] { number.ToString(), destination.Slice(0, bytesWritten).ToArray() };
-                }
-                else
-                {
-                    ISpanFormattable numberAsSpanFormattable = Assert.IsAssignableFrom<ISpanFormattable>(number);
-                    Span<char> destination = stackalloc char[40];
-                    bool formattedSuccessfully = numberAsSpanFormattable.TryFormat(destination, out int charsWritten, format: default, provider: null);
-                    Assert.True(formattedSuccessfully);
-
-                    return new object[] { number.ToString(), destination.Slice(0, charsWritten).ToArray() };
-                }
-            }
-        }
-#endif
-
         [Theory]
         [InlineData("null")]
         [InlineData("false")]
         [InlineData("true")]
+        [InlineData("42")]
         [InlineData("[]")]
         [InlineData("{}")]
         [InlineData("/* comment */ null", JsonCommentHandling.Allow)]

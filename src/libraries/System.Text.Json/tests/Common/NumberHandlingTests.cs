@@ -781,35 +781,57 @@ namespace System.Text.Json.Serialization.Tests
             async Task PerformFloatingPointSerialization(string testString)
             {
                 string testStringAsJson = $@"""{testString}""";
+#if NETCOREAPP
+                string testJson = @$"{{""HalfNumber"":{testStringAsJson},""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
+#else
                 string testJson = @$"{{""FloatNumber"":{testStringAsJson},""DoubleNumber"":{testStringAsJson}}}";
+#endif
 
                 StructWithNumbers obj;
                 switch (testString)
                 {
                     case "NaN":
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
+#if NETCOREAPP
+                        Assert.Equal(Half.NaN, obj.HalfNumber);
+#endif
                         Assert.Equal(float.NaN, obj.FloatNumber);
                         Assert.Equal(double.NaN, obj.DoubleNumber);
 
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr);
+#if NETCOREAPP
+                        Assert.Equal(Half.NaN, obj.HalfNumber);
+#endif
                         Assert.Equal(float.NaN, obj.FloatNumber);
                         Assert.Equal(double.NaN, obj.DoubleNumber);
                         break;
                     case "Infinity":
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
+#if NETCOREAPP
+                        Assert.Equal(Half.PositiveInfinity, obj.HalfNumber);
+#endif
                         Assert.Equal(float.PositiveInfinity, obj.FloatNumber);
                         Assert.Equal(double.PositiveInfinity, obj.DoubleNumber);
 
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr);
+#if NETCOREAPP
+                        Assert.Equal(Half.PositiveInfinity, obj.HalfNumber);
+#endif
                         Assert.Equal(float.PositiveInfinity, obj.FloatNumber);
                         Assert.Equal(double.PositiveInfinity, obj.DoubleNumber);
                         break;
                     case "-Infinity":
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants);
+#if NETCOREAPP
+                        Assert.Equal(Half.NegativeInfinity, obj.HalfNumber);
+#endif
                         Assert.Equal(float.NegativeInfinity, obj.FloatNumber);
                         Assert.Equal(double.NegativeInfinity, obj.DoubleNumber);
 
                         obj = await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr);
+#if NETCOREAPP
+                        Assert.Equal(Half.NegativeInfinity, obj.HalfNumber);
+#endif
                         Assert.Equal(float.NegativeInfinity, obj.FloatNumber);
                         Assert.Equal(double.NegativeInfinity, obj.DoubleNumber);
                         break;
@@ -854,8 +876,13 @@ namespace System.Text.Json.Serialization.Tests
         public async Task FloatingPointConstants_Fail(string testString)
         {
             string testStringAsJson = $@"""{testString}""";
-
-            string testJson = @$"{{""FloatNumber"":{testStringAsJson}}}";
+            string testJson;
+#if NETCOREAPP
+            testJson = @$"{{""HalfNumber"":{testStringAsJson}}}";
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr));
+#endif
+            testJson = @$"{{""FloatNumber"":{testStringAsJson}}}";
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<StructWithNumbers>(testJson, s_optionReadFromStr));
 
@@ -867,6 +894,11 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task AllowFloatingPointConstants_WriteAsNumber_IfNotConstant()
         {
+#if NETCOREAPP
+            Half half = (Half)1;
+            // Not written as "1"
+            Assert.Equal("1", await Serializer.SerializeWrapper(half, s_optionsAllowFloatConstants));
+#endif
             float @float = 1;
             // Not written as "1"
             Assert.Equal("1", await Serializer.SerializeWrapper(@float, s_optionsAllowFloatConstants));
@@ -882,6 +914,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("-Infinity")]
         public async Task Unquoted_FloatingPointConstants_Read_Fail(string testString)
         {
+#if NETCOREAPP
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<Half>(testString, s_optionsAllowFloatConstants));
+#endif
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<float>(testString, s_optionsAllowFloatConstants));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<double?>(testString, s_optionReadFromStr));
             await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<double>(testString, s_optionReadFromStrAllowFloatConstants));
@@ -889,6 +924,9 @@ namespace System.Text.Json.Serialization.Tests
 
         public struct StructWithNumbers
         {
+#if NETCOREAPP
+            public Half HalfNumber { get; set; }
+#endif
             public float FloatNumber { get; set; }
             public double DoubleNumber { get; set; }
         }
@@ -947,6 +985,12 @@ namespace System.Text.Json.Serialization.Tests
             await AssertFloatingPointIncompatible_Fails<uint?>();
             await AssertFloatingPointIncompatible_Fails<ulong?>();
             await AssertFloatingPointIncompatible_Fails<decimal?>();
+#if NETCOREAPP
+            await AssertFloatingPointIncompatible_Fails<Int128>();
+            await AssertFloatingPointIncompatible_Fails<UInt128>();
+            await AssertFloatingPointIncompatible_Fails<Int128?>();
+            await AssertFloatingPointIncompatible_Fails<UInt128?>();
+#endif
         }
 
         private async Task AssertFloatingPointIncompatible_Fails<T>()
@@ -987,6 +1031,14 @@ namespace System.Text.Json.Serialization.Tests
             await AssertUnsupportedFormatThrows<ulong?>();
             await AssertUnsupportedFormatThrows<float?>();
             await AssertUnsupportedFormatThrows<decimal?>();
+#if NETCOREAPP
+            await AssertUnsupportedFormatThrows<Int128>();
+            await AssertUnsupportedFormatThrows<UInt128>();
+            await AssertUnsupportedFormatThrows<Half>();
+            await AssertUnsupportedFormatThrows<Int128?>();
+            await AssertUnsupportedFormatThrows<UInt128?>();
+            await AssertUnsupportedFormatThrows<Half?>();
+#endif
         }
 
         private async Task AssertUnsupportedFormatThrows<T>()
@@ -1029,6 +1081,12 @@ namespace System.Text.Json.Serialization.Tests
             await PerformEscapingTest(JsonNumberTestData.Floats, options);
             await PerformEscapingTest(JsonNumberTestData.Doubles, options);
             await PerformEscapingTest(JsonNumberTestData.Decimals, options);
+#if NETCOREAPP
+            await PerformEscapingTest(JsonNumberTestData.Int128s, options);
+            await PerformEscapingTest(JsonNumberTestData.UInt128s, options);
+            await PerformEscapingTest(JsonNumberTestData.Halfs, options);
+#endif
+
         }
 
         private async Task PerformEscapingTest<T>(List<T> numbers, JsonSerializerOptions options)

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Globalization;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -36,41 +37,32 @@ namespace System.Text.Json.Serialization.Converters
 
 #if NET8_0_OR_GREATER
             byte[]? rentedBuffer = null;
+            Span<byte> buffer = bufferLength <= JsonConstants.StackallocByteThreshold
+                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
+                : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
 #else
             char[]? rentedBuffer = null;
-#endif
-            try
-            {
-#if NET8_0_OR_GREATER
-                Span<byte> buffer = bufferLength <= JsonConstants.StackallocByteThreshold
-                    ? stackalloc byte[JsonConstants.StackallocByteThreshold]
-                    : (rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferLength));
-#else
-                // Int128.TryParse(ROS<byte>) is not available on .NET 7, only Int128.TryParse(ROS<char>).
-                Span<char> buffer = bufferLength <= JsonConstants.StackallocCharThreshold
-                    ? stackalloc char[JsonConstants.StackallocCharThreshold]
-                    : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
+            Span<char> buffer = bufferLength <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedBuffer = ArrayPool<char>.Shared.Rent(bufferLength));
 #endif
 
-                int written = reader.CopyValue(buffer);
-                if (!Int128.TryParse(buffer.Slice(0, written), out Int128 result))
-                {
-                    ThrowHelper.ThrowFormatException(NumericType.Int128);
-                }
-
-                return result;
-            }
-            finally
+            int written = reader.CopyValue(buffer);
+            if (!TryParse(buffer.Slice(0, written), out Int128 result))
             {
-                if (rentedBuffer != null)
-                {
-#if NET8_0_OR_GREATER
-                    ArrayPool<byte>.Shared.Return(rentedBuffer);
-#else
-                    ArrayPool<char>.Shared.Return(rentedBuffer);
-#endif
-                }
+                ThrowHelper.ThrowFormatException(NumericType.Int128);
             }
+
+            if (rentedBuffer != null)
+            {
+#if NET8_0_OR_GREATER
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+#else
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+#endif
+            }
+
+            return result;
         }
 
         private static void WriteCore(Utf8JsonWriter writer, Int128 value)
@@ -80,8 +72,7 @@ namespace System.Text.Json.Serialization.Converters
 #else
             Span<char> buffer = stackalloc char[MaxFormatLength];
 #endif
-            bool formattedSuccessfully = value.TryFormat(buffer, out int written);
-            Debug.Assert(formattedSuccessfully);
+            Format(buffer, value, out int written);
             writer.WriteRawValue(buffer.Slice(0, written));
         }
 
@@ -98,8 +89,7 @@ namespace System.Text.Json.Serialization.Converters
 #else
             Span<char> buffer = stackalloc char[MaxFormatLength];
 #endif
-            bool formattedSuccessfully = value.TryFormat(buffer, out int bytesWritten);
-            Debug.Assert(formattedSuccessfully);
+            Format(buffer, value, out int written);
             writer.WritePropertyName(buffer);
         }
 
@@ -126,10 +116,9 @@ namespace System.Text.Json.Serialization.Converters
                 Span<char> buffer = stackalloc char[MaxFormatLength + 2];
 #endif
                 buffer[0] = Quote;
-                bool formattedSuccessfully = value.TryFormat(buffer.Slice(1), out int bytesWritten);
-                Debug.Assert(formattedSuccessfully);
+                Format(buffer.Slice(1), value, out int written);
 
-                int length = bytesWritten + 2;
+                int length = written + 2;
                 buffer[length - 1] = Quote;
                 writer.WriteRawValue(buffer.Slice(0, length));
             }
@@ -137,6 +126,30 @@ namespace System.Text.Json.Serialization.Converters
             {
                 WriteCore(writer, value);
             }
+        }
+
+        // Int128.TryParse(ROS<byte>) is not available on .NET 7, only Int128.TryParse(ROS<char>).
+        private static bool TryParse(
+#if NET8_0_OR_GREATER
+            ReadOnlySpan<byte> buffer,
+#else
+            ReadOnlySpan<char> buffer,
+#endif
+            out Int128 result)
+        {
+            return Int128.TryParse(buffer, CultureInfo.InvariantCulture, out result);
+        }
+
+        private static void Format(
+#if NET8_0_OR_GREATER
+            Span<byte> destination,
+#else
+            Span<char> destination,
+#endif
+            Int128 value, out int written)
+        {
+            bool formattedSuccessfully = value.TryFormat(destination, out written, provider: CultureInfo.InvariantCulture);
+            Debug.Assert(formattedSuccessfully);
         }
     }
 }
