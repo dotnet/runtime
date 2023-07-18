@@ -2109,7 +2109,8 @@ bool OptRangePatternDsc::optChangeToSwitch()
         // Check if prevBlock is the predecessor of currBb
         assert(currBb != nullptr && prevBlock != nullptr);
         FlowEdge** ptrToPred;
-        assert(m_comp->fgGetPredForBlock(currBb, prevBlock, &ptrToPred) != nullptr);
+        FlowEdge*  pred = m_comp->fgGetPredForBlock(currBb, prevBlock, &ptrToPred);
+        assert(pred != nullptr);
 
         m_comp->fgRemoveRefPred(currBb, prevBlock);
 
