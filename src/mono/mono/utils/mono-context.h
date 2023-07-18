@@ -47,7 +47,12 @@ typedef __uint128_t MonoContextSimdReg;
 #endif
 #elif defined(__linux__) && defined(__GLIBC__)
 #define MONO_HAVE_SIMD_REG
+#if !defined(MONO_CROSS_COMPILE)
 typedef struct _libc_xmmreg MonoContextSimdReg;
+#else
+/* if building for an arm64 host machine, a cross compiler that produces x64 modules, fake a MonoContextSimdReg */
+typedef __uint128_t MonoContextSimdReg;
+#endif
 #elif defined(HOST_WIN32)
 #define MONO_HAVE_SIMD_REG
 //#define MONO_HAVE_SIMD_REG_AVX
