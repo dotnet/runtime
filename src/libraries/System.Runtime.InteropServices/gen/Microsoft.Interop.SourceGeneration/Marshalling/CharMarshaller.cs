@@ -106,14 +106,17 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
-                        yield return ExpressionStatement(
-                            AssignmentExpression(
-                                SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(managedIdentifier),
-                                CastExpression(
-                                    PredefinedType(
-                                        Token(SyntaxKind.CharKeyword)),
-                                    IdentifierName(nativeIdentifier))));
+                        if (info.IsByRef)
+                        {
+                            yield return ExpressionStatement(
+                                AssignmentExpression(
+                                    SyntaxKind.SimpleAssignmentExpression,
+                                    IdentifierName(managedIdentifier),
+                                    CastExpression(
+                                        PredefinedType(
+                                            Token(SyntaxKind.CharKeyword)),
+                                        IdentifierName(nativeIdentifier))));
+                        }
                     }
 
                     break;

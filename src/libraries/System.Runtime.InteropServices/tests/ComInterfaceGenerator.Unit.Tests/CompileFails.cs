@@ -816,27 +816,21 @@ namespace ComInterfaceGenerator.Unit.Tests
         {
             var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
             const string inAttribute = "[{|#1:InAttribute|}]";
-            const string outAttribute = "[{|#2:OutAttribute|}]";
             const string paramName = "p";
             string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
-            const string constElementCount = @"[MarshalUsing(ConstantElementCount = 10)]";
-            var inOutAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+            var inAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
                     .WithLocation(1)
-                    .WithLocation(2)
-                    .WithArguments(SR.InOutAttributes, paramName, SR.PinnedMarshallingIsInOutByDefault);
-            yield return new object[] {
-                ID(),
-                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                //https://github.com/dotnet/runtime/issues/88708
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
-            };
+                    .WithArguments(SR.InOutAttributes, paramName, SR.InAttributeOnlyIsDefault);
+
+
+            // [In] is default for all non-pinned marshalled types
+            yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U2)]", "char", paramNameWithLocation), new DiagnosticResult[] {
+                inAttributeIsDefaultDiagnostic } };
         }
 
         [Theory]
-        [MemberData(nameof(ByValueMarshalAttributeOnValueTypes))]
-        [MemberData(nameof(ByValueMarshalAttributeOnReferenceTypes))]
-        [MemberData(nameof(ByValueMarshalAttributeOnPinnedMarshalledTypes))]
+        [MemberData(nameof(DirectedTestCase))]
         public async Task VerifyByValueMarshallingAttributeUsage(string id, string source, DiagnosticResult[] diagnostics)
         {
             _ = id;
