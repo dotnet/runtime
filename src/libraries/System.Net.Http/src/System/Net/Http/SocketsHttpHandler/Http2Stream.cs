@@ -610,9 +610,8 @@ namespace System.Net.Http
 
                     if (_responseProtocolState == ResponseProtocolState.ExpectingHeaders)
                     {
-                        // TODO: Fix
                         if (NetEventSource.Log.IsEnabled()) Trace("Received extra status header.");
-                        throw new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.net_http_invalid_response_multiple_status_codes);
+                        throw new HttpRequestException(HttpRequestError.InvalidResponse, SR.net_http_invalid_response_multiple_status_codes);
                     }
 
                     if (_responseProtocolState != ResponseProtocolState.ExpectingStatus)
