@@ -513,6 +513,11 @@
                        Include="@(HighAOTResourceRequiringProject)" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(EnableNativeSanitizers)' != ''">
+    <!-- The heavy recursion in the JSON tests suite causes an instrumented runtime to stack-overflow on some tests. -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup>
     <SmokeTestProject Include="$(MSBuildThisFileDirectory)System.Runtime\tests\System.Runtime.Tests.csproj" />
     <GrpcTestProject Include="$(RepoRoot)\src\tests\FunctionalTests\Android\Device_Emulator\gRPC\Android.Device_Emulator.gRPC.Test.csproj" />

@@ -555,6 +555,12 @@ if(GCC)
     set(WERROR_C "${WERROR_C} -Werror=incompatible-pointer-types")
   endif()
 
+  # Check for sometimes suppressed warnings
+  check_c_compiler_flag(-Wreserved-identifier COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  if(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+    add_compile_definitions(COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER)
+  endif()
+
   if(HOST_WASI)
     # When building under WASI SDK, it's stricter about discarding 'const' qualifiers, causing some existing
     # code (e.g., mono-rand.c:315) to be rejected

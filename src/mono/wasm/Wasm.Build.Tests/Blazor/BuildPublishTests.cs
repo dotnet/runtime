@@ -16,7 +16,7 @@ using Microsoft.Playwright;
 
 namespace Wasm.Build.Tests.Blazor;
 
-public class BuildPublishTests : BuildTestBase
+public class BuildPublishTests : BlazorWasmTestBase
 {
     public BuildPublishTests(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -34,11 +34,11 @@ public class BuildPublishTests : BuildTestBase
 
         // Build
         BlazorBuildInternal(id, config, publish: false);
-        AssertBlazorBootJson(config, isPublish: false);
+        _provider.AssertBlazorBootJson(config, isPublish: false);
 
         // Publish
         BlazorBuildInternal(id, config, publish: true);
-        AssertBlazorBootJson(config, isPublish: true);
+        _provider.AssertBlazorBootJson(config, isPublish: true);
     }
 
     [Theory]
@@ -196,7 +196,7 @@ public class BuildPublishTests : BuildTestBase
                 .ExecuteWithCapturedOutput("new razorclasslib")
                 .EnsureSuccessful();
 
-        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{WebcilInWasmExtension}" : "RazorClassLibrary.dll";
+        string razorClassLibraryFileName = UseWebcil ? $"RazorClassLibrary{ProjectProviderBase.WebcilInWasmExtension}" : "RazorClassLibrary.dll";
         AddItemsPropertiesToProject(wasmProjectFile, extraItems: @$"
             <ProjectReference Include=""..\\RazorClassLibrary\\RazorClassLibrary.csproj"" />
             <BlazorWebAssemblyLazyLoad Include=""{razorClassLibraryFileName}"" />
@@ -255,6 +255,30 @@ public class BuildPublishTests : BuildTestBase
             aot ? NativeFilesType.AOT
                 : (config == "Release" ? NativeFilesType.Relinked : NativeFilesType.FromRuntimePack)));
         await BlazorRunForPublishWithWebServer(config);
+    }
+
+    private void BlazorAddRazorButton(string buttonText, string customCode, string methodName = "test", string razorPage = "Pages/Counter.razor")
+    {
+        string additionalCode = $$"""
+            <p role="{{methodName}}">Output: @outputText</p>
+            <button class="btn btn-primary" @onclick="{{methodName}}">{{buttonText}}</button>
+
+            @code {
+                private string outputText = string.Empty;
+                public void {{methodName}}()
+                {
+                    {{customCode}}
+                }
+            }
+        """;
+
+        // find blazor's Counter.razor
+        string counterRazorPath = Path.Combine(_projectDir!, razorPage);
+        if (!File.Exists(counterRazorPath))
+            throw new FileNotFoundException($"Could not find {counterRazorPath}");
+
+        string oldContent = File.ReadAllText(counterRazorPath);
+        File.WriteAllText(counterRazorPath, oldContent + additionalCode);
     }
 
 }

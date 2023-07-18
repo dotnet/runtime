@@ -773,6 +773,10 @@ namespace System.Net
 
         private void ResetKeys()
         {
+            // Release buffers to pool
+            _clientSeal?.Dispose();
+            _serverSeal?.Dispose();
+
             _clientSeal = new RC4(_clientSealingKey);
             _serverSeal = new RC4(_serverSealingKey);
         }
