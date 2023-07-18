@@ -431,7 +431,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
                 unsigned slots = layout->GetSlotCount();
                 for (unsigned i = 0; i < slots; i++)
                 {
-                    if (layout->GetGCPtrType(i) == TYP_REF)
+                    if (layout->IsGCRef(i))
                     {
                         nonRefSlots = 0;
                     }

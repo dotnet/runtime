@@ -189,6 +189,16 @@ public:
         return GetGCPtr(slot) != TYPE_GC_NONE;
     }
 
+    bool IsGCRef(unsigned slot) const
+    {
+        return GetGCPtr(slot) == TYPE_GC_REF;
+    }
+
+    bool IsGCByRef(unsigned slot) const
+    {
+        return GetGCPtr(slot) == TYPE_GC_BYREF;
+    }
+
     var_types GetGCPtrType(unsigned slot) const
     {
         switch (GetGCPtr(slot))

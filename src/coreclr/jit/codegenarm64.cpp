@@ -3659,10 +3659,10 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         unsigned i = 0;
         while (i < slots)
         {
-            if (layout->GetGCPtrType(i) != TYP_REF)
+            if (!layout->IsGCRef(i))
             {
                 // Check if the next slot's type is also non-ref and use ldp/stp
-                if ((i + 1 < slots) && (layout->GetGCPtrType(i + 1) != TYP_REF))
+                if ((i + 1 < slots) && !layout->IsGCRef(i + 1))
                 {
                     emit->emitIns_R_R_R_I(INS_ldp, EA_8BYTE, tmpReg, tmpReg2, REG_WRITE_BARRIER_SRC_BYREF,
                                           2 * TARGET_POINTER_SIZE, INS_OPTS_POST_INDEX);

@@ -4169,7 +4169,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         unsigned i = 0;
         while (i < slots)
         {
-            if (layout->GetGCPtrType(i) != TYP_REF)
+            if (!layout->IsGCRef(i))
             {
                 // Let's see if we can use rep movsp instead of a sequence of movsp instructions
                 // to save cycles and code size.
@@ -4179,7 +4179,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                 {
                     nonRefSlotCount++;
                     i++;
-                } while ((i < slots) && (layout->GetGCPtrType(i) != TYP_REF));
+                } while ((i < slots) && !layout->IsGCRef(i));
 
                 // If we have a very small contiguous non-gc region, it's better just to
                 // emit a sequence of movsp instructions
