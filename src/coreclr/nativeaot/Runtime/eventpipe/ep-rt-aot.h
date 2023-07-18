@@ -1394,7 +1394,7 @@ ep_rt_utf8_to_utf16le_string (
 
     ep_char16_t* lpDestStr = NULL;
 
-    if (static_cast<int>(len) < 0)
+    if (len == (size_t) -1)
         len = strlen(str) + 1;
 
     size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
@@ -1459,12 +1459,8 @@ ep_rt_utf16_to_utf8_string (
         return NULL;
 
     ep_char8_t* lpDestStr = NULL;
-    if (static_cast<int>(len) < 0) {
-        len = 0;
-        while (str[len])
-            len++;
-
-    }
+    if (len == (size_t) -1)
+        len = ep_rt_utf16_string_len (str) + 1;
 
     size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
 
