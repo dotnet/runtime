@@ -23,7 +23,7 @@ namespace Microsoft.Interop
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef)
+            if (!UsesNativeIdentifier(info, context))
             {
                 return ValueBoundaryBehavior.ManagedIdentifier;
             }
@@ -31,8 +31,12 @@ namespace Microsoft.Interop
             {
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
+            else if (info.IsByRef)
+            {
+                return ValueBoundaryBehavior.AddressOfNativeIdentifier;
+            }
 
-            return ValueBoundaryBehavior.AddressOfNativeIdentifier;
+            return ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
@@ -106,17 +110,14 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Unmarshal:
                     if (elementMarshalDirection is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                     {
-                        if (info.IsByRef)
-                        {
-                            yield return ExpressionStatement(
-                                AssignmentExpression(
-                                    SyntaxKind.SimpleAssignmentExpression,
-                                    IdentifierName(managedIdentifier),
-                                    CastExpression(
-                                        PredefinedType(
-                                            Token(SyntaxKind.CharKeyword)),
-                                        IdentifierName(nativeIdentifier))));
-                        }
+                        yield return ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(managedIdentifier),
+                                CastExpression(
+                                    PredefinedType(
+                                        Token(SyntaxKind.CharKeyword)),
+                                    IdentifierName(nativeIdentifier))));
                     }
 
                     break;
@@ -127,7 +128,8 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return context.IsInStubReturnPosition(info) || (info.IsByRef && !context.SingleFrameSpansNativeContext);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+            return elementMarshalDirection != MarshalDirection.ManagedToUnmanaged || info.IsByRef;
         }
 
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)
