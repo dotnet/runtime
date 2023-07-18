@@ -264,7 +264,7 @@ namespace System.IO
         /// <exception cref="T:System.IO.IOException">An I/O error occurred.</exception>
         /// <remarks>
         /// <para>
-        /// This method calls platform-depedent APIs such as <c>FlushFileBuffers()</c> on Windows and <c>fsync()</c> on Unix.
+        /// This method calls platform-dependent APIs such as <c>FlushFileBuffers()</c> on Windows and <c>fsync()</c> on Unix.
         /// </para>
         /// <para>
         /// Flushing the buffers causes data to be written to disk which is a relatively expensive operation. It is recommended
