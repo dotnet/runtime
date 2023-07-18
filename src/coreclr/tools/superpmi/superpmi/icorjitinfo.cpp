@@ -68,13 +68,14 @@ void MyICJI::getMethodSig(CORINFO_METHOD_HANDLE ftn,         /* IN  */
 // return information about a method private to the implementation
 //      returns false if method is not IL, or is otherwise unavailable.
 //      This method is used to fetch data needed to inline functions
-bool MyICJI::getMethodInfo(CORINFO_METHOD_HANDLE ftn, /* IN  */
-                           CORINFO_METHOD_INFO*  info /* OUT */
+bool MyICJI::getMethodInfo(CORINFO_METHOD_HANDLE  ftn,    /* IN  */
+                           CORINFO_METHOD_INFO*   info,   /* OUT */
+                           CORINFO_CONTEXT_HANDLE context /* IN  */
                            )
 {
     jitInstance->mc->cr->AddCall("getMethodInfo");
     DWORD exceptionCode = 0;
-    bool  value         = jitInstance->mc->repGetMethodInfo(ftn, info, &exceptionCode);
+    bool  value         = jitInstance->mc->repGetMethodInfo(ftn, info, context, &exceptionCode);
     if (exceptionCode != 0)
         ThrowException(exceptionCode);
     return value;

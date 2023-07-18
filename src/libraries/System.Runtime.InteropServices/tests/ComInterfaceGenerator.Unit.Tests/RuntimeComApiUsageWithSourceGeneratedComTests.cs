@@ -10,7 +10,6 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<
 
 namespace ComInterfaceGenerator.Unit.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class RuntimeComApiUsageWithSourceGeneratedComTests
     {
         [Fact]

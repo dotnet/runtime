@@ -1596,11 +1596,10 @@ void LinearScan::buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation cu
 //                     If null, the restore will be inserted at the end of the block.
 //    isUse          - If the refPosition that is about to be created represents a use or not.
 //                   - If not, it would be the one at the end of the block.
+//    multiRegIdx    - Register position if this restore corresponds to a field of a multi reg node.
 //
-void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                                    LsraLocation currentLoc,
-                                                    GenTree*     node,
-                                                    bool         isUse)
+void LinearScan::buildUpperVectorRestoreRefPosition(
+    Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx)
 {
     if (lclVarInterval->isPartiallySpilled)
     {
@@ -1610,6 +1609,8 @@ void LinearScan::buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
         RefPosition* restorePos =
             newRefPosition(upperVectorInterval, currentLoc, RefTypeUpperVectorRestore, node, RBM_NONE);
         lclVarInterval->isPartiallySpilled = false;
+
+        restorePos->setMultiRegIdx(multiRegIdx);
 
         if (isUse)
         {
@@ -2536,7 +2537,7 @@ void           LinearScan::buildIntervals()
             while (largeVectorVarsIter.NextElem(&largeVectorVarIndex))
             {
                 Interval* lclVarInterval = getIntervalForLocalVar(largeVectorVarIndex);
-                buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr, false);
+                buildUpperVectorRestoreRefPosition(lclVarInterval, currentLoc, nullptr, false, 0);
             }
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
@@ -3195,7 +3196,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             UpdatePreferencesOfDyingLocal(interval);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true, (unsigned)multiRegIdx);
 #endif
     }
     else if (operand->IsMultiRegLclVar())
@@ -3209,7 +3210,7 @@ RefPosition* LinearScan::BuildUse(GenTree* operand, regMaskTP candidates, int mu
             VarSetOps::RemoveElemD(compiler, currentLiveVars, fieldVarDsc->lvVarIndex);
         }
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
-        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true);
+        buildUpperVectorRestoreRefPosition(interval, currentLoc, operand, true, (unsigned)multiRegIdx);
 #endif
     }
     else

@@ -403,6 +403,15 @@ create_interp_local_explicit (TransformData *td, MonoType *type, int size)
 
 }
 
+static void
+create_interp_dummy_var (TransformData *td)
+{
+	g_assert (td->dummy_var < 0);
+	td->dummy_var = create_interp_local_explicit (td, m_class_get_byval_arg (mono_defaults.void_class), 8);
+	td->locals [td->dummy_var].offset = 0;
+	td->locals [td->dummy_var].flags = INTERP_LOCAL_FLAG_GLOBAL;
+}
+
 static int
 get_tos_offset (TransformData *td)
 {
@@ -1281,11 +1290,6 @@ interp_get_icall_sig (MonoMethodSignature *sig);
 static void
 interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gpointer arg1, gpointer arg2)
 {
-	// Allocate dreg for call, only void calls are supported
-	push_simple_type (td, STACK_TYPE_I4);
-	td->sp--;
-	int dummy_dreg = td->sp [0].local;
-
 	int num_args = icall_info->sig->param_count;
 	if (num_args > 0)
 		emit_ldptr (td, arg1);
@@ -1295,7 +1299,7 @@ interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gp
 	td->sp -= num_args;
 
 	interp_add_ins (td, MINT_ICALL);
-	interp_ins_set_dreg (td->last_ins, dummy_dreg);
+	interp_ins_set_dummy_dreg (td->last_ins, td);
 	interp_ins_set_sreg (td->last_ins, MINT_CALL_ARGS_SREG);
 	td->last_ins->data [0] = interp_get_icall_sig (icall_info->sig);
 	td->last_ins->data [1] = get_data_item_index (td, (gpointer)icall_info->func);
@@ -1977,7 +1981,7 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 	const char *klass_name = m_class_get_name (target_method->klass);
 
 #ifdef INTERP_ENABLE_SIMD
-	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature))
+	if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, target_method, csignature, FALSE))
 		return TRUE;
 #endif
 
@@ -2536,7 +2540,10 @@ interp_handle_intrinsics (TransformData *td, MonoMethod *target_method, MonoClas
 		MonoType *t = ctx->method_inst->type_argv [0];
 		t = mini_get_underlying_type (t);
 
-		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8);
+		if (t->type == MONO_TYPE_R4 || t->type == MONO_TYPE_R8)
+			return FALSE;
+
+		gboolean is_i8 = (t->type == MONO_TYPE_I8 || t->type == MONO_TYPE_U8 || (TARGET_SIZEOF_VOID_P == 8 && (t->type == MONO_TYPE_I || t->type == MONO_TYPE_U)));
 		gboolean is_unsigned = (t->type == MONO_TYPE_U1 || t->type == MONO_TYPE_U2 || t->type == MONO_TYPE_U4 || t->type == MONO_TYPE_U8 || t->type == MONO_TYPE_U);
 
 		gboolean is_compareto = strcmp (tm, "EnumCompareTo") == 0;
@@ -3780,10 +3787,20 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 			if (native && !method->dynamic)
 				icall_sig = interp_get_icall_sig (csignature);
 #endif
+			gboolean default_cconv = TRUE;
+#ifdef TARGET_X86
+#ifdef TARGET_WIN32
+			// Platform that we don't actively support ?
+			default_cconv = csignature->call_convention == MONO_CALL_C;
+#else
+			default_cconv = csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C;
+#endif
+#endif
+
 			// FIXME calli receives both the args offset and sometimes another arg for the frame pointer,
 			// therefore some args are in the param area, while the fp is not. We should differentiate for
 			// this, probably once we will have an explicit param area where we copy arguments.
-			if (icall_sig != MINT_ICALLSIG_MAX) {
+			if (icall_sig != MINT_ICALLSIG_MAX && default_cconv) {
 				interp_add_ins (td, MINT_CALLI_NAT_FAST);
 				interp_ins_set_dreg (td->last_ins, dreg);
 				interp_ins_set_sregs2 (td->last_ins, fp_sreg, MINT_CALL_ARGS_SREG);
@@ -3797,10 +3814,6 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 				td->last_ins->data [0] = get_data_item_index (td, (void *)csignature);
 			} else if (native) {
 				interp_add_ins (td, MINT_CALLI_NAT);
-#ifdef TARGET_X86
-				/* Windows not tested/supported yet */
-				g_assertf (csignature->call_convention == MONO_CALL_DEFAULT || csignature->call_convention == MONO_CALL_C, "Interpreter supports only cdecl pinvoke on x86");
-#endif
 
 				InterpMethod *imethod = NULL;
 				/*
@@ -6093,11 +6106,24 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				interp_add_ins (td, MINT_LDSTR);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, s);
-			} else {
-				/* defer allocation to execution-time */
-				interp_add_ins (td, MINT_LDSTR_TOKEN);
+			} else if (method->wrapper_type == MONO_WRAPPER_DYNAMIC_METHOD) {
+				/* token is an index into the MonoDynamicMethod:method.method_data
+				 * which comes from ReflectionMethodBuilder:refs.  See
+				 * reflection_methodbuilder_to_mono_method.
+				 *
+				 * the actual data item is a managed MonoString from the managed DynamicMethod
+				 */
+				interp_add_ins (td, MINT_LDSTR_DYNAMIC);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				td->last_ins->data [0] = get_data_item_index (td, GUINT_TO_POINTER (token));
+			} else {
+				/* the token is an index into MonoWrapperMethod:method_data that
+				 * stores a global or malloc'ed C string. defer MonoString
+				 * allocation to execution-time */
+				interp_add_ins (td, MINT_LDSTR_CSTR);
+				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
+				const char *cstr = (const char*)mono_method_get_wrapper_data (method, token);
+				td->last_ins->data [0] = get_data_item_index (td, (void*)cstr);
 			}
 			td->ip += 5;
 			break;
@@ -6285,6 +6311,10 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				init_last_ins_call (td);
 				td->last_ins->info.call_info->call_offset = call_offset;
 			} else {
+#ifdef INTERP_ENABLE_SIMD
+				if ((mono_interp_opt & INTERP_OPT_SIMD) && interp_emit_simd_intrinsics (td, m, csignature, TRUE))
+					break;
+#endif
 				td->sp -= csignature->param_count;
 
 				// Move params types in temporary buffer
@@ -7078,7 +7108,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 					int size = mono_class_value_size (klass, NULL);
 					g_assert (size < G_MAXUINT16);
 
-					handle_stelem (td, MINT_STELEM_VT);
+					handle_stelem (td, m_class_has_references (klass) ? MINT_STELEM_VT : MINT_STELEM_VT_NOREF);
 					td->last_ins->data [0] = get_data_item_index (td, klass);
 					td->last_ins->data [1] = GINT_TO_UINT16 (size);
 					break;
@@ -9358,7 +9388,7 @@ write_v128_element (gpointer v128_addr, LocalValue *val, int index, int el_size)
 	switch (el_size) {
 		case 1: *(gint8*)el_addr = (gint8)val->i; break;
 		case 2: *(gint16*)el_addr = (gint16)val->i; break;
-		case 4: *(gint32*)el_addr = val->i; break;
+		case 4: *(gint32*)el_addr = val->i; break; // this also handles r4
 		case 8: *(gint64*)el_addr = val->l; break;
 		default:
 			g_assert_not_reached ();
@@ -9375,7 +9405,7 @@ interp_fold_simd_create (TransformData *td, InterpBasicBlock *cbb, LocalValue *l
 	int var = args [index];
 	while (var != -1) {
 		LocalValue *val = &local_defs [var];
-		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8)
+		if (val->type != LOCAL_VALUE_I4 && val->type != LOCAL_VALUE_I8 && val->type != LOCAL_VALUE_R4)
 			return ins;
 		index++;
 		var = args [index];
@@ -9650,6 +9680,11 @@ retry:
 			} else if (MINT_IS_LDC_I8 (opcode)) {
 				local_defs [dreg].type = LOCAL_VALUE_I8;
 				local_defs [dreg].l = interp_get_const_from_ldc_i8 (ins);
+			} else if (opcode == MINT_LDC_R4) {
+				guint32 val_u = READ32 (&ins->data [0]);
+				float f = *(float*)(&val_u);
+				local_defs [dreg].type = LOCAL_VALUE_R4;
+				local_defs [dreg].f = f;
 			} else if (ins->opcode == MINT_LDPTR) {
 #if SIZEOF_VOID_P == 8
 				local_defs [dreg].type = LOCAL_VALUE_I8;
@@ -9818,6 +9853,26 @@ retry:
 					if (td->verbose_level) {
 						g_print ("Replace ldloca/ldobj_vt pair :\n\t");
 						dump_interp_inst (ins, td->data_items);
+					}
+				}
+			} else if (opcode == MINT_STOBJ_VT || opcode == MINT_STOBJ_VT_NOREF) {
+				InterpInst *ldloca = local_defs [sregs [0]].ins;
+				if (ldloca != NULL && ldloca->opcode == MINT_LDLOCA_S) {
+					int stsize = ins->data [0];
+					int local = ldloca->sregs [0];
+
+					if (stsize == td->locals [local].size) {
+						// Replace LDLOCA + STOBJ_VT with MOV_VT
+						local_ref_count [sregs [0]]--;
+						ins->opcode = MINT_MOV_VT;
+						sregs [0] = sregs [1];
+						ins->dreg = local;
+						needs_retry = TRUE;
+
+						if (td->verbose_level) {
+							g_print ("Replace ldloca/stobj_vt pair :\n\t");
+							dump_interp_inst (ins, td->data_items);
+						}
 					}
 				}
 			} else if (MINT_IS_STIND (opcode)) {
@@ -11046,6 +11101,7 @@ retry:
 	td->mem_manager = m_method_get_mem_manager (method);
 	td->n_data_items = 0;
 	td->max_data_items = 0;
+	td->dummy_var = -1;
 	td->data_items = NULL;
 	td->data_hash = g_hash_table_new (NULL, NULL);
 #ifdef ENABLE_EXPERIMENT_TIERED
@@ -11361,6 +11417,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		method = nm;
 		header = interp_method_get_header (nm, error);
 		return_if_nok (error);
+	}
+
+	int accessor_kind = -1;
+	char *member_name = NULL;
+	if (!header && mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		method = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+		g_assert (method);
 	}
 
 	if (!header) {

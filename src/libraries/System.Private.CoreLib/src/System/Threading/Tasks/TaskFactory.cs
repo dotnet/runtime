@@ -2261,15 +2261,15 @@ namespace System.Threading.Tasks
         // which saves a couple of allocations.
         //
         // Used in TaskFactory.CommonCWAnyLogic(), below.
-        internal sealed class CompleteOnInvokePromise : Task<Task>, ITaskCompletionAction
+        internal sealed class CompleteOnInvokePromise<TTask> : Task<TTask>, ITaskCompletionAction where TTask : Task
         {
             private const int CompletedFlag = 0b_01;
             private const int SyncBlockingFlag = 0b_10;
 
-            private IList<Task>? _tasks; // must track this for cleanup
+            private IList<TTask>? _tasks; // must track this for cleanup
             private int _stateFlags;
 
-            public CompleteOnInvokePromise(IList<Task> tasks, bool isSyncBlocking)
+            public CompleteOnInvokePromise(IList<TTask> tasks, bool isSyncBlocking)
             {
                 Debug.Assert(tasks != null, "Expected non-null collection of tasks");
                 _tasks = tasks;
@@ -2305,7 +2305,7 @@ namespace System.Threading.Tasks
                     if (s_asyncDebuggingEnabled)
                         RemoveFromActiveTasks(this);
 
-                    bool success = TrySetResult(completingTask);
+                    bool success = TrySetResult((TTask)completingTask);
                     Debug.Assert(success, "Only one task should have gotten to this point, and thus this must be successful.");
 
                     // We need to remove continuations that may be left straggling on other tasks.
@@ -2313,12 +2313,12 @@ namespace System.Threading.Tasks
                     // This may also help to avoided unnecessary invocations of this whenComplete delegate.
                     // Note that we may be attempting to remove a continuation from a task that hasn't had it
                     // added yet; while there's overhead there, the operation won't hurt anything.
-                    IList<Task>? tasks = _tasks;
+                    IList<TTask>? tasks = _tasks;
                     Debug.Assert(tasks != null, "Should not have been nulled out yet.");
                     int numTasks = tasks.Count;
                     for (int i = 0; i < numTasks; i++)
                     {
-                        Task task = tasks[i];
+                        TTask task = tasks[i];
                         if (task != null && // if an element was erroneously nulled out concurrently, just skip it; worst case is we don't remove a continuation
                             !task.IsCompleted) task.RemoveContinuation(this);
                     }
@@ -2333,13 +2333,12 @@ namespace System.Threading.Tasks
         // we don't need to be concerned about concurrent modifications to the list.  If the task list
         // is an array, it should be a defensive copy if this functionality is being used
         // asynchronously (e.g. WhenAny) rather than synchronously (e.g. WaitAny).
-        internal static Task<Task> CommonCWAnyLogic(IList<Task> tasks, bool isSyncBlocking = false)
+        internal static Task<TTask> CommonCWAnyLogic<TTask>(IList<TTask> tasks, bool isSyncBlocking = false) where TTask : Task
         {
             Debug.Assert(tasks != null);
 
             // Create a promise task to be returned to the user.
-            // (If this logic ever changes, also update CommonCWAnyLogicCleanup.)
-            var promise = new CompleteOnInvokePromise(tasks, isSyncBlocking);
+            var promise = new CompleteOnInvokePromise<TTask>(tasks, isSyncBlocking);
 
             // At the completion of any of the tasks, complete the promise.
 
@@ -2395,7 +2394,7 @@ namespace System.Threading.Tasks
         {
             // Force cleanup of the promise (e.g. removing continuations from each
             // constituent task), by completing the promise with any value (it's not observable).
-            ((CompleteOnInvokePromise)continuation).Invoke(null!);
+            ((CompleteOnInvokePromise<Task>)continuation).Invoke(null!);
         }
 
         /// <summary>

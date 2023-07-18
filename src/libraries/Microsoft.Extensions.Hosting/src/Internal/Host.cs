@@ -3,10 +3,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
@@ -14,6 +16,8 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Hosting.Internal
 {
+    [DebuggerDisplay("{DebuggerToString(),nq}")]
+    [DebuggerTypeProxy(typeof(HostDebugView))]
     internal sealed class Host : IHost, IAsyncDisposable
     {
         private readonly ILogger<Host> _logger;
@@ -25,6 +29,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private IEnumerable<IHostedService>? _hostedServices;
         private IEnumerable<IHostedLifecycleService>? _hostedLifecycleServices;
         private volatile bool _stopCalled;
+        private bool _hostStopped;
 
         public Host(IServiceProvider services,
                     IHostEnvironment hostEnvironment,
@@ -57,7 +62,8 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         /// <summary>
         /// Order:
-        ///  IHostLifetime.WaitForStartAsync
+        ///  IHostLifetime.WaitForStartAsync (can abort chain)
+        ///  Services.GetService{IStartupValidator}().Validate() (can abort chain)
         ///  IHostedLifecycleService.StartingAsync
         ///  IHostedService.Start
         ///  IHostedLifecycleService.StartedAsync
@@ -94,14 +100,34 @@ namespace Microsoft.Extensions.Hosting.Internal
                 bool concurrent = _options.ServicesStartConcurrently;
                 bool abortOnFirstException = !concurrent;
 
+                // Call startup validators.
+                IStartupValidator? validator = Services.GetService<IStartupValidator>();
+                if (validator is not null)
+                {
+                    try
+                    {
+                        validator.Validate();
+                    }
+                    catch (Exception ex)
+                    {
+                        exceptions.Add(ex);
+
+                        // Validation errors cause startup to be aborted.
+                        LogAndRethrow();
+                    }
+                }
+
+                // Call StartingAsync().
                 if (_hostedLifecycleServices is not null)
                 {
-                    // Call StartingAsync().
                     await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
                         (service, token) => service.StartingAsync(token)).ConfigureAwait(false);
+
+                    // We do not abort on exceptions from StartingAsync.
                 }
 
                 // Call StartAsync().
+                // We do not abort on exceptions from StartAsync.
                 await ForeachService(_hostedServices, token, concurrent, abortOnFirstException, exceptions,
                     async (service, token) =>
                     {
@@ -113,33 +139,40 @@ namespace Microsoft.Extensions.Hosting.Internal
                         }
                     }).ConfigureAwait(false);
 
+                // Call StartedAsync().
+                // We do not abort on exceptions from StartedAsync.
                 if (_hostedLifecycleServices is not null)
                 {
-                    // Call StartedAsync().
                     await ForeachService(_hostedLifecycleServices, token, concurrent, abortOnFirstException, exceptions,
                         (service, token) => service.StartedAsync(token)).ConfigureAwait(false);
                 }
 
-                if (exceptions.Count > 0)
-                {
-                    if (exceptions.Count == 1)
-                    {
-                        // Rethrow if it's a single error
-                        Exception singleException = exceptions[0];
-                        _logger.HostedServiceStartupFaulted(singleException);
-                        ExceptionDispatchInfo.Capture(singleException).Throw();
-                    }
-                    else
-                    {
-                        var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
-                        _logger.HostedServiceStartupFaulted(ex);
-                        throw ex;
-                    }
-                }
+                LogAndRethrow();
 
                 // Call IHostApplicationLifetime.Started
                 // This catches all exceptions and does not re-throw.
                 _applicationLifetime.NotifyStarted();
+
+                // Log and abort if there are exceptions.
+                void LogAndRethrow()
+                {
+                    if (exceptions.Count > 0)
+                    {
+                        if (exceptions.Count == 1)
+                        {
+                            // Rethrow if it's a single error
+                            Exception singleException = exceptions[0];
+                            _logger.HostedServiceStartupFaulted(singleException);
+                            ExceptionDispatchInfo.Capture(singleException).Throw();
+                        }
+                        else
+                        {
+                            var ex = new AggregateException("One or more hosted services failed to start.", exceptions);
+                            _logger.HostedServiceStartupFaulted(ex);
+                            throw ex;
+                        }
+                    }
+                }
             }
 
             _logger.Started();
@@ -239,9 +272,9 @@ namespace Microsoft.Extensions.Hosting.Internal
                     await ForeachService(reversedServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
                         service.StopAsync(token)).ConfigureAwait(false);
 
+                    // Call StoppedAsync().
                     if (reversedLifetimeServices is not null)
                     {
-                        // Call StoppedAsync().
                         await ForeachService(reversedLifetimeServices, token, concurrent, abortOnFirstException: false, exceptions, (service, token) =>
                             service.StoppedAsync(token)).ConfigureAwait(false);
                     }
@@ -260,6 +293,8 @@ namespace Microsoft.Extensions.Hosting.Internal
                 {
                     exceptions.Add(ex);
                 }
+
+                _hostStopped = true;
 
                 if (exceptions.Count > 0)
                 {
@@ -407,6 +442,25 @@ namespace Microsoft.Extensions.Hosting.Internal
                         break;
                 }
             }
+        }
+
+        private string DebuggerToString()
+        {
+            return $@"ApplicationName = ""{_hostEnvironment.ApplicationName}"", IsRunning = {(IsRunning ? "true" : "false")}";
+        }
+
+        // Host is running if the app has been started and the host hasn't been stopped.
+        private bool IsRunning => _applicationLifetime.ApplicationStarted.IsCancellationRequested && !_hostStopped;
+
+        internal sealed class HostDebugView(Host host)
+        {
+            public IServiceProvider Services => host.Services;
+            public IConfiguration Configuration => host.Services.GetRequiredService<IConfiguration>();
+            public IHostEnvironment Environment => host._hostEnvironment;
+            public IHostApplicationLifetime ApplicationLifetime => host._applicationLifetime;
+            public HostOptions Options => host._options;
+            public List<IHostedService> HostedServices => new List<IHostedService>(host._hostedServices ?? Enumerable.Empty<IHostedService>());
+            public bool IsRunning => host.IsRunning;
         }
     }
 }

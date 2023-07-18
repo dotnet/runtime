@@ -50,6 +50,7 @@ namespace System
         internal const int COR_E_ENTRYPOINTNOTFOUND = unchecked((int)0x80131523);
         internal const int COR_E_EXCEPTION = unchecked((int)0x80131500);
         internal const int COR_E_EXECUTIONENGINE = unchecked((int)0x80131506);
+        internal const int COR_E_FAILFAST = unchecked((int)0x80131623);
         internal const int COR_E_FIELDACCESS = unchecked((int)0x80131507);
         internal const int COR_E_FILELOAD = unchecked((int)0x80131621);
         internal const int COR_E_FILENOTFOUND = unchecked((int)0x80070002);

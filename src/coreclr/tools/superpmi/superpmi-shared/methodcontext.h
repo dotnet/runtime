@@ -402,9 +402,9 @@ public:
     void dmpGetHFAType(DWORDLONG key, DWORD value);
     CorInfoHFAElemType repGetHFAType(CORINFO_CLASS_HANDLE clsHnd);
 
-    void recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, bool result, DWORD exceptionCode);
-    void dmpGetMethodInfo(DWORDLONG key, const Agnostic_GetMethodInfo& value);
-    bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, DWORD* exceptionCode);
+    void recGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, bool result, DWORD exceptionCode);
+    void dmpGetMethodInfo(DLDL key, const Agnostic_GetMethodInfo& value);
+    bool repGetMethodInfo(CORINFO_METHOD_HANDLE ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_HANDLE context, DWORD* exceptionCode);
 
     void recGetNewHelper(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                          CORINFO_METHOD_HANDLE   callerHandle,

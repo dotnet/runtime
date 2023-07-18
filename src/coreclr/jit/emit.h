@@ -2368,9 +2368,9 @@ private:
     //
     CLANG_FORMAT_COMMENT_ANCHOR;
 
-#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
-// ARM32 and ARM64 both can require a bigger prolog instruction group. One scenario is where
-// a function uses all the incoming integer and single-precision floating-point arguments,
+#if defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
+// ARM32/64, LoongArch and RISC-V can require a bigger prolog instruction group. One scenario
+// is where a function uses all the incoming integer and single-precision floating-point arguments,
 // and must store them all to the frame on entry. If the frame is very large, we generate
 // ugly code like:
 //     movw r10, 0x488
@@ -2387,7 +2387,7 @@ private:
 #else
 #define SC_IG_BUFFER_NUM_SMALL_DESCS 14
 #define SC_IG_BUFFER_NUM_LARGE_DESCS 50
-#endif // !(TARGET_ARMARCH || TARGET_LOONGARCH64)
+#endif // !(TARGET_ARMARCH || TARGET_LOONGARCH64 || TARGET_RISCV64)
 
     size_t emitIGbuffSize;
 
@@ -2713,6 +2713,10 @@ private:
 #ifdef TARGET_X86
     void emitMarkStackLvl(unsigned stackLevel);
 #endif
+
+#if defined(FEATURE_SIMD)
+    void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
+#endif // FEATURE_SIMD
 
     int emitNextRandomNop();
 

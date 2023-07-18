@@ -274,9 +274,9 @@ namespace System.Globalization.Tests
                 // we also don't preform.
                 // Greek Capital Letter Sigma (does not case to U+03C2 with "final sigma" rule).
                 yield return new object[] { cultureName, "\u03A3", "\u03C3" };
-                if (PlatformDetection.IsHybridGlobalizationOnBrowser || PlatformDetection.IsHybridGlobalizationOnOSX)
+                if (PlatformDetection.IsHybridGlobalizationOnBrowser)
                 {
-                    // JS and Apple platforms are using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
+                    // JS is using "final sigma" rule correctly - it's costly to unify it with ICU's behavior
                     yield return new object[] { cultureName, "O\u03A3", "o\u03C2" };
                 }
                 else
@@ -396,29 +396,24 @@ namespace System.Globalization.Tests
                 // RAINBOW (outside the BMP and does not case)
                 yield return new object[] { cultureName, "\U0001F308", "\U0001F308" };
 
-                if (!PlatformDetection.IsHybridGlobalizationOnOSX)
-                {
-                    // Unicode defines some codepoints which expand into multiple codepoints
-                    // when cased (see SpecialCasing.txt from UNIDATA for some examples). We have never done
-                    // these sorts of expansions, since it would cause string lengths to change when cased,
-                    // which is non-intuitive. In addition, there are some context sensitive mappings which
-                    // we also don't preform.
-                    // es-zed does not case to SS when uppercased.
-                    // on OSX, capitalizing the German letter ß (sharp S) gives SS
-                    yield return new object[] { cultureName, "\u00DF", "\u00DF" };
-                    yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
-                    if (!PlatformDetection.IsNlsGlobalization)
-                        yield return new object[] { cultureName, "st\uD801\uDC37ra\u00DFe", "ST\uD801\uDC0FRA\u00DFE" };
+                
+                // Unicode defines some codepoints which expand into multiple codepoints
+                // when cased (see SpecialCasing.txt from UNIDATA for some examples). We have never done
+                // these sorts of expansions, since it would cause string lengths to change when cased,
+                // which is non-intuitive. In addition, there are some context sensitive mappings which
+                // we also don't preform.
+                // es-zed does not case to SS when uppercased.
+                yield return new object[] { cultureName, "\u00DF", "\u00DF" };
+                yield return new object[] { cultureName, "stra\u00DFe", "STRA\u00DFE" };
+                if (!PlatformDetection.IsNlsGlobalization)
+                    yield return new object[] { cultureName, "st\uD801\uDC37ra\u00DFe", "ST\uD801\uDC0FRA\u00DFE" };
 
-                    // Ligatures do not expand when cased.
-                    // on OSX, this is uppercase to "FF"
-                    yield return new object[] { cultureName, "\uFB00", "\uFB00" };
+                // Ligatures do not expand when cased.
+                yield return new object[] { cultureName, "\uFB00", "\uFB00" };
 
-                    // Precomposed character with no uppercase variant, we don't want to "decompose" this
-                    // as part of casing.
-                    // on OSX, this is uppercased to "ʼN"
-                    yield return new object[] { cultureName, "\u0149", "\u0149" };
-                }
+                // Precomposed character with no uppercase variant, we don't want to "decompose" this
+                // as part of casing.
+                yield return new object[] { cultureName, "\u0149", "\u0149" };
             }
 
             // Turkish i

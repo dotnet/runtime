@@ -10,7 +10,7 @@
     <DisablePackageBaselineValidation Condition="'$(IsShipping)' == 'false' or
                                                  '$(SuppressFinalPackageVersion)' == 'true' or
                                                  '$(DotNetBuildFromSource)' == 'true'">true</DisablePackageBaselineValidation>
-    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(NetCoreAppPreviousPackageBaselineVersion)</PackageValidationBaselineVersion>
+    <PackageValidationBaselineVersion Condition="'$(PackageValidationBaselineVersion)' == ''">$(ApiCompatNetCoreAppBaselineVersion)</PackageValidationBaselineVersion>
     <BeforePack>$(BeforePack);IncludeAnalyzersInPackage;AddNETStandardCompatErrorFileForPackaging</BeforePack>
     <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);AddRuntimeSpecificFilesToPackage;IncludeProjectReferencesWithPackAttributeInPackage</TargetsForTfmSpecificContentInPackage>
     <!-- Don't include target platform specific dependencies, since we use the target platform to represent RIDs instead -->

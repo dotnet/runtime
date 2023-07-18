@@ -14,7 +14,6 @@ using VerifyCS = Microsoft.Interop.UnitTests.Verifiers.CSharpAnalyzerVerifier<Mi
 
 namespace LibraryImportGenerator.UnitTests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/60650", TestRuntimes.Mono)]
     public class ConvertToLibraryImportAnalyzerTests
     {
         public static IEnumerable<object[]> MarshallingRequiredTypes() => new[]

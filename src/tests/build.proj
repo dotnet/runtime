@@ -3,6 +3,9 @@
   <Import Project="Directory.Build.targets" />
   <Import Project="xunit-wrappers.targets" />
 
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.props" />
+  <Import Project="$(MonoProjectRoot)\msbuild\apple\build\AppleBuild.InTree.targets" />
+
   <PropertyGroup>
     <XunitTestBinBase Condition="'$(XunitTestBinBase)'==''" >$(BaseOutputPathWithConfig)</XunitTestBinBase>
     <XunitWrapperGeneratedCSDirBase>$(XunitTestBinBase)\TestWrappers\</XunitWrapperGeneratedCSDirBase>
@@ -55,7 +58,9 @@
     <ItemGroup Condition="'@(LegacyRunnableTestPaths)' != ''">
       <LegacyRunnableTestPaths Separator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $(XunitTestBinBase.Length)))" />
       <LegacyRunnableTestPaths SecondSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.Separator), 1))))" />
+      <LegacyRunnableTestPaths ThirdSeparator="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').IndexOfAny('\\/', $([MSBuild]::Add(%(LegacyRunnableTestPaths.SecondSeparator), 1))))" />
       <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.SecondSeparator)" Condition="'%(LegacyRunnableTestPaths.SecondSeparator)' != '-1'" />
+      <LegacyRunnableTestPaths Separator="%(LegacyRunnableTestPaths.ThirdSeparator)" Condition="'%(LegacyRunnableTestPaths.ThirdSeparator)' != '-1' and '$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'" />
       <TestDirectoriesWithDup Include="$([System.String]::Copy('%(LegacyRunnableTestPaths.Identity)').Substring(0, %(LegacyRunnableTestPaths.Separator)))" />
     </ItemGroup>
 
@@ -267,7 +272,7 @@
   <UsingTask TaskName="AppleAppBuilderTask" AssemblyFile="$(AppleAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="MonoAOTCompiler" AssemblyFile="$(MonoAOTCompilerTasksAssemblyPath)" />
 
-  <Target Name="BuildiOSApp">
+  <Target Name="BuildMonoiOSApp">
     <PropertyGroup>
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CMDDIR_Grandparent>
       <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
@@ -467,6 +472,59 @@
     <Message Importance="High" Text="App: $(FinalPath)" />
   </Target>
 
+
+  <!-- This target builds a Native AOT iOS App -->
+  <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
+    <PropertyGroup>
+      <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
+      <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
+      <TestRelativePath>$(CategoryName)/$([System.String]::Copy('$(_CMDDIR)').Replace("$(CategoryPath)/",""))</TestRelativePath>
+      <TestName>$([System.IO.Path]::GetFileName($(_CMDDIR)))</TestName>
+      <AppName>$([System.String]::Copy('$(TestRelativePath)').Replace('/','_'))</AppName>
+      <AppleBuildDir>$(IntermediateOutputPath)\iOSApps\$(AppName)</AppleBuildDir>
+      <FinalPath>$(XUnitTestBinBase)$(TestRelativePath)\$(AppName).app</FinalPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o</NativeDependencies>
+      <DevTeamProvisioning>-</DevTeamProvisioning>
+      <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
+      <GenerateXcodeProject>true</GenerateXcodeProject>
+      <AppleBundleDir>$(AppDir)</AppleBundleDir>
+      <RunAOTCompilation>false</RunAOTCompilation>
+      <MonoForceInterpreter>false</MonoForceInterpreter>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <_LinkerFlagsToDrop Include="@(NativeFramework->'-framework %(Identity)')" />
+      <LinkerArg Remove="@(_LinkerFlagsToDrop)" />
+      <ExtraAppLinkerArgs Include="@(LinkerArg)" />
+      <GlobalizationNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)runtimes/$(TargetOS)-$(TargetArchitecture)/native/icudt.dat" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(AppleBuildDir)" />
+    <RemoveDir Directories="$(AppDir)" />
+    <MakeDir Directories="$(AppleBuildDir)" />
+
+    <Copy
+        SourceFiles="@(GlobalizationNativeLibs)"
+        DestinationFolder="$(AppleBuildDir)" />
+  </Target>
+
+  <!-- This target moves app bundles to the payload directory -->
+  <Target Name="AfterAppleBuild">
+    <!-- Apparently MSBuild cannot move directories and recursively copying a
+         a directory requires writing some sort of recursive traversal
+         logic yourself. -->
+    <ItemGroup>
+      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
+    </ItemGroup>
+    <MakeDir Directories="$(FinalPath)" />
+    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
+    <RemoveDir Directories="$(AppBundlePath)" />
+    <Message Importance="High" Text="Final app: $(FinalPath)" />
+  </Target>
+
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
     <ItemGroup>
       <RunProj Include="$(MSBuildProjectFile)">
@@ -475,10 +533,17 @@
     </ItemGroup>
     <MSBuild
       Projects="@(RunProj)"
-      Targets="BuildiOSApp"
+      Targets="BuildMonoiOSApp"
       BuildInParallel="true"
-      Condition="'@(TestDirectories)' != ''"
-      />
+      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
+    />
+
+    <MSBuild
+      Projects="@(RunProj)"
+      Targets="BuildNativeAOTiOSApp;_AppleGenerateAppBundle;AfterAppleBuild"
+      BuildInParallel="true"
+      Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'"
+    />
   </Target>
 
   <Target Name="GetListOfTestCmds">

@@ -857,6 +857,10 @@ namespace Internal.JitInterface
             sig->_retType = (byte)corInfoRetType;
             sig->retTypeSigClass = ObjectToHandle(signature.ReturnType);
 
+#if READYTORUN
+            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
+#endif
+
             sig->flags = 0;    // used by IL stubs code
 
             sig->numArgs = (ushort)signature.Length;
@@ -1179,16 +1183,35 @@ namespace Internal.JitInterface
             Get_CORINFO_SIG_INFO(method, sig: sig, scope: null);
         }
 
-        private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info)
+        private bool getMethodInfo(CORINFO_METHOD_STRUCT_* ftn, CORINFO_METHOD_INFO* info, CORINFO_CONTEXT_STRUCT* context)
         {
             MethodDesc method = HandleToObject(ftn);
-#if READYTORUN
+
+            if (context != null && method.IsSharedByGenericInstantiations)
+            {
+                TypeSystemEntity ctx = entityFromContext(context);
+                if (ctx is MethodDesc methodFromCtx && context != contextFromMethodBeingCompiled())
+                {
+                    Debug.Assert(method.GetTypicalMethodDefinition() == methodFromCtx.GetTypicalMethodDefinition());
+                    method = methodFromCtx;
+                }
+                else if (ctx is InstantiatedType instantiatedCtxType)
+                {
+                    MethodDesc instantiatedMethod = _compilation.TypeSystemContext.GetMethodForInstantiatedType(method.GetTypicalMethodDefinition(), instantiatedCtxType);
+                    if (method.HasInstantiation)
+                    {
+                        instantiatedMethod = _compilation.TypeSystemContext.GetInstantiatedMethod(instantiatedMethod, method.Instantiation);
+                    }
+                    method = instantiatedMethod;
+                }
+            }
+
             // Add an early CanInline check to see if referring to the IL of the target methods is
             // permitted from within this MethodBeingCompiled, the full CanInline check will be performed
             // later.
             if (!_compilation.CanInline(MethodBeingCompiled, method))
                 return false;
-#endif
+
             MethodIL methodIL = method.IsUnboxingThunk() ? null : _compilation.GetMethodIL(method);
             return Get_CORINFO_METHOD_INFO(method, methodIL, info);
         }
@@ -1736,6 +1759,7 @@ namespace Internal.JitInterface
                     ModuleToken methodModuleToken = HandleToModuleToken(ref pResolvedToken);
                     var resolver = _compilation.NodeFactory.Resolver;
                     resolver.AddModuleTokenForMethod(method, methodModuleToken);
+                    ValidateSafetyOfUsingTypeEquivalenceInSignature(method.Signature);
                 }
 #else
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, method);
@@ -1762,6 +1786,8 @@ namespace Internal.JitInterface
 
 #if !READYTORUN
                 _compilation.NodeFactory.MetadataManager.GetDependenciesDueToAccess(ref _additionalDependencies, _compilation.NodeFactory, (MethodIL)methodIL, field);
+#else
+                ValidateSafetyOfUsingTypeEquivalenceOfType(field.FieldType);
 #endif
             }
             else
@@ -2368,7 +2394,7 @@ namespace Internal.JitInterface
             parNode->size = (uint)type.GetElementSize().AsInt;
             parNode->numFields = 0;
             parNode->type = CorInfoType.CORINFO_TYPE_VALUECLASS;
-            parNode->hasSignificantPadding = false;
+            parNode->hasSignificantPadding = type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0);
 
 #if READYTORUN
             // The contract of getTypeLayout is carefully crafted to still
@@ -2381,7 +2407,7 @@ namespace Internal.JitInterface
             // amenable to the optimizations that this unlocks if they already
             // went through EncodeFieldBaseOffset.
             //
-            if (!_compilation.IsLayoutFixedInCurrentVersionBubble(type))
+            if (!parNode->hasSignificantPadding && !_compilation.IsLayoutFixedInCurrentVersionBubble(type))
             {
                 // For types without fixed layout the JIT is not allowed to
                 // rely on padding bits being insignificant, since fields could
@@ -2390,14 +2416,6 @@ namespace Internal.JitInterface
                 parNode->hasSignificantPadding = true;
             }
 #endif
-
-            if (type.IsExplicitLayout || (type.IsSequentialLayout && type.GetClassLayout().Size != 0) || type.IsInlineArray)
-            {
-                if (!type.ContainsGCPointers && !type.IsByRefLike)
-                {
-                    parNode->hasSignificantPadding = true;
-                }
-            }
 
             // The intrinsic SIMD/HW SIMD types have a lot of fields that the JIT does
             // not care about since they are considered primitives by the JIT.
@@ -2472,19 +2490,43 @@ namespace Internal.JitInterface
                     int elemSize = fieldType.GetElementSize().AsInt;
                     int arrSize = type.GetElementSize().AsInt;
 
+                    // Number of fields added for each element, including all
+                    // subfields. For example, for ValueTuple<int, int>[4]:
+                    // [ 0]: InlineArray             parent = -1
+                    // [ 1]:   ValueTuple<int, int>  parent = 0          -
+                    // [ 2]:     int                 parent = 1          |
+                    // [ 3]:     int                 parent = 1          |
+                    // [ 4]:   ValueTuple<int, int>  parent = 0          - stride = 3
+                    // [ 5]:     int                 parent = 4
+                    // [ 6]:     int                 parent = 4
+                    // [ 7]:   ValueTuple<int, int>  parent = 0
+                    // [ 8]:     int                 parent = 7
+                    // [ 9]:     int                 parent = 7
+                    // [10]:   ValueTuple<int, int>  parent = 0
+                    // [11]:     int                 parent = 10
+                    // [12]:     int                 parent = 10
+                    uint elemFieldsStride = (uint)*numTreeNodes - (structNodeIndex + 1);
+
+                    // Now duplicate the fields of the previous entry for each
+                    // additional element. For each entry we have to update the
+                    // offset and the parent index.
                     for (int elemOffset = elemSize; elemOffset < arrSize; elemOffset += elemSize)
                     {
-                        for (nuint templateTreeNodeIndex = structNodeIndex + 1; templateTreeNodeIndex < treeNodeEnd; templateTreeNodeIndex++)
+                        nuint prevElemStart = *numTreeNodes - elemFieldsStride;
+                        for (nuint i = 0; i < elemFieldsStride; i++)
                         {
                             if (*numTreeNodes >= maxTreeNodes)
                                 return GetTypeLayoutResult.Partial;
 
                             CORINFO_TYPE_LAYOUT_NODE* treeNode = &treeNodes[(*numTreeNodes)++];
-                            *treeNode = treeNodes[templateTreeNodeIndex];
-                            treeNode->offset += (uint)elemOffset;
-
-                            parNode->numFields++;
+                            *treeNode = treeNodes[prevElemStart + i];
+                            treeNode->offset += (uint)elemSize;
+                            // The first field points back to the inline array
+                            // and has no bias; the rest of them do.
+                            treeNode->parent += (i == 0) ? 0 : elemFieldsStride;
                         }
+
+                        parNode->numFields++;
                     }
                 }
             }

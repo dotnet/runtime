@@ -334,7 +334,7 @@ jobs:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono_LLVMFullAot_RuntimeTests
       runtimeVariant: llvmfullaot
-      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true /p:MonoLLVMUseCxx11Abi=true
+      buildArgs: -s mono+libs+clr.hosts+clr.iltools -c Release /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=true
       timeoutInMinutes: 300
 
       condition: >-

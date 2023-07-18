@@ -27,6 +27,7 @@
 #include "CommonMacros.inl"
 #include "slist.inl"
 #include "MethodTable.inl"
+#include "../../inc/clrversion.h"
 
 #ifdef  FEATURE_GC_STRESS
 enum HijackType { htLoop, htCallsite };
@@ -35,9 +36,24 @@ bool ShouldHijackForGcStress(uintptr_t CallsiteIP, HijackType ht);
 
 #include "shash.inl"
 
+#define MAX_CRASHINFOBUFFER_SIZE 8192
+uint8_t g_CrashInfoBuffer[MAX_CRASHINFOBUFFER_SIZE];
+
 ThreadStore *   RuntimeInstance::GetThreadStore()
 {
     return m_pThreadStore;
+}
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
+{
+    *pcbMaxSize = MAX_CRASHINFOBUFFER_SIZE;
+    return g_CrashInfoBuffer;
+}
+
+COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
+{
+    *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null
+    return (uint8_t*)&CLR_PRODUCT_VERSION;
 }
 
 COOP_PINVOKE_HELPER(uint8_t *, RhFindMethodStartAddress, (void * codeAddr))

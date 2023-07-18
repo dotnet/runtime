@@ -934,20 +934,20 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
 {
     assert(argNode->gtOper == GT_PUTARG_STK);
 
-    GenTree* putArgChild = argNode->gtGetOp1();
+    GenTree* src = argNode->gtGetOp1();
 
     int srcCount = 0;
 
     // Do we have a TYP_STRUCT argument (or a GT_FIELD_LIST), if so it must be a multireg pass-by-value struct
-    if (putArgChild->TypeIs(TYP_STRUCT) || putArgChild->OperIs(GT_FIELD_LIST))
+    if (src->TypeIs(TYP_STRUCT))
     {
         // We will use store instructions that each write a register sized value
 
-        if (putArgChild->OperIs(GT_FIELD_LIST))
+        if (src->OperIs(GT_FIELD_LIST))
         {
-            assert(putArgChild->isContained());
+            assert(src->isContained());
             // We consume all of the items in the GT_FIELD_LIST
-            for (GenTreeFieldList::Use& use : putArgChild->AsFieldList()->Uses())
+            for (GenTreeFieldList::Use& use : src->AsFieldList()->Uses())
             {
                 BuildUse(use.GetNode());
                 srcCount++;
@@ -959,36 +959,23 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* argNode)
             buildInternalIntRegisterDefForNode(argNode);
             buildInternalIntRegisterDefForNode(argNode);
 
-            if (putArgChild->OperGet() == GT_BLK)
+            assert(src->isContained());
+
+            if (src->OperGet() == GT_BLK)
             {
-                assert(putArgChild->isContained());
-                GenTree* objChild = putArgChild->gtGetOp1();
-                if (objChild->OperGet() == GT_LCL_ADDR)
-                {
-                    // We will generate all of the code for the GT_PUTARG_STK, the GT_BLK and the GT_LCL_ADDR
-                    // as one contained operation, and there are no source registers.
-                    //
-                    assert(objChild->isContained());
-                }
-                else
-                {
-                    // We will generate all of the code for the GT_PUTARG_STK and its child node
-                    // as one contained operation
-                    //
-                    srcCount = BuildOperandUses(objChild);
-                }
+                srcCount = BuildOperandUses(src->AsBlk()->Addr());
             }
             else
             {
                 // No source registers.
-                putArgChild->OperIs(GT_LCL_VAR);
+                assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD));
             }
         }
     }
     else
     {
-        assert(!putArgChild->isContained());
-        srcCount = BuildOperandUses(putArgChild);
+        assert(!src->isContained());
+        srcCount = BuildOperandUses(src);
     }
     buildInternalRegisterUses();
     return srcCount;
@@ -1011,7 +998,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
     int srcCount = 0;
     assert(argNode->gtOper == GT_PUTARG_SPLIT);
 
-    GenTree* putArgChild = argNode->gtGetOp1();
+    GenTree* src = argNode->gtGetOp1();
 
     // Registers for split argument corresponds to source
     int dstCount = argNode->gtNumRegs;
@@ -1025,7 +1012,7 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         argNode->SetRegNumByIdx(thisArgReg, i);
     }
 
-    if (putArgChild->OperGet() == GT_FIELD_LIST)
+    if (src->OperGet() == GT_FIELD_LIST)
     {
         // Generated code:
         // 1. Consume all of the items in the GT_FIELD_LIST (source)
@@ -1036,47 +1023,53 @@ int LinearScan::BuildPutArgSplit(GenTreePutArgSplit* argNode)
         // To avoid redundant moves, have the argument operand computed in the
         // register in which the argument is passed to the call.
 
-        for (GenTreeFieldList::Use& use : putArgChild->AsFieldList()->Uses())
+        for (GenTreeFieldList::Use& use : src->AsFieldList()->Uses())
         {
             GenTree* node = use.GetNode();
             assert(!node->isContained());
             // The only multi-reg nodes we should see are OperIsMultiRegOp()
+            unsigned currentRegCount = 1;
             assert(!node->IsMultiRegNode());
 
             // Consume all the registers, setting the appropriate register mask for the ones that
             // go into registers.
-            regMaskTP sourceMask = RBM_NONE;
-            if (sourceRegCount < argNode->gtNumRegs)
+            for (unsigned regIndex = 0; regIndex < currentRegCount; regIndex++)
             {
-                sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
+                regMaskTP sourceMask = RBM_NONE;
+                if (sourceRegCount < argNode->gtNumRegs)
+                {
+                    sourceMask = genRegMask((regNumber)((unsigned)argReg + sourceRegCount));
+                }
+                sourceRegCount++;
+                BuildUse(node, sourceMask, regIndex);
             }
-            sourceRegCount++;
-            BuildUse(node, sourceMask, 0);
         }
         srcCount += sourceRegCount;
-        assert(putArgChild->isContained());
+        assert(src->isContained());
     }
     else
     {
-        assert(putArgChild->TypeGet() == TYP_STRUCT);
-        assert(putArgChild->OperGet() == GT_BLK);
+        assert(src->TypeIs(TYP_STRUCT) && src->isContained());
 
-        // We can use a ld/st sequence so we need an internal register
-        buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
-
-        GenTree* objChild = putArgChild->gtGetOp1();
-        if (objChild->IsLclVarAddr())
+        if (src->OperIs(GT_BLK))
         {
-            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_BLK and the GT_LCL_ADDR<0>
-            // as one contained operation
-            //
-            assert(objChild->isContained());
+            // If the PUTARG_SPLIT clobbers only one register we may need an
+            // extra internal register in case there is a conflict between the
+            // source address register and target register.
+            if (argNode->gtNumRegs == 1)
+            {
+                // We can use a ldr/str sequence so we need an internal register
+                buildInternalIntRegisterDefForNode(argNode, allRegs(TYP_INT) & ~argMask);
+            }
+
+            // We will generate code that loads from the OBJ's address, which must be in a register.
+            srcCount = BuildOperandUses(src->AsBlk()->Addr());
         }
         else
         {
-            srcCount = BuildIndirUses(putArgChild->AsIndir());
+            // We will generate all of the code for the GT_PUTARG_SPLIT and LCL_VAR/LCL_FLD as one contained operation.
+            assert(src->OperIsLocalRead());
         }
-        assert(putArgChild->isContained());
     }
     buildInternalRegisterUses();
     BuildDefs(argNode, dstCount, argMask);

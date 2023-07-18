@@ -2762,14 +2762,33 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Runtime_InteropService_MemoryMarshal_GetArrayDataReference:
             {
                 assert(sig->numArgs == 1);
-                assert(sig->sigInst.methInstCount == 1);
 
-                GenTree*             array    = impPopStack().val;
-                CORINFO_CLASS_HANDLE elemHnd  = sig->sigInst.methInst[0];
-                CorInfoType          jitType  = info.compCompHnd->asCorInfoType(elemHnd);
-                var_types            elemType = JITtype2varType(jitType);
+                GenTree*             array   = impStackTop().val;
+                bool                 notNull = false;
+                CORINFO_CLASS_HANDLE elemHnd = NO_CLASS_HANDLE;
+                CorInfoType          jitType;
+                if (sig->sigInst.methInstCount == 1)
+                {
+                    elemHnd = sig->sigInst.methInst[0];
+                    jitType = info.compCompHnd->asCorInfoType(elemHnd);
+                }
+                else
+                {
+                    bool                 isExact  = false;
+                    CORINFO_CLASS_HANDLE arrayHnd = gtGetClassHandle(array, &isExact, &notNull);
+                    if ((arrayHnd == NO_CLASS_HANDLE) || !info.compCompHnd->isSDArray(arrayHnd))
+                    {
+                        return nullptr;
+                    }
+                    jitType = info.compCompHnd->getChildType(arrayHnd, &elemHnd);
+                }
 
-                if (fgAddrCouldBeNull(array))
+                array = impPopStack().val;
+
+                assert(jitType != CORINFO_TYPE_UNDEF);
+                assert((jitType != CORINFO_TYPE_VALUECLASS) || (elemHnd != NO_CLASS_HANDLE));
+
+                if (!notNull && fgAddrCouldBeNull(array))
                 {
                     GenTree* arrayClone;
                     array = impCloneExpr(array, &arrayClone, CHECK_SPILL_ALL,
@@ -2780,7 +2799,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 }
 
                 GenTree*          index     = gtNewIconNode(0, TYP_I_IMPL);
-                GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, elemType, elemHnd);
+                GenTreeIndexAddr* indexAddr = gtNewArrayIndexAddr(array, index, JITtype2varType(jitType), elemHnd);
                 indexAddr->gtFlags &= ~GTF_INX_RNGCHK;
                 indexAddr->gtFlags |= GTF_INX_ADDR_NONNULL;
                 retNode = indexAddr;
@@ -7553,57 +7572,41 @@ CORINFO_CLASS_HANDLE Compiler::impGetSpecialIntrinsicExactReturnType(GenTreeCall
             CORINFO_SIG_INFO sig;
             info.compCompHnd->getMethodSig(methodHnd, &sig);
             assert(sig.sigInst.classInstCount == 1);
+
             CORINFO_CLASS_HANDLE typeHnd = sig.sigInst.classInst[0];
             assert(typeHnd != nullptr);
 
-            // Lookup can incorrect when we have __Canon as it won't appear
-            // to implement any interface types.
-            //
-            // And if we do not have a final type, devirt & inlining is
-            // unlikely to result in much simplification.
-            //
-            // We can use CORINFO_FLG_FINAL to screen out both of these cases.
-            const DWORD typeAttribs = info.compCompHnd->getClassAttribs(typeHnd);
-            bool        isFinalType = ((typeAttribs & CORINFO_FLG_FINAL) != 0);
-
-            if (!isFinalType)
+            CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
+            if (instParam != nullptr)
             {
-                CallArg* instParam = call->gtArgs.FindWellKnownArg(WellKnownArg::InstParam);
-                if (instParam != nullptr)
+                assert(instParam->GetNext() == nullptr);
+                CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
+                if (hClass != NO_CLASS_HANDLE)
                 {
-                    assert(instParam->GetNext() == nullptr);
-                    CORINFO_CLASS_HANDLE hClass = gtGetHelperArgClassHandle(instParam->GetNode());
-                    if (hClass != NO_CLASS_HANDLE)
-                    {
-                        hClass = getTypeInstantiationArgument(hClass, 0);
-                        if ((info.compCompHnd->getClassAttribs(hClass) & CORINFO_FLG_FINAL) != 0)
-                        {
-                            typeHnd     = hClass;
-                            isFinalType = true;
-                        }
-                    }
+                    typeHnd = getTypeInstantiationArgument(hClass, 0);
                 }
             }
 
-            if (isFinalType)
+            if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
             {
-                if (ni == NI_System_Collections_Generic_EqualityComparer_get_Default)
-                {
-                    result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
-                }
-                else
-                {
-                    assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
-                    result = info.compCompHnd->getDefaultComparerClass(typeHnd);
-                }
+                result = info.compCompHnd->getDefaultEqualityComparerClass(typeHnd);
+            }
+            else
+            {
+                assert(ni == NI_System_Collections_Generic_Comparer_get_Default);
+                result = info.compCompHnd->getDefaultComparerClass(typeHnd);
+            }
+
+            if (result != NO_CLASS_HANDLE)
+            {
                 JITDUMP("Special intrinsic for type %s: return type is %s\n", eeGetClassName(typeHnd),
                         result != nullptr ? eeGetClassName(result) : "unknown");
             }
             else
             {
-                JITDUMP("Special intrinsic for type %s: type not final, so deferring opt\n", eeGetClassName(typeHnd));
+                JITDUMP("Special intrinsic for type %s: type undetermined, so deferring opt\n",
+                        eeGetClassName(typeHnd));
             }
-
             break;
         }
 
@@ -7775,11 +7778,35 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
                 return;
             }
 #endif
+            JITDUMP("\nCheckCanInline: fetching method info for inline candidate %s -- context %p\n",
+                    compiler->eeGetMethodName(ftn), pParam->exactContextHnd);
+
+            if (pParam->exactContextHnd == nullptr)
+            {
+                JITDUMP("NULL context\n");
+            }
+            else if (pParam->exactContextHnd == METHOD_BEING_COMPILED_CONTEXT())
+            {
+                JITDUMP("Current method context\n");
+            }
+            else if ((((size_t)pParam->exactContextHnd & CORINFO_CONTEXTFLAGS_MASK) == CORINFO_CONTEXTFLAGS_METHOD))
+            {
+                JITDUMP("Method context: %s\n",
+                        compiler->eeGetMethodName((CORINFO_METHOD_HANDLE)pParam->exactContextHnd));
+            }
+            else
+            {
+                JITDUMP("Class context: %s\n", compiler->eeGetClassName((CORINFO_CLASS_HANDLE)(
+                                                   (size_t)pParam->exactContextHnd & ~CORINFO_CONTEXTFLAGS_MASK)));
+            }
+
+            const bool isGdv = pParam->call->IsGuardedDevirtualizationCandidate();
 
             // Fetch method info. This may fail, if the method doesn't have IL.
+            // NOTE: For GDV we're expected to use a different context (per candidate)
             //
             CORINFO_METHOD_INFO methInfo;
-            if (!compCompHnd->getMethodInfo(ftn, &methInfo))
+            if (!compCompHnd->getMethodInfo(ftn, &methInfo, isGdv ? nullptr : pParam->exactContextHnd))
             {
                 inlineResult->NoteFatal(InlineObservation::CALLEE_NO_METHOD_INFO);
                 return;
