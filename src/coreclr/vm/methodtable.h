@@ -25,6 +25,7 @@
 #include "contractimpl.h"
 #include "generics.h"
 #include "gcinfotypes.h"
+#include "enum_class_flags.h"
 
 /*
  * Forward Declarations
@@ -69,66 +70,21 @@ enum class ResolveVirtualStaticMethodFlags
     AllowNullResult = 1,
     VerifyImplemented = 2,
     AllowVariantMatches = 4,
-    InstantiateResultOverFinalMethodDesc = 8
+    InstantiateResultOverFinalMethodDesc = 8,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
 };
 
-inline ResolveVirtualStaticMethodFlags operator& (ResolveVirtualStaticMethodFlags left, ResolveVirtualStaticMethodFlags right)
-{
-    return ResolveVirtualStaticMethodFlags(int(left) & int(right));
-}
-
-inline ResolveVirtualStaticMethodFlags operator| (ResolveVirtualStaticMethodFlags left, ResolveVirtualStaticMethodFlags right)
-{
-    return ResolveVirtualStaticMethodFlags(int(left) | int(right));
-}
-inline ResolveVirtualStaticMethodFlags& operator|=(ResolveVirtualStaticMethodFlags& left, ResolveVirtualStaticMethodFlags right)
-{
-    left = left | right;
-    return left;
-}
-inline ResolveVirtualStaticMethodFlags operator^ (ResolveVirtualStaticMethodFlags left, ResolveVirtualStaticMethodFlags right)
-{
-    return ResolveVirtualStaticMethodFlags(int(left) ^ int(right));
-}
-
-inline ResolveVirtualStaticMethodFlags operator~ (ResolveVirtualStaticMethodFlags value)
-{
-    return ResolveVirtualStaticMethodFlags(~int(value));
-}
 
 enum class FindDefaultInterfaceImplementationFlags
 {
     None,
     AllowVariance = 1,
     ThrowOnConflict = 2,
-    InstantiateFoundMethodDesc = 4
+    InstantiateFoundMethodDesc = 4,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
 };
-
-inline FindDefaultInterfaceImplementationFlags operator& (FindDefaultInterfaceImplementationFlags left, FindDefaultInterfaceImplementationFlags right)
-{
-    return FindDefaultInterfaceImplementationFlags(int(left) & int(right));
-}
-
-inline FindDefaultInterfaceImplementationFlags operator| (FindDefaultInterfaceImplementationFlags left, FindDefaultInterfaceImplementationFlags right)
-{
-    return FindDefaultInterfaceImplementationFlags(int(left) | int(right));
-}
-
-inline FindDefaultInterfaceImplementationFlags& operator|=(FindDefaultInterfaceImplementationFlags& left, FindDefaultInterfaceImplementationFlags right)
-{
-    left = left | right;
-    return left;
-}
-
-inline FindDefaultInterfaceImplementationFlags operator^ (FindDefaultInterfaceImplementationFlags left, FindDefaultInterfaceImplementationFlags right)
-{
-    return FindDefaultInterfaceImplementationFlags(int(left) ^ int(right));
-}
-
-inline FindDefaultInterfaceImplementationFlags operator~ (FindDefaultInterfaceImplementationFlags value)
-{
-    return FindDefaultInterfaceImplementationFlags(~int(value));
-}
 
 //============================================================================
 // This is the in-memory structure of a class and it will evolve.
