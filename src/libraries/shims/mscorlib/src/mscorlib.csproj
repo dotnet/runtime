@@ -30,8 +30,8 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Tasks.Parallel\src\System.Threading.Tasks.Parallel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Security.Permissions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Threading.AccessControl.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Threading.AccessControl.csproj" />
   </ItemGroup>
 
 </Project>

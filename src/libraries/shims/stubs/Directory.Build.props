@@ -1,7 +1,7 @@
 <Project>
 
   <PropertyGroup>
-    <OutDirName>$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)fake</OutDirName>
+    <OutDirName>$(MSBuildProjectName)$([System.IO.Path]::DirectorySeparatorChar)stub</OutDirName>
   </PropertyGroup>
 
   <Import Project="..\Directory.Build.props" />

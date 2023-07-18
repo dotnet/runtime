@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.Diagnostics.EntryWrittenEventArgs" />
+    <ForwardedType Include="System.Diagnostics.EntryWrittenEventHandler" />
+    <ForwardedType Include="System.Diagnostics.EventInstance" />
+    <ForwardedType Include="System.Diagnostics.EventLog" />
+    <ForwardedType Include="System.Diagnostics.EventLogEntry" />
+    <ForwardedType Include="System.Diagnostics.EventLogEntryCollection" />
+    <ForwardedType Include="System.Diagnostics.EventLogEntryType" />
+    <ForwardedType Include="System.Diagnostics.EventLogTraceListener" />
+    <ForwardedType Include="System.Diagnostics.EventSourceCreationData" />
+    <ForwardedType Include="System.Diagnostics.OverflowAction" />
+  </ItemGroup>
+
+</Project>

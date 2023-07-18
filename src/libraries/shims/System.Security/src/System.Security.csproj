@@ -7,11 +7,11 @@
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Security.Cryptography.Pkcs.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Security.Cryptography.ProtectedData.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Security.Cryptography.Xml.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Security.Permissions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Windows.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Cryptography.Pkcs.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Cryptography.ProtectedData.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Cryptography.Xml.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Windows.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

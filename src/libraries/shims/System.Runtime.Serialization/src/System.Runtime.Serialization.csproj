@@ -10,7 +10,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Primitives\src\System.Runtime.Serialization.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Serialization.Xml\src\System.Runtime.Serialization.Xml.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Runtime.Serialization.Schema.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Runtime.Serialization.Schema.csproj" />
   </ItemGroup>
 
 </Project>
