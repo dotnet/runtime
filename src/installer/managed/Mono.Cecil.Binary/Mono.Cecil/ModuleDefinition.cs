@@ -555,7 +555,7 @@ namespace Mono.Cecil {
 			if (!dec.Resolved)
 				return dec.Blob;
 
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
 			if (dec.PermissionSet != null)
 				return Encoding.Unicode.GetBytes (dec.PermissionSet.ToXml ().ToString ());
 #endif

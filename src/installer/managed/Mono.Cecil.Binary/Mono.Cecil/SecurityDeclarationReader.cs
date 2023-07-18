@@ -71,7 +71,7 @@ namespace Mono.Cecil {
 		public SecurityDeclaration FromByteArray (SecurityAction action, byte [] declaration, bool resolve)
 		{
 			SecurityDeclaration dec = new SecurityDeclaration (action, this);
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
 			dec.PermissionSet = new PermissionSet (SSP.PermissionState.None);
 
 			if (IsEmptyDeclaration (declaration))

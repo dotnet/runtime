@@ -77,7 +77,7 @@ namespace Mono.Cecil {
 			SecurityDeclaration current = (SecurityDeclaration) m_items[value.Action];
 			if (current != null) {
 				// ... further additions are transformed into unions
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
                 current.PermissionSet = current.PermissionSet.Union (value.PermissionSet);
 #endif
 			} else {
@@ -106,7 +106,7 @@ namespace Mono.Cecil {
 			if (item == null)
 				return false;
 
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
 			return value.PermissionSet.IsSubsetOf (item.PermissionSet);
 #else
             // XXX For CF, this concept does not exist--so always be true

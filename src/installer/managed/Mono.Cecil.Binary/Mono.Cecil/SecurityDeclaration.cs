@@ -38,7 +38,7 @@ namespace Mono.Cecil {
 		SecurityDeclarationReader m_reader;
 		IDictionary m_annotations;
 
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
 		PermissionSet m_permSet;
 #endif
 
@@ -50,7 +50,7 @@ namespace Mono.Cecil {
 			set { m_action = value; }
 		}
 
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
 		public PermissionSet PermissionSet {
 			get { return m_permSet; }
 			set { m_permSet = value; }
@@ -100,7 +100,7 @@ namespace Mono.Cecil {
 				return sd;
 			}
 
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
             sd.PermissionSet = sec.PermissionSet.Copy ();
 #endif
 			return sd;
@@ -119,7 +119,7 @@ namespace Mono.Cecil {
 				return false;
 
 			m_action = clone.Action;
-#if !CF_1_0 && !CF_2_0
+#if !CF_1_0 && !CF_2_0 && !NETSTANDARD2_0
 			m_permSet = clone.PermissionSet.Copy ();
 #endif
 			m_resolved = true;
