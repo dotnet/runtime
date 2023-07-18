@@ -187,17 +187,7 @@ namespace Microsoft.Interop
                                 outlocal,
                                 true));
                         }
-                        //if (boundaryBehavior != ValueBoundaryBehavior.AddressOfNativeIdentifier)
-                        //{
-                        // <nativeType> __param_native;
-                        //else
-                        //{
-                        //    statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        //        localType,
-                        //        native,
-                        //        false));
-                        //}
-                        //}
+
                         if (boundaryBehavior is ValueBoundaryBehavior.AddressOfNativeIdentifier)
                         {
                             // To simplify propogating back the value to the "byref" parameter,
