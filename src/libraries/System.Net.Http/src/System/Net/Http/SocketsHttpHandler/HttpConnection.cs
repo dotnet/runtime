@@ -882,19 +882,23 @@ namespace System.Net.Http
                 mappedException = CancellationHelper.CreateOperationCanceledException(exception, cancellationToken);
                 return true;
             }
+
             if (exception is InvalidOperationException)
             {
                 // For consistency with other handlers we wrap the exception in an HttpRequestException.
                 mappedException = new HttpRequestException(SR.net_http_client_execution_error, exception);
                 return true;
             }
+
             if (exception is IOException ioe)
             {
                 // For consistency with other handlers we wrap the exception in an HttpRequestException.
                 // If the request is retryable, indicate that on the exception.
-                mappedException = new HttpRequestException(SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnConnectionFailure : RequestRetryType.NoRetry);
+                HttpRequestError error = ioe is HttpIOException httpIoe ? httpIoe.HttpRequestError : HttpRequestError.Unknown;
+                mappedException = new HttpRequestException(error, SR.net_http_client_execution_error, ioe, _canRetry ? RequestRetryType.RetryOnConnectionFailure : RequestRetryType.NoRetry);
                 return true;
             }
+
             // Otherwise, just allow the original exception to propagate.
             mappedException = exception;
             return false;
