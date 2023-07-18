@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.Metrics;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Logging;
@@ -202,6 +203,8 @@ namespace Microsoft.Extensions.Hosting
 
         /// <inheritdoc />
         public ILoggingBuilder Logging => _logging;
+
+        public IMetricsBuilder Metrics => throw null!;
 
         /// <inheritdoc />
         public void ConfigureContainer<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory, Action<TContainerBuilder>? configure = null) where TContainerBuilder : notnull
