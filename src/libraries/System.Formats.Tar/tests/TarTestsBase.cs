@@ -479,6 +479,8 @@ namespace System.Formats.Tar.Tests
             return entryType;
         }
 
+        protected static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         protected static TarEntry InvokeTarEntryCreationConstructor(TarEntryFormat targetFormat, TarEntryType entryType, string entryName)
             => targetFormat switch
             {

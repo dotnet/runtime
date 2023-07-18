@@ -439,7 +439,7 @@ namespace System.Formats.Tar.Tests
 
             string tarFilePath = GetTestFilePath();
             await using TarWriter writer = new(File.Create(tarFilePath));
-            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, entryFormat is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile, "foo");
+            TarEntry writeEntry = InvokeTarEntryCreationConstructor(entryFormat, GetRegularFileEntryTypeForFormat(entryFormat), "foo");
             writeEntry.DataStream = new SimulatedDataStream(FileSizeOverLimit);
 
             Assert.Equal(FileSizeOverLimit, writeEntry.Length);
