@@ -23,6 +23,7 @@ usage_list+=("-pgoinstrument: generate instrumented code for profile guided opti
 usage_list+=("-skipcrossarchnative: Skip building cross-architecture native binaries.")
 usage_list+=("-staticanalyzer: use scan_build static analyzer.")
 usage_list+=("-component: Build individual components instead of the full project. Available options are 'hosts', 'jit', 'runtime', 'paltests', 'alljits', 'iltools', 'nativeaot', and 'spmi'. Can be specified multiple times.")
+usage_list+=("-subdir: Append a directory with the provided name to the obj and bin paths.")
 
 setup_dirs_local()
 {
@@ -53,6 +54,12 @@ handle_arguments_local() {
             __RequestedBuildComponents="$__RequestedBuildComponents $2"
             __ShiftArgs=1
             ;;
+        
+        subdir|-subdir)
+            __SubDir="$2"
+            __ShiftArgs=1
+            ;;
+
         *)
             __UnprocessedBuildArgs="$__UnprocessedBuildArgs $1"
             ;;
@@ -97,6 +104,7 @@ __UseNinja=0
 __VerboseBuild=0
 __CMakeArgs=""
 __RequestedBuildComponents=""
+__SubDir=""
 
 source "$__ProjectRoot"/_build-commons.sh
 
@@ -119,6 +127,11 @@ export __IntermediatesDir __ArtifactsIntermediatesDir
 if [[ "$__ExplicitHostArch" == 1 ]]; then
     __IntermediatesDir="$__IntermediatesDir/$__HostArch"
     __BinDir="$__BinDir/$__HostArch"
+fi
+
+if [[ -n "$__SubDir" ]]; then
+    __IntermediatesDir="$__IntermediatesDir/$__SubDir"
+    __BinDir="$__BinDir/$__SubDir"
 fi
 
 # CI_SPECIFIC - On CI machines, $HOME may not be set. In such a case, create a subfolder and set the variable to set.

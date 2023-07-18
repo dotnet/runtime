@@ -130,8 +130,13 @@ internal static class ThrowHelper
     {
         if (StatusFailed(status))
         {
-            throw GetExceptionForMsQuicStatus(status, message: message);
+            ThrowMsQuicException(status, message);
         }
+    }
+
+    internal static void ThrowMsQuicException(int status, string? message = null)
+    {
+        throw GetExceptionForMsQuicStatus(status, message: message);
     }
 
     internal static string GetErrorMessageForStatus(int status, string? message)
