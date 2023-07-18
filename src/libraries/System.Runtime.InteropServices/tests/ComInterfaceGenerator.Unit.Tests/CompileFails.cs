@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -811,6 +812,27 @@ namespace ComInterfaceGenerator.Unit.Tests
             //};
         }
 
+        public static IEnumerable<object[]> DirectedTestCase()
+        {
+            var codeSnippets = new CodeSnippets(GetAttributeProvider(GeneratorKind.ComInterfaceGenerator));
+            const string inAttribute = "[{|#1:InAttribute|}]";
+            const string outAttribute = "[{|#2:OutAttribute|}]";
+            const string paramName = "p";
+            string paramNameWithLocation = $$"""{|#0:{{paramName}}|}""";
+            const string constElementCount = @"[MarshalUsing(ConstantElementCount = 10)]";
+            var inOutAttributeIsDefaultDiagnostic = new DiagnosticResult(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
+                    .WithLocation(0)
+                    .WithLocation(1)
+                    .WithLocation(2)
+                    .WithArguments(SR.InOutAttributes, paramName, SR.PinnedMarshallingIsInOutByDefault);
+            yield return new object[] {
+                ID(),
+                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
+                //https://github.com/dotnet/runtime/issues/88708
+                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+            };
+        }
+
         [Theory]
         [MemberData(nameof(ByValueMarshalAttributeOnValueTypes))]
         [MemberData(nameof(ByValueMarshalAttributeOnReferenceTypes))]
@@ -822,8 +844,6 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                // https://github.com/dotnet/runtime/issues/88708
-                CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
             await test.RunAsync();
