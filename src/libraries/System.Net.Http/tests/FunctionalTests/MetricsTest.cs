@@ -530,10 +530,10 @@ namespace System.Net.Http.Functional.Tests
             base.Dispose(disposing);
         }
 
-        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request) =>
+        protected Task<HttpResponseMessage> SendAsync(HttpMessageInvoker invoker, HttpRequestMessage request, CancellationToken cancellationToken = default) =>
             TestHttpMessageInvoker ?
-            invoker.SendAsync(request, default) :
-            ((HttpClient)invoker).SendAsync(TestAsync, request);
+            invoker.SendAsync(request, cancellationToken) :
+            ((HttpClient)invoker).SendAsync(TestAsync, request, cancellationToken);
 
         protected HttpMessageInvoker CreateHttpMessageInvoker(HttpMessageHandler? handler = null) =>
             TestHttpMessageInvoker ?
@@ -617,24 +617,32 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task FailedRequests_ConnectionClosedWhileReceivingHeaders_Recorded()
         {
-            TimeSpan timeout = TimeSpan.FromSeconds(30);
+            using CancellationTokenSource cancelServerCts = new CancellationTokenSource();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using HttpMessageInvoker client = CreateHttpMessageInvoker();
                 using InstrumentRecorder<long> recorder = SetupInstrumentRecorder<long>(InstrumentNames.FailedRequests);
                 using HttpRequestMessage request = new(HttpMethod.Get, uri) { Version = UseVersion };
 
-                await Assert.ThrowsAsync<HttpRequestException>(async () =>
+                Exception ex = await Assert.ThrowsAnyAsync<Exception>(async () =>
                 {
-                    using HttpResponseMessage response = await SendAsync(client, request);
-                }).WaitAsync(timeout);
+                    // Getting a cancellation is also good if we are unable to detect the peer shutdown.
+                    using CancellationTokenSource cts = new CancellationTokenSource(10_000);
+                    using HttpResponseMessage response = await SendAsync(client, request, cts.Token);
+                });
+                cancelServerCts.Cancel();
+                Assert.True(ex is HttpRequestException or TaskCanceledException);
 
                 Measurement<long> m = recorder.GetMeasurements().Single();
                 VerifyFailedRequests(m, 1, uri, null, null);
             }, async server =>
             {
-                var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(timeout);
-                connection.Socket.Close();
+                try
+                {
+                    var connection = (LoopbackServer.Connection)await server.EstablishGenericConnectionAsync().WaitAsync(cancelServerCts.Token);
+                    connection.Socket.Close();
+                }
+                catch { }
             });
         }
     }
