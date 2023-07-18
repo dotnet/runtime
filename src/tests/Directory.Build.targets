@@ -8,8 +8,6 @@
   -->
   <Import Project="$(MSBuildThisFileDirectory)/Common/disableversioncheck.targets"
           Condition="'$(DisableVersionCheckImported)' != 'true'" />
-  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets"
-          Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'" />
 
   <PropertyGroup Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'">
     <OSPlatformConfig>$(TargetOS).AnyCPU.$(Configuration)</OSPlatformConfig>
@@ -24,6 +22,9 @@
 
     <CustomMain>true</CustomMain>
   </PropertyGroup>
+
+  <Import Project="$(RepositoryEngineeringDir)testing\tests.targets"
+          Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono'" />
 
   <Target Name="_SetRunScriptOutputDirectory" Condition="'$(TargetsAppleMobile)' == 'true' and '$(RuntimeFlavor)' == 'mono' and '$(CustomMain)' == 'true'" BeforeTargets="GenerateRunScript">
     <PropertyGroup>

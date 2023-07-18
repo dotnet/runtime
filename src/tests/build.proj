@@ -333,7 +333,7 @@
       <UseRuntimeComponents>true</UseRuntimeComponents>
     </PropertyGroup>
 
-    <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)">
+    <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
       <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
     </CustomTask>
   </Target>
