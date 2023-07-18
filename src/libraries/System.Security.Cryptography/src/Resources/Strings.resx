@@ -811,7 +811,7 @@
     <value>OpenSSL is not supported on this platform.</value>
   </data>
   <data name="PlatformNotSupported_CryptographyOpenSSLNotFound" xml:space="preserve">
-    <value>Algorithm '{0}' requires OpenSSL however OpenSSL could not be found or loaded.</value>
+    <value>OpenSSL is required for algorithm '{0}' but could not be found or loaded.</value>
   </data>
   <data name="Security_AccessDenied" xml:space="preserve">
     <value>Access is denied.</value>
