@@ -13860,7 +13860,8 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     pImplMethodRuntime = NULL;
                 }
-                else if (IsMdFinal(pDeclMethod->GetAttrs()))
+                else if (IsMdFinal(pDeclMethod->GetAttrs()) ||
+                        pDeclMethod->GetMethodTable()->IsValueType() && !pDeclMethod->IsUnboxingStub())
                 {
                     pImplMethodRuntime = pDeclMethod;
                 }
@@ -13868,6 +13869,35 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     _ASSERTE(slot < pBaseMT->GetNumVirtuals());
                     pImplMethodRuntime = thImpl.GetMethodTable()->GetMethodDescForSlot(slot);
+                }
+            }
+
+            if (pImplMethodRuntime != pImplMethodCompiler)
+            {
+                // Strip unboxing stub differences if they exist. For various reasons the compiler will sometimes
+                // generate one or the other, and preventing that from hitting this fixup is not worth it
+                if (pImplMethodRuntime->IsUnboxingStub() != pImplMethodCompiler->IsUnboxingStub())
+                {
+                    if (pImplMethodCompiler->IsUnboxingStub())
+                    {
+                        pImplMethodCompiler = MethodDesc::FindOrCreateAssociatedMethodDesc(pImplMethodCompiler,
+                                        pImplMethodCompiler->GetMethodTable(),
+                                        FALSE,
+                                        pImplMethodCompiler->GetMethodInstantiation(),
+                                        FALSE);
+
+                        _ASSERTE(!pImplMethodCompiler->IsUnboxingStub());
+                    }
+                    if (pImplMethodRuntime->IsUnboxingStub())
+                    {
+                        pImplMethodRuntime = MethodDesc::FindOrCreateAssociatedMethodDesc(pImplMethodRuntime,
+                                        pImplMethodRuntime->GetMethodTable(),
+                                        FALSE,
+                                        pImplMethodRuntime->GetMethodInstantiation(),
+                                        FALSE);
+
+                        _ASSERTE(!pImplMethodRuntime->IsUnboxingStub());
+                    }
                 }
             }
 
