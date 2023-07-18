@@ -53,6 +53,7 @@ import {
     simdLoadTable, simdStoreTable,
 } from "./jiterpreter-tables";
 import { mono_log_error, mono_log_info } from "./logging";
+import { mono_assert } from "./globals";
 
 /*
 struct MonoVTable {
@@ -3571,10 +3572,10 @@ function emit_simd_3(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             const lane = get_known_constant_value(builder, getArgU16(ip, 3)),
                 laneCount = extractTup[0];
             if (typeof (lane) !== "number") {
-                mono_log_error (`${builder.functions[0].name}: Non-constant lane index passed to ExtractScalar`);
+                mono_log_error(`${builder.functions[0].name}: Non-constant lane index passed to ExtractScalar`);
                 return false;
             } else if ((lane >= laneCount) || (lane < 0)) {
-                mono_log_error (`${builder.functions[0].name}: ExtractScalar index ${lane} out of range (0 - ${laneCount - 1})`);
+                mono_log_error(`${builder.functions[0].name}: ExtractScalar index ${lane} out of range (0 - ${laneCount - 1})`);
                 return false;
             }
 
@@ -3747,10 +3748,10 @@ function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             const laneCount = rtup[0],
                 lane = get_known_constant_value(builder, getArgU16(ip, 3));
             if (typeof (lane) !== "number") {
-                mono_log_error (`${builder.functions[0].name}: Non-constant lane index passed to ReplaceScalar`);
+                mono_log_error(`${builder.functions[0].name}: Non-constant lane index passed to ReplaceScalar`);
                 return false;
             } else if ((lane >= laneCount) || (lane < 0)) {
-                mono_log_error (`${builder.functions[0].name}: ReplaceScalar index ${lane} out of range (0 - ${laneCount - 1})`);
+                mono_log_error(`${builder.functions[0].name}: ReplaceScalar index ${lane} out of range (0 - ${laneCount - 1})`);
                 return false;
             }
 
@@ -3766,10 +3767,10 @@ function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
             const laneCount = stup[0],
                 lane = get_known_constant_value(builder, getArgU16(ip, 4));
             if (typeof (lane) !== "number") {
-                mono_log_error (`${builder.functions[0].name}: Non-constant lane index passed to store method`);
+                mono_log_error(`${builder.functions[0].name}: Non-constant lane index passed to store method`);
                 return false;
             } else if ((lane >= laneCount) || (lane < 0)) {
-                mono_log_error (`${builder.functions[0].name}: Store lane ${lane} out of range (0 - ${laneCount - 1})`);
+                mono_log_error(`${builder.functions[0].name}: Store lane ${lane} out of range (0 - ${laneCount - 1})`);
                 return false;
             }
             append_ldloc(builder, getArgU16(ip, 2), WasmOpcode.i32_load);
@@ -3799,13 +3800,13 @@ function emit_simd_4(builder: WasmBuilder, ip: MintOpcodePtr, index: SimdIntrins
         case SimdIntrinsic4.ShuffleD1: {
             const indices = get_known_constant_value(builder, getArgU16(ip, 4));
             if (typeof (indices) !== "object") {
-                mono_log_error (`${builder.functions[0].name}: Non-constant indices passed to PackedSimd.Shuffle`);
+                mono_log_error(`${builder.functions[0].name}: Non-constant indices passed to PackedSimd.Shuffle`);
                 return false;
             }
             for (let i = 0; i < 32; i++) {
                 const lane = indices[i];
                 if ((lane < 0) || (lane > 31)) {
-                    mono_log_error (`${builder.functions[0].name}: Shuffle lane index #${i} (${lane}) out of range (0 - 31)`);
+                    mono_log_error(`${builder.functions[0].name}: Shuffle lane index #${i} (${lane}) out of range (0 - 31)`);
                     return false;
                 }
             }

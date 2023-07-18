@@ -137,6 +137,7 @@
     <Compile Include="System\Reflection\Attribute.NativeAot.cs" />
     <Compile Include="System\Reflection\Assembly.NativeAot.cs" />
     <Compile Include="System\Reflection\BinderBundle.cs" />
+    <Compile Include="System\Reflection\ConstructorInvoker.cs" />
     <Compile Include="System\Reflection\DynamicInvokeInfo.cs" />
     <Compile Include="System\Reflection\Emit\AssemblyBuilder.cs" />
     <Compile Include="System\Reflection\Emit\CustomAttributeBuilder.cs" />
@@ -150,6 +151,7 @@
     <Compile Include="System\Reflection\MethodBase.NativeAot.cs" />
     <Compile Include="System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="System\Reflection\Metadata\MetadataUpdater.cs" />
+    <Compile Include="System\Reflection\MethodInvoker.cs" />
     <Compile Include="System\Reflection\ModifiedType.NativeAot.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.cs" />
     <Compile Include="System\Reflection\Runtime\TypeInfos\RuntimeFunctionPointerTypeInfo.UnificationKey.cs" />
@@ -486,7 +488,7 @@
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionDomain.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ExecutionEnvironment.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\FieldAccessor.cs" />
-    <Compile Include="Internal\Reflection\Core\Execution\MethodInvoker.cs" />
+    <Compile Include="Internal\Reflection\Core\Execution\MethodBaseInvoker.cs" />
     <Compile Include="Internal\Reflection\Core\Execution\ReflectionCoreExecution.cs" />
   </ItemGroup>
   <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->

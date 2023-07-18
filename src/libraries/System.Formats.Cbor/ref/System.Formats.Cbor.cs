@@ -65,6 +65,7 @@ namespace System.Formats.Cbor
         [System.CLSCompliantAttribute(false)]
         public ulong ReadUInt64() { throw null; }
         public System.DateTimeOffset ReadUnixTimeSeconds() { throw null; }
+        public void Reset(System.ReadOnlyMemory<byte> data) { }
         public void SkipToParent(bool disableConformanceModeChecks = false) { }
         public void SkipValue(bool disableConformanceModeChecks = false) { }
         public bool TryReadByteString(System.Span<byte> destination, out int bytesWritten) { throw null; }
