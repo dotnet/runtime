@@ -20,10 +20,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(false)]
         public async Task ClassWithRequiredKeywordDeserialization(bool ignoreNullValues)
         {
-            JsonSerializerOptions options = new()
-            {
-                IgnoreNullValues = ignoreNullValues
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.IgnoreNullValues = ignoreNullValues;
 
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembers>(options),
                 nameof(PersonWithRequiredMembers.FirstName),
@@ -84,10 +82,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(false)]
         public async Task ClassWithRequiredKeywordAndSmallParametrizedCtorFailsDeserialization(bool ignoreNullValues)
         {
-            JsonSerializerOptions options = new()
-            {
-                IgnoreNullValues = ignoreNullValues
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.IgnoreNullValues = ignoreNullValues;
 
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndSmallParametrizedCtor>(options),
                 nameof(PersonWithRequiredMembersAndSmallParametrizedCtor.FirstName),
@@ -167,10 +163,8 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(false)]
         public async Task ClassWithRequiredKeywordAndLargeParametrizedCtorFailsDeserialization(bool ignoreNullValues)
         {
-            JsonSerializerOptions options = new()
-            {
-                IgnoreNullValues = ignoreNullValues
-            };
+            JsonSerializerOptions options = Serializer.CreateOptions(makeReadOnly: false);
+            options.IgnoreNullValues = ignoreNullValues;
 
             AssertJsonTypeInfoHasRequiredProperties(GetTypeInfo<PersonWithRequiredMembersAndLargeParametrizedCtor>(options),
                 nameof(PersonWithRequiredMembersAndLargeParametrizedCtor.AProp),
@@ -539,7 +533,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task RequiredKeywordAndJsonRequiredCustomAttributeWorkCorrectlyTogether()
         {
-            JsonSerializerOptions options = JsonSerializerOptions.Default;
+            JsonSerializerOptions options = Serializer.CreateOptions();
             JsonTypeInfo typeInfo = GetTypeInfo<ClassWithRequiredKeywordAndJsonRequiredCustomAttribute>(options);
             AssertJsonTypeInfoHasRequiredProperties(typeInfo,
                 nameof(ClassWithRequiredKeywordAndJsonRequiredCustomAttribute.SomeProperty));

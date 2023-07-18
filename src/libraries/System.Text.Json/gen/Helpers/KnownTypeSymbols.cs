@@ -135,6 +135,15 @@ namespace System.Text.Json.SourceGeneration
         public INamedTypeSymbol? TimeOnlyType => GetOrResolveType("System.TimeOnly", ref _TimeOnlyType);
         private Option<INamedTypeSymbol?> _TimeOnlyType;
 
+        public INamedTypeSymbol? Int128Type => GetOrResolveType("System.Int128", ref _Int128Type);
+        private Option<INamedTypeSymbol?> _Int128Type;
+
+        public INamedTypeSymbol? UInt128Type => GetOrResolveType("System.UInt128", ref _UInt128Type);
+        private Option<INamedTypeSymbol?> _UInt128Type;
+
+        public INamedTypeSymbol? HalfType => GetOrResolveType("System.Half", ref _HalfType);
+        private Option<INamedTypeSymbol?> _HalfType;
+
         public IArrayTypeSymbol? ByteArrayType => _ByteArrayType.HasValue
             ? _ByteArrayType.Value
             : (_ByteArrayType = new(Compilation.CreateArrayTypeSymbol(Compilation.GetSpecialType(SpecialType.System_Byte), rank: 1))).Value;
