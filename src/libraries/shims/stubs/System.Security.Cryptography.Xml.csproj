@@ -1,9 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <StrongNameKeyId>Microsoft</StrongNameKeyId>
-  </PropertyGroup>
-
   <ItemGroup>
     <ForwardedType Include="System.Security.Cryptography.Xml.CipherData" />
     <ForwardedType Include="System.Security.Cryptography.Xml.CipherReference" />
