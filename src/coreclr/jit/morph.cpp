@@ -14744,7 +14744,7 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* node = *use;
-            if ((node->gtFlags & GT_CALL) == 0)
+            if ((node->gtFlags & GTF_CALL) == 0)
             {
                 return WALK_SKIP_SUBTREES;
             }
@@ -14818,10 +14818,24 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
     {
         for (Statement* stmt : bb->Statements())
         {
-            if ((stmt->GetRootNode()->gtFlags & GT_CALL) != 0)
+            // Does this have any calls?
+            if ((stmt->GetRootNode()->gtFlags & GTF_CALL) == 0)
             {
-                if (visitor.WalkTree(stmt->GetRootNodePointer(), nullptr) == WALK_ABORT)
+                continue;
+            }
+
+            // If so, check for any struct last use and only do the expensive
+            // tree walk if one exists.
+            for (GenTreeLclVarCommon* lcl : stmt->LocalsTreeList())
+            {
+                if (!varTypeIsStruct(lcl) || !lcl->OperIsLocalRead())
                 {
+                    continue;
+                }
+
+                if ((lcl->gtFlags & GTF_VAR_DEATH) != 0)
+                {
+                    visitor.WalkTree(stmt->GetRootNodePointer(), nullptr);
                     break;
                 }
             }
