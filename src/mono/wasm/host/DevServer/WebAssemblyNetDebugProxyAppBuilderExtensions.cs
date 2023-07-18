@@ -19,6 +19,8 @@ using System.Web;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 
+namespace Microsoft.WebAssembly.AppHost.DevServer;
+
 internal static class WebAssemblyNetDebugProxyAppBuilderExtensions
 {
     /// <summary>

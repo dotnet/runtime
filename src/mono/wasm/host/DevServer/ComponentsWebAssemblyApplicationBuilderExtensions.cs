@@ -12,6 +12,8 @@ using System;
 using System.IO;
 using System.Net.Mime;
 
+namespace Microsoft.WebAssembly.AppHost.DevServer;
+
 internal static class ComponentsWebAssemblyApplicationBuilderExtensions
 {
     private static readonly string? s_dotnetModifiableAssemblies = GetNonEmptyEnvironmentVariableValue("DOTNET_MODIFIABLE_ASSEMBLIES");

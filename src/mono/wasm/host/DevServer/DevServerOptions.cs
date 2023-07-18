@@ -5,6 +5,8 @@ using System;
 using System.Net.WebSockets;
 using System.Threading.Tasks;
 
+namespace Microsoft.WebAssembly.AppHost.DevServer;
+
 internal sealed record DevServerOptions
 (
     Func<WebSocket, Task>? OnConsoleConnected,

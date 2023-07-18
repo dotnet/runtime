@@ -13,6 +13,8 @@ using Microsoft.WebAssembly.AppHost;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 
+namespace Microsoft.WebAssembly.AppHost.DevServer;
+
 internal static class DevServer
 {
     internal static async Task<(ServerURLs, IWebHost)> StartAsync(DevServerOptions options, ILogger logger, CancellationToken token)

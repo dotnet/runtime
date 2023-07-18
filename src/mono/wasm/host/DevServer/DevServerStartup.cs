@@ -11,6 +11,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.AppHost;
 
+namespace Microsoft.WebAssembly.AppHost.DevServer;
+
 internal sealed class DevServerStartup
 {
     public DevServerStartup(IConfiguration configuration)

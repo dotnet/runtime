@@ -16,6 +16,8 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 
+namespace Microsoft.WebAssembly.AppHost.DevServer;
+
 internal static class DebugProxyLauncher
 {
     private static readonly object LaunchLock = new object();

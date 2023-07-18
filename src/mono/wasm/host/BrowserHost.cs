@@ -11,8 +11,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.ApplicationParts;
 using Microsoft.Extensions.Logging;
+using Microsoft.WebAssembly.AppHost.DevServer;
 using Microsoft.WebAssembly.Diagnostics;
 
 #nullable enable
@@ -36,7 +36,6 @@ internal sealed class BrowserHost
                                               CancellationToken token)
     {
         var args = new BrowserArguments(commonArgs);
-        // TODO MF: args.Validate();
         var host = new BrowserHost(args, logger);
         await host.RunAsync(loggerFactory, token);
 
@@ -118,11 +117,11 @@ internal sealed class BrowserHost
 
             var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, ".staticwebassets.runtime.json");
             if (File.Exists(staticWebAssetsPath))
-                return await DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
+                return await DevServer.DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
 
             staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, ".StaticWebAssets.xml");
             if (File.Exists(staticWebAssetsPath))
-                return await DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
+                return await DevServer.DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
         }
 
         WebServerOptions options = new
