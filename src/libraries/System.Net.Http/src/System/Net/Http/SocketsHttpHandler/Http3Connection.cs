@@ -208,7 +208,7 @@ namespace System.Net.Http
 
                 if (quicStream == null)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 requestStream!.StreamId = quicStream.Id;
@@ -221,7 +221,7 @@ namespace System.Net.Http
 
                 if (goAway)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -237,7 +237,7 @@ namespace System.Net.Http
             {
                 // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
                 // note that _abortException may be null if we closed the connection in response to a GOAWAY frame
-                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {
