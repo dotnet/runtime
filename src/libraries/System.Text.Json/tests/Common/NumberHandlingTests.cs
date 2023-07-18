@@ -1045,6 +1045,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             string[] testCases = new[]
             {
+                "01", // leading zeroes
                 "$123.46", // Currency
                 "100.00 %", // Percent
                  "1234,57", // Fixed point

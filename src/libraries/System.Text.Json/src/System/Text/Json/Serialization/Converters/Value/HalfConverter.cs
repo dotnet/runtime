@@ -171,13 +171,13 @@ namespace System.Text.Json.Serialization.Converters
             }
         }
 
-        // Half.TryFormat/TryParse(ROS<byte>) are not available on .NET 7
-        // we need to use Half.TryFormat/TryParse(ROS<char>) in that case.
         private static bool TryParse(ReadOnlySpan<byte> buffer, out Half result)
         {
 #if NET8_0_OR_GREATER
             bool success = Half.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
 #else
+            // Half.TryFormat/TryParse(ROS<byte>) are not available on .NET 7
+            // we need to use Half.TryFormat/TryParse(ROS<char>) in that case.
             char[]? rentedCharBuffer = null;
 
             Span<char> charBuffer = buffer.Length <= JsonConstants.StackallocCharThreshold
