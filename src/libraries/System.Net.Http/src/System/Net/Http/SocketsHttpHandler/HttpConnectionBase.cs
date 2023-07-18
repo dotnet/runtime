@@ -16,6 +16,8 @@ namespace System.Net.Http
 {
     internal abstract class HttpConnectionBase : IDisposable, IHttpTrace
     {
+        private static long s_connectionCounter = -1;
+
         // May be null if none of the counters were enabled when the connection was established.
         private readonly ConnectionMetrics? _connectionMetrics;
 
@@ -31,7 +33,9 @@ namespace System.Net.Http
         /// <summary>Cached string for the last Server header received on this connection.</summary>
         private string? _lastServerHeaderValue;
 
-        public HttpConnectionBase(HttpConnectionPool pool)
+        public long Id { get; } = Interlocked.Increment(ref s_connectionCounter);
+
+        public HttpConnectionBase(HttpConnectionPool pool, IPEndPoint? remoteEndPoint)
         {
             Debug.Assert(this is HttpConnection or Http2Connection or Http3Connection);
             Debug.Assert(pool.Settings._metrics is not null);
@@ -64,9 +68,13 @@ namespace System.Net.Http
             {
                 _httpTelemetryMarkedConnectionAsOpened = true;
 
-                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished();
-                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished();
-                else HttpTelemetry.Log.Http30ConnectionEstablished();
+                string scheme = pool.IsSecure ? "https" : "http";
+                string host = pool.OriginAuthority.HostValue;
+                int port = pool.OriginAuthority.Port;
+
+                if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
+                else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
+                else HttpTelemetry.Log.Http30ConnectionEstablished(Id, scheme, host, port, remoteEndPoint);
             }
         }
 
@@ -79,9 +87,9 @@ namespace System.Net.Http
                 // Only decrement the connection count if we counted this connection
                 if (_httpTelemetryMarkedConnectionAsOpened)
                 {
-                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed();
-                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed();
-                    else HttpTelemetry.Log.Http30ConnectionClosed();
+                    if (this is HttpConnection) HttpTelemetry.Log.Http11ConnectionClosed(Id);
+                    else if (this is Http2Connection) HttpTelemetry.Log.Http20ConnectionClosed(Id);
+                    else HttpTelemetry.Log.Http30ConnectionClosed(Id);
                 }
             }
         }
@@ -125,7 +133,7 @@ namespace System.Net.Http
             if (stream is SslStream sslStream)
             {
                 Trace(
-                    $"{this}. " +
+                    $"{this}. Id:{Id}, " +
                     $"SslProtocol:{sslStream.SslProtocol}, NegotiatedApplicationProtocol:{sslStream.NegotiatedApplicationProtocol}, " +
                     $"NegotiatedCipherSuite:{sslStream.NegotiatedCipherSuite}, CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
                     $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
@@ -134,7 +142,7 @@ namespace System.Net.Http
             }
             else
             {
-                Trace($"{this}");
+                Trace($"{this}. Id:{Id}");
             }
         }
 
