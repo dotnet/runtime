@@ -104,6 +104,14 @@ list(APPEND GC_SOURCES ${GC_HEADERS})
 
 convert_to_absolute_path(GC_SOURCES ${GC_SOURCES})
 
+# clrgcr is build with standalone+regions
+add_library_clr(clrgcr SHARED ${GC_SOURCES})
+add_dependencies(clrgcr eventing_headers)
+target_link_libraries(clrgcr PRIVATE ${GC_LINK_LIBRARIES})
+target_compile_definitions(clrgcr PRIVATE -DUSE_REGIONS)
+install_clr(TARGETS clrgcr DESTINATIONS . COMPONENT runtime)
+
+# clrgc is build with standalone+segments
 add_library_clr(clrgc SHARED ${GC_SOURCES})
 add_dependencies(clrgc eventing_headers)
 target_link_libraries(clrgc PRIVATE ${GC_LINK_LIBRARIES})
