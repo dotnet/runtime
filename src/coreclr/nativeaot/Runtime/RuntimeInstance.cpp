@@ -50,6 +50,14 @@ COOP_PINVOKE_HELPER(uint8_t *, RhGetCrashInfoBuffer, (int32_t* pcbMaxSize))
     return g_CrashInfoBuffer;
 }
 
+#if TARGET_UNIX
+extern void PalCreateCrashDumpIfEnabled();
+COOP_PINVOKE_HELPER(void, RhCreateCrashDumpIfEnabled, ())
+{
+    PalCreateCrashDumpIfEnabled();
+}
+#endif
+
 COOP_PINVOKE_HELPER(uint8_t *, RhGetRuntimeVersion, (int32_t* pcbLength))
 {
     *pcbLength = sizeof(CLR_PRODUCT_VERSION) - 1;           // don't include the terminating null

@@ -7,7 +7,7 @@
 // Logic for resolving configuration names.
 //
 
-#include<minipal/utils.h>
+#include <minipal/utils.h>
 
 // Config prefixes
 #define COMPLUS_PREFIX_A "COMPlus_"
@@ -23,30 +23,30 @@ class CLRConfigNoCache
     const char* _value;
 
     CLRConfigNoCache() = default;
-    CLRConfigNoCache(LPCSTR cfg) : _value { cfg }
+    CLRConfigNoCache(const char* cfg) : _value { cfg }
     { }
 
 public:
     bool IsSet() const { return _value != NULL; }
 
-    LPCSTR AsString() const
+    const char* AsString() const
     {
         _ASSERTE(IsSet());
         return _value;
     }
 
-    bool TryAsInteger(int radix, DWORD& result) const
+    bool TryAsInteger(int radix, uint32_t& result) const
     {
         _ASSERTE(IsSet());
 
         errno = 0;
-        LPSTR endPtr;
+        char* endPtr;
         result = strtoul(_value, &endPtr, radix);
         bool fSuccess = (errno != ERANGE) && (endPtr != _value);
         return fSuccess;
     }
 
-    static CLRConfigNoCache Get(LPCSTR cfg, bool noPrefix = false, char*(*getEnvFptr)(const char*) = nullptr)
+    static CLRConfigNoCache Get(const char* cfg, bool noPrefix = false, char*(*getEnvFptr)(const char*) = nullptr)
     {
         char nameBuffer[64];
         const char* fallbackPrefix = NULL;
@@ -73,17 +73,17 @@ public:
             }
 
             // Priority order is DOTNET_ and then COMPlus_.
-            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), DOTNET_PREFIX_A);
+            strcpy(nameBuffer, DOTNET_PREFIX_A);
             fallbackPrefix = COMPLUS_PREFIX_A;
         }
 
-        strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
+        strcat(nameBuffer, cfg);
 
-        LPCSTR val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
+        const char* val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         if (val == NULL && fallbackPrefix != NULL)
         {
-            strcpy_s(nameBuffer, ARRAY_SIZE(nameBuffer), fallbackPrefix);
-            strcat_s(nameBuffer, ARRAY_SIZE(nameBuffer), cfg);
+            strcpy(nameBuffer, fallbackPrefix);
+            strcat(nameBuffer, cfg);
             val = getEnvFptr != NULL ? getEnvFptr(nameBuffer) : getenv(nameBuffer);
         }
 

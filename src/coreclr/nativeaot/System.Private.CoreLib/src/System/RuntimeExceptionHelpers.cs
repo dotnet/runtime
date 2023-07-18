@@ -255,6 +255,7 @@ namespace System
 #if TARGET_WINDOWS
             Interop.Kernel32.RaiseFailFastException(errorCode, pExAddress, pExContext, triageBufferAddress, triageBufferSize);
 #else
+            RuntimeImports.RhCreateCrashDumpIfEnabled();
             Interop.Sys.Abort();
 #endif
         }

@@ -85,9 +85,15 @@ static const int tccMilliSecondsToMicroSeconds = 1000;
 static const int tccMilliSecondsToNanoSeconds = 1000000;
 static const int tccMicroSecondsToNanoSeconds = 1000;
 
+extern bool PalCreateDumpInitialize();
+extern void PalCreateCrashDumpIfEnabled();
+
 extern "C" void RaiseFailFastException(PEXCEPTION_RECORD arg1, PCONTEXT arg2, uint32_t arg3)
 {
-    // Abort aborts the process and causes creation of a crash dump
+    // Causes creation of a crash dump if enabled
+    PalCreateCrashDumpIfEnabled();
+
+    // Aborts the process
     abort();
 }
 
@@ -418,6 +424,11 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 #endif // !USE_PORTABLE_HELPERS
 
     ConfigureSignals();
+
+    if (!PalCreateDumpInitialize())
+    {
+        return false;
+    }
 
     GCConfig::Initialize();
 

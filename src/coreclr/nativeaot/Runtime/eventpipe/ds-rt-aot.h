@@ -6,6 +6,7 @@
 #define DIAGNOSTICS_RT_AOT_H
 
 #include <eventpipe/ds-rt-config.h>
+#include <generatedumpflags.h>
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-aot.h"
@@ -181,8 +182,23 @@ ds_rt_generate_core_dump (
 {
     STATIC_CONTRACT_NOTHROW;
 
-    // Eventpipe driven core_dump is not currently supported in NativeAOT
-    return DS_IPC_E_NOTSUPPORTED;
+    ds_ipc_result_t result = DS_IPC_E_FAIL;
+    uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
+    if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
+    {
+        // For the old commmand, this payload field is a bool of whether to enable logging
+        flags = flags != 0 ? GenerateDumpFlagsLoggingEnabled : 0;
+    }
+    const ep_char16_t *dumpName = ds_generate_core_dump_command_payload_get_dump_name (payload);
+    int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
+
+    extern bool ds_rt_aot_generate_core_dump (const ep_char16_t* dumpName, int32_t dumpType, uint32_t flags, ep_char8_t *errorMessageBuffer, int32_t cbErrorMessageBuffer);
+    if (ds_rt_aot_generate_core_dump(dumpName, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+    {
+        result = DS_IPC_S_OK;
+    }
+
+    return 0;
 }
 
 /*

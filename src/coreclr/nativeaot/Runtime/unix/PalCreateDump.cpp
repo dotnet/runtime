@@ -1,0 +1,470 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <errno.h>
+#include <cwchar>
+#include <sal.h>
+#include "config.h"
+#include <pthread.h>
+#include <string.h>
+#include <ctype.h>
+#include <cstdarg>
+#include <unistd.h>
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <signal.h>
+#if HAVE_PRCTL_H
+#include <sys/prctl.h>
+#include <sys/syscall.h>
+#endif
+#include <sys/wait.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <dlfcn.h>
+
+#ifdef __APPLE__
+#include <libproc.h>
+#include <sys/sysctl.h>
+#include <sys/posix_sem.h>
+#include <mach/task.h>
+#endif
+
+#ifdef __NetBSD__
+#include <sys/cdefs.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <kvm.h>
+#endif
+
+#ifdef __FreeBSD__
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#endif
+
+#define _ASSERTE(x)
+
+#include <clrconfignocache.h>
+#include <generatedumpflags.h>
+
+// Crash dump generating program arguments
+#define MAX_ARGV_ENTRIES 16
+const char* g_argvCreateDump[MAX_ARGV_ENTRIES];
+char* g_szCreateDumpPath = nullptr;
+char* g_ppidarg  = nullptr;
+
+/*++
+Function:
+    FormatInt
+
+    Helper function to format an uint32 as a string.
+
+--*/
+static
+char*
+FormatInt(uint32_t value)
+{
+    char* buffer = (char*)malloc(128);
+    if (buffer != nullptr)
+    {
+        if (snprintf(buffer, 128, "%d", value) < 0)
+        {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return buffer;
+}
+
+/*++
+Function:
+    FormatInt64
+
+    Helper function to format an ULONG64 as a string.
+
+--*/
+static
+char*
+FormatInt64(uint64_t value)
+{
+    char* buffer = (char*)malloc(128);
+    if (buffer != nullptr)
+    {
+        if (snprintf(buffer, 128, "%lu", value) < 0)
+        {
+            free(buffer);
+            buffer = nullptr;
+        }
+    }
+    return buffer;
+}
+
+static const int UndefinedDumpType = 0;
+
+/*++
+Function
+  BuildCreateDumpCommandLine
+
+Abstract
+  Builds the createdump command line from the arguments.
+
+Return
+  true - succeeds, false - fails
+
+--*/
+static
+bool
+BuildCreateDumpCommandLine(
+    const char** argv,
+    const char* dumpName,
+    const char* logFileName,
+    int dumpType,
+    uint32_t flags)
+{
+    if (g_szCreateDumpPath == nullptr || g_ppidarg == nullptr)
+    {
+        return false;
+    }
+
+    int argc = 0;
+    argv[argc++] = g_szCreateDumpPath;
+
+    if (dumpName != nullptr)
+    {
+        argv[argc++] = "--name";
+        argv[argc++] = dumpName;
+    }
+
+    switch (dumpType)
+    {
+        case 1: argv[argc++] = "--normal";
+            break;
+        case 2: argv[argc++] = "--withheap";
+            break;
+        case 3: argv[argc++] = "--triage";
+            break;
+        case 4: argv[argc++] = "--full";
+            break;
+        default:
+            break;
+    }
+
+    if (flags & GenerateDumpFlagsLoggingEnabled)
+    {
+        argv[argc++] = "--diag";
+    }
+
+    if (flags & GenerateDumpFlagsVerboseLoggingEnabled)
+    {
+        argv[argc++] = "--verbose";
+    }
+
+    if (flags & GenerateDumpFlagsCrashReportEnabled)
+    {
+        argv[argc++] = "--crashreport";
+    }
+
+    if (flags & GenerateDumpFlagsCrashReportOnlyEnabled)
+    {
+        argv[argc++] = "--crashreportonly";
+    }
+
+    if (logFileName != nullptr)
+    {
+        argv[argc++] = "--logtofile";
+        argv[argc++] = logFileName;
+    }
+
+    argv[argc++] = "--nativeaot";
+    argv[argc++] = g_ppidarg;
+    argv[argc++] = nullptr;
+    _ASSERTE(argc < MAX_ARGV_ENTRIES);
+
+    return true;
+}
+
+/*++
+Function:
+  CreateCrashDump
+
+  Creates crash dump of the process. Can be called from the
+  unhandled native exception handler.
+
+(no return value)
+--*/
+static bool
+CreateCrashDump(
+    const char* argv[],
+    char* errorMessageBuffer,
+    int cbErrorMessageBuffer)
+{
+    int pipe_descs[2];
+    if (pipe(pipe_descs) == -1)
+    {
+        if (errorMessageBuffer != nullptr)
+        {
+            snprintf(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: pipe() FAILED %s (%d)\n", strerror(errno), errno);
+        }
+        return false;
+    }
+    // [0] is read end, [1] is write end
+    int parent_pipe = pipe_descs[0];
+    int child_pipe = pipe_descs[1];
+
+    // Fork the core dump child process.
+    pid_t childpid = fork();
+
+    // If error, write an error to trace log and abort
+    if (childpid == -1)
+    {
+        if (errorMessageBuffer != nullptr)
+        {
+            snprintf(errorMessageBuffer, cbErrorMessageBuffer, "Problem launching createdump: fork() FAILED %s (%d)\n", strerror(errno), errno);
+        }
+        close(pipe_descs[0]);
+        close(pipe_descs[1]);
+        return false;
+    }
+    else if (childpid == 0)
+    {
+        // Close the read end of the pipe, the child doesn't need it
+        close(parent_pipe);
+
+        // Only dup the child's stderr if there is error buffer
+        if (errorMessageBuffer != nullptr)
+        {
+            dup2(child_pipe, STDERR_FILENO);
+        }
+        // Execute the createdump program
+        if (execve(argv[0], (char* const *)argv, environ) == -1)
+        {
+            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            exit(-1);
+        }
+    }
+    else
+    {
+#if HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
+        // Gives the child process permission to use /proc/<pid>/mem and ptrace
+        if (prctl(PR_SET_PTRACER, childpid, 0, 0, 0) == -1)
+        {
+            // Ignore any error because on some CentOS and OpenSUSE distros, it isn't
+            // supported but createdump works just fine.
+            fprintf(stderr, "CreateCrashDump: prctl() FAILED %s (%d)\n", strerror(errno), errno);
+        }
+#endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
+        close(child_pipe);
+
+        // Read createdump's stderr messages (if any)
+        if (errorMessageBuffer != nullptr)
+        {
+            // Read createdump's stderr
+            int bytesRead = 0;
+            int count = 0;
+            while ((count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) > 0)
+            {
+                bytesRead += count;
+            }
+            errorMessageBuffer[bytesRead] = 0;
+            if (bytesRead > 0)
+            {
+                fputs(errorMessageBuffer, stderr);
+            }
+        }
+        close(parent_pipe);
+
+        // Parent waits until the child process is done
+        int wstatus = 0;
+        int result = waitpid(childpid, &wstatus, 0);
+        if (result != childpid)
+        {
+            fprintf(stderr, "Problem waiting for createdump: waitpid() FAILED result %d wstatus %08x errno %s (%d)\n",
+                result, wstatus, strerror(errno), errno);
+            return false;
+        }
+        else
+        {
+#ifdef _DEBUG
+            fprintf(stderr, "waitpid() returned successfully (wstatus %08x) WEXITSTATUS %x WTERMSIG %x\n", wstatus, WEXITSTATUS(wstatus), WTERMSIG(wstatus));
+#endif
+            return !WIFEXITED(wstatus) || WEXITSTATUS(wstatus) == 0;
+        }
+    }
+    return true;
+}
+
+/*++
+Function:
+  PalCreateCrashDumpIfEnabled
+
+  Creates crash dump of the process (if enabled). Can be called from the unhandled native exception handler.
+
+Parameters:
+    none
+
+(no return value)
+--*/
+void
+PalCreateCrashDumpIfEnabled()
+{
+    // If enabled, launch the create minidump utility and wait until it completes
+    if (g_argvCreateDump != nullptr)
+    {
+        CreateCrashDump(g_argvCreateDump, nullptr, 0);
+    }
+}
+
+/*++
+Function:
+  PalGenerateCoreDump
+
+Abstract:
+  Public entry point to create a crash dump of the process.
+
+Parameters:
+    dumpName
+    dumpType:
+        Normal = 1,
+        WithHeap = 2,
+        Triage = 3,
+        Full = 4
+    flags
+        See enum
+
+Return:
+    true success
+    false failed
+--*/
+bool
+PalGenerateCoreDump(
+    const char* dumpName,
+    int dumpType,
+    uint32_t flags,
+    char* errorMessageBuffer,
+    int cbErrorMessageBuffer)
+{
+    const char* argvCreateDump[MAX_ARGV_ENTRIES];
+    if (dumpType < 1 || dumpType > 4)
+    {
+        return false;
+    }
+    if (dumpName != nullptr && dumpName[0] == '\0')
+    {
+        dumpName = nullptr;
+    }
+    bool result = BuildCreateDumpCommandLine(argvCreateDump, dumpName, nullptr, dumpType, flags);
+    if (result)
+    {
+        result = CreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
+    }
+    return result;
+}
+
+/*++
+Function
+  PalCreateDumpInitialize()
+
+Abstract
+  Initialize the process abort crash dump program file path and
+  name. Doing all of this ahead of time so nothing is allocated
+  or copied in abort/signal handler.
+
+Return
+  true - succeeds, false - fails
+
+--*/
+bool
+PalCreateDumpInitialize()
+{
+    CLRConfigNoCache enabledCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
+
+    uint32_t enabled = 0;
+    if (enabledCfg.IsSet() && enabledCfg.TryAsInteger(10, enabled) && enabled)
+    {
+        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
+        const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+
+        CLRConfigNoCache dmpLogToFileCfg = CLRConfigNoCache::Get("CreateDumpLogToFile", /*noprefix*/ false, &getenv);
+        const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
+
+        CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
+        uint32_t dumpType = UndefinedDumpType;
+        if (dmpTypeCfg.IsSet())
+        {
+            (void)dmpTypeCfg.TryAsInteger(10, dumpType);
+            if (dumpType < 1 || dumpType > 4)
+            {
+                dumpType = UndefinedDumpType;
+            }
+        }
+
+        uint32_t flags = GenerateDumpFlagsNone;
+        CLRConfigNoCache createDumpDiag = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
+        uint32_t val = 0;
+        if (createDumpDiag.IsSet() && createDumpDiag.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsLoggingEnabled;
+        }
+        CLRConfigNoCache createDumpVerboseDiag = CLRConfigNoCache::Get("CreateDumpVerboseDiagnostics", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (createDumpVerboseDiag.IsSet() && createDumpVerboseDiag.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsVerboseLoggingEnabled;
+        }
+        CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsCrashReportEnabled;
+        }
+        CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
+        val = 0;
+        if (enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, val) && val == 1)
+        {
+            flags |= GenerateDumpFlagsCrashReportOnlyEnabled;
+        }
+
+        // Build the createdump program path for the command line
+        Dl_info info;
+        if (dladdr((void*)&PalCreateDumpInitialize, &info) == 0)
+        {
+            return false;
+        }
+        const char* DumpGeneratorName = "createdump";
+        int programLen = strlen(info.dli_fname) + strlen(DumpGeneratorName) + 1;
+        char* program = (char*)malloc(programLen);
+        if (program == nullptr)
+        {
+            return false;
+        }
+        strncpy(program, info.dli_fname, programLen);
+        char *last = strrchr(program, '/');
+        if (last != nullptr)
+        {
+            *(last + 1) = '\0';
+        }
+        else
+        {
+            program[0] = '\0';
+        }
+        strncat(program, DumpGeneratorName, programLen);
+        g_szCreateDumpPath = program;
+
+        // Format the app pid for the createdump command line
+        g_ppidarg = FormatInt(getpid());
+        if (g_ppidarg == nullptr)
+        {
+            return false;
+        }
+
+        if (!BuildCreateDumpCommandLine(g_argvCreateDump, dumpName, logFilePath, dumpType, flags))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
