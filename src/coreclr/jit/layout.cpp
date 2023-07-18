@@ -423,10 +423,10 @@ void ClassLayout::InitializeGCPtrs(Compiler* compiler)
 //    true if at least one GC ByRef, false otherwise.
 bool ClassLayout::HasGCByRef() const
 {
-    unsigned slots = this->GetSlotCount();
+    unsigned slots = GetSlotCount();
     for (unsigned i = 0; i < slots; i++)
     {
-        if (this->IsGCByRef(i))
+        if (IsGCByRef(i))
         {
             return true;
         }
