@@ -66,7 +66,7 @@ namespace System.Net.Http
         }
 
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
-            : base(pool)
+            : base(pool, connection.RemoteEndPoint)
         {
             _pool = pool;
             _authority = authority;

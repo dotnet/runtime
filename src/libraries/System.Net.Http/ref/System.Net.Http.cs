@@ -203,6 +203,11 @@ namespace System.Net.Http
         protected virtual System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal abstract bool TryComputeLength(out long length);
     }
+    public class HttpIOException : System.IO.IOException
+    {
+        public System.Net.Http.HttpRequestError HttpRequestError { get { throw null; } }
+        public HttpIOException(System.Net.Http.HttpRequestError httpRequestError, string? message = null, System.Exception? innerException = null) { }
+    }
     public abstract partial class HttpMessageHandler : System.IDisposable
     {
         protected HttpMessageHandler() { }
@@ -241,10 +246,25 @@ namespace System.Net.Http
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class HttpProtocolException : System.IO.IOException
+    public sealed class HttpProtocolException : System.Net.Http.HttpIOException
     {
-        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) : base (default(System.Net.Http.HttpRequestError), default(string?), default(System.Exception?)) { }
         public long ErrorCode { get { throw null; } }
+    }
+    public enum HttpRequestError
+    {
+        Unknown = 0,
+        NameResolutionError,
+        ConnectionError,
+        SecureConnectionError,
+        HttpProtocolError,
+        ExtendedConnectNotSupported,
+        VersionNegotiationError,
+        UserAuthenticationError,
+        ProxyTunnelError,
+        InvalidResponse,
+        ResponseEnded,
+        ConfigurationLimitExceeded,
     }
     public partial class HttpRequestException : System.Exception
     {
@@ -252,6 +272,8 @@ namespace System.Net.Http
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
+        public HttpRequestException(string? message, System.Exception? inner = null, System.Net.HttpStatusCode? statusCode = null, System.Net.Http.HttpRequestError? httpRequestError = null) { }
+        public System.Net.Http.HttpRequestError? HttpRequestError { get { throw null; } }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
