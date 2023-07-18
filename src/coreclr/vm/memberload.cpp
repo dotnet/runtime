@@ -367,16 +367,24 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
         {
             //
             // <NICE> this is duplicated logic GetFieldDescByIndex </NICE>
-            //
+            //          
+
             INDEBUG(mdFieldDef token = pFD->GetMemberDef();)
 
-            DWORD pos = static_cast<DWORD>(pFD - (pMT->GetApproxFieldDescListRaw() + pMT->GetNumIntroducedInstanceFields()));
-            _ASSERTE(pos >= 0 && pos < pMT->GetNumStaticFields());
-
-            pFD = pMT->GetGenericsStaticFieldDescs() + pos;
-            _ASSERTE(pFD->GetMemberDef() == token);
-            _ASSERTE(!pFD->IsSharedByGenericInstantiations());
-            _ASSERTE(pFD->GetEnclosingMethodTable() == pMT);
+            DWORD pos = static_cast<DWORD>(pFD - (pMT->GetApproxFieldDescListRaw() + pMT->GetNumStaticFields()));
+            if(!(pos >= 0 && pos < pMT->GetNumStaticFields()))
+            {
+                DWORD fdIndex = pMT->GetIndexForFieldDesc(pFD);
+                PTR_FieldDesc pFD = pMT->GetFieldDescByIndex(fdIndex);
+            }
+            else
+            {
+                _ASSERTE(pos >= 0 && pos < pMT->GetNumStaticFields());
+                pFD = pMT->GetGenericsStaticFieldDescs() + pos;
+                _ASSERTE(pFD->GetMemberDef() == token);
+                _ASSERTE(!pFD->IsSharedByGenericInstantiations());
+                _ASSERTE(pFD->GetEnclosingMethodTable() == pMT);
+            }
         }
 
         *ppFD = pFD;
@@ -562,6 +570,7 @@ FieldDesc * MemberLoader::GetFieldDescFromMemberRefAndType(ModuleBase * pModule,
         INDEBUG(mdFieldDef token = pFD->GetMemberDef();)
 
         DWORD pos = static_cast<DWORD>(pFD - (pMT->GetApproxFieldDescListRaw() + pMT->GetNumIntroducedInstanceFields()));
+        LOG((LF_CORDB, LL_INFO1000, "Nope We are right here\n"));
         _ASSERTE(pos >= 0 && pos < pMT->GetNumStaticFields());
 
         pFD = pMT->GetGenericsStaticFieldDescs() + pos;
