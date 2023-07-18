@@ -9255,7 +9255,8 @@ MethodTable::TryResolveConstraintMethodApprox(
             thInterfaceType.GetMethodTable(),
             pInterfaceMD,
             flags,
-            &uniqueResolution);
+            (pfForceUseRuntimeLookup != NULL ? &uniqueResolution : NULL));
+
         if (result == NULL || !uniqueResolution)
         {
             _ASSERTE(pfForceUseRuntimeLookup != NULL);
