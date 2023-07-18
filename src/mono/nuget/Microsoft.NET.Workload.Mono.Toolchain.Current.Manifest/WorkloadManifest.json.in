@@ -12,7 +12,7 @@
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling", "microsoft-net-sdk-emscripten" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64"]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64"]
     },
     "wasm-experimental": {
       "description": ".NET WebAssembly experimental tooling",
@@ -21,7 +21,7 @@
         "Microsoft.NETCore.App.Runtime.Mono.multithread.browser-wasm",
       ],
       "extends": [ "wasm-tools" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
     },
     "wasi-experimental": {
       "description": ".NET WASI experimental",
@@ -31,7 +31,7 @@
         "Microsoft.NET.Runtime.WebAssembly.Templates"
       ],
       "extends": [ "microsoft-net-runtime-mono-tooling" ],
-      "platforms": [ "win-x64", "win-arm64", "linux-x64", "osx-x64", "osx-arm64" ]
+      "platforms": [ "win-x64", "win-arm64", "linux-x64", "linux-arm64", "osx-x64", "osx-arm64" ]
     },
     "mobile-librarybuilder-experimental": {
       "description": "Mobile SDK for building a self-contained .NET native library",
@@ -363,6 +363,7 @@
         "win-x64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm",
         "win-arm64": "Microsoft.NETCore.App.Runtime.AOT.win-x64.Cross.browser-wasm",
         "linux-x64": "Microsoft.NETCore.App.Runtime.AOT.linux-x64.Cross.browser-wasm",
+        "linux-arm64": "Microsoft.NETCore.App.Runtime.AOT.linux-arm64.Cross.browser-wasm",
         "osx-x64": "Microsoft.NETCore.App.Runtime.AOT.osx-x64.Cross.browser-wasm",
         "osx-arm64": "Microsoft.NETCore.App.Runtime.AOT.osx-arm64.Cross.browser-wasm"
       }
