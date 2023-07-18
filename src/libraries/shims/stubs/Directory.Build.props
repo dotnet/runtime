@@ -17,6 +17,8 @@
     <HasMatchingContract>false</HasMatchingContract>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
     <EnableBinPlacing>false</EnableBinPlacing>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
   </PropertyGroup>
 
   <ItemGroup>
