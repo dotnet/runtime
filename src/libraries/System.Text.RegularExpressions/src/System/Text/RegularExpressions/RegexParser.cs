@@ -522,16 +522,16 @@ namespace System.Text.RegularExpressions
 
                 _pos = _pattern.IndexOf('$', _pos);
                 if (_pos < 0)
+                {
                     _pos = _pattern.Length;
+                }
 
                 AddToConcatenate(startpos, _pos - startpos, isReplacement: true);
 
                 if (_pos < _pattern.Length)
                 {
                     _pos++;
-                    _unit = ScanDollar();
-
-                    _concatenation.AddChild(_unit);
+                    _concatenation.AddChild(ScanDollar());
                     _unit = null;
                 }
             }
@@ -1051,7 +1051,9 @@ namespace System.Text.RegularExpressions
                 {
                     _pos = _pattern.IndexOf('\n', _pos);
                     if (_pos < 0)
+                    {
                         _pos = _pattern.Length;
+                    }
                 }
                 else if (_pos + 2 < _pattern.Length && _pattern[_pos + 2] == '#' && _pattern[_pos + 1] == '?' && _pattern[_pos] == '(')
                 {
@@ -1485,7 +1487,9 @@ namespace System.Text.RegularExpressions
                     char ch = _pattern[_pos++];
                     int result = HexConverter.FromChar(ch);
                     if (result == 0xFF)
+                    {
                         break;
+                    }
 
                     i = (i * 0x10) + result;
                 }
