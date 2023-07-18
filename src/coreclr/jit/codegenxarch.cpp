@@ -4196,6 +4196,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
                     // Otherwise, we can save code-size and improve CQ by emitting
                     // rep movsp (alias for movsd/movsq for x86/x64)
                     assert((cpObjNode->gtRsvdRegs & RBM_RCX) != 0);
+
                     GetEmitter()->emitIns_R_I(INS_mov, EA_4BYTE, REG_RCX, nonRefSlotCount);
                     instGen(INS_r_movsp);
                 }
