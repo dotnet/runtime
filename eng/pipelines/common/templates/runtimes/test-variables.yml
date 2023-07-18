@@ -1,8 +1,10 @@
 parameters:
   testGroup: 'innerloop'
   readyToRun: false
+  sanitizers: ''
   runtimeFlavor: ''
   runtimeVariant: ''
+  liveLibrariesBuildConfig: ''
 
 variables:
 
@@ -28,6 +30,15 @@ variables:
   - ${{ if in(parameters.testGroup, 'outerloop') }}:
     - name: timeoutPerTestCollectionInMinutes
       value: 120
+  # AddressSanitizer can have up to a 2x slowdown
+  - ${{ if eq(parameters.sanitizers, 'address') }}:
+    - name: timeoutPerTestInMinutes
+      value: 20
+    - name: timeoutPerTestCollectionInMinutes
+      value: 60
+    - ${{ if in(parameters.testGroup, 'outerloop') }}:
+      - name: timeoutPerTestCollectionInMinutes
+        value: 240
   - ${{ if eq(parameters.readyToRun, true) }}:
       - name: timeoutPerTestCollectionInMinutes
         value: 90
@@ -102,3 +113,10 @@ variables:
     - ${{ if eq(parameters.osGroup, 'windows') }}:
       - name: priorityArg
         value: '-priority=1'
+
+  - name: librariesConfigurationArg
+    value: '/p:LibrariesConfiguration=$(buildConfigUpper)'
+
+  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+    - name: librariesConfigurationArg
+      value: '/p:LibrariesConfiguration=${{ parameters.liveLibrariesBuildConfig }}'
