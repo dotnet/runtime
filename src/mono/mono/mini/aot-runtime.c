@@ -5910,9 +5910,9 @@ get_numerous_trampoline (MonoAotTrampoline tramp_type, int n_got_slots, MonoAotM
 
 	mono_aot_lock ();
 
-	if (amodule->trampoline_index [tramp_type] == amodule->info.num_trampolines [tramp_type]) {
-		g_error ("Ran out of trampolines of type %d in '%s' (limit %d)\n",
-				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->info.num_trampolines [tramp_type]);
+	if (amodule->trampoline_index [tramp_type] > 70000) {
+		g_print ("Current number of required trampolines of type %d in '%s' is %d\n",
+				 tramp_type, image ? image->name : MONO_ASSEMBLY_CORLIB_NAME, amodule->trampoline_index [tramp_type]);
 	}
 	index = amodule->trampoline_index [tramp_type] ++;
 
