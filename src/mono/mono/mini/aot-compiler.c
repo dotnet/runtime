@@ -4461,7 +4461,7 @@ add_jit_icall_wrapper (MonoAotCompile *acfg, MonoJitICallInfo *callinfo)
 	add_method (acfg, mono_marshal_get_icall_wrapper (callinfo, TRUE));
 }
 
-#if ENABLE_LLVM
+// #if ENABLE_LLVM
 
 static void
 add_lazy_init_wrappers (MonoAotCompile *acfg)
@@ -4470,7 +4470,7 @@ add_lazy_init_wrappers (MonoAotCompile *acfg)
 		add_method (acfg, mono_marshal_get_aot_init_wrapper ((MonoAotInitSubtype)i));
 }
 
-#endif
+// #endif
 
 static MonoMethod*
 get_runtime_invoke_sig (MonoMethodSignature *sig)
@@ -6810,8 +6810,9 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						 * This is a call from a JITted method to the init wrapper emitted by LLVM.
 						 * Disable this assert when nollvm init is enabled
 						 */
+#if !(!defined(ENABLE_LLVM) && defined(TARGET_ARM64))
 						g_assert (acfg->aot_opts.llvm && acfg->aot_opts.direct_extern_calls);
-
+#endif
 						const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
 						char *symbol = g_strdup_printf ("%s%s_%s", acfg->user_symbol_prefix, acfg->global_prefix, init_name);
 
@@ -15205,6 +15206,10 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 		add_lazy_init_wrappers (acfg);
 		add_method (acfg, mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL));
 	}
+#endif
+
+#if !defined(ENABLE_LLVM) && defined(TARGET_ARM64)
+	add_lazy_init_wrappers (acfg);
 #endif
 
 	if (mono_aot_mode_is_interp (&acfg->aot_opts) && mono_is_corlib_image (acfg->image->assembly->image)) {

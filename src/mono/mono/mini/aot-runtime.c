@@ -4390,8 +4390,10 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 			res = init_method (amodule, NULL, method_index, method, NULL, error);
 			if (!res)
 				goto cleanup;
-			// else 
-			// 	mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
+#if !defined(ENABLE_LLVM) && defined(TARGET_ARM64)
+			else 
+				mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
+#endif
 		}
 	}
 
@@ -5955,10 +5957,10 @@ no_specific_trampoline (void)
 void
 mini_nollvm_init_method (MonoAotModule* amodule, guint32 method_index)
 {
-	MonoBitSet *inited_bitset = mono_aot_get_mono_inited(amodule);
+	MonoBitSet *inited_bitset = mono_aot_get_mono_inited (amodule);
 
 	ERROR_DECL (error);
-	if (!mono_bitset_test(inited_bitset, method_index)) {
+	if (!mono_bitset_test (inited_bitset, method_index)) {
 		if (init_method (amodule, NULL, method_index, NULL, NULL, error)) {
 			mono_bitset_set (inited_bitset, method_index);
 		}

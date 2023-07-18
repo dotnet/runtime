@@ -5925,8 +5925,8 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Call the init wrapper which checks if the methos needs to be initialised or not */
-	// code = emit_imm (code, ARMREG_R0, cfg->method_index);
-	// code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
+	code = emit_imm (code, ARMREG_R0, cfg->method_index);
+	code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
 
 
 	/* Save return area addr received in R8 */
