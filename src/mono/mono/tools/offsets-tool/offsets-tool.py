@@ -23,7 +23,10 @@ class Target:
 		if self.arch_define:
 			ret.append (self.arch_define)
 		if self.platform_define:
-			ret.append (self.platform_define)
+			if isinstance(self.platform_define, list):
+				ret.extend (self.platform_define)
+			else:
+				ret.append (self.platform_define)
 		if self.defines:
 			ret.extend (self.defines)
 		return ret
@@ -141,7 +144,7 @@ class OffsetsTool:
 		# iOS/tvOS
 		elif "aarch64-apple-darwin10" == args.abi:
 			require_sysroot (args)
-			self.target = Target ("TARGET_ARM64", "TARGET_IOS", "TARGET_TVOS", IOS_DEFINES)
+			self.target = Target ("TARGET_ARM64", ["TARGET_IOS", "TARGET_TVOS"], IOS_DEFINES)
 			self.target_args += ["-arch", "arm64"]
 			self.target_args += ["-isysroot", args.sysroot]
 		elif "x86_64-apple-darwin10" == args.abi:
@@ -346,7 +349,10 @@ class OffsetsTool:
 		if target.arch_define:
 			f.write ("#ifdef " + target.arch_define + "\n")
 		if target.platform_define:
-			f.write ("#ifdef " + target.platform_define + "\n")
+			if isinstance(target.platform_define, list):
+				f.write ("#if " + " || ".join (["defined (" + platform_define + ")" for platform_define in target.platform_define]) + "\n")
+			else:
+				f.write ("#ifdef " + target.platform_define + "\n")
 		f.write ("#ifndef HAVE_BOEHM_GC\n")
 		f.write ("#define HAS_CROSS_COMPILER_OFFSETS\n")
 		f.write ("#if defined (USE_CROSS_COMPILE_OFFSETS) || defined (MONO_CROSS_COMPILE)\n")
@@ -388,7 +394,10 @@ class OffsetsTool:
 		if target.arch_define:
 			f.write ("#endif //" + target.arch_define + "\n")
 		if target.platform_define:
-			f.write ("#endif //" + target.platform_define + "\n")
+			if isinstance(target.platform_define, list):
+				f.write ("#endif //" + " || ".join (target.platform_define) + "\n")
+			else:
+				f.write ("#endif //" + target.platform_define + "\n")
 		f.write ("#endif //USED_CROSS_COMPILER_OFFSETS check\n")
 
 tool = OffsetsTool ()
