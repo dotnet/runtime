@@ -22,7 +22,7 @@ namespace System.Globalization
                 throw new Exception((string)exResult);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
-            if (subresults.Length < 2)
+            if (subresults.Length < 14)
                 throw new Exception("CalendarInfo recieved from the Browser is in icorrect format.");
             // JS always has one result per locale, so even arrays are initialized with one element
             this.sNativeName = string.IsNullOrEmpty(subresults[0]) ? ((CalendarId)calendarId).ToString() : subresults[0]; // this is EnglishName, not NativeName but it's the best we can do

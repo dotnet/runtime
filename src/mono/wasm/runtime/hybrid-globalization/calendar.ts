@@ -8,9 +8,8 @@ import { monoStringToString, stringToUTF16 } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
+import { INNER_SEPARATOR, OUTER_SEPARATOR } from "./helpers";
 
-const OUTER_SEPARATOR = "##";
-const INNER_SEPARATOR = "||";
 const MONTH_CODE = "MMMM";
 const YEAR_CODE = "yyyy";
 const DAY_CODE = "d";
@@ -384,11 +383,3 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         };
     }
 }
-
-// const date = new Date(year, month - 1, 22, 2, 3, 4)
-// let pattern = new Intl.DateTimeFormat(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric"}).format(date);
-// pattern = pattern.replace("02", "HH");
-// pattern = pattern.replace("2", "h"); // try localized version as well
-// pattern = pattern.replace("03", "mm"); // try localized version as well
-// pattern = pattern.replace("04", "ss"); // try localized version as well
-// // tt AM/PM - how to catch it?

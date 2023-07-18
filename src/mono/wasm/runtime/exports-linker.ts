@@ -34,6 +34,7 @@ import { mono_wasm_create_cs_owned_object_ref } from "./net6-legacy/cs-to-js";
 import { mono_wasm_typed_array_to_array_ref } from "./net6-legacy/js-to-cs";
 import { mono_wasm_typed_array_from_ref } from "./net6-legacy/buffers";
 import { mono_wasm_get_locale_info } from "./hybrid-globalization/locales";
+import { mono_wasm_get_culture_info } from "./hybrid-globalization/time";
 
 // the methods would be visible to EMCC linker
 // --- keep in sync with dotnet.cjs.lib.js ---
@@ -116,6 +117,7 @@ export function export_linker(): any {
         mono_wasm_index_of,
         mono_wasm_get_calendar_info,
         mono_wasm_get_locale_info,
+        mono_wasm_get_culture_info,
 
         // threading exports, if threading is enabled
         ...mono_wasm_threads_exports,

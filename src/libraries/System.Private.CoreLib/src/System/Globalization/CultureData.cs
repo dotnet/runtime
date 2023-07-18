@@ -810,6 +810,13 @@ namespace System.Globalization
             CultureData culture = new CultureData();
             culture._sRealName = cultureName;
             culture._bUseOverridesUserSetting = useUserOverride;
+#if TARGET_BROWSER
+            // populate fields for which ICU does not provide data in Hybrid mode
+            if (GlobalizationMode.Hybrid)
+            {
+                culture = JSLoadCultureInfoFromBrowser(cultureName, culture);
+            }
+#endif
 
             // Ask native code if that one's real
             if (!culture.InitCultureDataCore() && !culture.InitCompatibilityCultureData())
