@@ -9746,6 +9746,7 @@ namespace System.IO
     [System.FlagsAttribute]
     public enum FileAttributes
     {
+        None = 0,
         ReadOnly = 1,
         Hidden = 2,
         System = 4,
@@ -11320,7 +11321,7 @@ namespace System.Reflection
         public object? Invoke(object? arg1, object? arg2, object? arg3) { throw null; }
         public object? Invoke(object? arg1, object? arg2, object? arg3, object? arg4) { throw null; }
         public static System.Reflection.ConstructorInvoker Create(System.Reflection.ConstructorInfo constructor) { throw null; }
-    }    
+    }
     public partial class CustomAttributeData
     {
         protected CustomAttributeData() { }
