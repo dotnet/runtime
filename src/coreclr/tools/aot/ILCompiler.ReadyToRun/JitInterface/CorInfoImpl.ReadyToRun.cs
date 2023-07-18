@@ -1337,30 +1337,21 @@ namespace Internal.JitInterface
 
         private ModuleToken HandleToModuleToken(ref CORINFO_RESOLVED_TOKEN pResolvedToken, MethodDesc methodDesc, out object context, ref TypeDesc constrainedType)
         {
-            if (methodDesc != null && !methodDesc.IsAbstract)
+            if (methodDesc != null && (_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc)
+                || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
+                || methodDesc.IsPInvoke))
             {
-                bool inVersionBubble = _compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(methodDesc);
-                if (inVersionBubble
-                    || (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_DevirtualizedMethod)
-                    || methodDesc.IsPInvoke)
+                if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
+                    methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
                 {
-                    if ((CorTokenType)(unchecked((uint)pResolvedToken.token) & 0xFF000000u) == CorTokenType.mdtMethodDef &&
-                        methodDesc?.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
-                    {
-                        mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
+                    mdToken token = (mdToken)MetadataTokens.GetToken(ecmaMethod.Handle);
 
-                        // This is used for de-virtualization of non-generic virtual methods, and should be treated
-                        // as a the methodDesc parameter defining the exact OwningType, not doing resolution through the token.
-                        context = null;
-                        constrainedType = null;
+                    // This is used for de-virtualization of non-generic virtual methods, and should be treated
+                    // as a the methodDesc parameter defining the exact OwningType, not doing resolution through the token.
+                    context = null;
+                    constrainedType = null;
 
-                        return new ModuleToken(ecmaMethod.Module, token);
-                    }
-                    else if (inVersionBubble)
-                    {
-                        context = null;
-                        return HandleToModuleToken(ref pResolvedToken);
-                    }
+                    return new ModuleToken(ecmaMethod.Module, token);
                 }
             }
 
@@ -1953,9 +1944,9 @@ namespace Internal.JitInterface
                     resolvedConstraint = true;
                     pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
 
+                    exactType = constrainedType;
                     if (isStaticVirtual)
                     {
-                        exactType = constrainedType;
                         constrainedType = null;
                     }
                 }
