@@ -536,8 +536,7 @@ namespace System.Text
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Vector512<ushort> Load512(ref byte ptr)
             {
-                (Vector512<ushort> lower, Vector512<ushort> _) = Vector512.Widen(Vector256.LoadUnsafe(ref ptr).ToVector512());
-                return lower;
+                return Vector512.WidenLower(Vector256.LoadUnsafe(ref ptr).ToVector512());
             }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
