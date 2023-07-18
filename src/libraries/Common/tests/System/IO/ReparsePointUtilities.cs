@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -113,6 +114,38 @@ public static partial class MountHelper
         }
 
         return RunProcess(CreateProcessStartInfo("cmd", "/c", "mklink", "/J", junctionPath, targetPath));
+    }
+
+    /// <summary>
+    /// Retrieves the first appexeclink in this machine, if any.
+    /// </summary>
+    /// <returns>A string that represents a path to an appexeclink, if found, or null if not.</returns>
+    public static string? GetAppExecLinkPath()
+    {
+        string localAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA");
+        if (localAppDataPath is null)
+        {
+            return null;
+        }
+
+        string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
+
+        if (!Directory.Exists(windowsAppsDir))
+        {
+            return null;
+        }
+
+        var opts = new EnumerationOptions { RecurseSubdirectories = true };
+
+        return new FileSystemEnumerable<string?>(
+            windowsAppsDir,
+            (ref FileSystemEntry entry) => entry.ToFullPath(),
+            opts)
+        {
+            ShouldIncludePredicate = (ref FileSystemEntry entry) =>
+                FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
+                (entry.Attributes & FileAttributes.ReparsePoint) != 0
+        }.FirstOrDefault();
     }
 
     public static void Mount(string volumeName, string mountPoint)

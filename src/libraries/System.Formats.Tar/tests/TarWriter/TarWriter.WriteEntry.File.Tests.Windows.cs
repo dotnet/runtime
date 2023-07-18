@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Formats.Tar.Tests;
 
@@ -48,5 +50,23 @@ public partial class TarWriter_WriteEntry_File_Tests : TarWriter_File_Base
 
             Assert.Null(reader.GetNextEntry());
         }
+    }
+
+    [Theory]
+    [InlineData(TarEntryFormat.V7)]
+    [InlineData(TarEntryFormat.Ustar)]
+    [InlineData(TarEntryFormat.Pax)]
+    [InlineData(TarEntryFormat.Gnu)]
+    public void Add_Unsupported_ReparsePoints_Throws(TarEntryFormat format)
+    {
+        string? appExecLinkPath = MountHelper.GetAppExecLinkPath();
+        if (appExecLinkPath == null)
+        {
+            throw new SkipTestException("Could not find an appexeclink in this machine.");
+        }
+
+        using MemoryStream archive = new MemoryStream();
+        using TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
+        Assert.Throws<IOException>(() => writer.WriteEntry(fileName: appExecLinkPath, "UnsupportedAppExecLink"));
     }
 }

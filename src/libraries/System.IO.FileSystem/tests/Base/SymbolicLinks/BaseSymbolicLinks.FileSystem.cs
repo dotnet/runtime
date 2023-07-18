@@ -471,33 +471,5 @@ namespace System.IO.Tests
 
             Directory.SetCurrentDirectory(Path.GetTempPath());
         }
-
-        protected static string? GetAppExecLinkPath()
-        {
-            string localAppDataPath = Environment.GetEnvironmentVariable("LOCALAPPDATA");
-            if (localAppDataPath is null)
-            {
-                return null;
-            }
-
-            string windowsAppsDir = Path.Join(localAppDataPath, "Microsoft", "WindowsApps");
-
-            if (!Directory.Exists(windowsAppsDir))
-            {
-                return null;
-            }
-
-            var opts = new EnumerationOptions { RecurseSubdirectories = true };
-
-            return new FileSystemEnumerable<string?>(
-                windowsAppsDir,
-                (ref FileSystemEntry entry) => entry.ToFullPath(),
-                opts)
-            {
-                ShouldIncludePredicate = (ref FileSystemEntry entry) =>
-                    FileSystemName.MatchesWin32Expression("*.exe", entry.FileName) &&
-                    (entry.Attributes & FileAttributes.ReparsePoint) != 0
-            }.FirstOrDefault();
-        }
     }
 }

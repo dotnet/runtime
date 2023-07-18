@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
 namespace System.Formats.Tar.Tests;
@@ -49,5 +50,23 @@ public partial class TarWriter_WriteEntryAsync_File_Tests : TarWriter_File_Base
 
             Assert.Null(await reader.GetNextEntryAsync());
         }
+    }
+
+    [Theory]
+    [InlineData(TarEntryFormat.V7)]
+    [InlineData(TarEntryFormat.Ustar)]
+    [InlineData(TarEntryFormat.Pax)]
+    [InlineData(TarEntryFormat.Gnu)]
+    public async Task Add_Unsupported_ReparsePoints_Throws_Async(TarEntryFormat format)
+    {
+        string? appExecLinkPath = MountHelper.GetAppExecLinkPath();
+        if (appExecLinkPath == null)
+        {
+            throw new SkipTestException("Could not find an appexeclink in this machine.");
+        }
+
+        await using MemoryStream archive = new MemoryStream();
+        await using TarWriter writer = new TarWriter(archive, format, leaveOpen: true);
+        await Assert.ThrowsAsync<IOException>(() => writer.WriteEntryAsync(fileName: appExecLinkPath, "UnsupportedAppExecLink"));
     }
 }
