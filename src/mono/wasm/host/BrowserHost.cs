@@ -197,7 +197,7 @@ internal sealed class BrowserHost
         }
 
         string query = sb.ToString();
-        string filename = Path.GetFileName(_args.HTMLPath!);
+        string? filename = _args.HTMLPath != null ? Path.GetFileName(_args.HTMLPath) : null;
         string httpUrl = BuildUrl(serverURLs.Http, filename, query);
 
         return string.IsNullOrEmpty(serverURLs.Https)
@@ -208,11 +208,17 @@ internal sealed class BrowserHost
                     BuildUrl(serverURLs.Https!, filename, query)
                 });
 
-        static string BuildUrl(string baseUrl, string htmlFileName, string query)
-            => new UriBuilder(baseUrl)
+        static string BuildUrl(string baseUrl, string? htmlFileName, string query)
+        {
+            var uriBuilder = new UriBuilder(baseUrl)
             {
-                Query = query,
-                Path = htmlFileName
-            }.ToString();
+                Query = query
+            };
+
+            if (htmlFileName != null)
+                uriBuilder.Path = htmlFileName;
+
+            return uriBuilder.ToString();
+        }
     }
 }
