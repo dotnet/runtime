@@ -46,7 +46,8 @@
     <ForwardedType Include="System.Data.SqlClient.SqlNotificationInfo" />
     <ForwardedType Include="System.Data.SqlClient.SqlNotificationSource" />
     <ForwardedType Include="System.Data.SqlClient.SqlNotificationType" />
-    <ForwardedType Include="System.Data.SqlClient.SqlParameter" />
+    <ForwardedType Include="System.Data.SqlClient.SqlParameter"
+                   InnerClass="SqlParameterConverter" />
     <ForwardedType Include="System.Data.SqlClient.SqlParameterCollection" />
     <ForwardedType Include="System.Data.SqlClient.SqlRowUpdatedEventArgs" />
     <ForwardedType Include="System.Data.SqlClient.SqlRowUpdatedEventHandler" />

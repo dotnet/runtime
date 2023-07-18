@@ -8,14 +8,22 @@
 
   <Target Name="CreateCompileSourceForForwardedTypes"
           BeforeTargets="CoreCompile"
-          Inputs="$(MSBuildProjectFullPath)"
+          Inputs="$(MSBuildProjectFullPath);$(MSBuildThisFileFullPath)"
           Outputs="$(ForwardedTypesCompilePath)">
     <Error Text="The 'ForwardedType' item must not be empty." Condition="'@(ForwardedType)' == ''" />
 
     <ItemGroup>
       <ForwardedType Namespace="$([System.String]::new('%(Identity)').Substring(0, $([System.String]::new('%(Identity)').LastIndexOf('.'))))" />
       <ForwardedType TypeName="$([System.String]::new('%(Identity)').Substring($([MSBuild]::Add($([System.String]::new('%(Identity)').LastIndexOf('.')), 1))))" />
-      <ForwardedTypesLine Include="namespace %(ForwardedType.Namespace) { public static class %(ForwardedType.TypeName) { } }" />
+
+      <ForwardedTypeWithoutInnerClass Include="@(ForwardedType->WithMetadataValue('InnerClass', ''))" />
+      <ForwardedTypeWithInnerClass Include="@(ForwardedType)"
+                                   Exclude="@(ForwardedTypeWithoutInnerClass)" />
+
+      <ForwardedTypesLine Include="namespace %(ForwardedTypeWithoutInnerClass.Namespace) { public static class %(ForwardedTypeWithoutInnerClass.TypeName) { } }"
+                          Condition="'@(ForwardedTypeWithoutInnerClass)' != ''" />
+      <ForwardedTypesLine Include="namespace %(ForwardedTypeWithInnerClass.Namespace) { public static class %(ForwardedTypeWithInnerClass.TypeName) { public static class $([System.String]::new('%(ForwardedTypeWithInnerClass.InnerClass)').Replace(';', ' { } public static class ')) { } } }"
+                          Condition="'@(ForwardedTypeWithInnerClass)' != ''" />
     </ItemGroup>
 
     <WriteLinesToFile File="$(ForwardedTypesCompilePath)"
