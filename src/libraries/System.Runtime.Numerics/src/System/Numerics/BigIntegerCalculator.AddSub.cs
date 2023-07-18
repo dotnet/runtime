@@ -28,44 +28,7 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 1);
             Debug.Assert(bits.Length == left.Length + 1);
 
-            ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
-
-            // Executes the addition for one big and one 32-bit integer.
-            // Thus, we've similar code than below, but there is no loop for
-            // processing the 32-bit integer, since it's a single element.
-
-            int i = 0;
-            long carry = right;
-
-            if (left.Length <= CopyToThreshold)
-            {
-                for ( ; i < left.Length; i++)
-                {
-                    carry += left[i];
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    carry >>= 32;
-                }
-
-                Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
-            }
-            else
-            {
-                for ( ; i < left.Length; )
-                {
-                    carry += left[i];
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    i++;
-                    carry >>= 32;
-                    if (carry == 0) break;
-                }
-
-                Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
-
-                if (i < left.Length)
-                {
-                    CopyTail(left, bits, i);
-                }
-            }
+            Add(left, bits, ref MemoryMarshal.GetReference(bits), startIndex: 0, initialCarry: right);
         }
 
         public static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
@@ -80,8 +43,7 @@ namespace System.Numerics
             ref uint rightPtr = ref MemoryMarshal.GetReference(right);
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
 
-            nint i = 0;
-            nint upperBound = right.Length;
+            int i = 0;
             long carry = 0;
 
             // Executes the "grammar-school" algorithm for computing z = a + b.
@@ -96,39 +58,9 @@ namespace System.Numerics
                 Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                 carry >>= 32;
                 i++;
-            } while (i < upperBound);
-            upperBound = left.Length;
+            } while (i < right.Length);
 
-            if (upperBound <= CopyToThreshold)
-            {
-                for ( ; i < upperBound; i++)
-                {
-                    carry += Unsafe.Add(ref leftPtr, i);
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    carry >>= 32;
-                }
-
-                Unsafe.Add(ref resultPtr, upperBound) = unchecked((uint)carry);
-            }
-            else
-            {
-                for ( ; i < upperBound; )
-                {
-                    carry += Unsafe.Add(ref leftPtr, i);
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    i++;
-                    carry >>= 32;
-                    if (carry == 0) break;
-                }
-
-                Unsafe.Add(ref resultPtr, upperBound) = unchecked((uint)carry);
-
-                if (i < upperBound)
-                {
-                    CopyTail(left, bits, unchecked((int)i));
-                }
-            }
-
+            Add(left, bits, ref resultPtr, startIndex: i, initialCarry: carry);
         }
 
         private static void AddSelf(Span<uint> left, ReadOnlySpan<uint> right)
@@ -168,42 +100,7 @@ namespace System.Numerics
             Debug.Assert(left[0] >= right || left.Length >= 2);
             Debug.Assert(bits.Length == left.Length);
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
-            ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
-
-            // Executes the addition for one big and one 32-bit integer.
-            // Thus, we've similar code than below, but there is no loop for
-            // processing the 32-bit integer, since it's a single element.
-
-            int i = 0;
-            long carry = -right;
-
-            if (left.Length <= CopyToThreshold)
-            {
-                for ( ; i < left.Length; i++)
-                {
-                    carry += left[i];
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    carry >>= 32;
-                }
-            }
-            else
-            {
-                for ( ; i < left.Length; )
-                {
-                    carry += left[i];
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    i++;
-                    carry >>= 32;
-                    if (carry == 0) break;
-                }
-
-                if (i < left.Length)
-                {
-                    CopyTail(left, bits, i);
-                }
-            }
+            Subtract(left, bits, ref MemoryMarshal.GetReference(bits), startIndex: 0, initialCarry: -right);
         }
 
         public static void Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
@@ -219,8 +116,7 @@ namespace System.Numerics
             ref uint rightPtr = ref MemoryMarshal.GetReference(right);
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
 
-            nint i = 0;
-            nint upperBound = right.Length;
+            int i = 0;
             long carry = 0;
 
             // Executes the "grammar-school" algorithm for computing z = a + b.
@@ -235,33 +131,9 @@ namespace System.Numerics
                 Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                 carry >>= 32;
                 i++;
-            } while (i < upperBound);
-            upperBound = left.Length;
+            } while (i < right.Length);
 
-            if (upperBound <= CopyToThreshold)
-            {
-                for ( ; i < upperBound; i++)
-                {
-                    carry += Unsafe.Add(ref leftPtr, i);
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    carry >>= 32;
-                }
-            }
-            else
-            {
-                for ( ; carry != 0 && i < upperBound; i++)
-                {
-                    carry += Unsafe.Add(ref leftPtr, i);
-                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
-                    carry >>= 32;
-                }
-
-                if (i < upperBound)
-                {
-                    CopyTail(left, bits, unchecked((int)i));
-                }
-            }
-
+            Subtract(left, bits, ref resultPtr, startIndex: i, initialCarry: carry);
         }
 
         private static void SubtractSelf(Span<uint> left, ReadOnlySpan<uint> right)
@@ -294,6 +166,84 @@ namespace System.Numerics
             }
 
             Debug.Assert(carry == 0);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Add(ReadOnlySpan<uint> left, Span<uint> bits, ref uint resultPtr, int startIndex, long initialCarry)
+        {
+            // Executes the addition for one big and one 32-bit integer.
+            // Thus, we've similar code than below, but there is no loop for
+            // processing the 32-bit integer, since it's a single element.
+
+            int i = startIndex;
+            long carry = initialCarry;
+
+            if (left.Length <= CopyToThreshold)
+            {
+                for (; i < left.Length; i++)
+                {
+                    carry += left[i];
+                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
+                    carry >>= 32;
+                }
+
+                Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
+            }
+            else
+            {
+                for (; i < left.Length;)
+                {
+                    carry += left[i];
+                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
+                    i++;
+                    carry >>= 32;
+                    if (carry == 0) break;
+                }
+
+                Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
+
+                if (i < left.Length)
+                {
+                    CopyTail(left, bits, i);
+                }
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void Subtract(ReadOnlySpan<uint> left, Span<uint> bits, ref uint resultPtr, int startIndex, long initialCarry)
+        {
+            // Executes the addition for one big and one 32-bit integer.
+            // Thus, we've similar code than below, but there is no loop for
+            // processing the 32-bit integer, since it's a single element.
+
+            int i = startIndex;
+            long carry = initialCarry;
+
+            if (left.Length <= CopyToThreshold)
+            {
+                for (; i < left.Length; i++)
+                {
+                    carry += left[i];
+                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
+                    carry >>= 32;
+                }
+            }
+            else
+            {
+                for (; i < left.Length;)
+                {
+                    carry += left[i];
+                    Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
+                    i++;
+                    carry >>= 32;
+                    if (carry == 0) break;
+                }
+
+                if (i < left.Length)
+                {
+                    CopyTail(left, bits, i);
+                }
+            }
         }
     }
 }
