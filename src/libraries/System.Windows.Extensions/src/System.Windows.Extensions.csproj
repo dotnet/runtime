@@ -95,7 +95,7 @@ System.Security.Cryptography.X509Certificates.X509SelectionFlag</PackageDescript
 
   <ItemGroup>
     <!-- Avoid a product dependency to System.Drawing.Common, this reference is only needed for TypeForwards -->
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\fakes\System.Drawing.Common.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
