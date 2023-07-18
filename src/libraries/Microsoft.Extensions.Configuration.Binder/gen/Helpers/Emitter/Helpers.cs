@@ -129,11 +129,33 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any) ||
                 ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Any);
 
+            public void EmitStartScope(string? source = null)
+            {
+                if (source is not null)
+                {
+                    _writer.WriteLine(source);
+                }
+
+                _writer.WriteLine("{");
+                _writer.Indentation++;
+            }
+
+            public void EmitEndScope(string? source = null, string? extra = null)
+            {
+                if (source is not null)
+                {
+                    _writer.WriteLine(source);
+                }
+
+                _writer.Indentation--;
+                _writer.WriteLine($"}}{extra}");
+            }
+
             private void EmitBlankLineIfRequired()
             {
                 if (_emitBlankLineBeforeNextStatement)
                 {
-                    _writer.WriteBlankLine();
+                    _writer.WriteLine();
                 }
 
                 _emitBlankLineBeforeNextStatement = true;
@@ -153,14 +175,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ? "global::System.ArgumentNullException"
                     : "ArgumentNullException";
 
-                _writer.WriteBlock($$"""
+                _writer.WriteLine($$"""
                     if ({{paramName}} is null)
                     {
                         throw new {{exceptionTypeDisplayString}}(nameof({{paramName}}));
                     }
                     """);
 
-                _writer.WriteBlankLine();
+                _writer.WriteLine();
             }
 
             private bool EmitInitException(TypeSpec type)
@@ -176,14 +198,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private void EmitRootBindingClassBlockStart(string className)
+            private void EmitRootBindingClassStartScope(string className)
             {
                 EmitBlankLineIfRequired();
-                _writer.WriteBlock($$"""
+                EmitStartScope($$"""
                     /// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
                     {{GetGeneratedCodeAttributeSrc()}}
                     internal static class {{className}}
-                    {
                     """);
 
                 _emitBlankLineBeforeNextStatement = false;

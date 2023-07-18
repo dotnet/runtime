@@ -1,42 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.CodeAnalysis.Text;
+using System;
+using System.Text;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis.Text;
 
-namespace System.Text.Json.SourceGeneration
+namespace SourceGenerators
 {
     internal sealed class SourceWriter
     {
+        private const char IndentationChar = ' ';
+        private const int CharsPerIndentation = 4;
+
         private readonly StringBuilder _sb = new();
         private int _indentation;
 
-        public SourceWriter()
-        {
-            IndentationChar = ' ';
-            CharsPerIndentation = 4;
-        }
-
-        public SourceWriter(char indentationChar, int charsPerIndentation)
-        {
-            if (!char.IsWhiteSpace(indentationChar))
-            {
-                throw new ArgumentOutOfRangeException(nameof(indentationChar));
-            }
-
-            if (charsPerIndentation < 1)
-            {
-                throw new ArgumentOutOfRangeException(nameof(charsPerIndentation));
-            }
-
-            IndentationChar = indentationChar;
-            CharsPerIndentation = charsPerIndentation;
-        }
-
-        public char IndentationChar { get; }
-        public int CharsPerIndentation { get; }
-
-        public int Length => _sb.Length;
         public int Indentation
         {
             get => _indentation;
@@ -85,8 +64,18 @@ namespace System.Text.Json.SourceGeneration
         public SourceText ToSourceText()
         {
             Debug.Assert(_indentation == 0 && _sb.Length > 0);
-            return SourceText.From(_sb.ToString(), Encoding.UTF8);
+            return SourceText.From(ToString(), Encoding.UTF8);
         }
+
+        public override string ToString() => _sb.ToString();
+
+        #region Test utilities.
+        public void Reset()
+        {
+            _indentation = 0;
+            _sb.Clear();
+        }
+        #endregion
 
         private void AddIndentation()
             => _sb.Append(IndentationChar, CharsPerIndentation * _indentation);
