@@ -5,15 +5,28 @@ using System;
 
 namespace Microsoft.Interop
 {
-    internal sealed record MarshalToLocalContext(StubCodeContext inner) : StubCodeContext
+    internal sealed record MarshalToLocalContext : StubCodeContext
     {
-        public override bool SingleFrameSpansNativeContext => inner.SingleFrameSpansNativeContext;
+        internal StubCodeContext InnerContext { get; init; }
 
-        public override bool AdditionalTemporaryStateLivesAcrossStages => inner.AdditionalTemporaryStateLivesAcrossStages;
+        internal MarshalToLocalContext(StubCodeContext inner)
+        {
+            InnerContext = inner;
+            CurrentStage = inner.CurrentStage;
+            Direction = inner.Direction;
+            ParentContext = inner.ParentContext;
+        }
 
-        public override (TargetFramework framework, Version version) GetTargetFramework() => inner.GetTargetFramework();
+        public override (TargetFramework framework, Version version) GetTargetFramework() => InnerContext.GetTargetFramework();
+
+        public override bool SingleFrameSpansNativeContext => InnerContext.SingleFrameSpansNativeContext;
+
+        public override bool AdditionalTemporaryStateLivesAcrossStages => InnerContext.AdditionalTemporaryStateLivesAcrossStages;
+
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
-            => inner.GetIdentifiers(info);
+            => InnerContext.GetIdentifiers(info);
         //=> (inner.GetIdentifiers(info).managed, inner.GetAdditionalIdentifier(info, "out"));
+
+        public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => InnerContext.GetAdditionalIdentifier(info, name);
     }
 }

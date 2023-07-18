@@ -558,20 +558,12 @@ namespace ComInterfaceGenerator.Unit.Tests
 
             // [In] is default for all non-pinned marshalled types
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeIsDefaultDiagnostic,
-                //https://github.com/dotnet/runtime/issues/88540
                 inAttributeIsDefaultDiagnostic } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute, "byte", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeIsDefaultDiagnostic,
-                //https://github.com/dotnet/runtime/issues/88540
                 inAttributeIsDefaultDiagnostic } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U4)]", "bool", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeIsDefaultDiagnostic,
-                //https://github.com/dotnet/runtime/issues/88540
                 inAttributeIsDefaultDiagnostic } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + "[MarshalAs(UnmanagedType.U2)]", "char", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeIsDefaultDiagnostic,
-                //https://github.com/dotnet/runtime/issues/88540
                 inAttributeIsDefaultDiagnostic } };
 
             // [Out] is not allowed on value types passed by value - there is no indirection for the callee to make visible modifications.
@@ -579,48 +571,32 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, paramName);
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
-                outAttributeNotSupportedOnValueParameters,
-                //https://github.com/dotnet/runtime/issues/88540
                 outAttributeNotSupportedOnValueParameters } };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(outAttribute, "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
                 new DiagnosticResult[] {
-                    outAttributeNotSupportedOnValueParameters,
-                    //https://github.com/dotnet/runtime/issues/88540
-                    outAttributeNotSupportedOnValueParameters,
+                    outAttributeNotSupportedOnValueParameters
                 } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute + "[MarshalAs(UnmanagedType.U4)]", "bool", paramNameWithLocation), new DiagnosticResult[] {
-                outAttributeNotSupportedOnValueParameters,
-                //https://github.com/dotnet/runtime/issues/88540
                 outAttributeNotSupportedOnValueParameters
             } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(outAttribute, "[MarshalAs(UnmanagedType.U2)] char", paramNameWithLocation), new DiagnosticResult[] {
-                outAttributeNotSupportedOnValueParameters,
-                //https://github.com/dotnet/runtime/issues/88540
                 outAttributeNotSupportedOnValueParameters
             } };
             // [In,Out] should only warn for Out attribute
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute+outAttribute, "int", paramNameWithLocation), new DiagnosticResult[] {
-                outAttributeNotSupportedOnValueParameters,
-                //https://github.com/dotnet/runtime/issues/88540
                 outAttributeNotSupportedOnValueParameters } };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute+outAttribute, "IntStruct", paramNameWithLocation) + CodeSnippets.IntStructAndMarshaller,
                 new DiagnosticResult[] {
-                    outAttributeNotSupportedOnValueParameters,
-                    //https://github.com/dotnet/runtime/issues/88540
-                    outAttributeNotSupportedOnValueParameters,
+                    outAttributeNotSupportedOnValueParameters
                 } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + "[MarshalAs(UnmanagedType.U4)]", "bool", paramNameWithLocation), new DiagnosticResult[] {
-                outAttributeNotSupportedOnValueParameters,
-                //https://github.com/dotnet/runtime/issues/88540
                 outAttributeNotSupportedOnValueParameters
             } };
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute, "[MarshalAs(UnmanagedType.U2)] char", paramNameWithLocation), new DiagnosticResult[] {
-                outAttributeNotSupportedOnValueParameters,
-                //https://github.com/dotnet/runtime/issues/88540
                 outAttributeNotSupportedOnValueParameters
             } };
 
@@ -688,12 +664,12 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute, "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
-                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute, "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
-                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic }
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
             var outNotAllowedOnRefTypes = new DiagnosticResult(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
@@ -704,21 +680,21 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(outAttribute, "string", paramNameWithLocation, (StringMarshalling.Utf8, null)),
-                new DiagnosticResult[] { outNotAllowedOnRefTypes, outNotAllowedOnRefTypes }
+                new DiagnosticResult[] { outNotAllowedOnRefTypes }
             };
 
             // [Out] warns on by value reference types
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(outAttribute, "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
-                new DiagnosticResult[] { outNotAllowedOnRefTypes, outNotAllowedOnRefTypes }
+                new DiagnosticResult[] { outNotAllowedOnRefTypes }
             };
 
             // [In,Out] is fine on classes
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute, "IntClass", paramNameWithLocation) + CodeSnippets.IntClassAndMarshaller,
-                new DiagnosticResult[] { outNotAllowedOnRefTypes, outNotAllowedOnRefTypes }
+                new DiagnosticResult[] { outNotAllowedOnRefTypes }
             };
 
             // All refkinds are okay on classes and strings
@@ -774,11 +750,10 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(0)
                     .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, paramName);
             yield return new object[] { ID(), codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "int[]", paramNameWithLocation), new DiagnosticResult[] {
-                inAttributeNotSupportedOnPinnedParameter,
-                //https://github.com/dotnet/runtime/issues/88540
                 inAttributeNotSupportedOnPinnedParameter
             }};
-            // new issue before merge: char generated code doesn't seem to work well with [In, Out]
+            // blittable arrays don't support [In] only. Different diagnostics are issued because we can pin in one direction (managed->unmanaged)
+            // but not the other direction.
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
@@ -793,13 +768,13 @@ namespace ComInterfaceGenerator.Unit.Tests
                     "bool[]",
                     paramNameWithLocation,
                     (StringMarshalling.Utf16, null)),
-                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic}
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
             // Overriding marshalling with a custom marshaller makes it not pinned
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute, "[MarshalUsing(typeof(IntMarshaller), ElementIndirectionDepth = 1), MarshalUsing(ConstantElementCount = 10)]int[]", paramNameWithLocation) + CodeSnippets.IntMarshaller,
-                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic, inAttributeIsDefaultDiagnostic}
+                new DiagnosticResult[] { inAttributeIsDefaultDiagnostic }
             };
 
             // [In, Out] is default
@@ -811,12 +786,12 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic, inOutAttributeIsDefaultDiagnostic}
+                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
             };
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),
-                //https://github.com/dotnet/runtime/issues/88540
+                //https://github.com/dotnet/runtime/issues/88708
                 new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
             };
 
@@ -847,7 +822,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             {
                 TestCode = source,
                 TestBehaviors = TestBehaviors.SkipGeneratedSourcesCheck,
-                // Our fallback mechanism for invalid code for unmanaged->managed stubs sometimes generates invalid code.
+                // https://github.com/dotnet/runtime/issues/88708
                 CompilerDiagnostics = diagnostics.Length != 0 ? CompilerDiagnostics.None : CompilerDiagnostics.Errors,
             };
             test.ExpectedDiagnostics.AddRange(diagnostics);
