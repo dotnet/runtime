@@ -1057,6 +1057,27 @@ namespace System.Text.Json.Serialization.Tests
             }
         }
 
+#if NETCOREAPP
+        [Fact]
+        public async Task InvalidNumberFormatThrows()
+        {
+            await AssertInvalidNumberFormatThrows<Int128>("170141183460469231731687303715884105728"); // MaxValue + 1
+            await AssertInvalidNumberFormatThrows<Int128>("-170141183460469231731687303715884105729"); // MaxValue - 1
+            await AssertInvalidNumberFormatThrows<Int128>("3.14");
+            await AssertInvalidNumberFormatThrows<UInt128>("340282366920938463463374607431768211456"); // MaxValue + 1
+            await AssertInvalidNumberFormatThrows<Int128>("3.14");
+            await AssertInvalidNumberFormatThrows<UInt128>("-1");
+            await AssertInvalidNumberFormatThrows<Half>("65520");
+            await AssertInvalidNumberFormatThrows<Half>("-65520");
+        }
+
+        private async Task AssertInvalidNumberFormatThrows<T>(string testString)
+        {
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<T>(testString));
+            await Assert.ThrowsAsync<JsonException>(async () => await Serializer.DeserializeWrapper<T>($@"""{testString}""", s_optionReadFromStr));
+        }
+#endif
+
         [Fact]
         public async Task EscapingTest()
         {
