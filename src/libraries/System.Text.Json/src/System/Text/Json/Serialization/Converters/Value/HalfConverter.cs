@@ -194,7 +194,7 @@ namespace System.Text.Json.Serialization.Converters
 #endif
             out Half result)
         {
-            bool success = Half.TryParse(buffer, CultureInfo.InvariantCulture, out result);
+            bool success = Half.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
 
             // Half.TryParse is more lax with floating-point literals than other S.T.Json floating-point types
             // e.g: it parses "naN" successfully. Only succeed with the exact match.
