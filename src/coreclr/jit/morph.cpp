@@ -10119,8 +10119,11 @@ GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
     {
         LclVarDsc* varDsc = lvaGetDesc(store->AsLclVarCommon()->GetLclNum());
 
-        // It is not safe to remove the cast for non-NormalizeOnLoad variables, parameters or struct fields.
-        if (!varDsc->lvNormalizeOnLoad() || varDsc->lvIsParam || varDsc->lvIsStructField)
+        // We can make this transformation only under the assumption that NOL locals are always normalized before they are used,
+        // however this is not always the case: the JIT will utilize subrange assertions for NOL locals to make normalization
+        // assumptions -- see fgMorphLeafLocal. Thus we can only do this for cases where we know for sure that subsequent uses
+        // will normalize, which we can only guarantee when the local is address exposed.
+        if (!varDsc->lvNormalizeOnLoad() || !varDsc->IsAddressExposed())
             return store;
     }
 
