@@ -28,49 +28,44 @@ namespace System.Numerics
             Debug.Assert(left.Length >= 1);
             Debug.Assert(bits.Length == left.Length + 1);
 
-            // Switching to managed references helps eliminating
-            // index bounds check...
             ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
-            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
 
             // Executes the addition for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
 
-            nint i = 0;
-            nint upperBound = left.Length;
+            int i = 0;
             long carry = right;
 
-            if (upperBound <= CopyToThreshold)
+            if (left.Length <= CopyToThreshold)
             {
-                for ( ; i < upperBound; i++)
+                for ( ; i < left.Length; i++)
                 {
-                    carry += Unsafe.Add(ref leftPtr, i);
+                    carry += left[i];
                     Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                     carry >>= 32;
                 }
 
-                Unsafe.Add(ref resultPtr, upperBound) = unchecked((uint)carry);
+                Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
             }
             else
             {
-                for ( ; i < upperBound; )
+                for ( ; i < left.Length; )
                 {
-                    carry += Unsafe.Add(ref leftPtr, i);
+                    carry += left[i];
                     Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                     i++;
                     carry >>= 32;
                     if (carry == 0) break;
                 }
 
-                Unsafe.Add(ref resultPtr, upperBound) = unchecked((uint)carry);
+                Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
 
-                if (i < upperBound)
+                if (i < left.Length)
                 {
-                    CopyTail(left, bits, unchecked((int)i));
+                    CopyTail(left, bits, i);
                 }
             }
-
         }
 
         public static void Add(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
@@ -176,42 +171,39 @@ namespace System.Numerics
             // Switching to managed references helps eliminating
             // index bounds check...
             ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
-            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
 
             // Executes the addition for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
 
-            nint i = 0;
-            nint upperBound = left.Length;
+            int i = 0;
             long carry = -right;
 
-            if (upperBound <= CopyToThreshold)
+            if (left.Length <= CopyToThreshold)
             {
-                for ( ; i < upperBound; i++)
+                for ( ; i < left.Length; i++)
                 {
-                    carry += Unsafe.Add(ref leftPtr, i);
+                    carry += left[i];
                     Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                     carry >>= 32;
                 }
             }
             else
             {
-                for ( ; i < upperBound; )
+                for ( ; i < left.Length; )
                 {
-                    carry += Unsafe.Add(ref leftPtr, i);
+                    carry += left[i];
                     Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                     i++;
                     carry >>= 32;
                     if (carry == 0) break;
                 }
 
-                if (i < upperBound)
+                if (i < left.Length)
                 {
-                    CopyTail(left, bits, unchecked((int)i));
+                    CopyTail(left, bits, i);
                 }
             }
-
         }
 
         public static void Subtract(ReadOnlySpan<uint> left, ReadOnlySpan<uint> right, Span<uint> bits)
