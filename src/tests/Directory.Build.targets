@@ -99,6 +99,7 @@
     <_WillCLRTestProjectBuild Condition="'$(DisableProjectBuild)' == 'true'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(NativeAotIncompatible)' == 'true' and '$(TestBuildMode)' == 'nativeaot'">false</_WillCLRTestProjectBuild>
     <_WillCLRTestProjectBuild Condition="'$(RuntimeFlavor)' == 'mono' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
+    <_WillCLRTestProjectBuild Condition="'$(EnableNativeSanitizers)' != '' And '$(AlwaysUseCrossgen2)' == 'true'">false</_WillCLRTestProjectBuild>
   </PropertyGroup>
   <PropertyGroup>
     <_CopyNativeProjectBinaries Condition="'$(__CopyNativeTestBinaries)' != '1'">$(__CopyNativeProjectsAfterCombinedTestBuild)</_CopyNativeProjectBinaries>
@@ -530,7 +531,7 @@
     <TrimMode Condition="'$(EnableAggressiveTrimming)' != 'true'">partial</TrimMode>
 
     <IlcToolsPath>$(CoreCLRILCompilerDir)</IlcToolsPath>
-    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)'">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
+    <IlcToolsPath Condition="'$(TargetArchitecture)' != '$(BuildArchitecture)' or '$(TargetOS)' != '$(HostOS)' or '$(EnableNativeSanitizers)' != ''">$(CoreCLRCrossILCompilerDir)</IlcToolsPath>
     <IlcBuildTasksPath>$(CoreCLRILCompilerDir)netstandard/ILCompiler.Build.Tasks.dll</IlcBuildTasksPath>
     <IlcSdkPath>$(CoreCLRAotSdkDir)</IlcSdkPath>
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
@@ -564,7 +565,13 @@
     <IlcArg Include="--trim:xunit.abstractions" />
   </ItemGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.SingleEntry.targets" Condition="'$(TestBuildMode)' == 'nativeaot'" />
+
+  <ItemGroup Condition="'$(TestBuildMode)' == 'nativeaot'">
+    <Content Include="@(SanitizerRuntimeToCopy->'$(CoreCLRArtifactsPath)/%(Identity)')" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 
   <Target Name="BuildNativeAot"
           DependsOnTargets="Build;LinkNativeIfBuildAndRun" />

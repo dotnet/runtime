@@ -5,6 +5,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
@@ -27,6 +28,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedType ();
 			AccessThroughLdToken.Test ();
 			AccessThroughDelegate.Test ();
+			AccessThroughUnsafeAccessor.Test ();
 		}
 
 		class TestType { }
@@ -319,6 +321,87 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				TestMethodWithDelegate ();
 				LambdaThroughDelegate ();
 				LocalFunctionThroughDelegate ();
+			}
+		}
+
+		class AccessThroughUnsafeAccessor
+		{
+			// Analyzer has no support for UnsafeAccessor right now
+
+			class Target
+			{
+				[RequiresUnreferencedCode ("--Target..ctor--")]
+				[RequiresAssemblyFiles ("--Target..ctor--")]
+				[RequiresDynamicCode ("--Target..ctor--")]
+				private Target (int i) { }
+
+				[RequiresUnreferencedCode ("--Target.MethodRequires--")]
+				[RequiresAssemblyFiles ("--Target.MethodRequires--")]
+				[RequiresDynamicCode ("--Target.MethodRequires--")]
+				private static void MethodRequires () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--Target.MethodRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--Target.MethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--Target.MethodRequires--", ProducedBy = Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+			extern static void MethodRequires (Target target);
+
+			[ExpectedWarning ("IL2026", "--Target..ctor--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--Target..ctor--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--Target..ctor--", ProducedBy = Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+			extern static Target Constructor (int i);
+
+			[RequiresUnreferencedCode ("--TargetWitRequires--")]
+			class TargetWithRequires
+			{
+				private TargetWithRequires () { }
+
+				private static void StaticMethod () { }
+
+				private void InstanceMethod () { }
+
+				private static int StaticField;
+
+				private int InstanceField;
+			}
+
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+			extern static TargetWithRequires TargetRequiresConstructor ();
+
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = "StaticMethod")]
+			extern static void TargetRequiresStaticMethod (TargetWithRequires target);
+
+			// For trimmer this is a reflection access to an instance method - and as such it must warn (since it's in theory possible
+			// to invoke the method via reflection on a null instance)
+			// For NativeAOT this is a direct call to an instance method (there's no reflection involved) and as such it doesn't need to warn
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer)]
+			[UnsafeAccessor (UnsafeAccessorKind.Method, Name = "InstanceMethod")]
+			extern static void TargetRequiresInstanceMethod (TargetWithRequires target);
+
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField, Name = "StaticField")]
+			extern static ref int TargetRequiresStaticField (TargetWithRequires target);
+
+			// Access to instance fields never produces these warnings due to RUC on type
+			[UnsafeAccessor (UnsafeAccessorKind.Field, Name = "InstanceField")]
+			extern static ref int TargetRequiresInstanceField (TargetWithRequires target);
+
+			public static void Test ()
+			{
+				MethodRequires (null);
+				Constructor (0);
+
+				TargetRequiresConstructor ();
+
+				TargetWithRequires targetWithRequires = TargetRequiresConstructor ();
+				TargetRequiresStaticMethod (targetWithRequires);
+				TargetRequiresInstanceMethod (targetWithRequires);
+				TargetRequiresStaticField (targetWithRequires);
+				TargetRequiresInstanceField (targetWithRequires);
 			}
 		}
 	}

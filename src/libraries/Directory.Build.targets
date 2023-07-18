@@ -128,6 +128,7 @@
 
   <Import Project="$(RepositoryEngineeringDir)illink.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)AvoidRestoreCycleOnSelfReference.targets" Condition="'$(AvoidRestoreCycleOnSelfReference)' == 'true'" />
+  <Import Project="$(RepositoryEngineeringDir)nativeSanitizers.targets" />
 
   <ItemGroup Condition="'$(UseTargetFrameworkPackage)' != 'false'">
     <PackageReference Include="Microsoft.DotNet.Build.Tasks.TargetFramework" Version="$(MicrosoftDotNetBuildTasksTargetFrameworkVersion)" PrivateAssets="all" IsImplicitlyDefined="true" />

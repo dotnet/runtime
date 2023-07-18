@@ -12,6 +12,7 @@ namespace Microsoft.Extensions.Primitives
     /// <summary>
     /// An <see cref="IChangeToken"/> which represents one or more <see cref="IChangeToken"/> instances.
     /// </summary>
+    [DebuggerDisplay("HasChanged = {HasChanged}")]
     public class CompositeChangeToken : IChangeToken
     {
         private static readonly Action<object?> _onChangeDelegate = OnChange;

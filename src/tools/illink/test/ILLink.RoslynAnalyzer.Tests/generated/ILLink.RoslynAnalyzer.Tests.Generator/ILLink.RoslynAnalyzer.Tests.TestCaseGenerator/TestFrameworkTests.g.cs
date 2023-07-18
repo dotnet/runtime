@@ -94,12 +94,6 @@ namespace ILLink.RoslynAnalyzer.Tests
 		}
 
 		[Fact]
-		public Task VerifyExpectModifiedAttributesWork ()
-		{
-			return RunTest (allowMissingWarnings: true);
-		}
-
-		[Fact]
 		public Task VerifyResourceInAssemblyAttributesBehavior ()
 		{
 			return RunTest (allowMissingWarnings: true);

@@ -1503,6 +1503,15 @@ bool MethodDesc::TryGenerateUnsafeAccessor(DynamicResolver** resolver, COR_ILMET
         if (firstArgType.IsNull())
             ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
 
+        // If the non-static method access is for a
+        // value type, the instance must be byref.
+        if (kind == UnsafeAccessorKind::Method
+            && firstArgType.IsValueType()
+            && !firstArgType.IsByRef())
+        {
+            ThrowHR(COR_E_BADIMAGEFORMAT, BFA_INVALID_UNSAFEACCESSOR);
+        }
+
         context.TargetType = ValidateTargetType(firstArgType);
         context.IsTargetStatic = kind == UnsafeAccessorKind::StaticMethod;
         if (!TrySetTargetMethod(context, name.GetUTF8()))

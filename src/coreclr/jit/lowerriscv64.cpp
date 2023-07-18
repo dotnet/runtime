@@ -393,42 +393,14 @@ void Lowering::LowerPutArgStkOrSplit(GenTreePutArgStk* putArgNode)
 
     if (src->TypeIs(TYP_STRUCT))
     {
-        // STRUCT args (FIELD_LIST / OBJ) will always be contained.
+        // STRUCT args (FIELD_LIST / BLK / LCL_VAR / LCL_FLD) will always be contained.
         MakeSrcContained(putArgNode, src);
 
-        // Currently, codegen does not support LCL_VAR/LCL_FLD sources, so we morph them to OBJs.
-        // TODO-ADDR: support the local nodes in codegen and remove this code.
-        if (src->OperIsLocalRead())
+        if (src->OperIs(GT_LCL_VAR))
         {
-            unsigned     lclNum  = src->AsLclVarCommon()->GetLclNum();
-            ClassLayout* layout  = nullptr;
-            GenTree*     lclAddr = nullptr;
-
-            if (src->OperIs(GT_LCL_VAR))
-            {
-                layout  = comp->lvaGetDesc(lclNum)->GetLayout();
-                lclAddr = comp->gtNewLclVarAddrNode(lclNum);
-
-                comp->lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::IsStructArg));
-            }
-            else
-            {
-                layout  = src->AsLclFld()->GetLayout();
-                lclAddr = comp->gtNewLclAddrNode(lclNum, src->AsLclFld()->GetLclOffs());
-            }
-
-            src->ChangeOper(GT_BLK);
-            src->AsBlk()->SetAddr(lclAddr);
-            src->AsBlk()->Initialize(layout);
-
-            BlockRange().InsertBefore(src, lclAddr);
-        }
-
-        // Codegen supports containment of local addresses under OBJs.
-        if (src->OperIs(GT_BLK) && src->AsBlk()->Addr()->IsLclVarAddr())
-        {
-            // TODO-RISCV64-CQ: support containment of LCL_ADDR with non-zero offset too.
-            MakeSrcContained(src, src->AsBlk()->Addr());
+            // TODO-1stClassStructs: support struct enregistration here by retyping "src" to its register type for
+            // the non-split case.
+            comp->lvaSetVarDoNotEnregister(src->AsLclVar()->GetLclNum() DEBUGARG(DoNotEnregisterReason::IsStructArg));
         }
     }
 }
