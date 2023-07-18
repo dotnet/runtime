@@ -16,6 +16,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <HasMatchingContract>false</HasMatchingContract>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <EnableBinPlacing>false</EnableBinPlacing>
   </PropertyGroup>
 
   <ItemGroup>
