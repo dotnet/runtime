@@ -2108,7 +2108,7 @@ bool OptRangePatternDsc::optChangeToSwitch()
 
         // Check if prevBlock is the predecessor of currBb
         assert(currBb != nullptr && prevBlock != nullptr);
-        FlowEdge*  pred = m_comp->fgGetPredForBlock(currBb, prevBlock);
+        FlowEdge* pred = m_comp->fgGetPredForBlock(currBb, prevBlock);
         assert(pred != nullptr);
 
         m_comp->fgRemoveRefPred(currBb, prevBlock);
@@ -2219,7 +2219,7 @@ PhaseStatus Compiler::optSwitchRecognition()
 #endif // DEBUG
 
             // Check if prevBb is the predecessor of currBb and currBb has only one predecessor
-            FlowEdge*  pred = fgGetPredForBlock(currBb, prevBb);
+            FlowEdge* pred = fgGetPredForBlock(currBb, prevBb);
             if (pred == nullptr || currBb->bbRefs != 1 || currBb->bbFlags & BBF_DONT_REMOVE)
             {
                 if (foundPattern)
