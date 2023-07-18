@@ -53,7 +53,7 @@ namespace NativeExports.ComInterfaceGenerator
                 if (obj is ImplementingObject)
                 {
                     ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(ImplementingObject), sizeof(ComInterfaceEntry));
-                    comInterfaceEntry->IID = new Guid(IGetIntArray._guid);
+                    comInterfaceEntry->IID = new Guid(IGetIntArray.IID);
                     comInterfaceEntry->Vtable = (nint)GetIntArrayVTable;
                     count = 1;
                     return comInterfaceEntry;

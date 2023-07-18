@@ -81,7 +81,7 @@ namespace NativeExports.ComInterfaceGenerator
 				if (obj is IUTF8Marshalling)
 				{
 					ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(Utf8Implementation), sizeof(ComInterfaceEntry));
-					comInterfaceEntry->IID = new Guid(IUTF8Marshalling._guid);
+					comInterfaceEntry->IID = new Guid(IUTF8Marshalling.IID);
 					comInterfaceEntry->Vtable = (nint)S_Utf8VTable;
 					count = 1;
 					return comInterfaceEntry;
@@ -89,7 +89,7 @@ namespace NativeExports.ComInterfaceGenerator
 				else if (obj is IUTF16Marshalling)
 				{
 					ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(Utf16Implementation), sizeof(ComInterfaceEntry));
-					comInterfaceEntry->IID = new Guid(IUTF16Marshalling._guid);
+					comInterfaceEntry->IID = new Guid(IUTF16Marshalling.IID);
 					comInterfaceEntry->Vtable = (nint)S_Utf16VTable;
 					count = 1;
 					return comInterfaceEntry;

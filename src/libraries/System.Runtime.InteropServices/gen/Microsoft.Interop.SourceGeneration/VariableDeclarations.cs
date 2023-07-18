@@ -53,22 +53,23 @@ namespace Microsoft.Interop
 
             static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
             {
-                (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
+                TypePositionInfo info = marshaller.TypeInfo;
+                (string managed, string native) = context.GetIdentifiers(info);
 
                 // Declare variable for return value
-                if (marshaller.TypeInfo.IsManagedReturnPosition || marshaller.TypeInfo.IsNativeReturnPosition)
+                if (info.IsManagedReturnPosition || info.IsNativeReturnPosition)
                 {
                     statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        marshaller.TypeInfo.ManagedType.Syntax,
+                        info.ManagedType.Syntax,
                         managed,
                         initializeToDefault));
                 }
 
                 // Declare variable with native type for parameter or return value
-                if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context))
+                if (marshaller.Generator.UsesNativeIdentifier(info, context))
                 {
                     statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
+                        marshaller.Generator.AsNativeType(info).Syntax,
                         native,
                         initializeToDefault));
                 }
@@ -95,11 +96,11 @@ namespace Microsoft.Interop
                 {
                     // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
                     var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
-                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                    if (marshaller.Generator.UsesNativeIdentifier(info, context)
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
-                        if (MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
+                        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
@@ -117,11 +118,11 @@ namespace Microsoft.Interop
                     var info = marshaller.TypeInfo;
                     // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
                     var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
-                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                    if (marshaller.Generator.UsesNativeIdentifier(info, context)
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
-                        if (MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
+                        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
@@ -144,41 +145,41 @@ namespace Microsoft.Interop
 
             static void AppendVariableDeclarations(ImmutableArray<LocalDeclarationStatementSyntax>.Builder statementsToUpdate, BoundGenerator marshaller, StubCodeContext context, bool initializeToDefault)
             {
-                (string managed, string native) = context.GetIdentifiers(marshaller.TypeInfo);
-
                 var info = marshaller.TypeInfo;
+                (string managed, string native) = context.GetIdentifiers(info);
+
                 // Declare variable for return value
-                if (marshaller.TypeInfo.IsNativeReturnPosition)
+                if (info.IsNativeReturnPosition)
                 {
-                    bool nativeReturnUsesNativeIdentifier = marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context);
+                    bool nativeReturnUsesNativeIdentifier = marshaller.Generator.UsesNativeIdentifier(info, context);
 
                     // Always initialize the return value.
                     statementsToUpdate.Add(MarshallerHelpers.Declare(
-                        marshaller.TypeInfo.ManagedType.Syntax,
+                        info.ManagedType.Syntax,
                         managed,
                         initializeToDefault || !nativeReturnUsesNativeIdentifier));
 
                     if (nativeReturnUsesNativeIdentifier)
                     {
                         statementsToUpdate.Add(MarshallerHelpers.Declare(
-                            marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax,
+                            marshaller.Generator.AsNativeType(info).Syntax,
                             native,
                             initializeToDefault: true));
                     }
                 }
                 else
                 {
-                    ValueBoundaryBehavior boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(marshaller.TypeInfo, context);
+                    ValueBoundaryBehavior boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
 
                     // Declare variable with native type for parameter
                     // if the marshaller uses the native identifier and the signature uses a different identifier
                     // than the native identifier.
-                    if (marshaller.Generator.UsesNativeIdentifier(marshaller.TypeInfo, context)
+                    if (marshaller.Generator.UsesNativeIdentifier(info, context)
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
-                        TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
-                        if (MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
+                        TypeSyntax localType = marshaller.Generator.AsNativeType(info).Syntax;
+                        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             // <nativeType> __param_native_out;
@@ -197,14 +198,14 @@ namespace Microsoft.Interop
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
                                 RefType(localType),
                                 native,
-                                marshaller.Generator.GenerateNativeByRefInitialization(marshaller.TypeInfo, context)));
+                                marshaller.Generator.GenerateNativeByRefInitialization(info, context)));
                         }
                     }
 
                     if (boundaryBehavior != ValueBoundaryBehavior.ManagedIdentifier)
                     {
                         statementsToUpdate.Add(MarshallerHelpers.Declare(
-                            marshaller.TypeInfo.ManagedType.Syntax,
+                            info.ManagedType.Syntax,
                             managed,
                             initializeToDefault));
                     }

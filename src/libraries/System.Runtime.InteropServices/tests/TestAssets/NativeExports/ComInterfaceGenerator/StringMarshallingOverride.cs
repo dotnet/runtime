@@ -76,9 +76,9 @@ namespace NativeExports.ComInterfaceGenerator
                 if (obj is IStringMarshallingOverrideDerived)
                 {
                     ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(Implementation), sizeof(ComInterfaceEntry) * 2);
-                    comInterfaceEntry[0].IID = new Guid(IStringMarshallingOverrideDerived._guid);
+                    comInterfaceEntry[0].IID = new Guid(IStringMarshallingOverrideDerived.IID);
                     comInterfaceEntry[0].Vtable = (nint)S_DerivedVTable;
-                    comInterfaceEntry[1].IID = new Guid(IStringMarshallingOverride._guid);
+                    comInterfaceEntry[1].IID = new Guid(IStringMarshallingOverride.IID);
                     comInterfaceEntry[1].Vtable = (nint)S_VTable;
                     count = 2;
                     return comInterfaceEntry;
@@ -86,7 +86,7 @@ namespace NativeExports.ComInterfaceGenerator
                 if (obj is IStringMarshallingOverride)
                 {
                     ComInterfaceEntry* comInterfaceEntry = (ComInterfaceEntry*)RuntimeHelpers.AllocateTypeAssociatedMemory(typeof(Implementation), sizeof(ComInterfaceEntry));
-                    comInterfaceEntry->IID = new Guid(IStringMarshallingOverride._guid);
+                    comInterfaceEntry->IID = new Guid(IStringMarshallingOverride.IID);
                     comInterfaceEntry->Vtable = (nint)S_VTable;
                     count = 1;
                     return comInterfaceEntry;

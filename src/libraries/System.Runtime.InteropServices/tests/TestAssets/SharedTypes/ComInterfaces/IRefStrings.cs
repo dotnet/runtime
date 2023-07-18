@@ -7,10 +7,10 @@ using System.Runtime.InteropServices.Marshalling;
 namespace SharedTypes.ComInterfaces
 {
     [GeneratedComInterface(StringMarshalling = System.Runtime.InteropServices.StringMarshalling.Utf8)]
-    [Guid(_guid)]
+    [Guid(IID)]
     internal partial interface IRefStrings
     {
-        public const string _guid = "5146B7DB-0588-469B-B8E5-B38090A2FC15";
+        public const string IID = "5146B7DB-0588-469B-B8E5-B38090A2FC15";
         void RefString(ref string value);
         void InString(in string value);
         void OutString(out string value);
