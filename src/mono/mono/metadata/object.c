@@ -2211,13 +2211,13 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
 		if (m_field_is_from_update (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
 			continue;
-		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
 			if (special_static != SPECIAL_STATIC_NONE) {
