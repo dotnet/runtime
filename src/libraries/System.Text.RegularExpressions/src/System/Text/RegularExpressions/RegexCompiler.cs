@@ -962,83 +962,135 @@ namespace System.Text.RegularExpressions
                         // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
                         // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
                         // all of the target ASCII characters and all of non-ASCII.
-                        var asciiChars = new List<char>();
-                        for (int i = 0; i <= 0x7f; i++)
+                        var excludedAsciiChars = new List<char>();
+                        for (int i = 0; i < 128; i++)
                         {
                             if (!RegexCharClass.CharInClass((char)i, primarySet.Set))
                             {
-                                asciiChars.Add((char)i);
+                                excludedAsciiChars.Add((char)i);
                             }
                         }
 
-                        using (RentedLocalBuilder span = RentReadOnlySpanCharLocal())
-                        using (RentedLocalBuilder i = RentInt32Local())
+                        // We should only be here if the set might contain a non-ASCII character.  As such, we need a fallback
+                        // for if IndexOfAny for the ASCII characters or any non-ASCII character hits a non-ASCII character.
+                        // Worst case, that fallback can be a linear scan, but if we can easily determine the full set of
+                        // characters included in the set, and if it's reasonably small enough, we can just hand them all
+                        // to SearchValues and let it optimize the search as best as possible.  We still want the ASCII
+                        // fast path if there are any ASCII characters, though, as we assume if there are any ASCII chars
+                        // in the set that they will be more likely to occur, and SearchValues is very good at optimizing ASCII.
+                        const int SearchValuesFallbackLimit = 128; // somewhat arbitrary limit guided by SearchValues' probabilistic map implementation
+                        Span<char> allCharsInSet = stackalloc char[SearchValuesFallbackLimit];
+                        allCharsInSet = allCharsInSet.Slice(0, RegexCharClass.GetSetChars(primarySet.Set, allCharsInSet));
+                        bool allCharsInSetNegated = RegexCharClass.IsNegated(primarySet.Set);
+
+                        // In the case where there aren't any ASCII chars, if we do have the full set, we can avoid
+                        // emitting a custom helper and just use IndexOfAny.
+                        if (excludedAsciiChars.Count == 128 && !allCharsInSet.IsEmpty)
                         {
-                            // ReadOnlySpan<char> span = inputSpan...;
-                            Stloc(span);
+                            // ...IndexOfAnyExcept(searchValues)
+                            LoadSearchValues(allCharsInSet);
+                            Call(allCharsInSetNegated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                        }
+                        else
+                        {
+                            // Search for the first character that's either ASCII and in the target set or non-ASCII (whether or not it's in the target set.
+                            // If the character at the found position is ASCII, it's in the target set.
+                            // Otherwise, search for the first character that's in the target set.
+                            using (RentedLocalBuilder span = RentReadOnlySpanCharLocal())
+                            using (RentedLocalBuilder i = RentInt32Local())
+                            {
+                                // ReadOnlySpan<char> span = inputSpan...;
+                                Stloc(span);
 
-                            // int i = span.
-                            Ldloc(span);
-                            if (asciiChars.Count == 128)
-                            {
-                                // IndexOfAnyExceptInRange('\0', '\u007f');
-                                Ldc(0);
-                                Ldc(127);
-                                Call(s_spanIndexOfAnyExceptInRange);
-                            }
-                            else
-                            {
-                                // IndexOfAnyExcept(searchValuesArray[...]);
-                                LoadSearchValues(CollectionsMarshal.AsSpan(asciiChars));
+                                // int i = span.IndexOfAnyExcept(excludedAsciiChars)
+                                Ldloc(span);
+                                LoadSearchValues(CollectionsMarshal.AsSpan(excludedAsciiChars));
                                 Call(s_spanIndexOfAnyExceptSearchValues);
+                                Stloc(i);
+
+                                // if ((uint)i >= span.Length) goto doneSearch;
+                                Label doneSearch = DefineLabel();
+                                Ldloc(i);
+                                Ldloca(span);
+                                Call(s_spanGetLengthMethod);
+                                BgeUnFar(doneSearch);
+
+                                // if (span[i] < 128) goto doneSearch;
+                                Ldc(0x7f);
+                                Ldloca(span);
+                                Ldloc(i);
+                                Call(s_spanGetItemMethod);
+                                LdindU2();
+                                BgeUnFar(doneSearch);
+
+                                if (!allCharsInSet.IsEmpty)
+                                {
+                                    // Search for the first character that's in the target set.
+
+                                    // int j = span.IndexOfAny{Except}(allCharsInSet);
+                                    Ldloca(span);
+                                    Ldloc(i);
+                                    Call(s_spanSliceIntMethod);
+                                    LoadSearchValues(allCharsInSet);
+                                    Call(allCharsInSetNegated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                                    using (RentedLocalBuilder j = RentInt32Local())
+                                    {
+                                        Label notFound = DefineLabel();
+
+                                        // if (j < 0) goto notFound;
+                                        Stloc(j);
+                                        Ldloc(j);
+                                        Ldc(0);
+                                        Blt(notFound);
+
+                                        // i += j;
+                                        // goto doneSearch;
+                                        Ldloc(i);
+                                        Ldloc(j);
+                                        Add();
+                                        Stloc(i);
+                                        Br(doneSearch);
+
+                                        MarkLabel(notFound);
+                                    }
+                                }
+                                else
+                                {
+                                    // The current character is non-ASCII. Walk through the remainder of the characters looking.
+                                    // for the first one that's in the target set.
+
+                                    Label loop = DefineLabel();
+                                    MarkLabel(loop);
+                                    // do { ...
+
+                                    // if (CharInClass(span[i])) goto doneSearch;
+                                    Ldloca(span);
+                                    Ldloc(i);
+                                    Call(s_spanGetItemMethod);
+                                    LdindU2();
+                                    EmitMatchCharacterClass(primarySet.Set);
+                                    Brtrue(doneSearch);
+
+                                    // i++;
+                                    Ldloc(i);
+                                    Ldc(1);
+                                    Add();
+                                    Stloc(i);
+
+                                    // } while ((uint)i < span.Length);
+                                    Ldloc(i);
+                                    Ldloca(span);
+                                    Call(s_spanGetLengthMethod);
+                                    BltUnFar(loop);
+                                }
+
+                                // i = -1;
+                                Ldc(-1);
+                                Stloc(i);
+
+                                MarkLabel(doneSearch);
+                                Ldloc(i);
                             }
-                            Stloc(i);
-
-                            // if ((uint)i >= span.Length) goto doneSearch;
-                            Label doneSearch = DefineLabel();
-                            Ldloc(i);
-                            Ldloca(span);
-                            Call(s_spanGetLengthMethod);
-                            BgeUnFar(doneSearch);
-
-                            // if (span[i] <= 0x7f) goto doneSearch;
-                            Ldc(0x7f);
-                            Ldloca(span);
-                            Ldloc(i);
-                            Call(s_spanGetItemMethod);
-                            LdindU2();
-                            BgeUnFar(doneSearch);
-
-                            Label loop = DefineLabel();
-                            MarkLabel(loop);
-                            // do { ...
-
-                            // if (CharInClass(span[i])) goto doneSearch;
-                            Ldloca(span);
-                            Ldloc(i);
-                            Call(s_spanGetItemMethod);
-                            LdindU2();
-                            EmitMatchCharacterClass(primarySet.Set);
-                            Brtrue(doneSearch);
-
-                            // i++;
-                            Ldloc(i);
-                            Ldc(1);
-                            Add();
-                            Stloc(i);
-
-                            // } while ((uint)i < span.Length);
-                            Ldloc(i);
-                            Ldloca(span);
-                            Call(s_spanGetLengthMethod);
-                            BltUnFar(loop);
-
-                            // i = -1;
-                            Ldc(-1);
-                            Stloc(i);
-
-                            MarkLabel(doneSearch);
-                            Ldloc(i);
                         }
                     }
 

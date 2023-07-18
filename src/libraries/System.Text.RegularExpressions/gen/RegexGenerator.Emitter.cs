@@ -401,51 +401,63 @@ namespace System.Text.RegularExpressions.Generator
         /// <summary>Adds a SearchValues instance declaration to the required helpers collection.</summary>
         private static string EmitSearchValues(char[] asciiChars, Dictionary<string, string[]> requiredHelpers)
         {
-            Debug.Assert(RegexCharClass.IsAscii(asciiChars));
+            Array.Sort(asciiChars);
 
-            // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
-            byte[] bitmap = new byte[16];
-            foreach (char c in asciiChars)
+            string fieldName;
+            if (RegexCharClass.IsAscii(asciiChars))
             {
-                bitmap[c >> 3] |= (byte)(1 << (c & 7));
+                // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
+                byte[] bitmap = new byte[16];
+                foreach (char c in asciiChars)
+                {
+                    bitmap[c >> 3] |= (byte)(1 << (c & 7));
+                }
+
+                string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
+
+                fieldName = hexBitmap switch
+                {
+                    "FFFFFFFF000000000000000000000080" => "s_asciiControl",
+                    "000000000000FF030000000000000000" => "s_asciiDigits",
+                    "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
+                    "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
+                    "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
+                    "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
+                    "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
+                    "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
+                    "00000000010000000000000000000000" => "s_asciiSeparators",
+                    "00000000100800700000004001000050" => "s_asciiSymbols",
+                    "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
+                    "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
+
+                    "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
+                    "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
+                    "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
+                    "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
+                    "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
+                    "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
+                    "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
+                    "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
+                    "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
+                    "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
+                    "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
+
+                    _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
+                };
             }
-
-            string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
-
-            string fieldName = hexBitmap switch
+            else
             {
-                "FFFFFFFF000000000000000000000080" => "s_asciiControl",
-                "000000000000FF030000000000000000" => "s_asciiDigits",
-                "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
-                "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
-                "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
-                "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
-                "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
-                "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
-                "00000000010000000000000000000000" => "s_asciiSeparators",
-                "00000000100800700000004001000050" => "s_asciiSymbols",
-                "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
-                "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
-
-                "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
-                "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
-                "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
-                "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
-                "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
-                "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
-                "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
-                "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
-                "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
-                "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
-                "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
-
-                _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
-            };
+                Array.Sort(asciiChars);
+                using (SHA256 sha = SHA256.Create())
+                {
+#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
+                    fieldName = $"s_nonAscii_{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(asciiChars))).Replace("-", "")}";
+#pragma warning restore CA1850
+                }
+            }
 
             if (!requiredHelpers.ContainsKey(fieldName))
             {
-                Array.Sort(asciiChars);
-
                 string setLiteral = Literal(new string(asciiChars));
 
                 requiredHelpers.Add(fieldName, new string[]
@@ -458,20 +470,39 @@ namespace System.Text.RegularExpressions.Generator
             return $"{HelpersTypeName}.{fieldName}";
         }
 
-        private static string EmitIndexOfAnyCustomHelper(string set, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
+        private static string EmitIndexOfAnyCustomHelperCall(string set, Dictionary<string, string[]> requiredHelpers, bool checkOverflow)
         {
             // In order to optimize the search for ASCII characters, we use SearchValues to vectorize a search
             // for those characters plus anything non-ASCII (if we find something non-ASCII, we'll fall back to
             // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
             // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
             // all of the target ASCII characters and all of non-ASCII.
-            var asciiChars = new List<char>();
+            var excludedAsciiChars = new List<char>();
             for (int i = 0; i < 128; i++)
             {
                 if (!RegexCharClass.CharInClass((char)i, set))
                 {
-                    asciiChars.Add((char)i);
+                    excludedAsciiChars.Add((char)i);
                 }
+            }
+
+            // We should only be here if the set might contain a non-ASCII character.  As such, we need a fallback
+            // for if IndexOfAny for the ASCII characters or any non-ASCII character hits a non-ASCII character.
+            // Worst case, that fallback can be a linear scan, but if we can easily determine the full set of
+            // characters included in the set, and if it's reasonably small enough, we can just hand them all
+            // to SearchValues and let it optimize the search as best as possible.  We still want the ASCII
+            // fast path if there are any ASCII characters, though, as we assume if there are any ASCII chars
+            // in the set that they will be more likely to occur, and SearchValues is very good at optimizing ASCII.
+            const int SearchValuesFallbackLimit = 128; // somewhat arbitrary limit guided by SearchValues' probabilistic map implementation
+            Span<char> allCharsInSet = stackalloc char[SearchValuesFallbackLimit];
+            allCharsInSet = allCharsInSet.Slice(0, RegexCharClass.GetSetChars(set, allCharsInSet));
+            bool allCharsInSetNegated = RegexCharClass.IsNegated(set);
+
+            // In the case where there aren't any ASCII chars, if we do have the full set, we can avoid
+            // emitting a custom helper and just use IndexOfAny.
+            if (excludedAsciiChars.Count == 128 && !allCharsInSet.IsEmpty)
+            {
+                return $"IndexOfAny{(allCharsInSetNegated ? "Except" : "")}({EmitSearchValues(allCharsInSet.ToArray(), requiredHelpers)})";
             }
 
             // If this is a known set, use a predetermined simple name for the helper.
@@ -529,40 +560,55 @@ namespace System.Text.RegularExpressions.Generator
 
             if (!requiredHelpers.ContainsKey(helperName))
             {
-                var additionalDeclarations = new HashSet<string>();
-                string matchExpr = MatchCharacterClass("span[i]", set, negate: false, additionalDeclarations, requiredHelpers);
-
                 var lines = new List<string>();
                 lines.Add($"/// <summary>Finds the next index of any character that matches {EscapeXmlComment(DescribeSet(set))}.</summary>");
                 lines.Add($"[MethodImpl(MethodImplOptions.AggressiveInlining)]");
                 lines.Add($"internal static int {helperName}(this ReadOnlySpan<char> span)");
                 lines.Add($"{{");
                 int uncheckedStart = lines.Count;
-                lines.Add(asciiChars.Count == 128 ?
-                          $"    int i = span.IndexOfAnyExceptInRange('\0', '\u007f');" :
-                          $"    int i = span.IndexOfAnyExcept({EmitSearchValues(asciiChars.ToArray(), requiredHelpers)});");
+                lines.Add($"    // Search for the first character that's either ASCII and in the target set or non-ASCII (whether or not it's in the target set.");
+                lines.Add($"    int i = span.IndexOfAnyExcept({EmitSearchValues(excludedAsciiChars.ToArray(), requiredHelpers)});");
                 lines.Add($"    if ((uint)i < (uint)span.Length)");
                 lines.Add($"    {{");
+                lines.Add($"        // If the character at the found position is ASCII, it's in the target set.");
                 lines.Add($"        if (char.IsAscii(span[i]))");
                 lines.Add($"        {{");
                 lines.Add($"            return i;");
                 lines.Add($"        }}");
                 lines.Add($"");
-                if (additionalDeclarations.Count > 0)
+                if (!allCharsInSet.IsEmpty)
                 {
-                    lines.AddRange(additionalDeclarations.Select(s => $"        {s}"));
+                    lines.Add($"        // Search for the first character that's in the target set.");
+                    lines.Add($"        int j = span.Slice(i).IndexOfAny{(allCharsInSetNegated ? "Except" : "")}({EmitSearchValues(allCharsInSet.ToArray(), requiredHelpers)});");
+                    lines.Add($"        if (j >= 0)");
+                    lines.Add($"        {{");
+                    lines.Add($"            return i + j;");
+                    lines.Add($"        }}");
                 }
-                lines.Add($"        do");
-                lines.Add($"        {{");
-                lines.Add($"            if ({matchExpr})");
-                lines.Add($"            {{");
-                lines.Add($"                return i;");
-                lines.Add($"            }}");
-                lines.Add($"            i++;");
-                lines.Add($"        }}");
-                lines.Add($"        while ((uint)i < (uint)span.Length);");
+                else
+                {
+                    var additionalDeclarations = new HashSet<string>();
+                    string matchExpr = MatchCharacterClass("span[i]", set, negate: false, additionalDeclarations, requiredHelpers);
+
+                    lines.Add($"        // The current character is non-ASCII. Walk through the remainder of the characters looking");
+                    lines.Add($"        // for the first one that's in the target set.");
+                    if (additionalDeclarations.Count > 0)
+                    {
+                        lines.AddRange(additionalDeclarations.Select(s => $"        {s}"));
+                    }
+                    lines.Add($"        do");
+                    lines.Add($"        {{");
+                    lines.Add($"            if ({matchExpr})");
+                    lines.Add($"            {{");
+                    lines.Add($"                return i;");
+                    lines.Add($"            }}");
+                    lines.Add($"            i++;");
+                    lines.Add($"        }}");
+                    lines.Add($"        while ((uint)i < (uint)span.Length);");
+                }
                 lines.Add($"    }}");
                 lines.Add($"");
+                lines.Add($"    // No match found.");
                 lines.Add($"    return -1;");
                 lines.Add($"}}");
 
@@ -580,7 +626,7 @@ namespace System.Text.RegularExpressions.Generator
                 requiredHelpers.Add(helperName, lines.ToArray());
             }
 
-            return helperName;
+            return $"{helperName}()";
         }
 
         /// <summary>Emits the body of the Scan method override.</summary>
@@ -1104,7 +1150,7 @@ namespace System.Text.RegularExpressions.Generator
                     {
                         // We have an arbitrary set of characters that includes at least one non-ASCII char.  We use a custom IndexOfAny helper that
                         // will perform the search as efficiently as possible.
-                        indexOf = $"{span}.{EmitIndexOfAnyCustomHelper(primarySet.Set, requiredHelpers, checkOverflow)}()";
+                        indexOf = $"{span}.{EmitIndexOfAnyCustomHelperCall(primarySet.Set, requiredHelpers, checkOverflow)}";
                     }
 
                     if (needLoop)
