@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.Versioning;
 using System.Threading;
 using Microsoft.Extensions.Http;
 using Microsoft.Extensions.Options;
@@ -263,6 +264,72 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder;
         }
+
+#if NET5_0_OR_GREATER
+        /// <summary>
+        /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>. If provided,
+        /// also adds a delegate that will be used to configure the primary <see cref="SocketsHttpHandler"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="configureHandler">Optional delegate that is used to configure the primary <see cref="SocketsHttpHandler"/>.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        /// <remarks>
+        /// <para>
+        /// If a primary handler was already set to be <see cref="SocketsHttpHandler"/> by previously calling, for example,
+        /// <see cref="ConfigurePrimaryHttpMessageHandler(IHttpClientBuilder, Func{HttpMessageHandler})"/> or
+        /// <see cref="UseSocketsHttpHandler(IHttpClientBuilder, Action{ISocketsHttpHandlerBuilder})"/>, then the passed <paramref name="configureHandler"/>
+        /// delegate will be applied to the existing instance. Otherwise, a new instance of <see cref="SocketsHttpHandler"/> will be created.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<SocketsHttpHandler, IServiceProvider>? configureHandler = null)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.HttpMessageHandlerBuilderActions.Add(b =>
+                {
+                    if (b.PrimaryHandler is not SocketsHttpHandler handler)
+                    {
+                        handler = new SocketsHttpHandler();
+                    }
+                    configureHandler?.Invoke(handler, b.Services);
+                    b.PrimaryHandler = handler;
+                });
+            });
+
+            return builder;
+        }
+
+        /// <summary>
+        /// Adds or updates <see cref="SocketsHttpHandler"/> as a primary handler for a named <see cref="HttpClient"/>
+        /// and configures it using <see cref="ISocketsHttpHandlerBuilder"/>.
+        /// </summary>
+        /// <param name="builder">The <see cref="IHttpClientBuilder"/>.</param>
+        /// <param name="configureBuilder">Delegate that is used to set up the configuration of the the primary <see cref="SocketsHttpHandler"/>
+        /// on <see cref="ISocketsHttpHandlerBuilder"/> that will later be applied on the primary handler during its creation.</param>
+        /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
+        /// <remarks>
+        /// <para>
+        /// If a primary handler was already set to be <see cref="SocketsHttpHandler"/> by previously calling, for example,
+        /// <see cref="ConfigurePrimaryHttpMessageHandler(IHttpClientBuilder, Func{HttpMessageHandler})"/> or
+        /// <see cref="UseSocketsHttpHandler(IHttpClientBuilder, Action{ISocketsHttpHandlerBuilder})"/>, then the configuration set on
+        /// <see cref="ISocketsHttpHandlerBuilder"/> will be applied to the existing instance. Otherwise, a new instance of
+        /// <see cref="SocketsHttpHandler"/> will be created.
+        /// </para>
+        /// </remarks>
+        [UnsupportedOSPlatform("browser")]
+        public static IHttpClientBuilder UseSocketsHttpHandler(this IHttpClientBuilder builder, Action<ISocketsHttpHandlerBuilder> configureBuilder)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+
+            UseSocketsHttpHandler(builder);
+            configureBuilder(new DefaultSocketsHttpHandlerBuilder(builder.Services, builder.Name));
+
+            return builder;
+        }
+#endif
 
         /// <summary>
         /// Configures a binding between the <typeparamref name="TClient" /> type and the named <see cref="HttpClient"/>

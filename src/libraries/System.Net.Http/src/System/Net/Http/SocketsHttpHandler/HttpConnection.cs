@@ -65,7 +65,6 @@ namespace System.Net.Http
         private bool _inUse;
         private bool _detachedFromPool;
         private bool _canRetry;
-        private bool _startedSendingRequestBody;
         private bool _connectionClose; // Connection: close was seen on last response
 
         private const int Status_Disposed = 1;
@@ -510,7 +509,6 @@ namespace System.Net.Http
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
-            _startedSendingRequestBody = false;
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -616,7 +614,7 @@ namespace System.Net.Http
                     // The server shutdown the connection on their end, likely because of an idle timeout.
                     // If we haven't started sending the request body yet (or there is no request body),
                     // then we allow the request to be retried.
-                    if (!_startedSendingRequestBody)
+                    if (request.Content is null || allowExpect100ToContinue is not null)
                     {
                         _canRetry = true;
                     }
@@ -811,7 +809,11 @@ namespace System.Net.Http
                 cancellationRegistration.Dispose();
 
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
-                allowExpect100ToContinue?.TrySetResult(false);
+                if (allowExpect100ToContinue is not null && !allowExpect100ToContinue.TrySetResult(false))
+                {
+                    // allowExpect100ToContinue was already signaled and we may have started sending the request body.
+                    _canRetry = false;
+                }
 
                 if (_readAheadTask != default)
                 {
@@ -925,9 +927,6 @@ namespace System.Net.Http
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
-            // Now that we're sending content, prohibit retries of this request by setting this flag.
-            _startedSendingRequestBody = true;
-
             Debug.Assert(stream.BytesWritten == 0);
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
 

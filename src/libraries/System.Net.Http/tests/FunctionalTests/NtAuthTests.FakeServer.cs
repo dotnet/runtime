@@ -107,6 +107,8 @@ namespace System.Net.Http.Functional.Tests
             }
             while (!isAuthenticated);
 
+            fakeNtlmServer?.Dispose();
+
             await connection.SendResponseAsync(HttpStatusCode.OK);
         }
 
