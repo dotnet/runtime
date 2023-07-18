@@ -44,7 +44,7 @@ namespace System.Formats.Tar
             }
             else if ((attributes & (FileAttributes.Normal | FileAttributes.Archive)) != 0)
             {
-                entryType = Format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+                entryType = TarHelpers.GetRegularFileEntryTypeForFormat(Format);
             }
             else
             {

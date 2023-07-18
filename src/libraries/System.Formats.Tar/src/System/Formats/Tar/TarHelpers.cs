@@ -215,6 +215,9 @@ namespace System.Formats.Tar
             return entryType;
         }
 
+        // Chooses the compatible regular file entry type for the specified format.
+        internal static TarEntryType GetRegularFileEntryTypeForFormat(TarEntryFormat format) => format is TarEntryFormat.V7 ? TarEntryType.V7RegularFile : TarEntryType.RegularFile;
+
         /// <summary>Parses a byte span that represents an ASCII string containing a number in octal base.</summary>
         internal static T ParseOctal<T>(ReadOnlySpan<byte> buffer) where T : struct, INumber<T>
         {
