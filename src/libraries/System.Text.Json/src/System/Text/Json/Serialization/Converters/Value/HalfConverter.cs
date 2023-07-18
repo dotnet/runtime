@@ -36,7 +36,6 @@ namespace System.Text.Json.Serialization.Converters
             Half result;
 
             byte[]? rentedByteBuffer = null;
-            char[]? rentedCharBuffer = null;
             int bufferLength = reader.ValueLength;
 
             Span<byte> byteBuffer = bufferLength <= JsonConstants.StackallocByteThreshold
@@ -46,22 +45,10 @@ namespace System.Text.Json.Serialization.Converters
             int written = reader.CopyValue(byteBuffer);
             byteBuffer = byteBuffer.Slice(0, written);
 
-#if NET8_0_OR_GREATER
             bool success = TryParse(byteBuffer, out result);
-#else
-            // We need to transcode here instead of letting CopyValue do it for us because TryGetFloatingPointConstant only accepts ROS<byte>.
-            Span<char> charBuffer = stackalloc char[MaxFormatLength];
-            written = JsonReaderHelper.TranscodeHelper(byteBuffer, charBuffer);
-            bool success = TryParse(charBuffer, out result);
-#endif
             if (rentedByteBuffer != null)
             {
                 ArrayPool<byte>.Shared.Return(rentedByteBuffer);
-            }
-
-            if (rentedCharBuffer != null)
-            {
-                ArrayPool<char>.Shared.Return(rentedCharBuffer);
             }
 
             if (!success)
@@ -186,31 +173,33 @@ namespace System.Text.Json.Serialization.Converters
 
         // Half.TryFormat/TryParse(ROS<byte>) are not available on .NET 7
         // we need to use Half.TryFormat/TryParse(ROS<char>) in that case.
-        private static bool TryParse(
-#if NET8_0_OR_GREATER
-            ReadOnlySpan<byte> buffer,
-#else
-            ReadOnlySpan<char> buffer,
-#endif
-            out Half result)
+        private static bool TryParse(ReadOnlySpan<byte> buffer, out Half result)
         {
+#if NET8_0_OR_GREATER
             bool success = Half.TryParse(buffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
+#else
+            char[]? rentedCharBuffer = null;
+
+            Span<char> charBuffer = buffer.Length <= JsonConstants.StackallocCharThreshold
+                ? stackalloc char[JsonConstants.StackallocCharThreshold]
+                : (rentedCharBuffer = ArrayPool<char>.Shared.Rent(buffer.Length));
+
+            int written = JsonReaderHelper.TranscodeHelper(buffer, charBuffer);
+
+            bool success = Half.TryParse(charBuffer, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture, out result);
+
+            if (rentedCharBuffer != null)
+            {
+                ArrayPool<char>.Shared.Return(rentedCharBuffer);
+            }
+#endif
 
             // Half.TryParse is more lax with floating-point literals than other S.T.Json floating-point types
             // e.g: it parses "naN" successfully. Only succeed with the exact match.
-#if NET8_0_OR_GREATER
-            ReadOnlySpan<byte> NaN = JsonConstants.NaNValue;
-            ReadOnlySpan<byte> PositiveInfinity = JsonConstants.PositiveInfinityValue;
-            ReadOnlySpan<byte> NegativeInfinity = JsonConstants.NegativeInfinityValue;
-#else
-            const string NaN = "NaN";
-            const string PositiveInfinity = "Infinity";
-            const string NegativeInfinity = "-Infinity";
-#endif
             return success &&
-                (!Half.IsNaN(result) || buffer.SequenceEqual(NaN)) &&
-                (!Half.IsPositiveInfinity(result) || buffer.SequenceEqual(PositiveInfinity)) &&
-                (!Half.IsNegativeInfinity(result) || buffer.SequenceEqual(NegativeInfinity));
+                (!Half.IsNaN(result) || buffer.SequenceEqual(JsonConstants.NaNValue)) &&
+                (!Half.IsPositiveInfinity(result) || buffer.SequenceEqual(JsonConstants.PositiveInfinityValue)) &&
+                (!Half.IsNegativeInfinity(result) || buffer.SequenceEqual(JsonConstants.NegativeInfinityValue));
         }
 
         private static void Format(
