@@ -7712,7 +7712,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 #endif
     }
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
     {
         if (lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd) ==
             NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)

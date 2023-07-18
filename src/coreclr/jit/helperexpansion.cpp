@@ -116,9 +116,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
-    assert(call->IsHelperCall());
 
-    if (!call->IsExpRuntimeLookup())
+    if (!call->IsHelperCall() || !call->IsExpRuntimeLookup())
     {
         return false;
     }
@@ -472,8 +471,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
-    assert(call->IsHelperCall());
-    if (!call->IsExpTLSFieldAccess())
+
+    if (!call->IsHelperCall() || !call->IsExpTLSFieldAccess())
     {
         return false;
     }
@@ -817,7 +816,7 @@ bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* 
 //    true if there was any helper that was expanded.
 //
 template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
-PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks, bool handleIntrinsics)
+PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks)
 {
     PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
@@ -830,7 +829,7 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks, bool handleIntrin
 
         // Expand and visit the last block again to find more candidates
         INDEBUG(BasicBlock* origBlock = block);
-        while (fgExpandHelperForBlock<ExpansionFunction>(&block, handleIntrinsics))
+        while (fgExpandHelperForBlock<ExpansionFunction>(&block))
         {
             result = PhaseStatus::MODIFIED_EVERYTHING;
 #ifdef DEBUG
@@ -862,7 +861,7 @@ PhaseStatus Compiler::fgExpandHelper(bool skipRarelyRunBlocks, bool handleIntrin
 //    true if a helper was expanded
 //
 template <bool (Compiler::*ExpansionFunction)(BasicBlock**, Statement*, GenTreeCall*)>
-bool Compiler::fgExpandHelperForBlock(BasicBlock** pBlock, bool handleIntrinsics)
+bool Compiler::fgExpandHelperForBlock(BasicBlock** pBlock)
 {
     for (Statement* const stmt : (*pBlock)->NonPhiStatements())
     {
@@ -874,14 +873,12 @@ bool Compiler::fgExpandHelperForBlock(BasicBlock** pBlock, bool handleIntrinsics
 
         for (GenTree* const tree : stmt->TreeList())
         {
-            if (handleIntrinsics)
+            if (!tree->IsCall())
             {
-                if (!tree->IsCall() || ((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
-                {
-                    continue;
-                }
+                continue;
             }
-            else if (!tree->IsHelperCall())
+
+            if (!tree->IsHelperCall() && ((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
             {
                 continue;
             }
@@ -949,7 +946,10 @@ PhaseStatus Compiler::fgExpandStaticInit()
 bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
-    assert(call->IsHelperCall());
+    if (!call->IsHelperCall())
+    {
+        return false;
+    }
 
     bool                    isGc       = false;
     StaticHelperReturnValue retValKind = {};
@@ -1208,7 +1208,7 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
         JITDUMP("Optimized for size - bail out.\n")
         return result;
     }
-    return fgExpandHelper<&Compiler::fgVNBasedIntrinsicExpansionForCall>(true, true);
+    return fgExpandHelper<&Compiler::fgVNBasedIntrinsicExpansionForCall>(true);
 }
 
 //------------------------------------------------------------------------------
@@ -1224,7 +1224,11 @@ PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
 //
 bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
-    assert((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0);
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    {
+        return false;
+    }
+
     NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
     if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
     {
@@ -1309,14 +1313,15 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
 
     // Read the string literal (UTF16) into a local buffer (UTF8)
     assert(strObj != nullptr);
-    BYTE buffer[MaxPossibleUnrollThreshold * 2];
+    uint16_t bufferU16[MaxPossibleUnrollThreshold];
+    uint8_t  bufferU8[MaxPossibleUnrollThreshold]; // twice smaller because of narrowing
 
     // Both must be within [0..INT_MAX] range as we're going to cast them to int
     assert((unsigned)srcLenCns <= INT_MAX);
     assert((unsigned)strObjOffset <= INT_MAX);
 
     // getObjectContent is expected to validate the offset and length
-    if (!info.compCompHnd->getObjectContent(strObj, buffer, (int)srcLenCns * 2, (int)strObjOffset))
+    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)srcLenCns * 2, (int)strObjOffset))
     {
         JITDUMP("ReadUtf8: getObjectContent returned false.\n")
         return false;
@@ -1325,7 +1330,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
     for (unsigned charIndex = 0; charIndex < srcLenCns; charIndex++)
     {
         // Buffer keeps the original utf16 chars
-        uint16_t ch = ((uint16_t*)buffer)[charIndex];
+        uint16_t ch = bufferU16[charIndex];
         if (ch > 127)
         {
             // Only ASCII is supported.
@@ -1334,7 +1339,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         }
 
         // Narrow U16 to U8 in the same buffer
-        buffer[charIndex] = (BYTE)ch;
+        bufferU8[charIndex] = (uint8_t)ch;
     }
 
     DebugInfo debugInfo = stmt->GetDebugInfo();
@@ -1456,7 +1461,7 @@ bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, 
         fgValueNumberTreeConst(offsetNode);
 
         // Grab a chunk from srcUtf8cnsData for the given offset and width
-        GenTree* utf8cnsChunkNode = gtNewGenericCon(maxLoadType, buffer + offset);
+        GenTree* utf8cnsChunkNode = gtNewGenericCon(maxLoadType, bufferU8 + offset);
         fgValueNumberTreeConst(utf8cnsChunkNode);
 
         GenTree*   dstAddOffsetNode = gtNewOperNode(GT_ADD, dstPtr->TypeGet(), gtCloneExpr(dstPtr), offsetNode);
