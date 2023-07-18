@@ -73,7 +73,14 @@ namespace System.Reflection
                 }
                 else if (parameterType.IsValueType)
                 {
-                    il.Emit(OpCodes.Unbox_Any, parameterType);
+                    if (parameterType.IsNullableOfT)
+                    {
+                        EmitTrueNullableUnbox(il, parameterType);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Unbox_Any, parameterType);
+                    }
                 }
             }
 
@@ -130,7 +137,14 @@ namespace System.Reflection
                 }
                 else if (parameterType.IsValueType)
                 {
-                    il.Emit(OpCodes.Unbox_Any, parameterType);
+                    if (parameterType.IsNullableOfT)
+                    {
+                        EmitTrueNullableUnbox(il, parameterType);
+                    }
+                    else
+                    {
+                        il.Emit(OpCodes.Unbox_Any, parameterType);
+                    }
                 }
             }
 
@@ -194,6 +208,14 @@ namespace System.Reflection
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
+        }
+
+        private static void EmitTrueNullableUnbox(ILGenerator il, Type parameterType)
+        {
+            // Unbox the true Nullable<T> created by reflection to a Nullable<T> without using
+            // OpCodes.Unbox since unboxing that is not necessarily a valid CLI operation.
+            il.Emit(OpCodes.Call, Methods.Object_GetRawData());
+            il.Emit(OpCodes.Ldobj, parameterType);
         }
 
         private static void EmitCallAndReturnHandling(ILGenerator il, MethodBase method, bool emitNew, bool backwardsCompat)
@@ -315,6 +337,10 @@ namespace System.Reflection
             private static MethodInfo? s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned;
             public static MethodInfo ThrowHelper_Throw_NullReference_InvokeNullRefReturned() =>
                 s_ThrowHelper_Throw_NullReference_InvokeNullRefReturned ??= typeof(ThrowHelper).GetMethod(nameof(ThrowHelper.Throw_NullReference_InvokeNullRefReturned))!;
+
+            private static MethodInfo? s_Object_GetRawData;
+            public static MethodInfo Object_GetRawData() =>
+                s_Object_GetRawData ??= typeof(RuntimeHelpers).GetMethod(nameof(RuntimeHelpers.GetRawData), BindingFlags.NonPublic | BindingFlags.Static)!;
 
             private static MethodInfo? s_Pointer_Box;
             public static MethodInfo Pointer_Box() =>
