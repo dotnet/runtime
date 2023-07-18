@@ -878,11 +878,6 @@ bool Compiler::fgExpandHelperForBlock(BasicBlock** pBlock)
                 continue;
             }
 
-            if (!tree->IsHelperCall() && ((tree->AsCall()->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
-            {
-                continue;
-            }
-
             if ((this->*ExpansionFunction)(pBlock, stmt, tree->AsCall()))
             {
                 return true;
