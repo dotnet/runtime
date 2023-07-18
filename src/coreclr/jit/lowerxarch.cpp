@@ -5305,10 +5305,10 @@ GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
             {
                 if (!maskOp2->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) ||
                     (genTypeSize(maskOp2->AsHWIntrinsic()->GetSimdBaseType()) != genTypeSize(simdBaseType)))
-                    {
-                        // We don't want to handle this case, so return
-                        return nullptr;
-                    }
+                {
+                    // We don't want to handle this case, so return
+                    return nullptr;
+                }
 
                 GenTreeHWIntrinsic* maskToVector2 = maskOp2->AsHWIntrinsic();
                 *maskOperand2                     = maskToVector2->Op(1);
