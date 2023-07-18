@@ -834,7 +834,7 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			MonoType *type;
 
-			/* metadadta-update: added fields aren't stored in the object, don't
+			/* metadata-update: added fields aren't stored in the object, don't
 			 * contribute to the GC descriptor. */
 			if (m_field_is_from_update (field))
 				continue;
