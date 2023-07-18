@@ -2066,6 +2066,11 @@ private:
     //
     static regMaskTP calleeSaveRegs(RegisterType rt)
     {
+        // These should potentially use varTypeUses*Reg instead
+        //
+        // However, currently TYP_STRUCT hits the float path and
+        // this may have unexpected consequences if we change it
+
         if (varTypeIsIntegralOrI(rt))
         {
             return RBM_INT_CALLEE_SAVED;
@@ -2078,7 +2083,7 @@ private:
 #endif // TARGET_XARCH && FEATURE_SIMD
         else
         {
-            assert(varTypeIsFloating(rt) || varTypeIsSIMD(rt));
+            assert(varTypeIsFloating(rt) || varTypeIsSIMD(rt) || varTypeIsStruct(rt));
             return RBM_FLT_CALLEE_SAVED;
         }
     }
@@ -2088,6 +2093,11 @@ private:
     //
     regMaskTP callerSaveRegs(RegisterType rt) const
     {
+        // These should potentially use varTypeUses*Reg instead
+        //
+        // However, currently TYP_STRUCT hits the float path and
+        // this may have unexpected consequences if we change it
+
         if (varTypeIsIntegralOrI(rt))
         {
             return RBM_INT_CALLEE_TRASH;
@@ -2100,7 +2110,7 @@ private:
 #endif // TARGET_XARCH && FEATURE_SIMD
         else
         {
-            assert(varTypeIsFloating(rt) || varTypeIsSIMD(rt));
+            assert(varTypeIsFloating(rt) || varTypeIsSIMD(rt) || varTypeIsStruct(rt));
             return RBM_FLT_CALLEE_TRASH;
         }
     }
