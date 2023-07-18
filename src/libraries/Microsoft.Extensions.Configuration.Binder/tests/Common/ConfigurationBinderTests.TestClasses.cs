@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
@@ -665,60 +663,6 @@ namespace Microsoft.Extensions
             public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
 
             public int MyInt { get; }
-        }
-
-        [TypeConverter(typeof(GeolocationTypeConverter))]
-        public struct Geolocation : IEquatable<Geolocation>, IParsable<Geolocation>
-        {
-            public static readonly Geolocation Zero = new(0, 0);
-
-            public Geolocation(double latitude, double longitude)
-            {
-                Latitude = latitude;
-                Longitude = longitude;
-            }
-
-            public double Latitude { get; set; }
-
-            public double Longitude { get; set; }
-
-            private sealed class GeolocationTypeConverter : TypeConverter
-            {
-                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType)
-                {
-                    if (sourceType == typeof(string) || sourceType == typeof(Geolocation))
-                    {
-                        return true;
-                    }
-
-                    return base.CanConvertFrom(context, sourceType);
-                }
-
-                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value)
-                {
-                    if (value is string s)
-                    {
-                        return Parse(s, culture);
-                    }
-                    else if (value is Geolocation geolocation)
-                    {
-                        return geolocation;
-                    }
-
-                    return base.ConvertFrom(context, culture, value);
-                }
-            }
-
-            public bool Equals(Geolocation other) => Latitude == other.Latitude && Longitude == other.Longitude;
-
-            public static Geolocation Parse(string s, IFormatProvider? provider) => throw new NotImplementedException();
-
-            public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [MaybeNullWhen(false)] out Geolocation result) => throw new NotImplementedException();
-        }
-
-        public class GeolocationWrapper
-        {
-            public Geolocation Location { get; set; }
         }
     }
 }
