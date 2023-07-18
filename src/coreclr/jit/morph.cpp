@@ -3955,6 +3955,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
     GenTree* argx = arg->GetEarlyNode();
     noway_assert(!argx->OperIs(GT_MKREFANY));
 
+#if FEATURE_IMPLICIT_BYREFS
     // If we're optimizing, see if we can avoid making a copy.
     //
     // We don't need a copy if this is the last use of the local.
@@ -3992,13 +3993,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
 
             if (!omitCopy && fgGlobalMorph)
             {
-                // Note that candidates were address exposed ahead of time by
-                // fgMarkImplicitByrefCopyOmissionExposeCandidates.
-                // This is necessary for GTF_GLOB_REFs to be propagated
-                // properly (as part of morph).
-                omitCopy =
-                    (varDsc->IsAddressExposed() || (implicitByRefLcl != nullptr)) &&
-                    !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
+                omitCopy = (varDsc->lvLastUseCopyOmissionCandidate || (implicitByRefLcl != nullptr)) && !varDsc->lvPromoted && !varDsc->lvIsStructField && ((lcl->gtFlags & GTF_VAR_DEATH) != 0);
             }
 
             if (omitCopy)
@@ -4013,6 +4008,11 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                     lcl->ChangeOper(GT_LCL_ADDR);
                     lcl->AsLclFld()->SetLclOffs(offs);
                     lcl->gtType = TYP_I_IMPL;
+                    lcl->gtFlags &= ~GTF_ALL_EFFECT;
+                    lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+
+                    // Copy prop could allow creating another later use of lcl if there are live assertions about it.
+                    fgKillDependentAssertions(varNum DEBUGARG(lcl));
                 }
 
                 JITDUMP("did not need to make outgoing copy for last use of V%02d\n", varNum);
@@ -4020,6 +4020,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
             }
         }
     }
+#endif
 
     JITDUMP("making an outgoing copy for struct arg\n");
 
@@ -4633,7 +4634,17 @@ GenTree* Compiler::fgMorphLeafLocal(GenTreeLclVarCommon* lclNode)
     }
 
     LclVarDsc* varDsc = lvaGetDesc(lclNode);
-    if (varDsc->IsAddressExposed())
+    // For last-use copy omission candidates we will address expose them when
+    // we get to the call that passes their address, but they are not actually
+    // address exposed in the full sense, so we allow standard assertion prop
+    // on them until that point. However, we must still mark them with
+    // GTF_GLOB_REF to avoid illegal reordering with the call passing their
+    // address.
+    if (varDsc->IsAddressExposed()
+#if FEATURE_IMPLICIT_BYREFS
+        || varDsc->lvLastUseCopyOmissionCandidate
+#endif
+        )
     {
         lclNode->gtFlags |= GTF_GLOB_REF;
     }
@@ -14713,7 +14724,6 @@ PhaseStatus Compiler::fgPromoteStructs()
 PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
 {
 #if FEATURE_IMPLICIT_BYREFS
-
     if (!fgDidEarlyLiveness)
     {
         return PhaseStatus::MODIFIED_NOTHING;
@@ -14754,7 +14764,7 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                 }
 
                 GenTree* argNode = arg.GetNode()->gtEffectiveVal();
-                if (!argNode->OperIsLocal())
+                if (!argNode->OperIsLocalRead())
                 {
                     continue;
                 }
@@ -14762,8 +14772,26 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                 unsigned lclNum = argNode->AsLclVarCommon()->GetLclNum();
                 LclVarDsc* varDsc = m_compiler->lvaGetDesc(lclNum);
 
+                if (varDsc->lvLastUseCopyOmissionCandidate)
+                {
+                    // Already a candidate.
+                    continue;
+                }
+
+                if (varDsc->lvIsImplicitByRef)
+                {
+                    // While implicit byrefs are candidates, they are handled
+                    // specially and do not need GTF_GLOB_REF (the indirections
+                    // added on top already always get them). If we marked them
+                    // as a candidate fgMorphLeafLocal would add GTF_GLOB_REF
+                    // to the local containing the address, which is
+                    // conservative.
+                    continue;
+                }
+
                 if (varDsc->lvPromoted || varDsc->lvIsStructField || ((argNode->gtFlags & GTF_VAR_DEATH) == 0))
                 {
+                    // Not a candidate.
                     continue;
                 }
 
@@ -14777,8 +14805,8 @@ PhaseStatus Compiler::fgMarkImplicitByRefCopyOmissionCandidates()
                     continue;
                 }
 
-                JITDUMP("Address exposing V%02u for last-use copy elision of node [%06u]\n", lclNum, dspTreeID(argNode));
-                m_compiler->lvaSetVarAddrExposed(lclNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
+                JITDUMP("Marking V%02u as a candidate for last-use copy omission [%06u]\n", lclNum, dspTreeID(argNode));
+                varDsc->lvLastUseCopyOmissionCandidate = 1;
             }
 
             return WALK_CONTINUE;

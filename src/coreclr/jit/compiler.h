@@ -541,6 +541,7 @@ public:
 
 #if FEATURE_IMPLICIT_BYREFS
     unsigned char lvIsImplicitByRef : 1; // Set if the argument is an implicit byref.
+    unsigned char lvLastUseCopyOmissionCandidate : 1; // Set if the local appears as a last use that will be passed as an implicit byref.
 #endif                                   // FEATURE_IMPLICIT_BYREFS
 
 #if defined(TARGET_LOONGARCH64)
