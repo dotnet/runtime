@@ -57,7 +57,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
     {
-        string runArgs = $"{s_xharnessRunnerCommand} wasm webserver --app=. --web-server-use-default-files";
+        string runArgs = $"run";
         string workingDirectory = Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(options.Configuration, forPublish: options.ForPublish), ".."));
 
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
