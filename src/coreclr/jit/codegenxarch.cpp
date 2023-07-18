@@ -4164,7 +4164,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
     else
     {
-        ClassLayout* layout     = cpObjNode->GetLayout();
+        ClassLayout* layout = cpObjNode->GetLayout();
 
         unsigned i = 0;
         while (i < slots)
