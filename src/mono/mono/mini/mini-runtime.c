@@ -5114,7 +5114,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_monitor_enter_fast, mono_icall_sig_int_obj);
 	register_icall_no_wrapper (mono_monitor_enter_v4_fast, mono_icall_sig_int_obj_ptr);
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	register_icall (pthread_getspecific, mono_icall_sig_ptr_ptr, TRUE);
 #endif
 	/* Register tls icalls */
