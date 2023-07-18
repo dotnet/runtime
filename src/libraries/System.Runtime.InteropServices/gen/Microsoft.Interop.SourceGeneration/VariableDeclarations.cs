@@ -99,7 +99,7 @@ namespace Microsoft.Interop
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
-                        if (MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                        if (MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
@@ -121,7 +121,7 @@ namespace Microsoft.Interop
                         && boundaryBehavior is not
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
-                        if (MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                        if (MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
@@ -178,7 +178,7 @@ namespace Microsoft.Interop
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
                         TypeSyntax localType = marshaller.Generator.AsNativeType(marshaller.TypeInfo).Syntax;
-                        if (MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                        if (MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             // <nativeType> __param_native_out;

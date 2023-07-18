@@ -73,7 +73,7 @@ namespace Microsoft.Interop
             {
                 var localContext = context;
                 if (context.CurrentStage is StubCodeContext.Stage.Marshal
-                    && MarshallerHelpers.IsMidlOutBehavior(marshaller.TypeInfo, context))
+                    && MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                 {
                     localContext = new MarshalToLocalContext(context);
                 }

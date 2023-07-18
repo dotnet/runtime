@@ -396,9 +396,11 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Returns whether a parameter has MIDL '[out]' behavior should be unmarshalled into a local variable and only assigned to the parameter at the end of the function call.
+        /// Returns whether the parameter should be marshalled into a local variable.
+        /// This is necessary for scenarios with unmanaged callers where the parameter is expected to be modified If and Only If the method returns successfully.
         /// </summary>
-        public static bool IsMidlOutBehavior(TypePositionInfo info, StubCodeContext context)
+        public static bool MarshalsOutToLocal(TypePositionInfo info, StubCodeContext context)
+            // Managed callers will throw if the return is a failure, and so it is less important that the parameters aren't modified before returning a failure.
             => context.Direction is MarshalDirection.UnmanagedToManaged
                 && (info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref
                     || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
