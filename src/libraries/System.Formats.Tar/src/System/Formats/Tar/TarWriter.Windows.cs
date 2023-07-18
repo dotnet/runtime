@@ -21,12 +21,26 @@ namespace System.Formats.Tar
 
             FileAttributes attributes = File.GetAttributes(fullPath);
 
+            bool isDirectory = (attributes & FileAttributes.Directory) != 0;
+
+            Interop.Kernel32.WIN32_FIND_DATA data = default;
+            Interop.Kernel32.GetFindData(fullPath, isDirectory, ignoreAccessDenied: false, ref data);
+
             TarEntryType entryType;
             if ((attributes & FileAttributes.ReparsePoint) != 0)
             {
-                entryType = TarEntryType.SymbolicLink;
+                if (data.dwReserved0 is Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_SYMLINK or
+                                        Interop.Kernel32.IOReparseOptions.IO_REPARSE_TAG_MOUNT_POINT)
+                {
+                    entryType = TarEntryType.SymbolicLink;
+                }
+                else
+                {
+                    // Treat any other reparse point as regular file
+                    entryType = TarHelpers.GetRegularFileEntryTypeForFormat(Format);
+                }
             }
-            else if ((attributes & FileAttributes.Directory) != 0)
+            else if (isDirectory)
             {
                 entryType = TarEntryType.Directory;
             }
