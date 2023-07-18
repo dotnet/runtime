@@ -9,14 +9,7 @@ namespace System.Numerics
 {
     internal static partial class BigIntegerCalculator
     {
-
-#if DEBUG
-        // Mutable for unit testing.
-        private static
-#else
-        private const
-#endif
-        int CopyToThreshold = 8;
+        private const int CopyToThreshold = 8;
 
         private static void CopyTail(ReadOnlySpan<uint> source, Span<uint> dest, int start)
         {
@@ -38,7 +31,7 @@ namespace System.Numerics
             Debug.Assert(bits.Length == left.Length + 1);
 
             // Switching to managed references helps eliminating
-            // index bounds check...
+            // index bounds check for all buffers.
             ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
             ref uint rightPtr = ref MemoryMarshal.GetReference(right);
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
@@ -111,7 +104,7 @@ namespace System.Numerics
             Debug.Assert(bits.Length == left.Length);
 
             // Switching to managed references helps eliminating
-            // index bounds check...
+            // index bounds check for all buffers.
             ref uint resultPtr = ref MemoryMarshal.GetReference(bits);
             ref uint rightPtr = ref MemoryMarshal.GetReference(right);
             ref uint leftPtr = ref MemoryMarshal.GetReference(left);
@@ -197,7 +190,13 @@ namespace System.Numerics
                     Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                     i++;
                     carry >>= 32;
-                    if (carry == 0) break;
+
+                    // Once carry is set to 0 it can not be 1 anymore.
+                    // So the tail of the loop is just the movement of argument values to result span.
+                    if (carry == 0)
+                    {
+                        break;
+                    }
                 }
 
                 Unsafe.Add(ref resultPtr, left.Length) = unchecked((uint)carry);
@@ -236,7 +235,13 @@ namespace System.Numerics
                     Unsafe.Add(ref resultPtr, i) = unchecked((uint)carry);
                     i++;
                     carry >>= 32;
-                    if (carry == 0) break;
+
+                    // Once carry is set to 0 it can not be 1 anymore.
+                    // So the tail of the loop is just the movement of argument values to result span.
+                    if (carry == 0)
+                    {
+                        break;
+                    }
                 }
 
                 if (i < left.Length)
