@@ -3,6 +3,8 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkMinimum)</TargetFrameworks>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
+    <!-- Source gen tests target AOT so we disable reflection everywhere for consistency. -->
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <!-- SYSLIB0049: JsonSerializerOptions.AddContext is obsolete -->
     <!-- SYSLIB1034: Suppress JsonStringEnumConverter use warnings -->
