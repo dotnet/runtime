@@ -841,6 +841,7 @@ exit:
 void
 mono_arch_cpu_init (void)
 {
+#if !defined(MONO_CROSS_COMPILE)
 	/* spec compliance requires running with double precision */
 #ifndef _MSC_VER
 	guint16 fpcw;
@@ -852,6 +853,7 @@ mono_arch_cpu_init (void)
 	__asm__  __volatile__ ("fnstcw %0\n": "=m" (fpcw));
 #else
 	_control87 (_PC_53, MCW_PC);
+#endif
 #endif
 }
 

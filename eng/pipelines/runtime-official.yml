@@ -224,6 +224,8 @@ extends:
           platforms:
           - linux_x64
           - linux_musl_x64
+          - linux_arm64
+          - linux_musl_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
@@ -234,28 +236,6 @@ extends:
             - mono_browser_offsets
             monoCrossAOTTargetOS:
             - android
-            - browser
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            extraStepsParameters:
-              name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - linux_arm64
-          - linux_musl_arm64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                       /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            dependsOn:
-            - mono_browser_offsets
-            monoCrossAOTTargetOS:
             - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
@@ -292,6 +272,7 @@ extends:
           buildConfig: release
           platforms:
           - osx_x64
+          - osx_arm64
           jobParameters:
             buildArgs: -s mono+packs -c $(_BuildConfig)
                       /p:MonoCrossAOTTargetOS=android+browser+tvos+ios+maccatalyst /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
@@ -309,27 +290,6 @@ extends:
             - tvos
             - ios
             - maccatalyst
-            isOfficialBuild: ${{ variables.isOfficialBuild }}
-            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
-            extraStepsParameters:
-              name: MonoRuntimePacks
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/common/global-build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - osx_arm64
-          jobParameters:
-            buildArgs: -s mono+packs -c $(_BuildConfig)
-                       /p:MonoCrossAOTTargetOS=browser /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
-            nameSuffix: CrossAOT_Mono
-            runtimeVariant: crossaot
-            dependsOn:
-            - mono_browser_offsets
-            monoCrossAOTTargetOS:
-            - browser
             isOfficialBuild: ${{ variables.isOfficialBuild }}
             extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
             extraStepsParameters:
