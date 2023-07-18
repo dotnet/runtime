@@ -104,8 +104,8 @@ namespace System.Text
                 num |= num << 8;
                 return num & 0x00FF00FF_00FF00FFuL;
 #else
-                return ReadUInt32WideningLower(ref Unsafe.As<uint, byte>(ref num))
-                    | ((ulong)ReadUInt32WideningUpper(ref Unsafe.As<uint, byte>(ref num)) << 32);
+                return ReadUInt32WideningLower(ref Unsafe.As<uint, byte>(ref source))
+                    | ((ulong)ReadUInt32WideningUpper(ref Unsafe.As<uint, byte>(ref source)) << 32);
 #endif
             }
         }
