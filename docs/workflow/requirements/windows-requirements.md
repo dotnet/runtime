@@ -51,7 +51,9 @@ These steps are required only in case the tools have not been installed as Visua
 * Install [CMake](https://cmake.org/download) for Windows.
 * Add its location (e.g. C:\Program Files (x86)\CMake\bin) to the PATH environment variable. The installation script has a check box to do this, but you can do it yourself after the fact following the instructions at [Adding to the Default PATH variable](#adding-to-the-default-path-variable).
 
-The _dotnet/runtime_ repository recommends using CMake 3.16.4 or newer, but it may work with CMake 3.15.5.
+The _dotnet/runtime_ repository requires using CMake 3.20 or newer.
+
+**NOTE**: If you plan on using the `-msbuild` flag for building the repo, you will need version 3.21 at least. This is because the VS2022 generator doesn't exist in CMake until said version.
 
 #### Ninja
 

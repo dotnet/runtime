@@ -48,7 +48,6 @@ namespace System.Net.Http
         private bool _receivedSettingsAck;
         private int _initialServerStreamWindowSize;
         private int _pendingWindowUpdate;
-        private long _idleSinceTickCount;
 
         private uint _maxConcurrentStreams;
         private uint _streamsInUse;
@@ -76,10 +75,6 @@ namespace System.Net.Http
         // Requests currently in flight will continue to be processed.
         // When all requests have completed, the connection will be torn down.
         private bool _disposed;
-
-        private const int TelemetryStatus_Opened = 1;
-        private const int TelemetryStatus_Closed = 2;
-        private int _markedByTelemetryStatus;
 
         private const int MaxStreamId = int.MaxValue;
 
@@ -138,6 +133,7 @@ namespace System.Net.Http
         private volatile KeepAliveState _keepAliveState;
 
         public Http2Connection(HttpConnectionPool pool, Stream stream)
+            : base(pool)
         {
             _pool = pool;
             _stream = stream;
@@ -162,7 +158,6 @@ namespace System.Net.Http
             _streamsInUse = 0;
 
             _pendingWindowUpdate = 0;
-            _idleSinceTickCount = Environment.TickCount64;
 
             _keepAlivePingDelay = TimeSpanToMs(_pool.Settings._keepAlivePingDelay);
             _keepAlivePingTimeout = TimeSpanToMs(_pool.Settings._keepAlivePingTimeout);
@@ -175,12 +170,6 @@ namespace System.Net.Http
                 // Previous connections to the same host advertised a limit.
                 // Use this as an initial value before we receive the SETTINGS frame.
                 _maxHeaderListSize = maxHeaderListSize;
-            }
-
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                HttpTelemetry.Log.Http20ConnectionEstablished();
-                _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
@@ -327,6 +316,11 @@ namespace System.Net.Http
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
+                    if (_streamsInUse == 0)
+                    {
+                        MarkConnectionAsNotIdle();
+                    }
+
                     _streamsInUse++;
                     return true;
                 }
@@ -356,7 +350,7 @@ namespace System.Net.Http
 
                 if (_streamsInUse == 0)
                 {
-                    _idleSinceTickCount = Environment.TickCount64;
+                    MarkConnectionAsIdle();
 
                     if (_disposed)
                     {
@@ -368,7 +362,7 @@ namespace System.Net.Http
 
         // Returns true to indicate at least one stream is available
         // Returns false to indicate that the connection is shutting down and cannot be used anymore
-        public ValueTask<bool> WaitForAvailableStreamsAsync()
+        public Task<bool> WaitForAvailableStreamsAsync()
         {
             lock (SyncObject)
             {
@@ -379,17 +373,17 @@ namespace System.Net.Http
 
                 if (_shutdown)
                 {
-                    return ValueTask.FromResult(false);
+                    return Task.FromResult(false);
                 }
 
                 if (_streamsInUse < _maxConcurrentStreams)
                 {
-                    return ValueTask.FromResult(true);
+                    return Task.FromResult(true);
                 }
 
                 // Need to wait for streams to become available.
                 _availableStreamsWaiter = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                return new ValueTask<bool>(_availableStreamsWaiter.Task);
+                return _availableStreamsWaiter.Task;
             }
         }
 
@@ -1836,7 +1830,7 @@ namespace System.Net.Http
         {
             lock (SyncObject)
             {
-                return _streamsInUse == 0 ? nowTicks - _idleSinceTickCount : 0;
+                return _streamsInUse == 0 ? base.GetIdleTicks(nowTicks) : 0;
             }
         }
 
@@ -1894,13 +1888,7 @@ namespace System.Net.Http
             // ProcessIncomingFramesAsync and ProcessOutgoingFramesAsync respectively, and those methods are
             // responsible for returning the buffers.
 
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
-                {
-                    HttpTelemetry.Log.Http20ConnectionClosed();
-                }
-            }
+            MarkConnectionAsClosed();
         }
 
         public override void Dispose()

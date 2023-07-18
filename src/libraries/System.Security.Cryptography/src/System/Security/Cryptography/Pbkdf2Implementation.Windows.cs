@@ -97,6 +97,15 @@ namespace System.Security.Cryptography
                     case HashAlgorithmNames.SHA512:
                         hashBufferSize = SHA512.HashData(password, hashBuffer);
                         break;
+                    case HashAlgorithmNames.SHA3_256:
+                        hashBufferSize = SHA3_256.HashData(password, hashBuffer);
+                        break;
+                    case HashAlgorithmNames.SHA3_384:
+                        hashBufferSize = SHA3_384.HashData(password, hashBuffer);
+                        break;
+                    case HashAlgorithmNames.SHA3_512:
+                        hashBufferSize = SHA3_512.HashData(password, hashBuffer);
+                        break;
                     default:
                         Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");
                         throw new CryptographicException();
@@ -259,7 +268,7 @@ namespace System.Security.Cryptography
 
         private static int GetHashBlockSize(string hashAlgorithmName)
         {
-            // Block sizes per NIST FIPS pub 180-4.
+            // Block sizes per NIST FIPS pub 180-4 and FIPS 202.
             switch (hashAlgorithmName)
             {
                 case HashAlgorithmNames.SHA1:
@@ -268,6 +277,12 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA384:
                 case HashAlgorithmNames.SHA512:
                     return 1024 / 8;
+                case HashAlgorithmNames.SHA3_256:
+                    return HMACSHA3_256.BlockSize;
+                case HashAlgorithmNames.SHA3_384:
+                    return HMACSHA3_384.BlockSize;
+                case HashAlgorithmNames.SHA3_512:
+                    return HMACSHA3_512.BlockSize;
                 default:
                     Debug.Fail($"Unexpected hash algorithm '{hashAlgorithmName}'");
                     throw new CryptographicException();

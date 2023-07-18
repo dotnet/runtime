@@ -1,10 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -428,104 +428,93 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Theory]
-        [InlineData(typeof(Dictionary<string, object>), typeof(DictionaryOverflowConverter))]
-        [InlineData(typeof(Dictionary<string, JsonElement>), typeof(JsonElementOverflowConverter))]
-        [InlineData(typeof(CustomOverflowDictionary<object>), typeof(CustomObjectDictionaryOverflowConverter))]
-        [InlineData(typeof(CustomOverflowDictionary<JsonElement>), typeof(CustomJsonElementDictionaryOverflowConverter))]
-        public void ExtensionProperty_SupportsWritingToCustomSerializerWithOptions(Type overflowType, Type converterType)
-        {
-            typeof(ExtensionDataTests)
-                .GetMethod(nameof(ExtensionProperty_SupportsWritingToCustomSerializerWithOptionsInternal), BindingFlags.Static | BindingFlags.NonPublic)
-                .MakeGenericMethod(overflowType, converterType)
-                .Invoke(null, null);
-        }
-
-        private static void ExtensionProperty_SupportsWritingToCustomSerializerWithOptionsInternal<TDictionary, TConverter>()
-            where TDictionary : new()
-            where TConverter : JsonConverter, new()
+        [MemberData(nameof(GetCustomOverflowConverters))]
+        public async Task ExtensionProperty_SupportsWritingToCustomSerializerWithOptions<TDictionary>(JsonConverter<TDictionary> dictionaryConverter)
+            where TDictionary : IDictionary, new()
         {
             var root = new ClassWithExtensionData<TDictionary>()
             {
                 Overflow = new TDictionary()
             };
 
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new TConverter());
+            var options = Serializer.CreateOptions(makeReadOnly: false);
+            options.Converters.Add(dictionaryConverter);
 
-            string json = JsonSerializer.Serialize(root, options);
+            string json = await Serializer.SerializeWrapper(root, options);
             Assert.Equal(@"{""MyCustomOverflowWrite"":""OverflowValueWrite""}", json);
         }
 
-        private interface IClassWithOverflow<T>
+        public interface IClassWithOverflow
         {
-            public T Overflow { get; set; }
+            public IDictionary GetOverflow();
         }
 
-        public class ClassWithExtensionDataWithAttributedConverter : IClassWithOverflow<Dictionary<string, object>>
+        public class ClassWithExtensionDataWithAttributedConverter : IClassWithOverflow
         {
             [JsonExtensionData]
             [JsonConverter(typeof(DictionaryOverflowConverter))]
             public Dictionary<string, object> Overflow { get; set; }
+
+            public IDictionary GetOverflow() => Overflow;
         }
 
-        public class ClassWithJsonElementExtensionDataWithAttributedConverter : IClassWithOverflow<Dictionary<string, JsonElement>>
+        public class ClassWithJsonElementExtensionDataWithAttributedConverter : IClassWithOverflow
         {
             [JsonExtensionData]
             [JsonConverter(typeof(JsonElementOverflowConverter))]
             public Dictionary<string, JsonElement> Overflow { get; set; }
+
+            public IDictionary GetOverflow() => Overflow;
         }
 
-        public class ClassWithCustomElementExtensionDataWithAttributedConverter : IClassWithOverflow<CustomOverflowDictionary<object>>
+        public class ClassWithCustomElementExtensionDataWithAttributedConverter : IClassWithOverflow
         {
             [JsonExtensionData]
             [JsonConverter(typeof(CustomObjectDictionaryOverflowConverter))]
             public CustomOverflowDictionary<object> Overflow { get; set; }
+
+            public IDictionary GetOverflow() => Overflow;
         }
 
-        public class ClassWithCustomJsonElementExtensionDataWithAttributedConverter : IClassWithOverflow<CustomOverflowDictionary<JsonElement>>
+        public class ClassWithCustomJsonElementExtensionDataWithAttributedConverter : IClassWithOverflow
         {
             [JsonExtensionData]
             [JsonConverter(typeof(CustomJsonElementDictionaryOverflowConverter))]
             public CustomOverflowDictionary<JsonElement> Overflow { get; set; }
+
+            public IDictionary GetOverflow() => Overflow;
         }
 
         [Theory]
-        [InlineData(typeof(ClassWithExtensionDataWithAttributedConverter), typeof(Dictionary<string, object>))]
-        [InlineData(typeof(ClassWithJsonElementExtensionDataWithAttributedConverter), typeof(Dictionary<string, JsonElement>))]
-        [InlineData(typeof(ClassWithCustomElementExtensionDataWithAttributedConverter), typeof(CustomOverflowDictionary<object>))]
-        [InlineData(typeof(ClassWithCustomJsonElementExtensionDataWithAttributedConverter), typeof(CustomOverflowDictionary<JsonElement>))]
-        public void ExtensionProperty_SupportsWritingToCustomSerializerWithExplicitConverter(Type attributedType, Type dictionaryType)
+        [MemberData(nameof(GetClassesWithCustomExtensionDataOverflowConverter))]
+        public async Task ExtensionProperty_SupportsWritingToCustomSerializerWithExplicitConverter<ClassWithOverflow>(ClassWithOverflow obj) where ClassWithOverflow : IClassWithOverflow
         {
-            typeof(ExtensionDataTests)
-                .GetMethod(nameof(ExtensionProperty_SupportsWritingToCustomSerializerWithExplicitConverterInternal), BindingFlags.Static | BindingFlags.NonPublic)
-                .MakeGenericMethod(attributedType, dictionaryType)
-                .Invoke(null, null);
-        }
-
-        private static void ExtensionProperty_SupportsWritingToCustomSerializerWithExplicitConverterInternal<TRoot, TDictionary>()
-            where TRoot : IClassWithOverflow<TDictionary>, new()
-            where TDictionary : new()
-        {
-            var root = new TRoot()
-            {
-                Overflow = new TDictionary()
-            };
-
-            string json = JsonSerializer.Serialize(root);
+            string json = await Serializer.SerializeWrapper(obj);
             Assert.Equal(@"{""MyCustomOverflowWrite"":""OverflowValueWrite""}", json);
         }
 
         [Theory]
-        [InlineData(typeof(Dictionary<string, object>), typeof(DictionaryOverflowConverter), typeof(object))]
-        [InlineData(typeof(Dictionary<string, JsonElement>), typeof(JsonElementOverflowConverter), typeof(JsonElement))]
-        [InlineData(typeof(CustomOverflowDictionary<object>), typeof(CustomObjectDictionaryOverflowConverter), typeof(object))]
-        [InlineData(typeof(CustomOverflowDictionary<JsonElement>), typeof(CustomJsonElementDictionaryOverflowConverter), typeof(JsonElement))]
-        public void ExtensionProperty_IgnoresCustomSerializerWithOptions(Type overflowType, Type converterType, Type elementType)
+#if BUILDING_SOURCE_GENERATOR_TESTS
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/87005")]
+#endif
+        [MemberData(nameof(GetCustomOverflowConverters))]
+        public async Task ExtensionProperty_IgnoresCustomSerializerWithOptions<TDictionary>(JsonConverter<TDictionary> dictionaryConverter) where TDictionary : IDictionary
         {
-            typeof(ExtensionDataTests)
-                .GetMethod(nameof(ExtensionProperty_IgnoresCustomSerializerWithOptionsInternal), BindingFlags.Static | BindingFlags.NonPublic)
-                .MakeGenericMethod(overflowType, elementType, converterType)
-                .Invoke(null, null);
+            var options = Serializer.CreateOptions(makeReadOnly: false);
+            options.Converters.Add(dictionaryConverter);
+
+            ClassWithExtensionData<TDictionary> obj = await Serializer.DeserializeWrapper<ClassWithExtensionData<TDictionary>>(@"{""TestKey"":""TestValue""}", options);
+            Assert.Equal("TestValue", ((JsonElement)obj.Overflow["TestKey"]).GetString());
+        }
+
+        public static IEnumerable<object[]> GetCustomOverflowConverters()
+        {
+            yield return WrapArgs(new DictionaryOverflowConverter());
+            yield return WrapArgs(new JsonElementOverflowConverter());
+            yield return WrapArgs(new CustomObjectDictionaryOverflowConverter());
+            yield return WrapArgs(new CustomJsonElementDictionaryOverflowConverter());
+
+            static object[] WrapArgs(JsonConverter converter) => new object[] { converter };
         }
 
         [Fact]
@@ -541,30 +530,22 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Contains("JsonObject", ex.ToString());
         }
 
-        private static void ExtensionProperty_IgnoresCustomSerializerWithOptionsInternal<TDictionary, TOverflowItem, TConverter>()
-            where TConverter : JsonConverter, new()
-            where TDictionary : IDictionary<string, TOverflowItem>
+        [Theory]
+        [MemberData(nameof(GetClassesWithCustomExtensionDataOverflowConverter))]
+        public async Task ExtensionProperty_IgnoresCustomSerializerWithExplicitConverter<ClassWithOverflow>(ClassWithOverflow obj)
+            where ClassWithOverflow : IClassWithOverflow
         {
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new TConverter());
-
-            ClassWithExtensionData<TDictionary> obj
-                = JsonSerializer.Deserialize<ClassWithExtensionData<TDictionary>>(@"{""TestKey"":""TestValue""}", options);
-
-            Assert.Equal("TestValue", ((JsonElement)(object)obj.Overflow["TestKey"]).GetString());
+            obj = await Serializer.DeserializeWrapper<ClassWithOverflow>(@"{""TestKey"":""TestValue""}");
+            Assert.Equal("TestValue", ((JsonElement)obj.GetOverflow()["TestKey"]).GetString());
         }
 
-        [Theory]
-        [InlineData(typeof(ClassWithExtensionDataWithAttributedConverter), typeof(Dictionary<string, object>), typeof(object))]
-        [InlineData(typeof(ClassWithJsonElementExtensionDataWithAttributedConverter), typeof(Dictionary<string, JsonElement>), typeof(JsonElement))]
-        [InlineData(typeof(ClassWithCustomElementExtensionDataWithAttributedConverter), typeof(CustomOverflowDictionary<object>), typeof(object))]
-        [InlineData(typeof(ClassWithCustomJsonElementExtensionDataWithAttributedConverter), typeof(CustomOverflowDictionary<JsonElement>), typeof(JsonElement))]
-        public void ExtensionProperty_IgnoresCustomSerializerWithExplicitConverter(Type attributedType, Type dictionaryType, Type elementType)
+        public static IEnumerable<object[]> GetClassesWithCustomExtensionDataOverflowConverter()
         {
-            typeof(ExtensionDataTests)
-                .GetMethod(nameof(ExtensionProperty_IgnoresCustomSerializerWithExplicitConverterInternal), BindingFlags.Static | BindingFlags.NonPublic)
-                .MakeGenericMethod(attributedType, dictionaryType, elementType)
-                .Invoke(null, null);
+            yield return WrapArgs(new ClassWithExtensionDataWithAttributedConverter { Overflow = new() });
+            yield return WrapArgs(new ClassWithJsonElementExtensionDataWithAttributedConverter { Overflow = new() });
+            yield return WrapArgs(new ClassWithCustomElementExtensionDataWithAttributedConverter { Overflow = new() });
+            yield return WrapArgs(new ClassWithCustomJsonElementExtensionDataWithAttributedConverter { Overflow = new() });
+            static object[] WrapArgs(IClassWithOverflow classWithOverflow) => new object[] { classWithOverflow };
         }
 
         [Fact]
@@ -574,16 +555,6 @@ namespace System.Text.Json.Serialization.Tests
                 = await Serializer.DeserializeWrapper<ClassWithExtensionData<JsonObject>>(@"{""TestKey"":""TestValue""}");
 
             Assert.Equal("TestValue", obj.Overflow["TestKey"].GetValue<string>());
-        }
-
-        private static void ExtensionProperty_IgnoresCustomSerializerWithExplicitConverterInternal<TRoot, TDictionary, TOverflowItem>()
-            where TRoot : IClassWithOverflow<TDictionary>, new()
-            where TDictionary : IDictionary<string, TOverflowItem>
-        {
-            ClassWithExtensionData<TDictionary> obj
-                = JsonSerializer.Deserialize<ClassWithExtensionData<TDictionary>>(@"{""TestKey"":""TestValue""}");
-
-            Assert.Equal("TestValue", ((JsonElement)(object)obj.Overflow["TestKey"]).GetString());
         }
 
         [Fact]

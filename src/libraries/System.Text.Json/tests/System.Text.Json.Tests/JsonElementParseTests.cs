@@ -30,9 +30,10 @@ namespace System.Text.Json.Tests
         {
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(json));
 
-            JsonElement? element = JsonElement.ParseValue(ref reader);
-            Assert.Equal(kind, element!.Value.ValueKind);
+            JsonElement element = JsonElement.ParseValue(ref reader);
+            Assert.Equal(kind, element.ValueKind);
             Assert.Equal(json.Length, reader.BytesConsumed);
+            Assert.False(element.SniffDocument().IsDisposable());
         }
 
         [Theory]
@@ -45,6 +46,7 @@ namespace System.Text.Json.Tests
             Assert.True(success);
             Assert.Equal(kind, element!.Value.ValueKind);
             Assert.Equal(json.Length, reader.BytesConsumed);
+            Assert.False(element!.Value.SniffDocument().IsDisposable());
         }
 
         public static IEnumerable<object[]> ElementParsePartialDataCases

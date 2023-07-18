@@ -21,7 +21,7 @@ namespace Microsoft.Interop
 
             var isModuleSkipLocalsInit = context.SyntaxProvider
                 .ForAttributeWithMetadataName(
-                    TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute,
+                    TypeNames.System_Runtime_CompilerServices_SkipLocalsInitAttribute_Metadata,
                     (node, ct) => node is ICompilationUnitSyntax,
                     // If SkipLocalsInit is applied at the top level, it is either applied to the module
                     // or is invalid syntax. As a result, we just need to know if there's any top-level
@@ -35,6 +35,14 @@ namespace Microsoft.Interop
                 .Combine(context.CompilationProvider)
                 .Select((data, ct) =>
                     new StubEnvironment(data.Right, data.Left.Left.TargetFramework, data.Left.Left.Version, data.Left.Right));
+        }
+
+        public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<DiagnosticInfo> diagnostics)
+        {
+            context.RegisterSourceOutput(diagnostics.Where(diag => diag is not null), (context, diagnostic) =>
+            {
+                context.ReportDiagnostic(diagnostic.ToDiagnostic());
+            });
         }
 
         public static void RegisterDiagnostics(this IncrementalGeneratorInitializationContext context, IncrementalValuesProvider<Diagnostic> diagnostics)

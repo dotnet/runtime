@@ -100,6 +100,7 @@ namespace System.Formats.Asn1
         public AsnReader(System.ReadOnlyMemory<byte> data, System.Formats.Asn1.AsnEncodingRules ruleSet, System.Formats.Asn1.AsnReaderOptions options = default(System.Formats.Asn1.AsnReaderOptions)) { }
         public bool HasData { get { throw null; } }
         public System.Formats.Asn1.AsnEncodingRules RuleSet { get { throw null; } }
+        public System.Formats.Asn1.AsnReader Clone() { throw null; }
         public System.ReadOnlyMemory<byte> PeekContentBytes() { throw null; }
         public System.ReadOnlyMemory<byte> PeekEncodedValue() { throw null; }
         public System.Formats.Asn1.Asn1Tag PeekTag() { throw null; }

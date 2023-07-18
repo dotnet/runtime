@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { BootJsonData } from "../../types/blazor";
+import { loaderHelpers } from "../globals";
 
 let testAnchor: HTMLAnchorElement;
 export function toAbsoluteUri(relativeUri: string): string {
@@ -12,30 +13,10 @@ export function toAbsoluteUri(relativeUri: string): string {
 
 export function hasDebuggingEnabled(bootConfig: BootJsonData): boolean {
     // Copied from blazor MonoDebugger.ts/attachDebuggerHotkey
+    if (!globalThis.navigator) {
+        return false;
+    }
 
     const hasReferencedPdbs = !!bootConfig.resources.pdb;
-    const debugBuild = bootConfig.debugBuild;
-
-    const navigatorUA = navigator as MonoNavigatorUserAgent;
-    const brands = navigatorUA.userAgentData && navigatorUA.userAgentData.brands;
-    const currentBrowserIsChromeOrEdge = brands
-        ? brands.some(b => b.brand === "Google Chrome" || b.brand === "Microsoft Edge" || b.brand === "Chromium")
-        : (window as any).chrome;
-
-    return (hasReferencedPdbs || debugBuild) && (currentBrowserIsChromeOrEdge || navigator.userAgent.includes("Firefox"));
-}
-
-// can be removed once userAgentData is part of lib.dom.d.ts
-declare interface MonoNavigatorUserAgent extends Navigator {
-    readonly userAgentData: MonoUserAgentData;
-}
-
-declare interface MonoUserAgentData {
-    readonly brands: ReadonlyArray<MonoUserAgentDataBrandVersion>;
-    readonly platform: string;
-}
-
-declare interface MonoUserAgentDataBrandVersion {
-    brand?: string;
-    version?: string;
+    return (hasReferencedPdbs || bootConfig.debugBuild || bootConfig.debugLevel != 0) && (loaderHelpers.isChromium || loaderHelpers.isFirefox);
 }

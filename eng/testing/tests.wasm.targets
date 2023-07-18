@@ -21,6 +21,7 @@
     <WasmDebugLevel Condition="'$(DebuggerSupport)' == 'true' and '$(ContinuousIntegrationBuild)' == 'true' and '$(WasmDebugLevel)' == ''">reset-to-zero</WasmDebugLevel>
 
     <TrimMode Condition="'$(TrimMode)' == ''">full</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault Condition="'$(JsonSerializerIsReflectionEnabledByDefault)' == ''">true</JsonSerializerIsReflectionEnabledByDefault>
 
     <!-- Some tests expect to load satellite assemblies by path, eg. System.Runtime.Loader.Tests,
          so, just setting it true by default -->
@@ -61,7 +62,7 @@
       So, set those parameters explicitly here.
       -->
     <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' == 'true' and '$(RunAOTCompilation)' == 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.WasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
-    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true' or '$(RunAOTCompilation)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
+    <_ExtraTrimmerArgs Condition="'$(WasmEnableSIMD)' != 'true'">$(_ExtraTrimmerArgs) --substitutions &quot;$(MonoProjectRoot)\wasm\build\ILLink.Substitutions.NoWasmIntrinsics.xml&quot;</_ExtraTrimmerArgs>
   </PropertyGroup>
 
   <ItemGroup>

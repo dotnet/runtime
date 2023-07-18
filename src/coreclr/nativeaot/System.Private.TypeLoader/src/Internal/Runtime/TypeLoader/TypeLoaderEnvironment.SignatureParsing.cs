@@ -161,7 +161,7 @@ namespace Internal.Runtime.TypeLoader
 
         #region Private Helpers
 
-        private bool TryGetTypeFromSimpleTypeSignature(ref NativeParser parser, NativeFormatModuleInfo moduleHandle, out RuntimeTypeHandle typeHandle)
+        private static bool TryGetTypeFromSimpleTypeSignature(ref NativeParser parser, NativeFormatModuleInfo moduleHandle, out RuntimeTypeHandle typeHandle)
         {
             uint data;
             TypeSignatureKind kind = parser.GetTypeSignatureKind(out data);
@@ -222,7 +222,7 @@ namespace Internal.Runtime.TypeLoader
             }
         }
 
-        private bool CompareMethodSigs(NativeParser parser1, NativeFormatModuleInfo moduleHandle1, NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
+        private static bool CompareMethodSigs(NativeParser parser1, NativeFormatModuleInfo moduleHandle1, NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
         {
             MethodCallingConvention callingConvention1 = (MethodCallingConvention)parser1.GetUnsigned();
             MethodCallingConvention callingConvention2 = (MethodCallingConvention)parser2.GetUnsigned();
@@ -251,7 +251,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private bool CompareTypeSigs(ref NativeParser parser1, NativeFormatModuleInfo moduleHandle1, ref NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
+        private static bool CompareTypeSigs(ref NativeParser parser1, NativeFormatModuleInfo moduleHandle1, ref NativeParser parser2, NativeFormatModuleInfo moduleHandle2)
         {
             // startOffset lets us backtrack to the TypeSignatureKind for external types since the TypeLoader
             // expects to read it in.

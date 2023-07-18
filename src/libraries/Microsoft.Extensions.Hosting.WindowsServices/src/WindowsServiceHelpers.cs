@@ -15,7 +15,9 @@ namespace Microsoft.Extensions.Hosting.WindowsServices
         /// <summary>
         /// Check if the current process is hosted as a Windows Service.
         /// </summary>
-        /// <returns><c>True</c> if the current process is hosted as a Windows Service, otherwise <c>false</c>.</returns>
+        /// <returns>
+        /// <see langword="true" /> if the current process is hosted as a Windows Service; otherwise, <see langword="false" />.
+        /// </returns>
         [SupportedOSPlatformGuard("windows")]
         public static bool IsWindowsService()
         {

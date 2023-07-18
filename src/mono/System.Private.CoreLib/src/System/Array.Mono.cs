@@ -390,7 +390,9 @@ namespace System
         }
 
         [Intrinsic]
+#pragma warning disable CA1822 // Mark members as static
         internal int GetElementSize() => GetElementSize();
+#pragma warning restore
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern CorElementType GetCorElementTypeOfElementTypeInternal(ObjectHandleOnStack arr);
@@ -466,7 +468,8 @@ namespace System
 
         internal IEnumerator<T> InternalArray__IEnumerable_GetEnumerator<T>()
         {
-            return Length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(Unsafe.As<T[]>(this));
+            int length = Length;
+            return length == 0 ? SZGenericArrayEnumerator<T>.Empty : new SZGenericArrayEnumerator<T>(Unsafe.As<T[]>(this), length);
         }
 
         internal void InternalArray__ICollection_Clear()

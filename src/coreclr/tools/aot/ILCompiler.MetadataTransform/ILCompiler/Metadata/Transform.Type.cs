@@ -107,7 +107,9 @@ namespace ILCompiler.Metadata
                 ElementType = HandleType(entity.ElementType),
                 Rank = entity.Rank,
                 // TODO: LowerBounds
+                LowerBounds = Array.Empty<int>(),
                 // TODO: Sizes
+                Sizes = Array.Empty<int>(),
             };
         }
 
@@ -442,7 +444,10 @@ namespace ILCompiler.Metadata
                             {
                                 ElementType = elementType,
                                 Rank = rank,
-                                // TODO: sizes & lower bounds
+                                // TODO: LowerBounds
+                                LowerBounds = Array.Empty<int>(),
+                                // TODO: Sizes
+                                Sizes = Array.Empty<int>(),
                             }
                         };
                     }

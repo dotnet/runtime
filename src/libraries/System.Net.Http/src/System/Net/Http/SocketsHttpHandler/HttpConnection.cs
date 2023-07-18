@@ -61,22 +61,20 @@ namespace System.Net.Http
         private ValueTask<int> _readAheadTask;
         private ArrayBuffer _readBuffer;
 
-        private long _idleSinceTickCount;
         private int _keepAliveTimeoutSeconds; // 0 == no timeout
         private bool _inUse;
         private bool _detachedFromPool;
         private bool _canRetry;
-        private bool _startedSendingRequestBody;
         private bool _connectionClose; // Connection: close was seen on last response
 
         private const int Status_Disposed = 1;
-        private const int Status_NotDisposedAndTrackedByTelemetry = 2;
         private int _disposed;
 
         public HttpConnection(
             HttpConnectionPool pool,
             Stream stream,
             TransportContext? transportContext)
+            : base(pool)
         {
             Debug.Assert(pool != null);
             Debug.Assert(stream != null);
@@ -89,14 +87,6 @@ namespace System.Net.Http
             _writeBuffer = new ArrayBuffer(InitialWriteBufferSize, usePool: false);
             _readBuffer = new ArrayBuffer(InitialReadBufferSize, usePool: false);
 
-            _idleSinceTickCount = Environment.TickCount64;
-
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                HttpTelemetry.Log.Http11ConnectionEstablished();
-                _disposed = Status_NotDisposedAndTrackedByTelemetry;
-            }
-
             if (NetEventSource.Log.IsEnabled()) TraceConnection(_stream);
         }
 
@@ -108,16 +98,11 @@ namespace System.Net.Http
         {
             // Ensure we're only disposed once.  Dispose could be called concurrently, for example,
             // if the request and the response were running concurrently and both incurred an exception.
-            int previousValue = Interlocked.Exchange(ref _disposed, Status_Disposed);
-            if (previousValue != Status_Disposed)
+            if (Interlocked.Exchange(ref _disposed, Status_Disposed) != Status_Disposed)
             {
                 if (NetEventSource.Log.IsEnabled()) Trace("Connection closing.");
 
-                // Only decrement the connection count if we counted this connection
-                if (HttpTelemetry.Log.IsEnabled() && previousValue == Status_NotDisposedAndTrackedByTelemetry)
-                {
-                    HttpTelemetry.Log.Http11ConnectionClosed();
-                }
+                MarkConnectionAsClosed();
 
                 if (!_detachedFromPool)
                 {
@@ -270,8 +255,6 @@ namespace System.Net.Http
                 GetIdleTicks(Environment.TickCount64) >= _keepAliveTimeoutSeconds * 1000;
         }
 
-        public override long GetIdleTicks(long nowTicks) => nowTicks - _idleSinceTickCount;
-
         public TransportContext? TransportContext => _transportContext;
 
         public HttpConnectionKind Kind => _pool.Kind;
@@ -390,7 +373,7 @@ namespace System.Net.Http
                     _writeBuffer.EnsureAvailableSpace(6);
                     Span<byte> buffer = _writeBuffer.AvailableSpan;
                     buffer[0] = (byte)':';
-                    bool success = Utf8Formatter.TryFormat(requestUri.Port, buffer.Slice(1), out int bytesWritten);
+                    bool success = ((uint)requestUri.Port).TryFormat(buffer.Slice(1), out int bytesWritten);
                     Debug.Assert(success);
                     _writeBuffer.Commit(bytesWritten + 1);
                 }
@@ -517,6 +500,8 @@ namespace System.Net.Http
             Debug.Assert(_readBuffer.ActiveLength == 0, "Unexpected data in read buffer");
             Debug.Assert(_readAheadTaskStatus != ReadAheadTask_Started);
 
+            MarkConnectionAsNotIdle();
+
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
 
@@ -524,7 +509,6 @@ namespace System.Net.Http
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
 
             _canRetry = false;
-            _startedSendingRequestBody = false;
 
             // Send the request.
             if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -630,7 +614,7 @@ namespace System.Net.Http
                     // The server shutdown the connection on their end, likely because of an idle timeout.
                     // If we haven't started sending the request body yet (or there is no request body),
                     // then we allow the request to be retried.
-                    if (!_startedSendingRequestBody)
+                    if (request.Content is null || allowExpect100ToContinue is not null)
                     {
                         _canRetry = true;
                     }
@@ -825,7 +809,11 @@ namespace System.Net.Http
                 cancellationRegistration.Dispose();
 
                 // Make sure to complete the allowExpect100ToContinue task if it exists.
-                allowExpect100ToContinue?.TrySetResult(false);
+                if (allowExpect100ToContinue is not null && !allowExpect100ToContinue.TrySetResult(false))
+                {
+                    // allowExpect100ToContinue was already signaled and we may have started sending the request body.
+                    _canRetry = false;
+                }
 
                 if (_readAheadTask != default)
                 {
@@ -939,9 +927,6 @@ namespace System.Net.Http
 
         private async ValueTask SendRequestContentAsync(HttpRequestMessage request, HttpContentWriteStream stream, bool async, CancellationToken cancellationToken)
         {
-            // Now that we're sending content, prohibit retries of this request by setting this flag.
-            _startedSendingRequestBody = true;
-
             Debug.Assert(stream.BytesWritten == 0);
             if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestContentStart();
 
@@ -1493,7 +1478,7 @@ namespace System.Net.Http
         private ValueTask WriteHexInt32Async(int value, bool async)
         {
             // Try to format into our output buffer directly.
-            if (Utf8Formatter.TryFormat(value, _writeBuffer.AvailableSpan, out int bytesWritten, 'X'))
+            if (value.TryFormat(_writeBuffer.AvailableSpan, out int bytesWritten, "X"))
             {
                 _writeBuffer.Commit(bytesWritten);
                 return default;
@@ -1502,7 +1487,10 @@ namespace System.Net.Http
             // If we don't have enough room, do it the slow way.
             if (async)
             {
-                return WriteAsync(Encoding.ASCII.GetBytes(value.ToString("X", CultureInfo.InvariantCulture)));
+                Span<byte> temp = stackalloc byte[8]; // max length of Int32 as hex
+                bool formatted = value.TryFormat(temp, out bytesWritten, "X");
+                Debug.Assert(formatted);
+                return WriteAsync(temp.Slice(0, bytesWritten).ToArray());
             }
             else
             {
@@ -2082,8 +2070,6 @@ namespace System.Net.Http
             else
             {
                 Debug.Assert(!_detachedFromPool, "Should not be detached from pool unless _connectionClose is true");
-
-                _idleSinceTickCount = Environment.TickCount64;
 
                 // Put connection back in the pool.
                 _pool.RecycleHttp11Connection(this);

@@ -155,18 +155,18 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             _inputFilesToCompare = Get(command.InputFilesToCompare);
         }
 
-        private T Get<T>(Option<T> option) => _command.Result.GetValue(option);
-        private T Get<T>(Argument<T> argument) => _command.Result.GetValue(argument);
-        private bool IsSet<T>(Option<T> option) => _command.Result.FindResultFor(option) != null;
+        private T Get<T>(CliOption<T> option) => _command.Result.GetValue(option);
+        private T Get<T>(CliArgument<T> argument) => _command.Result.GetValue(argument);
+        private bool IsSet<T>(CliOption<T> option) => _command.Result.GetResult(option) != null;
 
         private static int Main(string[] args) =>
-            new CommandLineBuilder(new PgoRootCommand(args))
-                .UseTokenReplacer(Helpers.TryReadResponseFile)
-                .UseVersionOption("--version", "-v")
-                .UseHelp(context => context.HelpBuilder.CustomizeLayout(PgoRootCommand.GetExtendedHelp))
-                .UseParseErrorReporting()
-                .Build()
-                .Invoke(args);
+            new CliConfiguration(new PgoRootCommand(args)
+                .UseVersion()
+                .UseExtendedHelp(PgoRootCommand.GetExtendedHelp))
+            {
+                ResponseFileTokenReplacer = Helpers.TryReadResponseFile,
+                EnableParseErrorReporting = true
+            }.Invoke(args);
 
         public static void PrintWarning(string warning)
         {
@@ -438,14 +438,7 @@ namespace Microsoft.Diagnostics.Tools.Pgo
 
                 MibcConfig mergedConfig = ParseMibcConfigsAndMerge(tsc, mibcReaders);
                 var outputFileInfo = new FileInfo(outputPath);
-                int result = MibcEmitter.GenerateMibcFile(mergedConfig, tsc, outputFileInfo, mergedProfileData.Values, _command.ValidateOutputFile, !Get(_command.Compressed));
-                if (result == 0 && Get(_command.InheritTimestamp))
-                {
-                    outputFileInfo.CreationTimeUtc = paths.Max(f => new FileInfo(f).CreationTimeUtc);
-                    outputFileInfo.LastWriteTimeUtc = paths.Max(f => new FileInfo(f).LastWriteTimeUtc);
-                }
-
-                return result;
+                return MibcEmitter.GenerateMibcFile(mergedConfig, tsc, outputFileInfo, mergedProfileData.Values, _command.ValidateOutputFile, !Get(_command.Compressed));
             }
             finally
             {

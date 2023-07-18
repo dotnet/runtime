@@ -91,7 +91,7 @@ namespace Internal.IntrinsicSupport
                 Environment.FailFast("Unable to create comparer");
             }
 
-            return RuntimeAugments.NewObject(comparerType);
+            return RuntimeAugments.RawNewObject(comparerType);
         }
 
         //-----------------------------------------------------------------------

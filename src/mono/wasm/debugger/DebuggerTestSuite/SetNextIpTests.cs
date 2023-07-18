@@ -113,6 +113,7 @@ public class SetNextIpTests : DebuggerTests
     }
 
     [ConditionalFact(nameof(RunningOnChrome))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -159,6 +160,7 @@ public class SetNextIpTests : DebuggerTests
         }
 
     [ConditionalFact(nameof(RunningOnChrome))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_InvalidLocation()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -188,6 +190,7 @@ public class SetNextIpTests : DebuggerTests
     }
 
     [ConditionalFact(nameof(RunningOnChrome))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_ToNestedLambda()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -206,7 +209,7 @@ public class SetNextIpTests : DebuggerTests
 
         await SetNextIPAndCheck(top_frame["scriptId"].Value<string>(), "dotnet://debugger-test.dll/debugger-async-test.cs", 88, 20, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         expected_error: true);
-        
+
         await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 79, 16, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
             {
@@ -218,6 +221,7 @@ public class SetNextIpTests : DebuggerTests
         }
 
     [ConditionalFact(nameof(RunningOnChrome))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_ToNestedSingleLineLambda_Invalid()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -248,6 +252,7 @@ public class SetNextIpTests : DebuggerTests
     }
 
     [ConditionalFact(nameof(RunningOnChrome))]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/86496", typeof(DebuggerTests), nameof(DebuggerTests.WasmMultiThreaded))]
     public async Task Lambda_ToNestedSingleLineLambda_Valid()
     {
         var debugger_test_loc = "dotnet://debugger-test.dll/debugger-async-test.cs";
@@ -271,7 +276,7 @@ public class SetNextIpTests : DebuggerTests
                 await CheckValueType(locals, "code", "System.Threading.Tasks.TaskStatus", description: "Created");
                 await CheckValueType(locals, "dt0", "System.DateTime", description: "1/1/0001 12:00:00 AM");
             });
-        
+
         await StepAndCheck(StepKind.Over, "dotnet://debugger-test.dll/debugger-async-test.cs", 92, 12, "DebuggerTests.AsyncTests.ContinueWithTests.NestedContinueWithInstanceAsync",
         locals_fn: async (locals) =>
             {

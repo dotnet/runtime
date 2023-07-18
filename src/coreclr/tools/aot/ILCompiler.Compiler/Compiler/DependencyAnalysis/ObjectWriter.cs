@@ -1079,6 +1079,13 @@ namespace ILCompiler.DependencyAnalysis
                                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEBASE_REL21:
                                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12A:
                                 case RelocType.IMAGE_REL_BASED_ARM64_PAGEOFFSET_12L:
+
+                                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_HI12:
+                                case RelocType.IMAGE_REL_AARCH64_TLSLE_ADD_TPREL_LO12_NC:
+                                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADR_PAGE21:
+                                case RelocType.IMAGE_REL_AARCH64_TLSDESC_LD64_LO12:
+                                case RelocType.IMAGE_REL_AARCH64_TLSDESC_ADD_LO12:
+                                case RelocType.IMAGE_REL_AARCH64_TLSDESC_CALL:
                                     unsafe
                                     {
                                         fixed (void* location = &nodeContents.Data[i])
@@ -1134,7 +1141,12 @@ namespace ILCompiler.DependencyAnalysis
                     // Emit the last CFI to close the frame.
                     objectWriter.EmitCFICodes(nodeContents.Data.Length);
 
-                    if (objectWriter.HasFunctionDebugInfo())
+                    // Generate debug info if we have sequence points, or on Windows, we can also
+                    // generate even if no sequence points.
+                    bool generateDebugInfo = objectWriter.HasFunctionDebugInfo();
+                    generateDebugInfo |= factory.Target.IsWindows && objectWriter.HasModuleDebugInfo();
+
+                    if (generateDebugInfo)
                     {
                         objectWriter.EmitDebugVarInfo(node);
                         objectWriter.EmitDebugEHClauseInfo(node);

@@ -153,6 +153,17 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
 #define EVP_CTRL_AEAD_SET_TAG 0x11
 #endif
 
+#if !HAVE_OPENSSL_SHA3
+#undef HAVE_OPENSSL_SHA3
+#define HAVE_OPENSSL_SHA3 1
+const EVP_MD *EVP_sha3_256(void);
+const EVP_MD *EVP_sha3_384(void);
+const EVP_MD *EVP_sha3_512(void);
+const EVP_MD *EVP_shake128(void);
+const EVP_MD *EVP_shake256(void);
+int EVP_DigestFinalXOF(EVP_MD_CTX *ctx, unsigned char *md, size_t len);
+#endif
+
 #define API_EXISTS(fn) (fn != NULL)
 
 // List of all functions from the libssl that are used in the System.Security.Cryptography.Native.
@@ -321,6 +332,7 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_des_ede3_cfb8) \
     REQUIRED_FUNCTION(EVP_des_ede3_cfb64) \
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
+    LIGHTUP_FUNCTION(EVP_DigestFinalXOF) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
@@ -374,6 +386,11 @@ const EVP_CIPHER* EVP_chacha20_poly1305(void);
     REQUIRED_FUNCTION(EVP_sha256) \
     REQUIRED_FUNCTION(EVP_sha384) \
     REQUIRED_FUNCTION(EVP_sha512) \
+    LIGHTUP_FUNCTION(EVP_sha3_256) \
+    LIGHTUP_FUNCTION(EVP_sha3_384) \
+    LIGHTUP_FUNCTION(EVP_sha3_512) \
+    LIGHTUP_FUNCTION(EVP_shake128) \
+    LIGHTUP_FUNCTION(EVP_shake256) \
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     REQUIRED_FUNCTION(HMAC) \
@@ -803,6 +820,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_des_ede3_cfb64 EVP_des_ede3_cfb64_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
+#define EVP_DigestFinalXOF EVP_DigestFinalXOF_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
@@ -856,6 +874,11 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_sha256 EVP_sha256_ptr
 #define EVP_sha384 EVP_sha384_ptr
 #define EVP_sha512 EVP_sha512_ptr
+#define EVP_sha3_256 EVP_sha3_256_ptr
+#define EVP_sha3_384 EVP_sha3_384_ptr
+#define EVP_sha3_512 EVP_sha3_512_ptr
+#define EVP_shake128 EVP_shake128_ptr
+#define EVP_shake256 EVP_shake256_ptr
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC HMAC_ptr

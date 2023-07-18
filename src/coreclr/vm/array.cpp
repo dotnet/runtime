@@ -312,16 +312,6 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     // Inherit top level class's interface map
     cbMT += pParentClass->GetNumInterfaces() * sizeof(InterfaceInfo_t);
 
-    BOOL canShareVtableChunks = MethodTable::CanShareVtableChunksFrom(pParentClass, this);
-
-    size_t offsetOfUnsharedVtableChunks = cbMT;
-
-    // We either share all of the parent's virtual slots or none of them
-    // If none, we need to allocate space for the slots
-    if (!canShareVtableChunks)
-    {
-        cbMT += numVirtuals * sizeof(MethodTable::VTableIndir2_t);
-    }
 
     // Canonical methodtable has an array of non virtual slots pointed to by the optional member
     size_t offsetOfNonVirtualSlots = 0;
@@ -478,28 +468,8 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         MethodTable::VtableIndirectionSlotIterator it = pMT->IterateVtableIndirectionSlots();
         while (it.Next())
         {
-            if (canShareVtableChunks)
-            {
-                // Share the parent chunk
-                it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
-            }
-            else
-            {
-                // Use the locally allocated chunk
-                it.SetIndirectionSlot((MethodTable::VTableIndir2_t *)(pMemory+cbArrayClass+offsetOfUnsharedVtableChunks));
-                offsetOfUnsharedVtableChunks += it.GetSize();
-            }
-        }
-
-        // If we are not sharing parent chunks, copy down the slot contents
-        if (!canShareVtableChunks)
-        {
-            // Copy top level class's vtable - note, vtable is contained within the MethodTable
-            MethodTable::MethodDataWrapper hParentMTData(MethodTable::GetMethodData(pParentClass, FALSE));
-            for (UINT32 i = 0; i < numVirtuals; i++)
-            {
-                pMT->CopySlotFrom(i, hParentMTData, pParentClass);
-            }
+            // Share the parent chunk
+            it.SetIndirectionSlot(pParentClass->GetVtableIndirections()[it.GetIndex()]);
         }
 
         if (pClass != NULL)
@@ -665,7 +635,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
                                                                       IDS_CLASSLOAD_VALUECLASSTOOLARGE);
                 }
 
-                val_serie_item *val_item = &(pSeries->val_serie[-index]);
+                // pSeries->val_serie is a fixed sized array.
+                // Use pointer arithmetic instead of direct array access to avoid compilers, specifically GCC,
+                // to discover undefined behavior and generate unintended code when optimization is turned on.
+                val_serie_item *val_item = pSeries->val_serie - index;
 
                 val_item->set_val_serie_item (NumPtrs, (unsigned short)skip);
             }
@@ -1151,7 +1124,7 @@ void GenerateArrayOpScript(ArrayMethodDesc *pMD, ArrayOpScript *paos)
 //---------------------------------------------------------
 class ArrayStubCache : public StubCacheBase
 {
-    virtual void CompileStub(const BYTE *pRawStub,
+    virtual DWORD CompileStub(const BYTE *pRawStub,
                              StubLinker *psl);
     virtual UINT Length(const BYTE *pRawStub);
 
@@ -1196,12 +1169,13 @@ Stub *GenerateArrayOpStub(ArrayMethodDesc* pMD)
     return pArrayOpStub;
 }
 
-void ArrayStubCache::CompileStub(const BYTE *pRawStub,
+DWORD ArrayStubCache::CompileStub(const BYTE *pRawStub,
                                  StubLinker *psl)
 {
     STANDARD_VM_CONTRACT;
 
     ((CPUSTUBLINKER*)psl)->EmitArrayOpStub((ArrayOpScript*)pRawStub);
+    return NEWSTUB_FL_NONE;
 }
 
 UINT ArrayStubCache::Length(const BYTE *pRawStub)

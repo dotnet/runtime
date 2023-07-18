@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Text.Json.Serialization;
+using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.SourceGeneration
 {
@@ -49,15 +50,27 @@ namespace System.Text.Json.SourceGeneration
 
         public required bool IsPolymorphic { get; init; }
 
+        public required bool IsValueTuple { get; init; }
+
         public required JsonNumberHandling? NumberHandling { get; init; }
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
         public required JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling { get; init; }
 
-        public required ImmutableEquatableArray<PropertyGenerationSpec>? PropertyGenSpecs { get; init; }
+        /// <summary>
+        /// List of all properties without conflict resolution or sorting to be generated for the metadata-based serializer.
+        /// </summary>
+        public required ImmutableEquatableArray<PropertyGenerationSpec> PropertyGenSpecs { get; init; }
 
-        public required ImmutableEquatableArray<ParameterGenerationSpec>? CtorParamGenSpecs { get; init; }
+        /// <summary>
+        /// List of properties with compile-time conflict resolution and sorting to be generated for the fast-path serializer.
+        /// Contains indices pointing to <see cref="PropertyGenSpecs"/>. A <see cref="null"/> value in the case of object types
+        /// indicates that a naming conflict was found and that an exception throwing stub should be emitted in the fast-path method.
+        /// </summary>
+        public required ImmutableEquatableArray<int>? FastPathPropertyIndices { get; init; }
 
-        public required ImmutableEquatableArray<PropertyInitializerGenerationSpec>? PropertyInitializerSpecs { get; init; }
+        public required ImmutableEquatableArray<ParameterGenerationSpec> CtorParamGenSpecs { get; init; }
+
+        public required ImmutableEquatableArray<PropertyInitializerGenerationSpec> PropertyInitializerSpecs { get; init; }
 
         public required CollectionType CollectionType { get; init; }
 
@@ -75,16 +88,57 @@ namespace System.Text.Json.SourceGeneration
         /// Supports deserialization of extension data dictionaries typed as <c>I[ReadOnly]Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// Specifies a concrete type to instantiate, which would be <c>Dictionary&lt;string, object/JsonElement&gt;</c>.
         /// </summary>
-        public required string? RuntimeTypeRef { get; init; }
+        public required TypeRef? RuntimeTypeRef { get; init; }
 
-        public required TypeRef? ExtensionDataPropertyType { get; init; }
+        public required bool HasExtensionDataPropertyType { get; init; }
 
-        public required string? ConverterInstantiationLogic { get; init; }
+        public required TypeRef? ConverterType { get; init; }
 
-        // Only generate certain helper methods if necessary.
-        public required bool HasPropertyFactoryConverters { get; init; }
-        public required bool HasTypeFactoryConverter { get; init; }
+        public required string? ImmutableCollectionFactoryMethod { get; init; }
 
-        public required string? ImmutableCollectionBuilderName { get; init; }
+        public bool IsFastPathSupported()
+        {
+            if (IsPolymorphic)
+            {
+                return false;
+            }
+
+            if (JsonHelpers.RequiresSpecialNumberHandlingOnWrite(NumberHandling))
+            {
+                return false;
+            }
+
+            switch (ClassType)
+            {
+                case ClassType.Object:
+                    if (HasExtensionDataPropertyType)
+                    {
+                        return false;
+                    }
+
+                    foreach (PropertyGenerationSpec property in PropertyGenSpecs)
+                    {
+                        if (property.PropertyType.SpecialType is SpecialType.System_Object ||
+                            property.NumberHandling != null ||
+                            property.ConverterType != null)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+
+                case ClassType.Enumerable:
+                    return CollectionType != CollectionType.IAsyncEnumerableOfT &&
+                           CollectionValueType!.SpecialType is not SpecialType.System_Object;
+
+                case ClassType.Dictionary:
+                    return CollectionKeyType!.SpecialType is SpecialType.System_String &&
+                           CollectionValueType!.SpecialType is not SpecialType.System_Object;
+
+                default:
+                    return false;
+            }
+        }
     }
 }

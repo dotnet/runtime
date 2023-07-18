@@ -101,7 +101,6 @@ set(utils_common_sources
     mono-forward-internal.h
     mono-machine.h
     mono-math.h
-    mono-membar.h
     mono-path.h
     mono-poll.h
     mono-uri.h

@@ -244,6 +244,7 @@ namespace AppHost.Bundle.Tests
                 TestSelfContainedFixture
                     .EnsureRestoredForRid(TestSelfContainedFixture.CurrentRid)
                     .PublishProject(runtime: TestSelfContainedFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixture));
 
                 TestAppWithEmptyFileFixture = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
@@ -252,6 +253,7 @@ namespace AppHost.Bundle.Tests
                 TestAppWithEmptyFileFixture
                     .EnsureRestoredForRid(TestAppWithEmptyFileFixture.CurrentRid)
                     .PublishProject(runtime: TestAppWithEmptyFileFixture.CurrentRid,
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestAppWithEmptyFileFixture));
 
                 TestSelfContainedFixtureComposite = new TestProjectFixture("AppWithSubDirs", RepoDirectories);
@@ -261,6 +263,7 @@ namespace AppHost.Bundle.Tests
                     .PublishProject(runtime: TestSelfContainedFixtureComposite.CurrentRid,
                                     // ACTIVE ISSUE: https://github.com/dotnet/runtime/issues/54234
                                     //               uncomment extraArgs when fixed.
+                                    selfContained: true,
                                     outputDirectory: BundleHelper.GetPublishPath(TestSelfContainedFixtureComposite) /*,
                                     extraArgs: new string[] {
                                        "/p:PublishReadyToRun=true",

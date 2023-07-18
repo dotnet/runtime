@@ -234,6 +234,28 @@ namespace System
         public static bool Contains(this System.ReadOnlySpan<char> span, System.ReadOnlySpan<char> value, System.StringComparison comparisonType) { throw null; }
         public static bool Contains<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
         public static bool Contains<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAny<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.ReadOnlySpan<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.Span<T> span, System.Buffers.SearchValues<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.Span<T> span, System.ReadOnlySpan<T> values) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.Span<T> span, T value0, T value1) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExcept<T>(this System.Span<T> span, T value0, T value1, T value2) where T : System.IEquatable<T>? { throw null; }
+        public static bool ContainsAnyExceptInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static bool ContainsAnyExceptInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static bool ContainsAnyInRange<T>(this System.ReadOnlySpan<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
+        public static bool ContainsAnyInRange<T>(this System.Span<T> span, T lowInclusive, T highInclusive) where T : System.IComparable<T> { throw null; }
         public static void CopyTo<T>(this T[]? source, System.Memory<T> destination) { }
         public static void CopyTo<T>(this T[]? source, System.Span<T> destination) { }
         public static int Count<T>(this System.Span<T> span, T value) where T : System.IEquatable<T>? { throw null; }

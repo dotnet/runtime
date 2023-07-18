@@ -584,18 +584,11 @@ public:
             return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
         }
         return FALSE;
-#elif defined(TARGET_LOONGARCH64)
+#elif defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
         if (m_argType == ELEMENT_TYPE_VALUETYPE)
         {
             _ASSERTE(!m_argTypeHandle.IsNull());
             return (m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE);
-        }
-        return FALSE;
-#elif defined(TARGET_RISCV64)
-        if (m_argType == ELEMENT_TYPE_VALUETYPE)
-        {
-            _ASSERTE(!m_argTypeHandle.IsNull());
-            return ((m_argSize > ENREGISTERED_PARAMTYPE_MAXSIZE) && (!m_argTypeHandle.IsHFA() || this->IsVarArg()));
         }
         return FALSE;
 #else
@@ -926,7 +919,9 @@ public:
         {
             // TODO-RISCV64: support SIMD.
             // Dividing by 8 as size of each register in FloatArgumentRegisters is 8 bytes.
-            pLoc->m_idxFloatReg = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters()) / 8;
+            const int floatRegOfsInBytes = (argOffset - TransitionBlock::GetOffsetOfFloatArgumentRegisters());
+            _ASSERTE((floatRegOfsInBytes % FLOAT_REGISTER_SIZE) == 0);
+            pLoc->m_idxFloatReg = floatRegOfsInBytes / FLOAT_REGISTER_SIZE;
 
             assert(!m_argTypeHandle.IsHFA());
 

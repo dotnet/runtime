@@ -1,0 +1,24 @@
+<!-- Licensed to the .NET Foundation under one or more agreements. The .NET Foundation licenses this file to you under the MIT license. -->
+<Project>
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'x64'">
+    <LLVMArchitectureSuffix>x86_64</LLVMArchitectureSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'x86'">
+    <LLVMArchitectureSuffix>i386</LLVMArchitectureSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm'">
+    <LLVMArchitectureSuffix>armhf</LLVMArchitectureSuffix>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetArchitecture)' == 'arm64'">
+    <LLVMArchitectureSuffix>arm64</LLVMArchitectureSuffix>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetOS)' != 'windows'">
+    <LinkerArg Include="-fsanitize=$(EnableNativeSanitizers)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'osx'">
+    <SanitizerRuntimeToCopy Condition="$(EnableNativeSanitizers.Contains('address'))" Include="libclang_rt.asan_osx_dynamic.dylib" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'windows'">
+    <SanitizerRuntimeToCopy Condition="$(EnableNativeSanitizers.Contains('address'))" Include="clang_rt.asan_dynamic-$(LLVMArchitectureSuffix).dll" />
+  </ItemGroup>
+</Project>

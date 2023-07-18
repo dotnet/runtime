@@ -256,6 +256,7 @@ dwarf_put (struct dwarf_cursor *c, dwarf_loc_t loc, unw_word_t val)
 #define tdep_init_done                  UNW_OBJ(init_done)
 #define tdep_init                       UNW_OBJ(init)
 #define arm_find_proc_info              UNW_OBJ(find_proc_info)
+#define arm_find_proc_info2             UNW_OBJ(find_proc_info2)
 #define arm_put_unwind_info             UNW_OBJ(put_unwind_info)
 /* Platforms that support UNW_INFO_FORMAT_TABLE need to define
    tdep_search_unwind_table.  */
@@ -297,6 +298,9 @@ extern void tdep_init (void);
 extern int arm_find_proc_info (unw_addr_space_t as, unw_word_t ip,
                                unw_proc_info_t *pi, int need_unwind_info,
                                void *arg);
+extern int arm_find_proc_info2 (unw_addr_space_t as, unw_word_t ip,
+                                unw_proc_info_t *pi, int need_unwind_info,
+                                void *arg, int methods);
 extern void arm_put_unwind_info (unw_addr_space_t as,
                                   unw_proc_info_t *pi, void *arg);
 extern int tdep_search_unwind_table (unw_addr_space_t as, unw_word_t ip,

@@ -832,6 +832,24 @@ namespace System.Numerics
                 return result;
             }
 
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static Impl CreateViewport(float x, float y, float width, float height, float minDepth, float maxDepth)
+            {
+                Impl result;
+
+                // 4x SIMD fields to get a lot better codegen
+                result.W = new Vector4(width, height, 0f, 0f);
+                result.W *= new Vector4(0.5f, 0.5f, 0f, 0f);
+
+                result.X = new Vector4(result.W.X, 0f, 0f, 0f);
+                result.Y = new Vector4(0f, -result.W.Y, 0f, 0f);
+                result.Z = new Vector4(0f, 0f, maxDepth - minDepth, 0f);
+                result.W += new Vector4(x, y, minDepth, 1f);
+
+                return result;
+            }
+
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static Impl CreateWorld(in Vector3 position, in Vector3 forward, in Vector3 up)
             {

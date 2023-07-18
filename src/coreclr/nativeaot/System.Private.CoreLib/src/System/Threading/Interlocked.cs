@@ -4,9 +4,6 @@
 using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Versioning;
-
-using Internal.Runtime.CompilerServices;
 
 namespace System.Threading
 {
@@ -24,22 +21,6 @@ namespace System.Threading
         public static long CompareExchange(ref long location1, long value, long comparand)
         {
             return RuntimeImports.InterlockedCompareExchange(ref location1, value, comparand);
-        }
-
-        [Intrinsic]
-        public static unsafe float CompareExchange(ref float location1, float value, float comparand)
-        {
-            float ret;
-            *(int*)&ret = CompareExchange(ref Unsafe.As<float, int>(ref location1), *(int*)&value, *(int*)&comparand);
-            return ret;
-        }
-
-        [Intrinsic]
-        public static unsafe double CompareExchange(ref double location1, double value, double comparand)
-        {
-            double ret;
-            *(long*)&ret = CompareExchange(ref Unsafe.As<double, long>(ref location1), *(long*)&value, *(long*)&comparand);
-            return ret;
         }
 
         [Intrinsic]
@@ -85,22 +66,6 @@ namespace System.Threading
             } while (CompareExchange(ref location1, value, oldValue) != oldValue);
 
             return oldValue;
-        }
-
-        [Intrinsic]
-        public static unsafe float Exchange(ref float location1, float value)
-        {
-            float ret;
-            *(int*)&ret = Exchange(ref Unsafe.As<float, int>(ref location1), *(int*)&value);
-            return ret;
-        }
-
-        [Intrinsic]
-        public static unsafe double Exchange(ref double location1, double value)
-        {
-            double ret;
-            *(long*)&ret = Exchange(ref Unsafe.As<double, long>(ref location1), *(long*)&value);
-            return ret;
         }
 
         [Intrinsic]
@@ -194,14 +159,6 @@ namespace System.Threading
             return oldValue;
         }
 
-        #endregion
-
-        #region MemoryBarrier
-        [Intrinsic]
-        public static void MemoryBarrier()
-        {
-            RuntimeImports.MemoryBarrier();
-        }
         #endregion
 
         #region Read

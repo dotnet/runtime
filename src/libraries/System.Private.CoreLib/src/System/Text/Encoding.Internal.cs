@@ -573,7 +573,7 @@ namespace System.Text
         }
 
         /// <summary>
-        /// Transcodes chars to bytes, using <see cref="Encoding.EncoderFallback"/> or <see cref="Encoder.Fallback"/> if needed.
+        /// Transcodes chars to bytes, using <see cref="EncoderFallback"/> or <see cref="Encoder.Fallback"/> if needed.
         /// </summary>
         /// <returns>
         /// The total number of bytes written to <paramref name="bytes"/> (based on <paramref name="originalBytesLength"/>).
@@ -1174,7 +1174,7 @@ namespace System.Text
         }
 
         /// <summary>
-        /// Transcodes bytes to chars, using <see cref="Encoding.DecoderFallback"/> or <see cref="Decoder.Fallback"/> if needed.
+        /// Transcodes bytes to chars, using <see cref="DecoderFallback"/> or <see cref="Decoder.Fallback"/> if needed.
         /// </summary>
         /// <returns>
         /// The total number of chars written to <paramref name="chars"/> (based on <paramref name="originalCharsLength"/>).

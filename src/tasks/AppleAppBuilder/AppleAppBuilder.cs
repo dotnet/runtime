@@ -223,6 +223,7 @@ public class AppleAppBuilderTask : Task
 
     public override bool Execute()
     {
+        bool shouldStaticLink = !EnableAppSandbox;
         bool isDevice = (TargetOS == TargetNames.iOS || TargetOS == TargetNames.tvOS);
 
         ValidateRuntimeSelection();
@@ -287,9 +288,9 @@ public class AppleAppBuilderTask : Task
             assemblerFilesToLink.Add(nativeDependency);
         }
 
-        if (!ForceInterpreter && (isDevice || ForceAOT) && (assemblerFiles.Count == 0 && !UseNativeAOTRuntime))
+        if (!ForceInterpreter && (shouldStaticLink || ForceAOT) && (assemblerFiles.Count == 0 && !UseNativeAOTRuntime))
         {
-            throw new InvalidOperationException("Need list of AOT files for device builds.");
+            throw new InvalidOperationException("Need list of AOT files for static linked builds.");
         }
 
         if (!string.IsNullOrEmpty(DiagnosticPorts))
@@ -322,8 +323,8 @@ public class AppleAppBuilderTask : Task
 
         if (GenerateXcodeProject)
         {
-            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
+            XcodeProjectPath = generator.GenerateXCode(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
 
             if (BuildAppBundle)
             {
@@ -348,8 +349,8 @@ public class AppleAppBuilderTask : Task
         }
         else if (GenerateCMakeProject)
         {
-             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs,
-                AppDir, binDir, MonoRuntimeHeaders, !isDevice, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
+             generator.GenerateCMake(ProjectName, MainLibraryFileName, assemblerFiles, assemblerDataFiles, assemblerFilesToLink, extraLinkerArgs, excludes,
+                AppDir, binDir, MonoRuntimeHeaders, !shouldStaticLink, UseConsoleUITemplate, ForceAOT, ForceInterpreter, InvariantGlobalization, HybridGlobalization, Optimized, EnableRuntimeLogging, EnableAppSandbox, DiagnosticPorts, RuntimeComponents, NativeMainSource, UseNativeAOTRuntime);
         }
 
         return true;

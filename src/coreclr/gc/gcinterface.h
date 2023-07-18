@@ -11,7 +11,7 @@
 // The minor version of the IGCHeap interface. Non-breaking changes are required
 // to bump the minor version number. GCs and EEs with minor version number
 // mismatches can still interoperate correctly, with some care.
-#define GC_INTERFACE_MINOR_VERSION 1
+#define GC_INTERFACE_MINOR_VERSION 2
 
 // The major version of the IGCToCLR interface. Breaking changes to this interface
 // require bumps in the major version number.
@@ -121,6 +121,18 @@ struct WriteBarrierParameters
 
     // whether to use the more precise but slower write barrier
     bool region_use_bitwise_write_barrier;
+};
+
+struct FinalizerWorkItem
+{
+    FinalizerWorkItem* next;
+    void (*callback)(FinalizerWorkItem*);
+};
+
+struct NoGCRegionCallbackFinalizerWorkItem : public FinalizerWorkItem
+{
+    bool scheduled;
+    bool abandoned;
 };
 
 struct EtwGCSettingsInfo
@@ -265,7 +277,7 @@ enum GCEventKeyword
     GCEventKeyword_GCHeapDump                    =  0x100000,
     GCEventKeyword_GCSampledObjectAllocationHigh =  0x200000,
     GCEventKeyword_GCHeapSurvivalAndMovement     =  0x400000,
-    GCEventKeyword_GCHeapCollect                 =  0x800000,
+    GCEventKeyword_ManagedHeapCollect            =  0x800000,
     GCEventKeyword_GCHeapAndTypeNames            = 0x1000000,
     GCEventKeyword_GCSampledObjectAllocationLow  = 0x2000000,
     GCEventKeyword_All = GCEventKeyword_GC
@@ -275,7 +287,7 @@ enum GCEventKeyword
       | GCEventKeyword_GCHeapDump
       | GCEventKeyword_GCSampledObjectAllocationHigh
       | GCEventKeyword_GCHeapSurvivalAndMovement
-      | GCEventKeyword_GCHeapCollect
+      | GCEventKeyword_ManagedHeapCollect
       | GCEventKeyword_GCHeapAndTypeNames
       | GCEventKeyword_GCSampledObjectAllocationLow
 };
@@ -324,6 +336,27 @@ enum end_no_gc_region_status
     end_no_gc_not_in_progress = 1,
     end_no_gc_induced = 2,
     end_no_gc_alloc_exceeded = 3
+};
+
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs
+// if you change this!
+enum refresh_memory_limit_status
+{
+    refresh_success = 0,
+    refresh_hard_limit_too_low = 1,
+    refresh_hard_limit_invalid = 2
+};
+
+// !!!!!!!!!!!!!!!!!!!!!!!
+// make sure you change the def in bcl\system\gc.cs
+// if you change this!
+enum enable_no_gc_region_callback_status
+{
+    succeed,
+    not_started,
+    insufficient_budget,
+    already_registered,
 };
 
 enum gc_kind
@@ -569,10 +602,6 @@ enum class GCConfigurationType
 };
 
 using ConfigurationValueFunc = void (*)(void* context, void* name, void* publicKey, GCConfigurationType type, int64_t data);
-
-const int REFRESH_MEMORY_SUCCEED = 0;
-const int REFRESH_MEMORY_HARD_LIMIT_TOO_LOW = 1;
-const int REFRESH_MEMORY_HARD_LIMIT_INVALID = 2;
 
 // IGCHeap is the interface that the VM will use when interacting with the GC.
 class IGCHeap {
@@ -981,6 +1010,12 @@ public:
 
     // Refresh the memory limit
     virtual int RefreshMemoryLimit() PURE_VIRTUAL
+
+    // Enable NoGCRegionCallback
+    virtual enable_no_gc_region_callback_status EnableNoGCRegionCallback(NoGCRegionCallbackFinalizerWorkItem* callback, uint64_t callback_threshold) PURE_VIRTUAL
+
+    // Get extra work for the finalizer
+    virtual FinalizerWorkItem* GetExtraWorkForFinalization() PURE_VIRTUAL
 };
 
 #ifdef WRITE_BARRIER_CHECK
@@ -1033,6 +1068,7 @@ struct ScanContext
 {
     Thread* thread_under_crawl;
     int thread_number;
+    int thread_count;
     uintptr_t stack_limit; // Lowest point on the thread stack that the scanning logic is permitted to read
     bool promotion; //TRUE: Promotion, FALSE: Relocation.
     bool concurrent; //TRUE: concurrent scanning
@@ -1050,6 +1086,7 @@ struct ScanContext
 
         thread_under_crawl = 0;
         thread_number = -1;
+        thread_count = -1;
         stack_limit = 0;
         promotion = false;
         concurrent = false;

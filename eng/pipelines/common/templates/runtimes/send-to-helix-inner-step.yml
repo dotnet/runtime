@@ -10,7 +10,7 @@ parameters:
 steps:
 - ${{ if eq(parameters.osGroup, 'windows') }}:
   # TODO: Remove and consolidate this when we move to arcade via init-tools.cmd.
-  - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 -ci ${{ parameters.restoreParams }}
+  - powershell: $(Build.SourcesDirectory)\eng\common\build.ps1 -ci -warnaserror 0 ${{ parameters.restoreParams }}
     displayName: Restore blob feed tasks (Windows)
     condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.restoreParams, '')) }})
 
@@ -30,7 +30,7 @@ steps:
         # Arcade uses this SDK instead of trying to restore one.
         DotNetCoreSdkDir: /usr/local/dotnet
 
-  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci ${{ parameters.sendParams }}
+  - script: $(Build.SourcesDirectory)/eng/common/msbuild.sh --ci --warnaserror false ${{ parameters.sendParams }}
     displayName: ${{ parameters.displayName }} (Unix)
     condition: and(succeeded(), ${{ and(ne(parameters.condition, false), ne(parameters.sendParams, '')) }})
     env: ${{ parameters.environment }}

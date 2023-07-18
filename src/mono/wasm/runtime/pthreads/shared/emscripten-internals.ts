@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { Module } from "../../globals";
-import { pthread_ptr } from "./types";
+import { pthreadPtr } from "./types";
 
 /** @module emscripten-internals accessors to the functions in the emscripten PThreads library, including
- * the low-level representations of {@linkcode pthread_ptr} thread info structs, etc.
+ * the low-level representations of {@linkcode pthreadPtr} thread info structs, etc.
  * Additionally, note that some of these functions are replaced by {@linkcode file://./emscripten-replacements.ts}.
  * These have a hard dependency on the version of Emscripten that we are using and may need to be kept in sync with
  *    {@linkcode file://./../../../emsdk/upstream/emscripten/src/library_pthread.js}
@@ -20,7 +20,7 @@ interface PThreadLibrary {
 }
 
 interface EmscriptenPThreadInfo {
-    threadInfoStruct: pthread_ptr;
+    threadInfoStruct: pthreadPtr;
 }
 
 /// N.B. emscripten deletes the `pthread` property from the worker when it is not actively running a pthread
@@ -33,7 +33,7 @@ interface PThreadObject {
 }
 
 interface PThreadInfoMap {
-    [key: pthread_ptr]: PThreadObject | undefined;
+    [key: pthreadPtr]: PThreadObject | undefined;
 }
 
 
@@ -46,11 +46,11 @@ const Internals = {
     get modulePThread(): PThreadLibrary {
         return (<any>Module).PThread as PThreadLibrary;
     },
-    getWorker: (pthread_ptr: pthread_ptr): PThreadWorker | undefined => {
+    getWorker: (pthreadPtr: pthreadPtr): PThreadWorker | undefined => {
         // see https://github.com/emscripten-core/emscripten/pull/16239
-        return Internals.modulePThread.pthreads[pthread_ptr]?.worker;
+        return Internals.modulePThread.pthreads[pthreadPtr]?.worker;
     },
-    getThreadId: (worker: Worker): pthread_ptr | undefined => {
+    getThreadId: (worker: Worker): pthreadPtr | undefined => {
         /// See library_pthread.js in Emscripten.
         /// They hang a "pthread" object from the worker if the worker is running a thread, and remove it when the thread stops by doing `pthread_exit` or when it's joined using `pthread_join`.
         if (!isRunningPThreadWorker(worker))

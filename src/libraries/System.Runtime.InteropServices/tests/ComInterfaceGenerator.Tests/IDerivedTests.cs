@@ -2,13 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
-using System.Text;
-using System.Threading.Tasks;
 using SharedTypes.ComInterfaces;
 using Xunit;
 
@@ -34,6 +31,7 @@ namespace ComInterfaceGenerator.Tests
 
             Assert.True(expected.SequenceEqual(actual));
         }
+
         [Fact]
         public unsafe void CallBaseInterfaceMethod_EnsureQiCalledOnce()
         {
@@ -47,12 +45,15 @@ namespace ComInterfaceGenerator.Tests
             iface.SetInt(5);
             Assert.Equal(5, iface.GetInt());
 
-            // https://github.com/dotnet/runtime/issues/85795
-            //Assert.Equal("myName", iface.GetName());
-            //iface.SetName("updated");
-            //Assert.Equal("updated", iface.GetName());
+            Assert.Equal("myName", iface.GetName());
+            iface.SetName("updated");
+            Assert.Equal("updated", iface.GetName());
 
-            var qiCallCountObj = obj.GetType().GetRuntimeProperties().Where(p => p.Name == "IUnknownStrategy").Single().GetValue(obj);
+            var iUnknownStrategyProperty = typeof(ComObject).GetProperty("IUnknownStrategy", BindingFlags.NonPublic | BindingFlags.Instance);
+
+            Assert.NotNull(iUnknownStrategyProperty);
+
+            var qiCallCountObj = iUnknownStrategyProperty!.GetValue(obj);
             var countQi = (SingleQIComWrapper.CountQI)qiCallCountObj;
             Assert.Equal(1, countQi.QiCallCount);
         }
@@ -62,7 +63,7 @@ namespace ComInterfaceGenerator.Tests
         {
             int data = 3;
             string myName = "myName";
-            public void DoThingWithString([MarshalUsing(typeof(Utf16StringMarshaller))] string name) => throw new NotImplementedException();
+            public void DoThingWithString(string name) => throw new NotImplementedException();
 
             public int GetInt() => data;
 

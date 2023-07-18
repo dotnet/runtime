@@ -199,7 +199,7 @@ namespace System.Reflection.Runtime.TypeInfos
                 if (ns != null && !ns.Equals(ifc.Namespace))
                     continue;
                 if (match != null)
-                    throw new AmbiguousMatchException();
+                    throw ThrowHelper.GetAmbiguousMatchException(match);
                 match = ifc;
             }
             return match;

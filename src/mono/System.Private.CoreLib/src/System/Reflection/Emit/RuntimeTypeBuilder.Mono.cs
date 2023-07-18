@@ -431,7 +431,7 @@ namespace System.Reflection.Emit
                 if (types == null)
                 {
                     if (count > 1)
-                        throw new AmbiguousMatchException();
+                        throw ThrowHelper.GetAmbiguousMatchException(found!);
                     return found;
                 }
                 MethodBase[] match = new MethodBase[count];

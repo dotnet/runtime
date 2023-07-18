@@ -220,12 +220,12 @@ public sealed partial class WebcilReader : IDisposable
 
         Guid guid = reader.ReadGuid();
         int age = reader.ReadInt32();
-        string path = ReadUtf8NullTerminated(reader)!;
+        string path = ReadUtf8NullTerminated(ref reader)!;
 
         return MakeCodeViewDebugDirectoryData(guid, age, path);
     }
 
-    private static string? ReadUtf8NullTerminated(BlobReader reader) => Reflection.ReadUtf8NullTerminated(reader);
+    private static string? ReadUtf8NullTerminated(ref BlobReader reader) => Reflection.ReadUtf8NullTerminated(ref reader);
 
     private static CodeViewDebugDirectoryData MakeCodeViewDebugDirectoryData(Guid guid, int age, string path) => Reflection.MakeCodeViewDebugDirectoryData(guid, age, path);
 
@@ -316,7 +316,7 @@ public sealed partial class WebcilReader : IDisposable
 
     private static PdbChecksumDebugDirectoryData DecodePdbChecksumDebugDirectoryData(BlobReader reader)
     {
-        var algorithmName = ReadUtf8NullTerminated(reader);
+        var algorithmName = ReadUtf8NullTerminated(ref reader);
         byte[]? checksum = reader.ReadBytes(reader.RemainingBytes);
         if (string.IsNullOrEmpty(algorithmName) || checksum == null || checksum.Length == 0)
         {

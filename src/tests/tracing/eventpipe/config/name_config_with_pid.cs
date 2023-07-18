@@ -9,6 +9,7 @@ using System.Threading;
 
 class NameConfigWithPid
 {
+    private const string WaitForInput = "waitforinput";
     static int Main(string[] args)
     {
         if (args.Length == 0)
@@ -16,7 +17,7 @@ class NameConfigWithPid
         else
             Console.WriteLine($"args[0] = `{args[0]}`");
 
-        if (args.Length > 0 && args[0] == "waitforinput")
+        if (args.Length > 0 && args[0] == WaitForInput)
         {
             Console.Error.WriteLine("WaitingForInput in ErrorStream");
             Console.WriteLine("WaitingForInput");
@@ -39,17 +40,16 @@ class NameConfigWithPid
             }
 
             string coreRoot = Environment.GetEnvironmentVariable("CORE_ROOT");
-            string corerun = Path.Combine(coreRoot, "corerun");
-            if (OperatingSystem.IsWindows())
-                corerun = corerun + ".exe";
 
-            // Use dll directory as temp directory
-            string tempDir = Path.GetDirectoryName(typeof(NameConfigWithPid).Assembly.Location);
+            // Use app directory as temp directory
+            string tempDir = AppContext.BaseDirectory;
             string outputPathBaseName = $"eventPipeStream{Thread.CurrentThread.ManagedThreadId}_{(ulong)Stopwatch.GetTimestamp()}";
             string outputPathPattern = Path.Combine(tempDir, outputPathBaseName + "_{pid}_{pid}.nettrace");
 
-            process.StartInfo.FileName = corerun;
-            process.StartInfo.Arguments = typeof(NameConfigWithPid).Assembly.Location + " waitforinput";
+            process.StartInfo.FileName = Process.GetCurrentProcess().MainModule.FileName;
+            process.StartInfo.Arguments = TestLibrary.Utilities.IsNativeAot
+                ? WaitForInput
+                : $"{typeof(NameConfigWithPid).Assembly.Location} {WaitForInput}";
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardInput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -63,7 +63,7 @@ class NameConfigWithPid
             Console.Out.Flush();
             process.Start();
 
-            string readFromTargetProcess = process.StandardError.ReadLine(); 
+            string readFromTargetProcess = process.StandardError.ReadLine();
             Console.WriteLine($"Readline '{readFromTargetProcess}'");
             if (readFromTargetProcess != "WaitingForInput in ErrorStream")
             {
@@ -101,7 +101,7 @@ class NameConfigWithPid
                     Thread.Sleep(1000);
                 }
                 Console.WriteLine($"Unable to delete {expectedPath}");
-                return 2; 
+                return 2;
             }
         }
     }

@@ -2,14 +2,19 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
   <file datatype="xml" source-language="en" target-language="de" original="../Strings.resx">
     <body>
-      <trans-unit id="AbstractOrInterfaceNotSupported">
-        <source>Abstract or interface types are not supported: '{0}'.</source>
-        <target state="translated">Abstrakte Typen oder Schnittstellentypen werden nicht unterstützt: "{0}".</target>
-        <note />
-      </trans-unit>
       <trans-unit id="CollectionNotSupported">
         <source>The collection type is not supported: '{0}'.</source>
         <target state="translated">Der Sammlungstyp wird nicht unterstützt: "{0}".</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoMessageFormat">
+        <source>Binding logic was not generated for a binder call. Unsupported input patterns include generic calls and passing boxed objects.</source>
+        <target state="translated">Für einen Binderaufruf wurde keine Bindungslogik generiert. Nicht unterstützte Eingabemuster umfassen generische Aufrufe und übergeben geschachtelte Objekte.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CouldNotDetermineTypeInfoTitle">
+        <source>The target type for a binder call could not be determined</source>
+        <target state="translated">Der Zieltyp für einen Binderaufruf konnte nicht bestimmt werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="DictionaryKeyNotSupported">
@@ -32,14 +37,19 @@
         <target state="translated">Die Sprachversion muss mindestens C# 11 sein</target>
         <note />
       </trans-unit>
+      <trans-unit id="MissingPublicInstanceConstructor">
+        <source>Cannot create instance of type '{0}' because it is missing a public instance constructor.</source>
+        <target state="translated">Die Instanz vom Typ "{0}" kann nicht erstellt werden, weil ein öffentlicher Instanzkonstruktor fehlt.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="MultiDimArraysNotSupported">
         <source>Multidimensional arrays are not supported: '{0}'.</source>
         <target state="translated">Mehrdimensionale Arrays werden nicht unterstützt: "{0}".</target>
         <note />
       </trans-unit>
-      <trans-unit id="NeedPublicParameterlessConstructor">
-        <source>Only objects with public parameterless constructors are supported: '{0}'.</source>
-        <target state="translated">Nur Objekte mit öffentlichen parameterlosen Konstruktoren werden unterstützt: "{0}".</target>
+      <trans-unit id="MultipleParameterizedConstructors">
+        <source>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</source>
+        <target state="translated">Die Instanz vom Typ "{0}" kann nicht erstellt werden, weil sie über mehrere öffentliche parametrisierte Konstruktoren verfügt.</target>
         <note />
       </trans-unit>
       <trans-unit id="NullableUnderlyingTypeNotSupported">
@@ -65,6 +75,16 @@
       <trans-unit id="TypeNotSupportedTitle">
         <source>Did not generate binding logic for a type</source>
         <target state="translated">Für einen Typ wurde keine Bindungslogik generiert</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindMessageFormat">
+        <source>Binding logic was not generated for a binder call with target type '{0}'. Value types are invalid inputs to configuration 'Bind' methods.</source>
+        <target state="translated">Für einen Binderaufruf mit dem Zieltyp "{0}" wurde keine Bindungslogik generiert. Werttypen sind ungültige Eingaben für die Konfiguration von Bind-Methoden.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueTypesInvalidForBindTitle">
+        <source>Value types are invalid inputs to configuration 'Bind' methods</source>
+        <target state="translated">Werttypen sind ungültige Eingaben für die Konfiguration von Bind-Methoden.</target>
         <note />
       </trans-unit>
     </body>

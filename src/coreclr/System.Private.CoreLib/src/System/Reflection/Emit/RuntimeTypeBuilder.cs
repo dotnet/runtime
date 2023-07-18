@@ -574,7 +574,7 @@ namespace System.Reflection.Emit
                 typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
                 // Define the backing value class
-                valueClassType = m_module.DefineType(strValueClassName, typeAttributes, typeof(System.ValueType), PackingSize.Size1, size);
+                valueClassType = m_module.DefineType(strValueClassName, typeAttributes, typeof(ValueType), PackingSize.Size1, size);
                 valueClassType.CreateType();
             }
 
@@ -827,7 +827,7 @@ namespace System.Reflection.Emit
 
             if (m_typeInterfaces == null)
             {
-                return Type.EmptyTypes;
+                return EmptyTypes;
             }
 
             return m_typeInterfaces.ToArray();
@@ -1134,7 +1134,7 @@ namespace System.Reflection.Emit
             return m_inst;
         }
 
-        public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
+        public override Type[] GetGenericArguments() => m_inst ?? EmptyTypes;
 
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.
@@ -1709,7 +1709,7 @@ namespace System.Reflection.Emit
                     if (meth.m_ilGenerator != null)
                     {
                         // we need to bake the method here.
-                        meth.CreateMethodBodyHelper(meth.GetILGenerator());
+                        meth.CreateMethodBodyHelper(((RuntimeILGenerator)meth.GetILGenerator()));
                     }
 
                     body = meth.GetBody();

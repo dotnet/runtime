@@ -85,6 +85,8 @@ namespace Mono.Linker
 			}
 		}
 
+		private static readonly char[] s_separators = new char[] { ',', ';', ' ' };
+
 		public Driver (Queue<string> arguments)
 		{
 			this.arguments = arguments;
@@ -852,7 +854,7 @@ namespace Mono.Linker
 			}
 
 			value = Unquote (value);
-			string[] values = value.Split (new char[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+			string[] values = value.Split (s_separators, StringSplitOptions.RemoveEmptyEntries);
 			foreach (string v in values) {
 				var id = v.Trim ();
 				if (!id.StartsWith ("IL", StringComparison.Ordinal) || !ushort.TryParse (id.AsSpan (2), out ushort code))
@@ -892,7 +894,7 @@ namespace Mono.Linker
 			pipeline.AddStepBefore (typeof (MarkStep), new LinkAttributesStep (File.OpenRead (file), file));
 		}
 
-		static void AddBodySubstituterStep (Pipeline pipeline, string file)
+		protected virtual void AddBodySubstituterStep (Pipeline pipeline, string file)
 		{
 			pipeline.AddStepBefore (typeof (MarkStep), new BodySubstituterStep (File.OpenRead (file), file));
 		}

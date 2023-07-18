@@ -8,14 +8,14 @@ namespace System.Collections.Frozen
     internal sealed class OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring<TValue> : OrdinalStringFrozenDictionary<TValue>
     {
         internal OrdinalStringFrozenDictionary_RightJustifiedCaseInsensitiveAsciiSubstring(
-            Dictionary<string, TValue> source,
             string[] keys,
+            TValue[] values,
             IEqualityComparer<string> comparer,
             int minimumLength,
             int maximumLengthDiff,
             int hashIndex,
             int hashCount)
-            : base(source, keys, comparer, minimumLength, maximumLengthDiff, hashIndex, hashCount)
+            : base(keys, values, comparer, minimumLength, maximumLengthDiff, hashIndex, hashCount)
         {
         }
 

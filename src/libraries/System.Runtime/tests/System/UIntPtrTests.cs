@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Xunit;
 
 namespace System.Tests
@@ -543,6 +544,49 @@ namespace System.Tests
                 Assert.Throws(exceptionType, () => nuint.Parse(value.AsSpan(), style, provider));
 
                 Assert.False(nuint.TryParse(value.AsSpan(), style, provider, out result));
+                Assert.Equal(default, result);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, nuint expected)
+        {
+            nuint result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(nuint.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, nuint.Parse(valueUtf8, style, provider));
+
+            Assert.True(nuint.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                nuint result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(nuint.TryParse(valueUtf8, out result));
+                    Assert.Equal(default, result);
+                }
+
+                Assert.Throws(exceptionType, () => nuint.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(nuint.TryParse(valueUtf8, style, provider, out result));
                 Assert.Equal(default, result);
             }
         }

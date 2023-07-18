@@ -686,41 +686,7 @@ HRESULT PEWriterSection::applyRelocs(IMAGE_NT_HEADERS  *  pNtHeaders,
 }
 
 /******************************************************************/
-
-PESeedSection::PESeedSection(PEDecoder * peDecoder,
-                             IMAGE_SECTION_HEADER * seedSection)
-  : PEWriterSection((const char *)seedSection->Name,
-              VAL32(seedSection->Characteristics),
-              VAL32(seedSection->SizeOfRawData),
-              0),
-    m_pSeedFileDecoder(peDecoder),
-    m_pSeedSectionHeader(seedSection)
-{
-    m_baseRVA = VAL32(seedSection->VirtualAddress);
-}
-
-HRESULT  PESeedSection::write(HANDLE file) {
-    ULONG sizeOfSection = VAL32(m_pSeedSectionHeader->SizeOfRawData);
-    LPCVOID sectionData = PBYTE(m_pSeedFileDecoder->GetBase()) + m_pSeedSectionHeader->PointerToRawData;
-
-    DWORD dwWritten = 0;
-    if (!WriteFile(file, sectionData, sizeOfSection, &dwWritten, NULL)) {
-        return HRESULT_FROM_GetLastError();
-    }
-    _ASSERTE(dwWritten == sizeOfSection);
-    return S_OK;
-}
-
-unsigned PESeedSection::writeMem(void ** pMem) {
-    ULONG sizeOfSection = VAL32(m_pSeedSectionHeader->SizeOfRawData);
-    LPCVOID sectionData = PBYTE(m_pSeedFileDecoder->GetBase()) + m_pSeedSectionHeader->PointerToRawData;
-
-    COPY_AND_ADVANCE(*pMem, sectionData, sizeOfSection);
-    return sizeOfSection;
-}
-
-/******************************************************************/
-HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileName)
+HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags)
 {
     if (pFrom)
         *(PESectionMan*)this = *pFrom;
@@ -878,102 +844,11 @@ HRESULT PEWriter::Init(PESectionMan *pFrom, DWORD createFlags, LPCWSTR seedFileN
 
     m_file = INVALID_HANDLE_VALUE;
 
-    //
-    // Seed file
-    //
-
-    m_hSeedFile = INVALID_HANDLE_VALUE;
-    m_hSeedFileMap = INVALID_HANDLE_VALUE;
-    m_pSeedFileDecoder = NULL;
-    m_iSeedSections = 0;
-    m_pSeedSectionToAdd = NULL;
-
-    if (seedFileName)
-    {
-        HandleHolder hFile (WszCreateFile(seedFileName,
-                                     GENERIC_READ,
-                                     FILE_SHARE_READ,
-                                     NULL,
-                                     OPEN_EXISTING,
-                                     FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN,
-                                     NULL));
-
-        if (hFile == INVALID_HANDLE_VALUE)
-            return HRESULT_FROM_GetLastError();
-
-        MapViewHolder hMapFile (WszCreateFileMapping(hFile, NULL, PAGE_READONLY, 0, 0, NULL));
-        DWORD dwFileLen = SafeGetFileSize(hFile, 0);
-        if (dwFileLen == 0xffffffff)
-            return HRESULT_FROM_GetLastError();
-
-        if (hMapFile == NULL)
-            return HRESULT_FROM_GetLastError();
-
-        BYTE * baseFileView = (BYTE*) MapViewOfFile(hMapFile, FILE_MAP_READ, 0, 0, 0);
-
-        PEDecoder * pPEDecoder = new (nothrow) PEDecoder(baseFileView, (COUNT_T)dwFileLen);
-        if (pPEDecoder == NULL) return E_OUTOFMEMORY;
-
-        if (pPEDecoder->Has32BitNTHeaders())
-        {
-            if ((createFlags & ICEE_CREATE_FILE_PE32) == 0)
-                return E_FAIL;
-
-            setImageBase32(DWORD(size_t(pPEDecoder->GetPreferredBase())));
-        }
-        else
-        {
-            if ((createFlags & ICEE_CREATE_FILE_PE64) == 0)
-                return E_FAIL;
-
-            setImageBase64(UINT64((intptr_t) pPEDecoder->GetPreferredBase()));
-        }
-
-        setFileAlignment   (VAL32(pPEDecoder->GetFileAlignment()));
-        setSectionAlignment(VAL32(pPEDecoder->GetSectionAlignment()));
-
-        hFile.SuppressRelease();
-        hMapFile.SuppressRelease();
-
-        m_hSeedFile = hFile;
-        m_hSeedFileMap = hMapFile;
-        m_pSeedFileDecoder = pPEDecoder;
-
-#ifdef HOST_64BIT
-        m_pSeedFileNTHeaders = pPEDecoder->GetNTHeaders64();
-#else
-        m_pSeedFileNTHeaders = pPEDecoder->GetNTHeaders32();
-#endif
-
-        // Add the seed sections
-
-        m_pSeedSections = m_pSeedFileDecoder->FindFirstSection();
-
-        m_pSeedSectionToAdd = m_pSeedSections;
-        m_iSeedSections = m_pSeedFileDecoder->GetNumberOfSections();
-
-        for (unsigned i = 0; i < m_iSeedSections; m_pSeedSectionToAdd++, i++) {
-            PESection * dummy;
-            getSectionCreate((const char *)(m_pSeedSectionToAdd->Name),
-                VAL32(m_pSeedSectionToAdd->Characteristics),
-                &dummy);
-        }
-
-        m_pSeedSectionToAdd = NULL;
-    }
-
     return S_OK;
 }
 
 /******************************************************************/
 HRESULT PEWriter::Cleanup() {
-
-    if (m_hSeedFile != INVALID_HANDLE_VALUE)
-    {
-        CloseHandle(m_hSeedFile);
-        CloseHandle(m_hSeedFileMap);
-        delete m_pSeedFileDecoder;
-    }
 
     if (isPE32())
     {
@@ -993,43 +868,10 @@ HRESULT PEWriter::Cleanup() {
     return PESectionMan::Cleanup();
 }
 
-PESection* PEWriter::getSection(const char* name)
-{
-    int     len = (int)strlen(name);
-
-    // the section name can be at most 8 characters including the null.
-    if (len < 8)
-        len++;
-    else
-        len = 8;
-
-    // dbPrintf(("looking for section %s\n", name));
-    // Skip over the seed sections
-
-    for(PESection** cur = sectStart+m_iSeedSections; cur < sectCur; cur++) {
-        // dbPrintf(("searching section %s\n", (*cur)->m_ame));
-        if (strncmp((*cur)->m_name, name, len) == 0) {
-            // dbPrintf(("found section %s\n", (*cur)->m_name));
-            return(*cur);
-        }
-    }
-    return(0);
-}
-
 HRESULT PEWriter::newSection(const char* name, PESection **section,
                             unsigned flags, unsigned estSize,
                             unsigned estRelocs)
 {
-    if (m_pSeedSectionToAdd) {
-        _ASSERTE(strcmp((const char *)(m_pSeedSectionToAdd->Name), name) == 0 &&
-            VAL32(m_pSeedSectionToAdd->Characteristics) == flags);
-
-        PESeedSection * ret = new (nothrow) PESeedSection(m_pSeedFileDecoder, m_pSeedSectionToAdd);
-        *section = ret;
-        TESTANDRETURNMEMORY(ret);
-        return S_OK;
-    }
-
     PEWriterSection * ret = new (nothrow) PEWriterSection(name, flags, estSize, estRelocs);
     *section = ret;
     TESTANDRETURNMEMORY(ret);
@@ -1165,15 +1007,13 @@ class SectionNameSorter : protected CQuickSort<entry>
     entry *             m_entries;
     PEWriterSection **  m_sections;
     unsigned            m_count;
-    unsigned            m_seedCount;
 
   public:
-    SectionNameSorter(entry *entries, PEWriterSection ** sections, int count, unsigned seedSections)
+    SectionNameSorter(entry *entries, PEWriterSection ** sections, int count)
       : CQuickSort<entry>(entries, count),
         m_entries(entries),
         m_sections(sections),
-        m_count(unsigned(count)),
-        m_seedCount(seedSections)
+        m_count(unsigned(count))
     {}
 
     // Sorts the entries according to alphabetical + numerical order
@@ -1182,16 +1022,6 @@ class SectionNameSorter : protected CQuickSort<entry>
     {
         PEWriterSection * firstSection = m_sections[first->arrayIndex];
         PEWriterSection * secondSection = m_sections[second->arrayIndex];
-
-        // Seed sections are always at the start, in the order they were
-        // added to the PEWriter
-
-        if (firstSection->isSeedSection() || secondSection->isSeedSection()) {
-            if (firstSection->isSeedSection() && secondSection->isSeedSection())
-                return first->arrayIndex - second->arrayIndex;
-
-            return firstSection->isSeedSection() ? -1 : 1;
-        }
 
         // Sort the names
 
@@ -1225,11 +1055,7 @@ class SectionNameSorter : protected CQuickSort<entry>
 
         for (unsigned i = 1; i < m_count; i++, ePrev = e, e++) {
 
-            // Seed sections should stay at the front
-            _ASSERTE(i >= m_seedCount || i == e->arrayIndex);
-
-            if (!m_sections[ePrev->arrayIndex]->isSeedSection() &&
-                (ePrev->nameLength == e->nameLength) &&
+            if ((ePrev->nameLength == e->nameLength) &&
                 strncmp(ePrev->name, e->name, e->nameLength) == 0)
             {
                 continue;
@@ -1317,7 +1143,7 @@ HRESULT PEWriter::linkSortSections(entry * entries,
     // Sort the entries according to alphabetical + numerical order
     //
 
-    SectionNameSorter sorter(entries, getSectStart(), int(e - entries), m_iSeedSections);
+    SectionNameSorter sorter(entries, getSectStart(), int(e - entries));
     *piUniqueSections = sorter.SortSections();
 
     *piEntries = unsigned(e - entries);
@@ -1367,7 +1193,6 @@ HRESULT PEWriter::linkSortHeaders(entry * entries, unsigned iEntries, unsigned i
     for (entry * e = entries ; e < entriesEnd; e++)
     {
         if (ePrev != NULL
-            && !getSectStart()[ePrev->arrayIndex]->isSeedSection()
             && e->nameLength == ePrev->nameLength
             && strncmp(e->name, ePrev->name, e->nameLength) == 0)
         {
@@ -1433,10 +1258,6 @@ HRESULT PEWriter::linkPlaceSections(entry * entries, unsigned iEntries)
         entry * e = entries + VAL32(h->FirstEntryIndex);
         PEWriterSection *s = getSectStart()[e->arrayIndex];
 
-        if (s->isSeedSection()) {
-            virtualPos = s->getBaseRVA();
-        }
-
         h->VirtualAddress = VAL32(virtualPos);
         h->PointerToRawData = VAL32(filePos);
 
@@ -1501,11 +1322,6 @@ HRESULT PEWriter::linkPlaceSections(entry * entries, unsigned iEntries)
 
 void PEWriter::setSectionIndex(IMAGE_SECTION_HEADER * h, unsigned sectionIndex) {
 
-    if (getSectStart()[sectionIndex]->isSeedSection()) {
-        h->SectionIndex = VAL32(sectionIndex);
-        return;
-    }
-
     //
     // Reserve some dummy "array index" values for special sections
     // at the start of the image (after the seed sections)
@@ -1523,7 +1339,7 @@ void PEWriter::setSectionIndex(IMAGE_SECTION_HEADER * h, unsigned sectionIndex) 
         }
         else if (strcmp((char *) h->Name, *s) == 0)
         {
-            h->SectionIndex = VAL32(m_iSeedSections + DWORD(s - SpecialNames));
+            h->SectionIndex = VAL32(DWORD(s - SpecialNames));
             break;
         }
     }
@@ -1597,17 +1413,6 @@ HRESULT PEWriter::link() {
     m_ntHeaders->OptionalHeader.SizeOfHeaders = VAL32(filePos);
 
     virtualPos = roundUp(filePos, VAL32(m_ntHeaders->OptionalHeader.SectionAlignment));
-
-    if (m_hSeedFile != INVALID_HANDLE_VALUE) {
-        // We do not support relocating/sliding down the seed sections
-        if (filePos > VAL32(m_pSeedSections->VirtualAddress) ||
-            virtualPos > VAL32(m_pSeedSections->VirtualAddress))
-           return E_FAIL;
-
-        if (virtualPos < VAL32(m_pSeedSections->VirtualAddress)) {
-            virtualPos = VAL32(m_pSeedSections->VirtualAddress);
-        }
-    }
 
     // Now finally assign RVAs to the sections
 
@@ -2014,8 +1819,6 @@ UINT64 PEWriter::getImageBase64()
 
 void PEWriter::setImageBase32(DWORD imageBase)
 {
-    _ASSERTE(m_hSeedFile == INVALID_HANDLE_VALUE);
-
     _ASSERTE(isPE32());
     ntHeaders32()->OptionalHeader.ImageBase = VAL32(imageBase);
 }

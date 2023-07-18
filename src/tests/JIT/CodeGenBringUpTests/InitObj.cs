@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public struct MyClass
 {
@@ -28,7 +29,8 @@ public class BringUpTest_InitObj
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (InitObj())
         {

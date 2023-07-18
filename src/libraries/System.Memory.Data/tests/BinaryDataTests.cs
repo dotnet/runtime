@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -612,6 +612,93 @@ namespace System.Tests
         public void ToStringReturnEmptyStringWhenBinaryDataEmpty()
         {
             Assert.Equal(string.Empty, BinaryData.Empty.ToString());
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytesForBinaryDataFromReadOnlyMemory(int count)
+        {
+            var data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(new byte[count]));
+            Assert.Equal(count, data.Length);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytesForBinaryDataFromArray(int count)
+        {
+            var data = BinaryData.FromBytes(new byte[count]);
+            Assert.Equal(count, data.Length);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void LengthReturnsNumberOfBytesForBinaryDataFromString(int count)
+        {
+            var data = BinaryData.FromString(new string('*', count));
+            Assert.Equal(count, data.Length);
+        }
+
+        [Fact]
+        public void BinaryDataEmptyIsEmpty()
+        {
+            Assert.True(BinaryData.Empty.IsEmpty);
+        }
+
+        [Fact]
+        public void BinaryDataFromEmptyReadOnlyMemoryIsEmpty()
+        {
+            var data = BinaryData.FromBytes(ReadOnlyMemory<byte>.Empty);
+            Assert.True(data.IsEmpty);
+        }
+
+        [Fact]
+        public void BinaryDataFromEmptyArrayIsEmpty()
+        {
+            var data = BinaryData.FromBytes(Array.Empty<byte>());
+            Assert.True(data.IsEmpty);
+        }
+
+        [Fact]
+        public void BinaryDataFromEmptyStringIsEmpty()
+        {
+            var data = BinaryData.FromString("");
+            Assert.True(data.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataFromReadOnlyMemoryIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromBytes(new ReadOnlyMemory<byte>(new byte[count]));
+            Assert.False(data.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataFromArrayIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromBytes(new byte[count]);
+            Assert.False(data.IsEmpty);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(4)]
+        [InlineData(7)]
+        public void NonEmptyBinaryDataFromStringIsNotEmpty(int count)
+        {
+            var data = BinaryData.FromString(new string('*', count));
+            Assert.False(data.IsEmpty);
         }
 
         [Fact]

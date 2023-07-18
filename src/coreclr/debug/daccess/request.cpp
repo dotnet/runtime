@@ -3667,46 +3667,51 @@ ClrDataAccess::GetSyncBlockData(unsigned int SBNumber, struct DacpSyncBlockData 
 
     ZeroMemory(pSyncBlockData,sizeof(DacpSyncBlockData));
     pSyncBlockData->SyncBlockCount = (SyncBlockCache::s_pSyncBlockCache->m_FreeSyncTableIndex) - 1;
-    PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable)+(sizeof(SyncTableEntry) * SBNumber));
-    pSyncBlockData->bFree = ((dac_cast<TADDR>(ste->m_Object.Load())) & 1);
+    pSyncBlockData->bFree = TRUE;
 
-    if (pSyncBlockData->bFree == FALSE)
+    if (pSyncBlockData->SyncBlockCount > 0 && SBNumber <= pSyncBlockData->SyncBlockCount)
     {
-        pSyncBlockData->Object = (CLRDATA_ADDRESS)dac_cast<TADDR>(ste->m_Object.Load());
+        PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable)+(sizeof(SyncTableEntry) * SBNumber));
+        pSyncBlockData->bFree = ((dac_cast<TADDR>(ste->m_Object.Load())) & 1);
 
-        if (ste->m_SyncBlock != NULL)
+        if (pSyncBlockData->bFree == FALSE)
         {
-            SyncBlock *pBlock = PTR_SyncBlock(ste->m_SyncBlock);
-            pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
-#ifdef FEATURE_COMINTEROP
-            if (pBlock->m_pInteropInfo)
+            pSyncBlockData->Object = (CLRDATA_ADDRESS)dac_cast<TADDR>(ste->m_Object.Load());
+
+            if (ste->m_SyncBlock != NULL)
             {
-                pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->DacGetRawRCW() != 0) ? SYNCBLOCKDATA_COMFLAGS_RCW : 0;
-                pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetCCW() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CCW : 0;
+                SyncBlock *pBlock = PTR_SyncBlock(ste->m_SyncBlock);
+                pSyncBlockData->SyncBlockPointer = HOST_CDADDR(pBlock);
+#ifdef FEATURE_COMINTEROP
+                if (pBlock->m_pInteropInfo)
+                {
+                    pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->DacGetRawRCW() != 0) ? SYNCBLOCKDATA_COMFLAGS_RCW : 0;
+                    pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetCCW() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CCW : 0;
 #ifdef FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetComClassFactory() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CF : 0;
+                    pSyncBlockData->COMFlags |= (pBlock->m_pInteropInfo->GetComClassFactory() != NULL) ? SYNCBLOCKDATA_COMFLAGS_CF : 0;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-            }
+                }
 #endif // FEATURE_COMINTEROP
 
-            pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
-            pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
-            pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
-            pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
+                pSyncBlockData->MonitorHeld = pBlock->m_Monitor.GetMonitorHeldStateVolatile();
+                pSyncBlockData->Recursion = pBlock->m_Monitor.GetRecursionLevel();
+                pSyncBlockData->HoldingThread = HOST_CDADDR(pBlock->m_Monitor.GetHoldingThread());
+                pSyncBlockData->appDomainPtr = PTR_HOST_TO_TADDR(AppDomain::GetCurrentDomain());
 
-            // TODO: Microsoft, implement the wait list
-            pSyncBlockData->AdditionalThreadCount = 0;
+                // TODO: Microsoft, implement the wait list
+                pSyncBlockData->AdditionalThreadCount = 0;
 
-            if (pBlock->m_Link.m_pNext != NULL)
-            {
-                PTR_SLink pLink = pBlock->m_Link.m_pNext;
-                do
+                if (pBlock->m_Link.m_pNext != NULL)
                 {
-                    pSyncBlockData->AdditionalThreadCount++;
-                    pLink = pBlock->m_Link.m_pNext;
+                    PTR_SLink pLink = pBlock->m_Link.m_pNext;
+                    do
+                    {
+                        pSyncBlockData->AdditionalThreadCount++;
+                        pLink = pBlock->m_Link.m_pNext;
+                    }
+                    while ((pLink != NULL) &&
+                        (pSyncBlockData->AdditionalThreadCount < 1000));
                 }
-                while ((pLink != NULL) &&
-                    (pSyncBlockData->AdditionalThreadCount < 1000));
             }
         }
     }

@@ -24,6 +24,7 @@ using ILCompiler;
 using ILCompiler.DependencyAnalysis;
 using ILCompiler.DependencyAnalysis.ReadyToRun;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace Internal.JitInterface
 {
@@ -331,6 +332,12 @@ namespace Internal.JitInterface
             }
             sb.Append("; ");
             sb.Append(Token.ToString());
+            if (OwningTypeNotDerivedFromToken)
+            {
+                sb.Append("; OWNINGTYPE");
+                sb.Append(nameMangler.GetMangledTypeName(OwningType));
+                sb.Append("; ");
+            }
             if (Unboxing)
                 sb.Append("; UNBOXING");
         }
@@ -631,10 +638,50 @@ namespace Internal.JitInterface
             return false;
         }
 
+        class DeterminismData
+        {
+            public int Iterations = 0;
+            public int HashCode = 0;
+        }
+
+        private static ConditionalWeakTable<MethodDesc, DeterminismData> _determinismTable = new ConditionalWeakTable<MethodDesc, DeterminismData>();
+
         partial void DetermineIfCompilationShouldBeRetried(ref CompilationResult result)
         {
+            if ((_ilBodiesNeeded == null) && _compilation.NodeFactory.OptimizationFlags.DeterminismStress > 0)
+            {
+                HashCode hashCode = default(HashCode);
+                hashCode.AddBytes(_code);
+                hashCode.AddBytes(_roData);
+                int functionOutputHashCode = hashCode.ToHashCode();
+
+                lock (_determinismTable)
+                {
+                    DeterminismData data = _determinismTable.GetOrCreateValue(MethodBeingCompiled);
+                    if (data.Iterations == 0)
+                    {
+                        data.Iterations = 1;
+                        data.HashCode = functionOutputHashCode;
+                    }
+                    else
+                    {
+                        data.Iterations++;
+                    }
+
+                    if (data.HashCode != functionOutputHashCode)
+                    {
+                        _compilation.DeterminismCheckFailed = true;
+                        _compilation.Logger.LogMessage($"ERROR: Determinism check compiling method '{MethodBeingCompiled}' failed. Use '{_compilation.GetReproInstructions(MethodBeingCompiled)}' on command line to reproduce the failure.");
+                    }
+                    else if (data.Iterations <= _compilation.NodeFactory.OptimizationFlags.DeterminismStress)
+                    {
+                        result = CompilationResult.CompilationRetryRequested;
+                    }
+                }
+            }
+
             // If any il bodies need to be recomputed, force recompilation
-            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled)
+            if ((_ilBodiesNeeded != null) || InfiniteCompileStress.Enabled || result == CompilationResult.CompilationRetryRequested)
             {
                 _compilation.PrepareForCompilationRetry(_methodCodeNode, _ilBodiesNeeded);
                 result = CompilationResult.CompilationRetryRequested;
@@ -824,12 +871,14 @@ namespace Internal.JitInterface
                         if (helperId == ReadyToRunHelperId.MethodEntry && pGenericLookupKind.runtimeLookupArgs != null)
                         {
                             constrainedType = (TypeDesc)GetRuntimeDeterminedObjectForToken(ref *(CORINFO_RESOLVED_TOKEN*)pGenericLookupKind.runtimeLookupArgs);
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, constrainedType);
                         }
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
                             var methodIL = HandleToObject(pResolvedToken.tokenScope);
                             MethodDesc sharedMethod = methodIL.OwningMethod.GetSharedRuntimeFormMethodTarget();
+                            _compilation.NodeFactory.DetectGenericCycles(MethodBeingCompiled, sharedMethod);
                             helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false, context: sharedMethod);
                         }
                         else if (helperArg is FieldDesc fieldDesc)
@@ -2213,6 +2262,11 @@ namespace Internal.JitInterface
                 out callerModule,
                 out useInstantiatingStub);
 
+            if (callerMethod.HasInstantiation || callerMethod.OwningType.HasInstantiation)
+            {
+                _compilation.NodeFactory.DetectGenericCycles(callerMethod, methodToCall);
+            }
+
             if (pResult->thisTransform == CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS)
             {
                 // READYTORUN: FUTURE: Optionally create boxing stub at runtime
@@ -2240,6 +2294,10 @@ namespace Internal.JitInterface
                     throw new RequiresRuntimeJitException(pResult->thisTransform.ToString());
                 }
             }
+
+            // We validate the safety of the signature here, as it could have been adjusted
+            // by virtual resolution during getCallInfo (virtual resolution could find a result using type equivalence)
+            ValidateSafetyOfUsingTypeEquivalenceInSignature(targetMethod.GetTypicalMethodDefinition().Signature);
 
             // OK, if the EE said we're not doing a stub dispatch then just return the kind to
             // the caller.  No other kinds of virtual calls have extra information attached.
@@ -3128,7 +3186,7 @@ namespace Internal.JitInterface
         {
             return false;
         }
-        
+
         private CORINFO_OBJECT_STRUCT_* getRuntimeTypePointer(CORINFO_CLASS_STRUCT_* cls)
         {
             return null;
@@ -3149,6 +3207,28 @@ namespace Internal.JitInterface
         {
             // Implemented for JIT and NativeAOT only for now.
             return false;
+        }
+
+        private void ValidateSafetyOfUsingTypeEquivalenceInSignature(MethodSignature signature)
+        {
+            // Type equivalent valuetypes not in the current version bubble are problematic, and cannot be referred to in our current token
+            // scheme except through type references. So we need to detect them, and if they aren't referred to by type reference from a module
+            // in the current build, then we need to fallback to runtime jit.
+            ValidateSafetyOfUsingTypeEquivalenceOfType(signature.ReturnType);
+            foreach (var type in signature)
+            {
+                ValidateSafetyOfUsingTypeEquivalenceOfType(type);
+            }
+        }
+
+        void ValidateSafetyOfUsingTypeEquivalenceOfType(TypeDesc type)
+        {
+            if (type.IsValueType && type.IsTypeDefEquivalent && !_compilation.CompilationModuleGroup.VersionsWithTypeReference(type))
+            {
+                // Technically this is a bit pickier than needed, as cross module inlineable cases will be hit by this, but type equivalence is a
+                // rarely used feature, and we can fix that if we need to.
+                throw new RequiresRuntimeJitException($"Type equivalent valuetype '{type}' not directly referenced from member reference");
+            }
         }
     }
 }

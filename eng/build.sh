@@ -32,7 +32,7 @@ usage()
   echo "                                  [Default: Debug]"
   echo "  --os                            Target operating system: windows, linux, freebsd, osx, maccatalyst, tvos,"
   echo "                                  tvossimulator, ios, iossimulator, android, browser, wasi, netbsd, illumos, solaris"
-  echo "                                  linux-musl or linux-bionic."
+  echo "                                  linux-musl, linux-bionic or haiku."
   echo "                                  [Default: Your machine's OS.]"
   echo "  --outputrid <rid>               Optional argument that overrides the target rid name."
   echo "  --projects <value>              Project or solution file(s) to build."
@@ -84,6 +84,7 @@ usage()
   echo "  --keepnativesymbols        Optional argument: set to true to keep native symbols/debuginfo in generated binaries."
   echo "  --ninja                    Optional argument: set to true to use Ninja instead of Make to run the native build."
   echo "  --pgoinstrument            Optional argument: build PGO-instrumented runtime"
+  echo "  --fsanitize                Optional argument: Specify native sanitizers to instrument the native build with. Supported values are: 'address'."
   echo ""
 
   echo "Command line arguments starting with '/p:' are passed through to MSBuild."
@@ -140,8 +141,8 @@ initDistroRid()
     local isCrossBuild="$3"
     local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
-    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" ]]; then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not an Apple platform (that doesn't use rootfs)
+    if [[ $isCrossBuild == 1 && "$targetOs" != "osx" && "$targetOs" != "ios" && "$targetOs" != "iossimulator" && "$targetOs" != "tvos" && "$targetOs" != "tvossimulator" && "$targetOs" != "maccatalyst" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal "${targetOs}" "${targetArch}" "${isPortableBuild}" "${passedRootfsDir}"
@@ -296,9 +297,11 @@ while [[ $# > 0 ]]; do
           os="linux"
           __PortableTargetOS=linux-musl
           ;;
+        haiku)
+          os="haiku" ;;
         *)
           echo "Unsupported target OS '$2'."
-          echo "The allowed values are windows, linux, freebsd, osx, maccatalyst, tvos, tvossimulator, ios, iossimulator, android, browser, wasi, illumos and solaris."
+          echo "Try 'build.sh --help' for values supported by '--os'."
           exit 1
           ;;
       esac
@@ -505,6 +508,21 @@ while [[ $# > 0 ]]; do
       -pgoinstrument)
       arguments="$arguments /p:PgoInstrument=true"
       shift 1
+      ;;
+
+      -fsanitize)
+      if [ -z ${2+x} ]; then
+        echo "No value for -fsanitize is supplied. See help (--help) for supported values." 1>&2
+        exit 1
+      fi
+      arguments="$arguments /p:EnableNativeSanitizers=$2"
+      shift 2
+      ;;
+
+      -fsanitize=*)
+      sanitizers="${opt/#-fsanitize=/}" # -fsanitize=address => address
+      arguments="$arguments /p:EnableNativeSanitizers=$sanitizers"
+      shift 2
       ;;
 
       *)

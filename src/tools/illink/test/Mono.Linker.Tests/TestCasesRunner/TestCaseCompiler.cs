@@ -94,7 +94,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 		{
 			var allDefines = defines.Concat (setupCompileInfo.Defines ?? Array.Empty<string> ()).ToArray ();
 			var allReferences = references.Concat (setupCompileInfo.References?.Select (p => MakeSupportingAssemblyReferencePathAbsolute (outputDirectory, p)) ?? Array.Empty<NPath> ()).ToArray ();
-			string[] additionalArguments = string.IsNullOrEmpty (setupCompileInfo.AdditionalArguments) ? null : new[] { setupCompileInfo.AdditionalArguments };
+			string[] additionalArguments = setupCompileInfo.AdditionalArguments;
 			return new CompilerOptions {
 				OutputPath = outputDirectory.Combine (setupCompileInfo.OutputName),
 				SourceFiles = sourceFiles,

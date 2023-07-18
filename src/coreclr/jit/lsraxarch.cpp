@@ -154,12 +154,14 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_CNS_VEC:
         {
             srcCount = 0;
+
             assert(dstCount == 1);
             assert(!tree->IsReuseRegVal());
-            RefPosition* def               = BuildDef(tree, BuildEvexIncompatibleMask(tree));
+
+            RefPosition* def               = BuildDef(tree);
             def->getInterval()->isConstant = true;
+            break;
         }
-        break;
 
 #if !defined(TARGET_64BIT)
 
@@ -282,11 +284,6 @@ int LinearScan::BuildNode(GenTree* tree)
             assert(srcCount == 2);
         }
         break;
-
-        case GT_ASG:
-            noway_assert(!"We should never hit any assignment operator in lowering");
-            srcCount = 0;
-            break;
 
 #if !defined(TARGET_64BIT)
         case GT_ADD_LO:
@@ -1171,7 +1168,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // The return value will be on the X87 stack, and we will need to move it.
         dstCandidates = allRegs(registerType);
 #else  // !TARGET_X86
-        dstCandidates                     = RBM_FLOATRET;
+        dstCandidates = RBM_FLOATRET;
 #endif // !TARGET_X86
     }
     else
@@ -1383,12 +1380,10 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
         {
             case GenTreeBlk::BlkOpKindUnroll:
             {
-#ifdef TARGET_AMD64
-                const bool canUse16BytesSimdMov = !blkNode->IsOnHeapAndContainsReferences();
-                const bool willUseSimdMov       = canUse16BytesSimdMov && (size >= 16);
-#else
-                const bool willUseSimdMov = (size >= 16);
-#endif
+                const bool canUse16BytesSimdMov =
+                    !blkNode->IsOnHeapAndContainsReferences() && compiler->IsBaselineSimdIsaSupported();
+                const bool willUseSimdMov = canUse16BytesSimdMov && (size >= XMM_REGSIZE_BYTES);
+
                 if (willUseSimdMov)
                 {
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
@@ -1445,8 +1440,26 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 break;
 
             case GenTreeBlk::BlkOpKindUnroll:
-                if ((size % XMM_REGSIZE_BYTES) != 0)
+            {
+                unsigned regSize   = compiler->roundDownSIMDSize(size);
+                unsigned remainder = size;
+
+                if ((size >= regSize) && (regSize > 0))
                 {
+                    // We need a float temporary if we're doing SIMD operations
+
+                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
+                    SetContainsAVXFlags(size);
+
+                    remainder %= regSize;
+                }
+
+                if ((remainder > 0) && ((regSize == 0) || (isPow2(remainder) && (remainder <= REGSIZE_BYTES))))
+                {
+                    // We need an int temporary if we're not doing SIMD operations
+                    // or if are but the remainder is a power of 2 and less than the
+                    // size of a register
+
                     regMaskTP regMask = availableIntRegs;
 #ifdef TARGET_X86
                     if ((size & 1) != 0)
@@ -1458,13 +1471,8 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
 #endif
                     internalIntDef = buildInternalIntRegisterDefForNode(blkNode, regMask);
                 }
-
-                if (size >= XMM_REGSIZE_BYTES)
-                {
-                    buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
-                    SetContainsAVXFlags(size);
-                }
                 break;
+            }
 
             case GenTreeBlk::BlkOpKindUnrollMemmove:
             {
@@ -1488,13 +1496,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                 // Lowering was expected to get rid of memmove in case of zero
                 assert(size > 0);
 
-                unsigned simdSize = compiler->roundDownSIMDSize(size);
-                if (size <= ZMM_RECOMMENDED_THRESHOLD)
-                {
-                    // Only use ZMM for large data due to possible CPU throttle issues
-                    simdSize = min(YMM_REGSIZE_BYTES, compiler->roundDownSIMDSize(size));
-                }
-
+                const unsigned simdSize = compiler->roundDownSIMDSize(size);
                 if ((size >= simdSize) && (simdSize > 0))
                 {
                     unsigned simdRegs = size / simdSize;
@@ -1649,12 +1651,22 @@ int LinearScan::BuildPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // TARGET_X86
 
 #if defined(FEATURE_SIMD)
-            // Note that we need to check the field type, not the type of the node. This is because the
-            // field type will be TYP_SIMD12 whereas the node type might be TYP_SIMD16 for lclVar, where
-            // we "round up" to 16.
-            if ((fieldType == TYP_SIMD12) && (simdTemp == nullptr))
+            if (fieldType == TYP_SIMD12)
             {
-                simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
+                // Note that we need to check the field type, not the type of the node. This is because the
+                // field type will be TYP_SIMD12 whereas the node type might be TYP_SIMD16 for lclVar, where
+                // we "round up" to 16.
+                if (simdTemp == nullptr)
+                {
+                    simdTemp = buildInternalFloatRegisterDefForNode(putArgStk);
+                }
+
+                if (!compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+                {
+                    // To store SIMD12 without SSE4.1 (extractps) we will need
+                    // a temp xmm reg to do the shuffle.
+                    buildInternalFloatRegisterDefForNode(use.GetNode());
+                }
             }
 #endif // defined(FEATURE_SIMD)
 
@@ -2978,20 +2990,21 @@ void LinearScan::SetContainsAVXFlags(unsigned sizeOfSIMDVector /* = 0*/)
         return;
     }
 
-    compiler->compExactlyDependsOn(InstructionSet_AVX);
     compiler->GetEmitter()->SetContainsAVX(true);
+
     if (sizeOfSIMDVector == 32)
     {
         compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
+    }
+
+    if (!compiler->canUseEvexEncoding())
+    {
         return;
     }
 
-    if (compiler->canUseEvexEncoding())
+    if (sizeOfSIMDVector == 64)
     {
-        if (compiler->compExactlyDependsOn(InstructionSet_AVX512F) && (sizeOfSIMDVector == 64))
-        {
-            compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
-        }
+        compiler->GetEmitter()->SetContains256bitOrMoreAVX(true);
     }
 }
 

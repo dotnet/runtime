@@ -3,22 +3,30 @@
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
 import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
+import { mono_log_debug } from "./logging";
+import { mono_exit } from "./exit";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 
-// don't `fetch` javaScript files
-const skipDownloadsByAssetTypes: {
+const jsModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-native": true,
     "js-module-dotnet": true,
+};
+
+// don't `fetch` javaScript and wasm files
+const skipDownloadsByAssetTypes: {
+    [k: string]: boolean
+} = {
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
 };
 
@@ -38,10 +46,7 @@ const containedInSnapshotByAssetTypes: {
     "pdb": true,
     "heap": true,
     "icu": true,
-    "js-module-threads": true,
-    "js-module-runtime": true,
-    "js-module-native": true,
-    "js-module-dotnet": true,
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
 };
 
@@ -49,10 +54,7 @@ const containedInSnapshotByAssetTypes: {
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-threads": true,
-    "js-module-runtime": true,
-    "js-module-native": true,
-    "js-module-dotnet": true,
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
     "symbols": true,
 };
@@ -70,7 +72,7 @@ export function resolve_asset_path(behavior: AssetBehaviours): AssetEntryInterna
     return asset;
 }
 export async function mono_download_assets(): Promise<void> {
-    if (loaderHelpers.diagnosticTracing) console.debug("MONO_WASM: mono_download_assets");
+    mono_log_debug("mono_download_assets");
     loaderHelpers.maxParallelDownloads = loaderHelpers.config.maxParallelDownloads || loaderHelpers.maxParallelDownloads;
     loaderHelpers.enableDownloadRetry = loaderHelpers.config.enableDownloadRetry || loaderHelpers.enableDownloadRetry;
     try {
@@ -152,10 +154,6 @@ export async function mono_download_assets(): Promise<void> {
                         await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
@@ -167,6 +165,11 @@ export async function mono_download_assets(): Promise<void> {
                             loaderHelpers.expected_instantiated_assets_count--;
                         }
                     } else {
+                        if (asset.behavior === "symbols") {
+                            await runtimeHelpers.instantiate_symbols_asset(asset);
+                            cleanupAsset(asset);
+                        }
+
                         if (skipBufferByAssetTypes[asset.behavior]) {
                             ++loaderHelpers.actual_downloaded_assets_count;
                         }
@@ -179,22 +182,23 @@ export async function mono_download_assets(): Promise<void> {
         // and we are not awating it here
         Promise.all(promises_of_asset_instantiation).then(() => {
             runtimeHelpers.allAssetsInMemory.promise_control.resolve();
-        }).catch(e => {
-            loaderHelpers.err("MONO_WASM: Error in mono_download_assets: " + e);
-            loaderHelpers.abort_startup(e, true);
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
         // spreading in time
         // rather than to block all downloads after onRuntimeInitialized or block onRuntimeInitialized after all downloads are done. That would create allocation burst.
     } catch (e: any) {
-        loaderHelpers.err("MONO_WASM: Error in mono_download_assets: " + e);
+        loaderHelpers.err("Error in mono_download_assets: " + e);
         throw e;
     }
 }
 
 export function delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => globalThis.setTimeout(resolve, ms));
 }
 
 // FIXME: Connection reset is probably the only good one for which we should retry
@@ -244,8 +248,7 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
     try {
         ++parallel_count;
         if (parallel_count == loaderHelpers.maxParallelDownloads) {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug("MONO_WASM: Throttling further parallel downloads");
+            mono_log_debug("Throttling further parallel downloads");
             throttlingPromise = createPromiseController<void>();
         }
 
@@ -264,8 +267,7 @@ async function start_asset_download_with_throttle(asset: AssetEntryInternal): Pr
     finally {
         --parallel_count;
         if (throttlingPromise && parallel_count == loaderHelpers.maxParallelDownloads - 1) {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug("MONO_WASM: Resuming more parallel downloads");
+            mono_log_debug("Resuming more parallel downloads");
             const old_throttling = throttlingPromise;
             throttlingPromise = undefined;
             old_throttling.promise_control.resolve();
@@ -307,11 +309,9 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
 
         const attemptUrl = resolve_path(asset, sourcePrefix);
         if (asset.name === attemptUrl) {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}'`);
+            mono_log_debug(`Attempting to download '${attemptUrl}'`);
         } else {
-            if (loaderHelpers.diagnosticTracing)
-                console.debug(`MONO_WASM: Attempting to download '${attemptUrl}' for ${asset.name}`);
+            mono_log_debug(`Attempting to download '${attemptUrl}' for ${asset.name}`);
         }
         try {
             asset.resolvedUrl = attemptUrl;
@@ -338,11 +338,11 @@ async function start_asset_download_sources(asset: AssetEntryInternal): Promise<
     const isOkToFail = asset.isOptional || (asset.name.match(/\.pdb$/) && loaderHelpers.config.ignorePdbLoadErrors);
     mono_assert(response, () => `Response undefined ${asset.name}`);
     if (!isOkToFail) {
-        const err: any = new Error(`MONO_WASM: download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        const err: any = new Error(`download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         err.status = response.status;
         throw err;
     } else {
-        loaderHelpers.out(`MONO_WASM: optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
+        loaderHelpers.out(`optional download '${response.url}' for ${asset.name} failed ${response.status} ${response.statusText}`);
         return undefined;
     }
 }
@@ -370,10 +370,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
         } else {
             attemptUrl = sourcePrefix + asset.name;
         }
-        attemptUrl = loaderHelpers.locateFile(attemptUrl);
-        if (loaderHelpers.assetUniqueQuery) {
-            attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
-        }
+        attemptUrl = appendUniqueQuery(loaderHelpers.locateFile(attemptUrl), asset.behavior);
     }
     else {
         attemptUrl = asset.resolvedUrl;
@@ -381,6 +378,17 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
     mono_assert(attemptUrl && typeof attemptUrl == "string", "attemptUrl need to be path or url string");
     return attemptUrl;
 }
+
+export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviours): string {
+    // apply unique query to js modules to make the module state independent of the other runtime instances
+    if (loaderHelpers.modulesUniqueQuery && jsModulesAssetTypes[behavior]) {
+        attemptUrl = attemptUrl + loaderHelpers.modulesUniqueQuery;
+    }
+
+    return attemptUrl;
+}
+
+
 
 function download_resource(request: ResourceRequest): LoadingResource {
     try {

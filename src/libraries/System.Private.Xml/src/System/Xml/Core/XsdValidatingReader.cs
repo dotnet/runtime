@@ -1957,7 +1957,7 @@ namespace System.Xml
 
         // Internal / Private methods
 
-        private object GetStringValue()
+        private string GetStringValue()
         {
             return _coreReader.Value;
         }

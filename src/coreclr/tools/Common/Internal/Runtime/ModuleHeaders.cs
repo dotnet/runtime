@@ -71,6 +71,9 @@ namespace Internal.Runtime
         ManifestAssemblyMvids = 118, // Added in 5.3
         CrossModuleInlineInfo = 119, // Added in 6.3
         HotColdMap = 120, // Added in 8.0
+        MethodIsGenericMap = 121, // Added in V9.0
+        EnclosingTypeMap = 122, // Added in V9.0
+        TypeGenericInfoMap = 123, // Added in V9.0
 
         //
         // NativeAOT ReadyToRun sections

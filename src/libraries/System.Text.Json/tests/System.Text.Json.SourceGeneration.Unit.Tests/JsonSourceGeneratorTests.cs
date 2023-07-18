@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq;
-using System.Reflection;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Xunit;
 
 namespace System.Text.Json.SourceGeneration.UnitTests
@@ -57,10 +54,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             Compilation compilation = CompilationHelper.CreateCompilation(source);
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
         }
@@ -76,7 +69,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             string source = """
                 using System.Text.Json.Serialization;
-                using ReferencedAssembly;
 
                 namespace HelloWorld
                 {
@@ -117,10 +109,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
             Assert.Equal(6, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
             result.AssertContainsType("global::ReferencedAssembly.Location");
@@ -138,7 +126,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             string source = """
                 using System.Text.Json.Serialization;
-                using ReferencedAssembly;
 
                 using @JsonSerializable = System.Runtime.Serialization.CollectionDataContractAttribute ;
                 using AliasedAttribute = System.Text.Json.Serialization.JsonSerializableAttribute;
@@ -182,10 +169,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
             Assert.Equal(6, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
             result.AssertContainsType("global::ReferencedAssembly.Location");
@@ -220,55 +203,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 }
                 """;
 
-            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences: null, assemblyName, includeSTJ);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences: null, assemblyName, includeSTJ: includeSTJ);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             if (includeSTJ)
             {
-                result.AssertContainsType("global::System.Int32");
-                result.AssertContainsType("global::System.String");
+                result.AssertContainsType("int");
+                result.AssertContainsType("string");
             }
             else
             {
                 Assert.Empty(result.AllGeneratedTypes);
             }
 
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
-        }
-
-        [Theory]
-        [InlineData("System.Text.Json", true)]
-        [InlineData("System.Text.Json.Not", true)]
-        [InlineData("System.Text.Json", false)]
-        [InlineData("System.Text.Json.Not", false)]
-        public static void LocalJsonSerializableAttributeUnexpectedShape(string assemblyName, bool includeSTJ)
-        {
-            string source = """
-                using System;
-                using System.Text.Json.Serialization;
-
-                [assembly: JsonSerializable(typeof(int))]
-
-                namespace System.Text.Json.Serialization
-                {
-                    [AttributeUsage(AttributeTargets.Assembly, AllowMultiple = true)]
-                    public sealed class JsonSerializableAttribute : JsonAttribute
-                    {
-                        public JsonSerializableAttribute(string typeInfoPropertyName, Type type) { }
-                    }
-                }
-                """;
-
-            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences: null, assemblyName, includeSTJ);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            Assert.Empty(result.AllGeneratedTypes);
-
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, result.Diagnostics, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, result.Diagnostics, Array.Empty<(Location, string)>());
+            Assert.Empty(result.Diagnostics);
         }
 
         [Fact]
@@ -276,11 +224,11 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         {
             Compilation compilation = CompilationHelper.CreateRepeatedLocationsCompilation();
 
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation, disableDiagnosticValidation: true);
 
             // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
+            result.Diagnostics.AssertMaxSeverity(DiagnosticSeverity.Warning);
+            result.NewCompilation.GetDiagnostics().AssertMaxSeverity(DiagnosticSeverity.Warning);
         }
 
         [Fact]
@@ -294,7 +242,6 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             string source = """
                 using System;
-                using System.Collections;
                 using System.Collections.Generic;
                 using System.Text.Json.Serialization;
                 using ReferencedAssembly;
@@ -322,13 +269,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-
-            // Make sure compilation was successful.
-
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Fact]
@@ -371,20 +312,16 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
             Assert.Equal(5, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::MyType");
-            result.AssertContainsType("global::System.Int32");
-            result.AssertContainsType("global::System.String");
-            result.AssertContainsType("global::System.Double");
-            result.AssertContainsType("global::System.Char");
+            result.AssertContainsType("int");
+            result.AssertContainsType("string");
+            result.AssertContainsType("double");
+            result.AssertContainsType("char");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Netfx lacks IsExternalInit class needed for records
         public void Record()
         {
             // Compile the referenced assembly first.
@@ -425,16 +362,14 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Netfx lacks IsExternalInit class needed for records
         public void RecordInExternalAssembly()
         {
             // Compile the referenced assembly first.
@@ -459,15 +394,12 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
 
             Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
-
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::ReferencedAssembly.LibRecord");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -503,17 +435,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            CheckCompilationDiagnosticsErrors(result.Diagnostics);
-            CheckCompilationDiagnosticsErrors(result.NewCompilation.GetDiagnostics());
-
-            Assert.Equal(4, result.AllGeneratedTypes.Count());
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.AppRecord");
-        }
-
-        private void CheckCompilationDiagnosticsErrors(ImmutableArray<Diagnostic> diagnostics)
-        {
-            Assert.Empty(diagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error));
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         // TODO: add test guarding against (de)serializing static classes.
@@ -561,14 +486,10 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
 
-            // Make sure compilation was successful.
-            Assert.Empty(result.Diagnostics.Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
-            Assert.Empty(result.NewCompilation.GetDiagnostics().Where(diag => diag.Severity.Equals(DiagnosticSeverity.Error)));
-
             // Should find the generated type.
             Assert.Equal(2, result.AllGeneratedTypes.Count());
             result.AssertContainsType("global::HelloWorld.MyType");
-            result.AssertContainsType("global::System.Int32");
+            result.AssertContainsType("int");
         }
 
         [Fact]
@@ -595,20 +516,13 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
-
-            // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
 
         [Fact]
         public static void NoErrorsWhenUsingReservedCSharpKeywords()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace Test
@@ -625,20 +539,42 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
 
-            // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        [Fact]
+        public void EquivalentTupleDeclarations_DoNotConflict()
+        {
+            string source = """
+                using System.Text.Json.Serialization;
+
+                #nullable enable
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof((string? Label1, string Label2, int Integer)))]
+                    [JsonSerializable(typeof((string, string, int)))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            // Should find the generated type.
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("(string, string, int)");
+            result.AssertContainsType("string");
+            result.AssertContainsType("int");
         }
 
         [Fact]
         public static void NoErrorsWhenUsingIgnoredReservedCSharpKeywords()
         {
             string source = """
-                using System;
                 using System.Text.Json.Serialization;
 
                 namespace Test
@@ -655,13 +591,151 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                 """;
 
             Compilation compilation = CompilationHelper.CreateCompilation(source);
-            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
-            ImmutableArray<Diagnostic> generatorDiags = result.NewCompilation.GetDiagnostics();
+            CompilationHelper.RunJsonSourceGenerator(compilation);
+        }
 
-            // No diagnostics expected.
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
-            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        [Fact]
+        public void UseUnderlyingTypeConverterForNullableType()
+        {
+            // Compile the referenced assembly first.
+            Compilation referencedCompilation = CompilationHelper.CreateReferencedLocationCompilation();
+
+            // Emit the image of the referenced assembly.
+            byte[] referencedImage = CompilationHelper.CreateAssemblyImage(referencedCompilation);
+
+            string source = """
+                using System;
+                using System.Text.Json;
+                using System.Text.Json.Serialization;
+
+                namespace Test
+                {
+                    [JsonSourceGenerationOptions]
+                    [JsonSerializable(typeof(Sample))]
+                    public partial class SourceGenerationContext : JsonSerializerContext
+                    {
+                    }
+                    public class Sample
+                    {
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset Start { get; set; }
+                        [JsonConverter(typeof(DateTimeOffsetToTimestampJsonConverter))]
+                        public DateTimeOffset? End { get; set; } // Without this property, this is fine
+                    }
+                    public class DateTimeOffsetToTimestampJsonConverter : JsonConverter<DateTimeOffset>
+                    {
+                        internal const long TicksPerMicroseconds = 10;
+                        public override DateTimeOffset Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+                        {
+                            var value = reader.GetInt64();
+                            return new DateTimeOffset(value * TicksPerMicroseconds, TimeSpan.Zero);
+                        }
+                        public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
+                        {
+                            writer.WriteNumberValue(value.Ticks / TicksPerMicroseconds);
+                        }
+                    }
+                }
+                """;
+
+            MetadataReference[] additionalReferences = { MetadataReference.CreateFromImage(referencedImage) };
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, additionalReferences);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Equal(3, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("global::Test.Sample");
+            result.AssertContainsType("global::System.DateTimeOffset");
+            result.AssertContainsType("global::System.DateTimeOffset?");
+        }
+
+        [Fact]
+        public void VariousGenericSerializableTypesAreSupported()
+        {
+            string source = """
+                using System.Collections.Generic;
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    [JsonSerializable(typeof(Dictionary<string, string>))]
+                    [JsonSerializable(typeof(HelloWorld.MyClass.NestedGenericClass<string>))]
+                    [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedClass))]
+                    [JsonSerializable(typeof(HelloWorld.MyGenericClass<string>.NestedGenericClass<int>))]
+                    internal partial class JsonContext : JsonSerializerContext
+                    {
+                    }
+
+                    public class MyClass
+                    {
+                        public class NestedGenericClass<T>
+                        {
+                        }
+                    }
+
+                    public class MyGenericClass<T1>
+                    {
+                        public class NestedClass
+                        {
+                        }
+                        public class NestedGenericClass<T2>
+                        {
+                        }
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source);
+
+            JsonSourceGeneratorResult result = CompilationHelper.RunJsonSourceGenerator(compilation);
+
+            Assert.Equal(5, result.AllGeneratedTypes.Count());
+            result.AssertContainsType("global::System.Collections.Generic.Dictionary<string, string>");
+            result.AssertContainsType("global::HelloWorld.MyClass.NestedGenericClass<string>");
+            result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedClass");
+            result.AssertContainsType("global::HelloWorld.MyGenericClass<string>.NestedGenericClass<int>");
+            result.AssertContainsType("string");
+        }
+
+        [Theory]
+        [InlineData("public sealed partial class MySealedClass")]
+        [InlineData("public partial class MyGenericClass<T>")]
+        [InlineData("public partial interface IMyInterface")]
+        [InlineData("public partial interface IMyGenericInterface<T, U>")]
+        [InlineData("public partial struct MyStruct")]
+        [InlineData("public partial struct MyGenericStruct<T>")]
+        [InlineData("public ref partial struct MyRefStruct")]
+        [InlineData("public ref partial struct MyGenericRefStruct<T>")]
+        [InlineData("public readonly partial struct MyReadOnlyStruct")]
+        [InlineData("public readonly ref partial struct MyReadOnlyRefStruct")]
+#if ROSLYN4_0_OR_GREATER && NETCOREAPP
+        [InlineData("public partial record MyRecord(int x)", LanguageVersion.CSharp10)]
+        [InlineData("public partial record struct MyRecordStruct(int x)", LanguageVersion.CSharp10)]
+#endif
+        public void NestedContextsAreSupported(string containingTypeDeclarationHeader, LanguageVersion? languageVersion = null)
+        {
+            string source = $$"""
+                using System.Text.Json.Serialization;
+
+                namespace HelloWorld
+                {
+                    {{containingTypeDeclarationHeader}}
+                    {
+                        [JsonSerializable(typeof(MyClass))]
+                        internal partial class JsonContext : JsonSerializerContext
+                        {
+                        }
+                    }
+
+                    public class MyClass
+                    {
+                    }
+                }
+                """;
+
+            Compilation compilation = CompilationHelper.CreateCompilation(source, parseOptions: CompilationHelper.CreateParseOptions(languageVersion));
+            CompilationHelper.RunJsonSourceGenerator(compilation);
         }
     }
 }

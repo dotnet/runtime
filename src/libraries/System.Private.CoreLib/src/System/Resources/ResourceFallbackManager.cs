@@ -1,24 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-**
-**
-** Purpose: Encapsulates CultureInfo fallback for resource
-** lookup
-**
-**
-===========================================================*/
-
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 
 namespace System.Resources
 {
+    /// <summary>
+    /// Encapsulates <see cref="CultureInfo" /> fallback for resource lookup.
+    /// </summary>
     internal sealed class ResourceFallbackManager : IEnumerable<CultureInfo>
     {
         private readonly CultureInfo m_startingCulture;
