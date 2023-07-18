@@ -33,9 +33,9 @@ namespace DependencyLogViewer
         {
             this.nodeTitle = new System.Windows.Forms.Label();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-			chkSameWindowNav = new System.Windows.Forms.CheckBox();
-			btnBack = new System.Windows.Forms.Button();
-			btnForward = new System.Windows.Forms.Button();
+            this.chkSameWindowNav = new System.Windows.Forms.CheckBox();
+            this.btnBack = new System.Windows.Forms.Button();
+            this.btnForward = new System.Windows.Forms.Button();
             this.dependentsListBox = new System.Windows.Forms.ListBox();
             this.exploreDependent = new System.Windows.Forms.Button();
             this.dependeesListBox = new System.Windows.Forms.ListBox();
@@ -81,39 +81,39 @@ namespace DependencyLogViewer
             this.splitContainer1.SplitterDistance = 419;
             this.splitContainer1.SplitterWidth = 6;
             this.splitContainer1.TabIndex = 1;
-			// 
-			// chkSameWindowNav
-			// 
-			chkSameWindowNav.AutoSize = true;
-			chkSameWindowNav.Location = new System.Drawing.Point(890, 0);
-			chkSameWindowNav.Name = "chkSameWindowNav";
-			chkSameWindowNav.Size = new System.Drawing.Size(322, 36);
-			chkSameWindowNav.TabIndex = 5;
-			chkSameWindowNav.Text = "Same Window Nav";
-			chkSameWindowNav.UseVisualStyleBackColor = true;
-            chkSameWindowNav.CheckedChanged += ChkSameWindowNav_CheckedChanged;
-			// 
-			// btnBack
-			// 
-			btnBack.Location = new System.Drawing.Point(607, 0);
-			btnBack.Margin = new System.Windows.Forms.Padding(4);
-			btnBack.Name = "btnBack";
-			btnBack.Size = new System.Drawing.Size(124, 43);
-			btnBack.TabIndex = 3;
-			btnBack.Text = "Back";
-			btnBack.UseVisualStyleBackColor = true;
-			btnBack.Click += btnBack_Click;
-			// 
+            // 
+            // chkSameWindowNav
+            // 
+            this.chkSameWindowNav.AutoSize = true;
+            this.chkSameWindowNav.Location = new System.Drawing.Point(890, 0);
+            this.chkSameWindowNav.Name = "chkSameWindowNav";
+            this.chkSameWindowNav.Size = new System.Drawing.Size(322, 36);
+            this.chkSameWindowNav.TabIndex = 5;
+            this.chkSameWindowNav.Text = "Same Window Nav";
+            this.chkSameWindowNav.UseVisualStyleBackColor = true;
+            this.chkSameWindowNav.CheckedChanged += ChkSameWindowNav_CheckedChanged;
+            // 
+            // btnBack
+            // 
+            this.btnBack.Location = new System.Drawing.Point(607, 0);
+            this.btnBack.Margin = new System.Windows.Forms.Padding(4);
+            this.btnBack.Name = "btnBack";
+            this.btnBack.Size = new System.Drawing.Size(124, 43);
+            this.btnBack.TabIndex = 3;
+            this.btnBack.Text = "Back";
+            this.btnBack.UseVisualStyleBackColor = true;
+            this.btnBack.Click += btnBack_Click;
+            // 
             // btnForward
             // 
-            btnForward.Location = new System.Drawing.Point(750, 0);
-            btnForward.Margin = new System.Windows.Forms.Padding(4);
-            btnForward.Name = "btnForward";
-            btnForward.Size = new System.Drawing.Size(124, 43);
-            btnForward.TabIndex = 4;
-            btnForward.Text = "Forward";
-            btnForward.UseVisualStyleBackColor = true;
-            btnForward.Click += btnForward_Click;
+            this.btnForward.Location = new System.Drawing.Point(750, 0);
+            this.btnForward.Margin = new System.Windows.Forms.Padding(4);
+            this.btnForward.Name = "btnForward";
+            this.btnForward.Size = new System.Drawing.Size(124, 43);
+            this.btnForward.TabIndex = 4;
+            this.btnForward.Text = "Forward";
+            this.btnForward.UseVisualStyleBackColor = true;
+            this.btnForward.Click += btnForward_Click;
             // 
             // dependentsListBox
             // 
@@ -170,9 +170,9 @@ namespace DependencyLogViewer
             this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 30F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1126, 836);
-			Controls.Add(chkSameWindowNav);
-			Controls.Add(btnBack);
-			Controls.Add(btnForward);
+            Controls.Add(chkSameWindowNav);
+            Controls.Add(btnBack);
+            Controls.Add(btnForward);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.nodeTitle);
             this.Margin = new System.Windows.Forms.Padding(4);
@@ -197,8 +197,8 @@ namespace DependencyLogViewer
         private System.Windows.Forms.ListBox dependeesListBox;
         private System.Windows.Forms.Button exploreDependent;
         private System.Windows.Forms.ListBox dependentsListBox;
-		private System.Windows.Forms.Button btnBack;
-		private System.Windows.Forms.CheckBox chkSameWindowNav;
-		private System.Windows.Forms.Button btnForward;
+        private System.Windows.Forms.Button btnBack;
+        private System.Windows.Forms.CheckBox chkSameWindowNav;
+        private System.Windows.Forms.Button btnForward;
     }
 }

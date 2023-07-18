@@ -18,8 +18,7 @@ namespace DependencyLogViewer
             InitializeComponent();
             SetNode(n);
             btnBack.Visible = btnForward.Visible = chkSameWindowNav.Checked;
-            // this is stupid, this is winforms
-            var fixControls = new Control[] {btnBack,btnForward,chkSameWindowNav,exploreDependent,dependentsListBox,exploreDependee,dependeesListBox,this,this.splitContainer1 };
+            var fixControls = new Control[] {btnBack, btnForward, chkSameWindowNav, exploreDependent, dependentsListBox, exploreDependee, dependeesListBox, this, this.splitContainer1 };
             foreach (var cntrl in fixControls)
             {
                 cntrl.PreviewKeyDown += Cntrl_PreviewKeyDown;
@@ -53,7 +52,6 @@ namespace DependencyLogViewer
                 return;
             e.SuppressKeyPress = true;
             e.Handled = true;
-                
         }
 
         public void SetNode(Node n)
@@ -93,7 +91,7 @@ namespace DependencyLogViewer
                 return;
 
             BoxDisplay selected = (BoxDisplay)listbox.SelectedItem;
-            
+
             NodeForm nodeForm = new NodeForm(graph, selected.node);
             nodeForm.Show();
         }
@@ -103,7 +101,7 @@ namespace DependencyLogViewer
             if (chkSameWindowNav.Checked != true)
             {
                 ExploreSelectedItem(_graph, dependeesListBox);
-				return;
+                return;
             }
             ClearHistoryIfIn();
             var selected = (BoxDisplay)dependeesListBox.SelectedItem;
@@ -135,13 +133,12 @@ namespace DependencyLogViewer
                     History.RemoveRange(removeAfter, History.Count - removeAfter);
                 CurSpotInHistory = -1;
             }
-            
         }
         public int CurSpotInHistory = -1;
         private List<Node> History = new();
 
-		private void btnBack_Click(object sender, EventArgs e)
-		{
+        private void btnBack_Click(object sender, EventArgs e)
+        {
             if (CurSpotInHistory == -1)
                 CurSpotInHistory = History.Count - 2;
             else if (CurSpotInHistory == 0) // should not get here
@@ -149,22 +146,21 @@ namespace DependencyLogViewer
             else
                 CurSpotInHistory--;
             SetNode(History[CurSpotInHistory]);
-		}
+        }
         private void btnForward_Click(object sender, EventArgs e)
-		{
+        {
             if (CurSpotInHistory == -1)// should not get here
                 return;
             else if (CurSpotInHistory == History.Count - 1) // should not get here
                 return;
             else
-                CurSpotInHistory++; 
+                CurSpotInHistory++;
             SetNode(History[CurSpotInHistory]);
-		}
+        }
         private void SetNavButtonStates()
         {
             btnBack.Enabled = CurSpotInHistory != 0 && History.Count > 1;
             btnForward.Enabled = CurSpotInHistory != -1 && CurSpotInHistory != History.Count - 1;
-            
         }
         private void ChkSameWindowNav_CheckedChanged(object sender, System.EventArgs e) => btnBack.Visible = btnForward.Visible = chkSameWindowNav.Checked;
         private void infoButton_LinkClicked(object sender, EventArgs e)
