@@ -1699,6 +1699,9 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(knownSymbols.DateTimeOffsetType);
                 AddTypeIfNotNull(knownSymbols.DateOnlyType);
                 AddTypeIfNotNull(knownSymbols.TimeOnlyType);
+                AddTypeIfNotNull(knownSymbols.Int128Type);
+                AddTypeIfNotNull(knownSymbols.UInt128Type);
+                AddTypeIfNotNull(knownSymbols.HalfType);
                 AddTypeIfNotNull(knownSymbols.GuidType);
                 AddTypeIfNotNull(knownSymbols.UriType);
                 AddTypeIfNotNull(knownSymbols.VersionType);

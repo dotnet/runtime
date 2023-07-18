@@ -99,7 +99,7 @@ endif()
 
 check_include_files("sys/types.h;sys/user.h" HAVE_SYS_USER_H)
 
-if(HOST_IOS OR HOST_MACCAT)
+if(HOST_IOS OR HOST_TVOS OR HOST_MACCAT)
   # getentropy isn't allowed in the AppStore: https://github.com/rust-lang/rust/issues/102643
   set(HAVE_GETENTROPY 0)
 endif()
@@ -247,7 +247,7 @@ if(HOST_WIN32)
   set(HAVE_STRUCT_SOCKADDR_IN6 1)
   set(HAVE_STRTOK_R 1)
   set(HAVE_EXECVP 0)
-elseif(HOST_IOS)
+elseif(HOST_IOS OR HOST_TVOS)
   set(HAVE_SYSTEM 0)
   set(HAVE_SYS_USER_H 0)
   if(HOST_TVOS)

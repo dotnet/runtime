@@ -110,10 +110,10 @@
 #endif
 
 /*
- * On iOS we can't use System.Environment.Exit () as it will do the wrong
+ * On iOS/tvOS we can't use System.Environment.Exit () as it will do the wrong
  * shutdown sequence.
 */
-#if !defined (TARGET_IOS)
+#if !defined (TARGET_IOS) && !defined(TARGET_TVOS)
 #define TRY_MANAGED_SYSTEM_ENVIRONMENT_EXIT
 #endif
 
