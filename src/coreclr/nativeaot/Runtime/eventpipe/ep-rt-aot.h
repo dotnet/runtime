@@ -1395,7 +1395,7 @@ ep_rt_utf8_to_utf16le_string (
     ep_char16_t* lpDestStr = NULL;
 
     if (static_cast<int>(len) < 0)
-        len = (size_t)strlen(str) + 1;
+        len = strlen(str) + 1;
 
     size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
 
@@ -1403,7 +1403,7 @@ ep_rt_utf8_to_utf16le_string (
         return NULL;
 
     lpDestStr = reinterpret_cast<ep_char16_t *>(malloc((ret + 1) * sizeof(ep_char16_t)));
-    ret = (size_t)minipal_convert_utf8_to_utf16 (str, len, reinterpret_cast<CHAR16_T*>(lpDestStr), ret, flags);
+    ret = minipal_convert_utf8_to_utf16 (str, len, reinterpret_cast<CHAR16_T*>(lpDestStr), ret, flags);
     lpDestStr[ret] = '\0';
 
     return lpDestStr;
@@ -1464,16 +1464,15 @@ ep_rt_utf16_to_utf8_string (
         while (str[len])
             len++;
 
-        len++;
     }
 
-    size_t ret = (size_t)minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
+    size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
 
     if (ret <= 0)
         return NULL;
 
     lpDestStr = reinterpret_cast<ep_char8_t *>(malloc((ret + 1) * sizeof(ep_char8_t)));
-    ret = (size_t)minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
+    ret = minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
     lpDestStr[ret] = '\0';
 
     return lpDestStr;
