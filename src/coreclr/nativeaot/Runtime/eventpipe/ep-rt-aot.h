@@ -1397,7 +1397,7 @@ ep_rt_utf8_to_utf16le_string (
     if (static_cast<int>(len) < 0)
         len = (size_t)strlen(str) + 1;
 
-    size_t ret = (size_t)minipal_get_length_utf8_to_utf16 (str, len, flags);
+    size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
 
     if (ret <= 0)
         return NULL;
