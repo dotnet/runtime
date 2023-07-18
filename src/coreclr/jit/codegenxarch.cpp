@@ -4091,7 +4091,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     GenTree*  dstAddr     = cpObjNode->Addr();
     GenTree*  source      = cpObjNode->Data();
     var_types srcAddrType = TYP_BYREF;
-    bool      dstOnStack  = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
 
     // If the GenTree node has data about GC pointers, this means we're dealing
     // with CpObj, so this requires special logic.
@@ -4137,10 +4136,11 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     gcInfo.gcMarkRegPtrVal(REG_RSI, srcAddrType);
     gcInfo.gcMarkRegPtrVal(REG_RDI, dstAddr->TypeGet());
 
-    unsigned slots = cpObjNode->GetLayout()->GetSlotCount();
+    ClassLayout* layout = cpObjNode->GetLayout();
+    unsigned     slots  = layout->GetSlotCount();
 
     // If we can prove it's on the stack we don't need to use the write barrier.
-    if (dstOnStack)
+    if (dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
     {
         if (slots >= CPOBJ_NONGC_SLOTS_LIMIT)
         {
@@ -4164,8 +4164,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     }
     else
     {
-        ClassLayout* layout = cpObjNode->GetLayout();
-
         unsigned i = 0;
         while (i < slots)
         {

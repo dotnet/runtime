@@ -2746,8 +2746,6 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
         sourceIsLocal = true;
     }
 
-    bool dstOnStack = dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR);
-
 #ifdef DEBUG
     assert(!dstAddr->isContained());
 
@@ -2794,7 +2792,7 @@ void CodeGen::genCodeForCpObj(GenTreeBlk* cpObjNode)
     emitAttr attrDstAddr = emitActualTypeSize(dstAddr->TypeGet());
 
     // If we can prove it's on the stack we don't need to use the write barrier.
-    if (dstOnStack)
+    if (dstAddr->gtSkipReloadOrCopy()->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
     {
         unsigned i = 0;
         // Check if two or more remaining slots and use two load/store sequence

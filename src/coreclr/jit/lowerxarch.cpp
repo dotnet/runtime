@@ -424,7 +424,7 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
             // the entire operation takes 20 cycles and encodes in 5 bytes (loading RCX and REP MOVSD/Q).
             unsigned nonRefSlots = 0;
 
-            if (dstAddr->OperIs(GT_LCL_ADDR))
+            if (dstAddr->OperIs(GT_LCL_ADDR) || layout->HasGCByRef())
             {
                 // If the destination is on the stack then no write barriers are needed.
                 nonRefSlots = layout->GetSlotCount();
