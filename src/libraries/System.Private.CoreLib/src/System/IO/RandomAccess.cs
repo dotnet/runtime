@@ -285,8 +285,6 @@ namespace System.IO
             ValidateInput(handle, fileOffset: 0, flushingToDisk: true);
 
             // Call the same helper function that is used when users call FileStream.Flush(flushToDisk: true).
-            // While this was done to save time, it has the added bonus of providing consistent behavior which is
-            // beneficial for users who are migrating from using the FileStream class to using the RandomAccess class.
             FileStreamHelpers.FlushToDisk(handle);
         }
 
