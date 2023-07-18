@@ -266,7 +266,7 @@ namespace System.Net.Primitives.Functional.Tests
             // UTF8
             {
                 Span<byte> span = stackalloc byte[input.Length - 1];
-                Assert.False(((IUtf8SpanFormattable)network).TryFormat(span, out int bytesWritten, default, null));
+                Assert.False(network.TryFormat(span, out int bytesWritten));
                 Assert.Equal(0, bytesWritten);
             }
         }
@@ -290,7 +290,7 @@ namespace System.Net.Primitives.Functional.Tests
                 // UTF8
                 {
                     Span<byte> span = stackalloc byte[input.Length + additionalLength];
-                    Assert.True(((IUtf8SpanFormattable)network).TryFormat(span, out int bytesWritten, default, null));
+                    Assert.True(network.TryFormat(span, out int bytesWritten));
                     Assert.Equal(input.Length, bytesWritten);
                     Assert.Equal(input, Encoding.UTF8.GetString(span.Slice(0, bytesWritten)));
                 }

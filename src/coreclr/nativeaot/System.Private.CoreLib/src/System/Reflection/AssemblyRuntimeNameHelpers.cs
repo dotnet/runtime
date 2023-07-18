@@ -9,7 +9,6 @@ using System.Collections.Generic;
 
 namespace System.Reflection
 {
-    [System.Runtime.CompilerServices.ReflectionBlocked]
     public static class AssemblyRuntimeNameHelpers
     {
         //

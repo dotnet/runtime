@@ -47,11 +47,6 @@ namespace ILCompiler.Metadata
         private void InitializeFieldDefinition(Cts.FieldDesc entity, Field record)
         {
             record.Name = HandleString(entity.Name);
-            record.Signature = new FieldSignature
-            {
-                Type = HandleType(entity.FieldType),
-                // TODO: CustomModifiers
-            };
             record.Flags = GetFieldAttributes(entity);
 
             var ecmaField = entity as Cts.Ecma.EcmaField;
@@ -59,6 +54,14 @@ namespace ILCompiler.Metadata
             {
                 Ecma.MetadataReader reader = ecmaField.MetadataReader;
                 Ecma.FieldDefinition fieldDef = reader.GetFieldDefinition(ecmaField.Handle);
+
+                record.Signature = new FieldSignature
+                {
+                    Type = entity.HasEmbeddedSignatureData
+                        ? HandleFieldSignature(ecmaField.Module, fieldDef.Signature)
+                        : HandleType(entity.FieldType),
+                };
+
                 Ecma.ConstantHandle defaultValueHandle = fieldDef.GetDefaultValue();
                 if (!defaultValueHandle.IsNil)
                 {
@@ -75,6 +78,18 @@ namespace ILCompiler.Metadata
                 if (offset >= 0)
                     record.Offset = (uint)offset;
             }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private MetadataRecord HandleFieldSignature(Cts.Ecma.EcmaModule module, Ecma.BlobHandle sigBlob)
+        {
+            Ecma.BlobReader reader = module.MetadataReader.GetBlobReader(sigBlob);
+            Ecma.SignatureHeader header = reader.ReadSignatureHeader();
+            Debug.Assert(header.Kind == Ecma.SignatureKind.Field);
+            return HandleType(module, ref reader);
         }
 
         private MemberReference HandleFieldReference(Cts.FieldDesc field)

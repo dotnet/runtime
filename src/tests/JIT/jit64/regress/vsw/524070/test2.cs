@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit;
 public class Test_test2
 {
     public int func(int type)
@@ -10509,7 +10510,8 @@ public class Test_test2
         return type;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Test_test2 test = new Test_test2();
         if (test.func(-1) == -1)

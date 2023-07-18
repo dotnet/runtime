@@ -40,6 +40,8 @@ namespace System
             {
                 int fieldOffset = __GetFieldHelper(i, out MethodTable* fieldType);
 
+                Debug.Assert(!fieldType->IsPointerType && !fieldType->IsFunctionPointerType);
+
                 // Fetch the value of the field on both types
                 object thisResult = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref thisRawData, fieldOffset), fieldType);
                 object thatResult = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref thatRawData, fieldOffset), fieldType);
@@ -64,6 +66,9 @@ namespace System
             for (int i = 0; i < numFields; i++)
             {
                 int fieldOffset = __GetFieldHelper(i, out MethodTable* fieldType);
+
+                Debug.Assert(!fieldType->IsPointerType && !fieldType->IsFunctionPointerType);
+
                 object? fieldValue = RuntimeImports.RhBoxAny(ref Unsafe.Add(ref thisRawData, fieldOffset), fieldType);
 
                 // The hashcode of an array ignores the contents of the array, so it can produce

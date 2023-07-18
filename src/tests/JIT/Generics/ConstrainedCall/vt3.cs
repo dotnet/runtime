@@ -3,6 +3,7 @@
 //
 
 using System;
+using Xunit;
 interface IncrDecr
 {
     int Val();
@@ -44,9 +45,10 @@ class MyCounter<T> where T : IncrDecr
         return counter.GetHashCode();
     }
 }
-class test
+public class test
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         MyCounter<MyInt> mc = new MyCounter<MyInt>();
         if (mc.Val1A() != mc.Val1B())

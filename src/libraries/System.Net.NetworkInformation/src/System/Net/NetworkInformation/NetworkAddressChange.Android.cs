@@ -111,7 +111,7 @@ namespace System.Net.NetworkInformation
             Debug.Assert(s_loopTask is null);
 
             s_cancellationTokenSource = new CancellationTokenSource();
-            s_loopTask = Task.Run(() => PeriodicallyCheckIfNetworkChanged(s_cancellationTokenSource.Token));
+            s_loopTask = PeriodicallyCheckIfNetworkChanged(s_cancellationTokenSource.Token);
         }
 
         private static void StopLoop()
@@ -128,18 +128,23 @@ namespace System.Net.NetworkInformation
 
         private static async Task PeriodicallyCheckIfNetworkChanged(CancellationToken cancellationToken)
         {
-            using var timer = new PeriodicTimer(s_timerInterval);
+            await Task.CompletedTask.ConfigureAwait(ConfigureAwaitOptions.ForceYielding);
 
+            var timer = new PeriodicTimer(s_timerInterval);
             try
             {
-                while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false)
-                    && !cancellationToken.IsCancellationRequested)
+                while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false) &&
+                       !cancellationToken.IsCancellationRequested)
                 {
                     CheckIfNetworkChanged();
                 }
             }
             catch (OperationCanceledException)
             {
+            }
+            finally
+            {
+                timer.Dispose();
             }
         }
 

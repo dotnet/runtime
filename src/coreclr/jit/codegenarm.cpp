@@ -1082,6 +1082,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         LclVarDsc* varDsc     = compiler->lvaGetDesc(varNum);
         var_types  targetType = varDsc->GetRegisterType(tree);
 
+        emitter* emit = GetEmitter();
+
         if (targetType == TYP_LONG)
         {
             genStoreLongLclVar(tree);
@@ -1114,13 +1116,23 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
                 instruction ins  = ins_StoreFromSrc(dataReg, targetType);
                 emitAttr    attr = emitTypeSize(targetType);
 
-                emitter* emit = GetEmitter();
                 emit->emitIns_S_R(ins, attr, dataReg, varNum, /* offset */ 0);
             }
             else // store into register (i.e move into register)
             {
                 // Assign into targetReg when dataReg (from op1) is not the same register
-                inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+                // Only zero/sign extend if we are using general registers.
+                if (varTypeIsIntegral(targetType) && emit->isGeneralRegister(targetReg) &&
+                    emit->isGeneralRegister(dataReg))
+                {
+                    // We use 'emitActualTypeSize' as the instructions require 4BYTE.
+                    inst_Mov_Extend(targetType, /* srcInReg */ true, targetReg, dataReg, /* canSkip */ true,
+                                    emitActualTypeSize(targetType));
+                }
+                else
+                {
+                    inst_Mov(targetType, targetReg, dataReg, /* canSkip */ true);
+                }
             }
 
             genUpdateLifeStore(tree, targetReg, varDsc);

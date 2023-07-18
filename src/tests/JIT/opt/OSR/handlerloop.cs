@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 // OSR can't bail us out of a loop in a handler
 //
-class OSRHandlerLoop
+public class OSRHandlerLoop
 {
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int result = 0;
         int expected = 0;

@@ -10,15 +10,11 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// BlobIdStackTraceMethodRvaToTokenMapping - list of 8-byte pairs (method RVA-method token)
     /// </summary>
-    public sealed class StackTraceMethodMappingNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class StackTraceMethodMappingNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        public StackTraceMethodMappingNode()
-        {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "_stacktrace_methodRVA_to_token_mapping_End", true);
-        }
+        private int? _size;
 
-        private ObjectAndOffsetSymbolNode _endSymbol;
-        public ISymbolDefinitionNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
 
         public override bool IsShareable => false;
 
@@ -50,7 +46,6 @@ namespace ILCompiler.DependencyAnalysis
             ObjectDataBuilder objData = new ObjectDataBuilder(factory, relocsOnly);
             objData.RequireInitialPointerAlignment();
             objData.AddSymbol(this);
-            objData.AddSymbol(_endSymbol);
 
             foreach (var mappingEntry in factory.MetadataManager.GetStackTraceMapping(factory))
             {
@@ -58,7 +53,7 @@ namespace ILCompiler.DependencyAnalysis
                 objData.EmitInt(mappingEntry.MetadataHandle);
             }
 
-            _endSymbol.SetSymbolOffset(objData.CountBytes);
+            _size = objData.CountBytes;
             return objData.ToObjectData();
         }
     }

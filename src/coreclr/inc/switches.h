@@ -53,7 +53,7 @@
 #if defined(TARGET_X86) || defined(TARGET_ARM)
     #define USE_LAZY_PREFERRED_RANGE       0
 
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64) || defined(TARGET_POWERPC64) || defined(TARGET_RISCV64)
 
 #if defined(HOST_UNIX)
     // In PAL we have a smechanism that reserves memory on start up that is
@@ -74,10 +74,7 @@
 #endif
 
 // ALLOW_SXS_JIT enables AltJit support for JIT-ing, via DOTNET_AltJit / DOTNET_AltJitName.
-// ALLOW_SXS_JIT_NGEN enables AltJit support for NGEN, via DOTNET_AltJitNgen / DOTNET_AltJitName.
-// Note that if ALLOW_SXS_JIT_NGEN is defined, then ALLOW_SXS_JIT must be defined.
 #define ALLOW_SXS_JIT
-#define ALLOW_SXS_JIT_NGEN
 
 #if !defined(TARGET_UNIX)
 // PLATFORM_SUPPORTS_THREADSUSPEND is defined for platforms where it is safe to call
@@ -168,9 +165,3 @@
 #endif
 
 #define FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
-
-// If defined, support interpretation.
-
-#if !defined(TARGET_UNIX)
-#define FEATURE_STACK_SAMPLING
-#endif // defined (ALLOW_SXS_JIT)

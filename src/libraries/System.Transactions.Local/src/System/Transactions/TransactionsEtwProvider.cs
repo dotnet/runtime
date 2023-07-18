@@ -73,8 +73,7 @@ namespace System.Transactions
     /// <summary>Provides an event source for tracing Transactions information.</summary>
     [EventSource(
         Name = "System.Transactions.TransactionsEventSource",
-        Guid = "8ac2d80a-1f1a-431b-ace4-bff8824aef0b",
-        LocalizationResources = "FxResources.System.Transactions.Local.SR")]
+        Guid = "8ac2d80a-1f1a-431b-ace4-bff8824aef0b")]
     internal sealed class TransactionsEtwProvider : EventSource
     {
         /// <summary>
@@ -573,7 +572,6 @@ namespace System.Transactions
         }
 
         [Event(ENLISTMENT_CREATED_LTM_EVENTID, Keywords = Keywords.TraceLtm, Level = EventLevel.Informational, Task = Tasks.Enlistment, Opcode = Opcodes.Create, Message = "Enlistment Created (LTM). ID is {0}, type is {1}, options is {2}")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Only string/int are passed")]
         private void EnlistmentCreatedLtm(int enlistmentIdentifier, string enlistmentType, string enlistmentOptions)
         {
             SetActivityId(string.Empty);
@@ -581,7 +579,6 @@ namespace System.Transactions
         }
 
         [Event(ENLISTMENT_CREATED_OLETX_EVENTID, Keywords = Keywords.TraceOleTx, Level = EventLevel.Informational, Task = Tasks.Enlistment, Opcode = Opcodes.Create, Message = "Enlistment Created (OLETX). ID is {0}, type is {1}, options is {2}")]
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode", Justification = "Only string/int are passed")]
         private void EnlistmentCreatedOleTx(int enlistmentIdentifier, string enlistmentType, string enlistmentOptions)
         {
             SetActivityId(string.Empty);
@@ -1057,8 +1054,6 @@ namespace System.Transactions
             }
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-            Justification = "TransactionScopeResult parameter is an enum and is trimmer safe")]
         [Event(TRANSACTIONSCOPE_CREATED_EVENTID, Keywords = Keywords.TraceBase, Level = EventLevel.Informational, Task = Tasks.TransactionScope, Opcode = Opcodes.Created, Message = "Transactionscope was created: Transaction ID is {0}, TransactionScope Result is {1}")]
         private void TransactionScopeCreated(string transactionID, TransactionScopeResult transactionScopeResult)
         {

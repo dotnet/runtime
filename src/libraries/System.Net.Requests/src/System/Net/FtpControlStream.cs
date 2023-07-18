@@ -868,6 +868,9 @@ namespace System.Net
             }
         }
 
+        private static readonly char[] s_whitespaceDot = new char[] { ' ', '.', '\r', '\n' };
+        private static readonly char[] s_spaceCommaBrackets = new char[] { ' ', '(', ',', ')' };
+
         /// <summary>
         ///    <para>Parses a response string for content length</para>
         /// </summary>
@@ -885,26 +888,28 @@ namespace System.Net
         private DateTime GetLastModifiedFrom213Response(string str)
         {
             DateTime dateTime = _lastModified;
-            string[] parsedList = str.Split(new char[] { ' ', '.' });
-            if (parsedList.Length < 2)
+            Span<Range> parts = stackalloc Range[4];
+            ReadOnlySpan<char> strSpan = str;
+            int count = strSpan.SplitAny(parts, " .");
+            if (count < 2)
             {
                 return dateTime;
             }
-            string dateTimeLine = parsedList[1];
+            ReadOnlySpan<char> dateTimeLine = strSpan[parts[1]];
             if (dateTimeLine.Length < 14)
             {
                 return dateTime;
             }
-            int year = Convert.ToInt32(dateTimeLine.Substring(0, 4), NumberFormatInfo.InvariantInfo);
-            int month = Convert.ToInt16(dateTimeLine.Substring(4, 2), NumberFormatInfo.InvariantInfo);
-            int day = Convert.ToInt16(dateTimeLine.Substring(6, 2), NumberFormatInfo.InvariantInfo);
-            int hour = Convert.ToInt16(dateTimeLine.Substring(8, 2), NumberFormatInfo.InvariantInfo);
-            int minute = Convert.ToInt16(dateTimeLine.Substring(10, 2), NumberFormatInfo.InvariantInfo);
-            int second = Convert.ToInt16(dateTimeLine.Substring(12, 2), NumberFormatInfo.InvariantInfo);
+            int year = int.Parse(dateTimeLine.Slice(0, 4), NumberFormatInfo.InvariantInfo);
+            int month = short.Parse(dateTimeLine.Slice(4, 2), NumberFormatInfo.InvariantInfo);
+            int day = short.Parse(dateTimeLine.Slice(6, 2), NumberFormatInfo.InvariantInfo);
+            int hour = short.Parse(dateTimeLine.Slice(8, 2), NumberFormatInfo.InvariantInfo);
+            int minute = short.Parse(dateTimeLine.Slice(10, 2), NumberFormatInfo.InvariantInfo);
+            int second = short.Parse(dateTimeLine.Slice(12, 2), NumberFormatInfo.InvariantInfo);
             int millisecond = 0;
-            if (parsedList.Length > 2)
+            if (count > 2)
             {
-                millisecond = Convert.ToInt16(parsedList[2], NumberFormatInfo.InvariantInfo);
+                millisecond = short.Parse(strSpan[parts[2]], NumberFormatInfo.InvariantInfo);
             }
             try
             {
@@ -941,12 +946,10 @@ namespace System.Net
             if (end <= start)
                 return;
 
-            string filename = str.Substring(start, end - start);
-            filename = filename.TrimEnd(new char[] { ' ', '.', '\r', '\n' });
+            string filename = str.AsSpan(start, end - start).TrimEnd(s_whitespaceDot).ToString();
             // Do minimal escaping that we need to get a valid Uri
             // when combined with the baseUri
-            string escapedFilename;
-            escapedFilename = filename.Replace("%", "%25");
+            string escapedFilename = filename.Replace("%", "%25");
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
@@ -1022,7 +1025,7 @@ namespace System.Net
         /// </summary>
         private static int GetPortV4(string responseString)
         {
-            string[] parsedList = responseString.Split(new char[] { ' ', '(', ',', ')' });
+            string[] parsedList = responseString.Split(s_spaceCommaBrackets);
 
             // We need at least the status code and the port
             if (parsedList.Length <= 7)

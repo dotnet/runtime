@@ -25,49 +25,49 @@ namespace System.Runtime.Intrinsics.X86
 
             /// <summary>
             /// unsigned __int64 _andn_u64 (unsigned __int64 a, unsigned __int64 b)
-            ///   ANDN r64a, r64b, reg/m64
+            ///   ANDN r64a, r64b, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong AndNot(ulong left, ulong right) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _bextr_u64 (unsigned __int64 a, unsigned int start, unsigned int len)
-            ///   BEXTR r64a, reg/m64, r64b
+            ///   BEXTR r64a, r/m64, r64b
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong BitFieldExtract(ulong value, byte start, byte length) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _bextr2_u64 (unsigned __int64 a, unsigned __int64 control)
-            ///   BEXTR r64a, reg/m64, r64b
+            ///   BEXTR r64a, r/m64, r64b
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong BitFieldExtract(ulong value, ushort control) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _blsi_u64 (unsigned __int64 a)
-            ///   BLSI reg, reg/m64
+            ///   BLSI r64, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ExtractLowestSetBit(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _blsmsk_u64 (unsigned __int64 a)
-            ///   BLSMSK reg, reg/m64
+            ///   BLSMSK r64, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong GetMaskUpToLowestSetBit(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// unsigned __int64 _blsr_u64 (unsigned __int64 a)
-            ///   BLSR reg, reg/m64
+            ///   BLSR r64, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong ResetLowestSetBit(ulong value) { throw new PlatformNotSupportedException(); }
 
             /// <summary>
             /// __int64 _mm_tzcnt_64 (unsigned __int64 a)
-            ///   TZCNT reg, reg/m64
+            ///   TZCNT r64, r/m64
             /// This intrinsic is only available on 64-bit processes
             /// </summary>
             public static ulong TrailingZeroCount(ulong value) { throw new PlatformNotSupportedException(); }
@@ -75,43 +75,43 @@ namespace System.Runtime.Intrinsics.X86
 
         /// <summary>
         /// unsigned int _andn_u32 (unsigned int a, unsigned int b)
-        ///   ANDN r32a, r32b, reg/m32
+        ///   ANDN r32a, r32b, r/m32
         /// </summary>
         public static uint AndNot(uint left, uint right) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _bextr_u32 (unsigned int a, unsigned int start, unsigned int len)
-        ///   BEXTR r32a, reg/m32, r32b
+        ///   BEXTR r32a, r/m32, r32b
         /// </summary>
         public static uint BitFieldExtract(uint value, byte start, byte length) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _bextr2_u32 (unsigned int a, unsigned int control)
-        ///   BEXTR r32a, reg/m32, r32b
+        ///   BEXTR r32a, r/m32, r32b
         /// </summary>
         public static uint BitFieldExtract(uint value, ushort control) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _blsi_u32 (unsigned int a)
-        ///   BLSI reg, reg/m32
+        ///   BLSI r32, r/m32
         /// </summary>
         public static uint ExtractLowestSetBit(uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _blsmsk_u32 (unsigned int a)
-        ///   BLSMSK reg, reg/m32
+        ///   BLSMSK r32, r/m32
         /// </summary>
         public static uint GetMaskUpToLowestSetBit(uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// unsigned int _blsr_u32 (unsigned int a)
-        ///   BLSR reg, reg/m32
+        ///   BLSR r32, r/m32
         /// </summary>
         public static uint ResetLowestSetBit(uint value) { throw new PlatformNotSupportedException(); }
 
         /// <summary>
         /// int _mm_tzcnt_32 (unsigned int a)
-        ///   TZCNT reg, reg/m32
+        ///   TZCNT r32, r/m32
         /// </summary>
         public static uint TrailingZeroCount(uint value) { throw new PlatformNotSupportedException(); }
     }

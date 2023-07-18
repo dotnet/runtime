@@ -71,6 +71,65 @@ namespace Internal.TypeSystem
             }
         }
 
+        internal readonly struct FunctionPointerTypeKey
+        {
+            public readonly RuntimeTypeHandle ReturnType;
+            public readonly RuntimeTypeHandle[] ParameterTypes;
+            public readonly bool IsUnmanaged;
+            public FunctionPointerTypeKey(RuntimeTypeHandle returnType, RuntimeTypeHandle[] parameterTypes, bool isUnmanaged)
+                => (ReturnType, ParameterTypes, IsUnmanaged) = (returnType, parameterTypes, isUnmanaged);
+        }
+
+        internal class FunctionPointerRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<FunctionPointerTypeKey, RuntimeTypeHandle>
+        {
+            protected override bool CompareKeyToValue(FunctionPointerTypeKey key, RuntimeTypeHandle value)
+            {
+                if (key.IsUnmanaged != RuntimeAugments.IsUnmanagedFunctionPointerType(value)
+                    || key.ParameterTypes.Length != RuntimeAugments.GetFunctionPointerParameterCount(value)
+                    || !key.ReturnType.Equals(RuntimeAugments.GetFunctionPointerReturnType(value)))
+                    return false;
+
+                for (int i = 0; i < key.ParameterTypes.Length; i++)
+                    if (!key.ParameterTypes[i].Equals(RuntimeAugments.GetFunctionPointerParameterType(value, i)))
+                        return false;
+
+                return true;
+            }
+
+            protected override bool CompareValueToValue(RuntimeTypeHandle value1, RuntimeTypeHandle value2)
+            {
+                return value1.Equals(value2);
+            }
+
+            protected override RuntimeTypeHandle ConvertIntPtrToValue(IntPtr pointer)
+            {
+                unsafe
+                {
+                    return ((MethodTable*)pointer.ToPointer())->ToRuntimeTypeHandle();
+                }
+            }
+
+            protected override IntPtr ConvertValueToIntPtr(RuntimeTypeHandle value)
+            {
+                return value.ToIntPtr();
+            }
+
+            protected override RuntimeTypeHandle CreateValueFromKey(FunctionPointerTypeKey key)
+            {
+                throw new NotSupportedException();
+            }
+
+            protected override int GetKeyHashCode(FunctionPointerTypeKey key)
+            {
+                return TypeHashingAlgorithms.ComputeMethodSignatureHashCode(key.ReturnType.GetHashCode(), key.ParameterTypes);
+            }
+
+            protected override int GetValueHashCode(RuntimeTypeHandle value)
+            {
+                return value.GetHashCode();
+            }
+        }
+
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable[] s_ArrayTypesCaches = new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable[MDArray.MaxRank + 1];
         /// <summary>
         ///  Cache of array types created by the builder to prevent duplication
@@ -100,12 +159,20 @@ namespace Internal.TypeSystem
         internal static RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable ByRefTypesCache { get; } =
             new RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable();
 
-        public Instantiation ResolveRuntimeTypeHandles(RuntimeTypeHandle[] runtimeTypeHandles)
+        internal static FunctionPointerRuntimeTypeHandleHashtable FunctionPointerTypesCache { get; }
+            = new FunctionPointerRuntimeTypeHandleHashtable();
+
+        public TypeDesc[] ResolveRuntimeTypeHandlesInternal(RuntimeTypeHandle[] runtimeTypeHandles)
         {
             TypeDesc[] TypeDescs = new TypeDesc[runtimeTypeHandles.Length];
             for (int i = 0; i < runtimeTypeHandles.Length; i++)
                 TypeDescs[i] = ResolveRuntimeTypeHandle(runtimeTypeHandles[i]);
-            return new Instantiation(TypeDescs);
+            return TypeDescs;
+        }
+
+        public Instantiation ResolveRuntimeTypeHandles(RuntimeTypeHandle[] runtimeTypeHandles)
+        {
+            return new Instantiation(ResolveRuntimeTypeHandlesInternal(runtimeTypeHandles));
         }
 
         // This dictionary is in every scenario - create it eagerly
@@ -130,22 +197,12 @@ namespace Internal.TypeSystem
             {
                 unsafe
                 {
-                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericArgumentCount];
+                    TypeDesc[] genericParameters = new TypeDesc[rtth.ToEETypePtr()->GenericParameterCount];
                     Runtime.GenericVariance* runtimeVariance = rtth.ToEETypePtr()->HasGenericVariance ?
                         rtth.ToEETypePtr()->GenericVariance : null;
-                    for (int i = 0; i < genericParameters.Length; i++)
-                    {
-                        GenericVariance variance = runtimeVariance == null ? GenericVariance.None : runtimeVariance[i] switch
-                        {
-                            Runtime.GenericVariance.Contravariant => GenericVariance.Contravariant,
-                            Runtime.GenericVariance.Covariant => GenericVariance.Covariant,
-                            Runtime.GenericVariance.NonVariant or Runtime.GenericVariance.ArrayCovariant => GenericVariance.None,
-                            _ => throw new NotImplementedException()
-                        };
-                        genericParameters[i] = genericParameters[i] = new RuntimeGenericParameterDesc(GenericParameterKind.Type, i, this, variance);
-                    }
+                    ReadOnlySpan<Runtime.GenericVariance> varianceData = new ReadOnlySpan<Runtime.GenericVariance>(runtimeVariance, runtimeVariance == null ? 0 : genericParameters.Length);
 
-                    returnedType = new NoMetadataType(this, rtth, null, new Instantiation(genericParameters), rtth.GetHashCode());
+                    returnedType = new NoMetadataType(this, rtth, genericParameters.Length, varianceData, rtth.GetHashCode());
                 }
             }
             else if (RuntimeAugments.IsGenericType(rtth))
@@ -175,6 +232,20 @@ namespace Internal.TypeSystem
                 RuntimeTypeHandle targetTypeHandle = RuntimeAugments.GetRelatedParameterTypeHandle(rtth);
                 TypeDesc targetType = ResolveRuntimeTypeHandle(targetTypeHandle);
                 returnedType = GetPointerType(targetType);
+            }
+            else if (RuntimeAugments.IsFunctionPointerType(rtth))
+            {
+                RuntimeTypeHandle returnTypeHandle = RuntimeAugments.GetFunctionPointerReturnType(rtth);
+                RuntimeTypeHandle[] parameterHandles = RuntimeAugments.GetFunctionPointerParameterTypes(rtth);
+                bool isUnmanaged = RuntimeAugments.IsUnmanagedFunctionPointerType(rtth);
+
+                var sig = new MethodSignature(
+                    isUnmanaged ? MethodSignatureFlags.UnmanagedCallingConvention : 0,
+                    genericParameterCount: 0,
+                    ResolveRuntimeTypeHandle(returnTypeHandle),
+                    ResolveRuntimeTypeHandlesInternal(parameterHandles));
+
+                returnedType = GetFunctionPointerType(sig);
             }
             else if (RuntimeAugments.IsByRefType(rtth))
             {
@@ -349,15 +420,6 @@ namespace Internal.TypeSystem
                         {
                             MethodDesc typicalMethod = key._owningType.Context.ResolveRuntimeMethod(key._unboxingStub, (DefType)key._owningType.GetTypeDefinition(), key._methodNameAndSignature, IntPtr.Zero, false);
                             return typicalMethod.Context.GetMethodForInstantiatedType(typicalMethod, (InstantiatedType)key._owningType);
-                        }
-
-                        // Otherwise, just check to see if there is a method discoverable via GetMethods
-                        foreach (MethodDesc potentialMethod in key._owningType.GetMethods())
-                        {
-                            if (CompareKeyToValue(key, potentialMethod))
-                            {
-                                return potentialMethod;
-                            }
                         }
                     }
                     else

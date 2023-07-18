@@ -60,6 +60,18 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 oid = Oids.RsaPkcs1Sha512;
             }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_256)
+            {
+                oid = Oids.RsaPkcs1Sha3_256;
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_384)
+            {
+                oid = Oids.RsaPkcs1Sha3_384;
+            }
+            else if (hashAlgorithm == HashAlgorithmName.SHA3_512)
+            {
+                oid = Oids.RsaPkcs1Sha3_512;
+            }
             else
             {
                 throw new ArgumentOutOfRangeException(

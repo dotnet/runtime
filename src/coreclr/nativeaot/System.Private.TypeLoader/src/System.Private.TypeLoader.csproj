@@ -231,7 +231,6 @@
     <Compile Include="Internal\Runtime\TypeLoader\LockFreeObjectInterner.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\LowLevelStringConverter.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\MetadataNameExtensions.cs" />
-    <Compile Include="Internal\Runtime\TypeLoader\MetadataReaderHelpers.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\ModuleList.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInfoLoadContext.cs" />
     <Compile Include="Internal\Runtime\TypeLoader\NativeLayoutInterfacesAlgorithm.cs" />
@@ -272,9 +271,6 @@
     <Compile Include="Internal\TypeSystem\ThrowHelper.cs" />
     <Compile Include="Internal\TypeSystem\TypeDesc.Runtime.cs" />
     <Compile Include="Internal\TypeSystem\TypeSystemContext.Runtime.cs" />
-    <Compile Include="$(AotCommonPath)\System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs">
-      <Link>System\Runtime\CompilerServices\__BlockAllReflectionAttribute.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
     <Compile Include="$(CompilerCommonPath)\TypeSystem\Common\TypeDesc.ToString.cs">

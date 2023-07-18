@@ -131,6 +131,9 @@
           <GenericArgument Name="System.Double, System.Private.CoreLib" />
         </Method>
         <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Decimal, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestNullRefReturnInvoke" Dynamic="Required All">
           <GenericArgument Name="System.Reflection.BindingFlags, System.Private.CoreLib" />
         </Method>
 
@@ -177,6 +180,9 @@
           <GenericArgument Name="System.Double, System.Private.CoreLib" />
         </Method>
         <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
+          <GenericArgument Name="System.Decimal, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnPropertyGetValue" Dynamic="Required All">
           <GenericArgument Name="System.Reflection.BindingFlags, System.Private.CoreLib" />
         </Method>
 
@@ -221,6 +227,9 @@
         </Method>
         <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
           <GenericArgument Name="System.Double, System.Private.CoreLib" />
+        </Method>
+        <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
+          <GenericArgument Name="System.Decimal, System.Private.CoreLib" />
         </Method>
         <Method Name="TestRefReturnMethodInvoke" Dynamic="Required All">
           <GenericArgument Name="System.Reflection.BindingFlags, System.Private.CoreLib" />
@@ -243,10 +252,17 @@
       <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Boolean, System.Private.CoreLib]]" Dynamic="Required All" />
       <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Single, System.Private.CoreLib]]" Dynamic="Required All" />
       <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Double, System.Private.CoreLib]]" Dynamic="Required All" />
+      <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Decimal, System.Private.CoreLib]]" Dynamic="Required All" />
       <Type Name="System.Reflection.Tests.InvokeRefReturnNetcoreTests+TestClass`1[[System.Reflection.BindingFlags, System.Private.CoreLib]]" Dynamic="Required All" />
 
       <Type Name="System.Reflection.Tests.MethodBaseTests">
         <Method Name="MyFakeGenericMethod" Dynamic="Required All">
+          <GenericArgument Name="System.Byte, System.Private.CoreLib" />
+        </Method>
+      </Type>
+
+      <Type Name="System.Tests.Types.ModifiedTypeTests+ModifiedTypeHolder">
+        <Method Name="M_GenericWithParameterConstraint1" Dynamic="Required All">
           <GenericArgument Name="System.Byte, System.Private.CoreLib" />
         </Method>
       </Type>

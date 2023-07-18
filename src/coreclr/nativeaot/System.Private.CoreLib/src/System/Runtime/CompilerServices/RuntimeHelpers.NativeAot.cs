@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Internal.Reflection.Augments;
+using Internal.Reflection.Core.Execution;
 using Internal.Runtime;
 using Internal.Runtime.Augments;
 using System.Diagnostics.CodeAnalysis;
@@ -274,7 +275,7 @@ namespace System.Runtime.CompilerServices
             ArgumentOutOfRangeException.ThrowIfNegative(size);
 
             // We don't support unloading; the memory will never be freed.
-            return (IntPtr)NativeMemory.Alloc((uint)size);
+            return (IntPtr)NativeMemory.AllocZeroed((uint)size);
         }
 
         public static void PrepareDelegate(Delegate d)
@@ -304,7 +305,7 @@ namespace System.Runtime.CompilerServices
                 throw new SerializationException(SR.Format(SR.Serialization_InvalidType, type));
             }
 
-            if (type.HasElementType || type.IsGenericParameter)
+            if (type.HasElementType || type.IsGenericParameter || type.IsFunctionPointer)
             {
                 throw new ArgumentException(SR.Argument_InvalidValue);
             }
@@ -317,6 +318,11 @@ namespace System.Runtime.CompilerServices
             if (type.IsCOMObject)
             {
                 throw new NotSupportedException(SR.NotSupported_ManagedActivation);
+            }
+
+            if (type.IsAbstract)
+            {
+                throw new MemberAccessException(SR.Acc_CreateAbst);
             }
 
             MethodTable* mt = type.TypeHandle.ToMethodTable();
@@ -337,20 +343,24 @@ namespace System.Runtime.CompilerServices
                 throw new MemberAccessException();
             }
 
-            if (mt->IsAbstract)
-            {
-                throw new MemberAccessException(SR.Acc_CreateAbst);
-            }
-
             if (mt->IsByRefLike)
             {
                 throw new NotSupportedException(SR.NotSupported_ByRefLike);
             }
 
+            Debug.Assert(MethodTable.Of<object>()->NumVtableSlots > 0);
+            if (mt->NumVtableSlots == 0)
+            {
+                // This is a type without a vtable or GCDesc. We must not allow creating an instance of it
+                throw ReflectionCoreExecution.ExecutionDomain.CreateMissingMetadataException(type);
+            }
+            // Paranoid check: not-meant-for-GC-heap types should be reliably identifiable by empty vtable.
+            Debug.Assert(!mt->ContainsGCPointers || RuntimeImports.RhGetGCDescSize(new EETypePtr(mt)) != 0);
+
             if (mt->IsNullable)
             {
                 mt = mt->NullableType;
-                return GetUninitializedObject(Type.GetTypeFromEETypePtr(new EETypePtr(mt)));
+                return GetUninitializedObject(Type.GetTypeFromMethodTable(mt));
             }
 
             // Triggering the .cctor here is slightly different than desktop/CoreCLR, which

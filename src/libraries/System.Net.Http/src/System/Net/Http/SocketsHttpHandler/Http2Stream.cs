@@ -1024,7 +1024,8 @@ namespace System.Net.Http
                         Debug.Assert(!wait);
                     }
 
-                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+                    Debug.Assert(_response is not null);
+                    if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)_response.StatusCode);
                 }
                 catch
                 {

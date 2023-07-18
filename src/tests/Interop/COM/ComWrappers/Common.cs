@@ -19,17 +19,25 @@ namespace ComWrappersTests.Common
 
     class Test : ITest, ICustomQueryInterface
     {
+        public static Test Resurrected;
         public static int InstanceCount = 0;
 
         private int id;
         private int value = -1;
         public Test() { id = Interlocked.Increment(ref InstanceCount); }
-        ~Test() { Interlocked.Decrement(ref InstanceCount); id = -1; }
+        ~Test()
+        {
+            Interlocked.Decrement(ref InstanceCount);
+            id = -1;
+            if (EnableResurrection)
+                Resurrected = this;
+        }
 
         public void SetValue(int i) => this.value = i;
         public int GetValue() => this.value;
 
         public bool EnableICustomQueryInterface { get; set; } = false;
+        public bool EnableResurrection { get; set; } = false;
         public Guid ICustomQueryInterface_GetInterfaceIID { get; set; }
         public IntPtr ICustomQueryInterface_GetInterfaceResult { get; set; }
 
@@ -83,6 +91,30 @@ namespace ComWrappersTests.Common
             }
             return 0; // S_OK;
         }
+    }
+
+    public class ITestObjectWrapper : ITest
+    {
+        private readonly ITestVtbl._SetValue _setValue;
+        private readonly IntPtr _ptr;
+
+        public ITestObjectWrapper(IntPtr ptr)
+        {
+            _ptr = ptr;
+            VtblPtr inst = Marshal.PtrToStructure<VtblPtr>(ptr);
+            ITestVtbl _vtbl = Marshal.PtrToStructure<ITestVtbl>(inst.Vtbl);
+            _setValue = Marshal.GetDelegateForFunctionPointer<ITestVtbl._SetValue>(_vtbl.SetValue);
+        }
+
+        ~ITestObjectWrapper()
+        {
+            if (_ptr != IntPtr.Zero)
+            {
+                Marshal.Release(_ptr);
+            }
+        }
+
+        public void SetValue(int i) => _setValue(_ptr, i);
     }
 
     //

@@ -102,7 +102,7 @@ namespace ILCompiler.DependencyAnalysis
         {
         }
 
-        private static IReadOnlyList<MethodDesc> ComputeSlots(TypeDesc type)
+        private static MethodDesc[] ComputeSlots(TypeDesc type)
         {
             var slots = default(ArrayBuilder<MethodDesc>);
 

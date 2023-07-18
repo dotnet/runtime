@@ -39,15 +39,13 @@ typedef std::unordered_map<pal::string_t, deps_resolved_asset_t> name_to_resolve
 class deps_resolver_t
 {
 public:
-    // if root_framework_rid_fallback_graph is specified it is assumed that the fx_definitions
-    // doesn't contain the root framework at all.
     deps_resolver_t(
         const arguments_t& args,
         const fx_definition_vector_t& fx_definitions,
         const pal::char_t* additional_deps_serialized,
         const std::vector<pal::string_t>& shared_stores,
         const std::vector<pal::string_t>& additional_probe_paths,
-        const deps_json_t::rid_fallback_graph_t* root_framework_rid_fallback_graph,
+        deps_json_t::rid_resolution_options_t rid_resolution_options,
         bool is_framework_dependent)
         : m_fx_definitions(fx_definitions)
         , m_app_dir(args.app_root)
@@ -59,9 +57,15 @@ public:
         m_fx_deps.resize(m_fx_definitions.size());
         pal::get_default_servicing_directory(&m_core_servicing);
 
+        // If we are using the RID fallback graph and weren't explicitly given a graph, that of
+        // the lowest (root) framework is used for higher frameworks.
+        deps_json_t::rid_fallback_graph_t root_rid_fallback_graph;
+        if (rid_resolution_options.use_fallback_graph && rid_resolution_options.rid_fallback_graph == nullptr)
+        {
+            rid_resolution_options.rid_fallback_graph = &root_rid_fallback_graph;
+        }
+
         // Process from lowest (root) to highest (app) framework.
-        // If we weren't explicitly given a rid fallback graph, that of
-        // the root framework is used for higher frameworks.
         int lowest_framework = static_cast<int>(m_fx_definitions.size()) - 1;
         for (int i = lowest_framework; i >= 0; --i)
         {
@@ -70,22 +74,19 @@ public:
                 : get_fx_deps(m_fx_definitions[i]->get_dir(), m_fx_definitions[i]->get_name());
             trace::verbose(_X("Using %s deps file"), deps_file.c_str());
 
-            if (root_framework_rid_fallback_graph == nullptr && i == lowest_framework)
+            // Parse as framework-dependent if we are not the lowest framework or if there is only one
+            // framework, but framework-dependent is specified (for example, components)
+            if (i != lowest_framework || (lowest_framework == 0 && m_is_framework_dependent))
             {
-                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(false, deps_file, nullptr));
-
-                // The fx_definitions contains the root framework, so set the
-                // rid fallback graph that will be used for other frameworks.
-                root_framework_rid_fallback_graph = &m_fx_deps[lowest_framework]->get_rid_fallback_graph();
+                m_fx_deps[i] = deps_json_t::create_for_framework_dependent(deps_file, rid_resolution_options);
             }
             else
             {
-                // The rid graph is obtained from the root framework
-                m_fx_deps[i] = std::unique_ptr<deps_json_t>(new deps_json_t(true, deps_file, root_framework_rid_fallback_graph));
+                m_fx_deps[i] = deps_json_t::create_for_self_contained(deps_file, rid_resolution_options);
             }
         }
 
-        resolve_additional_deps(additional_deps_serialized, root_framework_rid_fallback_graph);
+        resolve_additional_deps(additional_deps_serialized, rid_resolution_options);
 
         setup_probe_config(shared_stores, additional_probe_paths);
     }
@@ -196,7 +197,7 @@ private:
 
     void resolve_additional_deps(
         const pal::char_t* additional_deps_serialized,
-        const deps_json_t::rid_fallback_graph_t* rid_fallback_graph);
+        const deps_json_t::rid_resolution_options_t& rid_resolution_options);
 
     const deps_json_t& get_app_deps() const
     {

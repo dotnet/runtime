@@ -106,15 +106,16 @@ namespace System.Reflection.Emit
             remove_method = mdBuilder;
         }
 
-        protected override void SetCustomAttributeCore(CustomAttributeBuilder customBuilder)
+        protected override void SetCustomAttributeCore(ConstructorInfo con, ReadOnlySpan<byte> binaryAttribute)
         {
             RejectIfCreated();
-            string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
+            string? attrname = con.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.SpecialNameAttribute")
             {
                 attrs |= EventAttributes.SpecialName;
                 return;
             }
+            CustomAttributeBuilder customBuilder = new CustomAttributeBuilder(con, binaryAttribute);
             if (cattrs != null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
@@ -127,11 +128,6 @@ namespace System.Reflection.Emit
                 cattrs = new CustomAttributeBuilder[1];
                 cattrs[0] = customBuilder;
             }
-        }
-
-        protected override void SetCustomAttributeCore(ConstructorInfo con, byte[] binaryAttribute)
-        {
-            SetCustomAttributeCore(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
         private void RejectIfCreated()

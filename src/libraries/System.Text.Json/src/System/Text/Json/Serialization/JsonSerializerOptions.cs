@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 
@@ -61,6 +62,7 @@ namespace System.Text.Json
         private ConverterList? _converters;
         private JsonIgnoreCondition _defaultIgnoreCondition;
         private JsonNumberHandling _numberHandling;
+        private JsonObjectCreationHandling _preferredObjectCreationHandling;
         private JsonUnknownTypeHandling _unknownTypeHandling;
         private JsonUnmappedMemberHandling _unmappedMemberHandling;
 
@@ -111,6 +113,7 @@ namespace System.Text.Json
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;
             _numberHandling = options._numberHandling;
+            _preferredObjectCreationHandling = options._preferredObjectCreationHandling;
             _unknownTypeHandling = options._unknownTypeHandling;
             _unmappedMemberHandling = options._unmappedMemberHandling;
 
@@ -136,6 +139,8 @@ namespace System.Text.Json
         /// <param name="defaults"> The <see cref="JsonSerializerDefaults"/> to reason about.</param>
         public JsonSerializerOptions(JsonSerializerDefaults defaults) : this()
         {
+            // Should be kept in sync with equivalent overload in JsonSourceGenerationOptionsAttribute
+
             if (defaults == JsonSerializerDefaults.Web)
             {
                 _propertyNameCaseInsensitive = true;
@@ -395,6 +400,33 @@ namespace System.Text.Json
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _numberHandling = value;
+            }
+        }
+
+        /// <summary>
+        /// Specifies preferred object creation handling for properties when deserializing JSON.
+        /// When set to <see cref="JsonObjectCreationHandling.Populate"/> all properties which
+        /// are capable of reusing the existing instance will be populated.
+        /// </summary>
+        /// <remarks>
+        /// Only property type is taken into consideration. For example if property is of type
+        /// <see cref="IEnumerable{T}"/> but it is assigned <see cref="List{T}"/> it will not be populated
+        /// because <see cref="IEnumerable{T}"/> is not capable of populating.
+        /// Additionally value types require a setter to be populated.
+        /// </remarks>
+        public JsonObjectCreationHandling PreferredObjectCreationHandling
+        {
+            get => _preferredObjectCreationHandling;
+            set
+            {
+                VerifyMutable();
+
+                if (!JsonSerializer.IsValidCreationHandlingValue(value))
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+
+                _preferredObjectCreationHandling = value;
             }
         }
 
@@ -696,6 +728,21 @@ namespace System.Text.Json
                     case JsonSerializerContext ctx when AppContextSwitchHelper.IsSourceGenReflectionFallbackEnabled:
                         // .NET 6 compatibility mode: enable fallback to reflection metadata for JsonSerializerContext
                         _effectiveJsonTypeInfoResolver = JsonTypeInfoResolver.Combine(ctx, defaultResolver);
+
+                        if (_cachingContext is { } cachingContext)
+                        {
+                            // A cache has already been created by the source generator.
+                            // Repeat the same configuration routine for that options instance, if different.
+                            // Invalidate any cache entries that have already been stored.
+                            if (cachingContext.Options != this)
+                            {
+                                cachingContext.Options.ConfigureForJsonSerializer();
+                            }
+                            else
+                            {
+                                cachingContext.Clear();
+                            }
+                        }
                         break;
                 }
             }
@@ -712,7 +759,13 @@ namespace System.Text.Json
 
         private JsonTypeInfo? GetTypeInfoNoCaching(Type type)
         {
-            JsonTypeInfo? info = (_effectiveJsonTypeInfoResolver ?? _typeInfoResolver)?.GetTypeInfo(type, this);
+            IJsonTypeInfoResolver? resolver = _effectiveJsonTypeInfoResolver ?? _typeInfoResolver;
+            if (resolver is null)
+            {
+                return null;
+            }
+
+            JsonTypeInfo? info = resolver.GetTypeInfo(type, this);
 
             if (info != null)
             {
@@ -724,6 +777,18 @@ namespace System.Text.Json
                 if (info.Options != this)
                 {
                     ThrowHelper.ThrowInvalidOperationException_ResolverTypeInfoOptionsNotCompatible();
+                }
+            }
+            else
+            {
+                Debug.Assert(_effectiveJsonTypeInfoResolver is null, "an effective resolver always returns metadata");
+
+                if (type == JsonTypeInfo.ObjectType)
+                {
+                    // If the resolver does not provide a JsonTypeInfo<object> instance, fill
+                    // with the serialization-only converter to enable polymorphic serialization.
+                    var converter = new SlimObjectConverter(resolver);
+                    info = new JsonTypeInfo<object>(converter, this);
                 }
             }
 
@@ -836,7 +901,7 @@ namespace System.Text.Json
 
                 TypeInfoResolver = JsonSerializer.IsReflectionEnabledByDefault
                     ? DefaultJsonTypeInfoResolver.RootDefaultInstance()
-                    : new JsonTypeInfoResolverChain(),
+                    : JsonTypeInfoResolver.Empty,
 
                 _isReadOnly = true,
             };
@@ -844,6 +909,6 @@ namespace System.Text.Json
             return Interlocked.CompareExchange(ref s_defaultOptions, options, null) ?? options;
         }
 
-        private string DebuggerDisplay => $"TypeInfoResolver = {(TypeInfoResolver is JsonTypeInfoResolverChain chain ? chain.DebuggerDisplay : TypeInfoResolver?.GetType().Name)}, IsReadOnly = {IsReadOnly}";
+        private string DebuggerDisplay => $"TypeInfoResolver = {(TypeInfoResolver?.ToString() ?? "<null>")}, IsReadOnly = {IsReadOnly}";
     }
 }

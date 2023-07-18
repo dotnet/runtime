@@ -3,8 +3,9 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class MainApp
+public class MainApp
 {
     private static int s_s = 1;
 
@@ -68,7 +69,8 @@ internal class MainApp
         return v;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -569,9 +569,7 @@ public:
         BasicBlock*          block;
         Statement*           stmt;
         GenTreeLclVarCommon* tree;
-        GenTree*             parent;
-        Location(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree, GenTree* parent)
-            : block(block), stmt(stmt), tree(tree), parent(parent)
+        Location(BasicBlock* block, Statement* stmt, GenTreeLclVarCommon* tree) : block(block), stmt(stmt), tree(tree)
         {
         }
 
@@ -691,8 +689,8 @@ public:
     bool IsOverBudget();
 
 private:
-    // Given a lclvar use, try to find the lclvar's defining assignment and its containing block.
-    LclSsaVarDsc* GetSsaDefAsg(GenTreeLclVarCommon* lclUse);
+    // Given a lclvar use, try to find the lclvar's defining store and its containing block.
+    LclSsaVarDsc* GetSsaDefStore(GenTreeLclVarCommon* lclUse);
 
     GenTreeBoundsChk* m_pCurBndsChk;
 

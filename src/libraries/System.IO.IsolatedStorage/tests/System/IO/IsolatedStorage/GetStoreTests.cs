@@ -48,6 +48,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "For mobile platforms root ends with /.isolated-storage")]
         public void GetUserStoreForApplication()
         {
             var isf = IsolatedStorageFile.GetUserStoreForApplication();
@@ -62,6 +63,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "For mobile platforms root ends with /.isolated-storage")]
         public void GetUserStoreForAssembly()
         {
             var isf = IsolatedStorageFile.GetUserStoreForAssembly();
@@ -71,6 +73,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "For mobile platforms root ends with /.isolated-storage")]
         public void GetUserStoreForDomain()
         {
             var isf = IsolatedStorageFile.GetUserStoreForDomain();
@@ -89,6 +92,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Android | TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "For mobile platforms root ends with /.isolated-storage")]
         public void GetStore_NullParamsAllowed()
         {
             VerifyApplicationStore(IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Application, (Type)null));

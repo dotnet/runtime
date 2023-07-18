@@ -166,17 +166,16 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	}
 	riscv_jalr (code, RISCV_RA, RISCV_T1, 0);
 
-	/* a0 contains the address of the tls slot holding the current lmf */
+	/* a0 contains the address of the tls slot holding the current (MonoLMF **)lmf */
 	/* T0 = lmf */
 	riscv_addi (code, RISCV_T0, RISCV_FP, -lmf_offset);
 
 	/* lmf->lmf_addr = lmf_addr */
-	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
+	code = mono_riscv_emit_store (code, RISCV_A0, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
 
 	/* lmf->previous_lmf = *lmf_addr */
 	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_A0, 0, 0);
-	code =
-	    mono_riscv_emit_store (code, RISCV_T1, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
+	code = mono_riscv_emit_store (code, RISCV_T1, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
 
 	/* *lmf_addr = lmf */
 	code = mono_riscv_emit_store (code, RISCV_T0, RISCV_A0, 0, 0);
@@ -216,9 +215,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 	/* T0 = lmf */
 	riscv_addi (code, RISCV_T0, RISCV_FP, -lmf_offset);
 	/* T1 = lmf->previous_lmf */
-	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
+	code = mono_riscv_emit_load (code, RISCV_T1, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, previous_lmf), 0);
 	/* T0 = lmf->lmf_addr */
-	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_FP, -lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
+	code = mono_riscv_emit_load (code, RISCV_T0, RISCV_T0, MONO_STRUCT_OFFSET (MonoLMF, lmf_addr), 0);
 	/* *lmf_addr = previous_lmf */
 	code = mono_riscv_emit_store (code, RISCV_T1, RISCV_T0, 0, 0);
 

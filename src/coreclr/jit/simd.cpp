@@ -145,9 +145,15 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
 //    If the size of the struct is already known call structSizeMightRepresentSIMDType
 //    to determine if this api needs to be called.
 //
+//    The type handle passed here can only be used in a subset of JIT-EE calls
+//    since it may be called by promotion during prejit of a method that does
+//    not version with SPC. See CORINFO_TYPE_LAYOUT_NODE for the contract on
+//    the supported JIT-EE calls.
+//
 // TODO-Throughput: current implementation parses class name to find base type. Change
 //         this when we implement  SIMD intrinsic identification for the final
 //         product.
+//
 CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
     if (m_simdHandleCache == nullptr)
@@ -233,8 +239,6 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     {
                         JITDUMP(" Found type Vector\n");
                         m_simdHandleCache->VectorHandle = typeHnd;
-
-                        size = getSIMDVectorRegisterByteLength();
                         break;
                     }
 
@@ -299,8 +303,12 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                         }
 
                         JITDUMP(" Found Vector<%s>\n", varTypeName(JitType2PreciseVarType(simdBaseJitType)));
+                        size = getVectorTByteLength();
 
-                        size = getSIMDVectorRegisterByteLength();
+                        if (size == 0)
+                        {
+                            return CORINFO_TYPE_UNDEF;
+                        }
                         break;
                     }
 
@@ -381,7 +389,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compExactlyDependsOn(InstructionSet_AVX))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX))
                 {
                     // We must treat as a regular struct if AVX isn't supported
                     return CORINFO_TYPE_UNDEF;
@@ -406,7 +414,7 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
                     return CORINFO_TYPE_UNDEF;
                 }
 
-                if (!compExactlyDependsOn(InstructionSet_AVX512F))
+                if (!compOpportunisticallyDependsOn(InstructionSet_AVX512F))
                 {
                     // We must treat as a regular struct if AVX512F isn't supported
                     return CORINFO_TYPE_UNDEF;
@@ -439,72 +447,21 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
     return simdBaseJitType;
 }
 
-// Pops and returns GenTree node from importer's type stack.
-// Normalizes TYP_STRUCT value in case of GT_CALL and GT_RET_EXPR.
+//------------------------------------------------------------------------
+// impSIMDPopStack: Pop a SIMD value from the importer's stack.
 //
-// Arguments:
-//    type         -  the type of value that the caller expects to be popped off the stack.
-//    expectAddr   -  if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    structHandle -  the class handle to use when normalizing if it is not the same as the stack entry class handle;
-//                    this can happen for certain scenarios, such as folding away a static cast, where we want the
-//                    value popped to have the type that would have been returned.
+// Spills calls with return buffers to temps.
 //
-// Notes:
-//    If the popped value is a struct, and the expected type is a simd type, it will be set
-//    to that type, otherwise it will assert if the type being popped is not the expected type.
-//
-GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLASS_HANDLE structHandle)
+GenTree* Compiler::impSIMDPopStack()
 {
     StackEntry se   = impPopStack();
-    typeInfo   ti   = se.seTypeInfo;
     GenTree*   tree = se.val;
-
-    // If expectAddr is true implies what we have on stack is address and we need
-    // SIMD type struct that it points to.
-    if (expectAddr)
-    {
-        assert(tree->TypeIs(TYP_BYREF, TYP_I_IMPL));
-
-        tree = gtNewOperNode(GT_IND, type, tree);
-    }
-
-    if (tree->OperIsIndir() && tree->AsIndir()->Addr()->IsLclVarAddr())
-    {
-        GenTreeLclFld* lclAddr = tree->AsIndir()->Addr()->AsLclFld();
-        LclVarDsc*     varDsc  = lvaGetDesc(lclAddr);
-        if (varDsc->TypeGet() == type)
-        {
-            assert(type != TYP_STRUCT);
-            lclAddr->ChangeType(type);
-            lclAddr->SetOper(GT_LCL_VAR);
-
-            tree = lclAddr;
-        }
-    }
+    assert(varTypeIsSIMD(tree));
 
     // Handle calls that may return the struct via a return buffer.
-    if (varTypeIsStruct(tree) && tree->OperIs(GT_CALL, GT_RET_EXPR))
+    if (tree->OperIs(GT_CALL, GT_RET_EXPR))
     {
-        assert(ti.IsType(TI_STRUCT));
-
-        if (structHandle == NO_CLASS_HANDLE)
-        {
-            structHandle = ti.GetClassHandleForValueClass();
-        }
-
-        tree = impNormStructVal(tree, structHandle, CHECK_SPILL_ALL);
-    }
-
-    // Now set the type of the tree to the specialized SIMD struct type, if applicable.
-    if (genActualType(tree->gtType) != genActualType(type))
-    {
-        assert(tree->gtType == TYP_STRUCT);
-        tree->gtType = type;
-    }
-    else if (tree->gtType == TYP_BYREF)
-    {
-        assert(tree->IsLocal() || tree->OperIs(GT_RET_EXPR, GT_CALL) ||
-               (tree->IsLclVarAddr() && varTypeIsSIMD(lvaGetDesc(tree->AsLclFld()))));
+        tree = impNormStructVal(tree, CHECK_SPILL_ALL);
     }
 
     return tree;
@@ -518,29 +475,32 @@ GenTree* Compiler::impSIMDPopStack(var_types type, bool expectAddr, CORINFO_CLAS
 //
 void Compiler::setLclRelatedToSIMDIntrinsic(GenTree* tree)
 {
-    assert(tree->OperIs(GT_LCL_VAR) || tree->IsLclVarAddr());
+    assert(tree->OperIsScalarLocal() || tree->IsLclVarAddr());
     LclVarDsc* lclVarDsc             = lvaGetDesc(tree->AsLclVarCommon());
     lclVarDsc->lvUsedInSIMDIntrinsic = true;
 }
 
 //-------------------------------------------------------------
-// Check if two field nodes reference at the same memory location.
-// Notice that this check is just based on pattern matching.
+// Check if two field address nodes reference at the same location.
+//
 // Arguments:
-//      op1 - GenTree*.
-//      op2 - GenTree*.
+//   op1 - first field address
+//   op2 - second field address
+//
 // Return Value:
-//    If op1's parents node and op2's parents node are at the same location, return true. Otherwise, return false
-
-bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
+//    If op1's parents node and op2's parents node are at the same
+//    location, return true. Otherwise, return false
+//
+bool areFieldAddressesTheSame(GenTreeFieldAddr* op1, GenTreeFieldAddr* op2)
 {
-    assert(op1->OperGet() == GT_FIELD);
-    assert(op2->OperGet() == GT_FIELD);
+    assert(op1->OperIs(GT_FIELD_ADDR) && op2->OperIs(GT_FIELD_ADDR));
 
-    GenTree* op1ObjRef = op1->AsField()->GetFldObj();
-    GenTree* op2ObjRef = op2->AsField()->GetFldObj();
-    while (op1ObjRef != nullptr && op2ObjRef != nullptr)
+    GenTree* op1ObjRef = op1->GetFldObj();
+    GenTree* op2ObjRef = op2->GetFldObj();
+    while ((op1ObjRef != nullptr) && (op2ObjRef != nullptr))
     {
+        assert(varTypeIsI(genActualType(op1ObjRef)) && varTypeIsI(genActualType(op2ObjRef)));
+
         if (op1ObjRef->OperGet() != op2ObjRef->OperGet())
         {
             break;
@@ -552,10 +512,18 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
             return true;
         }
 
-        if (op1ObjRef->OperIs(GT_FIELD) && (op1ObjRef->AsField()->gtFldHnd == op2ObjRef->AsField()->gtFldHnd))
+        if (op1ObjRef->OperIs(GT_IND))
         {
-            op1ObjRef = op1ObjRef->AsField()->GetFldObj();
-            op2ObjRef = op2ObjRef->AsField()->GetFldObj();
+            op1ObjRef = op1ObjRef->AsIndir()->Addr();
+            op2ObjRef = op2ObjRef->AsIndir()->Addr();
+            continue;
+        }
+
+        if (op1ObjRef->OperIs(GT_FIELD_ADDR) &&
+            (op1ObjRef->AsFieldAddr()->gtFldHnd == op2ObjRef->AsFieldAddr()->gtFldHnd))
+        {
+            op1ObjRef = op1ObjRef->AsFieldAddr()->GetFldObj();
+            op2ObjRef = op2ObjRef->AsFieldAddr()->GetFldObj();
             continue;
         }
         else
@@ -568,28 +536,29 @@ bool areFieldsParentsLocatedSame(GenTree* op1, GenTree* op2)
 }
 
 //----------------------------------------------------------------------
-// Check whether two field are contiguous
+// areFieldsContiguous: Check whether two fields are contiguous.
+//
 // Arguments:
-//      first - GenTree*. The Type of the node should be TYP_FLOAT
-//      second - GenTree*. The Type of the node should be TYP_FLOAT
+//      op1 - The first field indirection
+//      op2 - The second field indirection
+//
 // Return Value:
-//      if the first field is located before second field, and they are located contiguously,
-//      then return true. Otherwise, return false.
-
-bool Compiler::areFieldsContiguous(GenTree* first, GenTree* second)
+//      If the first field is located before second field, and they are
+//      located contiguously, then return true. Otherwise, return false.
+//
+bool Compiler::areFieldsContiguous(GenTreeIndir* op1, GenTreeIndir* op2)
 {
-    assert(first->OperGet() == GT_FIELD);
-    assert(second->OperGet() == GT_FIELD);
-    assert(first->gtType == TYP_FLOAT);
-    assert(second->gtType == TYP_FLOAT);
+    assert(op1->isIndir() && op2->isIndir());
+    // TODO-1stClassStructs: delete once IND<struct> nodes are no more.
+    assert(!op1->TypeIs(TYP_STRUCT) && !op2->TypeIs(TYP_STRUCT));
 
-    var_types firstFieldType  = first->gtType;
-    var_types secondFieldType = second->gtType;
-
-    unsigned firstFieldEndOffset = first->AsField()->gtFldOffset + genTypeSize(firstFieldType);
-    unsigned secondFieldOffset   = second->AsField()->gtFldOffset;
-    if (firstFieldEndOffset == secondFieldOffset && firstFieldType == secondFieldType &&
-        areFieldsParentsLocatedSame(first, second))
+    var_types         op1Type      = op1->TypeGet();
+    var_types         op2Type      = op2->TypeGet();
+    GenTreeFieldAddr* op1Addr      = op1->Addr()->AsFieldAddr();
+    GenTreeFieldAddr* op2Addr      = op2->Addr()->AsFieldAddr();
+    unsigned          op1EndOffset = op1Addr->gtFldOffset + genTypeSize(op1Type);
+    unsigned          op2Offset    = op2Addr->gtFldOffset;
+    if ((op1Type == op2Type) && (op1EndOffset == op2Offset) && areFieldAddressesTheSame(op1Addr, op2Addr))
     {
         return true;
     }
@@ -631,7 +600,7 @@ bool Compiler::areLocalFieldsContiguous(GenTreeLclFld* first, GenTreeLclFld* sec
 //
 bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
 {
-    assert(op1->OperIs(GT_IND) && op2->OperIs(GT_IND));
+    assert(op1->isIndir() && op2->isIndir());
     assert(!op1->TypeIs(TYP_STRUCT) && (op1->TypeGet() == op2->TypeGet()));
 
     GenTreeIndexAddr* op1IndexAddr = op1->AsIndir()->Addr()->AsIndexAddr();
@@ -645,19 +614,25 @@ bool Compiler::areArrayElementsContiguous(GenTree* op1, GenTree* op2)
     GenTree* op1IndexNode = op1IndexAddr->Index();
     GenTree* op2IndexNode = op2IndexAddr->Index();
     if ((op1IndexNode->OperGet() == GT_CNS_INT && op2IndexNode->OperGet() == GT_CNS_INT) &&
-        op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal)
+        (op1IndexNode->AsIntCon()->gtIconVal + 1 == op2IndexNode->AsIntCon()->gtIconVal))
     {
-        if (op1ArrayRef->OperIs(GT_FIELD) && op2ArrayRef->OperIs(GT_FIELD) &&
-            areFieldsParentsLocatedSame(op1ArrayRef, op2ArrayRef))
+        if (op1ArrayRef->OperIs(GT_IND) && op2ArrayRef->OperIs(GT_IND))
         {
-            return true;
+            GenTree* op1ArrayRefAddr = op1ArrayRef->AsIndir()->Addr();
+            GenTree* op2ArrayRefAddr = op2ArrayRef->AsIndir()->Addr();
+            if (op1ArrayRefAddr->OperIs(GT_FIELD_ADDR) && op2ArrayRefAddr->OperIs(GT_FIELD_ADDR) &&
+                areFieldAddressesTheSame(op1ArrayRefAddr->AsFieldAddr(), op2ArrayRefAddr->AsFieldAddr()))
+            {
+                return true;
+            }
         }
         else if (op1ArrayRef->OperIs(GT_LCL_VAR) && op2ArrayRef->OperIs(GT_LCL_VAR) &&
-                 op1ArrayRef->AsLclVarCommon()->GetLclNum() == op2ArrayRef->AsLclVarCommon()->GetLclNum())
+                 (op1ArrayRef->AsLclVar()->GetLclNum() == op2ArrayRef->AsLclVar()->GetLclNum()))
         {
             return true;
         }
     }
+
     return false;
 }
 
@@ -681,19 +656,25 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 
     assert(!op1->TypeIs(TYP_STRUCT));
 
-    if (op1->OperIs(GT_IND) && op1->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR) && op2->OperIs(GT_IND) &&
-        op2->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR))
+    if (op1->isIndir() && op2->isIndir())
     {
-        return areArrayElementsContiguous(op1, op2);
-    }
-    else if (op1->OperIs(GT_FIELD) && op2->OperIs(GT_FIELD))
-    {
-        return areFieldsContiguous(op1, op2);
+        GenTree* op1Addr = op1->AsIndir()->Addr();
+        GenTree* op2Addr = op2->AsIndir()->Addr();
+
+        if (op1Addr->OperIs(GT_INDEX_ADDR) && op2Addr->OperIs(GT_INDEX_ADDR))
+        {
+            return areArrayElementsContiguous(op1, op2);
+        }
+        if (op1Addr->OperIs(GT_FIELD_ADDR) && op2Addr->OperIs(GT_FIELD_ADDR))
+        {
+            return areFieldsContiguous(op1->AsIndir(), op2->AsIndir());
+        }
     }
     else if (op1->OperIs(GT_LCL_FLD) && op2->OperIs(GT_LCL_FLD))
     {
         return areLocalFieldsContiguous(op1->AsLclFld(), op2->AsLclFld());
     }
+
     return false;
 }
 
@@ -710,119 +691,93 @@ bool Compiler::areArgumentsContiguous(GenTree* op1, GenTree* op2)
 //      return the address node.
 //
 // TODO-CQ:
-//      Currently just supports GT_FIELD and GT_IND(GT_INDEX_ADDR), because we can only verify those nodes
-//      are located contiguously or not. In future we should support more cases.
+//      Currently just supports GT_IND/GT_STOREIND(GT_INDEX_ADDR / GT_FIELD_ADDR), because we can only verify
+//      those nodes are located contiguously or not. In future we should support more cases.
 //
 GenTree* Compiler::CreateAddressNodeForSimdHWIntrinsicCreate(GenTree* tree, var_types simdBaseType, unsigned simdSize)
 {
-    GenTree*  byrefNode = nullptr;
-    unsigned  offset    = 0;
-    var_types baseType  = tree->gtType;
+    assert(tree->isIndir());
+    GenTree* addr = tree->AsIndir()->Addr();
 
-    if (tree->OperIs(GT_FIELD))
+    if (addr->OperIs(GT_FIELD_ADDR))
     {
-        GenTree* objRef = tree->AsField()->GetFldObj();
-        if ((objRef != nullptr) && objRef->IsLclVarAddr())
+        assert(addr->AsFieldAddr()->IsInstance());
+
+        // If the field is directly from a struct, then in this case, we should set this
+        // struct's lvUsedInSIMDIntrinsic as true, so that this sturct won't be promoted.
+        GenTree* objRef = addr->AsFieldAddr()->GetFldObj();
+        if (objRef->IsLclVarAddr() && varTypeIsSIMD(lvaGetDesc(objRef->AsLclFld())))
         {
-            // If the field is directly from a struct, then in this case,
-            // we should set this struct's lvUsedInSIMDIntrinsic as true,
-            // so that this sturct won't be promoted.
-            // e.g. s.x x is a field, and s is a struct, then we should set the s's lvUsedInSIMDIntrinsic as true.
-            // so that s won't be promoted.
-            // Notice that if we have a case like s1.s2.x. s1 s2 are struct, and x is a field, then it is possible that
-            // s1 can be promoted, so that s2 can be promoted. The reason for that is if we don't allow s1 to be
-            // promoted, then this will affect the other optimizations which are depend on s1's struct promotion.
-            // TODO-CQ:
-            //  In future, we should optimize this case so that if there is a nested field like s1.s2.x and s1.s2.x's
-            //  address is used for initializing the vector, then s1 can be promoted but s2 can't.
-            if (varTypeIsSIMD(lvaGetDesc(objRef->AsLclFld())))
-            {
-                setLclRelatedToSIMDIntrinsic(objRef);
-            }
+            setLclRelatedToSIMDIntrinsic(objRef);
         }
 
-        byrefNode = gtCloneExpr(tree->AsField()->GetFldObj());
-        assert(byrefNode != nullptr);
-        offset = tree->AsField()->gtFldOffset;
-    }
-    else
-    {
-        assert(tree->OperIs(GT_IND) && tree->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR));
-
-        GenTreeIndexAddr* indexAddr = tree->AsIndir()->Addr()->AsIndexAddr();
-        GenTree*          arrayRef  = indexAddr->Arr();
-        GenTree*          index     = indexAddr->Index();
-        assert(index->IsCnsIntOrI());
-
-        GenTree* checkIndexExpr = nullptr;
-        unsigned indexVal       = (unsigned)index->AsIntCon()->gtIconVal;
-        offset                  = indexVal * genTypeSize(tree->TypeGet());
-
-        // Generate the boundary check exception.
-        // The length for boundary check should be the maximum index number which should be
-        // (first argument's index number) + (how many array arguments we have) - 1
-        // = indexVal + arrayElementsCount - 1
-        unsigned arrayElementsCount = simdSize / genTypeSize(simdBaseType);
-        checkIndexExpr              = gtNewIconNode(indexVal + arrayElementsCount - 1);
-        GenTreeArrLen*    arrLen    = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
-        GenTreeBoundsChk* arrBndsChk =
-            new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
-
-        offset += OFFSETOF__CORINFO_Array__data;
-        byrefNode = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
+        return addr;
     }
 
-    GenTree* address = byrefNode;
-    if (offset != 0)
-    {
-        address = gtNewOperNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(offset, TYP_I_IMPL));
-    }
+    GenTree* arrayRef = addr->AsIndexAddr()->Arr();
+    GenTree* index    = addr->AsIndexAddr()->Index();
+    assert(index->IsCnsIntOrI());
+
+    unsigned indexVal = (unsigned)index->AsIntCon()->gtIconVal;
+    unsigned offset   = indexVal * genTypeSize(tree->TypeGet());
+
+    // Generate the boundary check exception.
+    // The length for boundary check should be the maximum index number which should be
+    // (first argument's index number) + (how many array arguments we have) - 1 = indexVal + arrayElementsCount - 1
+    //
+    unsigned          arrayElementsCount = simdSize / genTypeSize(simdBaseType);
+    GenTree*          checkIndexExpr     = gtNewIconNode(indexVal + arrayElementsCount - 1);
+    GenTreeArrLen*    arrLen = gtNewArrLen(TYP_INT, arrayRef, (int)OFFSETOF__CORINFO_Array__length, compCurBB);
+    GenTreeBoundsChk* arrBndsChk =
+        new (this, GT_BOUNDS_CHECK) GenTreeBoundsChk(checkIndexExpr, arrLen, SCK_ARG_RNG_EXCPN);
+
+    offset += OFFSETOF__CORINFO_Array__data;
+    GenTree* address = gtNewOperNode(GT_COMMA, arrayRef->TypeGet(), arrBndsChk, gtCloneExpr(arrayRef));
+    address          = gtNewOperNode(GT_ADD, TYP_BYREF, address, gtNewIconNode(offset, TYP_I_IMPL));
 
     return address;
 }
 
 //-------------------------------------------------------------------------------
-// impMarkContiguousSIMDFieldAssignments: Try to identify if there are contiguous
+// impMarkContiguousSIMDFieldStores: Try to identify if there are contiguous
 // assignments from SIMD field to memory. If there are, then mark the related
 // lclvar so that it won't be promoted.
 //
 // Arguments:
 //      stmt - GenTree*. Input statement node.
 //
-void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
+void Compiler::impMarkContiguousSIMDFieldStores(Statement* stmt)
 {
     if (opts.OptimizationDisabled())
     {
         return;
     }
     GenTree* expr = stmt->GetRootNode();
-    if (expr->OperGet() == GT_ASG && expr->TypeGet() == TYP_FLOAT)
+    if (expr->OperIsStore() && expr->TypeIs(TYP_FLOAT))
     {
-        GenTree*    curDst          = expr->AsOp()->gtOp1;
-        GenTree*    curSrc          = expr->AsOp()->gtOp2;
-        unsigned    index           = 0;
-        CorInfoType simdBaseJitType = CORINFO_TYPE_UNDEF;
-        unsigned    simdSize        = 0;
-        GenTree*    srcSimdLclAddr  = getSIMDStructFromField(curSrc, &simdBaseJitType, &index, &simdSize, true);
+        GenTree*  curValue       = expr->Data();
+        unsigned  index          = 0;
+        var_types simdBaseType   = curValue->TypeGet();
+        unsigned  simdSize       = 0;
+        GenTree*  srcSimdLclAddr = getSIMDStructFromField(curValue, &index, &simdSize, true);
 
-        if (srcSimdLclAddr == nullptr || simdBaseJitType != CORINFO_TYPE_FLOAT)
+        if (srcSimdLclAddr == nullptr || simdBaseType != TYP_FLOAT)
         {
-            fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+            fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
         }
         else if (index == 0)
         {
-            fgPreviousCandidateSIMDFieldAsgStmt = stmt;
+            fgPreviousCandidateSIMDFieldStoreStmt = stmt;
         }
-        else if (fgPreviousCandidateSIMDFieldAsgStmt != nullptr)
+        else if (fgPreviousCandidateSIMDFieldStoreStmt != nullptr)
         {
             assert(index > 0);
-            var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
-            GenTree*  prevAsgExpr  = fgPreviousCandidateSIMDFieldAsgStmt->GetRootNode();
-            GenTree*  prevDst      = prevAsgExpr->AsOp()->gtOp1;
-            GenTree*  prevSrc      = prevAsgExpr->AsOp()->gtOp2;
-            if (!areArgumentsContiguous(prevDst, curDst) || !areArgumentsContiguous(prevSrc, curSrc))
+            GenTree* curStore  = expr;
+            GenTree* prevStore = fgPreviousCandidateSIMDFieldStoreStmt->GetRootNode();
+            GenTree* prevValue = prevStore->Data();
+            if (!areArgumentsContiguous(prevStore, curStore) || !areArgumentsContiguous(prevValue, curValue))
             {
-                fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+                fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
             }
             else
             {
@@ -831,25 +786,29 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
                     // Successfully found the pattern, mark the lclvar as UsedInSIMDIntrinsic
                     setLclRelatedToSIMDIntrinsic(srcSimdLclAddr);
 
-                    if (curDst->OperIs(GT_FIELD) && curDst->AsField()->IsInstance())
+                    if (curStore->OperIs(GT_STOREIND) && curStore->AsIndir()->Addr()->OperIs(GT_FIELD_ADDR))
                     {
-                        GenTree* objRef = curDst->AsField()->GetFldObj();
-                        if (objRef->IsLclVarAddr() && varTypeIsStruct(lvaGetDesc(objRef->AsLclFld())))
+                        GenTreeFieldAddr* addr = curStore->AsIndir()->Addr()->AsFieldAddr();
+                        if (addr->IsInstance())
                         {
-                            setLclRelatedToSIMDIntrinsic(objRef);
+                            GenTree* objRef = addr->GetFldObj();
+                            if (objRef->IsLclVarAddr() && varTypeIsStruct(lvaGetDesc(objRef->AsLclFld())))
+                            {
+                                setLclRelatedToSIMDIntrinsic(objRef);
+                            }
                         }
                     }
                 }
                 else
                 {
-                    fgPreviousCandidateSIMDFieldAsgStmt = stmt;
+                    fgPreviousCandidateSIMDFieldStoreStmt = stmt;
                 }
             }
         }
     }
     else
     {
-        fgPreviousCandidateSIMDFieldAsgStmt = nullptr;
+        fgPreviousCandidateSIMDFieldStoreStmt = nullptr;
     }
 }
 #endif // FEATURE_SIMD

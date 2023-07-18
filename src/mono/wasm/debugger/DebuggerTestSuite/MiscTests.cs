@@ -1065,6 +1065,12 @@ namespace DebuggerTests
         [InlineData("ClassInheritsFromNonUserCodeClass", 1335, false)]
         [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, true)]
         [InlineData("ClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1352, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols", 1618, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromClassWithoutDebugSymbols", 1618, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass", 1635, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClass", 1635, false)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1653, true)]
+        [InlineData("GenericCustomAttributeDecoratedClassInheritsFromNonUserCodeClassThatInheritsFromNormalClass", 1653, false)]
         public async Task InspectThisThatInheritsFromClassNonUserCode(string class_name, int line, bool jmc)
         {
             await SetJustMyCode(jmc);

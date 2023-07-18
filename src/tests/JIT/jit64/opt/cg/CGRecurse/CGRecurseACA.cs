@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 namespace CGRecurse
 {
@@ -15,7 +16,8 @@ namespace CGRecurse
 
         public static int cntC = 0;
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             string ExpectedResult = "ACA";
             int retVal = 1;
@@ -28,7 +30,7 @@ namespace CGRecurse
             return retVal;
         }
 
-        public static void C()
+        private static void C()
         {
             ActualResult = (ActualResult + "C");
             if ((cntA == 1))
@@ -41,7 +43,7 @@ namespace CGRecurse
             return;
         }
 
-        public static void A()
+        internal static void A()
         {
             ActualResult = (ActualResult + "A");
             if ((cntC == 1))

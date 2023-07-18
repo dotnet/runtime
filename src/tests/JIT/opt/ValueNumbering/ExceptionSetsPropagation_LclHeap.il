@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 .assembly extern xunit.core { }
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console { }
 
 .assembly ExceptionSetsPropagation_LclHeap { }
 
-.class ExceptionSetsPropagation_LclHeap extends [System.Runtime]System.Object
+.class public ExceptionSetsPropagation_LclHeap extends [System.Runtime]System.Object
 {
     .method public static int32 Main()
     {

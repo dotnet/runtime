@@ -1,6 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Text;
+
 namespace System.Globalization
 {
     /// <remarks>
@@ -54,6 +60,21 @@ namespace System.Globalization
         internal string _percentGroupSeparator = ",";
         internal string _percentSymbol = "%";
         internal string _perMilleSymbol = "\u2030";
+
+        internal byte[]? _positiveSignUtf8;
+        internal byte[]? _negativeSignUtf8;
+        internal byte[]? _currencySymbolUtf8;
+        internal byte[]? _numberDecimalSeparatorUtf8;
+        internal byte[]? _currencyDecimalSeparatorUtf8;
+        internal byte[]? _currencyGroupSeparatorUtf8;
+        internal byte[]? _numberGroupSeparatorUtf8;
+        internal byte[]? _percentSymbolUtf8;
+        internal byte[]? _percentDecimalSeparatorUtf8;
+        internal byte[]? _percentGroupSeparatorUtf8;
+        internal byte[]? _perMilleSymbolUtf8;
+        internal byte[]? _nanSymbolUtf8;
+        internal byte[]? _positiveInfinitySymbolUtf8;
+        internal byte[]? _negativeInfinitySymbolUtf8;
 
         internal string[] _nativeDigits = { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
 
@@ -186,7 +207,7 @@ namespace System.Globalization
         public static NumberFormatInfo InvariantInfo => s_invariantInfo ??=
             // Lazy create the invariant info. This cannot be done in a .cctor because exceptions can
             // be thrown out of a .cctor stack that will need this.
-            new NumberFormatInfo { _isReadOnly = true };
+            CultureInfo.InvariantCulture.NumberFormat;
 
         public static NumberFormatInfo GetInstance(IFormatProvider? formatProvider)
         {
@@ -223,10 +244,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -242,7 +260,17 @@ namespace System.Globalization
                 VerifyWritable();
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _currencyDecimalSeparator = value;
+                _currencyDecimalSeparatorUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> CurrencyDecimalSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_currencyDecimalSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_currencyDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyDecimalSeparator));
         }
 
         public bool IsReadOnly => _isReadOnly;
@@ -324,7 +352,17 @@ namespace System.Globalization
                 VerifyWritable();
                 ArgumentNullException.ThrowIfNull(value);
                 _currencyGroupSeparator = value;
+                _currencyGroupSeparatorUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> CurrencyGroupSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_currencyGroupSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_currencyGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_currencyGroupSeparator));
         }
 
         public string CurrencySymbol
@@ -336,8 +374,20 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _currencySymbol = value;
+                _currencySymbolUtf8 = null;
             }
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> CurrencySymbolTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_currencySymbol) :
+                MemoryMarshal.Cast<byte, TChar>(_currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol));
+        }
+
+        internal byte[]? CurrencySymbolUtf8 => _currencySymbolUtf8 ??= Encoding.UTF8.GetBytes(_currencySymbol);
 
         /// <summary>
         /// Returns the current culture's NumberFormatInfo. Used by Parse methods.
@@ -347,7 +397,7 @@ namespace System.Globalization
         {
             get
             {
-                System.Globalization.CultureInfo culture = CultureInfo.CurrentCulture;
+                CultureInfo culture = CultureInfo.CurrentCulture;
                 if (!culture._isInherited)
                 {
                     NumberFormatInfo? info = culture._numInfo;
@@ -370,7 +420,17 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _nanSymbol = value;
+                _nanSymbolUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> NaNSymbolTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_nanSymbol) :
+                MemoryMarshal.Cast<byte, TChar>(_nanSymbolUtf8 ??= Encoding.UTF8.GetBytes(_nanSymbol));
         }
 
         public int CurrencyNegativePattern
@@ -378,12 +438,9 @@ namespace System.Globalization
             get => _currencyNegativePattern;
             set
             {
-                if (value < 0 || value > 15)
+                if (value < 0 || value > 16)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 15));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 16);
                 }
 
                 VerifyWritable();
@@ -399,10 +456,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to negNumberFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 4)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 4));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 4);
                 }
 
                 VerifyWritable();
@@ -418,10 +472,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -437,10 +488,7 @@ namespace System.Globalization
                 // NOTENOTE: the range of value should correspond to posPercentFormats[] in vm\COMNumber.cpp.
                 if (value < 0 || value > 11)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 11));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 11);
                 }
 
                 VerifyWritable();
@@ -457,7 +505,17 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _negativeInfinitySymbol = value;
+                _negativeInfinitySymbolUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> NegativeInfinitySymbolTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_negativeInfinitySymbol) :
+                MemoryMarshal.Cast<byte, TChar>(_negativeInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_negativeInfinitySymbol));
         }
 
         public string NegativeSign
@@ -469,8 +527,18 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _negativeSign = value;
+                _negativeSignUtf8 = null;
                 InitializeInvariantAndNegativeSignFlags();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> NegativeSignTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_negativeSign) :
+                MemoryMarshal.Cast<byte, TChar>(_negativeSignUtf8 ??= Encoding.UTF8.GetBytes(_negativeSign));
         }
 
         public int NumberDecimalDigits
@@ -480,10 +548,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -499,7 +564,17 @@ namespace System.Globalization
                 VerifyWritable();
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _numberDecimalSeparator = value;
+                _numberDecimalSeparatorUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> NumberDecimalSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_numberDecimalSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_numberDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberDecimalSeparator));
         }
 
         public string NumberGroupSeparator
@@ -510,7 +585,17 @@ namespace System.Globalization
                 VerifyWritable();
                 ArgumentNullException.ThrowIfNull(value);
                 _numberGroupSeparator = value;
+                _numberGroupSeparatorUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> NumberGroupSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_numberGroupSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_numberGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_numberGroupSeparator));
         }
 
         public int CurrencyPositivePattern
@@ -520,10 +605,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 3)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 3));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 3);
                 }
 
                 VerifyWritable();
@@ -540,7 +622,17 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _positiveInfinitySymbol = value;
+                _positiveInfinitySymbolUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> PositiveInfinitySymbolTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_positiveInfinitySymbol) :
+                MemoryMarshal.Cast<byte, TChar>(_positiveInfinitySymbolUtf8 ??= Encoding.UTF8.GetBytes(_positiveInfinitySymbol));
         }
 
         public string PositiveSign
@@ -552,8 +644,18 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _positiveSign = value;
+                _positiveSignUtf8 = null;
                 InitializeInvariantAndNegativeSignFlags();
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> PositiveSignTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_positiveSign) :
+                MemoryMarshal.Cast<byte, TChar>(_positiveSignUtf8 ??= Encoding.UTF8.GetBytes(_positiveSign));
         }
 
         public int PercentDecimalDigits
@@ -563,10 +665,7 @@ namespace System.Globalization
             {
                 if (value < 0 || value > 99)
                 {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(value),
-                        value,
-                        SR.Format(SR.ArgumentOutOfRange_Range, 0, 99));
+                    ThrowHelper.ThrowArgumentOutOfRange_Range(nameof(value), value, 0, 99);
                 }
 
                 VerifyWritable();
@@ -582,7 +681,17 @@ namespace System.Globalization
                 VerifyWritable();
                 ArgumentException.ThrowIfNullOrEmpty(value);
                 _percentDecimalSeparator = value;
+                _percentDecimalSeparatorUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> PercentDecimalSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_percentDecimalSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_percentDecimalSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentDecimalSeparator));
         }
 
         public string PercentGroupSeparator
@@ -593,7 +702,17 @@ namespace System.Globalization
                 VerifyWritable();
                 ArgumentNullException.ThrowIfNull(value);
                 _percentGroupSeparator = value;
+                _percentGroupSeparatorUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> PercentGroupSeparatorTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_percentGroupSeparator) :
+                MemoryMarshal.Cast<byte, TChar>(_percentGroupSeparatorUtf8 ??= Encoding.UTF8.GetBytes(_percentGroupSeparator));
         }
 
         public string PercentSymbol
@@ -604,7 +723,17 @@ namespace System.Globalization
                 ArgumentNullException.ThrowIfNull(value);
                 VerifyWritable();
                 _percentSymbol = value;
+                _percentSymbolUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> PercentSymbolTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_percentSymbol) :
+                MemoryMarshal.Cast<byte, TChar>(_percentSymbolUtf8 ??= Encoding.UTF8.GetBytes(_percentSymbol));
         }
 
         public string PerMilleSymbol
@@ -616,7 +745,17 @@ namespace System.Globalization
 
                 VerifyWritable();
                 _perMilleSymbol = value;
+                _perMilleSymbolUtf8 = null;
             }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal ReadOnlySpan<TChar> PerMilleSymbolTChar<TChar>() where TChar : unmanaged, IUtfChar<TChar>
+        {
+            Debug.Assert(typeof(TChar) == typeof(char) || typeof(TChar) == typeof(byte));
+            return typeof(TChar) == typeof(char) ?
+                MemoryMarshal.Cast<char, TChar>(_perMilleSymbol) :
+                MemoryMarshal.Cast<byte, TChar>(_perMilleSymbolUtf8 ??= Encoding.UTF8.GetBytes(_perMilleSymbol));
         }
 
         public string[] NativeDigits
@@ -665,24 +804,24 @@ namespace System.Globalization
                                                            | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
                                                            | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
                                                            | NumberStyles.AllowThousands | NumberStyles.AllowExponent
-                                                           | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+                                                           | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier
+                                                           | NumberStyles.AllowBinarySpecifier);
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void ValidateParseStyleInteger(NumberStyles style)
         {
-            // Check for undefined flags or invalid hex number flags
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0
-                && (style & ~NumberStyles.HexNumber) != 0)
+            // Check for undefined flags or using AllowHexSpecifier/AllowBinarySpecifier each with anything other than AllowLeadingWhite/AllowTrailingWhite.
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0 &&
+                (style & ~NumberStyles.HexNumber) != 0 &&
+                (style & ~NumberStyles.BinaryNumber) != 0)
             {
                 ThrowInvalid(style);
 
                 static void ThrowInvalid(NumberStyles value)
                 {
-                    if ((value & InvalidNumberStyles) != 0)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-                    }
-
-                    throw new ArgumentException(SR.Arg_InvalidHexStyle);
+                    throw new ArgumentException(
+                        (value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_InvalidHexBinaryStyle,
+                        nameof(style));
                 }
             }
         }
@@ -690,19 +829,12 @@ namespace System.Globalization
         internal static void ValidateParseStyleFloatingPoint(NumberStyles style)
         {
             // Check for undefined flags or hex number
-            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
+            if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier | NumberStyles.AllowBinarySpecifier)) != 0)
             {
                 ThrowInvalid(style);
 
-                static void ThrowInvalid(NumberStyles value)
-                {
-                    if ((value & InvalidNumberStyles) != 0)
-                    {
-                        throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
-                    }
-
-                    throw new ArgumentException(SR.Arg_HexStyleNotSupported);
-                }
+                static void ThrowInvalid(NumberStyles value) =>
+                    throw new ArgumentException((value & InvalidNumberStyles) != 0 ? SR.Argument_InvalidNumberStyles : SR.Arg_HexBinaryStylesNotSupported, nameof(style));
             }
         }
     }

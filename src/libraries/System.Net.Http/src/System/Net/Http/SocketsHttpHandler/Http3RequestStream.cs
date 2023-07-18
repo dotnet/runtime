@@ -352,7 +352,7 @@ namespace System.Net.Http
 
             _headerState = HeaderState.TrailingHeaders;
 
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop((int)_response.StatusCode);
         }
 
         private async Task SendContentAsync(HttpContent content, CancellationToken cancellationToken)
@@ -552,7 +552,7 @@ namespace System.Net.Http
 
         private void BufferHeaders(HttpRequestMessage request)
         {
-            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+            if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(_connection.Id);
 
             // Reserve space for the header frame envelope.
             // The envelope needs to be written after headers are serialized, as we need to know the payload length first.

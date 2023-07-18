@@ -25,29 +25,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "gcinfo.h"
 #include "gcinfoencoder.h"
 
-// Instruction immediates
-
-// Insertps:
-// - bits 6 and 7 of the immediate indicate which source item to select (0..3)
-// - bits 4 and 5 of the immediate indicate which target item to insert into (0..3)
-// - bits 0 to 3 of the immediate indicate which target item to zero
-#define INSERTPS_SOURCE_SELECT(i) ((i) << 6)
-#define INSERTPS_TARGET_SELECT(i) ((i) << 4)
-#define INSERTPS_ZERO(i) (1 << (i))
-
-// ROUNDPS/PD:
-// - Bit 0 through 1 - Rounding mode
-//   * 0b00 - Round to nearest (even)
-//   * 0b01 - Round toward Neg. Infinity
-//   * 0b10 - Round toward Pos. Infinity
-//   * 0b11 - Round toward zero (Truncate)
-// - Bit 2 - Source of rounding control, 0b0 for immediate.
-// - Bit 3 - Precision exception, 0b1 to ignore. (We don't raise FP exceptions)
-#define ROUNDPS_TO_NEAREST_IMM 0b1000
-#define ROUNDPS_TOWARD_NEGATIVE_INFINITY_IMM 0b1001
-#define ROUNDPS_TOWARD_POSITIVE_INFINITY_IMM 0b1010
-#define ROUNDPS_TOWARD_ZERO_IMM 0b1011
-
 //-----------------------------------------------------------------------------
 // genStoreIndTypeSimd12: store indirect a TYP_SIMD12 (i.e. Vector3) to memory.
 // Since Vector3 is not a hardware supported write size, it is performed
@@ -72,6 +49,13 @@ void CodeGen::genStoreIndTypeSimd12(GenTreeStoreInd* treeNode)
 
     GenTree*  data    = treeNode->Data();
     regNumber dataReg = genConsumeReg(data);
+
+    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+    {
+        genEmitStoreLclTypeSimd12(treeNode, addr->AsLclFld()->GetLclNum(), addr->AsLclFld()->GetLclOffs());
+        genUpdateLife(treeNode);
+        return;
+    }
 
     emitter* emit = GetEmitter();
 
@@ -141,6 +125,13 @@ void CodeGen::genLoadIndTypeSimd12(GenTreeIndir* treeNode)
 
     GenTree* addr = treeNode->Addr();
     genConsumeAddress(addr);
+
+    if (addr->isContained() && addr->OperIs(GT_LCL_ADDR))
+    {
+        genEmitLoadLclTypeSimd12(treeNode->GetRegNum(), addr->AsLclFld()->GetLclNum(), addr->AsLclFld()->GetLclOffs());
+        genProduceReg(treeNode);
+        return;
+    }
 
     emitter*  emit     = GetEmitter();
     regNumber tgtReg   = treeNode->GetRegNum();
@@ -249,29 +240,7 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
     }
     else
     {
-        // Store lower 8 bytes
-        emit->emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, varNum, offs);
-
-        if (data->IsVectorZero())
-        {
-            // Store upper 4 bytes
-            emit->emitIns_S_R(INS_movss, EA_4BYTE, dataReg, varNum, offs + 8);
-        }
-        else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
-        {
-            // Extract and store upper 4 bytes
-            emit->emitIns_S_R_I(INS_extractps, EA_16BYTE, varNum, offs + 8, dataReg, 2);
-        }
-        else
-        {
-            regNumber tmpReg = treeNode->GetSingleTempReg();
-
-            // Extract upper 4 bytes from data
-            emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
-
-            // Store upper 4 bytes
-            emit->emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, varNum, offs + 8);
-        }
+        genEmitStoreLclTypeSimd12(treeNode, varNum, offs);
     }
 
     genUpdateLifeStore(treeNode, tgtReg, varDsc);
@@ -291,36 +260,82 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 void CodeGen::genLoadLclTypeSimd12(GenTreeLclVarCommon* treeNode)
 {
     assert(treeNode->OperIs(GT_LCL_FLD, GT_LCL_VAR));
+    genEmitLoadLclTypeSimd12(treeNode->GetRegNum(), treeNode->GetLclNum(), treeNode->GetLclOffs());
+    genProduceReg(treeNode);
+}
 
+//------------------------------------------------------------------------
+// genEmitStoreLclTypeSimd12: Emit code to store a SIMD12 value to stack.
+//
+// Arguments:
+//    store  - The store node
+//    lclNum - Stack local's number
+//    offset - Offset to store at
+//
+void CodeGen::genEmitStoreLclTypeSimd12(GenTree* store, unsigned lclNum, unsigned offset)
+{
+    assert(store->OperIsLocalStore() || store->OperIs(GT_STOREIND));
+
+    emitter*  emit    = GetEmitter();
+    GenTree*  data    = store->Data();
+    regNumber dataReg = data->GetRegNum();
+
+    // Store lower 8 bytes
+    emit->emitIns_S_R(INS_movsd_simd, EA_8BYTE, dataReg, lclNum, offset);
+
+    if (data->IsVectorZero())
+    {
+        // Store upper 4 bytes
+        emit->emitIns_S_R(INS_movss, EA_4BYTE, dataReg, lclNum, offset + 8);
+    }
+    else if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // Extract and store upper 4 bytes
+        emit->emitIns_S_R_I(INS_extractps, EA_16BYTE, lclNum, offset + 8, dataReg, 2);
+    }
+    else
+    {
+        regNumber tmpReg = store->GetSingleTempReg();
+
+        // Extract upper 4 bytes from data
+        emit->emitIns_R_R(INS_movhlps, EA_16BYTE, tmpReg, dataReg);
+
+        // Store upper 4 bytes
+        emit->emitIns_S_R(INS_movss, EA_4BYTE, tmpReg, lclNum, offset + 8);
+    }
+}
+
+//------------------------------------------------------------------------
+// genEmitLoadLclTypeSimd12: Emit code to load a SIMD12 value from stack.
+//
+// Arguments:
+//    tgtReg - Register to load into
+//    lclNum - Stack local's number
+//    offset - Offset to load from
+//
+void CodeGen::genEmitLoadLclTypeSimd12(regNumber tgtReg, unsigned lclNum, unsigned offset)
+{
     emitter* emit = GetEmitter();
-
-    unsigned offs   = treeNode->GetLclOffs();
-    unsigned varNum = treeNode->GetLclNum();
-    assert(varNum < compiler->lvaCount);
-
-    regNumber tgtReg = treeNode->GetRegNum();
 
     if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
     {
         // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
-        emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, varNum, offs);
+        emit->emitIns_R_S(INS_movsd_simd, EA_8BYTE, tgtReg, lclNum, offset);
 
         // Load and insert upper 4 byte, 0x20 inserts to index 2 and 0x8 zeros index 3
-        emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, varNum, offs + 8, 0x28);
+        emit->emitIns_SIMD_R_R_S_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, lclNum, offset + 8, 0x28);
     }
     else
     {
         // Load upper 4 bytes to lower half of tgtReg
-        emit->emitIns_R_S(INS_movss, EA_4BYTE, tgtReg, varNum, offs + 8);
+        emit->emitIns_R_S(INS_movss, EA_4BYTE, tgtReg, lclNum, offset + 8);
 
         // Move upper 4 bytes to upper half of tgtReg
         emit->emitIns_R_R(INS_movlhps, EA_16BYTE, tgtReg, tgtReg);
 
         // Load lower 8 bytes into tgtReg, preserving upper 4 bytes
-        emit->emitIns_R_S(INS_movlps, EA_16BYTE, tgtReg, varNum, offs);
+        emit->emitIns_R_S(INS_movlps, EA_16BYTE, tgtReg, lclNum, offset);
     }
-
-    genProduceReg(treeNode);
 }
 
 #ifdef TARGET_X86
@@ -493,6 +508,47 @@ void CodeGen::genSimdUpperRestore(GenTreeIntrinsic* node)
             // We will restore the whole 64 bytes for zmm.
             GetEmitter()->emitIns_R_S(INS_movups, EA_64BYTE, lclVarReg, varNum, 0);
         }
+    }
+}
+
+//-----------------------------------------------------------------------------
+// genSimd12UpperClear: Clears the upper 32-bits of a TYP_SIMD12 vector
+//
+// Arguments:
+//    tgtReg - The target register for which to clear the upper bits
+//
+// Return Value:
+//    None.
+//
+void CodeGen::genSimd12UpperClear(regNumber tgtReg)
+{
+    assert(genIsValidFloatReg(tgtReg));
+
+    if (compiler->compOpportunisticallyDependsOn(InstructionSet_SSE41))
+    {
+        // ZMASK:   0b1000 - Preserve element 0, 1, and 2; Zero element 3
+        // COUNT_D: 0b11   - Insert into element 3
+        // COUNT_S: 0b11   - Insert from element 3
+
+        GetEmitter()->emitIns_SIMD_R_R_R_I(INS_insertps, EA_16BYTE, tgtReg, tgtReg, tgtReg, static_cast<int8_t>(0xF8));
+    }
+    else
+    {
+        // Preserve element 0, 1, and 2; Zero element 3
+
+        if (zroSimd12Elm3 == NO_FIELD_HANDLE)
+        {
+            simd16_t constValue;
+
+            constValue.u32[0] = 0xFFFFFFFF;
+            constValue.u32[1] = 0xFFFFFFFF;
+            constValue.u32[2] = 0xFFFFFFFF;
+            constValue.u32[3] = 0x00000000;
+
+            zroSimd12Elm3 = GetEmitter()->emitSimd16Const(constValue);
+        }
+
+        GetEmitter()->emitIns_SIMD_R_R_C(INS_andps, EA_16BYTE, tgtReg, tgtReg, zroSimd12Elm3, 0);
     }
 }
 

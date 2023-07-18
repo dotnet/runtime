@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
 public class ComparisonTestAnd2Chains
 {
@@ -179,11 +180,13 @@ public class ComparisonTestAnd2Chains
 
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static void consume<T>(T a1, T a2) {}
+    internal static void consume<T>(T a1, T a2) {}
 
     // If conditions that are consumed.
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
     public static void Lt_byte_2_consume(byte a1, byte a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #10
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #11, nc, {{ge|lt}}
@@ -193,6 +196,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(12, 13)]
     public static void Le_short_2_consume(short a1, short a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #10
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #12, 0, {{gt|le}}
@@ -202,6 +207,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(14, 15)]
     public static void Gt_int_2_consume(int a1, int a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #10
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #13, 0, {{le|gt}}
@@ -211,6 +218,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(16, 17)]
     public static void Ge_long_2_consume(long a1, long a2) {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #10
         //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, #14, nc, {{lt|ge}}
@@ -220,6 +229,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(18, 19)]
     public static void Eq_ushort_2_consume(ushort a1, ushort a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #10
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #15, z, {{ne|eq}}
@@ -229,6 +240,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(20, 21)]
     public static void Ne_uint_2_consume(uint a1, uint a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #10
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #16, z, {{eq|ne}}
@@ -240,6 +253,9 @@ public class ComparisonTestAnd2Chains
     /* If/Else conditions that consume. */
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(10, 11)]
+    [InlineData(12, 13)]
     public static void Le_else_byte_2_consume(byte a1, byte a2)
     {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
@@ -250,6 +266,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(14, 15)]
     public static void Gt_else_short_2_consume(short a1, short a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #23, nzc, {{le|gt}}
@@ -259,6 +277,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(16, 17)]
     public static void Ge_else_int_2_consume(int a1, int a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #24, z, {{lt|ge}}
@@ -268,6 +288,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(18, 19)]
     public static void Eq_else_long_2_consume(long a1, long a2) {
         //ARM64-FULL-LINE: cmp {{x[0-9]+}}, #11
         //ARM64-FULL-LINE-NEXT: ccmp {{x[0-9]+}}, #25, 0, {{ne|eq}}
@@ -277,6 +299,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(20, 21)]
     public static void Ne_else_ushort_2_consume(ushort a1, ushort a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #26, 0, {{eq|ne}}
@@ -286,6 +310,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
+    [Theory]
+    [InlineData(22, 23)]
     public static void Lt_else_uint_2_consume(uint a1, uint a2) {
         //ARM64-FULL-LINE: cmp {{w[0-9]+}}, #11
         //ARM64-FULL-LINE-NEXT: ccmp {{w[0-9]+}}, #27, c, {{hs|lo}}
@@ -295,7 +321,8 @@ public class ComparisonTestAnd2Chains
     }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (!Eq_byte_2(10, 11))
         {
@@ -572,21 +599,6 @@ public class ComparisonTestAnd2Chains
             Console.WriteLine("ComparisonTestAnd2Chains:Ge_double_2(10.5, 11.5) failed");
             return 101;
         }
-
-        Lt_byte_2_consume(10, 11);
-        Le_short_2_consume(12, 13);
-        Gt_int_2_consume(14, 15);
-        Ge_long_2_consume(16, 17);
-        Eq_ushort_2_consume(18, 19);
-        Ne_uint_2_consume(20, 21);
-
-        Le_else_byte_2_consume(10, 11);
-        Le_else_byte_2_consume(12, 13);
-        Gt_else_short_2_consume(14, 15);
-        Ge_else_int_2_consume(16, 17);
-        Eq_else_long_2_consume(18, 19);
-        Ne_else_ushort_2_consume(20, 21);
-        Lt_else_uint_2_consume(22, 23);
 
         Console.WriteLine("PASSED");
         return 100;

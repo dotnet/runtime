@@ -20,12 +20,7 @@ namespace System.Linq
             }
 
             TElement[] array = new TElement[count];
-            int[] map = SortedMap(buffer);
-            for (int i = 0; i < array.Length; i++)
-            {
-                array[i] = buffer._items[map[i]];
-            }
-
+            Fill(buffer, array);
             return array;
         }
 
@@ -36,14 +31,19 @@ namespace System.Linq
             List<TElement> list = new List<TElement>(count);
             if (count > 0)
             {
-                int[] map = SortedMap(buffer);
-                for (int i = 0; i != count; i++)
-                {
-                    list.Add(buffer._items[map[i]]);
-                }
+                Fill(buffer, Enumerable.SetCountAndGetSpan(list, count));
             }
 
             return list;
+        }
+
+        private void Fill(Buffer<TElement> buffer, Span<TElement> destination)
+        {
+            int[] map = SortedMap(buffer);
+            for (int i = 0; i < destination.Length; i++)
+            {
+                destination[i] = buffer._items[map[i]];
+            }
         }
 
         public int GetCount(bool onlyIfCheap)
@@ -75,15 +75,9 @@ namespace System.Linq
                 return new TElement[] { GetEnumerableSorter().ElementAt(buffer._items, count, minIdx) };
             }
 
-            int[] map = SortedMap(buffer, minIdx, maxIdx);
             TElement[] array = new TElement[maxIdx - minIdx + 1];
-            int idx = 0;
-            while (minIdx <= maxIdx)
-            {
-                array[idx] = buffer._items[map[minIdx]];
-                ++idx;
-                ++minIdx;
-            }
+
+            Fill(minIdx, maxIdx, buffer, array);
 
             return array;
         }
@@ -107,15 +101,21 @@ namespace System.Linq
                 return new List<TElement>(1) { GetEnumerableSorter().ElementAt(buffer._items, count, minIdx) };
             }
 
-            int[] map = SortedMap(buffer, minIdx, maxIdx);
             List<TElement> list = new List<TElement>(maxIdx - minIdx + 1);
+            Fill(minIdx, maxIdx, buffer, Enumerable.SetCountAndGetSpan(list, maxIdx - minIdx + 1));
+            return list;
+        }
+
+        private void Fill(int minIdx, int maxIdx, Buffer<TElement> buffer, Span<TElement> destination)
+        {
+            int[] map = SortedMap(buffer, minIdx, maxIdx);
+            int idx = 0;
             while (minIdx <= maxIdx)
             {
-                list.Add(buffer._items[map[minIdx]]);
+                destination[idx] = buffer._items[map[minIdx]];
+                ++idx;
                 ++minIdx;
             }
-
-            return list;
         }
 
         internal int GetCount(int minIdx, int maxIdx, bool onlyIfCheap)

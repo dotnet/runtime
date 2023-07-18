@@ -38,6 +38,22 @@ namespace Mono.Linker.Tests.TestCases
 		}
 
 		[Theory]
+		[MemberData (nameof (TestDatabase.Reflection), MemberType = typeof (TestDatabase))]
+		public void Reflection (string t)
+		{
+			switch (t) {
+			case "TypeHierarchyReflectionWarnings":
+			case "ParametersUsedViaReflection":
+			case "UnsafeAccessor":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
+		}
+
+		[Theory]
 		[MemberData (nameof (TestDatabase.Repro), MemberType = typeof (TestDatabase))]
 		public void Repro (string t)
 		{
@@ -56,6 +72,20 @@ namespace Mono.Linker.Tests.TestCases
 		public void SingleFile (string t)
 		{
 			Run (t);
+		}
+
+		[Theory]
+		[MemberData (nameof (TestDatabase.UnreachableBlock), MemberType = typeof (TestDatabase))]
+		public void UnreachableBlock (string t)
+		{
+			switch (t) {
+			case "TryCatchBlocks":
+				Run (t);
+				break;
+			default:
+				// Skip the rest for now
+				break;
+			}
 		}
 
 		[Theory]

@@ -202,7 +202,7 @@ namespace System.Net
                 {
                     Cookie cookie = _cookies[index];
                     string cookieString = cookie.ToServerString();
-                    if (cookieString == null || cookieString.Length == 0)
+                    if (string.IsNullOrEmpty(cookieString))
                     {
                         continue;
                     }

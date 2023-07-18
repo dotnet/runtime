@@ -19,7 +19,7 @@
 }
 .assembly extern eh_common{}
 
-.assembly 'throw1dimarray'
+.assembly ASSEMBLY_NAME
 {
   .ver 0:0:0:0
 }

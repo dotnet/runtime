@@ -125,9 +125,9 @@ namespace System.Text.RegularExpressions
 
             // Gets the weakly cached replacement helper or creates one if there isn't one already.
             RegexReplacement repl = RegexReplacement.GetOrCreate(regex.RegexReplacementWeakReference, replacement, regex.caps!, regex.capsize, regex.capnames!, regex.roptions);
-            SegmentStringBuilder segments = SegmentStringBuilder.Create();
+            var segments = new StructListBuilder<ReadOnlyMemory<char>>();
             repl.ReplacementImpl(ref segments, this);
-            return segments.ToString();
+            return Regex.SegmentsToStringAndDispose(ref segments);
         }
 
         internal ReadOnlyMemory<char> GroupToStringImpl(int groupnum)

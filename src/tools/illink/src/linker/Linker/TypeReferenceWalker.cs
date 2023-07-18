@@ -15,15 +15,18 @@ namespace Mono.Linker
 
 		protected HashSet<TypeReference> Visited { get; } = new HashSet<TypeReference> ();
 
-		public TypeReferenceWalker (AssemblyDefinition assembly)
+		readonly bool walkSymbols;
+
+		public TypeReferenceWalker (AssemblyDefinition assembly, bool walkSymbols)
 		{
 			this.assembly = assembly;
+			this.walkSymbols = walkSymbols;
 		}
 
 		// Traverse the assembly and mark the scopes of discovered type references (but not exported types).
 		// This includes scopes referenced by Cecil TypeReference objects that don't represent rows in the typeref table,
 		// such as references to built-in types, or attribute arguments which encode type references as strings.
-		protected virtual void Process ()
+		public virtual void Process ()
 		{
 			if (Visited.Count > 0)
 				throw new InvalidOperationException ();
@@ -103,6 +106,9 @@ namespace Mono.Linker
 
 					if (m.HasBody)
 						WalkTypeScope (m.Body);
+
+					if (walkSymbols && m.DebugInformation?.Scope?.Import is ImportDebugInformation import)
+						WalkDebugInfoImportScope (import);
 				}
 			}
 
@@ -313,6 +319,17 @@ namespace Mono.Linker
 					WalkForwardedTypesScope (item);
 				break;
 			}
+		}
+
+		void WalkDebugInfoImportScope (ImportDebugInformation import)
+		{
+			if (import.HasTargets) {
+				foreach (var target in import.Targets)
+					WalkScopeOfTypeReference (target.Type);
+			}
+
+			if (import.Parent is ImportDebugInformation parent)
+				WalkDebugInfoImportScope (parent);
 		}
 
 		void WalkScopeOfTypeReference (TypeReference type)

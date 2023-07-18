@@ -154,6 +154,18 @@ namespace System.Text.Json.SourceGeneration.Tests
         public int Length => Message?.Length ?? 0; // Read-only property
     }
 
+    public class AllocatingOnPropertyAccess 
+    {
+        public int WhenWritingNullAccessCounter = 0;
+        public int WhenWritingDefaultAccessCounter = 0;
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string SomeAllocatingProperty => $"Current Value: {++WhenWritingNullAccessCounter}";
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string SomeAllocatingProperty2 => $"Current Value: {++WhenWritingDefaultAccessCounter}";
+    }
+
     internal struct MyStruct { }
 
     public struct PersonStruct
@@ -286,5 +298,11 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         public ClassWithDictionaryProperty(Dictionary<string, object?> property) => DictionaryProperty = property;
         public Dictionary<string, object?> DictionaryProperty { get; }
+    }
+
+    [JsonNumberHandling(JsonNumberHandling.WriteAsString)]
+    public class PocoWithNumberHandlingAttr
+    {
+        public int Id { get; set; }
     }
 }

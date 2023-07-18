@@ -200,6 +200,11 @@ namespace Internal.Metadata.NativeFormat.Writer
             writer.WriteUnsigned((uint)value);
         } // Write
 
+        public static void Write(this NativeWriter writer, SignatureCallingConvention value)
+        {
+            writer.WriteUnsigned((uint)value);
+        } // Write
+
         public static void Write(this NativeWriter writer, EventAttributes value)
         {
             writer.WriteUnsigned((uint)value);

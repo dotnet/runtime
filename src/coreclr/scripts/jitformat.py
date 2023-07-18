@@ -81,7 +81,7 @@ def main(argv):
     args, unknown = parser.parse_known_args(argv)
 
     if unknown:
-        logging.warn('Ignoring argument(s): {}'.format(','.join(unknown)))
+        logging.warning('Ignoring argument(s): {}'.format(','.join(unknown)))
 
     if args.coreclr is None:
         logging.error('Specify --coreclr')

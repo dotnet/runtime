@@ -367,6 +367,8 @@ namespace System.Text.RegularExpressions
             Interlocked.CompareExchange(ref _replref, new WeakReference<RegexReplacement?>(null), null) ??
             _replref;
 
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected void InitializeReferences()
         {
             // This method no longer has anything to initialize. It continues to exist
@@ -615,9 +617,13 @@ namespace System.Text.RegularExpressions
             factory!.CreateInstance();
 
         /// <summary>True if the <see cref="RegexOptions.Compiled"/> option was set.</summary>
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         protected bool UseOptionC() => (roptions & RegexOptions.Compiled) != 0;
 
         /// <summary>True if the <see cref="RegexOptions.RightToLeft"/> option was set.</summary>
-        protected internal bool UseOptionR() => RightToLeft;
+        [Obsolete(Obsoletions.RegexExtensibilityImplMessage, DiagnosticId = Obsoletions.RegexExtensibilityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        protected bool UseOptionR() => RightToLeft;
     }
 }

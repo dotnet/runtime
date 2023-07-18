@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RoslynSupportsRequiredAttributes>true</RoslynSupportsRequiredAttributes>
+    <TestedRoslynVersion>4.4</TestedRoslynVersion>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
@@ -10,6 +10,10 @@
   </ItemGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.Tests.targets" />
+
+  <ItemGroup>
+    <RdXmlFile Include="roslyn4.4.rd.xml" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- The Roslyn4.4 project uses multi-targeting to enable nullability annotations,

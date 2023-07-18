@@ -15,7 +15,7 @@ namespace System.Security.Cryptography.X509Certificates
             throw new PlatformNotSupportedException($"{nameof(StorePal)}.{nameof(FromHandle)}");
         }
 
-        internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        private static ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, bool readingFromFile, X509KeyStorageFlags keyStorageFlags)
         {
             List<ICertificatePal>? certificateList = null;
 
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.X509Certificates
                 (derData, contentType) =>
                 {
                     certificateList ??= new List<ICertificatePal>();
-                    certificateList.Add(AppleCertificatePal.FromDerBlob(derData, contentType, password, keyStorageFlags));
+                    certificateList.Add(AppleCertificatePal.FromDerBlob(derData, contentType, password, readingFromFile, keyStorageFlags));
                     return true;
                 });
 
@@ -45,6 +45,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             if (contentType == X509ContentType.Pkcs12)
             {
+                X509Certificate.EnforceIterationCountLimit(ref rawData, readingFromFile, password.PasswordProvided);
                 ApplePkcs12Reader reader = new ApplePkcs12Reader(rawData);
 
                 try
@@ -94,12 +95,17 @@ namespace System.Security.Cryptography.X509Certificates
             return new CertCollectionLoader(certificateList);
         }
 
+        internal static partial ILoaderPal FromBlob(ReadOnlySpan<byte> rawData, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
+        {
+            return FromBlob(rawData, password, readingFromFile: false, keyStorageFlags);
+        }
+
         internal static partial ILoaderPal FromFile(string fileName, SafePasswordHandle password, X509KeyStorageFlags keyStorageFlags)
         {
             Debug.Assert(password != null);
 
             byte[] fileBytes = File.ReadAllBytes(fileName);
-            return FromBlob(fileBytes, password, keyStorageFlags);
+            return FromBlob(fileBytes, password, readingFromFile: true, keyStorageFlags);
         }
 
         internal static partial IExportPal FromCertificate(ICertificatePalCore cert)

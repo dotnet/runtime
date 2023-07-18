@@ -3,7 +3,7 @@
 
 #include "createdump.h"
 
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
 long g_pageSize = 0;
 #endif
 
@@ -19,10 +19,22 @@ CreateDump(const CreateDumpOptions& options)
     bool result = false;
 
     // Initialize PAGE_SIZE
-#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64)
+#if defined(__arm__) || defined(__aarch64__) || defined(__loongarch64) || defined(__riscv)
     g_pageSize = sysconf(_SC_PAGESIZE);
 #endif
     TRACE("PAGE_SIZE %d\n", PAGE_SIZE);
+
+    if (options.CrashReport && (options.AppModel == AppModelType::SingleFile || options.AppModel == AppModelType::NativeAOT))
+    {
+        printf_error("The app model does not support crash report generation\n");
+        goto exit;
+    }
+
+    if (options.DumpType != DumpType::Full && options.AppModel == AppModelType::NativeAOT)
+    {
+        printf_error("The app model only supports full dump generation\n");
+        goto exit;
+    }
 
     // Initialize the crash info 
     if (!crashInfo->Initialize())
@@ -42,7 +54,7 @@ CreateDump(const CreateDumpOptions& options)
         goto exit;
     }
     // Gather all the info about the process, threads (registers, etc.) and memory regions
-    if (!crashInfo->GatherCrashInfo(options.MinidumpType))
+    if (!crashInfo->GatherCrashInfo(options.DumpType))
     {
         goto exit;
     }
@@ -60,14 +72,14 @@ CreateDump(const CreateDumpOptions& options)
     if (options.CreateDump)
     {
         // Gather all the useful memory regions from the DAC
-        if (!crashInfo->EnumerateMemoryRegionsWithDAC(options.MinidumpType))
+        if (!crashInfo->EnumerateMemoryRegionsWithDAC(options.DumpType))
         {
             goto exit;
         }
         // Join all adjacent memory regions
         crashInfo->CombineMemoryRegions();
     
-        printf_status("Writing %s to file %s\n", options.DumpType, dumpPath.c_str());
+        printf_status("Writing %s to file %s\n", GetDumpTypeString(options.DumpType), dumpPath.c_str());
 
         // Write the actual dump file
         if (!dumpWriter.OpenDump(dumpPath.c_str()))

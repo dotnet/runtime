@@ -16,6 +16,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <memory>
+#include <dn-u16.h>
 #include "corhlpr.h"
 
 #ifdef HOST_WINDOWS
@@ -328,7 +329,7 @@ HRESULT GetNextLevelResourceEntryRVAByName(ICorDebugDataTarget* pDataTarget,
     DWORD* pNextLevelRva)
 {
     HRESULT hr = S_OK;
-    DWORD nameLength = (DWORD)wcslen(pwzName);
+    DWORD nameLength = (DWORD)u16_strlen(pwzName);
     WCHAR entryName[50];
     assert(nameLength < 50);     // this implementation won't support matching a name longer
     // than 50 characters. We only look up the hard coded name

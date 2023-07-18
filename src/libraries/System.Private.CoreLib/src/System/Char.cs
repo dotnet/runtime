@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: This is the value class representing a Unicode character
-** Char methods until we create this functionality.
-**
-**
-===========================================================*/
-
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -23,6 +13,9 @@ using System.Text;
 
 namespace System
 {
+    /// <summary>
+    /// Represents a character as a UTF-16 code unit.
+    /// </summary>
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
@@ -35,7 +28,9 @@ namespace System
           IBinaryInteger<char>,
           IMinMaxValue<char>,
           IUnsignedNumber<char>,
-          IUtf8SpanFormattable
+          IUtf8SpanFormattable,
+          IUtfChar<char>,
+          IBinaryIntegerParseAndFormatInfo<char>
     {
         //
         // Member Variables
@@ -161,12 +156,12 @@ namespace System
         // Overrides System.Object.ToString.
         public override string ToString()
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         public string ToString(IFormatProvider? provider)
         {
-            return char.ToString(m_value);
+            return ToString(m_value);
         }
 
         //
@@ -192,6 +187,7 @@ namespace System
             return false;
         }
 
+        /// <inheritdoc cref="IUtf8SpanFormattable.TryFormat" />
         bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider) =>
             new Rune(this).TryEncodeToUtf8(utf8Destination, out bytesWritten);
 
@@ -199,29 +195,37 @@ namespace System
 
         public static char Parse(string s)
         {
-            if (s == null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            }
+            if (s is null) { ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s); }
+            return Parse(s.AsSpan());
+        }
 
+        internal static char Parse(ReadOnlySpan<char> s)
+        {
             if (s.Length != 1)
             {
-                throw new FormatException(SR.Format_NeedSingleChar);
+                ThrowHelper.ThrowFormatException_NeedSingleChar();
             }
             return s[0];
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, out char result)
         {
-            result = '\0';
-            if (s == null)
+            if (s is null)
             {
+                result = '\0';
                 return false;
             }
+            return TryParse(s.AsSpan(), out result);
+        }
+
+        internal static bool TryParse(ReadOnlySpan<char> s, out char result)
+        {
             if (s.Length != 1)
             {
+                result = '\0';
                 return false;
             }
+
             result = s[0];
             return true;
         }
@@ -1186,7 +1190,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(char)) && (source[..^sizeof(char)].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -1236,7 +1240,7 @@ namespace System
                     return false;
                 }
 
-                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].IndexOfAnyExcept((byte)0x00) >= 0))
+                if ((source.Length > sizeof(char)) && (source[sizeof(char)..].ContainsAnyExcept((byte)0x00)))
                 {
                     // When we have any non-zero leading data, we are a large positive and therefore
                     // definitely out of range
@@ -1507,14 +1511,7 @@ namespace System
 
         static char INumberBase<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
-        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
+        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
         /// <inheritdoc cref="INumberBase{TSelf}.TryConvertFromChecked{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1928,16 +1925,7 @@ namespace System
 
         static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
-        {
-            if (s.Length != 1)
-            {
-                result = default;
-                return false;
-            }
-            result = s[0];
-            return true;
-        }
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // IParsable
@@ -1964,25 +1952,9 @@ namespace System
         // ISpanParsable
         //
 
-        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-        {
-            if (s.Length != 1)
-            {
-                throw new FormatException(SR.Format_NeedSingleChar);
-            }
-            return s[0];
-        }
+        static char ISpanParsable<char>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s);
 
-        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result)
-        {
-            if (s.Length != 1)
-            {
-                result = default;
-                return false;
-            }
-            result = s[0];
-            return true;
-        }
+        static bool ISpanParsable<char>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
         //
         // ISubtractionOperators
@@ -2010,5 +1982,37 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static char IUnaryPlusOperators<char, char>.operator +(char value) => (char)(+value);
+
+        //
+        // IUtfChar
+        //
+
+        static char IUtfChar<char>.CastFrom(byte value) => (char)value;
+        static char IUtfChar<char>.CastFrom(char value) => value;
+        static char IUtfChar<char>.CastFrom(int value) => (char)value;
+        static char IUtfChar<char>.CastFrom(uint value) => (char)value;
+        static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
+
+        static uint IUtfChar<char>.CastToUInt32(char value) => value;
+
+        //
+        // IBinaryIntegerParseAndFormatInfo
+        //
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsSigned => false;
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxDigitCount => 5; // 65_535
+
+        static int IBinaryIntegerParseAndFormatInfo<char>.MaxHexDigitCount => 4; // 0xFFFF
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MaxValueDiv10 => (char)(MaxValue / 10);
+
+        static string IBinaryIntegerParseAndFormatInfo<char>.OverflowMessage => SR.Overflow_Char;
+
+        static bool IBinaryIntegerParseAndFormatInfo<char>.IsGreaterThanAsUnsigned(char left, char right) => left > right;
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy10(char value) => (char)(value * 10);
+
+        static char IBinaryIntegerParseAndFormatInfo<char>.MultiplyBy16(char value) => (char)(value * 16);
     }
 }

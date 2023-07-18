@@ -24,5 +24,10 @@ namespace System.Reflection.Emit
         {
             ReflectionEmitThrower.ThrowPlatformNotSupportedException();
         }
+
+#pragma warning disable CA1822 // Member 'Ctor' does not access instance data and can be marked as static
+        internal ConstructorInfo Ctor => default;
+        internal byte[] Data => default;
+#pragma warning restore CA1822
     }
 }

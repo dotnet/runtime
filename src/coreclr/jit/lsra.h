@@ -642,7 +642,8 @@ public:
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb);
 
     // This does the dataflow analysis and builds the intervals
-    void buildIntervals();
+    template <bool localVarsEnregistered>
+    void           buildIntervals();
 
 // This is where the actual assignment is done
 #ifdef TARGET_ARM64
@@ -651,7 +652,8 @@ public:
     void allocateRegisters();
 
     // This is the resolution phase, where cross-block mismatches are fixed up
-    void resolveRegisters();
+    template <bool localVarsEnregistered>
+    void           resolveRegisters();
 
     void writeRegisters(RefPosition* currentRefPosition, GenTree* tree);
 
@@ -733,6 +735,7 @@ public:
     unsigned int currentSpill[TYP_COUNT];
     bool         needFloatTmpForFPCall;
     bool         needDoubleTmpForFPCall;
+    bool         needNonIntegerRegisters;
 
 #ifdef DEBUG
 private:
@@ -792,9 +795,6 @@ private:
 #elif defined(TARGET_ARM64)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_R0 | RBM_R1 | RBM_R2 | RBM_R19 | RBM_R20);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_V0 | RBM_V1 | RBM_V2 | RBM_V8 | RBM_V9);
-    // LsraLimitFPSetForConsecutive is used for stress mode and gives few extra registers to satisfy
-    // the requirements for allocating consecutive registers.
-    static const regMaskTP LsraLimitFPSetForConsecutive = (RBM_V3 | RBM_V5 | RBM_V7);
 #elif defined(TARGET_X86)
     static const regMaskTP LsraLimitSmallIntSet = (RBM_EAX | RBM_ECX | RBM_EDI);
     static const regMaskTP LsraLimitSmallFPSet  = (RBM_XMM0 | RBM_XMM1 | RBM_XMM2 | RBM_XMM6 | RBM_XMM7);
@@ -813,7 +813,10 @@ private:
         return (LsraStressLimitRegs)(lsraStressMask & LSRA_LIMIT_MASK);
     }
 
-    regMaskTP getConstrainedRegMask(regMaskTP regMaskActual, regMaskTP regMaskConstrain, unsigned minRegCount);
+    regMaskTP getConstrainedRegMask(RefPosition* refPosition,
+                                    regMaskTP    regMaskActual,
+                                    regMaskTP    regMaskConstrain,
+                                    unsigned     minRegCount);
     regMaskTP stressLimitRegs(RefPosition* refPosition, regMaskTP mask);
 
     // This controls the heuristics used to select registers
@@ -988,7 +991,8 @@ public:
 
 private:
     // Determine which locals are candidates for allocation
-    void identifyCandidates();
+    template <bool localVarsEnregistered>
+    void           identifyCandidates();
 
     // determine which locals are used in EH constructs we don't want to deal with
     void identifyCandidatesExceptionDataflow();
@@ -1010,6 +1014,7 @@ private:
     // Record variable locations at start/end of block
     void processBlockStartLocations(BasicBlock* current);
     void processBlockEndLocations(BasicBlock* current);
+    void resetAllRegistersState();
 
 #ifdef TARGET_ARM
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
@@ -1019,8 +1024,9 @@ private:
     bool canSpillDoubleReg(RegRecord* physRegRecord, LsraLocation refLocation);
     void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
-    void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
-    void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
+    void clearAssignedInterval(RegRecord* reg ARM_ARG(RegisterType regType));
+    void updateAssignedInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
+    void updatePreviousInterval(RegRecord* reg, Interval* interval ARM_ARG(RegisterType regType));
     bool canRestorePreviousInterval(RegRecord* regRec, Interval* assignedInterval);
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool isRefPositionActive(RefPosition* refPosition, LsraLocation refLocation);
@@ -1039,10 +1045,8 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                            LsraLocation currentLoc,
-                                            GenTree*     node,
-                                            bool         isUse);
+    void buildUpperVectorRestoreRefPosition(
+        Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1554,8 +1558,7 @@ public:
 #endif // !TRACK_LSRA_STATS
 
 private:
-    Compiler* compiler;
-
+    Compiler*     compiler;
     CompAllocator getAllocator(Compiler* comp)
     {
         return comp->getAllocator(CMK_LSRA);
@@ -1656,8 +1659,8 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap sharedCriticalVarToRegMap;
-
+    VarToRegMap          sharedCriticalVarToRegMap;
+    PhasedVar<regMaskTP> actualRegistersMask;
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;
@@ -1787,6 +1790,12 @@ private:
     void clearSpillCost(regNumber reg, var_types regType);
     void updateSpillCost(regNumber reg, Interval* interval);
 
+    FORCEINLINE void updateRegsFreeBusyState(RefPosition& refPosition,
+                                             regMaskTP    regsBusy,
+                                             regMaskTP*   regsToFree,
+                                             regMaskTP* delayRegsToFree DEBUG_ARG(Interval* interval)
+                                                 DEBUG_ARG(regNumber assignedReg));
+
     regMaskTP m_RegistersWithConstants;
     void clearConstantReg(regNumber reg, var_types regType)
     {
@@ -1836,6 +1845,9 @@ private:
     regMaskTP regsBusyUntilKill;
     regMaskTP regsInUseThisLocation;
     regMaskTP regsInUseNextLocation;
+#ifdef TARGET_ARM64
+    regMaskTP consecutiveRegsInUseThisLocation;
+#endif
     bool isRegBusy(regNumber reg, var_types regType)
     {
         regMaskTP regMask = getRegMask(reg, regType);
@@ -2006,8 +2018,12 @@ private:
     int BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree, int* pDstCount);
 #ifdef TARGET_ARM64
     int BuildConsecutiveRegistersForUse(GenTree* treeNode, GenTree* rmwNode = nullptr);
-#endif
+#endif // TARGET_ARM64
 #endif // FEATURE_HW_INTRINSICS
+
+#ifdef DEBUG
+    LsraLocation consecutiveRegistersLocation;
+#endif // DEBUG
 
     int BuildPutArgStk(GenTreePutArgStk* argNode);
 #if FEATURE_ARG_SPLIT
@@ -2031,13 +2047,14 @@ private:
     }
 #endif // TARGET_AMD64
 
+#endif // TARGET_XARCH
+
     unsigned availableRegCount;
 
     unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
-#endif // TARGET_XARCH
 
     //------------------------------------------------------------------------
     // calleeSaveRegs: Get the set of callee-save registers of the given RegisterType
@@ -2651,6 +2668,10 @@ public:
         }
         return false;
     }
+
+#ifdef DEBUG
+    bool isLiveAtConsecutiveRegistersLoc(LsraLocation consecutiveRegistersLocation);
+#endif
 #endif // TARGET_ARM64
 
 #ifdef DEBUG

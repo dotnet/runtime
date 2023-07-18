@@ -157,7 +157,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             if (arguments != null) // null is treated as empty, so not invalid
             {
-                for (int i = 0; i != arguments.Length; ++i)
+                for (int i = 0; i < arguments.Length; ++i)
                 {
                     ValidateBindArgument(arguments[i], $"{paramName}[{i}]");
                 }

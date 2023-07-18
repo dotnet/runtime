@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include <mono/utils/atomic.h>
-#include <mono/utils/mono-membar.h>
+#include <mono/utils/mono-memory-model.h>
 #ifdef SGEN_WITHOUT_MONO
 #include <mono/sgen/sgen-gc.h>
 #include <mono/sgen/sgen-client.h>

@@ -85,7 +85,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		public virtual void AddLinkAssembly (string fileName)
 		{
-			Options.TrimAssemblies.Add (fileName);
+			Options.TrimAssemblies.Add (Path.GetFileNameWithoutExtension(fileName));
 		}
 
 		public virtual void LinkFromAssembly (string fileName)

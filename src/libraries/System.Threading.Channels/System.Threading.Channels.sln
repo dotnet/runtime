@@ -1,6 +1,8 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{C1F10802-5F76-472B-B164-C1D181DB5EBC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{CFA034DE-BEB3-4E06-945A-F8FA8F6A463A}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{6B242CF0-6FFA-46D4-A31A-8A1EDCFDAB60}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{9158C7E3-284E-4D6F-BA23-B7534683E265}"
@@ -31,6 +33,10 @@ Global
 		{C1F10802-5F76-472B-B164-C1D181DB5EBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1F10802-5F76-472B-B164-C1D181DB5EBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1F10802-5F76-472B-B164-C1D181DB5EBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CFA034DE-BEB3-4E06-945A-F8FA8F6A463A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CFA034DE-BEB3-4E06-945A-F8FA8F6A463A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CFA034DE-BEB3-4E06-945A-F8FA8F6A463A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CFA034DE-BEB3-4E06-945A-F8FA8F6A463A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6B242CF0-6FFA-46D4-A31A-8A1EDCFDAB60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6B242CF0-6FFA-46D4-A31A-8A1EDCFDAB60}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6B242CF0-6FFA-46D4-A31A-8A1EDCFDAB60}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -62,6 +68,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{C1F10802-5F76-472B-B164-C1D181DB5EBC} = {07CE01C8-BDC8-4CED-AA33-6F3B35935CB6}
 		{845BFFC3-14F2-402E-81E5-B487D41B7CD9} = {07CE01C8-BDC8-4CED-AA33-6F3B35935CB6}
+		{CFA034DE-BEB3-4E06-945A-F8FA8F6A463A} = {42E20B4D-6489-4096-8DC3-A0C20D19B1D6}
 		{6B242CF0-6FFA-46D4-A31A-8A1EDCFDAB60} = {42E20B4D-6489-4096-8DC3-A0C20D19B1D6}
 		{9158C7E3-284E-4D6F-BA23-B7534683E265} = {42E20B4D-6489-4096-8DC3-A0C20D19B1D6}
 		{3D984937-E378-411E-8943-5B5DB23944F5} = {F69B62DE-61AD-4978-81C4-C095B62B5B04}

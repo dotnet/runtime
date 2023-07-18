@@ -22,11 +22,11 @@ pointed to by \Var{c} with the machine-state in the context structure
 pointed to by \Var{ctxt}.  As such, the machine-state pointed to by
 \Var{ctxt} identifies the initial stack frame at which unwinding
 starts.  The machine-state is expected to be one provided by a call to
-unw_getcontext; as such, the instruction pointer may point to the
-instruction after the last instruction of a function, and libunwind
-will back-up the instruction pointer before beginning a walk up the
-call stack.  The machine-state must remain valid for the duration for
-which the cursor \Var{c} is in use.
+\Func{unw\_getcontext}(); as such, the instruction pointer may point to
+the instruction after the last instruction of a function, and
+\Prog{libunwind} will back-up the instruction pointer before beginning
+a walk up the call stack.  The machine-state must remain valid for the
+duration for which the cursor \Var{c} is in use.
 
 The \Func{unw\_init\_local}() routine can be used only for unwinding in
 the address space of the current process (i.e., for local unwinding).
@@ -37,10 +37,10 @@ available even when \Const{UNW\_LOCAL\_ONLY} has been defined before
 including \File{$<$libunwind.h$>$}, whereas \Func{unw\_init\_remote}()
 is not.
 
-If the unw_context_t is known to be a signal frame (i.e., from the
-third argument in a sigaction handler on linux),
+If the \Type{unw\_context\_t} is known to be a signal frame (i.e.,
+from the third argument in a sigaction handler on linux),
 \Func{unw\_init\_local2}() should be used for correct initialization
-on some platforms, passing the UNW_INIT_SIGNAL_FRAME flag.
+on some platforms, passing the \Const{UNW\_INIT\_SIGNAL\_FRAME} flag.
 
 \section{Return Value}
 

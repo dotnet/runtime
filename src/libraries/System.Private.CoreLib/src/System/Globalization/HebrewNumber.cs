@@ -83,7 +83,7 @@ namespace System.Globalization
         //
         ////////////////////////////////////////////////////////////////////////////
 
-        internal static void Append<TChar>(ref ValueListBuilder<TChar> outputBuffer, int Number) where TChar : unmanaged, IBinaryInteger<TChar>
+        internal static void Append<TChar>(ref ValueListBuilder<TChar> outputBuffer, int Number) where TChar : unmanaged, IUtfChar<TChar>
         {
             int outputBufferStartingLength = outputBuffer.Length;
 
@@ -205,7 +205,7 @@ namespace System.Globalization
                 {
                     TChar last = outputBuffer[outputBuffer.Length - 1];
                     outputBuffer.Length--;
-                    outputBuffer.Append(TChar.CreateTruncating('"'));
+                    outputBuffer.Append(TChar.CastFrom('"'));
                     outputBuffer.Append(last);
                 }
                 else
@@ -213,7 +213,7 @@ namespace System.Globalization
                     Debug.Assert(typeof(TChar) == typeof(byte));
                     Rune.DecodeLastFromUtf8(MemoryMarshal.AsBytes(outputBuffer.AsSpan()), out Rune value, out int bytesConsumed);
                     outputBuffer.Length -= bytesConsumed;
-                    outputBuffer.Append(TChar.CreateTruncating('"'));
+                    outputBuffer.Append(TChar.CastFrom('"'));
                     DateTimeFormat.AppendChar(ref outputBuffer, (char)value.Value);
                 }
             }

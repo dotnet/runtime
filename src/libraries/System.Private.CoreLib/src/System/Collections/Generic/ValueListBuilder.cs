@@ -58,27 +58,71 @@ namespace System.Collections.Generic
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Append(scoped ReadOnlySpan<T> source)
+        {
+            int pos = _pos;
+            Span<T> span = _span;
+            if (source.Length == 1 && (uint)pos < (uint)span.Length)
+            {
+                span[pos] = source[0];
+                _pos = pos + 1;
+            }
+            else
+            {
+                AppendMultiChar(source);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AppendMultiChar(scoped ReadOnlySpan<T> source)
         {
             if ((uint)(_pos + source.Length) > (uint)_span.Length)
             {
-                Grow(source.Length);
+                Grow(_span.Length - _pos + source.Length);
             }
 
             source.CopyTo(_span.Slice(_pos));
             _pos += source.Length;
         }
 
+        public void Insert(int index, scoped ReadOnlySpan<T> source)
+        {
+            Debug.Assert(index >= 0 && index <= _pos);
+
+            if ((uint)(_pos + source.Length) > (uint)_span.Length)
+            {
+                Grow(source.Length);
+            }
+
+            _span.Slice(0, _pos).CopyTo(_span.Slice(source.Length));
+            source.CopyTo(_span);
+            _pos += source.Length;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Span<T> AppendSpan(int length)
         {
             Debug.Assert(length >= 0);
 
             int pos = _pos;
-            if ((uint)(pos + length) > (uint)_span.Length)
+            Span<T> span = _span;
+            if ((ulong)(uint)pos + (ulong)(uint)length <= (ulong)(uint)span.Length) // same guard condition as in Span<T>.Slice on 64-bit
             {
-                Grow(length);
+                _pos = pos + length;
+                return span.Slice(pos, length);
             }
+            else
+            {
+                return AppendSpanWithGrow(length);
+            }
+        }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private Span<T> AppendSpanWithGrow(int length)
+        {
+            int pos = _pos;
+            Grow(_span.Length - pos + length);
             _pos += length;
             return _span.Slice(pos, length);
         }
@@ -122,6 +166,11 @@ namespace System.Collections.Generic
             }
         }
 
+        // Note that consuming implementations depend on the list only growing if it's absolutely
+        // required.  If the list is already large enough to hold the additional items be added,
+        // it must not grow. The list is used in a number of places where the reference is checked
+        // and it's expected to match the initial reference provided to the constructor if that
+        // span was sufficiently large.
         private void Grow(int additionalCapacityRequired = 1)
         {
             const int ArrayMaxLength = 0x7FFFFFC7; // same as Array.MaxLength

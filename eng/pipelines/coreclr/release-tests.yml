@@ -28,6 +28,7 @@ extends:
           # Adding it here will enable it also
           - osx_arm64
           jobParameters:
+            testGroup: outerloop
             isOfficialBuild: false
 
       #

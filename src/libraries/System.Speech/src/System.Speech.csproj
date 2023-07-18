@@ -7,6 +7,8 @@
     <NoWarn>$(NoWarn);CS0649;SA1129;IDE0059;IDE0060;CA1822;CA1852</NoWarn>
     <Nullable>annotations</Nullable>
     <IsTrimmable>false</IsTrimmable>
+    <!-- Public API not fully documented. -->
+    <NoWarn>$(NoWarn);1591</NoWarn>
     <IsPackable>true</IsPackable>
     <AddNETFrameworkPlaceholderFileToPackage>true</AddNETFrameworkPlaceholderFileToPackage>
     <AddNETFrameworkAssemblyReferenceToPackage>true</AddNETFrameworkAssemblyReferenceToPackage>

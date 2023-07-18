@@ -344,6 +344,8 @@ namespace ILCompiler.DependencyAnalysis
                 methodCallingConvention |= MethodCallingConvention.Generic;
             if (_signature.IsStatic)
                 methodCallingConvention |= MethodCallingConvention.Static;
+            if ((_signature.Flags & MethodSignatureFlags.UnmanagedCallingConventionMask) != 0)
+                methodCallingConvention |= MethodCallingConvention.Unmanaged;
 
             Debug.Assert(_signature.Length == _parametersSig.Length);
 
@@ -407,9 +409,8 @@ namespace ILCompiler.DependencyAnalysis
                 case Internal.TypeSystem.TypeFlags.SignatureMethodVariable:
                     return new NativeLayoutGenericVarSignatureVertexNode(type);
 
-                // TODO Internal.TypeSystem.TypeFlags.FunctionPointer (Runtime parsing also not yet implemented)
                 case Internal.TypeSystem.TypeFlags.FunctionPointer:
-                    throw new NotImplementedException("FunctionPointer signature");
+                    return new NativeLayoutFunctionPointerTypeSignatureVertexNode(factory, type);
 
                 default:
                     {
@@ -464,6 +465,26 @@ namespace ILCompiler.DependencyAnalysis
 
                 Debug.Fail("UNREACHABLE");
                 return null;
+            }
+        }
+
+        private sealed class NativeLayoutFunctionPointerTypeSignatureVertexNode : NativeLayoutTypeSignatureVertexNode
+        {
+            private readonly NativeLayoutMethodSignatureVertexNode _sig;
+
+            public NativeLayoutFunctionPointerTypeSignatureVertexNode(NodeFactory factory, TypeDesc type) : base(type)
+            {
+                _sig = factory.NativeLayout.MethodSignatureVertex(((FunctionPointerType)type).Signature);
+            }
+            public override IEnumerable<DependencyListEntry> GetStaticDependencies(NodeFactory context)
+            {
+                return new DependencyListEntry[] { new DependencyListEntry(_sig, "Method signature") };
+            }
+            public override Vertex WriteVertex(NodeFactory factory)
+            {
+                Debug.Assert(Marked, "WriteVertex should only happen for marked vertices");
+
+                return GetNativeWriter(factory).GetFunctionPointerTypeSignature(_sig.WriteVertex(factory));
             }
         }
 
@@ -1240,27 +1261,6 @@ namespace ILCompiler.DependencyAnalysis
                 layoutInfo.Append(BagElementKind.BaseType, factory.NativeLayout.PlacedSignatureVertex(factory.NativeLayout.TypeSignatureVertex(_type.BaseType)).WriteVertex(factory));
             }
 
-            if (_type.GetTypeDefinition().HasVariance || factory.TypeSystemContext.IsGenericArrayInterfaceType(_type))
-            {
-                // Runtime casting logic relies on all interface types implemented on arrays
-                // to have the variant flag set (even if all the arguments are non-variant).
-                // This supports e.g. casting uint[] to ICollection<int>
-                List<uint> varianceFlags = new List<uint>();
-                foreach (GenericParameterDesc param in _type.GetTypeDefinition().Instantiation)
-                {
-                    varianceFlags.Add((uint)param.Variance);
-                }
-
-                layoutInfo.Append(BagElementKind.GenericVarianceInfo, factory.NativeLayout.PlacedUIntVertexSequence(varianceFlags).WriteVertex(factory));
-            }
-            else if (_type.GetTypeDefinition() == factory.ArrayOfTEnumeratorType)
-            {
-                // Generic array enumerators use special variance rules recognized by the runtime
-                List<uint> varianceFlag = new List<uint>();
-                varianceFlag.Add((uint)Internal.Runtime.GenericVariance.ArrayCovariant);
-                layoutInfo.Append(BagElementKind.GenericVarianceInfo, factory.NativeLayout.PlacedUIntVertexSequence(varianceFlag).WriteVertex(factory));
-            }
-
             if (_isUniversalCanon)
             {
                 // For universal canonical template types, we need to write out field layout information so that we
@@ -1359,7 +1359,7 @@ namespace ILCompiler.DependencyAnalysis
         /// Do not adjust vtable index for generic dictionary slot
         /// The vtable index is only actually valid if whichEntries is set to VTableEntriesToProcess.AllInVTable
         /// </summary>
-        private void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
+        private static void ProcessVTableEntriesForCallingConventionSignatureGeneration(NodeFactory factory, VTableEntriesToProcess whichEntries, ref int currentVTableIndex, Action<int, bool, MethodDesc, MethodDesc> operation, TypeDesc implType, TypeDesc declType, TypeDesc templateType)
         {
             if (implType.IsInterface)
                 return;

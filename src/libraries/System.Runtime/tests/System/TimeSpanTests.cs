@@ -1450,16 +1450,16 @@ namespace System.Tests
                 Span<byte> dst;
 
                 dst = new byte[expected.Length - 1];
-                Assert.False(((IUtf8SpanFormattable)input).TryFormat(dst, out bytesWritten, format, info));
+                Assert.False(input.TryFormat(dst, out bytesWritten, format, info));
                 Assert.Equal(0, bytesWritten);
 
                 dst = new byte[expected.Length];
-                Assert.True(((IUtf8SpanFormattable)input).TryFormat(dst, out bytesWritten, format, info));
+                Assert.True(input.TryFormat(dst, out bytesWritten, format, info));
                 Assert.Equal(expected.Length, bytesWritten);
                 Assert.Equal(expected, Encoding.UTF8.GetString(dst));
 
                 dst = new byte[expected.Length + 1];
-                Assert.True(((IUtf8SpanFormattable)input).TryFormat(dst, out bytesWritten, format, info));
+                Assert.True(input.TryFormat(dst, out bytesWritten, format, info));
                 Assert.Equal(expected.Length, bytesWritten);
                 Assert.Equal(expected, Encoding.UTF8.GetString(dst.Slice(0, dst.Length - 1)));
                 Assert.Equal(0, dst[dst.Length - 1]);

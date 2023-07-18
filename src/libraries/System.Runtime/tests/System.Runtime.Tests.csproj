@@ -68,6 +68,8 @@
     <Compile Include="System\Attributes.cs" />
     <Compile Include="System\AttributeUsageAttributeTests.cs" />
     <Compile Include="System\BadImageFormatExceptionTests.cs" />
+    <Compile Include="System\Diagnostics\CodeAnalysis\ExperimentalAttributeTests.cs" />
+    <Compile Include="System\NumberFormatTestHelper.cs" />
     <Compile Include="System\StringTests.GenericMath.cs" />
     <Compile Include="System\BooleanTests.cs" />
     <Compile Include="System\BufferTests.cs" />
@@ -235,6 +237,7 @@
     <Compile Include="System\Reflection\InvokeRefReturn.cs" />
     <Compile Include="System\Reflection\InvokeWithRefLikeArgs.cs" />
     <Compile Include="System\Reflection\IsCollectibleTests.cs" />
+    <Compile Include="System\Reflection\FieldInfoTests.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.cs" />
     <Compile Include="System\Reflection\MethodBodyTests.cs" />
     <Compile Include="System\Reflection\ModuleTests.cs" />
@@ -341,8 +344,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" ReferenceOutputAssembly="false" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" />
-
     <PackageReference Include="Moq" Version="$(MoqVersion)" />
     <PackageReference Include="System.Runtime.Numerics.TestData" Version="$(SystemRuntimeNumericsTestDataVersion)" GeneratePathProperty="true" />
 

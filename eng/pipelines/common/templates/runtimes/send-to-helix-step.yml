@@ -29,6 +29,9 @@ parameters:
   runtimeVariant: ''
   shouldContinueOnError: false
   SuperPmiCollect: ''
+  SuperPmiDiffType: ''
+  SuperPmiBaseJitOptions: ''
+  SuperPmiDiffJitOptions: ''
 
 
 steps:
@@ -62,6 +65,9 @@ steps:
       RuntimeFlavor: ${{ parameters.runtimeFlavor }}
       _RuntimeVariant: ${{ parameters.runtimeVariant }}
       _SuperPmiCollect: ${{ parameters.SuperPmiCollect }}
+      _SuperPmiDiffType: ${{ parameters.SuperPmiDiffType }}
+      _SuperPmiBaseJitOptions: ${{ parameters.SuperPmiBaseJitOptions }}
+      _SuperPmiDiffJitOptions: ${{ parameters.SuperPmiDiffJitOptions }}
       ${{ if eq(parameters.publishTestResults, 'true') }}:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
       # TODO: remove NUGET_PACKAGES once https://github.com/dotnet/arcade/issues/1578 is fixed

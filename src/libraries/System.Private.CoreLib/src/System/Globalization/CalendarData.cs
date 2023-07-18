@@ -322,7 +322,7 @@ namespace System.Globalization
         {
             if (GlobalizationMode.Invariant)
             {
-                return CalendarData.Invariant.iCurrentEra;
+                return Invariant.iCurrentEra;
             }
 
             //
