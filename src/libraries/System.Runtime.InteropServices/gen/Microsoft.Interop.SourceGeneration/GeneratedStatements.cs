@@ -22,6 +22,7 @@ namespace Microsoft.Interop
         public ImmutableArray<StatementSyntax> NotifyForSuccessfulInvoke { get; init; }
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Cleanup { get; init; }
+        public ImmutableArray<StatementSyntax> AssignOut { get; init; }
 
         public ImmutableArray<CatchClauseSyntax> ManagedExceptionCatchClauses { get; init; }
 
@@ -39,7 +40,8 @@ namespace Microsoft.Interop
                 NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.NotifyForSuccessfulInvoke }),
                 GuaranteedUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.GuaranteedUnmarshal }),
                 Cleanup = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Cleanup }),
-                ManagedExceptionCatchClauses = GenerateCatchClauseForManagedException(marshallers, context)
+                ManagedExceptionCatchClauses = GenerateCatchClauseForManagedException(marshallers, context),
+                AssignOut = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.AssignOut })
             };
         }
         public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
@@ -170,6 +172,10 @@ namespace Microsoft.Interop
             catchClauseBuilder.AddRange(
                 managedExceptionMarshaller.Generator.Generate(
                     managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
+            if (!marshallers.IsUnmanagedVoidReturn)
+            {
+                catchClauseBuilder.Add(ReturnStatement(IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native)));
+            }
             return ImmutableArray.Create(
                 CatchClause(
                     CatchDeclaration(ParseTypeName(TypeNames.System_Exception), Identifier(managed)),

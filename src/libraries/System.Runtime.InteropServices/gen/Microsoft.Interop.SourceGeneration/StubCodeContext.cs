@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 
 namespace Microsoft.Interop
 {
@@ -72,7 +71,13 @@ namespace Microsoft.Interop
             /// Convert native data to managed data even in the case of an exception during
             /// the non-cleanup phases.
             /// </summary>
-            GuaranteedUnmarshal
+            GuaranteedUnmarshal,
+
+            /// <summary>
+            /// In scenarios where necessary (unmanaged to managed stubs), assign marshalled values out to the parameters.
+            /// Separating this from <see cref="Marshal"/> ensures parameters remain unmodified when the method returns a failing return value.
+            /// </summary>
+            AssignOut
         }
 
         /// <summary>
