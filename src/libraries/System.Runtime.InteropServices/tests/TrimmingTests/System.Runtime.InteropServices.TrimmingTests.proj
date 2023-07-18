@@ -2,9 +2,8 @@
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.props))" />
 
   <ItemGroup>
-    <!-- Validate that disabling the interop feature switch trims the interop code. -->
+    <!-- Validate that not enabling the interop feature switch trims the interop code. -->
     <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
-      <DisabledFeatureSwitches>System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop</DisabledFeatureSwitches>
       <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
     <!-- Validate that disabling the built-in COM interop wholesale trims the interop code. -->
@@ -16,6 +15,11 @@
     <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
       <DisabledFeatureSwitches></DisabledFeatureSwitches>
       <SkipOnTestRuntimes>win-x64;browser-wasm</SkipOnTestRuntimes>
+    </TestConsoleAppSourceFiles>
+    <!-- Validate that enabling the interop feature switch doesn't trim the interop code. -->
+    <TestConsoleAppSourceFiles Include="GeneratedComInterfaceComImportInteropTrimmed.cs">
+      <EnabledFeatureSwitches>System.Runtime.InteropServices.Marshalling.EnableGeneratedComInterfaceComImportInterop</EnabledFeatureSwitches>
+      <SkipOnTestRuntimes>osx-x64;linux-x64;browser-wasm</SkipOnTestRuntimes>
     </TestConsoleAppSourceFiles>
   </ItemGroup>
 
