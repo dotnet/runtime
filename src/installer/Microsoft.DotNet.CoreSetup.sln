@@ -27,6 +27,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.App
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.NET.HostModel.ComHost.Tests", "tests\Microsoft.NET.HostModel.Tests\Microsoft.NET.HostModel.ComHost.Tests\Microsoft.NET.HostModel.ComHost.Tests.csproj", "{35EF7826-6D47-4C91-AFDF-91091C05FB13}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Cecil.Binary", "managed\Mono.Cecil.Binary\Mono.Cecil.Binary.csproj", "{7A341FAE-196A-4E30-A734-C4E998286CC2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -183,6 +185,22 @@ Global
 		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|Any CPU.Build.0 = Release|Any CPU
 		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|x64.ActiveCfg = Release|Any CPU
 		{35EF7826-6D47-4C91-AFDF-91091C05FB13}.RelWithDebInfo|x64.Build.0 = Release|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Debug|x64.Build.0 = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.MinSizeRel|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.MinSizeRel|Any CPU.Build.0 = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.MinSizeRel|x64.ActiveCfg = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.MinSizeRel|x64.Build.0 = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Release|x64.ActiveCfg = Release|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.Release|x64.Build.0 = Release|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.RelWithDebInfo|Any CPU.ActiveCfg = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.RelWithDebInfo|Any CPU.Build.0 = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.RelWithDebInfo|x64.ActiveCfg = Debug|Any CPU
+		{7A341FAE-196A-4E30-A734-C4E998286CC2}.RelWithDebInfo|x64.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

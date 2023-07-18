@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>CS0618;CS0649</NoWarn>
+    <NoWarn>$(NoWarn);SA1027;IDE0073;</NoWarn>
+    <NoWarn>$(NoWarn);IDE0065;IDE0036;IDE0074;IDE0020;IDE0031;IDE0059;IDE0054</NoWarn>
+    <NoWarn>$(NoWarn);SYSLIB0003;SYSLIB0037</NoWarn>
+    <NoWarn>$(NoWarn);SA1400;SA1121;SA1129</NoWarn>
+    <NoWarn>$(NoWarn);CA1805;CA1066;CA1052;CA1825;CA1859;CA1510;CA1507;CA1834;CA1822;CA5351;CA5350;CA1852</NoWarn>
+    <NoWarn>$(NoWarn);IL3002</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+  </ItemGroup>
+
+</Project>
