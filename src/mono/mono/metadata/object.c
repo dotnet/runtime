@@ -834,6 +834,11 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		while ((field = mono_class_get_fields_internal (p, &iter))) {
 			MonoType *type;
 
+			/* metadata-update: added fields aren't stored in the object, don't
+			 * contribute to the GC descriptor. */
+			if (m_field_is_from_update (field))
+				continue;
+
 			if (static_fields) {
 				if (!(field->type->attrs & (FIELD_ATTRIBUTE_STATIC | FIELD_ATTRIBUTE_HAS_FIELD_RVA)))
 					continue;
@@ -846,11 +851,6 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 			/* FIXME: should not happen, flag as type load error */
 			if (m_type_is_byref (field->type))
 				break;
-
-			/* metadadta-update: added fields aren't stored in the object, don't
-			 * contribute to the GC descriptor. */
-			if (m_field_is_from_update (field))
-				continue;
 
 			int field_offset = m_field_get_offset (field);
 
@@ -2211,12 +2211,12 @@ mono_class_create_runtime_vtable (MonoClass *klass, MonoError *error)
 
 	iter = NULL;
 	while ((field = mono_class_get_fields_internal (klass, &iter))) {
+		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
+		if (m_field_is_from_update (field))
+			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_STATIC))
 			continue;
 		if (mono_field_is_deleted (field))
-			continue;
-		/* metadata-update: added fields are stored external to the object, and don't contribute to the bitmap */
-		if (m_field_is_from_update (field))
 			continue;
 		if (!(field->type->attrs & FIELD_ATTRIBUTE_LITERAL)) {
 			gint32 special_static = m_class_has_no_special_static_fields (klass) ? SPECIAL_STATIC_NONE : field_is_special_static (klass, field);
