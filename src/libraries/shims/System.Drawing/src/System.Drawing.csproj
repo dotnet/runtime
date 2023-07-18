@@ -9,9 +9,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.ComponentModel.TypeConverter\src\System.ComponentModel.TypeConverter.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Primitives\src\System.Drawing.Primitives.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Configuration.ConfigurationManager.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Configuration.ConfigurationManager.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Drawing.Common.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>

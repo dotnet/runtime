@@ -39,15 +39,15 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\ref\System.Text.RegularExpressions.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading.Thread\ref\System.Threading.Thread.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\Microsoft.Win32.SystemEvents.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.CodeDom.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Configuration.ConfigurationManager.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Diagnostics.EventLog.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Diagnostics.PerformanceCounter.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.IO.Ports.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Threading.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Windows.Extensions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\Microsoft.Win32.SystemEvents.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.CodeDom.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Configuration.ConfigurationManager.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Diagnostics.EventLog.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Diagnostics.PerformanceCounter.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.IO.Ports.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Security.Permissions.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Threading.AccessControl.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)shims\stubs\System.Windows.Extensions.csproj" PrivateAssets="all" />
   </ItemGroup>
 
 </Project>
