@@ -26,30 +26,29 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using Mono.Cecil.Metadata;
 
-	using System;
+    internal sealed class ReflectionException : MetadataFormatException
+    {
+        internal ReflectionException() : base()
+        {
+        }
 
-	using Mono.Cecil.Metadata;
+        internal ReflectionException(string message) : base(message)
+        {
+        }
 
-	internal sealed class ReflectionException : MetadataFormatException {
+        internal ReflectionException(string message, params string[] parameters) :
+            base(string.Format(message, parameters))
+        {
+        }
 
-		internal ReflectionException () : base ()
-		{
-		}
-
-		internal ReflectionException (string message) : base (message)
-		{
-		}
-
-		internal ReflectionException (string message, params string [] parameters) :
-			base (string.Format (message, parameters))
-		{
-		}
-
-		internal ReflectionException (string message, Exception inner) :
-			base (message, inner)
-		{
-		}
-	}
+        internal ReflectionException(string message, Exception inner) :
+            base(message, inner)
+        {
+        }
+    }
 }

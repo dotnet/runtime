@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal interface IHasSecurity : IMetadataTokenProvider
+    {
+        SecurityDeclarationCollection SecurityDeclarations { get; }
 
-	internal interface IHasSecurity : IMetadataTokenProvider {
-
-		SecurityDeclarationCollection SecurityDeclarations { get; }
-
-		bool HasSecurityDeclarations { get; }
-	}
+        bool HasSecurityDeclarations { get; }
+    }
 }

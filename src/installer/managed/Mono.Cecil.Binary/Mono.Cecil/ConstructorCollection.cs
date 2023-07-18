@@ -29,154 +29,158 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class ConstructorCollection : CollectionBase, IReflectionVisitable
+    {
+        TypeDefinition m_container;
 
-	using Mono.Cecil.Cil;
+        public MethodDefinition this[int index]
+        {
+            get { return List[index] as MethodDefinition; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class ConstructorCollection : CollectionBase, IReflectionVisitable {
+        public TypeDefinition Container
+        {
+            get { return m_container; }
+        }
 
-		TypeDefinition m_container;
+        public ConstructorCollection(TypeDefinition container)
+        {
+            m_container = container;
+        }
 
-		public MethodDefinition this [int index] {
-			get { return List [index] as MethodDefinition; }
-			set { List [index] = value; }
-		}
+        public void Add(MethodDefinition value)
+        {
+            Attach(value);
 
-		public TypeDefinition Container {
-			get { return m_container; }
-		}
-
-		public ConstructorCollection (TypeDefinition container)
-		{
-			m_container = container;
-		}
-
-		public void Add (MethodDefinition value)
-		{
-			Attach (value);
-
-			List.Add (value);
-		}
-
-
-		public new void Clear ()
-		{
-			foreach (MethodDefinition item in this)
-				Detach (item);
-
-			base.Clear ();
-		}
-
-		public bool Contains (MethodDefinition value)
-		{
-			return List.Contains (value);
-		}
-
-		public int IndexOf (MethodDefinition value)
-		{
-			return List.IndexOf (value);
-		}
-
-		public void Insert (int index, MethodDefinition value)
-		{
-			Attach (value);
-
-			List.Insert (index, value);
-		}
-
-		public void Remove (MethodDefinition value)
-		{
-			List.Remove (value);
-
-			Detach (value);
-		}
+            List.Add(value);
+        }
 
 
-		public new void RemoveAt (int index)
-		{
-			MethodDefinition item = this [index];
-			Remove (item);
-		}
+        public new void Clear()
+        {
+            foreach (MethodDefinition item in this)
+                Detach(item);
 
-		protected override void OnValidate (object o)
-		{
-			if (! (o is MethodDefinition))
-				throw new ArgumentException ("Must be of type " + typeof (MethodDefinition).FullName);
-		}
+            base.Clear();
+        }
 
-		internal MethodDefinition GetConstructorInternal (bool isStatic, IList parameters)
-		{
-			if (parameters == null)
+        public bool Contains(MethodDefinition value)
+        {
+            return List.Contains(value);
+        }
+
+        public int IndexOf(MethodDefinition value)
+        {
+            return List.IndexOf(value);
+        }
+
+        public void Insert(int index, MethodDefinition value)
+        {
+            Attach(value);
+
+            List.Insert(index, value);
+        }
+
+        public void Remove(MethodDefinition value)
+        {
+            List.Remove(value);
+
+            Detach(value);
+        }
+
+
+        public new void RemoveAt(int index)
+        {
+            MethodDefinition item = this[index];
+            Remove(item);
+        }
+
+        protected override void OnValidate(object o)
+        {
+            if (!(o is MethodDefinition))
+                throw new ArgumentException("Must be of type " + typeof(MethodDefinition).FullName);
+        }
+
+        internal MethodDefinition GetConstructorInternal(bool isStatic, IList parameters)
+        {
+            if (parameters == null)
 #if CF_2_0 || CF_1_0
 				parameters = new Type[0];
 #else
-				parameters = Type.EmptyTypes;
+                parameters = Type.EmptyTypes;
 #endif
 
-			foreach (MethodDefinition ctor in this) {
-				if (ctor.IsStatic != isStatic || ctor.Parameters.Count != parameters.Count)
-					continue;
+            foreach (MethodDefinition ctor in this)
+            {
+                if (ctor.IsStatic != isStatic || ctor.Parameters.Count != parameters.Count)
+                    continue;
 
-				bool match = true;
-				for (int i = 0; i < parameters.Count; i++) {
-					string pname;
-					object param = parameters [i];
-					if (param is Type)
-						pname = ReflectionHelper.GetTypeSignature (param as Type);
-					else if (param is TypeReference)
-						pname = (param as TypeReference).FullName;
-					else if (param is ParameterDefinition)
-						pname = (param as ParameterDefinition).ParameterType.FullName;
-					else
-						throw new NotSupportedException ();
+                bool match = true;
+                for (int i = 0; i < parameters.Count; i++)
+                {
+                    string pname;
+                    object param = parameters[i];
+                    if (param is Type)
+                        pname = ReflectionHelper.GetTypeSignature(param as Type);
+                    else if (param is TypeReference)
+                        pname = (param as TypeReference).FullName;
+                    else if (param is ParameterDefinition)
+                        pname = (param as ParameterDefinition).ParameterType.FullName;
+                    else
+                        throw new NotSupportedException();
 
-					if (ctor.Parameters [i].ParameterType.FullName != pname) {
-						match = false;
-						break;
-					}
-				}
+                    if (ctor.Parameters[i].ParameterType.FullName != pname)
+                    {
+                        match = false;
+                        break;
+                    }
+                }
 
-				if (match)
-					return ctor;
-			}
+                if (match)
+                    return ctor;
+            }
 
-			return null;
-		}
+            return null;
+        }
 
-		public MethodDefinition GetConstructor (bool isStatic, Type [] parameters)
-		{
-			return GetConstructorInternal (isStatic, parameters);
-		}
+        public MethodDefinition GetConstructor(bool isStatic, Type[] parameters)
+        {
+            return GetConstructorInternal(isStatic, parameters);
+        }
 
-		public MethodDefinition GetConstructor (bool isStatic, TypeReference [] parameters)
-		{
-			return GetConstructorInternal (isStatic, parameters);
-		}
+        public MethodDefinition GetConstructor(bool isStatic, TypeReference[] parameters)
+        {
+            return GetConstructorInternal(isStatic, parameters);
+        }
 
-		public MethodDefinition GetConstructor (bool isStatic, ParameterDefinitionCollection parameters)
-		{
-			return GetConstructorInternal (isStatic, parameters);
-		}
+        public MethodDefinition GetConstructor(bool isStatic, ParameterDefinitionCollection parameters)
+        {
+            return GetConstructorInternal(isStatic, parameters);
+        }
 
-		void Attach (MemberReference member)
-		{
-			if (member.DeclaringType != null)
-				throw new ReflectionException ("Member already attached, clone it instead");
+        void Attach(MemberReference member)
+        {
+            if (member.DeclaringType != null)
+                throw new ReflectionException("Member already attached, clone it instead");
 
-			member.DeclaringType = m_container;
-		}
+            member.DeclaringType = m_container;
+        }
 
-		void Detach (MemberReference member)
-		{
-			member.DeclaringType = null;
-		}
+        void Detach(MemberReference member)
+        {
+            member.DeclaringType = null;
+        }
 
-		public void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitConstructorCollection (this);
-		}
-	}
+        public void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitConstructorCollection(this);
+        }
+    }
 }

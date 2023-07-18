@@ -26,14 +26,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Reflection;
 
-	using System.Reflection;
+    internal interface ICustomAttributeProvider
+    {
+        CustomAttributeCollection CustomAttributes { get; }
 
-	internal interface ICustomAttributeProvider {
-
-		CustomAttributeCollection CustomAttributes { get; }
-
-		bool HasCustomAttributes { get; }
-	}
+        bool HasCustomAttributes { get; }
+    }
 }

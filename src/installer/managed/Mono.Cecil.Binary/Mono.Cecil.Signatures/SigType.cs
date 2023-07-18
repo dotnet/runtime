@@ -26,17 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using Mono.Cecil.Metadata;
 
-	using Mono.Cecil.Metadata;
+    internal class SigType
+    {
+        public ElementType ElementType;
 
-	internal class SigType {
-
-		public ElementType ElementType;
-
-		public SigType (ElementType elem)
-		{
-			ElementType = elem;
-		}
-	}
+        public SigType(ElementType elem)
+        {
+            ElementType = elem;
+        }
+    }
 }

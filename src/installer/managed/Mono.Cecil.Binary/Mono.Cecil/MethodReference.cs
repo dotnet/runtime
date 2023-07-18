@@ -26,133 +26,148 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Text;
 
-	using System.Text;
+    internal class MethodReference : MemberReference, IMethodSignature, IGenericParameterProvider
+    {
+        ParameterDefinitionCollection m_parameters;
+        MethodReturnType m_returnType;
 
-	internal class MethodReference : MemberReference, IMethodSignature, IGenericParameterProvider {
+        bool m_hasThis;
+        bool m_explicitThis;
+        MethodCallingConvention m_callConv;
+        GenericParameterCollection m_genparams;
 
-		ParameterDefinitionCollection m_parameters;
-		MethodReturnType m_returnType;
+        public virtual bool HasThis
+        {
+            get { return m_hasThis; }
+            set { m_hasThis = value; }
+        }
 
-		bool m_hasThis;
-		bool m_explicitThis;
-		MethodCallingConvention m_callConv;
-		GenericParameterCollection m_genparams;
+        public virtual bool ExplicitThis
+        {
+            get { return m_explicitThis; }
+            set { m_explicitThis = value; }
+        }
 
-		public virtual bool HasThis {
-			get { return m_hasThis; }
-			set { m_hasThis = value; }
-		}
+        public virtual MethodCallingConvention CallingConvention
+        {
+            get { return m_callConv; }
+            set { m_callConv = value; }
+        }
 
-		public virtual bool ExplicitThis {
-			get { return m_explicitThis; }
-			set { m_explicitThis = value; }
-		}
+        public virtual bool HasParameters
+        {
+            get { return (m_parameters == null) ? false : (m_parameters.Count > 0); }
+        }
 
-		public virtual MethodCallingConvention CallingConvention {
-			get { return m_callConv; }
-			set { m_callConv = value; }
-		}
+        public virtual ParameterDefinitionCollection Parameters
+        {
+            get
+            {
+                if (m_parameters == null)
+                    m_parameters = new ParameterDefinitionCollection(this);
+                return m_parameters;
+            }
+        }
 
-		public virtual bool HasParameters {
-			get { return (m_parameters == null) ? false : (m_parameters.Count > 0); }
-		}
+        public bool HasGenericParameters
+        {
+            get { return (m_genparams == null) ? false : (m_genparams.Count > 0); }
+        }
 
-		public virtual ParameterDefinitionCollection Parameters {
-			get {
-				if (m_parameters == null)
-					m_parameters = new ParameterDefinitionCollection (this);
-				return m_parameters;
-			}
-		}
+        public GenericParameterCollection GenericParameters
+        {
+            get
+            {
+                if (m_genparams == null)
+                    m_genparams = new GenericParameterCollection(this);
+                return m_genparams;
+            }
+        }
 
-		public bool HasGenericParameters {
-			get { return (m_genparams == null) ? false : (m_genparams.Count > 0); }
-		}
+        public virtual MethodReturnType ReturnType
+        {
+            get { return m_returnType; }
+            set { m_returnType = value; }
+        }
 
-		public GenericParameterCollection GenericParameters {
-			get {
-				if (m_genparams == null)
-					m_genparams = new GenericParameterCollection (this);
-				return m_genparams;
-			}
-		}
+        internal MethodReference(string name, bool hasThis,
+            bool explicitThis, MethodCallingConvention callConv) : this(name)
+        {
+            m_parameters = new ParameterDefinitionCollection(this);
+            m_hasThis = hasThis;
+            m_explicitThis = explicitThis;
+            m_callConv = callConv;
+        }
 
-		public virtual MethodReturnType ReturnType {
-			get { return m_returnType;}
-			set { m_returnType = value; }
-		}
+        internal MethodReference(string name) : base(name)
+        {
+            m_returnType = new MethodReturnType(null);
+        }
 
-		internal MethodReference (string name, bool hasThis,
-			bool explicitThis, MethodCallingConvention callConv) : this (name)
-		{
-			m_parameters = new ParameterDefinitionCollection (this);
-			m_hasThis = hasThis;
-			m_explicitThis = explicitThis;
-			m_callConv = callConv;
-		}
+        public MethodReference(string name,
+            TypeReference declaringType, TypeReference returnType,
+            bool hasThis, bool explicitThis, MethodCallingConvention callConv) :
+            this(name, hasThis, explicitThis, callConv)
+        {
+            this.DeclaringType = declaringType;
+            this.ReturnType.ReturnType = returnType;
+        }
 
-		internal MethodReference (string name) : base (name)
-		{
-			m_returnType = new MethodReturnType (null);
-		}
+        public virtual MethodDefinition Resolve()
+        {
+            TypeReference declaringType = DeclaringType;
+            if (declaringType == null)
+                return null;
 
-		public MethodReference (string name,
-			TypeReference declaringType, TypeReference returnType,
-			bool hasThis, bool explicitThis, MethodCallingConvention callConv) :
-			this (name, hasThis, explicitThis, callConv)
-		{
-			this.DeclaringType = declaringType;
-			this.ReturnType.ReturnType = returnType;
-		}
+            return declaringType.Module.Resolver.Resolve(this);
+        }
 
-		public virtual MethodDefinition Resolve ()
-		{
-			TypeReference declaringType = DeclaringType;
-			if (declaringType == null)
-				return null;
+        public virtual MethodReference GetOriginalMethod()
+        {
+            return this;
+        }
 
-			return declaringType.Module.Resolver.Resolve (this);
-		}
+        public int GetSentinel()
+        {
+            if (HasParameters)
+            {
+                for (int i = 0; i < Parameters.Count; i++)
+                    if (Parameters[i].ParameterType is SentinelType)
+                        return i;
+            }
 
-		public virtual MethodReference GetOriginalMethod ()
-		{
-			return this;
-		}
+            return -1;
+        }
 
-		public int GetSentinel ()
-		{
-			if (HasParameters) {
-				for (int i = 0; i < Parameters.Count; i++)
-					if (Parameters [i].ParameterType is SentinelType)
-						return i;
-			}
-			return -1;
-		}
+        public override string ToString()
+        {
+            int sentinel = GetSentinel();
 
-		public override string ToString ()
-		{
-			int sentinel = GetSentinel ();
+            StringBuilder sb = new StringBuilder();
+            sb.Append(m_returnType.ReturnType.FullName);
+            sb.Append(" ");
+            sb.Append(base.ToString());
+            sb.Append("(");
+            if (this.HasParameters)
+            {
+                for (int i = 0; i < this.Parameters.Count; i++)
+                {
+                    if (i > 0)
+                        sb.Append(",");
 
-			StringBuilder sb = new StringBuilder ();
-			sb.Append (m_returnType.ReturnType.FullName);
-			sb.Append (" ");
-			sb.Append (base.ToString ());
-			sb.Append ("(");
-			if (this.HasParameters) {
-				for (int i = 0; i < this.Parameters.Count; i++) {
-					if (i > 0)
-						sb.Append (",");
+                    if (i == sentinel)
+                        sb.Append("...,");
 
-					if (i == sentinel)
-						sb.Append ("...,");
+                    sb.Append(this.Parameters[i].ParameterType.FullName);
+                }
+            }
 
-					sb.Append (this.Parameters [i].ParameterType.FullName);
-				}
-			}
-			sb.Append (")");
-			return sb.ToString ();
-		}
-	}
+            sb.Append(")");
+            return sb.ToString();
+        }
+    }
 }

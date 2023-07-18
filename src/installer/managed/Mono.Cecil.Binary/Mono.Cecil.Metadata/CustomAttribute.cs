@@ -29,52 +29,55 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class CustomAttributeTable : IMetadataTable
+    {
+        public const int RId = 0x0c;
 
-	internal sealed class CustomAttributeTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x0c;
+        public CustomAttributeRow this[int index]
+        {
+            get { return m_rows[index] as CustomAttributeRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public CustomAttributeRow this [int index] {
-			get { return m_rows [index] as CustomAttributeRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal CustomAttributeTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitCustomAttributeTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal CustomAttributeTable ()
-		{
-		}
+    internal sealed class CustomAttributeRow : IMetadataRow
+    {
+        public MetadataToken Parent;
+        public MetadataToken Type;
+        public uint Value;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitCustomAttributeTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal CustomAttributeRow()
+        {
+        }
 
-	internal sealed class CustomAttributeRow : IMetadataRow {
-
-		public MetadataToken Parent;
-		public MetadataToken Type;
-		public uint Value;
-
-		internal CustomAttributeRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitCustomAttributeRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitCustomAttributeRow(this);
+        }
+    }
 }

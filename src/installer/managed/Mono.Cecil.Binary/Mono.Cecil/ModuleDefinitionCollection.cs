@@ -29,65 +29,66 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class ModuleDefinitionCollection : CollectionBase, IReflectionStructureVisitable
+    {
+        AssemblyDefinition m_container;
 
-	using Mono.Cecil.Cil;
+        public ModuleDefinition this[int index]
+        {
+            get { return List[index] as ModuleDefinition; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class ModuleDefinitionCollection : CollectionBase, IReflectionStructureVisitable {
+        public AssemblyDefinition Container
+        {
+            get { return m_container; }
+        }
 
-		AssemblyDefinition m_container;
+        public ModuleDefinitionCollection(AssemblyDefinition container)
+        {
+            m_container = container;
+        }
 
-		public ModuleDefinition this [int index] {
-			get { return List [index] as ModuleDefinition; }
-			set { List [index] = value; }
-		}
+        public void Add(ModuleDefinition value)
+        {
+            List.Add(value);
+        }
 
-		public AssemblyDefinition Container {
-			get { return m_container; }
-		}
+        public bool Contains(ModuleDefinition value)
+        {
+            return List.Contains(value);
+        }
 
-		public ModuleDefinitionCollection (AssemblyDefinition container)
-		{
-			m_container = container;
-		}
+        public int IndexOf(ModuleDefinition value)
+        {
+            return List.IndexOf(value);
+        }
 
-		public void Add (ModuleDefinition value)
-		{
-			List.Add (value);
-		}
+        public void Insert(int index, ModuleDefinition value)
+        {
+            List.Insert(index, value);
+        }
 
-		public bool Contains (ModuleDefinition value)
-		{
-			return List.Contains (value);
-		}
+        public void Remove(ModuleDefinition value)
+        {
+            List.Remove(value);
+        }
 
-		public int IndexOf (ModuleDefinition value)
-		{
-			return List.IndexOf (value);
-		}
+        protected override void OnValidate(object o)
+        {
+            if (!(o is ModuleDefinition))
+                throw new ArgumentException("Must be of type " + typeof(ModuleDefinition).FullName);
+        }
 
-		public void Insert (int index, ModuleDefinition value)
-		{
-			List.Insert (index, value);
-		}
-
-		public void Remove (ModuleDefinition value)
-		{
-			List.Remove (value);
-		}
-
-		protected override void OnValidate (object o)
-		{
-			if (! (o is ModuleDefinition))
-				throw new ArgumentException ("Must be of type " + typeof (ModuleDefinition).FullName);
-		}
-
-		public void Accept (IReflectionStructureVisitor visitor)
-		{
-			visitor.VisitModuleDefinitionCollection (this);
-		}
-	}
+        public void Accept(IReflectionStructureVisitor visitor)
+        {
+            visitor.VisitModuleDefinitionCollection(this);
+        }
+    }
 }

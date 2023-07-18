@@ -29,65 +29,66 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class GenericParameterCollection : CollectionBase, IReflectionVisitable
+    {
+        IGenericParameterProvider m_container;
 
-	using Mono.Cecil.Cil;
+        public GenericParameter this[int index]
+        {
+            get { return List[index] as GenericParameter; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class GenericParameterCollection : CollectionBase, IReflectionVisitable {
+        public IGenericParameterProvider Container
+        {
+            get { return m_container; }
+        }
 
-		IGenericParameterProvider m_container;
+        public GenericParameterCollection(IGenericParameterProvider container)
+        {
+            m_container = container;
+        }
 
-		public GenericParameter this [int index] {
-			get { return List [index] as GenericParameter; }
-			set { List [index] = value; }
-		}
+        public void Add(GenericParameter value)
+        {
+            List.Add(value);
+        }
 
-		public IGenericParameterProvider Container {
-			get { return m_container; }
-		}
+        public bool Contains(GenericParameter value)
+        {
+            return List.Contains(value);
+        }
 
-		public GenericParameterCollection (IGenericParameterProvider container)
-		{
-			m_container = container;
-		}
+        public int IndexOf(GenericParameter value)
+        {
+            return List.IndexOf(value);
+        }
 
-		public void Add (GenericParameter value)
-		{
-			List.Add (value);
-		}
+        public void Insert(int index, GenericParameter value)
+        {
+            List.Insert(index, value);
+        }
 
-		public bool Contains (GenericParameter value)
-		{
-			return List.Contains (value);
-		}
+        public void Remove(GenericParameter value)
+        {
+            List.Remove(value);
+        }
 
-		public int IndexOf (GenericParameter value)
-		{
-			return List.IndexOf (value);
-		}
+        protected override void OnValidate(object o)
+        {
+            if (!(o is GenericParameter))
+                throw new ArgumentException("Must be of type " + typeof(GenericParameter).FullName);
+        }
 
-		public void Insert (int index, GenericParameter value)
-		{
-			List.Insert (index, value);
-		}
-
-		public void Remove (GenericParameter value)
-		{
-			List.Remove (value);
-		}
-
-		protected override void OnValidate (object o)
-		{
-			if (! (o is GenericParameter))
-				throw new ArgumentException ("Must be of type " + typeof (GenericParameter).FullName);
-		}
-
-		public void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitGenericParameterCollection (this);
-		}
-	}
+        public void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitGenericParameterCollection(this);
+        }
+    }
 }

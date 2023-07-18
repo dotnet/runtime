@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class FieldLayoutTable : IMetadataTable
+    {
+        public const int RId = 0x10;
 
-	internal sealed class FieldLayoutTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x10;
+        public FieldLayoutRow this[int index]
+        {
+            get { return m_rows[index] as FieldLayoutRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public FieldLayoutRow this [int index] {
-			get { return m_rows [index] as FieldLayoutRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal FieldLayoutTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitFieldLayoutTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal FieldLayoutTable ()
-		{
-		}
+    internal sealed class FieldLayoutRow : IMetadataRow
+    {
+        public uint Offset;
+        public uint Field;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitFieldLayoutTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal FieldLayoutRow()
+        {
+        }
 
-	internal sealed class FieldLayoutRow : IMetadataRow {
-
-		public uint Offset;
-		public uint Field;
-
-		internal FieldLayoutRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitFieldLayoutRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitFieldLayoutRow(this);
+        }
+    }
 }

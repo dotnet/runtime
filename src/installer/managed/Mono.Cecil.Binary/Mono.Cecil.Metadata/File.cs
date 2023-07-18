@@ -29,54 +29,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using Mono.Cecil;
 
-	using Mono.Cecil;
+    internal sealed class FileTable : IMetadataTable
+    {
+        public const int RId = 0x26;
 
-	internal sealed class FileTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x26;
+        public FileRow this[int index]
+        {
+            get { return m_rows[index] as FileRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public FileRow this [int index] {
-			get { return m_rows [index] as FileRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal FileTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitFileTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal FileTable ()
-		{
-		}
+    internal sealed class FileRow : IMetadataRow
+    {
+        public FileAttributes Flags;
+        public uint Name;
+        public uint HashValue;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitFileTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal FileRow()
+        {
+        }
 
-	internal sealed class FileRow : IMetadataRow {
-
-		public FileAttributes Flags;
-		public uint Name;
-		public uint HashValue;
-
-		internal FileRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitFileRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitFileRow(this);
+        }
+    }
 }

@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class GenericParamConstraintTable : IMetadataTable
+    {
+        public const int RId = 0x2c;
 
-	internal sealed class GenericParamConstraintTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x2c;
+        public GenericParamConstraintRow this[int index]
+        {
+            get { return m_rows[index] as GenericParamConstraintRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public GenericParamConstraintRow this [int index] {
-			get { return m_rows [index] as GenericParamConstraintRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal GenericParamConstraintTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitGenericParamConstraintTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal GenericParamConstraintTable ()
-		{
-		}
+    internal sealed class GenericParamConstraintRow : IMetadataRow
+    {
+        public uint Owner;
+        public MetadataToken Constraint;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitGenericParamConstraintTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal GenericParamConstraintRow()
+        {
+        }
 
-	internal sealed class GenericParamConstraintRow : IMetadataRow {
-
-		public uint Owner;
-		public MetadataToken Constraint;
-
-		internal GenericParamConstraintRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitGenericParamConstraintRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitGenericParamConstraintRow(this);
+        }
+    }
 }

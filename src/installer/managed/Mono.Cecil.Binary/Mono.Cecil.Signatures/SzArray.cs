@@ -26,17 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using Mono.Cecil.Metadata;
 
-	using Mono.Cecil.Metadata;
+    internal sealed class SZARRAY : SigType
+    {
+        public CustomMod[] CustomMods;
+        public SigType Type;
 
-	internal sealed class SZARRAY : SigType {
-
-		public CustomMod [] CustomMods;
-		public SigType Type;
-
-		public SZARRAY () : base (ElementType.SzArray)
-		{
-		}
-	}
+        public SZARRAY() : base(ElementType.SzArray)
+        {
+        }
+    }
 }

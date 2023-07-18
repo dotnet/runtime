@@ -26,158 +26,162 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.IO;
+    using SR = System.Reflection;
+    using Mono.Cecil.Binary;
 
-	using System;
-	using System.IO;
-	using SR = System.Reflection;
+    internal sealed class AssemblyFactory
+    {
+        AssemblyFactory()
+        {
+        }
 
-	using Mono.Cecil.Binary;
+        static AssemblyDefinition GetAssembly(ImageReader irv, bool manifestOnly)
+        {
+            StructureReader srv = new StructureReader(irv, manifestOnly);
+            AssemblyDefinition asm = new AssemblyDefinition(
+                new AssemblyNameDefinition(), srv);
 
-	internal sealed class AssemblyFactory {
+            asm.Accept(srv);
+            return asm;
+        }
 
-		AssemblyFactory ()
-		{
-		}
+        static AssemblyDefinition GetAssembly(ImageReader reader)
+        {
+            return GetAssembly(reader, false);
+        }
 
-		static AssemblyDefinition GetAssembly (ImageReader irv, bool manifestOnly)
-		{
-			StructureReader srv = new StructureReader (irv, manifestOnly);
-			AssemblyDefinition asm = new AssemblyDefinition (
-				new AssemblyNameDefinition (), srv);
+        static AssemblyDefinition GetAssemblyManifest(ImageReader reader)
+        {
+            return GetAssembly(reader, true);
+        }
 
-			asm.Accept (srv);
-			return asm;
-		}
+        public static AssemblyDefinition GetAssembly(string file)
+        {
+            return GetAssembly(ImageReader.Read(file));
+        }
 
-		static AssemblyDefinition GetAssembly (ImageReader reader)
-		{
-			return GetAssembly (reader, false);
-		}
+        public static AssemblyDefinition GetAssembly(byte[] assembly)
+        {
+            return GetAssembly(ImageReader.Read(assembly));
+        }
 
-		static AssemblyDefinition GetAssemblyManifest (ImageReader reader)
-		{
-			return GetAssembly (reader, true);
-		}
+        public static AssemblyDefinition GetAssembly(Stream stream)
+        {
+            return GetAssembly(ImageReader.Read(stream));
+        }
 
-		public static AssemblyDefinition GetAssembly (string file)
-		{
-			return GetAssembly (ImageReader.Read (file));
-		}
+        public static AssemblyDefinition GetAssemblyManifest(string file)
+        {
+            return GetAssemblyManifest(ImageReader.Read(file));
+        }
 
-		public static AssemblyDefinition GetAssembly (byte [] assembly)
-		{
-			return GetAssembly (ImageReader.Read (assembly));
-		}
+        public static AssemblyDefinition GetAssemblyManifest(byte[] assembly)
+        {
+            return GetAssemblyManifest(ImageReader.Read(assembly));
+        }
 
-		public static AssemblyDefinition GetAssembly (Stream stream)
-		{
-			return GetAssembly (ImageReader.Read (stream));
-		}
+        public static AssemblyDefinition GetAssemblyManifest(Stream stream)
+        {
+            return GetAssemblyManifest(ImageReader.Read(stream));
+        }
 
-		public static AssemblyDefinition GetAssemblyManifest (string file)
-		{
-			return GetAssemblyManifest (ImageReader.Read (file));
-		}
+        static TargetRuntime CurrentRuntime()
+        {
+            Version corlib = typeof(object).Assembly.GetName().Version;
 
-		public static AssemblyDefinition GetAssemblyManifest (byte [] assembly)
-		{
-			return GetAssemblyManifest (ImageReader.Read (assembly));
-		}
+            switch (corlib.Major)
+            {
+                case 1:
+                    return corlib.Minor == 0 ? TargetRuntime.NET_1_0 : TargetRuntime.NET_1_1;
+                case 2:
+                    return TargetRuntime.NET_2_0;
+                case 4:
+                    return TargetRuntime.NET_4_0;
+                default:
+                    throw new NotSupportedException();
+            }
+        }
 
-		public static AssemblyDefinition GetAssemblyManifest (Stream stream)
-		{
-			return GetAssemblyManifest (ImageReader.Read (stream));
-		}
+        public static AssemblyDefinition DefineAssembly(string name, AssemblyKind kind)
+        {
+            return DefineAssembly(name, name, CurrentRuntime(), kind);
+        }
 
-		static TargetRuntime CurrentRuntime ()
-		{
-			Version corlib = typeof (object).Assembly.GetName ().Version;
+        public static AssemblyDefinition DefineAssembly(string name, TargetRuntime rt, AssemblyKind kind)
+        {
+            return DefineAssembly(name, name, rt, kind);
+        }
 
-			switch (corlib.Major) {
-			case 1:
-				return corlib.Minor == 0 ? TargetRuntime.NET_1_0 : TargetRuntime.NET_1_1;
-			case 2:
-				return TargetRuntime.NET_2_0;
-			case 4:
-				return TargetRuntime.NET_4_0;
-			default:
-				throw new NotSupportedException ();
-			}
-		}
+        public static AssemblyDefinition DefineAssembly(string assemblyName, string moduleName, TargetRuntime rt,
+            AssemblyKind kind)
+        {
+            AssemblyNameDefinition asmName = new AssemblyNameDefinition();
+            asmName.Name = assemblyName;
+            AssemblyDefinition asm = new AssemblyDefinition(asmName);
+            asm.Runtime = rt;
+            asm.Kind = kind;
+            ModuleDefinition main = new ModuleDefinition(moduleName, asm, true);
+            asm.Modules.Add(main);
+            return asm;
+        }
 
-		public static AssemblyDefinition DefineAssembly (string name, AssemblyKind kind)
-		{
-			return DefineAssembly (name, name, CurrentRuntime (), kind);
-		}
+        static void WriteAssembly(AssemblyDefinition asm, BinaryWriter bw)
+        {
+            asm.Accept(new StructureWriter(asm, bw));
+        }
 
-		public static AssemblyDefinition DefineAssembly (string name, TargetRuntime rt, AssemblyKind kind)
-		{
-			return DefineAssembly (name, name, rt, kind);
-		}
+        public static void SaveAssembly(AssemblyDefinition asm, string file)
+        {
+            using (FileStream fs = new FileStream(
+                       file, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                SaveAssembly(asm, fs);
+                asm.MainModule.Image.SetFileInfo(new FileInfo(file));
+            }
+        }
 
-		public static AssemblyDefinition DefineAssembly (string assemblyName, string moduleName, TargetRuntime rt, AssemblyKind kind)
-		{
-			AssemblyNameDefinition asmName = new AssemblyNameDefinition ();
-			asmName.Name = assemblyName;
-			AssemblyDefinition asm = new AssemblyDefinition (asmName);
-			asm.Runtime = rt;
-			asm.Kind = kind;
-			ModuleDefinition main = new ModuleDefinition (moduleName, asm, true);
-			asm.Modules.Add (main);
-			return asm;
-		}
+        public static void SaveAssembly(AssemblyDefinition asm, out byte[] assembly)
+        {
+            MemoryBinaryWriter bw = new MemoryBinaryWriter();
+            SaveAssembly(asm, bw.BaseStream);
+            assembly = bw.ToArray();
+        }
 
-		static void WriteAssembly (AssemblyDefinition asm, BinaryWriter bw)
-		{
-			asm.Accept (new StructureWriter (asm, bw));
-		}
+        public static void SaveAssembly(AssemblyDefinition asm, Stream stream)
+        {
+            BinaryWriter bw = new BinaryWriter(stream);
+            try
+            {
+                WriteAssembly(asm, bw);
+            }
+            finally
+            {
+                bw.Close();
+            }
 
-		public static void SaveAssembly (AssemblyDefinition asm, string file)
-		{
-			using (FileStream fs = new FileStream (
-				file, FileMode.Create, FileAccess.Write, FileShare.None)) {
-
-				SaveAssembly (asm, fs);
-				asm.MainModule.Image.SetFileInfo (new FileInfo (file));
-			}
-		}
-
-		public static void SaveAssembly (AssemblyDefinition asm, out byte [] assembly)
-		{
-			MemoryBinaryWriter bw = new MemoryBinaryWriter ();
-			SaveAssembly (asm, bw.BaseStream);
-			assembly = bw.ToArray ();
-		}
-
-		public static void SaveAssembly (AssemblyDefinition asm, Stream stream)
-		{
-			BinaryWriter bw = new BinaryWriter (stream);
-			try {
-				WriteAssembly (asm, bw);
-			} finally {
-				bw.Close ();
-			}
-
-			foreach (ModuleDefinition module in asm.Modules)
-				if (module.Controller.Writer.SaveSymbols)
-					module.Controller.Writer.WriteSymbols (module);
-		}
+            foreach (ModuleDefinition module in asm.Modules)
+                if (module.Controller.Writer.SaveSymbols)
+                    module.Controller.Writer.WriteSymbols(module);
+        }
 
 #if !CF_1_0 && !CF_2_0
-		public static SR.Assembly CreateReflectionAssembly (AssemblyDefinition asm, AppDomain domain)
-		{
-			using (MemoryBinaryWriter writer = new MemoryBinaryWriter ()) {
+        public static SR.Assembly CreateReflectionAssembly(AssemblyDefinition asm, AppDomain domain)
+        {
+            using (MemoryBinaryWriter writer = new MemoryBinaryWriter())
+            {
+                WriteAssembly(asm, writer);
+                return domain.Load(writer.ToArray());
+            }
+        }
 
-				WriteAssembly (asm, writer);
-				return domain.Load (writer.ToArray ());
-			}
-		}
-
-		public static SR.Assembly CreateReflectionAssembly (AssemblyDefinition asm)
-		{
-			return CreateReflectionAssembly (asm, AppDomain.CurrentDomain);
-		}
+        public static SR.Assembly CreateReflectionAssembly(AssemblyDefinition asm)
+        {
+            return CreateReflectionAssembly(asm, AppDomain.CurrentDomain);
+        }
 #endif
-	}
+    }
 }

@@ -26,37 +26,41 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal sealed class ReflectionController
+    {
+        ReflectionReader m_reader;
+        ReflectionWriter m_writer;
+        ReflectionHelper m_helper;
+        DefaultImporter m_importer;
 
-	internal sealed class ReflectionController {
+        public ReflectionReader Reader
+        {
+            get { return m_reader; }
+        }
 
-		ReflectionReader m_reader;
-		ReflectionWriter m_writer;
-		ReflectionHelper m_helper;
-		DefaultImporter m_importer;
+        public ReflectionWriter Writer
+        {
+            get { return m_writer; }
+        }
 
-		public ReflectionReader Reader {
-			get { return m_reader; }
-		}
+        public ReflectionHelper Helper
+        {
+            get { return m_helper; }
+        }
 
-		public ReflectionWriter Writer {
-			get { return m_writer; }
-		}
+        public IImporter Importer
+        {
+            get { return m_importer; }
+        }
 
-		public ReflectionHelper Helper {
-			get { return m_helper; }
-		}
-
-		public IImporter Importer {
-			get { return m_importer; }
-		}
-
-		public ReflectionController (ModuleDefinition module)
-		{
-			m_reader = new AggressiveReflectionReader (module);
-			m_writer = new ReflectionWriter (module);
-			m_helper = new ReflectionHelper (module);
-			m_importer = new DefaultImporter (module);
-		}
-	}
+        public ReflectionController(ModuleDefinition module)
+        {
+            m_reader = new AggressiveReflectionReader(module);
+            m_writer = new ReflectionWriter(module);
+            m_helper = new ReflectionHelper(module);
+            m_importer = new DefaultImporter(module);
+        }
+    }
 }

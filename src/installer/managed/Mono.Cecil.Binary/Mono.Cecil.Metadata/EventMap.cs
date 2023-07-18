@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class EventMapTable : IMetadataTable
+    {
+        public const int RId = 0x12;
 
-	internal sealed class EventMapTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x12;
+        public EventMapRow this[int index]
+        {
+            get { return m_rows[index] as EventMapRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public EventMapRow this [int index] {
-			get { return m_rows [index] as EventMapRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal EventMapTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitEventMapTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal EventMapTable ()
-		{
-		}
+    internal sealed class EventMapRow : IMetadataRow
+    {
+        public uint Parent;
+        public uint EventList;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitEventMapTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal EventMapRow()
+        {
+        }
 
-	internal sealed class EventMapRow : IMetadataRow {
-
-		public uint Parent;
-		public uint EventList;
-
-		internal EventMapRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitEventMapRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitEventMapRow(this);
+        }
+    }
 }

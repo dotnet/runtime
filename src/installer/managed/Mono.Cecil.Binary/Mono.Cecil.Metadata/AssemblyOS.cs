@@ -29,52 +29,55 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class AssemblyOSTable : IMetadataTable
+    {
+        public const int RId = 0x22;
 
-	internal sealed class AssemblyOSTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x22;
+        public AssemblyOSRow this[int index]
+        {
+            get { return m_rows[index] as AssemblyOSRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public AssemblyOSRow this [int index] {
-			get { return m_rows [index] as AssemblyOSRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal AssemblyOSTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitAssemblyOSTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal AssemblyOSTable ()
-		{
-		}
+    internal sealed class AssemblyOSRow : IMetadataRow
+    {
+        public uint OSPlatformID;
+        public uint OSMajorVersion;
+        public uint OSMinorVersion;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitAssemblyOSTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal AssemblyOSRow()
+        {
+        }
 
-	internal sealed class AssemblyOSRow : IMetadataRow {
-
-		public uint OSPlatformID;
-		public uint OSMajorVersion;
-		public uint OSMinorVersion;
-
-		internal AssemblyOSRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitAssemblyOSRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitAssemblyOSRow(this);
+        }
+    }
 }

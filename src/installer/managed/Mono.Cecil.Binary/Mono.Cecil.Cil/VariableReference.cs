@@ -26,50 +26,53 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    internal abstract class VariableReference : ICodeVisitable
+    {
+        string m_name;
+        int m_index;
+        TypeReference m_variableType;
 
-	internal abstract class VariableReference : ICodeVisitable {
+        public string Name
+        {
+            get { return m_name; }
+            set { m_name = value; }
+        }
 
-		string m_name;
-		int m_index;
-		TypeReference m_variableType;
+        public int Index
+        {
+            get { return m_index; }
+            set { m_index = value; }
+        }
 
-		public string Name {
-			get { return m_name; }
-			set { m_name = value; }
-		}
+        public TypeReference VariableType
+        {
+            get { return m_variableType; }
+            set { m_variableType = value; }
+        }
 
-		public int Index {
-			get { return m_index; }
-			set { m_index = value; }
-		}
+        public VariableReference(TypeReference variableType)
+        {
+            m_variableType = variableType;
+        }
 
-		public TypeReference VariableType {
-			get { return m_variableType; }
-			set { m_variableType = value; }
-		}
+        public VariableReference(string name, int index, TypeReference variableType) : this(variableType)
+        {
+            m_name = name;
+            m_index = index;
+        }
 
-		public VariableReference (TypeReference variableType)
-		{
-			m_variableType = variableType;
-		}
+        public abstract VariableDefinition Resolve();
 
-		public VariableReference (string name, int index, TypeReference variableType) : this (variableType)
-		{
-			m_name = name;
-			m_index = index;
-		}
+        public override string ToString()
+        {
+            if (m_name != null && m_name.Length > 0)
+                return m_name;
 
-		public abstract VariableDefinition Resolve ();
+            return string.Concat("V_", m_index);
+        }
 
-		public override string ToString ()
-		{
-			if (m_name != null && m_name.Length > 0)
-				return m_name;
-
-			return string.Concat ("V_", m_index);
-		}
-
-		public abstract void Accept (ICodeVisitor visitor);
-	}
+        public abstract void Accept(ICodeVisitor visitor);
+    }
 }

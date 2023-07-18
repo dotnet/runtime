@@ -26,11 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal interface IAssemblyResolver {
-
-		AssemblyDefinition Resolve (string fullName);
-		AssemblyDefinition Resolve (AssemblyNameReference name);
-	}
+namespace Mono.Cecil
+{
+    internal interface IAssemblyResolver
+    {
+        AssemblyDefinition Resolve(string fullName);
+        AssemblyDefinition Resolve(AssemblyNameReference name);
+    }
 }

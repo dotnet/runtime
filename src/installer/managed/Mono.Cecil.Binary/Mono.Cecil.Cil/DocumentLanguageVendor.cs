@@ -26,17 +26,21 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    using System;
 
-	using System;
-
-	internal abstract class DocumentLanguageVendor {
+    internal abstract class DocumentLanguageVendor
+    {
 #if CF_2_0
 		public static readonly Guid Other = new Guid ("00000000-0000-0000-0000-000000000000");
 		public static readonly Guid Microsoft = new Guid ("994b45c4-e6e9-11d2-903f-00c04fa302a1");
 #else
-		public static readonly Guid Other = new Guid (0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
-		public static readonly Guid Microsoft = new Guid (0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
+        public static readonly Guid Other = new Guid(0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00);
+
+        public static readonly Guid Microsoft =
+            new Guid(0x994b45c4, 0xe6e9, 0x11d2, 0x90, 0x3f, 0x00, 0xc0, 0x4f, 0xa3, 0x02, 0xa1);
 #endif
-	}
+    }
 }

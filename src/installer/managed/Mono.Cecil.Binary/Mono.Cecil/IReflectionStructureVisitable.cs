@@ -26,10 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal interface IReflectionStructureVisitable {
-
-		void Accept (IReflectionStructureVisitor visitor);
-	}
+namespace Mono.Cecil
+{
+    internal interface IReflectionStructureVisitable
+    {
+        void Accept(IReflectionStructureVisitor visitor);
+    }
 }

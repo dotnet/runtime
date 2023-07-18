@@ -26,144 +26,165 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Metadata;
 
-	using System;
-	using System.Collections;
+    internal class AssemblyDefinition : ICustomAttributeProvider,
+        IHasSecurity, IAnnotationProvider, IReflectionStructureVisitable
+    {
+        MetadataToken m_token;
+        AssemblyNameDefinition m_asmName;
+        ModuleDefinitionCollection m_modules;
+        SecurityDeclarationCollection m_secDecls;
+        CustomAttributeCollection m_customAttrs;
+        MethodDefinition m_ep;
+        TargetRuntime m_runtime;
+        AssemblyKind m_kind;
 
-	using Mono.Cecil.Metadata;
+        ModuleDefinition m_mainModule;
+        StructureReader m_reader;
 
-	internal class AssemblyDefinition : ICustomAttributeProvider,
-		IHasSecurity, IAnnotationProvider, IReflectionStructureVisitable {
+        IAssemblyResolver m_resolver;
+        IDictionary m_annotations;
 
-		MetadataToken m_token;
-		AssemblyNameDefinition m_asmName;
-		ModuleDefinitionCollection m_modules;
-		SecurityDeclarationCollection m_secDecls;
-		CustomAttributeCollection m_customAttrs;
-		MethodDefinition m_ep;
-		TargetRuntime m_runtime;
-		AssemblyKind m_kind;
+        public MetadataToken MetadataToken
+        {
+            get { return m_token; }
+            set { m_token = value; }
+        }
 
-		ModuleDefinition m_mainModule;
-		StructureReader m_reader;
+        public AssemblyNameDefinition Name
+        {
+            get { return m_asmName; }
+        }
 
-		IAssemblyResolver m_resolver;
-		IDictionary m_annotations;
+        public ModuleDefinitionCollection Modules
+        {
+            get { return m_modules; }
+        }
 
-		public MetadataToken MetadataToken {
-			get { return m_token; }
-			set { m_token = value; }
-		}
+        public bool HasSecurityDeclarations
+        {
+            get { return (m_secDecls == null) ? false : (m_secDecls.Count > 0); }
+        }
 
-		public AssemblyNameDefinition Name {
-			get { return m_asmName; }
-		}
+        public SecurityDeclarationCollection SecurityDeclarations
+        {
+            get
+            {
+                if (m_secDecls == null)
+                    m_secDecls = new SecurityDeclarationCollection(this);
 
-		public ModuleDefinitionCollection Modules {
-			get { return m_modules; }
-		}
+                return m_secDecls;
+            }
+        }
 
-		public bool HasSecurityDeclarations {
-			get { return (m_secDecls == null) ? false : (m_secDecls.Count > 0); }
-		}
+        public bool HasCustomAttributes
+        {
+            get { return (m_customAttrs == null) ? false : (m_customAttrs.Count > 0); }
+        }
 
-		public SecurityDeclarationCollection SecurityDeclarations {
-			get {
-				if (m_secDecls == null)
-					m_secDecls = new SecurityDeclarationCollection (this);
+        public CustomAttributeCollection CustomAttributes
+        {
+            get
+            {
+                if (m_customAttrs == null)
+                    m_customAttrs = new CustomAttributeCollection(this);
 
-				return m_secDecls;
-			}
-		}
+                return m_customAttrs;
+            }
+        }
 
-		public bool HasCustomAttributes {
-			get { return (m_customAttrs == null) ? false : (m_customAttrs.Count > 0); }
-		}
+        public MethodDefinition EntryPoint
+        {
+            get { return m_ep; }
+            set { m_ep = value; }
+        }
 
-		public CustomAttributeCollection CustomAttributes {
-			get {
-				if (m_customAttrs == null)
-					m_customAttrs = new CustomAttributeCollection (this);
+        public TargetRuntime Runtime
+        {
+            get { return m_runtime; }
+            set { m_runtime = value; }
+        }
 
-				return m_customAttrs;
-			}
-		}
+        public AssemblyKind Kind
+        {
+            get { return m_kind; }
+            set { m_kind = value; }
+        }
 
-		public MethodDefinition EntryPoint {
-			get { return m_ep; }
-			set { m_ep = value; }
-		}
+        public ModuleDefinition MainModule
+        {
+            get
+            {
+                if (m_mainModule == null)
+                {
+                    foreach (ModuleDefinition module in m_modules)
+                    {
+                        if (module.Main)
+                        {
+                            m_mainModule = module;
+                            break;
+                        }
+                    }
+                }
 
-		public TargetRuntime Runtime {
-			get { return m_runtime; }
-			set { m_runtime = value; }
-		}
+                return m_mainModule;
+            }
+        }
 
-		public AssemblyKind Kind {
-			get { return m_kind; }
-			set { m_kind = value; }
-		}
+        internal StructureReader Reader
+        {
+            get { return m_reader; }
+        }
 
-		public ModuleDefinition MainModule {
-			get {
-				if (m_mainModule == null) {
-					foreach (ModuleDefinition module in m_modules) {
-						if (module.Main) {
-							m_mainModule = module;
-							break;
-						}
-					}
-				}
-				return m_mainModule;
-			}
-		}
+        public IAssemblyResolver Resolver
+        {
+            get { return m_resolver; }
+            set { m_resolver = value; }
+        }
 
-		internal StructureReader Reader {
-			get { return m_reader; }
-		}
+        IDictionary IAnnotationProvider.Annotations
+        {
+            get
+            {
+                if (m_annotations == null)
+                    m_annotations = new Hashtable();
+                return m_annotations;
+            }
+        }
 
-		public IAssemblyResolver Resolver {
-			get { return m_resolver; }
-			set { m_resolver = value; }
-		}
+        internal AssemblyDefinition(AssemblyNameDefinition name)
+        {
+            if (name == null)
+                throw new ArgumentNullException("name");
 
-		IDictionary IAnnotationProvider.Annotations {
-			get {
-				if (m_annotations == null)
-					m_annotations = new Hashtable ();
-				return m_annotations;
-			}
-		}
+            m_asmName = name;
+            m_modules = new ModuleDefinitionCollection(this);
+            m_resolver = new DefaultAssemblyResolver();
+        }
 
-		internal AssemblyDefinition (AssemblyNameDefinition name)
-		{
-			if (name == null)
-				throw new ArgumentNullException ("name");
+        internal AssemblyDefinition(AssemblyNameDefinition name, StructureReader reader) : this(name)
+        {
+            m_reader = reader;
+        }
 
-			m_asmName = name;
-			m_modules = new ModuleDefinitionCollection (this);
-			m_resolver = new DefaultAssemblyResolver ();
-		}
+        public void Accept(IReflectionStructureVisitor visitor)
+        {
+            visitor.VisitAssemblyDefinition(this);
 
-		internal AssemblyDefinition (AssemblyNameDefinition name, StructureReader reader) : this (name)
-		{
-			m_reader = reader;
-		}
+            m_asmName.Accept(visitor);
+            m_modules.Accept(visitor);
 
-		public void Accept (IReflectionStructureVisitor visitor)
-		{
-			visitor.VisitAssemblyDefinition (this);
+            visitor.TerminateAssemblyDefinition(this);
+        }
 
-			m_asmName.Accept (visitor);
-			m_modules.Accept (visitor);
-
-			visitor.TerminateAssemblyDefinition (this);
-		}
-
-		public override string ToString ()
-		{
-			return m_asmName.FullName;
-		}
-	}
+        public override string ToString()
+        {
+            return m_asmName.FullName;
+        }
+    }
 }

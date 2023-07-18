@@ -26,33 +26,33 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal sealed class PEFileHeader : IHeader, IBinaryVisitable
+    {
+        public ushort Machine;
+        public ushort NumberOfSections;
+        public uint TimeDateStamp;
+        public uint PointerToSymbolTable;
+        public uint NumberOfSymbols;
+        public ushort OptionalHeaderSize;
+        public ImageCharacteristics Characteristics;
 
-	internal sealed class PEFileHeader : IHeader, IBinaryVisitable {
+        internal PEFileHeader()
+        {
+        }
 
-		public ushort Machine;
-		public ushort NumberOfSections;
-		public uint TimeDateStamp;
-		public uint PointerToSymbolTable;
-		public uint NumberOfSymbols;
-		public ushort OptionalHeaderSize;
-		public ImageCharacteristics Characteristics;
+        public void SetDefaultValues()
+        {
+            Machine = 0x14c;
+            PointerToSymbolTable = 0;
+            NumberOfSymbols = 0;
+            OptionalHeaderSize = 0xe0;
+        }
 
-		internal PEFileHeader ()
-		{
-		}
-
-		public void SetDefaultValues ()
-		{
-			Machine = 0x14c;
-			PointerToSymbolTable = 0;
-			NumberOfSymbols = 0;
-			OptionalHeaderSize = 0xe0;
-		}
-
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitPEFileHeader (this);
-		}
-	}
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitPEFileHeader(this);
+        }
+    }
 }

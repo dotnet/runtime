@@ -29,55 +29,58 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using Mono.Cecil;
 
-	using Mono.Cecil;
+    internal sealed class ManifestResourceTable : IMetadataTable
+    {
+        public const int RId = 0x28;
 
-	internal sealed class ManifestResourceTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x28;
+        public ManifestResourceRow this[int index]
+        {
+            get { return m_rows[index] as ManifestResourceRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public ManifestResourceRow this [int index] {
-			get { return m_rows [index] as ManifestResourceRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal ManifestResourceTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitManifestResourceTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal ManifestResourceTable ()
-		{
-		}
+    internal sealed class ManifestResourceRow : IMetadataRow
+    {
+        public uint Offset;
+        public ManifestResourceAttributes Flags;
+        public uint Name;
+        public MetadataToken Implementation;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitManifestResourceTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal ManifestResourceRow()
+        {
+        }
 
-	internal sealed class ManifestResourceRow : IMetadataRow {
-
-		public uint Offset;
-		public ManifestResourceAttributes Flags;
-		public uint Name;
-		public MetadataToken Implementation;
-
-		internal ManifestResourceRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitManifestResourceRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitManifestResourceRow(this);
+        }
+    }
 }

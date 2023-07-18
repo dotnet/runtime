@@ -26,23 +26,23 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    internal sealed class MethodDefSig : MethodRefSig
+    {
+        public int GenericParameterCount;
 
-	internal sealed class MethodDefSig : MethodRefSig {
+        public MethodDefSig() : this(0)
+        {
+        }
 
-		public int GenericParameterCount;
+        public MethodDefSig(uint blobIndex) : base(blobIndex)
+        {
+        }
 
-		public MethodDefSig () : this (0)
-		{
-		}
-
-		public MethodDefSig (uint blobIndex) : base (blobIndex)
-		{
-		}
-
-		public override void Accept (ISignatureVisitor visitor)
-		{
-			visitor.VisitMethodDefSig (this);
-		}
-	}
+        public override void Accept(ISignatureVisitor visitor)
+        {
+            visitor.VisitMethodDefSig(this);
+        }
+    }
 }

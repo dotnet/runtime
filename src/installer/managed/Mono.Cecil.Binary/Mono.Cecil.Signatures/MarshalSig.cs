@@ -26,68 +26,68 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using System;
+    using Mono.Cecil;
 
-	using System;
+    internal sealed class MarshalSig
+    {
+        public NativeType NativeInstrinsic;
+        public IMarshalSigSpec Spec;
 
-	using Mono.Cecil;
+        public MarshalSig(NativeType nt)
+        {
+            this.NativeInstrinsic = nt;
+        }
 
-	internal sealed class MarshalSig {
+        internal interface IMarshalSigSpec
+        {
+        }
 
-		public NativeType NativeInstrinsic;
-		public IMarshalSigSpec Spec;
+        internal sealed class Array : IMarshalSigSpec
+        {
+            public NativeType ArrayElemType;
+            public int ParamNum;
+            public int ElemMult;
+            public int NumElem;
 
-		public MarshalSig (NativeType nt)
-		{
-			this.NativeInstrinsic = nt;
-		}
+            public Array()
+            {
+                this.ParamNum = 0;
+                this.ElemMult = 0;
+                this.NumElem = 0;
+            }
+        }
 
-		internal interface IMarshalSigSpec {
-		}
+        internal sealed class CustomMarshaler : IMarshalSigSpec
+        {
+            public string Guid;
+            public string UnmanagedType;
+            public string ManagedType;
+            public string Cookie;
+        }
 
-		internal sealed class Array : IMarshalSigSpec {
+        internal sealed class FixedArray : IMarshalSigSpec
+        {
+            public int NumElem;
+            public NativeType ArrayElemType;
 
-			public NativeType ArrayElemType;
-			public int ParamNum;
-			public int ElemMult;
-			public int NumElem;
+            public FixedArray()
+            {
+                this.NumElem = 0;
+                this.ArrayElemType = NativeType.NONE;
+            }
+        }
 
-			public Array ()
-			{
-				this.ParamNum = 0;
-				this.ElemMult = 0;
-				this.NumElem = 0;
-			}
-		}
+        internal sealed class SafeArray : IMarshalSigSpec
+        {
+            public VariantType ArrayElemType;
+        }
 
-		internal sealed class CustomMarshaler : IMarshalSigSpec {
-
-			public string Guid;
-			public string UnmanagedType;
-			public string ManagedType;
-			public string Cookie;
-		}
-
-		internal sealed class FixedArray : IMarshalSigSpec {
-
-			public int NumElem;
-			public NativeType ArrayElemType;
-
-			public FixedArray ()
-			{
-				this.NumElem = 0;
-				this.ArrayElemType = NativeType.NONE;
-			}
-		}
-
-		internal sealed class SafeArray : IMarshalSigSpec {
-
-			public VariantType ArrayElemType;
-		}
-
-		internal sealed class FixedSysString : IMarshalSigSpec {
-
-			public int Size;
-		}
-	}
+        internal sealed class FixedSysString : IMarshalSigSpec
+        {
+            public int Size;
+        }
+    }
 }

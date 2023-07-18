@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class MethodSpecTable : IMetadataTable
+    {
+        public const int RId = 0x2b;
 
-	internal sealed class MethodSpecTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x2b;
+        public MethodSpecRow this[int index]
+        {
+            get { return m_rows[index] as MethodSpecRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public MethodSpecRow this [int index] {
-			get { return m_rows [index] as MethodSpecRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal MethodSpecTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitMethodSpecTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal MethodSpecTable ()
-		{
-		}
+    internal sealed class MethodSpecRow : IMetadataRow
+    {
+        public MetadataToken Method;
+        public uint Instantiation;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitMethodSpecTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal MethodSpecRow()
+        {
+        }
 
-	internal sealed class MethodSpecRow : IMetadataRow {
-
-		public MetadataToken Method;
-		public uint Instantiation;
-
-		internal MethodSpecRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitMethodSpecRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitMethodSpecRow(this);
+        }
+    }
 }

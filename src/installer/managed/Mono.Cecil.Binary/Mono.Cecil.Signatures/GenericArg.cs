@@ -26,16 +26,16 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    sealed class GenericArg
+    {
+        public CustomMod[] CustomMods;
+        public SigType Type;
 
-	sealed class GenericArg {
-
-		public CustomMod [] CustomMods;
-		public SigType Type;
-
-		public GenericArg (SigType type)
-		{
-			Type = type;
-		}
-	}
+        public GenericArg(SigType type)
+        {
+            Type = type;
+        }
+    }
 }

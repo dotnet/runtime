@@ -26,48 +26,49 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    using System.IO;
+    using System.Text;
 
-	using System.IO;
-	using System.Text;
+    internal sealed class MemoryBinaryWriter : BinaryWriter
+    {
+        public MemoryStream MemoryStream
+        {
+            get { return (MemoryStream)this.BaseStream; }
+        }
 
-	internal sealed class MemoryBinaryWriter : BinaryWriter {
+        public MemoryBinaryWriter() : base(new MemoryStream())
+        {
+        }
 
-		public MemoryStream MemoryStream {
-			get { return (MemoryStream) this.BaseStream; }
-		}
+        public MemoryBinaryWriter(Encoding enc) : base(new MemoryStream(), enc)
+        {
+        }
 
-		public MemoryBinaryWriter () : base (new MemoryStream ())
-		{
-		}
+        public void Empty()
+        {
+            BaseStream.Position = 0;
+            BaseStream.SetLength(0);
+        }
 
-		public MemoryBinaryWriter (Encoding enc) : base (new MemoryStream (), enc)
-		{
-		}
+        public void Write(MemoryBinaryWriter writer)
+        {
+            writer.MemoryStream.WriteTo(this.BaseStream);
+        }
 
-		public void Empty ()
-		{
-			BaseStream.Position = 0;
-			BaseStream.SetLength (0);
-		}
+        public byte[] ToArray()
+        {
+            return MemoryStream.ToArray();
+        }
 
-		public void Write (MemoryBinaryWriter writer)
-		{
-			writer.MemoryStream.WriteTo (this.BaseStream);
-		}
+        public void QuadAlign()
+        {
+            BaseStream.Position += 3;
+            BaseStream.Position &= ~3;
 
-		public byte [] ToArray ()
-		{
-			return MemoryStream.ToArray ();
-		}
-
-		public void QuadAlign ()
-		{
-			BaseStream.Position += 3;
-			BaseStream.Position &= ~3;
-
-			if (BaseStream.Position > BaseStream.Length)
-				BaseStream.SetLength (BaseStream.Position);
-		}
-	}
+            if (BaseStream.Position > BaseStream.Length)
+                BaseStream.SetLength(BaseStream.Position);
+        }
+    }
 }

@@ -26,25 +26,26 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using Mono.Cecil.Metadata;
 
-	using Mono.Cecil.Metadata;
+    internal sealed class CustomMod
+    {
+        public static CustomMod[] EmptyCustomMod = new CustomMod [0];
 
-	internal sealed class CustomMod {
+        internal enum CMODType : byte
+        {
+            None = 0x0,
+            OPT = (byte)ElementType.CModOpt,
+            REQD = (byte)ElementType.CModReqD
+        }
 
-		public static CustomMod [] EmptyCustomMod = new CustomMod [0];
+        public CMODType CMOD;
+        public MetadataToken TypeDefOrRef;
 
-		internal enum CMODType : byte {
-			None = 0x0,
-			OPT = (byte) ElementType.CModOpt,
-			REQD = (byte) ElementType.CModReqD
-		}
-
-		public CMODType CMOD;
-		public MetadataToken TypeDefOrRef;
-
-		public CustomMod ()
-		{
-		}
-	}
+        public CustomMod()
+        {
+        }
+    }
 }

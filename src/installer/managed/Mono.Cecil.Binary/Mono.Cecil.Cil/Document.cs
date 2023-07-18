@@ -26,55 +26,61 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    using System;
 
-	using System;
+    internal class Document
+    {
+        string m_url;
 
-	internal class Document {
+        Guid m_type;
+        DocumentHashAlgorithm m_hashAlgorithm;
+        Guid m_language;
+        Guid m_languageVendor;
 
-		string m_url;
+        byte[] m_hash;
 
-		Guid m_type;
-		DocumentHashAlgorithm m_hashAlgorithm;
-		Guid m_language;
-		Guid m_languageVendor;
+        public string Url
+        {
+            get { return m_url; }
+            set { m_url = value; }
+        }
 
-		byte [] m_hash;
+        public Guid Type
+        {
+            get { return m_type; }
+            set { m_type = value; }
+        }
 
-		public string Url {
-			get { return m_url; }
-			set { m_url = value; }
-		}
+        public DocumentHashAlgorithm HashAlgorithm
+        {
+            get { return m_hashAlgorithm; }
+            set { m_hashAlgorithm = value; }
+        }
 
-		public Guid Type {
-			get { return m_type; }
-			set { m_type = value; }
-		}
+        public Guid Language
+        {
+            get { return m_language; }
+            set { m_language = value; }
+        }
 
-		public DocumentHashAlgorithm HashAlgorithm {
-			get { return m_hashAlgorithm; }
-			set { m_hashAlgorithm = value; }
-		}
+        public Guid LanguageVendor
+        {
+            get { return m_languageVendor; }
+            set { m_languageVendor = value; }
+        }
 
-		public Guid Language {
-			get { return m_language; }
-			set { m_language = value; }
-		}
+        public byte[] Hash
+        {
+            get { return m_hash; }
+            set { m_hash = value; }
+        }
 
-		public Guid LanguageVendor {
-			get { return m_languageVendor; }
-			set { m_languageVendor = value; }
-		}
-
-		public byte [] Hash {
-			get { return m_hash; }
-			set { m_hash = value; }
-		}
-
-		public Document (string url)
-		{
-			m_url = url;
-			m_hash = new byte [0];
-		}
-	}
+        public Document(string url)
+        {
+            m_url = url;
+            m_hash = new byte [0];
+        }
+    }
 }

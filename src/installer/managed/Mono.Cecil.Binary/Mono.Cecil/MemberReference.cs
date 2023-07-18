@@ -26,57 +26,61 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Collections;
+    using Mono.Cecil.Metadata;
 
-	using System.Collections;
+    internal abstract class MemberReference : IMemberReference
+    {
+        string m_name;
+        TypeReference m_decType;
+        MetadataToken m_token;
+        IDictionary m_annotations;
 
-	using Mono.Cecil.Metadata;
+        public virtual string Name
+        {
+            get { return m_name; }
+            set { m_name = value; }
+        }
 
-	internal abstract class MemberReference : IMemberReference {
+        public virtual TypeReference DeclaringType
+        {
+            get { return m_decType; }
+            set { m_decType = value; }
+        }
 
-		string m_name;
-		TypeReference m_decType;
-		MetadataToken m_token;
-		IDictionary m_annotations;
+        public MetadataToken MetadataToken
+        {
+            get { return m_token; }
+            set { m_token = value; }
+        }
 
-		public virtual string Name {
-			get { return m_name; }
-			set { m_name = value; }
-		}
+        IDictionary IAnnotationProvider.Annotations
+        {
+            get
+            {
+                if (m_annotations == null)
+                    m_annotations = new Hashtable();
+                return m_annotations;
+            }
+        }
 
-		public virtual TypeReference DeclaringType {
-			get { return m_decType; }
-			set { m_decType = value; }
-		}
+        public MemberReference(string name)
+        {
+            m_name = name;
+        }
 
-		public MetadataToken MetadataToken {
-			get { return m_token; }
-			set { m_token = value; }
-		}
+        public override string ToString()
+        {
+            if (m_decType == null)
+                return m_name;
 
-		IDictionary IAnnotationProvider.Annotations {
-			get {
-				if (m_annotations == null)
-					m_annotations = new Hashtable ();
-				return m_annotations;
-			}
-		}
+            return string.Concat(m_decType.FullName, "::", m_name);
+        }
 
-		public MemberReference (string name)
-		{
-			m_name = name;
-		}
-
-		public override string ToString ()
-		{
-			if (m_decType == null)
-				return m_name;
-
-			return string.Concat (m_decType.FullName, "::", m_name);
-		}
-
-		public virtual void Accept (IReflectionVisitor visitor)
-		{
-		}
-	}
+        public virtual void Accept(IReflectionVisitor visitor)
+        {
+        }
+    }
 }

@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal sealed class SentinelType : TypeSpecification {
-
-		public SentinelType (TypeReference elementType) : base (elementType)
-		{
-		}
-	}
+namespace Mono.Cecil
+{
+    internal sealed class SentinelType : TypeSpecification
+    {
+        public SentinelType(TypeReference elementType) : base(elementType)
+        {
+        }
+    }
 }

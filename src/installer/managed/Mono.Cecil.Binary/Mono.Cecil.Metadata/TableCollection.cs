@@ -26,90 +26,94 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using System;
+    using System.Collections;
 
-	using System;
-	using System.Collections;
+    internal class TableCollection : ICollection, IMetadataTableVisitable
+    {
+        IMetadataTable[] m_tables = new IMetadataTable [TablesHeap.MaxTableCount];
 
-	internal class TableCollection : ICollection, IMetadataTableVisitable	{
+        TablesHeap m_heap;
 
-		IMetadataTable [] m_tables = new IMetadataTable [TablesHeap.MaxTableCount];
+        public IMetadataTable this[int index]
+        {
+            get { return m_tables[index]; }
+            set { m_tables[index] = value; }
+        }
 
-		TablesHeap m_heap;
+        public int Count
+        {
+            get { return GetList().Count; }
+        }
 
-		public IMetadataTable this [int index] {
-			get { return m_tables [index]; }
-			set { m_tables [index] = value; }
-		}
+        public bool IsSynchronized
+        {
+            get { return false; }
+        }
 
-		public int Count {
-			get {
-				return GetList ().Count;
-			}
-		}
+        public object SyncRoot
+        {
+            get { return this; }
+        }
 
-		public bool IsSynchronized {
-			get { return false; }
-		}
+        public TablesHeap Heap
+        {
+            get { return m_heap; }
+        }
 
-		public object SyncRoot {
-			get { return this; }
-		}
+        internal TableCollection(TablesHeap heap)
+        {
+            m_heap = heap;
+        }
 
-		public TablesHeap Heap {
-			get { return m_heap; }
-		}
+        internal void Add(IMetadataTable value)
+        {
+            m_tables[value.Id] = value;
+        }
 
-		internal TableCollection (TablesHeap heap)
-		{
-			m_heap = heap;
-		}
+        public bool Contains(IMetadataTable value)
+        {
+            return m_tables[value.Id] != null;
+        }
 
-		internal void Add (IMetadataTable value)
-		{
-			m_tables [value.Id] = value;
-		}
+        internal void Remove(IMetadataTable value)
+        {
+            m_tables[value.Id] = null;
+        }
 
-		public bool Contains (IMetadataTable value)
-		{
-			return m_tables [value.Id] != null;
-		}
+        public void CopyTo(Array array, int index)
+        {
+            GetList().CopyTo(array, index);
+        }
 
-		internal void Remove (IMetadataTable value)
-		{
-			m_tables [value.Id] = null;
-		}
+        internal IList GetList()
+        {
+            IList tables = new ArrayList();
+            for (int i = 0; i < m_tables.Length; i++)
+            {
+                IMetadataTable table = m_tables[i];
+                if (table != null)
+                    tables.Add(table);
+            }
 
-		public void CopyTo (Array array, int index)
-		{
-			GetList ().CopyTo (array, index);
-		}
+            return tables;
+        }
 
-		internal IList GetList ()
-		{
-			IList tables = new ArrayList ();
-			for (int i = 0; i < m_tables.Length; i++) {
-				IMetadataTable table = m_tables [i];
-				if (table != null)
-					tables.Add (table);
-			}
+        public IEnumerator GetEnumerator()
+        {
+            return GetList().GetEnumerator();
+        }
 
-			return tables;
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitTableCollection(this);
 
-		public IEnumerator GetEnumerator ()
-		{
-			return GetList ().GetEnumerator ();
-		}
+            foreach (IMetadataTable table in GetList())
+                table.Accept(visitor);
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitTableCollection (this);
-
-			foreach (IMetadataTable table in GetList ())
-				table.Accept (visitor);
-
-			visitor.TerminateTableCollection (this);
-		}
-	}
+            visitor.TerminateTableCollection(this);
+        }
+    }
 }

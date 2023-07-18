@@ -26,55 +26,62 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using System;
+    using System.Collections;
 
-	using System;
-	using System.Collections;
+    internal class GuidHeap : MetadataHeap
+    {
+        readonly IDictionary m_guids;
 
-	internal class GuidHeap : MetadataHeap {
+        public IDictionary Guids
+        {
+            get { return m_guids; }
+        }
 
-		readonly IDictionary m_guids;
+        public GuidHeap(MetadataStream stream) : base(stream, MetadataStream.GUID)
+        {
+            int capacity = (int)(stream.Header.Size / 16);
+            m_guids = new Hashtable(capacity);
+        }
 
-		public IDictionary Guids {
-			get { return m_guids; }
-		}
+        public Guid this[uint index]
+        {
+            get
+            {
+                if (index == 0)
+                    return new Guid(new byte [16]);
 
-		public GuidHeap (MetadataStream stream) : base (stream, MetadataStream.GUID)
-		{
-			int capacity = (int)(stream.Header.Size / 16);
-			m_guids = new Hashtable (capacity);
-		}
+                int idx = (int)index - 1;
 
-		public Guid this [uint index] {
-			get {
-				if (index == 0)
-					return new Guid (new byte [16]);
+                if (m_guids.Contains(idx))
+                    return (Guid)m_guids[idx];
 
-				int idx = (int) index - 1;
+                if (idx + 16 > this.Data.Length)
+                    throw new IndexOutOfRangeException();
 
-				if (m_guids.Contains (idx))
-					return (Guid) m_guids [idx];
+                byte[] buffer = null;
+                if (this.Data.Length == 16)
+                {
+                    buffer = this.Data;
+                }
+                else
+                {
+                    buffer = new byte [16];
+                    Buffer.BlockCopy(this.Data, idx, buffer, 0, 16);
+                }
 
-				if (idx + 16 > this.Data.Length)
-					throw new IndexOutOfRangeException ();
+                Guid res = new Guid(buffer);
+                m_guids[idx] = res;
+                return res;
+            }
+            set { m_guids[index] = value; }
+        }
 
-				byte [] buffer = null;
-				if (this.Data.Length == 16) {
-					buffer = this.Data;
-				} else {
-					buffer = new byte [16];
-					Buffer.BlockCopy (this.Data, idx, buffer, 0, 16);
-				}
-				Guid res = new Guid (buffer);
-				m_guids [idx] = res;
-				return res;
-			}
-			set { m_guids [index] = value; }
-		}
-
-		public override void Accept (IMetadataVisitor visitor)
-		{
-			visitor.VisitGuidHeap (this);
-		}
-	}
+        public override void Accept(IMetadataVisitor visitor)
+        {
+            visitor.VisitGuidHeap(this);
+        }
+    }
 }

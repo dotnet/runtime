@@ -29,54 +29,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using Mono.Cecil;
 
-	using Mono.Cecil;
+    internal sealed class EventTable : IMetadataTable
+    {
+        public const int RId = 0x14;
 
-	internal sealed class EventTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x14;
+        public EventRow this[int index]
+        {
+            get { return m_rows[index] as EventRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public EventRow this [int index] {
-			get { return m_rows [index] as EventRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal EventTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitEventTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal EventTable ()
-		{
-		}
+    internal sealed class EventRow : IMetadataRow
+    {
+        public EventAttributes EventFlags;
+        public uint Name;
+        public MetadataToken EventType;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitEventTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal EventRow()
+        {
+        }
 
-	internal sealed class EventRow : IMetadataRow {
-
-		public EventAttributes EventFlags;
-		public uint Name;
-		public MetadataToken EventType;
-
-		internal EventRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitEventRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitEventRow(this);
+        }
+    }
 }

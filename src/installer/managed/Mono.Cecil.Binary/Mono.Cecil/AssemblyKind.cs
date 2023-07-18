@@ -26,11 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal enum AssemblyKind {
-		Dll,
-		Console,
-		Windows
-	}
+namespace Mono.Cecil
+{
+    internal enum AssemblyKind
+    {
+        Dll,
+        Console,
+        Windows
+    }
 }

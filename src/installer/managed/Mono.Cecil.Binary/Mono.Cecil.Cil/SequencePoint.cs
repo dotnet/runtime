@@ -26,53 +26,58 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    internal class SequencePoint
+    {
+        Document m_document;
 
-	internal class SequencePoint {
+        int m_startLine;
+        int m_startColumn;
+        int m_endLine;
+        int m_endColumn;
 
-		Document m_document;
+        public int StartLine
+        {
+            get { return m_startLine; }
+            set { m_startLine = value; }
+        }
 
-		int m_startLine;
-		int m_startColumn;
-		int m_endLine;
-		int m_endColumn;
+        public int StartColumn
+        {
+            get { return m_startColumn; }
+            set { m_startColumn = value; }
+        }
 
-		public int StartLine {
-			get { return m_startLine; }
-			set { m_startLine = value; }
-		}
+        public int EndLine
+        {
+            get { return m_endLine; }
+            set { m_endLine = value; }
+        }
 
-		public int StartColumn {
-			get { return m_startColumn; }
-			set { m_startColumn = value; }
-		}
+        public int EndColumn
+        {
+            get { return m_endColumn; }
+            set { m_endColumn = value; }
+        }
 
-		public int EndLine {
-			get { return m_endLine; }
-			set { m_endLine = value; }
-		}
+        public Document Document
+        {
+            get { return m_document; }
+            set { m_document = value; }
+        }
 
-		public int EndColumn {
-			get { return m_endColumn; }
-			set { m_endColumn = value; }
-		}
+        public SequencePoint(Document document)
+        {
+            m_document = document;
+        }
 
-		public Document Document {
-			get { return m_document; }
-			set { m_document = value; }
-		}
-
-		public SequencePoint (Document document)
-		{
-			m_document = document;
-		}
-
-		public SequencePoint (Document doc, int startLine, int startCol, int endLine, int endCol) : this (doc)
-		{
-			m_startLine = startLine;
-			m_startColumn = startCol;
-			m_endLine = endLine;
-			m_endColumn = endCol;
-		}
-	}
+        public SequencePoint(Document doc, int startLine, int startCol, int endLine, int endCol) : this(doc)
+        {
+            m_startLine = startLine;
+            m_startColumn = startCol;
+            m_endLine = endLine;
+            m_endColumn = endCol;
+        }
+    }
 }

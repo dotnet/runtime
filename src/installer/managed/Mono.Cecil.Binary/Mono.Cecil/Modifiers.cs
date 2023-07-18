@@ -26,62 +26,62 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal abstract class ModType : TypeSpecification
+    {
+        TypeReference m_modifierType;
 
-	internal abstract class ModType : TypeSpecification {
+        public TypeReference ModifierType
+        {
+            get { return m_modifierType; }
+            set { m_modifierType = value; }
+        }
 
-		TypeReference m_modifierType;
+        public override string Name
+        {
+            get { return string.Concat(base.Name, Suffix()); }
+        }
 
-		public TypeReference ModifierType {
-			get { return m_modifierType; }
-			set { m_modifierType = value; }
-		}
+        public override string FullName
+        {
+            get { return string.Concat(base.FullName, Suffix()); }
+        }
 
-		public override string Name
-		{
-			get { return string.Concat (base.Name, Suffix ()); }
-		}
+        string Suffix()
+        {
+            return string.Concat(" ", ModifierName, "(", this.ModifierType.FullName, ")");
+        }
 
-		public override string FullName
-		{
-			get { return string.Concat (base.FullName, Suffix ()); }
-		}
+        protected abstract string ModifierName { get; }
 
-		string Suffix ()
-		{
-			return string.Concat (" ", ModifierName, "(", this.ModifierType.FullName, ")");
-		}
+        public ModType(TypeReference elemType, TypeReference modType) : base(elemType)
+        {
+            m_modifierType = modType;
+        }
+    }
 
-		protected abstract string ModifierName {
-			get;
-		}
+    internal sealed class ModifierOptional : ModType
+    {
+        protected override string ModifierName
+        {
+            get { return "modopt"; }
+        }
 
-		public ModType (TypeReference elemType, TypeReference modType) : base (elemType)
-		{
-			m_modifierType = modType;
-		}
-	}
+        public ModifierOptional(TypeReference elemType, TypeReference modType) : base(elemType, modType)
+        {
+        }
+    }
 
-	internal sealed class ModifierOptional : ModType {
+    internal sealed class ModifierRequired : ModType
+    {
+        protected override string ModifierName
+        {
+            get { return "modreq"; }
+        }
 
-		protected override string ModifierName {
-			get { return "modopt"; }
-		}
-
-		public ModifierOptional (TypeReference elemType, TypeReference modType) : base (elemType, modType)
-		{
-		}
-
-	}
-
-	internal sealed class ModifierRequired : ModType {
-
-		protected override string ModifierName {
-			get { return "modreq"; }
-		}
-
-		public ModifierRequired (TypeReference elemType, TypeReference modType) : base (elemType, modType)
-		{
-		}
-	}
+        public ModifierRequired(TypeReference elemType, TypeReference modType) : base(elemType, modType)
+        {
+        }
+    }
 }

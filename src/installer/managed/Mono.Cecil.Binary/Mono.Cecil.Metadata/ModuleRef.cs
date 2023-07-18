@@ -29,50 +29,53 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class ModuleRefTable : IMetadataTable
+    {
+        public const int RId = 0x1a;
 
-	internal sealed class ModuleRefTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x1a;
+        public ModuleRefRow this[int index]
+        {
+            get { return m_rows[index] as ModuleRefRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public ModuleRefRow this [int index] {
-			get { return m_rows [index] as ModuleRefRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal ModuleRefTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitModuleRefTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal ModuleRefTable ()
-		{
-		}
+    internal sealed class ModuleRefRow : IMetadataRow
+    {
+        public uint Name;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitModuleRefTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal ModuleRefRow()
+        {
+        }
 
-	internal sealed class ModuleRefRow : IMetadataRow {
-
-		public uint Name;
-
-		internal ModuleRefRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitModuleRefRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitModuleRefRow(this);
+        }
+    }
 }

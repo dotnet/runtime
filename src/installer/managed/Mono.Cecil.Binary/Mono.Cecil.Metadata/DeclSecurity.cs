@@ -29,54 +29,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using Mono.Cecil;
 
-	using Mono.Cecil;
+    internal sealed class DeclSecurityTable : IMetadataTable
+    {
+        public const int RId = 0x0e;
 
-	internal sealed class DeclSecurityTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x0e;
+        public DeclSecurityRow this[int index]
+        {
+            get { return m_rows[index] as DeclSecurityRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public DeclSecurityRow this [int index] {
-			get { return m_rows [index] as DeclSecurityRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal DeclSecurityTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitDeclSecurityTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal DeclSecurityTable ()
-		{
-		}
+    internal sealed class DeclSecurityRow : IMetadataRow
+    {
+        public SecurityAction Action;
+        public MetadataToken Parent;
+        public uint PermissionSet;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitDeclSecurityTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal DeclSecurityRow()
+        {
+        }
 
-	internal sealed class DeclSecurityRow : IMetadataRow {
-
-		public SecurityAction Action;
-		public MetadataToken Parent;
-		public uint PermissionSet;
-
-		internal DeclSecurityRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitDeclSecurityRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitDeclSecurityRow(this);
+        }
+    }
 }

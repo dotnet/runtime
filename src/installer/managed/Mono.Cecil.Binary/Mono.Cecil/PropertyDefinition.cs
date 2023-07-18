@@ -26,227 +26,253 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Text;
 
-	using System;
-	using System.Text;
+    internal sealed class PropertyDefinition : PropertyReference,
+        IMemberDefinition, ICustomAttributeProvider, IHasConstant
+    {
+        PropertyAttributes m_attributes;
 
-	internal sealed class PropertyDefinition : PropertyReference,
-		IMemberDefinition, ICustomAttributeProvider, IHasConstant {
+        CustomAttributeCollection m_customAttrs;
 
-		PropertyAttributes m_attributes;
+        MethodDefinition m_getMeth;
+        MethodDefinition m_setMeth;
 
-		CustomAttributeCollection m_customAttrs;
+        bool m_hasConstant;
+        object m_const;
 
-		MethodDefinition m_getMeth;
-		MethodDefinition m_setMeth;
+        public PropertyAttributes Attributes
+        {
+            get { return m_attributes; }
+            set { m_attributes = value; }
+        }
 
-		bool m_hasConstant;
-		object m_const;
+        public bool HasCustomAttributes
+        {
+            get { return (m_customAttrs == null) ? false : (m_customAttrs.Count > 0); }
+        }
 
-		public PropertyAttributes Attributes {
-			get { return m_attributes; }
-			set { m_attributes = value; }
-		}
+        public CustomAttributeCollection CustomAttributes
+        {
+            get
+            {
+                if (m_customAttrs == null)
+                    m_customAttrs = new CustomAttributeCollection(this);
 
-		public bool HasCustomAttributes {
-			get { return (m_customAttrs == null) ? false : (m_customAttrs.Count > 0); }
-		}
+                return m_customAttrs;
+            }
+        }
 
-		public CustomAttributeCollection CustomAttributes {
-			get {
-				if (m_customAttrs == null)
-					m_customAttrs = new CustomAttributeCollection (this);
+        public override bool HasParameters
+        {
+            get
+            {
+                if (m_getMeth != null)
+                    return m_getMeth.HasParameters;
+                else if (m_setMeth != null)
+                    return m_setMeth.HasParameters;
+                else if (m_parameters == null)
+                    return false;
+                else
+                    return m_parameters.Count > 0;
+            }
+        }
 
-				return m_customAttrs;
-			}
-		}
+        public override ParameterDefinitionCollection Parameters
+        {
+            get
+            {
+                if (this.GetMethod != null)
+                    return CloneParameterCollection(this.GetMethod.Parameters);
+                else if (this.SetMethod != null)
+                {
+                    ParameterDefinitionCollection parameters =
+                        CloneParameterCollection(this.SetMethod.Parameters);
+                    if (parameters.Count > 0)
+                        parameters.RemoveAt(parameters.Count - 1);
+                    return parameters;
+                }
 
-		public override bool HasParameters {
-			get {
-				if (m_getMeth != null)
-					return m_getMeth.HasParameters;
-				else if (m_setMeth != null)
-					return m_setMeth.HasParameters;
-				else if (m_parameters == null)
-					return false;
-				else
-					return m_parameters.Count > 0;
-			}
-		}
+                if (m_parameters == null)
+                    m_parameters = new ParameterDefinitionCollection(this);
 
-		public override ParameterDefinitionCollection Parameters {
-			get {
-				if (this.GetMethod != null)
-					return CloneParameterCollection (this.GetMethod.Parameters);
-				else if (this.SetMethod != null) {
-					ParameterDefinitionCollection parameters =
-						CloneParameterCollection (this.SetMethod.Parameters);
-					if (parameters.Count > 0)
-						parameters.RemoveAt (parameters.Count - 1);
-					return parameters;
-				}
+                return m_parameters;
+            }
+        }
 
-				if (m_parameters == null)
-					m_parameters = new ParameterDefinitionCollection (this);
+        public MethodDefinition GetMethod
+        {
+            get { return m_getMeth; }
+            set { m_getMeth = value; }
+        }
 
-				return m_parameters;
-			}
-		}
+        public MethodDefinition SetMethod
+        {
+            get { return m_setMeth; }
+            set { m_setMeth = value; }
+        }
 
-		public MethodDefinition GetMethod {
-			get { return m_getMeth; }
-			set { m_getMeth = value; }
-		}
+        ParameterDefinitionCollection CloneParameterCollection(ParameterDefinitionCollection original)
+        {
+            ParameterDefinitionCollection clone = new ParameterDefinitionCollection(
+                original.Container);
+            foreach (ParameterDefinition param in original)
+                clone.Add(param);
+            return clone;
+        }
 
-		public MethodDefinition SetMethod {
-			get { return m_setMeth; }
-			set { m_setMeth = value; }
-		}
+        public bool HasConstant
+        {
+            get { return m_hasConstant; }
+        }
 
-		ParameterDefinitionCollection CloneParameterCollection (ParameterDefinitionCollection original)
-		{
-			ParameterDefinitionCollection clone = new ParameterDefinitionCollection (
-				original.Container);
-			foreach (ParameterDefinition param in original)
-				clone.Add (param);
-			return clone;
-		}
+        public object Constant
+        {
+            get { return m_const; }
+            set
+            {
+                m_hasConstant = true;
+                m_const = value;
+            }
+        }
 
-		public bool HasConstant {
-			get { return m_hasConstant; }
-		}
+        #region PropertyAttributes
 
-		public object Constant {
-			get { return m_const; }
-			set {
-				m_hasConstant = true;
-				m_const = value;
-			}
-		}
+        public bool IsSpecialName
+        {
+            get { return (m_attributes & PropertyAttributes.SpecialName) != 0; }
+            set
+            {
+                if (value)
+                    m_attributes |= PropertyAttributes.SpecialName;
+                else
+                    m_attributes &= ~PropertyAttributes.SpecialName;
+            }
+        }
 
-		#region PropertyAttributes
+        public bool IsRuntimeSpecialName
+        {
+            get { return (m_attributes & PropertyAttributes.RTSpecialName) != 0; }
+            set
+            {
+                if (value)
+                    m_attributes |= PropertyAttributes.RTSpecialName;
+                else
+                    m_attributes &= ~PropertyAttributes.RTSpecialName;
+            }
+        }
 
-		public bool IsSpecialName {
-			get { return (m_attributes & PropertyAttributes.SpecialName) != 0; }
-			set {
-				if (value)
-					m_attributes |= PropertyAttributes.SpecialName;
-				else
-					m_attributes &= ~PropertyAttributes.SpecialName;
-			}
-		}
+        public bool HasDefault
+        {
+            get { return (m_attributes & PropertyAttributes.HasDefault) != 0; }
+            set
+            {
+                if (value)
+                    m_attributes |= PropertyAttributes.HasDefault;
+                else
+                    m_attributes &= ~PropertyAttributes.HasDefault;
+            }
+        }
 
-		public bool IsRuntimeSpecialName {
-			get { return (m_attributes & PropertyAttributes.RTSpecialName) != 0; }
-			set {
-				if (value)
-					m_attributes |= PropertyAttributes.RTSpecialName;
-				else
-					m_attributes &= ~PropertyAttributes.RTSpecialName;
-			}
-		}
+        #endregion
 
-		public bool HasDefault {
-			get { return (m_attributes & PropertyAttributes.HasDefault) != 0; }
-			set {
-				if (value)
-					m_attributes |= PropertyAttributes.HasDefault;
-				else
-					m_attributes &= ~PropertyAttributes.HasDefault;
-			}
-		}
+        public new TypeDefinition DeclaringType
+        {
+            get { return (TypeDefinition)base.DeclaringType; }
+            set { base.DeclaringType = value; }
+        }
 
-		#endregion
+        public PropertyDefinition(string name, TypeReference propertyType, PropertyAttributes attrs) : base(name,
+            propertyType)
+        {
+            m_attributes = attrs;
+        }
 
-		public new TypeDefinition DeclaringType {
-			get { return (TypeDefinition) base.DeclaringType; }
-			set { base.DeclaringType = value; }
-		}
+        public override PropertyDefinition Resolve()
+        {
+            return this;
+        }
 
-		public PropertyDefinition (string name, TypeReference propertyType, PropertyAttributes attrs) : base (name, propertyType)
-		{
-			m_attributes = attrs;
-		}
+        public static MethodDefinition CreateGetMethod(PropertyDefinition prop)
+        {
+            MethodDefinition get = new MethodDefinition(
+                string.Concat("get_", prop.Name), (MethodAttributes)0, prop.PropertyType);
+            prop.GetMethod = get;
+            return get;
+        }
 
-		public override PropertyDefinition Resolve ()
-		{
-			return this;
-		}
+        public static MethodDefinition CreateSetMethod(PropertyDefinition prop)
+        {
+            MethodDefinition set = new MethodDefinition(
+                string.Concat("set_", prop.Name), (MethodAttributes)0, prop.PropertyType);
+            prop.SetMethod = set;
+            return set;
+        }
 
-		public static MethodDefinition CreateGetMethod (PropertyDefinition prop)
-		{
-			MethodDefinition get = new MethodDefinition (
-				string.Concat ("get_", prop.Name), (MethodAttributes) 0, prop.PropertyType);
-			prop.GetMethod = get;
-			return get;
-		}
+        public PropertyDefinition Clone()
+        {
+            return Clone(this, new ImportContext(NullReferenceImporter.Instance, this.DeclaringType));
+        }
 
-		public static MethodDefinition CreateSetMethod (PropertyDefinition prop)
-		{
-			MethodDefinition set = new MethodDefinition (
-				string.Concat ("set_", prop.Name), (MethodAttributes) 0, prop.PropertyType);
-			prop.SetMethod = set;
-			return set;
-		}
+        internal static PropertyDefinition Clone(PropertyDefinition prop, ImportContext context)
+        {
+            PropertyDefinition np = new PropertyDefinition(
+                prop.Name,
+                context.Import(prop.PropertyType),
+                prop.Attributes);
 
-		public PropertyDefinition Clone ()
-		{
-			return Clone (this, new ImportContext (NullReferenceImporter.Instance, this.DeclaringType));
-		}
+            if (prop.HasConstant)
+                np.Constant = prop.Constant;
 
-		internal static PropertyDefinition Clone (PropertyDefinition prop, ImportContext context)
-		{
-			PropertyDefinition np = new PropertyDefinition (
-				prop.Name,
-				context.Import (prop.PropertyType),
-				prop.Attributes);
+            if (context.GenericContext.Type is TypeDefinition)
+            {
+                TypeDefinition type = context.GenericContext.Type as TypeDefinition;
+                if (prop.SetMethod != null)
+                    np.SetMethod = type.Methods.GetMethod(prop.SetMethod.Name, prop.SetMethod.Parameters);
+                if (prop.GetMethod != null)
+                    np.GetMethod = type.Methods.GetMethod(prop.GetMethod.Name, prop.GetMethod.Parameters);
+            }
 
-			if (prop.HasConstant)
-				np.Constant = prop.Constant;
+            foreach (CustomAttribute ca in prop.CustomAttributes)
+                np.CustomAttributes.Add(CustomAttribute.Clone(ca, context));
 
-			if (context.GenericContext.Type is TypeDefinition) {
-				TypeDefinition type = context.GenericContext.Type as TypeDefinition;
-				if (prop.SetMethod != null)
-					np.SetMethod = type.Methods.GetMethod (prop.SetMethod.Name, prop.SetMethod.Parameters);
-				if (prop.GetMethod != null)
-					np.GetMethod = type.Methods.GetMethod (prop.GetMethod.Name, prop.GetMethod.Parameters);
-			}
+            return np;
+        }
 
-			foreach (CustomAttribute ca in prop.CustomAttributes)
-				np.CustomAttributes.Add (CustomAttribute.Clone (ca, context));
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(PropertyType.ToString());
+            sb.Append(' ');
 
-			return np;
-		}
+            if (this.DeclaringType != null)
+            {
+                sb.Append(this.DeclaringType.ToString());
+                sb.Append("::");
+            }
 
-		public override string ToString ()
-		{
-			StringBuilder sb = new StringBuilder ();
-			sb.Append (PropertyType.ToString ());
-			sb.Append (' ');
+            sb.Append(this.Name);
+            sb.Append('(');
+            ParameterDefinitionCollection parameters = this.Parameters;
+            for (int i = 0; i < parameters.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(',');
+                sb.Append(parameters[i].ParameterType.ToString());
+            }
 
-			if (this.DeclaringType != null) {
-				sb.Append (this.DeclaringType.ToString ());
-				sb.Append ("::");
-			}
+            sb.Append(')');
+            return sb.ToString();
+        }
 
-			sb.Append (this.Name);
-			sb.Append ('(');
-			ParameterDefinitionCollection parameters = this.Parameters;
-			for (int i = 0; i < parameters.Count; i++) {
-				if (i > 0)
-					sb.Append (',');
-				sb.Append (parameters [i].ParameterType.ToString ());
-			}
-			sb.Append (')');
-			return sb.ToString ();
-		}
+        public override void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitPropertyDefinition(this);
 
-		public override void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitPropertyDefinition (this);
-
-			this.CustomAttributes.Accept (visitor);
-		}
-	}
+            this.CustomAttributes.Accept(visitor);
+        }
+    }
 }

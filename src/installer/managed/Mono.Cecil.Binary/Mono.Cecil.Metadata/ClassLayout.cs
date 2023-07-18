@@ -29,52 +29,55 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class ClassLayoutTable : IMetadataTable
+    {
+        public const int RId = 0x0f;
 
-	internal sealed class ClassLayoutTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x0f;
+        public ClassLayoutRow this[int index]
+        {
+            get { return m_rows[index] as ClassLayoutRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public ClassLayoutRow this [int index] {
-			get { return m_rows [index] as ClassLayoutRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal ClassLayoutTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitClassLayoutTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal ClassLayoutTable ()
-		{
-		}
+    internal sealed class ClassLayoutRow : IMetadataRow
+    {
+        public ushort PackingSize;
+        public uint ClassSize;
+        public uint Parent;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitClassLayoutTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal ClassLayoutRow()
+        {
+        }
 
-	internal sealed class ClassLayoutRow : IMetadataRow {
-
-		public ushort PackingSize;
-		public uint ClassSize;
-		public uint Parent;
-
-		internal ClassLayoutRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitClassLayoutRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitClassLayoutRow(this);
+        }
+    }
 }

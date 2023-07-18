@@ -26,73 +26,73 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal sealed class ImportAddressTable : IBinaryVisitable
+    {
+        public RVA HintNameTableRVA;
 
-	internal sealed class ImportAddressTable : IBinaryVisitable {
+        internal ImportAddressTable()
+        {
+        }
 
-		public RVA HintNameTableRVA;
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitImportAddressTable(this);
+        }
+    }
 
-		internal ImportAddressTable ()
-		{
-		}
+    internal sealed class ImportTable : IBinaryVisitable
+    {
+        public RVA ImportLookupTable;
+        public uint DateTimeStamp;
+        public uint ForwardChain;
+        public RVA Name;
+        public RVA ImportAddressTable;
 
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitImportAddressTable (this);
-		}
-	}
+        internal ImportTable()
+        {
+        }
 
-	internal sealed class ImportTable : IBinaryVisitable {
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitImportTable(this);
+        }
+    }
 
-		public RVA ImportLookupTable;
-		public uint DateTimeStamp;
-		public uint ForwardChain;
-		public RVA Name;
-		public RVA ImportAddressTable;
+    internal sealed class ImportLookupTable : IBinaryVisitable
+    {
+        public RVA HintNameRVA;
 
-		internal ImportTable ()
-		{
-		}
+        internal ImportLookupTable()
+        {
+        }
 
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitImportTable (this);
-		}
-	}
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitImportLookupTable(this);
+        }
+    }
 
-	internal sealed class ImportLookupTable : IBinaryVisitable {
+    internal sealed class HintNameTable : IBinaryVisitable
+    {
+        public const string RuntimeMainExe = "_CorExeMain";
+        public const string RuntimeMainDll = "_CorDllMain";
+        public const string RuntimeCorEE = "mscoree.dll";
 
-		public RVA HintNameRVA;
+        public ushort Hint;
+        public string RuntimeMain;
+        public string RuntimeLibrary;
+        public ushort EntryPoint;
+        public RVA RVA;
 
-		internal ImportLookupTable ()
-		{
-		}
+        internal HintNameTable()
+        {
+        }
 
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitImportLookupTable (this);
-		}
-	}
-
-	internal sealed class HintNameTable : IBinaryVisitable {
-
-		public const string RuntimeMainExe = "_CorExeMain";
-		public const string RuntimeMainDll = "_CorDllMain";
-		public const string RuntimeCorEE = "mscoree.dll";
-
-		public ushort Hint;
-		public string RuntimeMain;
-		public string RuntimeLibrary;
-		public ushort EntryPoint;
-		public RVA RVA;
-
-		internal HintNameTable ()
-		{
-		}
-
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitHintNameTable (this);
-		}
-	}
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitHintNameTable(this);
+        }
+    }
 }

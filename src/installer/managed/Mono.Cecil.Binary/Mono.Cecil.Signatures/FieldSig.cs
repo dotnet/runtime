@@ -26,25 +26,25 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    internal sealed class FieldSig : Signature
+    {
+        public bool Field;
+        public CustomMod[] CustomMods;
+        public SigType Type;
 
-	internal sealed class FieldSig : Signature {
+        public FieldSig() : base()
+        {
+        }
 
-		public bool Field;
-		public CustomMod [] CustomMods;
-		public SigType Type;
+        public FieldSig(uint blobIndex) : base(blobIndex)
+        {
+        }
 
-		public FieldSig () : base ()
-		{
-		}
-
-		public FieldSig (uint blobIndex) : base (blobIndex)
-		{
-		}
-
-		public override void Accept (ISignatureVisitor visitor)
-		{
-			visitor.VisitFieldSig (this);
-		}
-	}
+        public override void Accept(ISignatureVisitor visitor)
+        {
+            visitor.VisitFieldSig(this);
+        }
+    }
 }

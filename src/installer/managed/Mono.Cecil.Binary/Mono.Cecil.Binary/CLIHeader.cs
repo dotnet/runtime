@@ -26,41 +26,41 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal sealed class CLIHeader : IHeader, IBinaryVisitable
+    {
+        public uint Cb;
+        public ushort MajorRuntimeVersion;
+        public ushort MinorRuntimeVersion;
+        public DataDirectory Metadata;
+        public RuntimeImage Flags;
+        public uint EntryPointToken;
+        public DataDirectory Resources;
+        public DataDirectory StrongNameSignature;
+        public DataDirectory CodeManagerTable;
+        public DataDirectory VTableFixups;
+        public DataDirectory ExportAddressTableJumps;
+        public DataDirectory ManagedNativeHeader;
 
-	internal sealed class CLIHeader : IHeader, IBinaryVisitable {
+        public byte[] ImageHash;
 
-		public uint Cb;
-		public ushort MajorRuntimeVersion;
-		public ushort MinorRuntimeVersion;
-		public DataDirectory Metadata;
-		public RuntimeImage Flags;
-		public uint EntryPointToken;
-		public DataDirectory Resources;
-		public DataDirectory StrongNameSignature;
-		public DataDirectory CodeManagerTable;
-		public DataDirectory VTableFixups;
-		public DataDirectory ExportAddressTableJumps;
-		public DataDirectory ManagedNativeHeader;
+        internal CLIHeader()
+        {
+        }
 
-		public byte [] ImageHash;
+        public void SetDefaultValues()
+        {
+            Cb = 0x48;
+            Flags = RuntimeImage.ILOnly;
+            CodeManagerTable = DataDirectory.Zero;
+            ExportAddressTableJumps = DataDirectory.Zero;
+            ManagedNativeHeader = DataDirectory.Zero;
+        }
 
-		internal CLIHeader ()
-		{
-		}
-
-		public void SetDefaultValues ()
-		{
-			Cb = 0x48;
-			Flags = RuntimeImage.ILOnly;
-			CodeManagerTable = DataDirectory.Zero;
-			ExportAddressTableJumps = DataDirectory.Zero;
-			ManagedNativeHeader = DataDirectory.Zero;
-		}
-
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitCLIHeader (this);
-		}
-	}
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitCLIHeader(this);
+        }
+    }
 }

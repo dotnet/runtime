@@ -26,48 +26,49 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using System;
+    using System.Collections;
 
-	using System;
-	using System.Collections;
+    internal class TablesHeap : MetadataHeap
+    {
+        public uint Reserved;
+        public byte MajorVersion;
+        public byte MinorVersion;
+        public byte HeapSizes;
+        public byte Reserved2;
+        public long Valid;
+        public long Sorted;
 
-	internal class TablesHeap : MetadataHeap {
+        TableCollection m_tables;
 
-		public uint Reserved;
-		public byte MajorVersion;
-		public byte MinorVersion;
-		public byte HeapSizes;
-		public byte Reserved2;
-		public long Valid;
-		public long Sorted;
+        public const int MaxTableCount = 45;
 
-		TableCollection m_tables;
+        public TableCollection Tables
+        {
+            get { return m_tables; }
+            set { m_tables = value; }
+        }
 
-		public const int MaxTableCount = 45;
+        public IMetadataTable this[int id]
+        {
+            get { return m_tables[id]; }
+            set { m_tables[id] = value; }
+        }
 
-		public TableCollection Tables {
-			get { return m_tables; }
-			set { m_tables = value; }
-		}
+        internal TablesHeap(MetadataStream stream) : base(stream, MetadataStream.Tables)
+        {
+        }
 
-		public IMetadataTable this [int id]
-		{
-			get { return m_tables [id]; }
-			set { m_tables [id] = value; }
-		}
+        public bool HasTable(int id)
+        {
+            return (Valid & (1L << id)) != 0;
+        }
 
-		internal TablesHeap (MetadataStream stream) : base(stream, MetadataStream.Tables)
-		{
-		}
-
-		public bool HasTable (int id)
-		{
-			return (Valid & (1L << id)) != 0;
-		}
-
-		public override void Accept (IMetadataVisitor visitor)
-		{
-			visitor.VisitTablesHeap (this);
-		}
-	}
+        public override void Accept(IMetadataVisitor visitor)
+        {
+            visitor.VisitTablesHeap(this);
+        }
+    }
 }

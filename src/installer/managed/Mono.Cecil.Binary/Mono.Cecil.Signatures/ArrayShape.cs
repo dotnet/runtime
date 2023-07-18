@@ -26,18 +26,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    internal sealed class ArrayShape
+    {
+        public int Rank;
+        public int NumSizes;
+        public int[] Sizes;
+        public int NumLoBounds;
+        public int[] LoBounds;
 
-	internal sealed class ArrayShape {
-
-		public int Rank;
-		public int NumSizes;
-		public int [] Sizes;
-		public int NumLoBounds;
-		public int [] LoBounds;
-
-		public ArrayShape ()
-		{
-		}
-	}
+        public ArrayShape()
+        {
+        }
+    }
 }

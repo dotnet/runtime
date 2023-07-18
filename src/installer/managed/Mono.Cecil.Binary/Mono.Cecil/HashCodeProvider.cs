@@ -26,21 +26,21 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Collections;
 
-	using System.Collections;
+    internal sealed class HashCodeProvider : IHashCodeProvider
+    {
+        public static readonly HashCodeProvider Instance = new HashCodeProvider();
 
-	internal sealed class HashCodeProvider : IHashCodeProvider {
+        HashCodeProvider()
+        {
+        }
 
-		public static readonly HashCodeProvider Instance = new HashCodeProvider ();
-
-		HashCodeProvider ()
-		{
-		}
-
-		public int GetHashCode (object o)
-		{
-			return o.GetHashCode ();
-		}
-	}
+        public int GetHashCode(object o)
+        {
+            return o.GetHashCode();
+        }
+    }
 }

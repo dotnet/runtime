@@ -29,52 +29,55 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class MethodImplTable : IMetadataTable
+    {
+        public const int RId = 0x19;
 
-	internal sealed class MethodImplTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x19;
+        public MethodImplRow this[int index]
+        {
+            get { return m_rows[index] as MethodImplRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public MethodImplRow this [int index] {
-			get { return m_rows [index] as MethodImplRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal MethodImplTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitMethodImplTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal MethodImplTable ()
-		{
-		}
+    internal sealed class MethodImplRow : IMetadataRow
+    {
+        public uint Class;
+        public MetadataToken MethodBody;
+        public MetadataToken MethodDeclaration;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitMethodImplTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal MethodImplRow()
+        {
+        }
 
-	internal sealed class MethodImplRow : IMetadataRow {
-
-		public uint Class;
-		public MetadataToken MethodBody;
-		public MetadataToken MethodDeclaration;
-
-		internal MethodImplRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitMethodImplRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitMethodImplRow(this);
+        }
+    }
 }

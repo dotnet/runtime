@@ -29,164 +29,171 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using System.Collections.Specialized;
+    using Mono.Cecil.Cil;
+    using Hcp = Mono.Cecil.HashCodeProvider;
+    using Cmp = System.Collections.Comparer;
 
-	using System;
-	using System.Collections;
-	using System.Collections.Specialized;
+    internal sealed class ExternTypeCollection : NameObjectCollectionBase, IList, IReflectionVisitable
+    {
+        ModuleDefinition m_container;
 
-	using Mono.Cecil.Cil;
+        public TypeReference this[int index]
+        {
+            get { return this.BaseGet(index) as TypeReference; }
+            set { this.BaseSet(index, value); }
+        }
 
-	using Hcp = Mono.Cecil.HashCodeProvider;
-	using Cmp = System.Collections.Comparer;
+        public TypeReference this[string fullName]
+        {
+            get { return this.BaseGet(fullName) as TypeReference; }
+            set { this.BaseSet(fullName, value); }
+        }
 
-	internal sealed class ExternTypeCollection : NameObjectCollectionBase, IList, IReflectionVisitable  {
+        public ModuleDefinition Container
+        {
+            get { return m_container; }
+        }
 
-		ModuleDefinition m_container;
+        public bool IsSynchronized
+        {
+            get { return false; }
+        }
 
-		public TypeReference this [int index] {
-			get { return this.BaseGet (index) as TypeReference; }
-			set { this.BaseSet (index, value); }
-		}
+        public object SyncRoot
+        {
+            get { return this; }
+        }
 
-		public TypeReference this [string fullName] {
-			get { return this.BaseGet (fullName) as TypeReference; }
-			set { this.BaseSet (fullName, value); }
-		}
+        bool IList.IsReadOnly
+        {
+            get { return false; }
+        }
 
-		public ModuleDefinition Container {
-			get { return m_container; }
-		}
+        bool IList.IsFixedSize
+        {
+            get { return false; }
+        }
 
-		public bool IsSynchronized {
-			get { return false; }
-		}
+        object IList.this[int index]
+        {
+            get { return BaseGet(index); }
+            set
+            {
+                Check(value);
+                BaseSet(index, value);
+            }
+        }
 
-		public object SyncRoot {
-			get { return this; }
-		}
+        public ExternTypeCollection(ModuleDefinition container) :
+            base(Hcp.Instance, Cmp.Default)
+        {
+            m_container = container;
+        }
 
-		bool IList.IsReadOnly {
-			get { return false; }
-		}
+        public void Add(TypeReference value)
+        {
+            if (value == null)
+                throw new ArgumentNullException("value");
 
-		bool IList.IsFixedSize {
-			get { return false; }
-		}
+            this.BaseAdd(value.FullName, value);
+        }
 
-		object IList.this [int index] {
-			get { return BaseGet (index); }
-			set {
-				Check (value);
-				BaseSet (index, value);
-			}
-		}
+        public void Clear()
+        {
+            this.BaseClear();
+        }
 
-		public ExternTypeCollection (ModuleDefinition container) :
-			base (Hcp.Instance, Cmp.Default)
-		{
-			m_container = container;
-		}
+        public bool Contains(TypeReference value)
+        {
+            return Contains(value.FullName);
+        }
 
-		public void Add (TypeReference value)
-		{
-			if (value == null)
-				throw new ArgumentNullException ("value");
+        public bool Contains(string fullName)
+        {
+            return this.BaseGet(fullName) != null;
+        }
 
-			this.BaseAdd (value.FullName, value);
-		}
+        public int IndexOf(TypeReference value)
+        {
+            string[] keys = this.BaseGetAllKeys();
+            return Array.IndexOf(keys, value.FullName, 0, keys.Length);
+        }
 
-		public void Clear ()
-		{
-			this.BaseClear ();
-		}
+        public void Remove(TypeReference value)
+        {
+            this.BaseRemove(value.FullName);
+        }
 
-		public bool Contains (TypeReference value)
-		{
-			return Contains (value.FullName);
-		}
+        public void RemoveAt(int index)
+        {
+            TypeReference item = this[index];
+            Remove(item);
+        }
 
-		public bool Contains (string fullName)
-		{
-			return this.BaseGet (fullName) != null;
-		}
+        public void CopyTo(Array ary, int index)
+        {
+            this.BaseGetAllValues().CopyTo(ary, index);
+        }
 
-		public int IndexOf (TypeReference value)
-		{
-			string [] keys = this.BaseGetAllKeys ();
-			return Array.IndexOf (keys, value.FullName, 0, keys.Length);
-		}
+        public new IEnumerator GetEnumerator()
+        {
+            return this.BaseGetAllValues().GetEnumerator();
+        }
 
-		public void Remove (TypeReference value)
-		{
-			this.BaseRemove (value.FullName);
-		}
-
-		public void RemoveAt (int index)
-		{
-			TypeReference item = this [index];
-			Remove (item);
-		}
-
-		public void CopyTo (Array ary, int index)
-		{
-			this.BaseGetAllValues ().CopyTo (ary, index);
-		}
-
-		public new IEnumerator GetEnumerator ()
-		{
-			return this.BaseGetAllValues ().GetEnumerator ();
-		}
-
-		public void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitExternTypeCollection (this);
-		}
+        public void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitExternTypeCollection(this);
+        }
 
 #if CF_1_0 || CF_2_0
 		internal object [] BaseGetAllValues ()
 		{
 			object [] values = new object [this.Count];
-			for (int i=0; i < values.Length; ++i) {
+			for (int i = 0; i < values.Length; ++i) {
 				values [i] = this.BaseGet (i);
 			}
 			return values;
 		}
 #endif
 
-		void Check (object value)
-		{
-			if (!(value is TypeReference))
-				throw new ArgumentException ();
-		}
+        void Check(object value)
+        {
+            if (!(value is TypeReference))
+                throw new ArgumentException();
+        }
 
-		int IList.Add (object value)
-		{
-			Check (value);
-			Add (value as TypeReference);
-			return 0;
-		}
+        int IList.Add(object value)
+        {
+            Check(value);
+            Add(value as TypeReference);
+            return 0;
+        }
 
-		bool IList.Contains (object value)
-		{
-			Check (value);
-			return Contains (value as TypeReference);
-		}
+        bool IList.Contains(object value)
+        {
+            Check(value);
+            return Contains(value as TypeReference);
+        }
 
-		int IList.IndexOf (object value)
-		{
-			throw new NotSupportedException ();
-		}
+        int IList.IndexOf(object value)
+        {
+            throw new NotSupportedException();
+        }
 
-		void IList.Insert (int index, object value)
-		{
-			throw new NotSupportedException ();
-		}
+        void IList.Insert(int index, object value)
+        {
+            throw new NotSupportedException();
+        }
 
-		void IList.Remove (object value)
-		{
-			Check (value);
-			Remove (value as TypeReference);
-		}
-	}
+        void IList.Remove(object value)
+        {
+            Check(value);
+            Remove(value as TypeReference);
+        }
+    }
 }

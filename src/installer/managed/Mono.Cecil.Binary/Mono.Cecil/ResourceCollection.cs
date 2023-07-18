@@ -29,65 +29,66 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class ResourceCollection : CollectionBase, IReflectionStructureVisitable
+    {
+        ModuleDefinition m_container;
 
-	using Mono.Cecil.Cil;
+        public Resource this[int index]
+        {
+            get { return List[index] as Resource; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class ResourceCollection : CollectionBase, IReflectionStructureVisitable {
+        public ModuleDefinition Container
+        {
+            get { return m_container; }
+        }
 
-		ModuleDefinition m_container;
+        public ResourceCollection(ModuleDefinition container)
+        {
+            m_container = container;
+        }
 
-		public Resource this [int index] {
-			get { return List [index] as Resource; }
-			set { List [index] = value; }
-		}
+        public void Add(Resource value)
+        {
+            List.Add(value);
+        }
 
-		public ModuleDefinition Container {
-			get { return m_container; }
-		}
+        public bool Contains(Resource value)
+        {
+            return List.Contains(value);
+        }
 
-		public ResourceCollection (ModuleDefinition container)
-		{
-			m_container = container;
-		}
+        public int IndexOf(Resource value)
+        {
+            return List.IndexOf(value);
+        }
 
-		public void Add (Resource value)
-		{
-			List.Add (value);
-		}
+        public void Insert(int index, Resource value)
+        {
+            List.Insert(index, value);
+        }
 
-		public bool Contains (Resource value)
-		{
-			return List.Contains (value);
-		}
+        public void Remove(Resource value)
+        {
+            List.Remove(value);
+        }
 
-		public int IndexOf (Resource value)
-		{
-			return List.IndexOf (value);
-		}
+        protected override void OnValidate(object o)
+        {
+            if (!(o is Resource))
+                throw new ArgumentException("Must be of type " + typeof(Resource).FullName);
+        }
 
-		public void Insert (int index, Resource value)
-		{
-			List.Insert (index, value);
-		}
-
-		public void Remove (Resource value)
-		{
-			List.Remove (value);
-		}
-
-		protected override void OnValidate (object o)
-		{
-			if (! (o is Resource))
-				throw new ArgumentException ("Must be of type " + typeof (Resource).FullName);
-		}
-
-		public void Accept (IReflectionStructureVisitor visitor)
-		{
-			visitor.VisitResourceCollection (this);
-		}
-	}
+        public void Accept(IReflectionStructureVisitor visitor)
+        {
+            visitor.VisitResourceCollection(this);
+        }
+    }
 }

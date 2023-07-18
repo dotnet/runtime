@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class FieldMarshalTable : IMetadataTable
+    {
+        public const int RId = 0x0d;
 
-	internal sealed class FieldMarshalTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x0d;
+        public FieldMarshalRow this[int index]
+        {
+            get { return m_rows[index] as FieldMarshalRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public FieldMarshalRow this [int index] {
-			get { return m_rows [index] as FieldMarshalRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal FieldMarshalTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitFieldMarshalTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal FieldMarshalTable ()
-		{
-		}
+    internal sealed class FieldMarshalRow : IMetadataRow
+    {
+        public MetadataToken Parent;
+        public uint NativeType;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitFieldMarshalTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal FieldMarshalRow()
+        {
+        }
 
-	internal sealed class FieldMarshalRow : IMetadataRow {
-
-		public MetadataToken Parent;
-		public uint NativeType;
-
-		internal FieldMarshalRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitFieldMarshalRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitFieldMarshalRow(this);
+        }
+    }
 }

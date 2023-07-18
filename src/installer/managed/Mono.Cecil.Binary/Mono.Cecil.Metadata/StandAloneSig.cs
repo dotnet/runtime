@@ -29,50 +29,53 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class StandAloneSigTable : IMetadataTable
+    {
+        public const int RId = 0x11;
 
-	internal sealed class StandAloneSigTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x11;
+        public StandAloneSigRow this[int index]
+        {
+            get { return m_rows[index] as StandAloneSigRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public StandAloneSigRow this [int index] {
-			get { return m_rows [index] as StandAloneSigRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal StandAloneSigTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitStandAloneSigTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal StandAloneSigTable ()
-		{
-		}
+    internal sealed class StandAloneSigRow : IMetadataRow
+    {
+        public uint Signature;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitStandAloneSigTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal StandAloneSigRow()
+        {
+        }
 
-	internal sealed class StandAloneSigRow : IMetadataRow {
-
-		public uint Signature;
-
-		internal StandAloneSigRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitStandAloneSigRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitStandAloneSigRow(this);
+        }
+    }
 }

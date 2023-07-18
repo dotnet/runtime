@@ -26,28 +26,28 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    internal abstract class BaseSignatureVisitor : ISignatureVisitor
+    {
+        public virtual void VisitMethodDefSig(MethodDefSig methodDef)
+        {
+        }
 
-	internal abstract class BaseSignatureVisitor : ISignatureVisitor {
+        public virtual void VisitMethodRefSig(MethodRefSig methodRef)
+        {
+        }
 
-		public virtual void VisitMethodDefSig (MethodDefSig methodDef)
-		{
-		}
+        public virtual void VisitFieldSig(FieldSig field)
+        {
+        }
 
-		public virtual void VisitMethodRefSig (MethodRefSig methodRef)
-		{
-		}
+        public virtual void VisitPropertySig(PropertySig property)
+        {
+        }
 
-		public virtual void VisitFieldSig (FieldSig field)
-		{
-		}
-
-		public virtual void VisitPropertySig (PropertySig property)
-		{
-		}
-
-		public virtual void VisitLocalVarSig (LocalVarSig localvar)
-		{
-		}
-	}
+        public virtual void VisitLocalVarSig(LocalVarSig localvar)
+        {
+        }
+    }
 }

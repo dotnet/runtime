@@ -26,17 +26,17 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using Mono.Cecil.Metadata;
 
-	using Mono.Cecil.Metadata;
+    internal sealed class MVAR : SigType
+    {
+        public int Index;
 
-	internal sealed class MVAR : SigType {
-
-		public int Index;
-
-		public MVAR (int index) : base (ElementType.MVar)
-		{
-			this.Index = index;
-		}
-	}
+        public MVAR(int index) : base(ElementType.MVar)
+        {
+            this.Index = index;
+        }
+    }
 }

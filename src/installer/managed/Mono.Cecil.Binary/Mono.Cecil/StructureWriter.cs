@@ -26,223 +26,227 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.IO;
+    using Mono.Cecil.Binary;
+    using Mono.Cecil.Metadata;
 
-	using System;
-	using System.IO;
+    internal sealed class StructureWriter : BaseStructureVisitor
+    {
+        MetadataWriter m_mdWriter;
+        MetadataTableWriter m_tableWriter;
+        MetadataRowWriter m_rowWriter;
 
-	using Mono.Cecil.Binary;
-	using Mono.Cecil.Metadata;
+        AssemblyDefinition m_asm;
+        BinaryWriter m_binaryWriter;
 
-	internal sealed class StructureWriter : BaseStructureVisitor {
+        public AssemblyDefinition Assembly
+        {
+            get { return m_asm; }
+        }
 
-		MetadataWriter m_mdWriter;
-		MetadataTableWriter m_tableWriter;
-		MetadataRowWriter m_rowWriter;
+        static void ResetImage(ModuleDefinition mod)
+        {
+            Image ni = Image.CreateImage();
+            ni.Accept(new CopyImageVisitor(mod.Image));
+            mod.Image = ni;
+        }
 
-		AssemblyDefinition m_asm;
-		BinaryWriter m_binaryWriter;
+        public StructureWriter(AssemblyDefinition asm, BinaryWriter writer)
+        {
+            m_asm = asm;
+            m_binaryWriter = writer;
+        }
 
-		public AssemblyDefinition Assembly {
-			get { return m_asm; }
-		}
+        public BinaryWriter GetWriter()
+        {
+            return m_binaryWriter;
+        }
 
-		static void ResetImage (ModuleDefinition mod)
-		{
-			Image ni = Image.CreateImage ();
-			ni.Accept (new CopyImageVisitor (mod.Image));
-			mod.Image = ni;
-		}
+        public override void VisitAssemblyDefinition(AssemblyDefinition asm)
+        {
+            if (asm.Kind != AssemblyKind.Dll && asm.EntryPoint == null)
+                throw new ReflectionException("Assembly does not have an entry point defined");
 
-		public StructureWriter (AssemblyDefinition asm, BinaryWriter writer)
-		{
-			m_asm = asm;
-			m_binaryWriter = writer;
-		}
+            if ((asm.MainModule.Image.CLIHeader.Flags & RuntimeImage.ILOnly) == 0)
+                throw new NotSupportedException("Can not write a mixed mode assembly");
 
-		public BinaryWriter GetWriter ()
-		{
-			return m_binaryWriter;
-		}
+            foreach (ModuleDefinition module in asm.Modules)
+                if (module.Image.CLIHeader.Metadata.VirtualAddress != RVA.Zero)
+                    ResetImage(module);
 
-		public override void VisitAssemblyDefinition (AssemblyDefinition asm)
-		{
-			if (asm.Kind != AssemblyKind.Dll && asm.EntryPoint == null)
-				throw new ReflectionException ("Assembly does not have an entry point defined");
+            asm.MetadataToken = new MetadataToken(TokenType.Assembly, 1);
+            ReflectionWriter rw = asm.MainModule.Controller.Writer;
+            rw.StructureWriter = this;
 
-			if ((asm.MainModule.Image.CLIHeader.Flags & RuntimeImage.ILOnly) == 0)
-				throw new NotSupportedException ("Can not write a mixed mode assembly");
+            m_mdWriter = rw.MetadataWriter;
+            m_tableWriter = rw.MetadataTableWriter;
+            m_rowWriter = rw.MetadataRowWriter;
 
-			foreach (ModuleDefinition module in asm.Modules)
-				if (module.Image.CLIHeader.Metadata.VirtualAddress != RVA.Zero)
-					ResetImage (module);
+            if (!rw.SaveSymbols)
+                return;
 
-			asm.MetadataToken = new MetadataToken (TokenType.Assembly, 1);
-			ReflectionWriter rw = asm.MainModule.Controller.Writer;
-			rw.StructureWriter = this;
+            FileStream fs = m_binaryWriter.BaseStream as FileStream;
+            if (fs != null)
+                rw.OutputFile = fs.Name;
+        }
 
-			m_mdWriter = rw.MetadataWriter;
-			m_tableWriter = rw.MetadataTableWriter;
-			m_rowWriter = rw.MetadataRowWriter;
+        public override void VisitAssemblyNameDefinition(AssemblyNameDefinition name)
+        {
+            AssemblyTable asmTable = m_tableWriter.GetAssemblyTable();
 
-			if (!rw.SaveSymbols)
-				return;
+            if (name.PublicKey != null && name.PublicKey.Length > 0)
+                name.Flags |= AssemblyFlags.PublicKey;
 
-			FileStream fs = m_binaryWriter.BaseStream as FileStream;
-			if (fs != null)
-				rw.OutputFile = fs.Name;
-		}
+            AssemblyRow asmRow = m_rowWriter.CreateAssemblyRow(
+                name.HashAlgorithm,
+                (ushort)name.Version.Major,
+                (ushort)name.Version.Minor,
+                (ushort)name.Version.Build,
+                (ushort)name.Version.Revision,
+                name.Flags,
+                m_mdWriter.AddBlob(name.PublicKey),
+                m_mdWriter.AddString(name.Name),
+                m_mdWriter.AddString(name.Culture));
 
-		public override void VisitAssemblyNameDefinition (AssemblyNameDefinition name)
-		{
-			AssemblyTable asmTable = m_tableWriter.GetAssemblyTable ();
+            asmTable.Rows.Add(asmRow);
+        }
 
-			if (name.PublicKey != null && name.PublicKey.Length > 0)
-				name.Flags |= AssemblyFlags.PublicKey;
+        public override void VisitAssemblyNameReferenceCollection(AssemblyNameReferenceCollection references)
+        {
+            foreach (AssemblyNameReference name in references)
+                VisitAssemblyNameReference(name);
+        }
 
-			AssemblyRow asmRow = m_rowWriter.CreateAssemblyRow (
-				name.HashAlgorithm,
-				(ushort) name.Version.Major,
-				(ushort) name.Version.Minor,
-				(ushort) name.Version.Build,
-				(ushort) name.Version.Revision,
-				name.Flags,
-				m_mdWriter.AddBlob (name.PublicKey),
-				m_mdWriter.AddString (name.Name),
-				m_mdWriter.AddString (name.Culture));
+        public override void VisitAssemblyNameReference(AssemblyNameReference name)
+        {
+            byte[] pkortoken;
+            if (name.PublicKey != null && name.PublicKey.Length > 0)
+                pkortoken = name.PublicKey;
+            else if (name.PublicKeyToken != null && name.PublicKeyToken.Length > 0)
+                pkortoken = name.PublicKeyToken;
+            else
+                pkortoken = new byte [0];
 
-			asmTable.Rows.Add (asmRow);
-		}
+            AssemblyRefTable arTable = m_tableWriter.GetAssemblyRefTable();
+            AssemblyRefRow arRow = m_rowWriter.CreateAssemblyRefRow(
+                (ushort)name.Version.Major,
+                (ushort)name.Version.Minor,
+                (ushort)name.Version.Build,
+                (ushort)name.Version.Revision,
+                name.Flags,
+                m_mdWriter.AddBlob(pkortoken),
+                m_mdWriter.AddString(name.Name),
+                m_mdWriter.AddString(name.Culture),
+                m_mdWriter.AddBlob(name.Hash));
 
-		public override void VisitAssemblyNameReferenceCollection (AssemblyNameReferenceCollection references)
-		{
-			foreach (AssemblyNameReference name in references)
-				VisitAssemblyNameReference (name);
-		}
+            arTable.Rows.Add(arRow);
+        }
 
-		public override void VisitAssemblyNameReference (AssemblyNameReference name)
-		{
-			byte [] pkortoken;
-			if (name.PublicKey != null && name.PublicKey.Length > 0)
-				pkortoken = name.PublicKey;
-			else if (name.PublicKeyToken != null && name.PublicKeyToken.Length > 0)
-				pkortoken = name.PublicKeyToken;
-			else
-				pkortoken = new byte [0];
+        public override void VisitResourceCollection(ResourceCollection resources)
+        {
+            VisitCollection(resources);
+        }
 
-			AssemblyRefTable arTable = m_tableWriter.GetAssemblyRefTable ();
-			AssemblyRefRow arRow = m_rowWriter.CreateAssemblyRefRow (
-				(ushort) name.Version.Major,
-				(ushort) name.Version.Minor,
-				(ushort) name.Version.Build,
-				(ushort) name.Version.Revision,
-				name.Flags,
-				m_mdWriter.AddBlob (pkortoken),
-				m_mdWriter.AddString (name.Name),
-				m_mdWriter.AddString (name.Culture),
-				m_mdWriter.AddBlob (name.Hash));
+        public override void VisitEmbeddedResource(EmbeddedResource res)
+        {
+            AddManifestResource(
+                m_mdWriter.AddResource(res.Data),
+                res.Name, res.Flags,
+                new MetadataToken(TokenType.ManifestResource, 0));
+        }
 
-			arTable.Rows.Add (arRow);
-		}
+        public override void VisitLinkedResource(LinkedResource res)
+        {
+            FileTable fTable = m_tableWriter.GetFileTable();
+            FileRow fRow = m_rowWriter.CreateFileRow(
+                Mono.Cecil.FileAttributes.ContainsNoMetaData,
+                m_mdWriter.AddString(res.File),
+                m_mdWriter.AddBlob(res.Hash));
 
-		public override void VisitResourceCollection (ResourceCollection resources)
-		{
-			VisitCollection (resources);
-		}
+            fTable.Rows.Add(fRow);
 
-		public override void VisitEmbeddedResource (EmbeddedResource res)
-		{
-			AddManifestResource (
-				m_mdWriter.AddResource (res.Data),
-				res.Name, res.Flags,
-				new MetadataToken (TokenType.ManifestResource, 0));
-		}
+            AddManifestResource(
+                0, res.Name, res.Flags,
+                new MetadataToken(TokenType.File, (uint)fTable.Rows.IndexOf(fRow) + 1));
+        }
 
-		public override void VisitLinkedResource (LinkedResource res)
-		{
-			FileTable fTable = m_tableWriter.GetFileTable ();
-			FileRow fRow = m_rowWriter.CreateFileRow (
-				Mono.Cecil.FileAttributes.ContainsNoMetaData,
-				m_mdWriter.AddString (res.File),
-				m_mdWriter.AddBlob (res.Hash));
+        public override void VisitAssemblyLinkedResource(AssemblyLinkedResource res)
+        {
+            MetadataToken impl = new MetadataToken(TokenType.AssemblyRef,
+                (uint)m_asm.MainModule.AssemblyReferences.IndexOf(res.Assembly) + 1);
 
-			fTable.Rows.Add (fRow);
+            AddManifestResource(0, res.Name, res.Flags, impl);
+        }
 
-			AddManifestResource (
-				0, res.Name, res.Flags,
-				new MetadataToken (TokenType.File, (uint) fTable.Rows.IndexOf (fRow) + 1));
-		}
+        void AddManifestResource(uint offset, string name, ManifestResourceAttributes flags, MetadataToken impl)
+        {
+            ManifestResourceTable mrTable = m_tableWriter.GetManifestResourceTable();
+            ManifestResourceRow mrRow = m_rowWriter.CreateManifestResourceRow(
+                offset,
+                flags,
+                m_mdWriter.AddString(name),
+                impl);
 
-		public override void VisitAssemblyLinkedResource (AssemblyLinkedResource res)
-		{
-			MetadataToken impl = new MetadataToken (TokenType.AssemblyRef,
-				(uint) m_asm.MainModule.AssemblyReferences.IndexOf (res.Assembly) + 1);
+            mrTable.Rows.Add(mrRow);
+        }
 
-			AddManifestResource (0, res.Name, res.Flags, impl);
-		}
+        public override void VisitModuleDefinitionCollection(ModuleDefinitionCollection modules)
+        {
+            VisitCollection(modules);
+        }
 
-		void AddManifestResource (uint offset, string name, ManifestResourceAttributes flags, MetadataToken impl)
-		{
-			ManifestResourceTable mrTable = m_tableWriter.GetManifestResourceTable ();
-			ManifestResourceRow mrRow = m_rowWriter.CreateManifestResourceRow (
-				offset,
-				flags,
-				m_mdWriter.AddString (name),
-				impl);
+        public override void VisitModuleDefinition(ModuleDefinition module)
+        {
+            if (module.Main)
+            {
+                ModuleTable modTable = m_tableWriter.GetModuleTable();
+                ModuleRow modRow = m_rowWriter.CreateModuleRow(
+                    0,
+                    m_mdWriter.AddString(module.Name),
+                    m_mdWriter.AddGuid(module.Mvid),
+                    0,
+                    0);
 
-			mrTable.Rows.Add (mrRow);
-		}
+                modTable.Rows.Add(modRow);
+                module.MetadataToken = new MetadataToken(TokenType.Module, 1);
+            }
+            else
+            {
+                // multiple module assemblies
+                throw new NotImplementedException();
+            }
+        }
 
-		public override void VisitModuleDefinitionCollection (ModuleDefinitionCollection modules)
-		{
-			VisitCollection (modules);
-		}
+        public override void VisitModuleReferenceCollection(ModuleReferenceCollection modules)
+        {
+            VisitCollection(modules);
+        }
 
-		public override void VisitModuleDefinition (ModuleDefinition module)
-		{
-			if (module.Main) {
-				ModuleTable modTable = m_tableWriter.GetModuleTable ();
-				ModuleRow modRow = m_rowWriter.CreateModuleRow (
-					0,
-					m_mdWriter.AddString (module.Name),
-					m_mdWriter.AddGuid (module.Mvid),
-					0,
-					0);
+        public override void VisitModuleReference(ModuleReference module)
+        {
+            ModuleRefTable mrTable = m_tableWriter.GetModuleRefTable();
+            ModuleRefRow mrRow = m_rowWriter.CreateModuleRefRow(
+                m_mdWriter.AddString(module.Name));
 
-				modTable.Rows.Add (modRow);
-				module.MetadataToken = new MetadataToken (TokenType.Module, 1);
-			} else {
-				// multiple module assemblies
-				throw new NotImplementedException ();
-			}
-		}
+            mrTable.Rows.Add(mrRow);
+        }
 
-		public override void VisitModuleReferenceCollection (ModuleReferenceCollection modules)
-		{
-			VisitCollection (modules);
-		}
+        public override void TerminateAssemblyDefinition(AssemblyDefinition asm)
+        {
+            foreach (ModuleDefinition mod in asm.Modules)
+            {
+                ReflectionWriter writer = mod.Controller.Writer;
+                writer.VisitModuleDefinition(mod);
+                writer.VisitTypeReferenceCollection(mod.TypeReferences);
+                writer.VisitTypeDefinitionCollection(mod.Types);
+                writer.VisitMemberReferenceCollection(mod.MemberReferences);
+                writer.CompleteTypeDefinitions();
 
-		public override void VisitModuleReference (ModuleReference module)
-		{
-			ModuleRefTable mrTable = m_tableWriter.GetModuleRefTable ();
-			ModuleRefRow mrRow = m_rowWriter.CreateModuleRefRow (
-				m_mdWriter.AddString (module.Name));
-
-			mrTable.Rows.Add (mrRow);
-		}
-
-		public override void TerminateAssemblyDefinition (AssemblyDefinition asm)
-		{
-			foreach (ModuleDefinition mod in asm.Modules) {
-				ReflectionWriter writer = mod.Controller.Writer;
-				writer.VisitModuleDefinition (mod);
-				writer.VisitTypeReferenceCollection (mod.TypeReferences);
-				writer.VisitTypeDefinitionCollection (mod.Types);
-				writer.VisitMemberReferenceCollection (mod.MemberReferences);
-				writer.CompleteTypeDefinitions ();
-
-				writer.TerminateModuleDefinition (mod);
-			}
-		}
-	}
+                writer.TerminateModuleDefinition(mod);
+            }
+        }
+    }
 }

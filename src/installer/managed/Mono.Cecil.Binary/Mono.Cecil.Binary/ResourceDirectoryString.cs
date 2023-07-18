@@ -26,20 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal class ResourceDirectoryString : ResourceNode
+    {
+        public string String;
 
-	internal class ResourceDirectoryString : ResourceNode {
+        public ResourceDirectoryString(string str)
+        {
+            this.String = str;
+        }
 
-		public string String;
-
-		public ResourceDirectoryString (string str)
-		{
-			this.String = str;
-		}
-
-		public ResourceDirectoryString (string str, int offset) : base (offset)
-		{
-			this.String = str;
-		}
-	}
+        public ResourceDirectoryString(string str, int offset) : base(offset)
+        {
+            this.String = str;
+        }
+    }
 }

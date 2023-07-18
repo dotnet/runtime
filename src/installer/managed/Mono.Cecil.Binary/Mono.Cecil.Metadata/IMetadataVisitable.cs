@@ -26,17 +26,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal interface IMetadataVisitable
+    {
+        void Accept(IMetadataVisitor visitor);
+    }
 
-	internal interface IMetadataVisitable {
-		void Accept (IMetadataVisitor visitor);
-	}
+    internal interface IMetadataTableVisitable
+    {
+        void Accept(IMetadataTableVisitor visitor);
+    }
 
-	internal interface IMetadataTableVisitable {
-		void Accept (IMetadataTableVisitor visitor);
-	}
-
-	internal interface IMetadataRowVisitable {
-		void Accept (IMetadataRowVisitor visitor);
-	}
+    internal interface IMetadataRowVisitable
+    {
+        void Accept(IMetadataRowVisitor visitor);
+    }
 }

@@ -29,59 +29,61 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using Mono.Cecil;
+    using Mono.Cecil.Binary;
 
-	using Mono.Cecil;
+    internal sealed class MethodTable : IMetadataTable
+    {
+        public const int RId = 0x06;
 
-	using Mono.Cecil.Binary;
+        RowCollection m_rows;
 
-	internal sealed class MethodTable : IMetadataTable {
+        public MethodRow this[int index]
+        {
+            get { return m_rows[index] as MethodRow; }
+            set { m_rows[index] = value; }
+        }
 
-		public const int RId = 0x06;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		RowCollection m_rows;
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public MethodRow this [int index] {
-			get { return m_rows [index] as MethodRow; }
-			set { m_rows [index] = value; }
-		}
+        internal MethodTable()
+        {
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitMethodTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		public int Id {
-			get { return RId; }
-		}
+    internal sealed class MethodRow : IMetadataRow
+    {
+        public RVA RVA;
+        public MethodImplAttributes ImplFlags;
+        public MethodAttributes Flags;
+        public uint Name;
+        public uint Signature;
+        public uint ParamList;
 
-		internal MethodTable ()
-		{
-		}
+        internal MethodRow()
+        {
+        }
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitMethodTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
-
-	internal sealed class MethodRow : IMetadataRow {
-
-		public RVA RVA;
-		public MethodImplAttributes ImplFlags;
-		public MethodAttributes Flags;
-		public uint Name;
-		public uint Signature;
-		public uint ParamList;
-
-		internal MethodRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitMethodRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitMethodRow(this);
+        }
+    }
 }

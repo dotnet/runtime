@@ -26,11 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
-
-	internal interface ISymbolStoreFactory {
-
-		ISymbolReader CreateReader (ModuleDefinition module, string assemblyFileName);
-		ISymbolWriter CreateWriter (ModuleDefinition module, string assemblyFileName);
-	}
+namespace Mono.Cecil.Cil
+{
+    internal interface ISymbolStoreFactory
+    {
+        ISymbolReader CreateReader(ModuleDefinition module, string assemblyFileName);
+        ISymbolWriter CreateWriter(ModuleDefinition module, string assemblyFileName);
+    }
 }

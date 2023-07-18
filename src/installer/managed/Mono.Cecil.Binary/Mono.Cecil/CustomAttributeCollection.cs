@@ -29,65 +29,66 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class CustomAttributeCollection : CollectionBase, IReflectionVisitable
+    {
+        ICustomAttributeProvider m_container;
 
-	using Mono.Cecil.Cil;
+        public CustomAttribute this[int index]
+        {
+            get { return List[index] as CustomAttribute; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class CustomAttributeCollection : CollectionBase, IReflectionVisitable {
+        public ICustomAttributeProvider Container
+        {
+            get { return m_container; }
+        }
 
-		ICustomAttributeProvider m_container;
+        public CustomAttributeCollection(ICustomAttributeProvider container)
+        {
+            m_container = container;
+        }
 
-		public CustomAttribute this [int index] {
-			get { return List [index] as CustomAttribute; }
-			set { List [index] = value; }
-		}
+        public void Add(CustomAttribute value)
+        {
+            List.Add(value);
+        }
 
-		public ICustomAttributeProvider Container {
-			get { return m_container; }
-		}
+        public bool Contains(CustomAttribute value)
+        {
+            return List.Contains(value);
+        }
 
-		public CustomAttributeCollection (ICustomAttributeProvider container)
-		{
-			m_container = container;
-		}
+        public int IndexOf(CustomAttribute value)
+        {
+            return List.IndexOf(value);
+        }
 
-		public void Add (CustomAttribute value)
-		{
-			List.Add (value);
-		}
+        public void Insert(int index, CustomAttribute value)
+        {
+            List.Insert(index, value);
+        }
 
-		public bool Contains (CustomAttribute value)
-		{
-			return List.Contains (value);
-		}
+        public void Remove(CustomAttribute value)
+        {
+            List.Remove(value);
+        }
 
-		public int IndexOf (CustomAttribute value)
-		{
-			return List.IndexOf (value);
-		}
+        protected override void OnValidate(object o)
+        {
+            if (!(o is CustomAttribute))
+                throw new ArgumentException("Must be of type " + typeof(CustomAttribute).FullName);
+        }
 
-		public void Insert (int index, CustomAttribute value)
-		{
-			List.Insert (index, value);
-		}
-
-		public void Remove (CustomAttribute value)
-		{
-			List.Remove (value);
-		}
-
-		protected override void OnValidate (object o)
-		{
-			if (! (o is CustomAttribute))
-				throw new ArgumentException ("Must be of type " + typeof (CustomAttribute).FullName);
-		}
-
-		public void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitCustomAttributeCollection (this);
-		}
-	}
+        public void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitCustomAttributeCollection(this);
+        }
+    }
 }

@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal interface IImporter {
-
-		TypeReference ImportTypeReference (TypeReference type, ImportContext context);
-		FieldReference ImportFieldReference (FieldReference field, ImportContext context);
-		MethodReference ImportMethodReference (MethodReference method, ImportContext context);
-	}
+namespace Mono.Cecil
+{
+    internal interface IImporter
+    {
+        TypeReference ImportTypeReference(TypeReference type, ImportContext context);
+        FieldReference ImportFieldReference(FieldReference field, ImportContext context);
+        MethodReference ImportMethodReference(MethodReference method, ImportContext context);
+    }
 }

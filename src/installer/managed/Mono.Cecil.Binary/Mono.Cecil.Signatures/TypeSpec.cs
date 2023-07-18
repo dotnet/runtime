@@ -26,11 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
-
-	internal sealed class TypeSpec {
-
-		public CustomMod [] CustomMods;
-		public SigType Type;
-	}
+namespace Mono.Cecil.Signatures
+{
+    internal sealed class TypeSpec
+    {
+        public CustomMod[] CustomMods;
+        public SigType Type;
+    }
 }

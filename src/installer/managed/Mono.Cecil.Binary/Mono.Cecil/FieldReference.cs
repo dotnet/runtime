@@ -26,42 +26,43 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using Mono.Cecil;
 
-	using Mono.Cecil;
+    internal class FieldReference : MemberReference
+    {
+        TypeReference m_fieldType;
 
-	internal class FieldReference : MemberReference {
+        public TypeReference FieldType
+        {
+            get { return m_fieldType; }
+            set { m_fieldType = value; }
+        }
 
-		TypeReference m_fieldType;
+        internal FieldReference(string name, TypeReference fieldType) : base(name)
+        {
+            m_fieldType = fieldType;
+        }
 
-		public TypeReference FieldType {
-			get { return m_fieldType; }
-			set { m_fieldType = value; }
-		}
+        public FieldReference(string name, TypeReference declaringType, TypeReference fieldType) :
+            this(name, fieldType)
+        {
+            this.DeclaringType = declaringType;
+        }
 
-		internal FieldReference (string name, TypeReference fieldType) : base (name)
-		{
-			m_fieldType = fieldType;
-		}
+        public virtual FieldDefinition Resolve()
+        {
+            TypeReference declaringType = DeclaringType;
+            if (declaringType == null)
+                return null;
 
-		public FieldReference (string name, TypeReference declaringType, TypeReference fieldType) :
-			this (name, fieldType)
-		{
-			this.DeclaringType = declaringType;
-		}
+            return declaringType.Module.Resolver.Resolve(this);
+        }
 
-		public virtual FieldDefinition Resolve ()
-		{
-			TypeReference declaringType = DeclaringType;
-			if (declaringType == null)
-				return null;
-
-			return declaringType.Module.Resolver.Resolve (this);
-		}
-
-		public override string ToString ()
-		{
-			return string.Concat (m_fieldType.FullName, " ", base.ToString ());
-		}
-	}
+        public override string ToString()
+        {
+            return string.Concat(m_fieldType.FullName, " ", base.ToString());
+        }
+    }
 }

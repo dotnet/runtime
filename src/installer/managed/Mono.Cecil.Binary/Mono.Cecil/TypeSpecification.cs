@@ -26,55 +26,62 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
 
-	using System;
+    internal abstract class TypeSpecification : TypeReference
+    {
+        private TypeReference m_elementType;
 
-	internal abstract class TypeSpecification : TypeReference {
+        public override string Name
+        {
+            get { return m_elementType.Name; }
+            set { throw new NotSupportedException(); }
+        }
 
-		private TypeReference m_elementType;
+        public override string Namespace
+        {
+            get { return m_elementType.Namespace; }
+            set { throw new NotSupportedException(); }
+        }
 
-		public override string Name {
-			get { return m_elementType.Name; }
-			set { throw new NotSupportedException (); }
-		}
+        public override bool IsValueType
+        {
+            get { return m_elementType.IsValueType; }
+            set { throw new InvalidOperationException(); }
+        }
 
-		public override string Namespace {
-			get { return m_elementType.Namespace; }
-			set { throw new NotSupportedException (); }
-		}
+        public override IMetadataScope Scope
+        {
+            get { return m_elementType.Scope; }
+        }
 
-		public override bool IsValueType {
-			get { return m_elementType.IsValueType; }
-			set { throw new InvalidOperationException (); }
-		}
+        public override ModuleDefinition Module
+        {
+            get { return m_elementType.Module; }
+            set { throw new InvalidOperationException(); }
+        }
 
-		public override IMetadataScope Scope {
-			get { return m_elementType.Scope; }
-		}
+        public TypeReference ElementType
+        {
+            get { return m_elementType; }
+            set { m_elementType = value; }
+        }
 
-		public override ModuleDefinition Module {
-			get { return m_elementType.Module; }
-			set { throw new InvalidOperationException (); }
-		}
+        public override string FullName
+        {
+            get { return m_elementType.FullName; }
+        }
 
-		public TypeReference ElementType {
-			get { return m_elementType; }
-			set { m_elementType = value; }
-		}
+        internal TypeSpecification(TypeReference elementType) : base(string.Empty, string.Empty)
+        {
+            m_elementType = elementType;
+        }
 
-		public override string FullName {
-			get { return m_elementType.FullName; }
-		}
-
-		internal TypeSpecification (TypeReference elementType) : base (string.Empty, string.Empty)
-		{
-			m_elementType = elementType;
-		}
-
-		public override TypeReference GetOriginalType ()
-		{
-			return m_elementType.GetOriginalType ();
-		}
-	}
+        public override TypeReference GetOriginalType()
+        {
+            return m_elementType.GetOriginalType();
+        }
+    }
 }

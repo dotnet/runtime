@@ -26,67 +26,72 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal class GenericContext
+    {
+        TypeReference m_type;
+        MethodReference m_method;
 
-	internal class GenericContext {
+        public TypeReference Type
+        {
+            get { return m_type; }
+            set { m_type = value; }
+        }
 
-		TypeReference m_type;
-		MethodReference m_method;
+        public MethodReference Method
+        {
+            get { return m_method; }
+            set { m_method = value; }
+        }
 
-		public TypeReference Type {
-			get { return m_type; }
-			set { m_type = value; }
-		}
+        public bool AllowCreation
+        {
+            get { return m_type != null && m_type.GetType() == typeof(TypeReference); }
+        }
 
-		public MethodReference Method {
-			get { return m_method; }
-			set { m_method = value; }
-		}
+        public bool Null
+        {
+            get { return m_type == null && m_method == null; }
+        }
 
-		public bool AllowCreation {
-			get { return m_type != null && m_type.GetType () == typeof (TypeReference); }
-		}
+        public GenericContext()
+        {
+        }
 
-		public bool Null {
-			get { return m_type == null && m_method == null; }
-		}
+        public GenericContext(TypeReference type, MethodReference meth)
+        {
+            m_type = type;
+            m_method = meth;
+        }
 
-		public GenericContext ()
-		{
-		}
+        public GenericContext(IGenericParameterProvider provider)
+        {
+            if (provider is TypeReference)
+                m_type = provider as TypeReference;
+            else if (provider is MethodReference)
+            {
+                MethodReference meth = provider as MethodReference;
+                m_method = meth;
+                m_type = meth.DeclaringType;
+            }
+        }
 
-		public GenericContext (TypeReference type, MethodReference meth)
-		{
-			m_type = type;
-			m_method = meth;
-		}
+        internal void CheckProvider(IGenericParameterProvider provider, int count)
+        {
+            if (!AllowCreation)
+                return;
 
-		public GenericContext (IGenericParameterProvider provider)
-		{
-			if (provider is TypeReference)
-				m_type = provider as TypeReference;
-			else if (provider is MethodReference) {
-				MethodReference meth = provider as MethodReference;
-				m_method = meth;
-				m_type = meth.DeclaringType;
-			}
-		}
+            for (int i = provider.GenericParameters.Count; i < count; i++)
+                provider.GenericParameters.Add(new GenericParameter(i, provider));
+        }
 
-		internal void CheckProvider (IGenericParameterProvider provider, int count)
-		{
-			if (!AllowCreation)
-				return;
-
-			for (int i = provider.GenericParameters.Count; i < count; i++)
-				provider.GenericParameters.Add (new GenericParameter (i, provider));
-		}
-
-		public GenericContext Clone ()
-		{
-			GenericContext ctx = new GenericContext ();
-			ctx.Type = m_type;
-			ctx.Method = m_method;
-			return ctx;
-		}
-	}
+        public GenericContext Clone()
+        {
+            GenericContext ctx = new GenericContext();
+            ctx.Type = m_type;
+            ctx.Method = m_method;
+            return ctx;
+        }
+    }
 }

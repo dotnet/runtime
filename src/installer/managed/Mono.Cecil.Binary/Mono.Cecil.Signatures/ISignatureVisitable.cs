@@ -26,10 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
-
-	internal interface ISignatureVisitable {
-
-		void Accept (ISignatureVisitor visitor);
-	}
+namespace Mono.Cecil.Signatures
+{
+    internal interface ISignatureVisitable
+    {
+        void Accept(ISignatureVisitor visitor);
+    }
 }

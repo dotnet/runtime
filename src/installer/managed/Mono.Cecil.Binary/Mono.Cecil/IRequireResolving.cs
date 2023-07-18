@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal interface IRequireResolving {
-
-		byte [] Blob { get; }
-		bool Resolved { get; }
-		bool Resolve ();
-	}
+namespace Mono.Cecil
+{
+    internal interface IRequireResolving
+    {
+        byte[] Blob { get; }
+        bool Resolved { get; }
+        bool Resolve();
+    }
 }

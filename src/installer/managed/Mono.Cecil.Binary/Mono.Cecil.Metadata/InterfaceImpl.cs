@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class InterfaceImplTable : IMetadataTable
+    {
+        public const int RId = 0x09;
 
-	internal sealed class InterfaceImplTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x09;
+        public InterfaceImplRow this[int index]
+        {
+            get { return m_rows[index] as InterfaceImplRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public InterfaceImplRow this [int index] {
-			get { return m_rows [index] as InterfaceImplRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal InterfaceImplTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitInterfaceImplTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal InterfaceImplTable ()
-		{
-		}
+    internal sealed class InterfaceImplRow : IMetadataRow
+    {
+        public uint Class;
+        public MetadataToken Interface;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitInterfaceImplTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal InterfaceImplRow()
+        {
+        }
 
-	internal sealed class InterfaceImplRow : IMetadataRow {
-
-		public uint Class;
-		public MetadataToken Interface;
-
-		internal InterfaceImplRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitInterfaceImplRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitInterfaceImplRow(this);
+        }
+    }
 }

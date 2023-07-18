@@ -26,77 +26,79 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal struct MetadataToken
+    {
+        uint m_rid;
+        TokenType m_type;
 
-	internal struct MetadataToken {
+        public uint RID
+        {
+            get { return m_rid; }
+        }
 
-		uint m_rid;
-		TokenType m_type;
+        public TokenType TokenType
+        {
+            get { return m_type; }
+        }
 
-		public uint RID {
-			get { return m_rid; }
-		}
+        public static readonly MetadataToken Zero = new MetadataToken((TokenType)0, 0);
 
-		public TokenType TokenType {
-			get { return m_type; }
-		}
+        public MetadataToken(int token)
+        {
+            m_type = (TokenType)(token & 0xff000000);
+            m_rid = (uint)token & 0x00ffffff;
+        }
 
-		public static readonly MetadataToken Zero = new MetadataToken ((TokenType) 0, 0);
+        public MetadataToken(TokenType table, uint rid)
+        {
+            m_type = table;
+            m_rid = rid;
+        }
 
-		public MetadataToken (int token)
-		{
-			m_type = (TokenType) (token & 0xff000000);
-			m_rid = (uint) token & 0x00ffffff;
-		}
+        internal static MetadataToken FromMetadataRow(TokenType table, int rowIndex)
+        {
+            return new MetadataToken(table, (uint)rowIndex + 1);
+        }
 
-		public MetadataToken (TokenType table, uint rid)
-		{
-			m_type = table;
-			m_rid = rid;
-		}
+        public uint ToUInt()
+        {
+            return (uint)m_type | m_rid;
+        }
 
-		internal static MetadataToken FromMetadataRow (TokenType table, int rowIndex)
-		{
-			return new MetadataToken (table, (uint) rowIndex + 1);
-		}
+        public override int GetHashCode()
+        {
+            return (int)ToUInt();
+        }
 
-		public uint ToUInt ()
-		{
-			return (uint) m_type | m_rid;
-		}
+        public override bool Equals(object other)
+        {
+            if (other is MetadataToken)
+                return Equals((MetadataToken)other);
 
-		public override int GetHashCode ()
-		{
-			return (int) ToUInt ();
-		}
+            return false;
+        }
 
-		public override bool Equals (object other)
-		{
-			if (other is MetadataToken)
-				return Equals ((MetadataToken) other);
+        private bool Equals(MetadataToken other)
+        {
+            return other.m_rid == m_rid && other.m_type == m_type;
+        }
 
-			return false;
-		}
+        public static bool operator ==(MetadataToken one, MetadataToken other)
+        {
+            return one.Equals(other);
+        }
 
-		private bool Equals (MetadataToken other)
-		{
-			return other.m_rid == m_rid && other.m_type == m_type;
-		}
+        public static bool operator !=(MetadataToken one, MetadataToken other)
+        {
+            return !one.Equals(other);
+        }
 
-		public static bool operator == (MetadataToken one, MetadataToken other)
-		{
-			return one.Equals (other);
-		}
-
-		public static bool operator != (MetadataToken one, MetadataToken other)
-		{
-			return !one.Equals (other);
-		}
-
-		public override string ToString ()
-		{
-			return string.Format ("{0} [0x{1}]",
-				m_type, m_rid.ToString ("x4"));
-		}
-	}
+        public override string ToString()
+        {
+            return string.Format("{0} [0x{1}]",
+                m_type, m_rid.ToString("x4"));
+        }
+    }
 }

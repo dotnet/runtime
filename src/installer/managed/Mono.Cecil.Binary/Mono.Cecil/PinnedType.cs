@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal sealed class PinnedType : TypeSpecification {
-
-		public PinnedType (TypeReference pType) : base (pType)
-		{
-		}
-	}
+namespace Mono.Cecil
+{
+    internal sealed class PinnedType : TypeSpecification
+    {
+        public PinnedType(TypeReference pType) : base(pType)
+        {
+        }
+    }
 }

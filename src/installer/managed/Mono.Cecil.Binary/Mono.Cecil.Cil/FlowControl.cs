@@ -26,17 +26,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
-
-	internal enum FlowControl {
-		Branch,
-		Break,
-		Call,
-		Cond_Branch,
-		Meta,
-		Next,
-		Phi,
-		Return,
-		Throw
-	}
+namespace Mono.Cecil.Cil
+{
+    internal enum FlowControl
+    {
+        Branch,
+        Break,
+        Call,
+        Cond_Branch,
+        Meta,
+        Next,
+        Phi,
+        Return,
+        Throw
+    }
 }

@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class PropertyMapTable : IMetadataTable
+    {
+        public const int RId = 0x15;
 
-	internal sealed class PropertyMapTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x15;
+        public PropertyMapRow this[int index]
+        {
+            get { return m_rows[index] as PropertyMapRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public PropertyMapRow this [int index] {
-			get { return m_rows [index] as PropertyMapRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal PropertyMapTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitPropertyMapTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal PropertyMapTable ()
-		{
-		}
+    internal sealed class PropertyMapRow : IMetadataRow
+    {
+        public uint Parent;
+        public uint PropertyList;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitPropertyMapTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal PropertyMapRow()
+        {
+        }
 
-	internal sealed class PropertyMapRow : IMetadataRow {
-
-		public uint Parent;
-		public uint PropertyList;
-
-		internal PropertyMapRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitPropertyMapRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitPropertyMapRow(this);
+        }
+    }
 }

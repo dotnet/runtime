@@ -29,54 +29,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using Mono.Cecil;
 
-	using Mono.Cecil;
+    internal sealed class ParamTable : IMetadataTable
+    {
+        public const int RId = 0x08;
 
-	internal sealed class ParamTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x08;
+        public ParamRow this[int index]
+        {
+            get { return m_rows[index] as ParamRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public ParamRow this [int index] {
-			get { return m_rows [index] as ParamRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal ParamTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitParamTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal ParamTable ()
-		{
-		}
+    internal sealed class ParamRow : IMetadataRow
+    {
+        public ParameterAttributes Flags;
+        public ushort Sequence;
+        public uint Name;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitParamTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal ParamRow()
+        {
+        }
 
-	internal sealed class ParamRow : IMetadataRow {
-
-		public ParameterAttributes Flags;
-		public ushort Sequence;
-		public uint Name;
-
-		internal ParamRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitParamRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitParamRow(this);
+        }
+    }
 }

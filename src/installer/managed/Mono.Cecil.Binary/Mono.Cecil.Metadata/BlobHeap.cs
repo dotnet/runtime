@@ -26,65 +26,65 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    using System;
+    using System.Collections;
+    using System.IO;
 
-	using System;
-	using System.Collections;
-	using System.IO;
+    internal class BlobHeap : MetadataHeap
+    {
+        internal BlobHeap(MetadataStream stream) : base(stream, MetadataStream.Blob)
+        {
+        }
 
-	internal class BlobHeap : MetadataHeap {
+        public byte[] Read(uint index)
+        {
+            return ReadBytesFromStream(index);
+        }
 
-		internal BlobHeap (MetadataStream stream) : base (stream, MetadataStream.Blob)
-		{
-		}
+        public BinaryReader GetReader(uint index)
+        {
+            return new BinaryReader(new MemoryStream(Read(index)));
+        }
 
-		public byte [] Read (uint index)
-		{
-			return ReadBytesFromStream (index);
-		}
+        public override void Accept(IMetadataVisitor visitor)
+        {
+            visitor.VisitBlobHeap(this);
+        }
+    }
 
-		public BinaryReader GetReader (uint index)
-		{
-			return new BinaryReader (new MemoryStream (Read (index)));
-		}
+    class ByteArrayEqualityComparer : IHashCodeProvider, IComparer
+    {
+        public static readonly ByteArrayEqualityComparer Instance = new ByteArrayEqualityComparer();
 
-		public override void Accept (IMetadataVisitor visitor)
-		{
-			visitor.VisitBlobHeap (this);
-		}
-	}
+        public int GetHashCode(object obj)
+        {
+            byte[] array = (byte[])obj;
 
-	class ByteArrayEqualityComparer : IHashCodeProvider, IComparer {
+            int hash = 0;
+            for (int i = 0; i < array.Length; i++)
+                hash = (hash * 37) ^ array[i];
 
-		public static readonly ByteArrayEqualityComparer Instance = new ByteArrayEqualityComparer ();
+            return hash;
+        }
 
-		public int GetHashCode (object obj)
-		{
-			byte [] array = (byte []) obj;
+        public int Compare(object a, object b)
+        {
+            byte[] x = (byte[])a;
+            byte[] y = (byte[])b;
 
-			int hash = 0;
-			for (int i = 0; i < array.Length; i++)
-				hash = (hash * 37) ^ array [i];
+            if (x == null || y == null)
+                return x == y ? 0 : 1;
 
-			return hash;
-		}
+            if (x.Length != y.Length)
+                return 1;
 
-		public int Compare (object a, object b)
-		{
-			byte [] x = (byte []) a;
-			byte [] y = (byte []) b;
+            for (int i = 0; i < x.Length; i++)
+                if (x[i] != y[i])
+                    return 1;
 
-			if (x == null || y == null)
-				return x == y ? 0 : 1;
-
-			if (x.Length != y.Length)
-				return 1;
-
-			for (int i = 0; i < x.Length; i++)
-				if (x [i] != y [i])
-					return 1;
-
-			return 0;
-		}
-	}
+            return 0;
+        }
+    }
 }

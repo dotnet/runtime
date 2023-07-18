@@ -26,14 +26,15 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
-
-	internal enum OpCodeType {
-		Annotation,
-		Macro,
-		Nternal,
-		Objmodel,
-		Prefix,
-		Primitive
-	}
+namespace Mono.Cecil.Cil
+{
+    internal enum OpCodeType
+    {
+        Annotation,
+        Macro,
+        Nternal,
+        Objmodel,
+        Prefix,
+        Primitive
+    }
 }

@@ -26,48 +26,48 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    using System;
 
-	using System;
+    internal sealed class DebugHeader : IHeader, IBinaryVisitable
+    {
+        public uint Characteristics;
+        public uint TimeDateStamp;
+        public ushort MajorVersion;
+        public ushort MinorVersion;
+        public DebugStoreType Type;
+        public uint SizeOfData;
+        public RVA AddressOfRawData;
+        public uint PointerToRawData;
 
-	internal sealed class DebugHeader : IHeader, IBinaryVisitable {
+        public uint Magic;
+        public Guid Signature;
+        public uint Age;
+        public string FileName;
 
-		public uint Characteristics;
-		public uint TimeDateStamp;
-		public ushort MajorVersion;
-		public ushort MinorVersion;
-		public DebugStoreType Type;
-		public uint SizeOfData;
-		public RVA AddressOfRawData;
-		public uint PointerToRawData;
+        internal DebugHeader()
+        {
+        }
 
-		public uint Magic;
-		public Guid Signature;
-		public uint Age;
-		public string FileName;
+        public void SetDefaultValues()
+        {
+            Characteristics = 0;
 
-		internal DebugHeader ()
-		{
-		}
+            this.Magic = 0x53445352;
+            this.Age = 0;
+            this.Type = DebugStoreType.CodeView;
+            this.FileName = string.Empty;
+        }
 
-		public void SetDefaultValues ()
-		{
-			Characteristics = 0;
+        public uint GetSize()
+        {
+            return 0x34 + (uint)FileName.Length + 1;
+        }
 
-			this.Magic = 0x53445352;
-			this.Age = 0;
-			this.Type = DebugStoreType.CodeView;
-			this.FileName = string.Empty;
-		}
-
-		public uint GetSize ()
-		{
-			return 0x34 + (uint) FileName.Length + 1;
-		}
-
-		public void Accept (IBinaryVisitor visitor)
-		{
-			visitor.VisitDebugHeader (this);
-		}
-	}
+        public void Accept(IBinaryVisitor visitor)
+        {
+            visitor.VisitDebugHeader(this);
+        }
+    }
 }

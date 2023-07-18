@@ -26,19 +26,19 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal abstract class ResourceNode
+    {
+        public int Offset;
 
-	internal abstract class ResourceNode {
+        internal ResourceNode(int offset)
+        {
+            this.Offset = offset;
+        }
 
-		public int Offset;
-
-		internal ResourceNode (int offset)
-		{
-			this.Offset = offset;
-		}
-
-		internal ResourceNode ()
-		{
-		}
-	}
+        internal ResourceNode()
+        {
+        }
+    }
 }

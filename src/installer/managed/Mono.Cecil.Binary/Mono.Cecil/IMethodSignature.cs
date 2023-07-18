@@ -26,18 +26,18 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal interface IMethodSignature
+    {
+        bool HasParameters { get; }
+        bool HasThis { get; set; }
+        bool ExplicitThis { get; set; }
+        MethodCallingConvention CallingConvention { get; set; }
 
-	internal interface IMethodSignature {
+        ParameterDefinitionCollection Parameters { get; }
+        MethodReturnType ReturnType { get; }
 
-		bool HasParameters { get; }
-		bool HasThis { get; set; }
-		bool ExplicitThis { get; set; }
-		MethodCallingConvention CallingConvention { get; set; }
-
-		ParameterDefinitionCollection Parameters { get; }
-		MethodReturnType ReturnType { get; }
-
-		int GetSentinel ();
-	}
+        int GetSentinel();
+    }
 }

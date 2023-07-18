@@ -26,23 +26,23 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal class ResourceDataEntry : ResourceNode
+    {
+        public RVA Data;
+        public uint Size;
+        public uint Codepage;
+        public uint Reserved = 0;
 
-	internal class ResourceDataEntry : ResourceNode {
+        public byte[] ResourceData;
 
-		public RVA Data;
-		public uint Size;
-		public uint Codepage;
-		public uint Reserved = 0;
+        public ResourceDataEntry(int offset) : base(offset)
+        {
+        }
 
-		public byte [] ResourceData;
-
-		public ResourceDataEntry (int offset) : base (offset)
-		{
-		}
-
-		public ResourceDataEntry ()
-		{
-		}
-	}
+        public ResourceDataEntry()
+        {
+        }
+    }
 }

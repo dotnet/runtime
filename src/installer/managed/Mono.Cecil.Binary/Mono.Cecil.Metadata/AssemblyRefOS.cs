@@ -29,53 +29,56 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class AssemblyRefOSTable : IMetadataTable
+    {
+        public const int RId = 0x25;
 
-	internal sealed class AssemblyRefOSTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x25;
+        public AssemblyRefOSRow this[int index]
+        {
+            get { return m_rows[index] as AssemblyRefOSRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public AssemblyRefOSRow this [int index] {
-			get { return m_rows [index] as AssemblyRefOSRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal AssemblyRefOSTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitAssemblyRefOSTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal AssemblyRefOSTable ()
-		{
-		}
+    internal sealed class AssemblyRefOSRow : IMetadataRow
+    {
+        public uint OSPlatformID;
+        public uint OSMajorVersion;
+        public uint OSMinorVersion;
+        public uint AssemblyRef;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitAssemblyRefOSTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal AssemblyRefOSRow()
+        {
+        }
 
-	internal sealed class AssemblyRefOSRow : IMetadataRow {
-
-		public uint OSPlatformID;
-		public uint OSMajorVersion;
-		public uint OSMinorVersion;
-		public uint AssemblyRef;
-
-		internal AssemblyRefOSRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitAssemblyRefOSRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitAssemblyRefOSRow(this);
+        }
+    }
 }

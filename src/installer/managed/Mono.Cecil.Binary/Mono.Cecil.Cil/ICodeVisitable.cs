@@ -26,9 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
-
-	internal interface ICodeVisitable {
-		void Accept (ICodeVisitor visitor);
-	}
+namespace Mono.Cecil.Cil
+{
+    internal interface ICodeVisitable
+    {
+        void Accept(ICodeVisitor visitor);
+    }
 }

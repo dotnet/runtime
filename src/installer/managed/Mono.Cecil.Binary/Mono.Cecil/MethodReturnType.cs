@@ -27,75 +27,85 @@
 //
 
 using System;
-
 using Mono.Cecil.Metadata;
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal sealed class MethodReturnType : ICustomAttributeProvider, IHasMarshalSpec, IHasConstant
+    {
+        MethodReference m_method;
+        ParameterDefinition m_param;
 
-	internal sealed class MethodReturnType : ICustomAttributeProvider, IHasMarshalSpec, IHasConstant {
+        TypeReference m_returnType;
 
-		MethodReference m_method;
-		ParameterDefinition m_param;
+        public MethodReference Method
+        {
+            get { return m_method; }
+            set { m_method = value; }
+        }
 
-		TypeReference m_returnType;
+        public TypeReference ReturnType
+        {
+            get { return m_returnType; }
+            set { m_returnType = value; }
+        }
 
-		public MethodReference Method {
-			get { return m_method; }
-			set { m_method = value; }
-		}
+        internal ParameterDefinition Parameter
+        {
+            get
+            {
+                if (m_param == null)
+                {
+                    m_param = new ParameterDefinition(m_returnType);
+                    m_param.Method = m_method;
+                }
 
-		public TypeReference ReturnType {
-			get { return m_returnType; }
-			set { m_returnType = value; }
-		}
+                return m_param;
+            }
+            set { m_param = value; }
+        }
 
-		internal ParameterDefinition Parameter {
-			get {
-				if (m_param == null) {
-					m_param = new ParameterDefinition (m_returnType);
-					m_param.Method = m_method;
-				}
+        public MetadataToken MetadataToken
+        {
+            get { return Parameter.MetadataToken; }
+            set { Parameter.MetadataToken = value; }
+        }
 
-				return m_param;
-			}
-			set { m_param = value; }
-		}
+        public bool HasCustomAttributes
+        {
+            get { return m_param != null && m_param.HasCustomAttributes; }
+        }
 
-		public MetadataToken MetadataToken {
-			get { return Parameter.MetadataToken; }
-			set { Parameter.MetadataToken = value; }
-		}
+        public CustomAttributeCollection CustomAttributes
+        {
+            get { return Parameter.CustomAttributes; }
+        }
 
-		public bool HasCustomAttributes {
-			get { return m_param != null && m_param.HasCustomAttributes; }
-		}
+        public bool HasConstant
+        {
+            get { return m_param != null && m_param.HasConstant; }
+        }
 
-		public CustomAttributeCollection CustomAttributes {
-			get { return Parameter.CustomAttributes; }
-		}
+        public object Constant
+        {
+            get { return Parameter.Constant; }
+            set { Parameter.Constant = value; }
+        }
 
-		public bool HasConstant {
-			get { return m_param != null && m_param.HasConstant; }
-		}
+        public MarshalSpec MarshalSpec
+        {
+            get { return Parameter.MarshalSpec; }
+            set { Parameter.MarshalSpec = value; }
+        }
 
-		public object Constant {
-			get { return Parameter.Constant; }
-			set { Parameter.Constant = value; }
-		}
+        public MethodReturnType(TypeReference retType)
+        {
+            m_returnType = retType;
+        }
 
-		public MarshalSpec MarshalSpec {
-			get { return Parameter.MarshalSpec; }
-			set { Parameter.MarshalSpec = value; }
-		}
-
-		public MethodReturnType (TypeReference retType)
-		{
-			m_returnType = retType;
-		}
-
-		public override string ToString ()
-		{
-			return String.Format ("[return: {0}]", m_returnType);
-		}
-	}
+        public override string ToString()
+        {
+            return String.Format("[return: {0}]", m_returnType);
+        }
+    }
 }

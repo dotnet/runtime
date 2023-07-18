@@ -26,65 +26,68 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal class MetadataStream : IMetadataVisitable
+    {
+        public const string Strings = "#Strings";
+        public const string Tables = "#~";
+        public const string IncrementalTables = "#-";
+        public const string Blob = "#Blob";
+        public const string GUID = "#GUID";
+        public const string UserStrings = "#US";
 
-	internal class MetadataStream : IMetadataVisitable {
+        MetadataStreamHeader m_header;
+        MetadataHeap m_heap;
 
-		public const string Strings = "#Strings";
-		public const string Tables = "#~";
-		public const string IncrementalTables = "#-";
-		public const string Blob = "#Blob";
-		public const string GUID = "#GUID";
-		public const string UserStrings = "#US";
+        public MetadataStreamHeader Header
+        {
+            get { return m_header; }
+            set { m_header = value; }
+        }
 
-		MetadataStreamHeader m_header;
-		MetadataHeap m_heap;
+        public MetadataHeap Heap
+        {
+            get { return m_heap; }
+            set { m_heap = value; }
+        }
 
-		public MetadataStreamHeader Header {
-			get { return m_header; }
-			set { m_header = value; }
-		}
+        internal MetadataStream()
+        {
+            m_header = new MetadataStreamHeader(this);
+        }
 
-		public MetadataHeap Heap {
-			get { return m_heap; }
-			set { m_heap = value; }
-		}
+        public void Accept(IMetadataVisitor visitor)
+        {
+            visitor.VisitMetadataStream(this);
 
-		internal MetadataStream ()
-		{
-			m_header = new MetadataStreamHeader (this);
-		}
+            m_header.Accept(visitor);
+            if (m_heap != null)
+                m_heap.Accept(visitor);
+        }
 
-		public void Accept (IMetadataVisitor visitor)
-		{
-			visitor.VisitMetadataStream (this);
+        internal class MetadataStreamHeader : IMetadataVisitable
+        {
+            public uint Offset;
+            public uint Size;
+            public string Name;
 
-			m_header.Accept (visitor);
-			if (m_heap != null)
-				m_heap.Accept (visitor);
-		}
+            private MetadataStream m_stream;
 
-		internal class MetadataStreamHeader : IMetadataVisitable {
+            public MetadataStream Stream
+            {
+                get { return m_stream; }
+            }
 
-			public uint Offset;
-			public uint Size;
-			public string Name;
+            internal MetadataStreamHeader(MetadataStream stream)
+            {
+                m_stream = stream;
+            }
 
-			private MetadataStream m_stream;
-
-			public MetadataStream Stream {
-				get { return m_stream; }
-			}
-
-			internal MetadataStreamHeader (MetadataStream stream)
-			{
-				m_stream = stream;
-			}
-
-			public void Accept (IMetadataVisitor visitor)
-			{
-				visitor.VisitMetadataStreamHeader (this);
-			}
-		}
-	}
+            public void Accept(IMetadataVisitor visitor)
+            {
+                visitor.VisitMetadataStreamHeader(this);
+            }
+        }
+    }
 }

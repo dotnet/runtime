@@ -26,108 +26,115 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    internal sealed class Instruction : ICodeVisitable
+    {
+        int m_offset;
+        OpCode m_opCode;
+        object m_operand;
 
-	internal sealed class Instruction : ICodeVisitable {
+        Instruction m_previous;
+        Instruction m_next;
 
-		int m_offset;
-		OpCode m_opCode;
-		object m_operand;
+        SequencePoint m_sequencePoint;
 
-		Instruction m_previous;
-		Instruction m_next;
+        public int Offset
+        {
+            get { return m_offset; }
+            set { m_offset = value; }
+        }
 
-		SequencePoint m_sequencePoint;
+        public OpCode OpCode
+        {
+            get { return m_opCode; }
+            set { m_opCode = value; }
+        }
 
-		public int Offset {
-			get { return m_offset; }
-			set { m_offset = value; }
-		}
+        public object Operand
+        {
+            get { return m_operand; }
+            set { m_operand = value; }
+        }
 
-		public OpCode OpCode {
-			get { return m_opCode; }
-			set { m_opCode = value; }
-		}
+        public Instruction Previous
+        {
+            get { return m_previous; }
+            set { m_previous = value; }
+        }
 
-		public object Operand {
-			get { return m_operand; }
-			set { m_operand = value; }
-		}
+        public Instruction Next
+        {
+            get { return m_next; }
+            set { m_next = value; }
+        }
 
-		public Instruction Previous {
-			get { return m_previous; }
-			set { m_previous = value; }
-		}
+        public SequencePoint SequencePoint
+        {
+            get { return m_sequencePoint; }
+            set { m_sequencePoint = value; }
+        }
 
-		public Instruction Next {
-			get { return m_next; }
-			set { m_next = value; }
-		}
+        internal Instruction(int offset, OpCode opCode, object operand) : this(offset, opCode)
+        {
+            m_operand = operand;
+        }
 
-		public SequencePoint SequencePoint {
-			get { return m_sequencePoint; }
-			set { m_sequencePoint = value; }
-		}
+        internal Instruction(int offset, OpCode opCode)
+        {
+            m_offset = offset;
+            m_opCode = opCode;
+        }
 
-		internal Instruction (int offset, OpCode opCode, object operand) : this (offset, opCode)
-		{
-			m_operand = operand;
-		}
+        internal Instruction(OpCode opCode, object operand) : this(0, opCode, operand)
+        {
+        }
 
-		internal Instruction (int offset, OpCode opCode)
-		{
-			m_offset = offset;
-			m_opCode = opCode;
-		}
+        internal Instruction(OpCode opCode) : this(0, opCode)
+        {
+        }
 
-		internal Instruction (OpCode opCode, object operand) : this (0, opCode, operand)
-		{
-		}
+        public int GetSize()
+        {
+            int size = m_opCode.Size;
 
-		internal Instruction (OpCode opCode) : this (0, opCode)
-		{
-		}
+            switch (m_opCode.OperandType)
+            {
+                case OperandType.InlineSwitch:
+                    size += (1 + ((Instruction[])m_operand).Length) * 4;
+                    break;
+                case OperandType.InlineI8:
+                case OperandType.InlineR:
+                    size += 8;
+                    break;
+                case OperandType.InlineBrTarget:
+                case OperandType.InlineField:
+                case OperandType.InlineI:
+                case OperandType.InlineMethod:
+                case OperandType.InlineString:
+                case OperandType.InlineTok:
+                case OperandType.InlineType:
+                case OperandType.ShortInlineR:
+                    size += 4;
+                    break;
+                case OperandType.InlineParam:
+                case OperandType.InlineVar:
+                    size += 2;
+                    break;
+                case OperandType.ShortInlineBrTarget:
+                case OperandType.ShortInlineI:
+                case OperandType.ShortInlineParam:
+                case OperandType.ShortInlineVar:
+                    size += 1;
+                    break;
+            }
 
-		public int GetSize ()
-		{
-			int size = m_opCode.Size;
+            return size;
+        }
 
-			switch (m_opCode.OperandType) {
-			case OperandType.InlineSwitch:
-				size += (1 + ((Instruction []) m_operand).Length) * 4;
-				break;
-			case OperandType.InlineI8:
-			case OperandType.InlineR:
-				size += 8;
-				break;
-			case OperandType.InlineBrTarget:
-			case OperandType.InlineField:
-			case OperandType.InlineI:
-			case OperandType.InlineMethod:
-			case OperandType.InlineString:
-			case OperandType.InlineTok:
-			case OperandType.InlineType:
-			case OperandType.ShortInlineR:
-				size += 4;
-				break;
-			case OperandType.InlineParam:
-			case OperandType.InlineVar:
-				size += 2;
-				break;
-			case OperandType.ShortInlineBrTarget:
-			case OperandType.ShortInlineI:
-			case OperandType.ShortInlineParam:
-			case OperandType.ShortInlineVar:
-				size += 1;
-				break;
-			}
-
-			return size;
-		}
-
-		public void Accept (ICodeVisitor visitor)
-		{
-			visitor.VisitInstruction (this);
-		}
-	}
+        public void Accept(ICodeVisitor visitor)
+        {
+            visitor.VisitInstruction(this);
+        }
+    }
 }

@@ -26,65 +26,70 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Collections;
+    using Mono.Cecil.Metadata;
 
-	using System.Collections;
+    internal abstract class ParameterReference : IMetadataTokenProvider, IAnnotationProvider, IReflectionVisitable
+    {
+        string m_name;
+        int m_sequence;
+        TypeReference m_paramType;
+        MetadataToken m_token;
+        IDictionary m_annotations;
 
-	using Mono.Cecil.Metadata;
+        public string Name
+        {
+            get { return m_name; }
+            set { m_name = value; }
+        }
 
-	internal abstract class ParameterReference : IMetadataTokenProvider, IAnnotationProvider, IReflectionVisitable {
+        public int Sequence
+        {
+            get { return m_sequence; }
+            set { m_sequence = value; }
+        }
 
-		string m_name;
-		int m_sequence;
-		TypeReference m_paramType;
-		MetadataToken m_token;
-		IDictionary m_annotations;
+        public TypeReference ParameterType
+        {
+            get { return m_paramType; }
+            set { m_paramType = value; }
+        }
 
-		public string Name {
-			get { return m_name; }
-			set { m_name = value; }
-		}
+        public MetadataToken MetadataToken
+        {
+            get { return m_token; }
+            set { m_token = value; }
+        }
 
-		public int Sequence {
-			get { return m_sequence; }
-			set { m_sequence = value; }
-		}
+        IDictionary IAnnotationProvider.Annotations
+        {
+            get
+            {
+                if (m_annotations == null)
+                    m_annotations = new Hashtable();
+                return m_annotations;
+            }
+        }
 
-		public TypeReference ParameterType {
-			get { return m_paramType; }
-			set { m_paramType = value; }
-		}
+        public ParameterReference(string name, int sequence, TypeReference parameterType)
+        {
+            m_name = name;
+            m_sequence = sequence;
+            m_paramType = parameterType;
+        }
 
-		public MetadataToken MetadataToken {
-			get { return m_token; }
-			set { m_token = value; }
-		}
+        public abstract ParameterDefinition Resolve();
 
-		IDictionary IAnnotationProvider.Annotations {
-			get {
-				if (m_annotations == null)
-					m_annotations = new Hashtable ();
-				return m_annotations;
-			}
-		}
+        public override string ToString()
+        {
+            if (m_name != null && m_name.Length > 0)
+                return m_name;
 
-		public ParameterReference (string name, int sequence, TypeReference parameterType)
-		{
-			m_name = name;
-			m_sequence = sequence;
-			m_paramType = parameterType;
-		}
+            return string.Concat("A_", m_sequence);
+        }
 
-		public abstract ParameterDefinition Resolve ();
-
-		public override string ToString ()
-		{
-			if (m_name != null && m_name.Length > 0)
-				return m_name;
-
-			return string.Concat ("A_", m_sequence);
-		}
-
-		public abstract void Accept (IReflectionVisitor visitor);
-	}
+        public abstract void Accept(IReflectionVisitor visitor);
+    }
 }

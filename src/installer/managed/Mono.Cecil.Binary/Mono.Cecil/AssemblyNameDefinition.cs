@@ -26,27 +26,28 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
 
-	using System;
+    internal sealed class AssemblyNameDefinition : AssemblyNameReference
+    {
+        public override byte[] Hash
+        {
+            get { return new byte [0]; }
+        }
 
-	internal sealed class AssemblyNameDefinition : AssemblyNameReference {
+        public AssemblyNameDefinition() : base()
+        {
+        }
 
-		public override byte [] Hash {
-			get { return new byte [0]; }
-		}
+        public AssemblyNameDefinition(string name, string culture, Version version) : base(name, culture, version)
+        {
+        }
 
-		public AssemblyNameDefinition () : base()
-		{
-		}
-
-		public AssemblyNameDefinition (string name, string culture, Version version) : base (name, culture, version)
-		{
-		}
-
-		public override void Accept (IReflectionStructureVisitor visitor)
-		{
-			visitor.VisitAssemblyNameDefinition (this);
-		}
-	}
+        public override void Accept(IReflectionStructureVisitor visitor)
+        {
+            visitor.VisitAssemblyNameDefinition(this);
+        }
+    }
 }

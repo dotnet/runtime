@@ -26,20 +26,22 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal sealed class PointerType : TypeSpecification
+    {
+        public override string Name
+        {
+            get { return string.Concat(base.Name, "*"); }
+        }
 
-	internal sealed class PointerType : TypeSpecification {
+        public override string FullName
+        {
+            get { return string.Concat(base.FullName, "*"); }
+        }
 
-		public override string Name {
-			get { return string.Concat (base.Name, "*"); }
-		}
-
-		public override string FullName {
-			get { return string.Concat (base.FullName, "*"); }
-		}
-
-		public PointerType (TypeReference pType) : base (pType)
-		{
-		}
-	}
+        public PointerType(TypeReference pType) : base(pType)
+        {
+        }
+    }
 }

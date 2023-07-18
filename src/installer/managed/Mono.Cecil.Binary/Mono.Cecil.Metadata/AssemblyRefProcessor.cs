@@ -29,51 +29,54 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class AssemblyRefProcessorTable : IMetadataTable
+    {
+        public const int RId = 0x24;
 
-	internal sealed class AssemblyRefProcessorTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x24;
+        public AssemblyRefProcessorRow this[int index]
+        {
+            get { return m_rows[index] as AssemblyRefProcessorRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public AssemblyRefProcessorRow this [int index] {
-			get { return m_rows [index] as AssemblyRefProcessorRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal AssemblyRefProcessorTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitAssemblyRefProcessorTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal AssemblyRefProcessorTable ()
-		{
-		}
+    internal sealed class AssemblyRefProcessorRow : IMetadataRow
+    {
+        public uint Processor;
+        public uint AssemblyRef;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitAssemblyRefProcessorTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal AssemblyRefProcessorRow()
+        {
+        }
 
-	internal sealed class AssemblyRefProcessorRow : IMetadataRow {
-
-		public uint Processor;
-		public uint AssemblyRef;
-
-		internal AssemblyRefProcessorRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitAssemblyRefProcessorRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitAssemblyRefProcessorRow(this);
+        }
+    }
 }

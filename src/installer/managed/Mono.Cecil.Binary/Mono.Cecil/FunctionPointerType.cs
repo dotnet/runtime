@@ -26,91 +26,106 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Text;
 
-	using System;
-	using System.Text;
+    internal sealed class FunctionPointerType : TypeSpecification, IMethodSignature
+    {
+        MethodReference m_function;
 
-	internal sealed class FunctionPointerType : TypeSpecification, IMethodSignature {
+        public bool HasThis
+        {
+            get { return m_function.HasThis; }
+            set { m_function.HasThis = value; }
+        }
 
-		MethodReference m_function;
+        public bool ExplicitThis
+        {
+            get { return m_function.ExplicitThis; }
+            set { m_function.ExplicitThis = value; }
+        }
 
-		public bool HasThis {
-			get { return m_function.HasThis; }
-			set { m_function.HasThis = value; }
-		}
+        public MethodCallingConvention CallingConvention
+        {
+            get { return m_function.CallingConvention; }
+            set { m_function.CallingConvention = value; }
+        }
 
-		public bool ExplicitThis {
-			get { return m_function.ExplicitThis; }
-			set { m_function.ExplicitThis = value; }
-		}
+        public bool HasParameters
+        {
+            get { return m_function.HasParameters; }
+        }
 
-		public MethodCallingConvention CallingConvention {
-			get { return m_function.CallingConvention; }
-			set { m_function.CallingConvention = value; }
-		}
+        public ParameterDefinitionCollection Parameters
+        {
+            get { return m_function.Parameters; }
+        }
 
-		public bool HasParameters {
-			get { return m_function.HasParameters; }
-		}
+        public MethodReturnType ReturnType
+        {
+            get { return m_function.ReturnType; }
+            set { m_function.ReturnType = value; }
+        }
 
-		public ParameterDefinitionCollection Parameters {
-			get { return m_function.Parameters; }
-		}
+        public override string Name
+        {
+            get { return m_function.Name; }
+            set { throw new InvalidOperationException(); }
+        }
 
-		public MethodReturnType ReturnType {
-			get { return m_function.ReturnType; }
-			set { m_function.ReturnType = value; }
-		}
+        public override string Namespace
+        {
+            get { return string.Empty; }
+            set { throw new InvalidOperationException(); }
+        }
 
-		public override string Name {
-			get { return m_function.Name; }
-			set { throw new InvalidOperationException (); }
-		}
+        public override IMetadataScope Scope
+        {
+            get { return m_function.DeclaringType.Scope; }
+        }
 
-		public override string Namespace {
-			get { return string.Empty; }
-			set { throw new InvalidOperationException (); }
-		}
+        public override string FullName
+        {
+            get
+            {
+                int sentinel = GetSentinel();
+                StringBuilder sb = new StringBuilder();
+                sb.Append(m_function.Name);
+                sb.Append(" ");
+                sb.Append(m_function.ReturnType.ReturnType.FullName);
+                sb.Append(" *(");
+                if (m_function.HasParameters)
+                {
+                    for (int i = 0; i < m_function.Parameters.Count; i++)
+                    {
+                        if (i > 0)
+                            sb.Append(",");
 
-		public override IMetadataScope Scope {
-			get { return m_function.DeclaringType.Scope; }
-		}
+                        if (i == sentinel)
+                            sb.Append("...,");
 
-		public override string FullName {
-			get {
-				int sentinel = GetSentinel ();
-				StringBuilder sb = new StringBuilder ();
-				sb.Append (m_function.Name);
-				sb.Append (" ");
-				sb.Append (m_function.ReturnType.ReturnType.FullName);
-				sb.Append (" *(");
-				if (m_function.HasParameters) {
-					for (int i = 0; i < m_function.Parameters.Count; i++) {
-						if (i > 0)
-							sb.Append (",");
+                        sb.Append(m_function.Parameters[i].ParameterType.FullName);
+                    }
+                }
 
-						if (i == sentinel)
-							sb.Append ("...,");
+                sb.Append(")");
+                return sb.ToString();
+            }
+        }
 
-						sb.Append (m_function.Parameters [i].ParameterType.FullName);
-					}
-				}
-				sb.Append (")");
-				return sb.ToString ();
-			}
-		}
+        public FunctionPointerType(bool hasThis, bool explicitThis, MethodCallingConvention callConv,
+            MethodReturnType retType) :
+            base(retType.ReturnType)
+        {
+            m_function = new MethodReference("method", hasThis, explicitThis, callConv);
+            m_function.ReturnType = retType;
+        }
 
-		public FunctionPointerType (bool hasThis, bool explicitThis, MethodCallingConvention callConv, MethodReturnType retType) :
-			base (retType.ReturnType)
-		{
-			m_function = new MethodReference ("method", hasThis, explicitThis, callConv);
-			m_function.ReturnType = retType;
-		}
-
-		public int GetSentinel ()
-		{
-			return m_function.GetSentinel ();
-		}
-	}
+        public int GetSentinel()
+        {
+            return m_function.GetSentinel();
+        }
+    }
 }

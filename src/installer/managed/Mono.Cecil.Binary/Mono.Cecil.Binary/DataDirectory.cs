@@ -26,59 +26,62 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal struct DataDirectory
+    {
+        public static readonly DataDirectory Zero = new DataDirectory(RVA.Zero, 0);
 
-	internal struct DataDirectory {
+        RVA m_virtualAddress;
+        uint m_size;
 
-		public static readonly DataDirectory Zero = new DataDirectory (RVA.Zero, 0);
+        public RVA VirtualAddress
+        {
+            get { return m_virtualAddress; }
+            set { m_virtualAddress = value; }
+        }
 
-		RVA m_virtualAddress;
-		uint m_size;
+        public uint Size
+        {
+            get { return m_size; }
+            set { m_size = value; }
+        }
 
-		public RVA VirtualAddress {
-			get { return m_virtualAddress; }
-			set { m_virtualAddress = value; }
-		}
+        public DataDirectory(RVA virtualAddress, uint size)
+        {
+            m_virtualAddress = virtualAddress;
+            m_size = size;
+        }
 
-		public uint Size {
-			get { return m_size; }
-			set { m_size = value; }
-		}
+        public override int GetHashCode()
+        {
+            return (m_virtualAddress.GetHashCode() ^ (int)m_size << 1);
+        }
 
-		public DataDirectory (RVA virtualAddress, uint size)
-		{
-			m_virtualAddress = virtualAddress;
-			m_size = size;
-		}
+        public override bool Equals(object other)
+        {
+            if (other is DataDirectory)
+            {
+                DataDirectory odd = (DataDirectory)other;
+                return this.m_virtualAddress == odd.m_virtualAddress && this.m_size == odd.m_size;
+            }
 
-		public override int GetHashCode ()
-		{
-			return (m_virtualAddress.GetHashCode () ^ (int) m_size << 1);
-		}
+            return false;
+        }
 
-		public override bool Equals (object other)
-		{
-			if (other is DataDirectory) {
-				DataDirectory odd = (DataDirectory) other;
-				return this.m_virtualAddress == odd.m_virtualAddress && this.m_size == odd.m_size;
-			}
+        public override string ToString()
+        {
+            return string.Format("{0} [{1}]", m_virtualAddress, m_size.ToString("X"));
+        }
 
-			return false;
-		}
+        public static bool operator ==(DataDirectory one, DataDirectory other)
+        {
+            return one.m_virtualAddress == other.m_virtualAddress && one.m_size == other.m_size;
+        }
 
-		public override string ToString ()
-		{
-			return string.Format ("{0} [{1}]", m_virtualAddress, m_size.ToString ("X"));
-		}
-
-		public static bool operator == (DataDirectory one, DataDirectory other)
-		{
-			return one.m_virtualAddress == other.m_virtualAddress && one.m_size == other.m_size;
-		}
-
-		public static bool operator != (DataDirectory one, DataDirectory other)
-		{
-			return one.m_virtualAddress != other.m_virtualAddress || one.m_size != other.m_size;
-		}
-	}
+        public static bool operator !=(DataDirectory one, DataDirectory other)
+        {
+            return one.m_virtualAddress != other.m_virtualAddress || one.m_size != other.m_size;
+        }
+    }
 }

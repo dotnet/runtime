@@ -26,33 +26,33 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    internal sealed class LocalVarSig : Signature
+    {
+        public bool Local;
+        public int Count;
+        public LocalVariable[] LocalVariables;
 
-	internal sealed class LocalVarSig : Signature {
+        public LocalVarSig() : base()
+        {
+        }
 
-		public bool Local;
-		public int Count;
-		public LocalVariable [] LocalVariables;
+        public LocalVarSig(uint blobIndex) : base(blobIndex)
+        {
+        }
 
-		public LocalVarSig () : base ()
-		{
-		}
+        public override void Accept(ISignatureVisitor visitor)
+        {
+            visitor.VisitLocalVarSig(this);
+        }
 
-		public LocalVarSig (uint blobIndex) : base (blobIndex)
-		{
-		}
-
-		public override void Accept (ISignatureVisitor visitor)
-		{
-			visitor.VisitLocalVarSig (this);
-		}
-
-		internal struct LocalVariable {
-
-			public CustomMod [] CustomMods;
-			public Constraint Constraint;
-			public bool ByRef;
-			public SigType Type;
-		}
-	}
+        internal struct LocalVariable
+        {
+            public CustomMod[] CustomMods;
+            public Constraint Constraint;
+            public bool ByRef;
+            public SigType Type;
+        }
+    }
 }

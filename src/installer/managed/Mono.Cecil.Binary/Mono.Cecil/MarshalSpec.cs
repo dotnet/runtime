@@ -26,193 +26,207 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
 
-	using System;
+    internal class MarshalSpec
+    {
+        NativeType m_natIntr;
+        IHasMarshalSpec m_container;
 
-	internal class MarshalSpec {
+        public NativeType NativeIntrinsic
+        {
+            get { return m_natIntr; }
+            set { m_natIntr = value; }
+        }
 
-		NativeType m_natIntr;
-		IHasMarshalSpec m_container;
+        public IHasMarshalSpec Container
+        {
+            get { return m_container; }
+            set { m_container = value; }
+        }
 
-		public NativeType NativeIntrinsic {
-			get { return m_natIntr; }
-			set { m_natIntr = value; }
-		}
+        public MarshalSpec(NativeType natIntr, IHasMarshalSpec container)
+        {
+            m_natIntr = natIntr;
+            m_container = container;
+        }
 
-		public IHasMarshalSpec Container {
-			get { return m_container; }
-			set { m_container = value; }
-		}
+        public virtual void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitMarshalSpec(this);
+        }
 
-		public MarshalSpec (NativeType natIntr, IHasMarshalSpec container)
-		{
-			m_natIntr = natIntr;
-			m_container = container;
-		}
+        public virtual MarshalSpec CloneInto(IHasMarshalSpec container)
+        {
+            return new MarshalSpec(m_natIntr, container);
+        }
+    }
 
-		public virtual void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitMarshalSpec (this);
-		}
+    internal sealed class ArrayMarshalSpec : MarshalSpec
+    {
+        NativeType m_elemType;
+        int m_paramNum;
+        int m_elemMult;
+        int m_numElem;
 
-		public virtual MarshalSpec CloneInto (IHasMarshalSpec container)
-		{
-			return new MarshalSpec (m_natIntr, container);
-		}
-	}
+        public NativeType ElemType
+        {
+            get { return m_elemType; }
+            set { m_elemType = value; }
+        }
 
-	internal sealed class ArrayMarshalSpec : MarshalSpec {
+        public int ParamNum
+        {
+            get { return m_paramNum; }
+            set { m_paramNum = value; }
+        }
 
-		NativeType m_elemType;
-		int m_paramNum;
-		int m_elemMult;
-		int m_numElem;
+        public int ElemMult
+        {
+            get { return m_elemMult; }
+            set { m_elemMult = value; }
+        }
 
-		public NativeType ElemType {
-			get { return m_elemType; }
-			set { m_elemType = value; }
-		}
+        public int NumElem
+        {
+            get { return m_numElem; }
+            set { m_numElem = value; }
+        }
 
-		public int ParamNum {
-			get { return m_paramNum; }
-			set { m_paramNum = value; }
-		}
+        public ArrayMarshalSpec(IHasMarshalSpec container) : base(NativeType.ARRAY, container)
+        {
+        }
 
-		public int ElemMult {
-			get { return m_elemMult; }
-			set { m_elemMult = value; }
-		}
+        public override MarshalSpec CloneInto(IHasMarshalSpec container)
+        {
+            ArrayMarshalSpec spec = new ArrayMarshalSpec(container);
+            spec.m_elemType = m_elemType;
+            spec.m_paramNum = m_paramNum;
+            spec.m_elemMult = m_elemMult;
+            spec.m_numElem = m_numElem;
+            return spec;
+        }
+    }
 
-		public int NumElem {
-			get { return m_numElem; }
-			set { m_numElem = value; }
-		}
+    internal sealed class CustomMarshalerSpec : MarshalSpec
+    {
+        Guid m_guid;
+        string m_unmanagedType;
+        string m_managedType;
+        string m_cookie;
 
-		public ArrayMarshalSpec (IHasMarshalSpec container) : base (NativeType.ARRAY, container)
-		{
-		}
+        public Guid Guid
+        {
+            get { return m_guid; }
+            set { m_guid = value; }
+        }
 
-		public override MarshalSpec CloneInto (IHasMarshalSpec container)
-		{
-			ArrayMarshalSpec spec = new ArrayMarshalSpec (container);
-			spec.m_elemType = m_elemType;
-			spec.m_paramNum = m_paramNum;
-			spec.m_elemMult = m_elemMult;
-			spec.m_numElem = m_numElem;
-			return spec;
-		}
-	}
+        public String UnmanagedType
+        {
+            get { return m_unmanagedType; }
+            set { m_unmanagedType = value; }
+        }
 
-	internal sealed class CustomMarshalerSpec : MarshalSpec {
+        public string ManagedType
+        {
+            get { return m_managedType; }
+            set { m_managedType = value; }
+        }
 
-		Guid m_guid;
-		string m_unmanagedType;
-		string m_managedType;
-		string m_cookie;
+        public string Cookie
+        {
+            get { return m_cookie; }
+            set { m_cookie = value; }
+        }
 
-		public Guid Guid {
-			get { return m_guid; }
-			set { m_guid = value; }
-		}
+        public CustomMarshalerSpec(IHasMarshalSpec container) : base(NativeType.CUSTOMMARSHALER, container)
+        {
+        }
 
-		public String UnmanagedType {
-			get { return m_unmanagedType; }
-			set { m_unmanagedType = value; }
-		}
+        public override MarshalSpec CloneInto(IHasMarshalSpec container)
+        {
+            CustomMarshalerSpec spec = new CustomMarshalerSpec(container);
+            spec.m_guid = m_guid;
+            spec.m_unmanagedType = m_unmanagedType;
+            spec.m_managedType = m_managedType;
+            spec.m_cookie = m_cookie;
+            return spec;
+        }
+    }
 
-		public string ManagedType {
-			get { return m_managedType; }
-			set { m_managedType = value; }
-		}
+    internal sealed class SafeArraySpec : MarshalSpec
+    {
+        private VariantType m_elemType;
 
-		public string Cookie {
-			get { return m_cookie; }
-			set { m_cookie = value; }
-		}
+        public VariantType ElemType
+        {
+            get { return m_elemType; }
+            set { m_elemType = value; }
+        }
 
-		public CustomMarshalerSpec (IHasMarshalSpec container) : base (NativeType.CUSTOMMARSHALER, container)
-		{
-		}
+        public SafeArraySpec(IHasMarshalSpec container) : base(NativeType.SAFEARRAY, container)
+        {
+        }
 
-		public override MarshalSpec CloneInto (IHasMarshalSpec container)
-		{
-			CustomMarshalerSpec spec = new CustomMarshalerSpec (container);
-			spec.m_guid = m_guid;
-			spec.m_unmanagedType = m_unmanagedType;
-			spec.m_managedType = m_managedType;
-			spec.m_cookie = m_cookie;
-			return spec;
-		}
-	}
+        public override MarshalSpec CloneInto(IHasMarshalSpec container)
+        {
+            SafeArraySpec spec = new SafeArraySpec(container);
+            spec.m_elemType = m_elemType;
+            return spec;
+        }
+    }
 
-	internal sealed class SafeArraySpec : MarshalSpec {
+    internal sealed class FixedArraySpec : MarshalSpec
+    {
+        private int m_numElem;
+        private NativeType m_elemType;
 
-		private VariantType m_elemType;
+        public int NumElem
+        {
+            get { return m_numElem; }
+            set { m_numElem = value; }
+        }
 
-		public VariantType ElemType {
-			get { return m_elemType; }
-			set { m_elemType = value; }
-		}
+        public NativeType ElemType
+        {
+            get { return m_elemType; }
+            set { m_elemType = value; }
+        }
 
-		public SafeArraySpec (IHasMarshalSpec container) : base (NativeType.SAFEARRAY, container)
-		{
-		}
+        public FixedArraySpec(IHasMarshalSpec container) : base(NativeType.FIXEDARRAY, container)
+        {
+        }
 
-		public override MarshalSpec CloneInto(IHasMarshalSpec container)
-		{
-			SafeArraySpec spec = new SafeArraySpec	(container);
-			spec.m_elemType = m_elemType;
-			return spec;
-		}
-	}
+        public override MarshalSpec CloneInto(IHasMarshalSpec container)
+        {
+            FixedArraySpec spec = new FixedArraySpec(container);
+            spec.m_numElem = m_numElem;
+            spec.m_elemType = m_elemType;
+            return spec;
+        }
+    }
 
-	internal sealed class FixedArraySpec : MarshalSpec {
+    internal sealed class FixedSysStringSpec : MarshalSpec
+    {
+        private int m_size;
 
-		private int m_numElem;
-		private NativeType m_elemType;
+        public int Size
+        {
+            get { return m_size; }
+            set { m_size = value; }
+        }
 
-		public int NumElem {
-			get { return m_numElem; }
-			set { m_numElem = value; }
-		}
+        public FixedSysStringSpec(IHasMarshalSpec container) : base(NativeType.FIXEDSYSSTRING, container)
+        {
+        }
 
-		public NativeType ElemType {
-			get { return m_elemType; }
-			set { m_elemType = value; }
-		}
-
-		public FixedArraySpec (IHasMarshalSpec container) : base (NativeType.FIXEDARRAY, container)
-		{
-		}
-
-		public override MarshalSpec CloneInto (IHasMarshalSpec container)
-		{
-			FixedArraySpec spec = new FixedArraySpec (container);
-			spec.m_numElem = m_numElem;
-			spec.m_elemType = m_elemType;
-			return spec;
-		}
-	}
-
-	internal sealed class FixedSysStringSpec : MarshalSpec {
-
-		private int m_size;
-
-		public int Size {
-			get { return m_size; }
-			set { m_size = value; }
-		}
-
-		public FixedSysStringSpec (IHasMarshalSpec container) : base (NativeType.FIXEDSYSSTRING, container)
-		{
-		}
-
-		public override MarshalSpec CloneInto (IHasMarshalSpec container)
-		{
-			FixedSysStringSpec spec = new FixedSysStringSpec (container);
-			spec.m_size = m_size;
-			return spec;
-		}
-	}
+        public override MarshalSpec CloneInto(IHasMarshalSpec container)
+        {
+            FixedSysStringSpec spec = new FixedSysStringSpec(container);
+            spec.m_size = m_size;
+            return spec;
+        }
+    }
 }

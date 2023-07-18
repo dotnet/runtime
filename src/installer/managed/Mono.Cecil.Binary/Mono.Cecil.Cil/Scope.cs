@@ -26,54 +26,61 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    internal class Scope : IScopeProvider, IVariableDefinitionProvider, ICodeVisitable
+    {
+        Instruction m_start;
+        Instruction m_end;
 
-	internal class Scope : IScopeProvider, IVariableDefinitionProvider, ICodeVisitable {
+        Scope m_parent;
+        ScopeCollection m_scopes;
 
-		Instruction m_start;
-		Instruction m_end;
+        VariableDefinitionCollection m_variables;
 
-		Scope m_parent;
-		ScopeCollection m_scopes;
+        public Instruction Start
+        {
+            get { return m_start; }
+            set { m_start = value; }
+        }
 
-		VariableDefinitionCollection m_variables;
+        public Instruction End
+        {
+            get { return m_end; }
+            set { m_end = value; }
+        }
 
-		public Instruction Start {
-			get { return m_start; }
-			set { m_start = value; }
-		}
+        public Scope Parent
+        {
+            get { return m_parent; }
+            set { m_parent = value; }
+        }
 
-		public Instruction End {
-			get { return m_end; }
-			set { m_end = value; }
-		}
+        public ScopeCollection Scopes
+        {
+            get
+            {
+                if (m_scopes == null)
+                    m_scopes = new ScopeCollection(this);
 
-		public Scope Parent {
-			get { return m_parent; }
-			set { m_parent = value; }
-		}
+                return m_scopes;
+            }
+        }
 
-		public ScopeCollection Scopes {
-			get {
-				if (m_scopes == null)
-					m_scopes = new ScopeCollection (this);
+        public VariableDefinitionCollection Variables
+        {
+            get
+            {
+                if (m_variables == null)
+                    m_variables = new VariableDefinitionCollection(this);
 
-				return m_scopes;
-			}
-		}
+                return m_variables;
+            }
+        }
 
-		public VariableDefinitionCollection Variables {
-			get {
-				if (m_variables == null)
-					m_variables = new VariableDefinitionCollection (this);
-
-				return m_variables;
-			}
-		}
-
-		public void Accept (ICodeVisitor visitor)
-		{
-			visitor.VisitScope (this);
-		}
-	}
+        public void Accept(ICodeVisitor visitor)
+        {
+            visitor.VisitScope(this);
+        }
+    }
 }

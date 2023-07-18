@@ -29,50 +29,53 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class PropertyPtrTable : IMetadataTable
+    {
+        public const int RId = 0x16;
 
-	internal sealed class PropertyPtrTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x16;
+        public PropertyPtrRow this[int index]
+        {
+            get { return m_rows[index] as PropertyPtrRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public PropertyPtrRow this [int index] {
-			get { return m_rows [index] as PropertyPtrRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal PropertyPtrTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitPropertyPtrTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal PropertyPtrTable ()
-		{
-		}
+    internal sealed class PropertyPtrRow : IMetadataRow
+    {
+        public uint Property;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitPropertyPtrTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal PropertyPtrRow()
+        {
+        }
 
-	internal sealed class PropertyPtrRow : IMetadataRow {
-
-		public uint Property;
-
-		internal PropertyPtrRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitPropertyPtrRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitPropertyPtrRow(this);
+        }
+    }
 }

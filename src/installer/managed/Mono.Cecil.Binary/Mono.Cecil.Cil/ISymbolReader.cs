@@ -29,10 +29,10 @@
 using System;
 using System.Collections;
 
-namespace Mono.Cecil.Cil {
-
-	internal interface ISymbolReader : IDisposable {
-
-		void Read (MethodBody body, IDictionary instructions);
-	}
+namespace Mono.Cecil.Cil
+{
+    internal interface ISymbolReader : IDisposable
+    {
+        void Read(MethodBody body, IDictionary instructions);
+    }
 }

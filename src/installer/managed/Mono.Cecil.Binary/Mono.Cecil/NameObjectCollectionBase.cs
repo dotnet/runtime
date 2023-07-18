@@ -230,7 +230,8 @@ namespace System.Collections.Specialized
 		protected NameObjectCollectionBase (int capacity, IEqualityComparer equalityComparer)
 		{
 			m_readonly = false;
-			equality_comparer = (equalityComparer == null ? StringComparer.InvariantCultureIgnoreCase : equalityComparer);
+			equality_comparer =
+ (equalityComparer == null ? StringComparer.InvariantCultureIgnoreCase : equalityComparer);
 			m_defCapacity = capacity;
 			Init();
 		}

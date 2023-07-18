@@ -29,54 +29,57 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class ModuleTable : IMetadataTable
+    {
+        public const int RId = 0x00;
 
-	internal sealed class ModuleTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x00;
+        public ModuleRow this[int index]
+        {
+            get { return m_rows[index] as ModuleRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public ModuleRow this [int index] {
-			get { return m_rows [index] as ModuleRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal ModuleTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitModuleTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal ModuleTable ()
-		{
-		}
+    internal sealed class ModuleRow : IMetadataRow
+    {
+        public ushort Generation;
+        public uint Name;
+        public uint Mvid;
+        public uint EncId;
+        public uint EncBaseId;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitModuleTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal ModuleRow()
+        {
+        }
 
-	internal sealed class ModuleRow : IMetadataRow {
-
-		public ushort Generation;
-		public uint Name;
-		public uint Mvid;
-		public uint EncId;
-		public uint EncBaseId;
-
-		internal ModuleRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitModuleRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitModuleRow(this);
+        }
+    }
 }

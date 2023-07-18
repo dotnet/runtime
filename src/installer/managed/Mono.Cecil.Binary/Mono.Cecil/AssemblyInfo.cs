@@ -33,23 +33,23 @@ using System.Runtime.InteropServices;
 
 #if !EMBEDDED
 
-[assembly: AssemblyTitle ("Mono.Cecil")]
-[assembly: AssemblyDescription ("Library for reading and writing CIL images")]
-[assembly: AssemblyConfiguration ("")]
-[assembly: AssemblyProduct ("Mono.Cecil")]
-[assembly: AssemblyCopyright ("(C) 2005 - 2007, Jb Evain")]
-[assembly: AssemblyCulture ("")]
+[assembly: AssemblyTitle("Mono.Cecil")]
+[assembly: AssemblyDescription("Library for reading and writing CIL images")]
+[assembly: AssemblyConfiguration("")]
+[assembly: AssemblyProduct("Mono.Cecil")]
+[assembly: AssemblyCopyright("(C) 2005 - 2007, Jb Evain")]
+[assembly: AssemblyCulture("")]
 
-[assembly: CLSCompliant (false)]
-[assembly: ComVisible (false)]
+[assembly: CLSCompliant(false)]
+[assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion (
-	//
-	// DO NOT MODIFY THE STRING BELOWS WITOUT UPDATING cecil.pc.in in mono/data
-	//
-	"0.6.9.0"
-	//
-	// DO NOT MODIFY THE STRING ABOVE WITHOUT UPDATING cecil.pc.in in mono/data
+[assembly: AssemblyVersion(
+    //
+    // DO NOT MODIFY THE STRING BELOWS WITOUT UPDATING cecil.pc.in in mono/data
+    //
+    version: "0.6.9.0"
+    //
+    // DO NOT MODIFY THE STRING ABOVE WITHOUT UPDATING cecil.pc.in in mono/data
 )]
 
 #if KEYFILE

@@ -29,50 +29,53 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class AssemblyProcessorTable : IMetadataTable
+    {
+        public const int RId = 0x21;
 
-	internal sealed class AssemblyProcessorTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x21;
+        public AssemblyProcessorRow this[int index]
+        {
+            get { return m_rows[index] as AssemblyProcessorRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public AssemblyProcessorRow this [int index] {
-			get { return m_rows [index] as AssemblyProcessorRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal AssemblyProcessorTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitAssemblyProcessorTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal AssemblyProcessorTable ()
-		{
-		}
+    internal sealed class AssemblyProcessorRow : IMetadataRow
+    {
+        public uint Processor;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitAssemblyProcessorTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal AssemblyProcessorRow()
+        {
+        }
 
-	internal sealed class AssemblyProcessorRow : IMetadataRow {
-
-		public uint Processor;
-
-		internal AssemblyProcessorRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitAssemblyProcessorRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitAssemblyProcessorRow(this);
+        }
+    }
 }

@@ -26,12 +26,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
+namespace Mono.Cecil.Cil
+{
+    using System;
 
-	using System;
-
-	internal interface ISymbolWriter : IDisposable {
-
-		void Write (MethodBody body);
-	}
+    internal interface ISymbolWriter : IDisposable
+    {
+        void Write(MethodBody body);
+    }
 }

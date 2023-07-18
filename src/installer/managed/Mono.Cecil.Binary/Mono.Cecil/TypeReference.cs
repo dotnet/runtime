@@ -26,145 +26,162 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal class TypeReference : MemberReference, IGenericParameterProvider, ICustomAttributeProvider
+    {
+        string m_namespace;
+        bool m_fullNameDiscarded;
+        string m_fullName;
+        protected bool m_isValueType;
+        IMetadataScope m_scope;
+        ModuleDefinition m_module;
 
-	internal class TypeReference : MemberReference, IGenericParameterProvider, ICustomAttributeProvider {
+        CustomAttributeCollection m_customAttrs;
+        GenericParameterCollection m_genparams;
 
-		string m_namespace;
-		bool m_fullNameDiscarded;
-		string m_fullName;
-		protected bool m_isValueType;
-		IMetadataScope m_scope;
-		ModuleDefinition m_module;
+        public override string Name
+        {
+            get { return base.Name; }
+            set
+            {
+                base.Name = value;
+                m_fullNameDiscarded = true;
+            }
+        }
 
-		CustomAttributeCollection m_customAttrs;
-		GenericParameterCollection m_genparams;
+        public virtual string Namespace
+        {
+            get { return m_namespace; }
+            set
+            {
+                m_namespace = value;
+                m_fullNameDiscarded = true;
+            }
+        }
 
-		public override string Name {
-			get { return base.Name; }
-			set {
-				base.Name = value;
-				m_fullNameDiscarded = true;
-			}
-		}
+        public virtual bool IsValueType
+        {
+            get { return m_isValueType; }
+            set { m_isValueType = value; }
+        }
 
-		public virtual string Namespace {
-			get { return m_namespace; }
-			set {
-				m_namespace = value;
-				m_fullNameDiscarded = true;
-			}
-		}
+        public virtual ModuleDefinition Module
+        {
+            get { return m_module; }
+            set { m_module = value; }
+        }
 
-		public virtual bool IsValueType {
-			get { return m_isValueType; }
-			set { m_isValueType = value; }
-		}
+        public bool HasCustomAttributes
+        {
+            get { return (m_customAttrs == null) ? false : (m_customAttrs.Count > 0); }
+        }
 
-		public virtual ModuleDefinition Module {
-			get { return m_module; }
-			set { m_module = value; }
-		}
+        public CustomAttributeCollection CustomAttributes
+        {
+            get
+            {
+                if (m_customAttrs == null)
+                    m_customAttrs = new CustomAttributeCollection(this);
 
-		public bool HasCustomAttributes {
-			get { return (m_customAttrs == null) ? false : (m_customAttrs.Count > 0); }
-		}
+                return m_customAttrs;
+            }
+        }
 
-		public CustomAttributeCollection CustomAttributes {
-			get {
-				if (m_customAttrs == null)
-					m_customAttrs = new CustomAttributeCollection (this);
+        public bool HasGenericParameters
+        {
+            get { return (m_genparams == null) ? false : (m_genparams.Count > 0); }
+        }
 
-				return m_customAttrs;
-			}
-		}
+        public GenericParameterCollection GenericParameters
+        {
+            get
+            {
+                if (m_genparams == null)
+                    m_genparams = new GenericParameterCollection(this);
+                return m_genparams;
+            }
+        }
 
-		public bool HasGenericParameters {
-			get { return (m_genparams == null) ? false : (m_genparams.Count > 0); }
-		}
+        public virtual IMetadataScope Scope
+        {
+            get
+            {
+                if (this.DeclaringType != null)
+                    return this.DeclaringType.Scope;
 
-		public GenericParameterCollection GenericParameters {
-			get {
-				if (m_genparams == null)
-					m_genparams = new GenericParameterCollection (this);
-				return m_genparams;
-			}
-		}
+                return m_scope;
+            }
+        }
 
-		public virtual IMetadataScope Scope {
-			get {
-				if (this.DeclaringType != null)
-					return this.DeclaringType.Scope;
+        public bool IsNested
+        {
+            get { return this.DeclaringType != null; }
+        }
 
-				return m_scope;
-			}
-		}
+        public virtual string FullName
+        {
+            get
+            {
+                if (m_fullName != null && !m_fullNameDiscarded)
+                    return m_fullName;
 
-		public bool IsNested {
-			get { return this.DeclaringType != null; }
-		}
+                if (this.IsNested)
+                    return string.Concat(this.DeclaringType.FullName, "/", this.Name);
 
-		public virtual string FullName {
-			get {
-				if (m_fullName != null && !m_fullNameDiscarded)
-					return m_fullName;
+                if (m_namespace == null || m_namespace.Length == 0)
+                    return this.Name;
 
-				if (this.IsNested)
-					return string.Concat (this.DeclaringType.FullName, "/", this.Name);
+                m_fullName = string.Concat(m_namespace, ".", this.Name);
+                m_fullNameDiscarded = false;
+                return m_fullName;
+            }
+        }
 
-				if (m_namespace == null || m_namespace.Length == 0)
-					return this.Name;
+        protected TypeReference(string name, string ns) : base(name)
+        {
+            m_namespace = ns;
+            m_fullNameDiscarded = false;
+        }
 
-				m_fullName = string.Concat (m_namespace, ".", this.Name);
-				m_fullNameDiscarded = false;
-				return m_fullName;
-			}
-		}
+        internal TypeReference(string name, string ns, IMetadataScope scope) : this(name, ns)
+        {
+            m_scope = scope;
+        }
 
-		protected TypeReference (string name, string ns) : base (name)
-		{
-			m_namespace = ns;
-			m_fullNameDiscarded = false;
-		}
+        public TypeReference(string name, string ns, IMetadataScope scope, bool valueType) :
+            this(name, ns, scope)
+        {
+            m_isValueType = valueType;
+        }
 
-		internal TypeReference (string name, string ns, IMetadataScope scope) : this (name, ns)
-		{
-			m_scope = scope;
-		}
+        public virtual TypeDefinition Resolve()
+        {
+            ModuleDefinition module = Module;
+            if (module == null)
+                return null;
 
-		public TypeReference (string name, string ns, IMetadataScope scope, bool valueType) :
-			this (name, ns, scope)
-		{
-			m_isValueType = valueType;
-		}
+            return module.Resolver.Resolve(this);
+        }
 
-		public virtual TypeDefinition Resolve ()
-		{
-			ModuleDefinition module = Module;
-			if (module == null)
-				return null;
+        public virtual TypeReference GetOriginalType()
+        {
+            return this;
+        }
 
-			return module.Resolver.Resolve (this);
-		}
+        internal void AttachToScope(IMetadataScope scope)
+        {
+            m_scope = scope;
+        }
 
-		public virtual TypeReference GetOriginalType ()
-		{
-			return this;
-		}
+        public override void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitTypeReference(this);
+        }
 
-		internal void AttachToScope (IMetadataScope scope)
-		{
-			m_scope = scope;
-		}
-
-		public override void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitTypeReference (this);
-		}
-
-		public override string ToString ()
-		{
-			return this.FullName;
-		}
-	}
+        public override string ToString()
+        {
+            return this.FullName;
+        }
+    }
 }

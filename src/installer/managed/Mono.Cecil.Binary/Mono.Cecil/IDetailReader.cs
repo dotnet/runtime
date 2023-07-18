@@ -26,23 +26,23 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    internal interface IDetailReader
+    {
+        void ReadSemantic(EventDefinition evt);
+        void ReadSemantic(PropertyDefinition prop);
 
-	internal interface IDetailReader {
+        void ReadMarshalSpec(ParameterDefinition param);
+        void ReadMarshalSpec(FieldDefinition field);
 
-		void ReadSemantic (EventDefinition evt);
-		void ReadSemantic (PropertyDefinition prop);
+        void ReadLayout(TypeDefinition type);
+        void ReadLayout(FieldDefinition field);
 
-		void ReadMarshalSpec (ParameterDefinition param);
-		void ReadMarshalSpec (FieldDefinition field);
+        void ReadConstant(FieldDefinition field);
+        void ReadConstant(PropertyDefinition prop);
+        void ReadConstant(ParameterDefinition param);
 
-		void ReadLayout (TypeDefinition type);
-		void ReadLayout (FieldDefinition field);
-
-		void ReadConstant (FieldDefinition field);
-		void ReadConstant (PropertyDefinition prop);
-		void ReadConstant (ParameterDefinition param);
-
-		void ReadInitialValue (FieldDefinition field);
-	}
+        void ReadInitialValue(FieldDefinition field);
+    }
 }

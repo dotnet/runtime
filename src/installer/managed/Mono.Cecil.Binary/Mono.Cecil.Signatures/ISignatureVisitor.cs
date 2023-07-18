@@ -26,14 +26,14 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
-
-	internal interface ISignatureVisitor {
-
-		void VisitMethodDefSig (MethodDefSig methodDef);
-		void VisitMethodRefSig (MethodRefSig methodRef);
-		void VisitFieldSig (FieldSig field);
-		void VisitPropertySig (PropertySig property);
-		void VisitLocalVarSig (LocalVarSig localvar);
-	}
+namespace Mono.Cecil.Signatures
+{
+    internal interface ISignatureVisitor
+    {
+        void VisitMethodDefSig(MethodDefSig methodDef);
+        void VisitMethodRefSig(MethodRefSig methodRef);
+        void VisitFieldSig(FieldSig field);
+        void VisitPropertySig(PropertySig property);
+        void VisitLocalVarSig(LocalVarSig localvar);
+    }
 }

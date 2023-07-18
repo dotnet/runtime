@@ -26,9 +26,10 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
-
-	internal interface IBinaryVisitable {
-		void Accept (IBinaryVisitor visitor);
-	}
+namespace Mono.Cecil.Binary
+{
+    internal interface IBinaryVisitable
+    {
+        void Accept(IBinaryVisitor visitor);
+    }
 }

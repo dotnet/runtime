@@ -29,52 +29,55 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Metadata {
+namespace Mono.Cecil.Metadata
+{
+    internal sealed class TypeRefTable : IMetadataTable
+    {
+        public const int RId = 0x01;
 
-	internal sealed class TypeRefTable : IMetadataTable {
+        RowCollection m_rows;
 
-		public const int RId = 0x01;
+        public TypeRefRow this[int index]
+        {
+            get { return m_rows[index] as TypeRefRow; }
+            set { m_rows[index] = value; }
+        }
 
-		RowCollection m_rows;
+        public RowCollection Rows
+        {
+            get { return m_rows; }
+            set { m_rows = value; }
+        }
 
-		public TypeRefRow this [int index] {
-			get { return m_rows [index] as TypeRefRow; }
-			set { m_rows [index] = value; }
-		}
+        public int Id
+        {
+            get { return RId; }
+        }
 
-		public RowCollection Rows {
-			get { return m_rows; }
-			set { m_rows = value; }
-		}
+        internal TypeRefTable()
+        {
+        }
 
-		public int Id {
-			get { return RId; }
-		}
+        public void Accept(IMetadataTableVisitor visitor)
+        {
+            visitor.VisitTypeRefTable(this);
+            this.Rows.Accept(visitor.GetRowVisitor());
+        }
+    }
 
-		internal TypeRefTable ()
-		{
-		}
+    internal sealed class TypeRefRow : IMetadataRow
+    {
+        public MetadataToken ResolutionScope;
+        public uint Name;
+        public uint Namespace;
 
-		public void Accept (IMetadataTableVisitor visitor)
-		{
-			visitor.VisitTypeRefTable (this);
-			this.Rows.Accept (visitor.GetRowVisitor ());
-		}
-	}
+        internal TypeRefRow()
+        {
+        }
 
-	internal sealed class TypeRefRow : IMetadataRow {
-
-		public MetadataToken ResolutionScope;
-		public uint Name;
-		public uint Namespace;
-
-		internal TypeRefRow ()
-		{
-		}
-
-		public void Accept (IMetadataRowVisitor visitor)
-		{
-			visitor.VisitTypeRefRow (this);
-		}
-	}
+        public void Accept(IMetadataRowVisitor visitor)
+        {
+            visitor.VisitTypeRefRow(this);
+        }
+    }
 }

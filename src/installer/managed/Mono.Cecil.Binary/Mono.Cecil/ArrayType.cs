@@ -26,84 +26,95 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Text;
+    using Mono.Cecil.Signatures;
 
-	using System.Text;
+    internal sealed class ArrayType : TypeSpecification
+    {
+        private ArrayDimensionCollection m_dimensions;
 
-	using Mono.Cecil.Signatures;
+        public ArrayDimensionCollection Dimensions
+        {
+            get { return m_dimensions; }
+        }
 
-	internal sealed class ArrayType : TypeSpecification {
+        public int Rank
+        {
+            get { return m_dimensions.Count; }
+        }
 
-		private ArrayDimensionCollection m_dimensions;
+        public bool IsSizedArray
+        {
+            get
+            {
+                if (this.Rank != 1)
+                    return false;
+                ArrayDimension dim = m_dimensions[0];
+                return dim.UpperBound == 0;
+            }
+        }
 
-		public ArrayDimensionCollection Dimensions {
-			get { return m_dimensions; }
-		}
+        public override string Name
+        {
+            get { return string.Concat(base.Name, Suffix()); }
+        }
 
-		public int Rank {
-			get { return m_dimensions.Count; }
-		}
+        public override string FullName
+        {
+            get { return string.Concat(base.FullName, Suffix()); }
+        }
 
-		public bool IsSizedArray {
-			get {
-				if (this.Rank != 1)
-					return false;
-				ArrayDimension dim = m_dimensions [0];
-				return dim.UpperBound == 0;
-			}
-		}
+        string Suffix()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("[");
+            for (int i = 0; i < m_dimensions.Count; i++)
+            {
+                ArrayDimension dim = m_dimensions[i];
+                string rank = dim.ToString();
+                if (i < m_dimensions.Count - 1)
+                    sb.Append(",");
+                if (rank.Length > 0)
+                {
+                    sb.Append(" ");
+                    sb.Append(rank);
+                }
+            }
 
-		public override string Name {
-			get { return string.Concat (base.Name, Suffix ()); }
-		}
+            sb.Append("]");
+            return sb.ToString();
+        }
 
-		public override string FullName {
-			get { return string.Concat (base.FullName, Suffix ()); }
-		}
+        internal ArrayType(TypeReference elementType, ArrayShape shape) : base(elementType)
+        {
+            m_dimensions = new ArrayDimensionCollection(this);
+            for (int i = 0; i < shape.Rank; i++)
+            {
+                int lower = 0, upper = 0;
+                if (i < shape.NumSizes)
+                    if (i < shape.NumLoBounds)
+                    {
+                        lower = shape.LoBounds[i];
+                        upper = shape.LoBounds[i] + shape.Sizes[i] - 1;
+                    }
+                    else
+                        upper = shape.Sizes[i] - 1;
 
-		string Suffix ()
-		{
-			StringBuilder sb = new StringBuilder ();
-			sb.Append ("[");
-			for (int i = 0; i < m_dimensions.Count; i++) {
-				ArrayDimension dim = m_dimensions [i];
-				string rank = dim.ToString ();
-				if (i < m_dimensions.Count - 1)
-					sb.Append (",");
-				if (rank.Length > 0) {
-					sb.Append (" ");
-					sb.Append (rank);
-				}
-			}
-			sb.Append ("]");
-			return sb.ToString ();
-		}
+                m_dimensions.Add(new ArrayDimension(lower, upper));
+            }
+        }
 
-		internal ArrayType (TypeReference elementType, ArrayShape shape) : base (elementType)
-		{
-			m_dimensions = new ArrayDimensionCollection (this);
-			for (int i = 0; i < shape.Rank; i++) {
-				int lower = 0, upper = 0;
-				if (i < shape.NumSizes)
-					if (i < shape.NumLoBounds) {
-						lower = shape.LoBounds [i];
-						upper = shape.LoBounds [i] + shape.Sizes [i] - 1;
-					} else
-						upper = shape.Sizes [i] - 1;
+        public ArrayType(TypeReference elementType, int rank) : base(elementType)
+        {
+            m_dimensions = new ArrayDimensionCollection(this);
+            for (int i = 0; i < rank; i++)
+                m_dimensions.Add(new ArrayDimension(0, 0));
+        }
 
-				m_dimensions.Add (new ArrayDimension (lower, upper));
-			}
-		}
-
-		public ArrayType (TypeReference elementType, int rank) : base (elementType)
-		{
-			m_dimensions = new ArrayDimensionCollection (this);
-			for (int i = 0; i < rank; i++)
-				m_dimensions.Add (new ArrayDimension (0, 0));
-		}
-
-		public ArrayType (TypeReference elementType) : this (elementType, 1)
-		{
-		}
-	}
+        public ArrayType(TypeReference elementType) : this(elementType, 1)
+        {
+        }
+    }
 }

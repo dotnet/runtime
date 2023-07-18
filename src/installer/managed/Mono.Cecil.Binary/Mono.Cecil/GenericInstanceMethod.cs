@@ -26,56 +26,64 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System.Text;
 
-	using System.Text;
+    internal sealed class GenericInstanceMethod : MethodSpecification, IGenericInstance
+    {
+        private GenericArgumentCollection m_genArgs;
 
-	internal sealed class GenericInstanceMethod : MethodSpecification, IGenericInstance {
+        public GenericArgumentCollection GenericArguments
+        {
+            get
+            {
+                if (m_genArgs == null)
+                    m_genArgs = new GenericArgumentCollection(this);
+                return m_genArgs;
+            }
+        }
 
-		private GenericArgumentCollection m_genArgs;
+        public bool HasGenericArguments
+        {
+            get { return m_genArgs == null ? false : m_genArgs.Count > 0; }
+        }
 
-		public GenericArgumentCollection GenericArguments {
-			get {
-				if (m_genArgs == null)
-					m_genArgs = new GenericArgumentCollection (this);
-				return m_genArgs;
-			}
-		}
+        public GenericInstanceMethod(MethodReference elemMethod) : base(elemMethod)
+        {
+        }
 
-		public bool HasGenericArguments {
-			get { return m_genArgs == null ? false : m_genArgs.Count > 0; }
-		}
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+            MethodReference meth = this.ElementMethod;
+            sb.Append(meth.ReturnType.ReturnType.FullName);
+            sb.Append(" ");
+            sb.Append(meth.DeclaringType.FullName);
+            sb.Append("::");
+            sb.Append(meth.Name);
+            sb.Append("<");
+            for (int i = 0; i < this.GenericArguments.Count; i++)
+            {
+                if (i > 0)
+                    sb.Append(",");
+                sb.Append(this.GenericArguments[i].FullName);
+            }
 
-		public GenericInstanceMethod (MethodReference elemMethod) : base (elemMethod)
-		{
-		}
+            sb.Append(">");
+            sb.Append("(");
+            if (meth.HasParameters)
+            {
+                for (int i = 0; i < meth.Parameters.Count; i++)
+                {
+                    sb.Append(meth.Parameters[i].ParameterType.FullName);
+                    if (i < meth.Parameters.Count - 1)
+                        sb.Append(",");
+                }
+            }
 
-		public override string ToString ()
-		{
-			StringBuilder sb = new StringBuilder ();
-			MethodReference meth = this.ElementMethod;
-			sb.Append (meth.ReturnType.ReturnType.FullName);
-			sb.Append (" ");
-			sb.Append (meth.DeclaringType.FullName);
-			sb.Append ("::");
-			sb.Append (meth.Name);
-			sb.Append ("<");
-			for (int i = 0; i < this.GenericArguments.Count; i++) {
-				if (i > 0)
-					sb.Append (",");
-				sb.Append (this.GenericArguments [i].FullName);
-			}
-			sb.Append (">");
-			sb.Append ("(");
-			if (meth.HasParameters) {
-				for (int i = 0; i < meth.Parameters.Count; i++) {
-					sb.Append (meth.Parameters [i].ParameterType.FullName);
-					if (i < meth.Parameters.Count - 1)
-						sb.Append (",");
-				}
-			}
-			sb.Append (")");
-			return sb.ToString ();
-		}
-	}
+            sb.Append(")");
+            return sb.ToString();
+        }
+    }
 }

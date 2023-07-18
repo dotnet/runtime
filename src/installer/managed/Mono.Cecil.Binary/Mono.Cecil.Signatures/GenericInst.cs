@@ -27,20 +27,20 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using Mono.Cecil;
+    using Mono.Cecil.Metadata;
 
-	using Mono.Cecil;
-	using Mono.Cecil.Metadata;
+    internal sealed class GENERICINST : SigType
+    {
+        public bool ValueType;
+        public MetadataToken Type;
 
-	internal sealed class GENERICINST : SigType {
+        public GenericInstSignature Signature;
 
-		public bool ValueType;
-		public MetadataToken Type;
-
-		public GenericInstSignature Signature;
-
-		public GENERICINST () : base (ElementType.GenericInst)
-		{
-		}
-	}
+        public GENERICINST() : base(ElementType.GenericInst)
+        {
+        }
+    }
 }

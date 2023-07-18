@@ -29,60 +29,61 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class ConstraintCollection : CollectionBase
+    {
+        GenericParameter m_container;
 
-	using Mono.Cecil.Cil;
+        public TypeReference this[int index]
+        {
+            get { return List[index] as TypeReference; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class ConstraintCollection : CollectionBase {
+        public GenericParameter Container
+        {
+            get { return m_container; }
+        }
 
-		GenericParameter m_container;
+        public ConstraintCollection(GenericParameter container)
+        {
+            m_container = container;
+        }
 
-		public TypeReference this [int index] {
-			get { return List [index] as TypeReference; }
-			set { List [index] = value; }
-		}
+        public void Add(TypeReference value)
+        {
+            List.Add(value);
+        }
 
-		public GenericParameter Container {
-			get { return m_container; }
-		}
+        public bool Contains(TypeReference value)
+        {
+            return List.Contains(value);
+        }
 
-		public ConstraintCollection (GenericParameter container)
-		{
-			m_container = container;
-		}
+        public int IndexOf(TypeReference value)
+        {
+            return List.IndexOf(value);
+        }
 
-		public void Add (TypeReference value)
-		{
-			List.Add (value);
-		}
+        public void Insert(int index, TypeReference value)
+        {
+            List.Insert(index, value);
+        }
 
-		public bool Contains (TypeReference value)
-		{
-			return List.Contains (value);
-		}
+        public void Remove(TypeReference value)
+        {
+            List.Remove(value);
+        }
 
-		public int IndexOf (TypeReference value)
-		{
-			return List.IndexOf (value);
-		}
-
-		public void Insert (int index, TypeReference value)
-		{
-			List.Insert (index, value);
-		}
-
-		public void Remove (TypeReference value)
-		{
-			List.Remove (value);
-		}
-
-		protected override void OnValidate (object o)
-		{
-			if (! (o is TypeReference))
-				throw new ArgumentException ("Must be of type " + typeof (TypeReference).FullName);
-		}
-	}
+        protected override void OnValidate(object o)
+        {
+            if (!(o is TypeReference))
+                throw new ArgumentException("Must be of type " + typeof(TypeReference).FullName);
+        }
+    }
 }

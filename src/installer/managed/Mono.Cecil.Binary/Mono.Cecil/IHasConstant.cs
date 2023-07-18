@@ -26,11 +26,11 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
-
-	internal interface IHasConstant : IMetadataTokenProvider {
-
-		bool HasConstant { get; }
-		object Constant { get; set; }
-	}
+namespace Mono.Cecil
+{
+    internal interface IHasConstant : IMetadataTokenProvider
+    {
+        bool HasConstant { get; }
+        object Constant { get; set; }
+    }
 }

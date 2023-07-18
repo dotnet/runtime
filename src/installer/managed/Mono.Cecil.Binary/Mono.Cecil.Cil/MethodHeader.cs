@@ -26,12 +26,13 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Cil {
-
-	internal enum MethodHeader : ushort {
-		TinyFormat = 0x2,
-		FatFormat = 0x3,
-		MoreSects = 0x8,
-		InitLocals = 0x10
-	}
+namespace Mono.Cecil.Cil
+{
+    internal enum MethodHeader : ushort
+    {
+        TinyFormat = 0x2,
+        FatFormat = 0x3,
+        MoreSects = 0x8,
+        InitLocals = 0x10
+    }
 }

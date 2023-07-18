@@ -26,90 +26,91 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Binary {
+namespace Mono.Cecil.Binary
+{
+    internal struct RVA
+    {
+        public static readonly RVA Zero = new RVA(0);
 
-	internal struct RVA {
+        uint m_rva;
 
-		public static readonly RVA Zero = new RVA (0);
+        public uint Value
+        {
+            get { return m_rva; }
+            set { m_rva = value; }
+        }
 
-		uint m_rva;
+        public RVA(uint rva)
+        {
+            m_rva = rva;
+        }
 
-		public uint Value {
-			get { return m_rva; }
-			set { m_rva = value; }
-		}
+        public override int GetHashCode()
+        {
+            return (int)m_rva;
+        }
 
-		public RVA (uint rva)
-		{
-			m_rva = rva;
-		}
+        public override bool Equals(object other)
+        {
+            if (other is RVA)
+                return this.m_rva == ((RVA)other).m_rva;
 
-		public override int GetHashCode ()
-		{
-			return (int) m_rva;
-		}
+            return false;
+        }
 
-		public override bool Equals (object other)
-		{
-			if (other is RVA)
-				return this.m_rva == ((RVA) other).m_rva;
+        public override string ToString()
+        {
+            return string.Format("0x{0}", m_rva.ToString("X"));
+        }
 
-			return false;
-		}
+        public static bool operator ==(RVA one, RVA other)
+        {
+            return one.m_rva == other.m_rva;
+        }
 
-		public override string ToString ()
-		{
-			return string.Format ("0x{0}", m_rva.ToString ("X"));
-		}
+        public static bool operator !=(RVA one, RVA other)
+        {
+            return one.m_rva != other.m_rva;
+        }
 
-		public static bool operator == (RVA one, RVA other)
-		{
-			return one.m_rva == other.m_rva;
-		}
+        public static bool operator <(RVA one, RVA other)
+        {
+            return one.m_rva < other.m_rva;
+        }
 
-		public static bool operator != (RVA one, RVA other)
-		{
-			return one.m_rva != other.m_rva;
-		}
+        public static bool operator >(RVA one, RVA other)
+        {
+            return one.m_rva > other.m_rva;
+        }
 
-		public static bool operator < (RVA one, RVA other)
-		{
-			return one.m_rva < other.m_rva;
-		}
+        public static bool operator <=(RVA one, RVA other)
+        {
+            return one.m_rva <= other.m_rva;
+        }
 
-		public static bool operator > (RVA one, RVA other)
-		{
-			return one.m_rva > other.m_rva;
-		}
+        public static bool operator >=(RVA one, RVA other)
+        {
+            return one.m_rva >= other.m_rva;
+        }
 
-		public static bool operator <= (RVA one, RVA other)
-		{
-			return one.m_rva <= other.m_rva;
-		}
+        public static RVA operator +(RVA rva, uint x)
+        {
+            return new RVA(rva.m_rva + x);
+        }
 
-		public static bool operator >= (RVA one, RVA other)
-		{
-			return one.m_rva >= other.m_rva;
-		}
+        public static RVA operator -(RVA rva, uint x)
+        {
+            return new RVA(rva.m_rva - x);
+        }
 
-		public static RVA operator + (RVA rva, uint x)
-		{
-			return new RVA (rva.m_rva + x);
-		}
+        public static implicit operator RVA(uint val)
+        {
+            return val == 0 ? Zero : new RVA(val);
+        }
 
-		public static RVA operator - (RVA rva, uint x)
-		{
-			return new RVA (rva.m_rva - x);
-		}
-
-		public static implicit operator RVA (uint val)
-		{
-			return val == 0 ? Zero : new RVA (val);
-		}
-
-		public static implicit operator uint (RVA rva)
-		{
-			return rva.m_rva;
-		}
-	}
+        public static implicit operator uint(RVA rva)
+        {
+            return rva.m_rva;
+        }
+    }
 }

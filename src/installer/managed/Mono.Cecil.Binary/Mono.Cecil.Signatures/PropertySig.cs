@@ -26,27 +26,27 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    internal sealed class PropertySig : Signature
+    {
+        public bool Property;
+        public int ParamCount;
+        public CustomMod[] CustomMods;
+        public SigType Type;
+        public Param[] Parameters;
 
-	internal sealed class PropertySig : Signature {
+        public PropertySig() : base()
+        {
+        }
 
-		public bool Property;
-		public int ParamCount;
-		public CustomMod [] CustomMods;
-		public SigType Type;
-		public Param [] Parameters;
+        public PropertySig(uint blobIndex) : base(blobIndex)
+        {
+        }
 
-		public PropertySig () : base ()
-		{
-		}
-
-		public PropertySig (uint blobIndex) : base (blobIndex)
-		{
-		}
-
-		public override void Accept (ISignatureVisitor visitor)
-		{
-			visitor.VisitPropertySig (this);
-		}
-	}
+        public override void Accept(ISignatureVisitor visitor)
+        {
+            visitor.VisitPropertySig(this);
+        }
+    }
 }

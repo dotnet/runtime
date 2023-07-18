@@ -29,65 +29,66 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.Collections;
+    using Mono.Cecil.Cil;
 
-	using System;
-	using System.Collections;
+    internal sealed class ParameterDefinitionCollection : CollectionBase, IReflectionVisitable
+    {
+        IMemberReference m_container;
 
-	using Mono.Cecil.Cil;
+        public ParameterDefinition this[int index]
+        {
+            get { return List[index] as ParameterDefinition; }
+            set { List[index] = value; }
+        }
 
-	internal sealed class ParameterDefinitionCollection : CollectionBase, IReflectionVisitable {
+        public IMemberReference Container
+        {
+            get { return m_container; }
+        }
 
-		IMemberReference m_container;
+        public ParameterDefinitionCollection(IMemberReference container)
+        {
+            m_container = container;
+        }
 
-		public ParameterDefinition this [int index] {
-			get { return List [index] as ParameterDefinition; }
-			set { List [index] = value; }
-		}
+        public void Add(ParameterDefinition value)
+        {
+            List.Add(value);
+        }
 
-		public IMemberReference Container {
-			get { return m_container; }
-		}
+        public bool Contains(ParameterDefinition value)
+        {
+            return List.Contains(value);
+        }
 
-		public ParameterDefinitionCollection (IMemberReference container)
-		{
-			m_container = container;
-		}
+        public int IndexOf(ParameterDefinition value)
+        {
+            return List.IndexOf(value);
+        }
 
-		public void Add (ParameterDefinition value)
-		{
-			List.Add (value);
-		}
+        public void Insert(int index, ParameterDefinition value)
+        {
+            List.Insert(index, value);
+        }
 
-		public bool Contains (ParameterDefinition value)
-		{
-			return List.Contains (value);
-		}
+        public void Remove(ParameterDefinition value)
+        {
+            List.Remove(value);
+        }
 
-		public int IndexOf (ParameterDefinition value)
-		{
-			return List.IndexOf (value);
-		}
+        protected override void OnValidate(object o)
+        {
+            if (!(o is ParameterDefinition))
+                throw new ArgumentException("Must be of type " + typeof(ParameterDefinition).FullName);
+        }
 
-		public void Insert (int index, ParameterDefinition value)
-		{
-			List.Insert (index, value);
-		}
-
-		public void Remove (ParameterDefinition value)
-		{
-			List.Remove (value);
-		}
-
-		protected override void OnValidate (object o)
-		{
-			if (! (o is ParameterDefinition))
-				throw new ArgumentException ("Must be of type " + typeof (ParameterDefinition).FullName);
-		}
-
-		public void Accept (IReflectionVisitor visitor)
-		{
-			visitor.VisitParameterDefinitionCollection (this);
-		}
-	}
+        public void Accept(IReflectionVisitor visitor)
+        {
+            visitor.VisitParameterDefinitionCollection(this);
+        }
+    }
 }

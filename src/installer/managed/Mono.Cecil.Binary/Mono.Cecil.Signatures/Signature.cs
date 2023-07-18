@@ -26,25 +26,25 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil.Signatures {
+namespace Mono.Cecil.Signatures
+{
+    using System;
 
-	using System;
+    internal abstract class Signature : ISignatureVisitable
+    {
+        public byte CallingConvention;
+        public uint BlobIndex;
 
-	internal abstract class Signature : ISignatureVisitable {
+        public Signature(uint blobIndex)
+        {
+            BlobIndex = blobIndex;
+        }
 
-		public byte CallingConvention;
-		public uint BlobIndex;
+        public Signature()
+        {
+            BlobIndex = 0;
+        }
 
-		public Signature (uint blobIndex)
-		{
-			BlobIndex = blobIndex;
-		}
-
-		public Signature ()
-		{
-			BlobIndex = 0;
-		}
-
-		public abstract void Accept (ISignatureVisitor visitor);
-	}
+        public abstract void Accept(ISignatureVisitor visitor);
+    }
 }

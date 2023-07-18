@@ -38,597 +38,660 @@ using System.Text;
 
 namespace Mono.Xml
 {
-	internal sealed class DefaultHandler : SmallXmlParser.IContentHandler
-	{
-		public void OnStartParsing (SmallXmlParser parser)
-		{
-		}
+    internal sealed class DefaultHandler : SmallXmlParser.IContentHandler
+    {
+        public void OnStartParsing(SmallXmlParser parser)
+        {
+        }
 
-		public void OnEndParsing (SmallXmlParser parser)
-		{
-		}
+        public void OnEndParsing(SmallXmlParser parser)
+        {
+        }
 
-		public void OnStartElement (string name, SmallXmlParser.IAttrList attrs)
-		{
-		}
+        public void OnStartElement(string name, SmallXmlParser.IAttrList attrs)
+        {
+        }
 
-		public void OnEndElement (string name)
-		{
-		}
+        public void OnEndElement(string name)
+        {
+        }
 
-		public void OnChars (string s)
-		{
-		}
+        public void OnChars(string s)
+        {
+        }
 
-		public void OnIgnorableWhitespace (string s)
-		{
-		}
+        public void OnIgnorableWhitespace(string s)
+        {
+        }
 
-		public void OnProcessingInstruction (string name, string text)
-		{
-		}
-	}
+        public void OnProcessingInstruction(string name, string text)
+        {
+        }
+    }
 
-	internal class SmallXmlParser
-	{
-		internal interface IContentHandler
-		{
-			void OnStartParsing (SmallXmlParser parser);
-			void OnEndParsing (SmallXmlParser parser);
-			void OnStartElement (string name, IAttrList attrs);
-			void OnEndElement (string name);
-			void OnProcessingInstruction (string name, string text);
-			void OnChars (string text);
-			void OnIgnorableWhitespace (string text);
-		}
+    internal class SmallXmlParser
+    {
+        internal interface IContentHandler
+        {
+            void OnStartParsing(SmallXmlParser parser);
+            void OnEndParsing(SmallXmlParser parser);
+            void OnStartElement(string name, IAttrList attrs);
+            void OnEndElement(string name);
+            void OnProcessingInstruction(string name, string text);
+            void OnChars(string text);
+            void OnIgnorableWhitespace(string text);
+        }
 
-		internal interface IAttrList
-		{
-			int Length { get; }
-			bool IsEmpty { get; }
-			string GetName (int i);
-			string GetValue (int i);
-			string GetValue (string name);
-			string [] Names { get; }
-			string [] Values { get; }
-		}
+        internal interface IAttrList
+        {
+            int Length { get; }
+            bool IsEmpty { get; }
+            string GetName(int i);
+            string GetValue(int i);
+            string GetValue(string name);
+            string[] Names { get; }
+            string[] Values { get; }
+        }
 
-		sealed class AttrListImpl : IAttrList
-		{
-			public int Length {
-				get { return attrNames.Count; }
-			}
-			public bool IsEmpty {
-				get { return attrNames.Count == 0; }
-			}
-			public string GetName (int i)
-			{
-				return (string) attrNames [i];
-			}
-			public string GetValue (int i)
-			{
-				return (string) attrValues [i];
-			}
-			public string GetValue (string name)
-			{
-				for (int i = 0; i < attrNames.Count; i++)
-					if ((string) attrNames [i] == name)
-						return (string) attrValues [i];
-				return null;
-			}
-			public string [] Names {
-				get { return (string []) attrNames.ToArray (typeof (string)); }
-			}
-			public string [] Values {
-				get { return (string []) attrValues.ToArray (typeof (string)); }
-			}
+        sealed class AttrListImpl : IAttrList
+        {
+            public int Length
+            {
+                get { return attrNames.Count; }
+            }
 
-			ArrayList attrNames = new ArrayList ();
-			ArrayList attrValues = new ArrayList ();
+            public bool IsEmpty
+            {
+                get { return attrNames.Count == 0; }
+            }
 
-			internal void Clear ()
-			{
-				attrNames.Clear ();
-				attrValues.Clear ();
-			}
+            public string GetName(int i)
+            {
+                return (string)attrNames[i];
+            }
 
-			internal void Add (string name, string value)
-			{
-				attrNames.Add (name);
-				attrValues.Add (value);
-			}
-		}
+            public string GetValue(int i)
+            {
+                return (string)attrValues[i];
+            }
 
-		IContentHandler handler;
-		TextReader reader;
-		Stack elementNames = new Stack ();
-		Stack xmlSpaces = new Stack ();
-		string xmlSpace;
-		StringBuilder buffer = new StringBuilder (200);
-		char [] nameBuffer = new char [30];
-		bool isWhitespace;
+            public string GetValue(string name)
+            {
+                for (int i = 0; i < attrNames.Count; i++)
+                    if ((string)attrNames[i] == name)
+                        return (string)attrValues[i];
+                return null;
+            }
 
-		AttrListImpl attributes = new AttrListImpl ();
-		int line = 1, column;
-		bool resetColumn;
+            public string[] Names
+            {
+                get { return (string[])attrNames.ToArray(typeof(string)); }
+            }
 
-		public SmallXmlParser ()
-		{
-		}
+            public string[] Values
+            {
+                get { return (string[])attrValues.ToArray(typeof(string)); }
+            }
 
-		private Exception Error (string msg)
-		{
-			return new SmallXmlParserException (msg, line, column);
-		}
+            ArrayList attrNames = new ArrayList();
+            ArrayList attrValues = new ArrayList();
 
-		private Exception UnexpectedEndError ()
-		{
-			string [] arr = new string [elementNames.Count];
-			// COMPACT FRAMEWORK NOTE: CopyTo is not visible through the Stack class
-			(elementNames as ICollection).CopyTo (arr, 0);
-			return Error (String.Format (
-							  "Unexpected end of stream. Element stack content is {0}", String.Join (",", arr)));
-		}
+            internal void Clear()
+            {
+                attrNames.Clear();
+                attrValues.Clear();
+            }
 
+            internal void Add(string name, string value)
+            {
+                attrNames.Add(name);
+                attrValues.Add(value);
+            }
+        }
 
-		private bool IsNameChar (char c, bool start)
-		{
-			switch (c) {
-			case ':':
-			case '_':
-				return true;
-			case '-':
-			case '.':
-				return !start;
-			}
-			if (c > 0x100) { // optional condition for optimization
-				switch (c) {
-				case '\u0559':
-				case '\u06E5':
-				case '\u06E6':
-					return true;
-				}
-				if ('\u02BB' <= c && c <= '\u02C1')
-					return true;
-			}
-			switch (Char.GetUnicodeCategory (c)) {
-			case UnicodeCategory.LowercaseLetter:
-			case UnicodeCategory.UppercaseLetter:
-			case UnicodeCategory.OtherLetter:
-			case UnicodeCategory.TitlecaseLetter:
-			case UnicodeCategory.LetterNumber:
-				return true;
-			case UnicodeCategory.SpacingCombiningMark:
-			case UnicodeCategory.EnclosingMark:
-			case UnicodeCategory.NonSpacingMark:
-			case UnicodeCategory.ModifierLetter:
-			case UnicodeCategory.DecimalDigitNumber:
-				return !start;
-			default:
-				return false;
-			}
-		}
+        IContentHandler handler;
+        TextReader reader;
+        Stack elementNames = new Stack();
+        Stack xmlSpaces = new Stack();
+        string xmlSpace;
+        StringBuilder buffer = new StringBuilder(200);
+        char[] nameBuffer = new char [30];
+        bool isWhitespace;
 
-		private bool IsWhitespace (int c)
-		{
-			switch (c) {
-			case ' ':
-			case '\r':
-			case '\t':
-			case '\n':
-				return true;
-			default:
-				return false;
-			}
-		}
+        AttrListImpl attributes = new AttrListImpl();
+        int line = 1, column;
+        bool resetColumn;
+
+        public SmallXmlParser()
+        {
+        }
+
+        private Exception Error(string msg)
+        {
+            return new SmallXmlParserException(msg, line, column);
+        }
+
+        private Exception UnexpectedEndError()
+        {
+            string[] arr = new string [elementNames.Count];
+            // COMPACT FRAMEWORK NOTE: CopyTo is not visible through the Stack class
+            (elementNames as ICollection).CopyTo(arr, 0);
+            return Error(String.Format(
+                "Unexpected end of stream. Element stack content is {0}", String.Join(",", arr)));
+        }
 
 
-		public void SkipWhitespaces ()
-		{
-			SkipWhitespaces (false);
-		}
+        private bool IsNameChar(char c, bool start)
+        {
+            switch (c)
+            {
+                case ':':
+                case '_':
+                    return true;
+                case '-':
+                case '.':
+                    return !start;
+            }
 
-		private void HandleWhitespaces ()
-		{
-			while (IsWhitespace (Peek ()))
-				buffer.Append ((char) Read ());
-			if (Peek () != '<' && Peek () >= 0)
-				isWhitespace = false;
-		}
+            if (c > 0x100)
+            {
+                // optional condition for optimization
+                switch (c)
+                {
+                    case '\u0559':
+                    case '\u06E5':
+                    case '\u06E6':
+                        return true;
+                }
 
-		public void SkipWhitespaces (bool expected)
-		{
-			while (true) {
-				switch (Peek ()) {
-				case ' ':
-				case '\r':
-				case '\t':
-				case '\n':
-					Read ();
-					if (expected)
-						expected = false;
-					continue;
-				}
-				if (expected)
-					throw Error ("Whitespace is expected.");
-				return;
-			}
-		}
+                if ('\u02BB' <= c && c <= '\u02C1')
+                    return true;
+            }
 
+            switch (Char.GetUnicodeCategory(c))
+            {
+                case UnicodeCategory.LowercaseLetter:
+                case UnicodeCategory.UppercaseLetter:
+                case UnicodeCategory.OtherLetter:
+                case UnicodeCategory.TitlecaseLetter:
+                case UnicodeCategory.LetterNumber:
+                    return true;
+                case UnicodeCategory.SpacingCombiningMark:
+                case UnicodeCategory.EnclosingMark:
+                case UnicodeCategory.NonSpacingMark:
+                case UnicodeCategory.ModifierLetter:
+                case UnicodeCategory.DecimalDigitNumber:
+                    return !start;
+                default:
+                    return false;
+            }
+        }
 
-		private int Peek ()
-		{
-			return reader.Peek ();
-		}
-
-		private int Read ()
-		{
-			int i = reader.Read ();
-			if (i == '\n')
-				resetColumn = true;
-			if (resetColumn) {
-				line++;
-				resetColumn = false;
-				column = 1;
-			}
-			else
-				column++;
-			return i;
-		}
-
-		public void Expect (int c)
-		{
-			int p = Read ();
-			if (p < 0)
-				throw UnexpectedEndError ();
-			else if (p != c)
-				throw Error (String.Format ("Expected '{0}' but got {1}", (char) c, (char) p));
-		}
-
-		private string ReadUntil (char until, bool handleReferences)
-		{
-			while (true) {
-				if (Peek () < 0)
-					throw UnexpectedEndError ();
-				char c = (char) Read ();
-				if (c == until)
-					break;
-				else if (handleReferences && c == '&')
-					ReadReference ();
-				else
-					buffer.Append (c);
-			}
-			string ret = buffer.ToString ();
-			buffer.Length = 0;
-			return ret;
-		}
-
-		public string ReadName ()
-		{
-			int idx = 0;
-			if (Peek () < 0 || !IsNameChar ((char) Peek (), true))
-				throw Error ("XML name start character is expected.");
-			for (int i = Peek (); i >= 0; i = Peek ()) {
-				char c = (char) i;
-				if (!IsNameChar (c, false))
-					break;
-				if (idx == nameBuffer.Length) {
-					char [] tmp = new char [idx * 2];
-					// COMPACT FRAMEWORK NOTE: Array.Copy(sourceArray, destinationArray, count) is not available.
-					Array.Copy (nameBuffer, 0, tmp, 0, idx);
-					nameBuffer = tmp;
-				}
-				nameBuffer [idx++] = c;
-				Read ();
-			}
-			if (idx == 0)
-				throw Error ("Valid XML name is expected.");
-			return new string (nameBuffer, 0, idx);
-		}
+        private bool IsWhitespace(int c)
+        {
+            switch (c)
+            {
+                case ' ':
+                case '\r':
+                case '\t':
+                case '\n':
+                    return true;
+                default:
+                    return false;
+            }
+        }
 
 
-		public void Parse (TextReader input, IContentHandler handler)
-		{
-			this.reader = input;
-			this.handler = handler;
+        public void SkipWhitespaces()
+        {
+            SkipWhitespaces(false);
+        }
 
-			handler.OnStartParsing (this);
+        private void HandleWhitespaces()
+        {
+            while (IsWhitespace(Peek()))
+                buffer.Append((char)Read());
+            if (Peek() != '<' && Peek() >= 0)
+                isWhitespace = false;
+        }
 
-			while (Peek () >= 0)
-				ReadContent ();
-			HandleBufferedContent ();
-			if (elementNames.Count > 0)
-				throw Error (String.Format ("Insufficient close tag: {0}", elementNames.Peek ()));
+        public void SkipWhitespaces(bool expected)
+        {
+            while (true)
+            {
+                switch (Peek())
+                {
+                    case ' ':
+                    case '\r':
+                    case '\t':
+                    case '\n':
+                        Read();
+                        if (expected)
+                            expected = false;
+                        continue;
+                }
 
-			handler.OnEndParsing (this);
+                if (expected)
+                    throw Error("Whitespace is expected.");
+                return;
+            }
+        }
 
-			Cleanup ();
-		}
 
-		private void Cleanup ()
-		{
-			line = 1;
-			column = 0;
-			handler = null;
-			reader = null;
+        private int Peek()
+        {
+            return reader.Peek();
+        }
+
+        private int Read()
+        {
+            int i = reader.Read();
+            if (i == '\n')
+                resetColumn = true;
+            if (resetColumn)
+            {
+                line++;
+                resetColumn = false;
+                column = 1;
+            }
+            else
+                column++;
+
+            return i;
+        }
+
+        public void Expect(int c)
+        {
+            int p = Read();
+            if (p < 0)
+                throw UnexpectedEndError();
+            else if (p != c)
+                throw Error(String.Format("Expected '{0}' but got {1}", (char)c, (char)p));
+        }
+
+        private string ReadUntil(char until, bool handleReferences)
+        {
+            while (true)
+            {
+                if (Peek() < 0)
+                    throw UnexpectedEndError();
+                char c = (char)Read();
+                if (c == until)
+                    break;
+                else if (handleReferences && c == '&')
+                    ReadReference();
+                else
+                    buffer.Append(c);
+            }
+
+            string ret = buffer.ToString();
+            buffer.Length = 0;
+            return ret;
+        }
+
+        public string ReadName()
+        {
+            int idx = 0;
+            if (Peek() < 0 || !IsNameChar((char)Peek(), true))
+                throw Error("XML name start character is expected.");
+            for (int i = Peek(); i >= 0; i = Peek())
+            {
+                char c = (char)i;
+                if (!IsNameChar(c, false))
+                    break;
+                if (idx == nameBuffer.Length)
+                {
+                    char[] tmp = new char [idx * 2];
+                    // COMPACT FRAMEWORK NOTE: Array.Copy(sourceArray, destinationArray, count) is not available.
+                    Array.Copy(nameBuffer, 0, tmp, 0, idx);
+                    nameBuffer = tmp;
+                }
+
+                nameBuffer[idx++] = c;
+                Read();
+            }
+
+            if (idx == 0)
+                throw Error("Valid XML name is expected.");
+            return new string(nameBuffer, 0, idx);
+        }
+
+
+        public void Parse(TextReader input, IContentHandler handler)
+        {
+            this.reader = input;
+            this.handler = handler;
+
+            handler.OnStartParsing(this);
+
+            while (Peek() >= 0)
+                ReadContent();
+            HandleBufferedContent();
+            if (elementNames.Count > 0)
+                throw Error(String.Format("Insufficient close tag: {0}", elementNames.Peek()));
+
+            handler.OnEndParsing(this);
+
+            Cleanup();
+        }
+
+        private void Cleanup()
+        {
+            line = 1;
+            column = 0;
+            handler = null;
+            reader = null;
 #if CF_1_0
 			elementNames = new Stack ();
 			xmlSpaces = new Stack ();
 #else
-			elementNames.Clear ();
-			xmlSpaces.Clear ();
+            elementNames.Clear();
+            xmlSpaces.Clear();
 #endif
-			attributes.Clear ();
-			buffer.Length = 0;
-			xmlSpace = null;
-			isWhitespace = false;
-		}
+            attributes.Clear();
+            buffer.Length = 0;
+            xmlSpace = null;
+            isWhitespace = false;
+        }
 
-		public void ReadContent ()
-		{
-			string name;
-			if (IsWhitespace (Peek ())) {
-				if (buffer.Length == 0)
-					isWhitespace = true;
-				HandleWhitespaces ();
-			}
-			if (Peek () == '<') {
-				Read ();
-				switch (Peek ()) {
-				case '!': // declarations
-					Read ();
-					if (Peek () == '[') {
-						Read ();
-						if (ReadName () != "CDATA")
-							throw Error ("Invalid declaration markup");
-						Expect ('[');
-						ReadCDATASection ();
-						return;
-					}
-					else if (Peek () == '-') {
-						ReadComment ();
-						return;
-					}
-					else if (ReadName () != "DOCTYPE")
-						throw Error ("Invalid declaration markup.");
-					else
-						throw Error ("This parser does not support document type.");
-				case '?': // PIs
-					HandleBufferedContent ();
-					Read ();
-					name = ReadName ();
-					SkipWhitespaces ();
-					string text = String.Empty;
-					if (Peek () != '?') {
-						while (true) {
-							text += ReadUntil ('?', false);
-							if (Peek () == '>')
-								break;
-							text += "?";
-						}
-					}
-					handler.OnProcessingInstruction (
-						name, text);
-					Expect ('>');
-					return;
-				case '/': // end tags
-					HandleBufferedContent ();
-					if (elementNames.Count == 0)
-						throw UnexpectedEndError ();
-					Read ();
-					name = ReadName ();
-					SkipWhitespaces ();
-					string expected = (string) elementNames.Pop ();
-					xmlSpaces.Pop ();
-					if (xmlSpaces.Count > 0)
-						xmlSpace = (string) xmlSpaces.Peek ();
-					else
-						xmlSpace = null;
-					if (name != expected)
-						throw Error (String.Format ("End tag mismatch: expected {0} but found {1}", expected, name));
-					handler.OnEndElement (name);
-					Expect ('>');
-					return;
-				default: // start tags (including empty tags)
-					HandleBufferedContent ();
-					name = ReadName ();
-					while (Peek () != '>' && Peek () != '/')
-						ReadAttribute (attributes);
-					handler.OnStartElement (name, attributes);
-					attributes.Clear ();
-					SkipWhitespaces ();
-					if (Peek () == '/') {
-						Read ();
-						handler.OnEndElement (name);
-					}
-					else {
-						elementNames.Push (name);
-						xmlSpaces.Push (xmlSpace);
-					}
-					Expect ('>');
-					return;
-				}
-			}
-			else
-				ReadCharacters ();
-		}
+        public void ReadContent()
+        {
+            string name;
+            if (IsWhitespace(Peek()))
+            {
+                if (buffer.Length == 0)
+                    isWhitespace = true;
+                HandleWhitespaces();
+            }
 
-		private void HandleBufferedContent ()
-		{
-			if (buffer.Length == 0)
-				return;
-			if (isWhitespace)
-				handler.OnIgnorableWhitespace (buffer.ToString ());
-			else
-				handler.OnChars (buffer.ToString ());
-			buffer.Length = 0;
-			isWhitespace = false;
-		}
+            if (Peek() == '<')
+            {
+                Read();
+                switch (Peek())
+                {
+                    case '!': // declarations
+                        Read();
+                        if (Peek() == '[')
+                        {
+                            Read();
+                            if (ReadName() != "CDATA")
+                                throw Error("Invalid declaration markup");
+                            Expect('[');
+                            ReadCDATASection();
+                            return;
+                        }
+                        else if (Peek() == '-')
+                        {
+                            ReadComment();
+                            return;
+                        }
+                        else if (ReadName() != "DOCTYPE")
+                            throw Error("Invalid declaration markup.");
+                        else
+                            throw Error("This parser does not support document type.");
+                    case '?': // PIs
+                        HandleBufferedContent();
+                        Read();
+                        name = ReadName();
+                        SkipWhitespaces();
+                        string text = String.Empty;
+                        if (Peek() != '?')
+                        {
+                            while (true)
+                            {
+                                text += ReadUntil('?', false);
+                                if (Peek() == '>')
+                                    break;
+                                text += "?";
+                            }
+                        }
 
-		private void ReadCharacters ()
-		{
-			isWhitespace = false;
-			while (true) {
-				int i = Peek ();
-				switch (i) {
-				case -1:
-					return;
-				case '<':
-					return;
-				case '&':
-					Read ();
-					ReadReference ();
-					continue;
-				default:
-					buffer.Append ((char) Read ());
-					continue;
-				}
-			}
-		}
+                        handler.OnProcessingInstruction(
+                            name, text);
+                        Expect('>');
+                        return;
+                    case '/': // end tags
+                        HandleBufferedContent();
+                        if (elementNames.Count == 0)
+                            throw UnexpectedEndError();
+                        Read();
+                        name = ReadName();
+                        SkipWhitespaces();
+                        string expected = (string)elementNames.Pop();
+                        xmlSpaces.Pop();
+                        if (xmlSpaces.Count > 0)
+                            xmlSpace = (string)xmlSpaces.Peek();
+                        else
+                            xmlSpace = null;
+                        if (name != expected)
+                            throw Error(String.Format("End tag mismatch: expected {0} but found {1}", expected, name));
+                        handler.OnEndElement(name);
+                        Expect('>');
+                        return;
+                    default: // start tags (including empty tags)
+                        HandleBufferedContent();
+                        name = ReadName();
+                        while (Peek() != '>' && Peek() != '/')
+                            ReadAttribute(attributes);
+                        handler.OnStartElement(name, attributes);
+                        attributes.Clear();
+                        SkipWhitespaces();
+                        if (Peek() == '/')
+                        {
+                            Read();
+                            handler.OnEndElement(name);
+                        }
+                        else
+                        {
+                            elementNames.Push(name);
+                            xmlSpaces.Push(xmlSpace);
+                        }
 
-		private void ReadReference ()
-		{
-			if (Peek () == '#') {
-				// character reference
-				Read ();
-				ReadCharacterReference ();
-			} else {
-				string name = ReadName ();
-				Expect (';');
-				switch (name) {
-				case "amp":
-					buffer.Append ('&');
-					break;
-				case "quot":
-					buffer.Append ('"');
-					break;
-				case "apos":
-					buffer.Append ('\'');
-					break;
-				case "lt":
-					buffer.Append ('<');
-					break;
-				case "gt":
-					buffer.Append ('>');
-					break;
-				default:
-					throw Error ("General non-predefined entity reference is not supported in this parser.");
-				}
-			}
-		}
+                        Expect('>');
+                        return;
+                }
+            }
+            else
+                ReadCharacters();
+        }
 
-		private int ReadCharacterReference ()
-		{
-			int n = 0;
-			if (Peek () == 'x') { // hex
-				Read ();
-				for (int i = Peek (); i >= 0; i = Peek ()) {
-					if ('0' <= i && i <= '9')
-						n = n << 4 + i - '0';
-					else if ('A' <= i && i <='F')
-						n = n << 4 + i - 'A' + 10;
-					else if ('a' <= i && i <='f')
-						n = n << 4 + i - 'a' + 10;
-					else
-						break;
-					Read ();
-				}
-			} else {
-				for (int i = Peek (); i >= 0; i = Peek ()) {
-					if ('0' <= i && i <= '9')
-						n = n << 4 + i - '0';
-					else
-						break;
-					Read ();
-				}
-			}
-			return n;
-		}
+        private void HandleBufferedContent()
+        {
+            if (buffer.Length == 0)
+                return;
+            if (isWhitespace)
+                handler.OnIgnorableWhitespace(buffer.ToString());
+            else
+                handler.OnChars(buffer.ToString());
+            buffer.Length = 0;
+            isWhitespace = false;
+        }
 
-		private void ReadAttribute (AttrListImpl a)
-		{
-			SkipWhitespaces (true);
-			if (Peek () == '/' || Peek () == '>')
-			// came here just to spend trailing whitespaces
-				return;
+        private void ReadCharacters()
+        {
+            isWhitespace = false;
+            while (true)
+            {
+                int i = Peek();
+                switch (i)
+                {
+                    case -1:
+                        return;
+                    case '<':
+                        return;
+                    case '&':
+                        Read();
+                        ReadReference();
+                        continue;
+                    default:
+                        buffer.Append((char)Read());
+                        continue;
+                }
+            }
+        }
 
-			string name = ReadName ();
-			string value;
-			SkipWhitespaces ();
-			Expect ('=');
-			SkipWhitespaces ();
-			switch (Read ()) {
-			case '\'':
-				value = ReadUntil ('\'', true);
-				break;
-			case '"':
-				value = ReadUntil ('"', true);
-				break;
-			default:
-				throw Error ("Invalid attribute value markup.");
-			}
-			if (name == "xml:space")
-				xmlSpace = value;
-			a.Add (name, value);
-		}
+        private void ReadReference()
+        {
+            if (Peek() == '#')
+            {
+                // character reference
+                Read();
+                ReadCharacterReference();
+            }
+            else
+            {
+                string name = ReadName();
+                Expect(';');
+                switch (name)
+                {
+                    case "amp":
+                        buffer.Append('&');
+                        break;
+                    case "quot":
+                        buffer.Append('"');
+                        break;
+                    case "apos":
+                        buffer.Append('\'');
+                        break;
+                    case "lt":
+                        buffer.Append('<');
+                        break;
+                    case "gt":
+                        buffer.Append('>');
+                        break;
+                    default:
+                        throw Error("General non-predefined entity reference is not supported in this parser.");
+                }
+            }
+        }
 
-		private void ReadCDATASection ()
-		{
-			int nBracket = 0;
-			while (true) {
-				if (Peek () < 0)
-					throw UnexpectedEndError ();
-				char c = (char) Read ();
-				if (c == ']')
-					nBracket++;
-				else if (c == '>' && nBracket > 1) {
-					for (int i = nBracket; i > 2; i--)
-						buffer.Append (']');
-					break;
-				}
-				else {
-					for (int i = 0; i < nBracket; i++)
-						buffer.Append (']');
-					nBracket = 0;
-					buffer.Append (c);
-				}
-			}
-		}
+        private int ReadCharacterReference()
+        {
+            int n = 0;
+            if (Peek() == 'x')
+            {
+                // hex
+                Read();
+                for (int i = Peek(); i >= 0; i = Peek())
+                {
+                    if ('0' <= i && i <= '9')
+                        n = n << 4 + i - '0';
+                    else if ('A' <= i && i <= 'F')
+                        n = n << 4 + i - 'A' + 10;
+                    else if ('a' <= i && i <= 'f')
+                        n = n << 4 + i - 'a' + 10;
+                    else
+                        break;
+                    Read();
+                }
+            }
+            else
+            {
+                for (int i = Peek(); i >= 0; i = Peek())
+                {
+                    if ('0' <= i && i <= '9')
+                        n = n << 4 + i - '0';
+                    else
+                        break;
+                    Read();
+                }
+            }
 
-		private void ReadComment ()
-		{
-			Expect ('-');
-			Expect ('-');
-			while (true) {
-				if (Read () != '-')
-					continue;
-				if (Read () != '-')
-					continue;
-				if (Read () != '>')
-					throw Error ("'--' is not allowed inside comment markup.");
-				break;
-			}
-		}
-	}
+            return n;
+        }
 
-	internal sealed class SmallXmlParserException : SystemException
-	{
-		int line;
-		int column;
+        private void ReadAttribute(AttrListImpl a)
+        {
+            SkipWhitespaces(true);
+            if (Peek() == '/' || Peek() == '>')
+                // came here just to spend trailing whitespaces
+                return;
 
-		public SmallXmlParserException (string msg, int line, int column)
-		: base (String.Format ("{0}. At ({1},{2})", msg, line, column))
-		{
-			this.line = line;
-			this.column = column;
-		}
+            string name = ReadName();
+            string value;
+            SkipWhitespaces();
+            Expect('=');
+            SkipWhitespaces();
+            switch (Read())
+            {
+                case '\'':
+                    value = ReadUntil('\'', true);
+                    break;
+                case '"':
+                    value = ReadUntil('"', true);
+                    break;
+                default:
+                    throw Error("Invalid attribute value markup.");
+            }
 
-		public int Line {
-			get { return line; }
-		}
+            if (name == "xml:space")
+                xmlSpace = value;
+            a.Add(name, value);
+        }
 
-		public int Column {
-			get { return column; }
-		}
-	}
+        private void ReadCDATASection()
+        {
+            int nBracket = 0;
+            while (true)
+            {
+                if (Peek() < 0)
+                    throw UnexpectedEndError();
+                char c = (char)Read();
+                if (c == ']')
+                    nBracket++;
+                else if (c == '>' && nBracket > 1)
+                {
+                    for (int i = nBracket; i > 2; i--)
+                        buffer.Append(']');
+                    break;
+                }
+                else
+                {
+                    for (int i = 0; i < nBracket; i++)
+                        buffer.Append(']');
+                    nBracket = 0;
+                    buffer.Append(c);
+                }
+            }
+        }
+
+        private void ReadComment()
+        {
+            Expect('-');
+            Expect('-');
+            while (true)
+            {
+                if (Read() != '-')
+                    continue;
+                if (Read() != '-')
+                    continue;
+                if (Read() != '>')
+                    throw Error("'--' is not allowed inside comment markup.");
+                break;
+            }
+        }
+    }
+
+    internal sealed class SmallXmlParserException : SystemException
+    {
+        int line;
+        int column;
+
+        public SmallXmlParserException(string msg, int line, int column)
+            : base(String.Format("{0}. At ({1},{2})", msg, line, column))
+        {
+            this.line = line;
+            this.column = column;
+        }
+
+        public int Line
+        {
+            get { return line; }
+        }
+
+        public int Column
+        {
+            get { return column; }
+        }
+    }
 }

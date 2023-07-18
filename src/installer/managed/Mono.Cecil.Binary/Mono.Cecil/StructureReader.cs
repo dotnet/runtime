@@ -26,252 +26,266 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
-namespace Mono.Cecil {
+namespace Mono.Cecil
+{
+    using System;
+    using System.IO;
+    using Mono.Cecil.Binary;
+    using Mono.Cecil.Metadata;
 
-	using System;
-	using System.IO;
+    internal sealed class StructureReader : BaseStructureVisitor
+    {
+        ImageReader m_ir;
+        Image m_img;
+        bool m_manifestOnly;
+        AssemblyDefinition m_asmDef;
+        ModuleDefinition m_module;
+        MetadataStreamCollection m_streams;
+        TablesHeap m_tHeap;
+        MetadataTableReader m_tableReader;
 
-	using Mono.Cecil.Binary;
-	using Mono.Cecil.Metadata;
+        public bool ManifestOnly
+        {
+            get { return m_manifestOnly; }
+        }
 
-	internal sealed class StructureReader : BaseStructureVisitor {
+        public ImageReader ImageReader
+        {
+            get { return m_ir; }
+        }
 
-		ImageReader m_ir;
-		Image m_img;
-		bool m_manifestOnly;
-		AssemblyDefinition m_asmDef;
-		ModuleDefinition m_module;
-		MetadataStreamCollection m_streams;
-		TablesHeap m_tHeap;
-		MetadataTableReader m_tableReader;
+        public Image Image
+        {
+            get { return m_img; }
+        }
 
-		public bool ManifestOnly {
-			get { return m_manifestOnly; }
-		}
+        public StructureReader(ImageReader ir)
+        {
+            if (ir.Image.CLIHeader == null)
+                throw new ImageFormatException("The image is not a managed assembly");
 
-		public ImageReader ImageReader {
-			get { return m_ir; }
-		}
+            m_ir = ir;
+            m_img = ir.Image;
+            m_streams = m_img.MetadataRoot.Streams;
+            m_tHeap = m_streams.TablesHeap;
+            m_tableReader = ir.MetadataReader.TableReader;
+        }
 
-		public Image Image {
-			get { return m_img; }
-		}
+        public StructureReader(ImageReader ir, bool manifestOnly) : this(ir)
+        {
+            m_manifestOnly = manifestOnly;
+        }
 
-		public StructureReader (ImageReader ir)
-		{
-			if (ir.Image.CLIHeader == null)
-				throw new ImageFormatException ("The image is not a managed assembly");
+        byte[] ReadBlob(uint pointer)
+        {
+            if (pointer == 0)
+                return new byte [0];
 
-			m_ir = ir;
-			m_img = ir.Image;
-			m_streams = m_img.MetadataRoot.Streams;
-			m_tHeap = m_streams.TablesHeap;
-			m_tableReader = ir.MetadataReader.TableReader;
-		}
+            return m_streams.BlobHeap.Read(pointer);
+        }
 
-		public StructureReader (ImageReader ir, bool manifestOnly) : this (ir)
-		{
-			m_manifestOnly = manifestOnly;
-		}
+        string ReadString(uint pointer)
+        {
+            return m_streams.StringsHeap[pointer];
+        }
 
-		byte [] ReadBlob (uint pointer)
-		{
-			if (pointer == 0)
-				return new byte [0];
+        public override void VisitAssemblyDefinition(AssemblyDefinition asm)
+        {
+            if (!m_tHeap.HasTable(AssemblyTable.RId))
+                throw new ReflectionException("No assembly manifest");
 
-			return m_streams.BlobHeap.Read (pointer);
-		}
+            asm.MetadataToken = new MetadataToken(TokenType.Assembly, 1);
+            m_asmDef = asm;
 
-		string ReadString (uint pointer)
-		{
-			return m_streams.StringsHeap [pointer];
-		}
+            switch (m_img.MetadataRoot.Header.Version)
+            {
+                case "v1.0.3705":
+                    asm.Runtime = TargetRuntime.NET_1_0;
+                    break;
+                case "v1.1.4322":
+                    asm.Runtime = TargetRuntime.NET_1_1;
+                    break;
+                case "v2.0.50727":
+                    asm.Runtime = TargetRuntime.NET_2_0;
+                    break;
+                case "v4.0.30319":
+                    asm.Runtime = TargetRuntime.NET_4_0;
+                    break;
+            }
 
-		public override void VisitAssemblyDefinition (AssemblyDefinition asm)
-		{
-			if (!m_tHeap.HasTable (AssemblyTable.RId))
-				throw new ReflectionException ("No assembly manifest");
+            if ((m_img.PEFileHeader.Characteristics & ImageCharacteristics.Dll) != 0)
+                asm.Kind = AssemblyKind.Dll;
+            else if (m_img.PEOptionalHeader.NTSpecificFields.SubSystem == SubSystem.WindowsGui ||
+                     m_img.PEOptionalHeader.NTSpecificFields.SubSystem == SubSystem.WindowsCeGui)
+                asm.Kind = AssemblyKind.Windows;
+            else
+                asm.Kind = AssemblyKind.Console;
+        }
 
-			asm.MetadataToken = new MetadataToken (TokenType.Assembly, 1);
-			m_asmDef = asm;
+        public override void VisitAssemblyNameDefinition(AssemblyNameDefinition name)
+        {
+            AssemblyTable atable = m_tableReader.GetAssemblyTable();
+            AssemblyRow arow = atable[0];
+            name.Name = ReadString(arow.Name);
+            name.Flags = arow.Flags;
+            name.PublicKey = ReadBlob(arow.PublicKey);
 
-			switch (m_img.MetadataRoot.Header.Version) {
-			case "v1.0.3705" :
-				asm.Runtime = TargetRuntime.NET_1_0;
-				break;
-			case "v1.1.4322" :
-				asm.Runtime = TargetRuntime.NET_1_1;
-				break;
-			case "v2.0.50727":
-				asm.Runtime = TargetRuntime.NET_2_0;
-				break;
-			case "v4.0.30319" :
-				asm.Runtime = TargetRuntime.NET_4_0;
-				break;
-			}
+            name.Culture = ReadString(arow.Culture);
+            name.Version = new Version(
+                arow.MajorVersion, arow.MinorVersion,
+                arow.BuildNumber, arow.RevisionNumber);
+            name.HashAlgorithm = arow.HashAlgId;
+            name.MetadataToken = new MetadataToken(TokenType.Assembly, 1);
+        }
 
-			if ((m_img.PEFileHeader.Characteristics & ImageCharacteristics.Dll) != 0)
-				asm.Kind = AssemblyKind.Dll;
-			else if (m_img.PEOptionalHeader.NTSpecificFields.SubSystem == SubSystem.WindowsGui ||
-				m_img.PEOptionalHeader.NTSpecificFields.SubSystem == SubSystem.WindowsCeGui)
-				asm.Kind = AssemblyKind.Windows;
-			else
-				asm.Kind = AssemblyKind.Console;
-		}
+        public override void VisitAssemblyNameReferenceCollection(AssemblyNameReferenceCollection names)
+        {
+            if (!m_tHeap.HasTable(AssemblyRefTable.RId))
+                return;
 
-		public override void VisitAssemblyNameDefinition (AssemblyNameDefinition name)
-		{
-			AssemblyTable atable = m_tableReader.GetAssemblyTable ();
-			AssemblyRow arow = atable [0];
-			name.Name = ReadString (arow.Name);
-			name.Flags = arow.Flags;
-			name.PublicKey = ReadBlob (arow.PublicKey);
+            AssemblyRefTable arTable = m_tableReader.GetAssemblyRefTable();
+            for (int i = 0; i < arTable.Rows.Count; i++)
+            {
+                AssemblyRefRow arRow = arTable[i];
+                AssemblyNameReference aname = new AssemblyNameReference(
+                    ReadString(arRow.Name),
+                    ReadString(arRow.Culture),
+                    new Version(arRow.MajorVersion, arRow.MinorVersion,
+                        arRow.BuildNumber, arRow.RevisionNumber));
+                aname.PublicKeyToken = ReadBlob(arRow.PublicKeyOrToken);
+                aname.Hash = ReadBlob(arRow.HashValue);
+                aname.Flags = arRow.Flags;
+                aname.MetadataToken = new MetadataToken(TokenType.AssemblyRef, (uint)i + 1);
+                names.Add(aname);
+            }
+        }
 
-			name.Culture = ReadString (arow.Culture);
-			name.Version = new Version (
-				arow.MajorVersion, arow.MinorVersion,
-				arow.BuildNumber, arow.RevisionNumber);
-			name.HashAlgorithm = arow.HashAlgId;
-			name.MetadataToken = new MetadataToken (TokenType.Assembly, 1);
-		}
+        public override void VisitResourceCollection(ResourceCollection resources)
+        {
+            if (!m_tHeap.HasTable(ManifestResourceTable.RId))
+                return;
 
-		public override void VisitAssemblyNameReferenceCollection (AssemblyNameReferenceCollection names)
-		{
-			if (!m_tHeap.HasTable (AssemblyRefTable.RId))
-				return;
+            ManifestResourceTable mrTable = m_tableReader.GetManifestResourceTable();
+            FileTable fTable = m_tableReader.GetFileTable();
 
-			AssemblyRefTable arTable = m_tableReader.GetAssemblyRefTable ();
-			for (int i = 0; i < arTable.Rows.Count; i++) {
-				AssemblyRefRow arRow = arTable [i];
-				AssemblyNameReference aname = new AssemblyNameReference (
-					ReadString (arRow.Name),
-					ReadString (arRow.Culture),
-					new Version (arRow.MajorVersion, arRow.MinorVersion,
-								 arRow.BuildNumber, arRow.RevisionNumber));
-				aname.PublicKeyToken = ReadBlob (arRow.PublicKeyOrToken);
-				aname.Hash = ReadBlob (arRow.HashValue);
-				aname.Flags = arRow.Flags;
-				aname.MetadataToken = new MetadataToken (TokenType.AssemblyRef, (uint) i + 1);
-				names.Add (aname);
-			}
-		}
+            for (int i = 0; i < mrTable.Rows.Count; i++)
+            {
+                ManifestResourceRow mrRow = mrTable[i];
+                if (mrRow.Implementation.RID == 0)
+                {
+                    EmbeddedResource eres = new EmbeddedResource(
+                        ReadString(mrRow.Name), mrRow.Flags);
 
-		public override void VisitResourceCollection (ResourceCollection resources)
-		{
-			if (!m_tHeap.HasTable (ManifestResourceTable.RId))
-				return;
+                    BinaryReader br = m_ir.MetadataReader.GetDataReader(
+                        m_img.CLIHeader.Resources.VirtualAddress);
+                    br.BaseStream.Position += mrRow.Offset;
 
-			ManifestResourceTable mrTable = m_tableReader.GetManifestResourceTable ();
-			FileTable fTable = m_tableReader.GetFileTable ();
+                    eres.Data = br.ReadBytes(br.ReadInt32());
 
-			for (int i = 0; i < mrTable.Rows.Count; i++) {
-				ManifestResourceRow mrRow = mrTable [i];
-				if (mrRow.Implementation.RID == 0) {
-					EmbeddedResource eres = new EmbeddedResource (
-						ReadString (mrRow.Name), mrRow.Flags);
+                    resources.Add(eres);
+                    continue;
+                }
 
-					BinaryReader br = m_ir.MetadataReader.GetDataReader (
-						m_img.CLIHeader.Resources.VirtualAddress);
-					br.BaseStream.Position += mrRow.Offset;
+                switch (mrRow.Implementation.TokenType)
+                {
+                    case TokenType.File:
+                        FileRow fRow = fTable[(int)mrRow.Implementation.RID - 1];
+                        LinkedResource lres = new LinkedResource(
+                            ReadString(mrRow.Name), mrRow.Flags,
+                            ReadString(fRow.Name));
+                        lres.Hash = ReadBlob(fRow.HashValue);
+                        resources.Add(lres);
+                        break;
+                    case TokenType.AssemblyRef:
+                        AssemblyNameReference asm =
+                            m_module.AssemblyReferences[(int)mrRow.Implementation.RID - 1];
+                        AssemblyLinkedResource alr = new AssemblyLinkedResource(
+                            ReadString(mrRow.Name),
+                            mrRow.Flags, asm);
+                        resources.Add(alr);
+                        break;
+                }
+            }
+        }
 
-					eres.Data = br.ReadBytes (br.ReadInt32 ());
+        public override void VisitModuleDefinitionCollection(ModuleDefinitionCollection modules)
+        {
+            ModuleTable mt = m_tableReader.GetModuleTable();
+            if (mt == null || mt.Rows.Count != 1)
+                throw new ReflectionException("Can not read main module");
 
-					resources.Add (eres);
-					continue;
-				}
+            ModuleRow mr = mt[0];
+            string name = ReadString(mr.Name);
+            ModuleDefinition main = new ModuleDefinition(name, m_asmDef, this, true);
+            main.Mvid = m_streams.GuidHeap[mr.Mvid];
+            main.MetadataToken = new MetadataToken(TokenType.Module, 1);
+            modules.Add(main);
+            m_module = main;
+            m_module.Accept(this);
 
-				switch (mrRow.Implementation.TokenType) {
-				case TokenType.File :
-					FileRow fRow = fTable [(int) mrRow.Implementation.RID - 1];
-					LinkedResource lres = new LinkedResource (
-						ReadString (mrRow.Name), mrRow.Flags,
-						ReadString (fRow.Name));
-					lres.Hash = ReadBlob (fRow.HashValue);
-					resources.Add (lres);
-					break;
-				case TokenType.AssemblyRef :
-					AssemblyNameReference asm =
-						m_module.AssemblyReferences [(int) mrRow.Implementation.RID - 1];
-					AssemblyLinkedResource alr = new AssemblyLinkedResource (
-						ReadString (mrRow.Name),
-						mrRow.Flags, asm);
-					resources.Add (alr);
-					break;
-				}
-			}
-		}
+            FileTable ftable = m_tableReader.GetFileTable();
+            if (ftable == null || ftable.Rows.Count == 0)
+                return;
 
-		public override void VisitModuleDefinitionCollection (ModuleDefinitionCollection modules)
-		{
-			ModuleTable mt = m_tableReader.GetModuleTable ();
-			if (mt == null || mt.Rows.Count != 1)
-				throw new ReflectionException ("Can not read main module");
+            foreach (FileRow frow in ftable.Rows)
+            {
+                if (frow.Flags != FileAttributes.ContainsMetaData)
+                    continue;
 
-			ModuleRow mr = mt [0];
-			string name = ReadString (mr.Name);
-			ModuleDefinition main = new ModuleDefinition (name, m_asmDef, this, true);
-			main.Mvid = m_streams.GuidHeap [mr.Mvid];
-			main.MetadataToken = new MetadataToken (TokenType.Module, 1);
-			modules.Add (main);
-			m_module = main;
-			m_module.Accept (this);
+                name = ReadString(frow.Name);
+                FileInfo location = new FileInfo(
+                    m_img.FileInformation != null ? Path.Combine(m_img.FileInformation.DirectoryName, name) : name);
+                if (!File.Exists(location.FullName))
+                    throw new FileNotFoundException("Module not found : " + name);
 
-			FileTable ftable = m_tableReader.GetFileTable ();
-			if (ftable == null || ftable.Rows.Count == 0)
-				return;
+                try
+                {
+                    ImageReader module = ImageReader.Read(location.FullName);
+                    mt = module.Image.MetadataRoot.Streams.TablesHeap[ModuleTable.RId] as ModuleTable;
+                    if (mt == null || mt.Rows.Count != 1)
+                        throw new ReflectionException("Can not read module : " + name);
 
-			foreach (FileRow frow in ftable.Rows) {
-				if (frow.Flags != FileAttributes.ContainsMetaData)
-					continue;
+                    mr = mt[0];
+                    ModuleDefinition modext = new ModuleDefinition(name, m_asmDef,
+                        new StructureReader(module, m_manifestOnly), false);
+                    modext.Mvid = module.Image.MetadataRoot.Streams.GuidHeap[mr.Mvid];
 
-				name = ReadString (frow.Name);
-				FileInfo location = new FileInfo (
-					m_img.FileInformation != null ? Path.Combine (m_img.FileInformation.DirectoryName, name) : name);
-				if (!File.Exists (location.FullName))
-					throw new FileNotFoundException ("Module not found : " + name);
+                    modules.Add(modext);
+                    modext.Accept(this);
+                }
+                catch (ReflectionException)
+                {
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    throw new ReflectionException("Can not read module : " + name, e);
+                }
+            }
+        }
 
-				try {
-					ImageReader module = ImageReader.Read (location.FullName);
-					mt = module.Image.MetadataRoot.Streams.TablesHeap [ModuleTable.RId] as ModuleTable;
-					if (mt == null || mt.Rows.Count != 1)
-						throw new ReflectionException ("Can not read module : " + name);
+        public override void VisitModuleReferenceCollection(ModuleReferenceCollection modules)
+        {
+            if (!m_tHeap.HasTable(ModuleRefTable.RId))
+                return;
 
-					mr = mt [0];
-					ModuleDefinition modext = new ModuleDefinition (name, m_asmDef,
-						new StructureReader (module, m_manifestOnly), false);
-					modext.Mvid = module.Image.MetadataRoot.Streams.GuidHeap [mr.Mvid];
+            ModuleRefTable mrTable = m_tableReader.GetModuleRefTable();
+            for (int i = 0; i < mrTable.Rows.Count; i++)
+            {
+                ModuleRefRow mrRow = mrTable[i];
+                ModuleReference mod = new ModuleReference(ReadString(mrRow.Name));
+                mod.MetadataToken = MetadataToken.FromMetadataRow(TokenType.ModuleRef, i);
+                modules.Add(mod);
+            }
+        }
 
-					modules.Add (modext);
-					modext.Accept (this);
-				} catch (ReflectionException) {
-					throw;
-				} catch (Exception e) {
-					throw new ReflectionException ("Can not read module : " + name, e);
-				}
-			}
-		}
+        public override void TerminateAssemblyDefinition(AssemblyDefinition asm)
+        {
+            if (m_manifestOnly)
+                return;
 
-		public override void VisitModuleReferenceCollection (ModuleReferenceCollection modules)
-		{
-			if (!m_tHeap.HasTable (ModuleRefTable.RId))
-				return;
-
-			ModuleRefTable mrTable = m_tableReader.GetModuleRefTable ();
-			for (int i = 0; i < mrTable.Rows.Count; i++) {
-				ModuleRefRow mrRow = mrTable [i];
-				ModuleReference mod = new ModuleReference (ReadString (mrRow.Name));
-				mod.MetadataToken = MetadataToken.FromMetadataRow (TokenType.ModuleRef, i);
-				modules.Add (mod);
-			}
-		}
-
-		public override void TerminateAssemblyDefinition (AssemblyDefinition asm)
-		{
-			if (m_manifestOnly)
-				return;
-
-			foreach (ModuleDefinition mod in asm.Modules)
-				mod.Controller.Reader.VisitModuleDefinition (mod);
-		}
-	}
+            foreach (ModuleDefinition mod in asm.Modules)
+                mod.Controller.Reader.VisitModuleDefinition(mod);
+        }
+    }
 }
