@@ -140,6 +140,20 @@ elseif (CLR_CMAKE_HOST_UNIX)
 endif(MSVC)
 
 if (CLR_CMAKE_ENABLE_SANITIZERS)
+  enable_language(C)
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang")
+    execute_process(
+      COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
+      OUTPUT_VARIABLE compilerResourceDir
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+    include_directories(SYSTEM ${compilerResourceDir}/include)
+
+    # Work around https://gitlab.kitware.com/cmake/cmake/-/issues/19227 since CoreCLR passes -nostdinc
+    # and CMake will filter out the resource dir if -nostdinc is passed.
+    list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "${compilerResourceDir}/include")
+    list(REMOVE_ITEM CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES "${compilerResourceDir}/include")
+  endif()
+
   set (CLR_CMAKE_BUILD_SANITIZERS "")
   set (CLR_CMAKE_SANITIZER_RUNTIMES "")
   string(FIND "${CLR_CMAKE_ENABLE_SANITIZERS}" "address" __ASAN_POS)
@@ -157,12 +171,11 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
     # The rest of our platforms use statically-linked ASAN so this isn't a concern for those platforms.
     if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST)
       function(getSanitizerRuntimeDirectory output)
-        enable_language(C)
         execute_process(
-          COMMAND ${CMAKE_C_COMPILER} -print-resource-dir
-          OUTPUT_VARIABLE compilerResourceDir
+          COMMAND ${CMAKE_C_COMPILER} -print-runtime-dir
+          OUTPUT_VARIABLE compilerRuntimeDir
           OUTPUT_STRIP_TRAILING_WHITESPACE)
-        set(${output} "${compilerResourceDir}/lib/darwin/" PARENT_SCOPE)
+        set(${output} "${compilerResourceDir}" PARENT_SCOPE)
       endfunction()
       getSanitizerRuntimeDirectory(sanitizerRuntimeDirectory)
       find_library(ASAN_RUNTIME clang_rt.asan_osx_dynamic PATHS ${sanitizerRuntimeDirectory})

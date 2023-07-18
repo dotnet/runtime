@@ -45,14 +45,7 @@
 #endif
 
 #if defined(HAS_ADDRESS_SANITIZER)
-#  ifdef __cplusplus
-   extern "C"
-   {
-#  endif
-      void SANITIZER_INTERFACE_CALLCONV __asan_handle_no_return(void);
-#  ifdef __cplusplus
-   }
-#  endif
+#include <sanitizer/asan_interface.h>
 #elif defined(__llvm__)
 #  pragma clang diagnostic push
 #  ifdef COMPILER_SUPPORTS_W_RESERVED_IDENTIFIER
