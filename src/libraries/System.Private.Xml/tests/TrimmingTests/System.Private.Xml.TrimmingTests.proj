@@ -8,6 +8,12 @@
                                ExtraTrimmerArgs="--enable-opt sealer" />
     <TestConsoleAppSourceFiles Include="XmlSerializer.Serialize.cs" />
     <TestConsoleAppSourceFiles Include="XslCompiledTransformTests.cs" />
+    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.Disabled.IsNetworkingEnabledByDefault.cs">
+      <DisabledFeatureSwitches>System.Xml.XmlResolver.IsNetworkingEnabledByDefault</DisabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
+    <TestConsoleAppSourceFiles Include="XmlUrlResolverDefaults.IsNetworkingEnabledByDefault.cs">
+      <EnabledFeatureSwitches>System.Xml.XmlResolver.IsNetworkingEnabledByDefault</EnabledFeatureSwitches>
+    </TestConsoleAppSourceFiles>
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />
