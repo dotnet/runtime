@@ -38,7 +38,7 @@ class XmlUrlResolverDefaults
         return -2;
     }
 
-    // The intention of this method is to ensure the trimmer doesn't preserve the Type.
+    // The intention of this method is to ensure the trimmer preserves the Type.
     private static Type? GetXmlType(string name) =>
         typeof(XmlReader).Assembly.GetType(name, throwOnError: false);
 }
