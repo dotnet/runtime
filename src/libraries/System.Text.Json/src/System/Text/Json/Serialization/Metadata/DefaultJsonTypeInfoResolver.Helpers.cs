@@ -218,7 +218,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert);
+            JsonPropertyInfo jsonPropertyInfo = typeInfo.CreatePropertyUsingReflection(typeToConvert, declaringType: memberInfo.DeclaringType);
             PopulatePropertyInfo(jsonPropertyInfo, memberInfo, customConverter, ignoreCondition, shouldCheckForRequiredKeyword, hasJsonIncludeAttribute);
             return jsonPropertyInfo;
         }

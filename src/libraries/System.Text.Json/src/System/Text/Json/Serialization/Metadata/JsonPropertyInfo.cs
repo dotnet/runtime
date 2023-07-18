@@ -267,7 +267,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal JsonPropertyInfo(Type declaringType, Type propertyType, JsonTypeInfo? declaringTypeInfo, JsonSerializerOptions options)
         {
-            Debug.Assert(declaringTypeInfo is null || declaringTypeInfo.Type == declaringType);
+            Debug.Assert(declaringTypeInfo is null || declaringType.IsAssignableFrom(declaringTypeInfo.Type));
 
             DeclaringType = declaringType;
             PropertyType = propertyType;
@@ -939,6 +939,9 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private int _index;
+
+        internal bool IsOverriddenOrShadowedBy(JsonPropertyInfo other)
+            => MemberName == other.MemberName && DeclaringType.IsAssignableFrom(other.DeclaringType);
 
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         private string DebuggerDisplay => $"PropertyType = {PropertyType}, Name = {Name}, DeclaringType = {DeclaringType}";

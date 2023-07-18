@@ -11419,6 +11419,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		return_if_nok (error);
 	}
 
+	int accessor_kind = -1;
+	char *member_name = NULL;
+	if (!header && mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+		method = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+		g_assert (method);
+	}
+
 	if (!header) {
 		header = mono_method_get_header_checked (method, error);
 		return_if_nok (error);

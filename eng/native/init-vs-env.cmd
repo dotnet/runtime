@@ -61,9 +61,13 @@ exit /b 1
 if "%__VCBuildArch%"=="" exit /b 0
 
 :: Set the environment for the native build
-if not exist "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" goto :VSMissing
-call "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
-if not "%ErrorLevel%"=="0" exit /b 1
+:: We can set SkipVCEnvInit to skip setting up the MSVC environment from VS and instead assume that the current environment is set up correctly.
+:: This is very useful for testing with new MSVC versions that aren't in a VS build yet.
+if not defined SkipVCEnvInit (
+  if not exist "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" goto :VSMissing
+  call "%VCINSTALLDIR%Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
+  if not "%ErrorLevel%"=="0" exit /b 1
+)
 
 set "__VCBuildArch="
 

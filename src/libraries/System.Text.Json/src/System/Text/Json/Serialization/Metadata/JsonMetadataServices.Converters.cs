@@ -151,6 +151,20 @@ namespace System.Text.Json.Serialization.Metadata
         private static JsonConverter<JsonDocument?>? s_jsonDocumentConverter;
 
         /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="Memory{Byte}"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<Memory<byte>> MemoryByteConverter => s_memoryByteConverter ??= new MemoryByteConverter();
+        private static JsonConverter<Memory<byte>>? s_memoryByteConverter;
+
+        /// <summary>
+        /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="ReadOnlyMemory{Byte}"/> values.
+        /// </summary>
+        /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
+        public static JsonConverter<ReadOnlyMemory<byte>> ReadOnlyMemoryByteConverter => s_readOnlyMemoryByteConverter ??= new ReadOnlyMemoryByteConverter();
+        private static JsonConverter<ReadOnlyMemory<byte>>? s_readOnlyMemoryByteConverter;
+
+        /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="object"/> values.
         /// </summary>
         /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>

@@ -969,6 +969,12 @@ namespace System.Text.Json.Serialization
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
     }
+    public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct
+    {
+        public JsonNumberEnumConverter() { }
+        public override bool CanConvert(System.Type typeToConvert) { throw null; }
+        public override System.Text.Json.Serialization.JsonConverter? CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
     [System.FlagsAttribute]
     public enum JsonNumberHandling
     {
@@ -1045,12 +1051,25 @@ namespace System.Text.Json.Serialization
     public sealed partial class JsonSourceGenerationOptionsAttribute : System.Text.Json.Serialization.JsonAttribute
     {
         public JsonSourceGenerationOptionsAttribute() { }
+        public JsonSourceGenerationOptionsAttribute(System.Text.Json.JsonSerializerDefaults defaults) { }
+        public bool AllowTrailingCommas { get { throw null; } set { } }
+        public System.Type[]? Converters { get { throw null; } set { } }
+        public int DefaultBufferSize { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonIgnoreCondition DefaultIgnoreCondition { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonKnownNamingPolicy DictionaryKeyPolicy { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonSourceGenerationMode GenerationMode { get { throw null; } set { } }
         public bool IgnoreReadOnlyFields { get { throw null; } set { } }
         public bool IgnoreReadOnlyProperties { get { throw null; } set { } }
         public bool IncludeFields { get { throw null; } set { } }
+        public int MaxDepth { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonNumberHandling NumberHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonObjectCreationHandling PreferredObjectCreationHandling { get { throw null; } set { } }
+        public bool PropertyNameCaseInsensitive { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonKnownNamingPolicy PropertyNamingPolicy { get { throw null; } set { } }
+        public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
+        public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
+        public bool UseStringEnumConverter { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
     }
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Applications should use the generic JsonStringEnumConverter<TEnum> instead.")]
@@ -1165,7 +1184,9 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonNode?> JsonNodeConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonObject?> JsonObjectConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<System.Text.Json.Nodes.JsonValue?> JsonValueConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.Memory<byte>> MemoryByteConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<object?> ObjectConverter { get { throw null; } }
+        public static System.Text.Json.Serialization.JsonConverter<System.ReadOnlyMemory<byte>> ReadOnlyMemoryByteConverter { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public static System.Text.Json.Serialization.JsonConverter<sbyte> SByteConverter { get { throw null; } }
         public static System.Text.Json.Serialization.JsonConverter<float> SingleConverter { get { throw null; } }
@@ -1196,10 +1217,12 @@ namespace System.Text.Json.Serialization.Metadata
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateIReadOnlyDictionaryInfo<TCollection, TKey, TValue>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.IReadOnlyDictionary<TKey, TValue> where TKey : notnull { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateISetInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.ISet<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateListInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.List<TElement> { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<Memory<TElement>> CreateMemoryInfo<TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<Memory<TElement>> collectionInfo) { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateObjectInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonObjectInfoValues<T> objectInfo) where T : notnull { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonPropertyInfo CreatePropertyInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonPropertyInfoValues<T> propertyInfo) { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateQueueInfo<TCollection>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo, System.Action<TCollection, object?> addFunc) where TCollection : System.Collections.IEnumerable { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateQueueInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.Queue<TElement> { throw null; }
+        public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<ReadOnlyMemory<TElement>> CreateReadOnlyMemoryInfo<TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<ReadOnlyMemory<TElement>> collectionInfo) { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateStackInfo<TCollection>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo, System.Action<TCollection, object?> addFunc) where TCollection : System.Collections.IEnumerable { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<TCollection> CreateStackInfo<TCollection, TElement>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.Metadata.JsonCollectionInfoValues<TCollection> collectionInfo) where TCollection : System.Collections.Generic.Stack<TElement> { throw null; }
         public static System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> CreateValueInfo<T>(System.Text.Json.JsonSerializerOptions options, System.Text.Json.Serialization.JsonConverter converter) { throw null; }
