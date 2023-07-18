@@ -83,7 +83,7 @@
     <ItemGroup>
       <ApiCompatRightAssembly Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'SharedFrameworkAssembly'))" />
       <ApiCompatRightAssemblyReference Include="@(ReferencePathWithRefAssemblies->WithMetadataValue('IsPrivateAssembly', 'false')->WithMetadataValue('OutputItemType', 'OOBAssembly'))" />
-      <ApiCompatRightAssemblyReference Include="@(ApiCompatTypeForwardDestinationPackage->'$(NuGetPackageRoot)%(Identity)\%(PackageVersion)\lib\%(TargetFramework)\%(Identity).dll')" />
+      <ApiCompatRightAssemblyReference Include="@(ApiCompatTypeForwardDestinationPackage->'$(NuGetPackageRoot)$([System.String]::new('%(Identity)').ToLowerInvariant())\%(PackageVersion)\lib\%(TargetFramework)\%(Identity).dll')" />
     </ItemGroup>
 
     <!-- ApiCompat: NetCoreAppCurrent <-> .NETCoreApp ApiCompatNetCoreAppBaselineVersion -->
@@ -98,7 +98,7 @@
       ExcludeAttributesFiles="@(ApiCompatExcludeAttributesFile)"
       LeftAssembliesTransformationPattern="@(ApiCompatNetCoreAppLatestStableLeftAssembliesTransformationPattern)"
       RightAssembliesTransformationPattern="@(ApiCompatNetCoreAppCurrentRightAssembliesTransformationPattern)"
-      LeftAssembliesReferences="@(ApiCompatLeftTypeForwardDestinationPackage->'$(NuGetPackageRoot)%(Identity)\%(PackageVersion)\lib\%(TargetFramework)\%(Identity).dll', ',')"
+      LeftAssembliesReferences="@(ApiCompatLeftTypeForwardDestinationPackage->'$(NuGetPackageRoot)$([System.String]::new('%(Identity)').ToLowerInvariant())\%(PackageVersion)\lib\%(TargetFramework)\%(Identity).dll', ',')"
       RightAssembliesReferences="@(ApiCompatRightAssemblyReference, ',')" />
 
     <!-- ApiCompat: NetCoreAppCurrent <-> netstandard2.1 -->
