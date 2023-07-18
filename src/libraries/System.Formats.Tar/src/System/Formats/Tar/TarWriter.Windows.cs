@@ -34,8 +34,9 @@ namespace System.Formats.Tar
                 }
                 else
                 {
-                    // Treat any other reparse point as regular file
-                    entryType = TarHelpers.GetRegularFileEntryTypeForFormat(Format);
+                    // All other reparse points are not supported since they cannot be
+                    // represented in a tar file using the existing entry types.
+                    throw new IOException(SR.Format(SR.TarUnsupportedFile, fullPath));
                 }
             }
             else if (isDirectory)
