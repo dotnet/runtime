@@ -7893,25 +7893,39 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             fgRemoveRestOfBlock = true;
         }
     }
-    else if (!opts.IsReadyToRun() && fgGlobalMorph && opts.OptimizationEnabled() &&
-             (call->gtCallType == CT_USER_FUNC) && !call->IsDelegateInvoke() && !call->IsUnmanaged() &&
-             !call->CanTailCall() && call->gtCallCookie == nullptr)
+#if defined(TARGET_ARMARCH)
+    // Most managed-to-managed calls are indirect - it's not a problem for x64 which can use IP-relative addressing
+    // in call instructions, e.g.:
+    //
+    //   call [RIP + addr] ;; e.g. call [MyMethod]
+    //
+    // while on arm64 we will have to do something like:
+    //
+    //   movz    x0, #0x46F0      // code for MyMethod()
+    //   movk    x0, #0xD9FB LSL #16
+    //   movk    x0, #0x495A LSL #32
+    //   movk    x0, #0x7FFA LSL #48
+    //   ldr     x0, [x0]
+    //   blr     x0
+    //
+    // So, to be able to do CSE/hoisting for call targets (up to 4 instructions to populate a 64-bit constant) we morph
+    // calls to indirect early (instead of doing exactly the same in lowering where it's too late for CSE).
+    //
+    else if (!opts.IsReadyToRun() && fgGlobalMorph && opts.OptimizationEnabled() && !compCurBB->isRunRarely() &&
+             (call->gtCallType == CT_USER_FUNC) && !call->IsVirtual() && !call->IsDelegateInvoke() &&
+             !call->IsUnmanaged() && !call->CanTailCall() && (call->gtCallCookie == nullptr) &&
+             ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
     {
-        if ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_NONVIRT &&
-            ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
+        CORINFO_CONST_LOOKUP addrInfo;
+        info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
+        // Only do it for indirect targets
+        if (addrInfo.accessType == IAT_PVALUE)
         {
-            CORINFO_CONST_LOOKUP addrInfo;
-            info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
-            if (addrInfo.accessType == IAT_PVALUE)
-            {
-                call->gtCallType = CT_INDIRECT;
-                GenTree* callTarget =
-                    gtNewIconEmbHndNode(nullptr, addrInfo.addr, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
-                call->gtCallAddr = callTarget;
-                return call;
-            }
+            call->gtCallAddr = gtNewIconEmbHndNode(nullptr, addrInfo.addr, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
+            call->gtCallType = CT_INDIRECT;
         }
     }
+#endif
 
     return call;
 }
