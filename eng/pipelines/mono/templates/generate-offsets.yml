@@ -2,7 +2,6 @@ parameters:
   buildConfig: 'Debug'
   osGroup: ''
   osSubGroup: ''
-  archType: 'x64'
   platform: ''
   container: ''
   timeoutInMinutes: ''
