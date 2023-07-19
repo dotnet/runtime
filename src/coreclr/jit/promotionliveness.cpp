@@ -808,7 +808,7 @@ StructDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl
 
     unsigned       lclNum  = lcl->GetLclNum();
     AggregateInfo* aggInfo = m_aggregates.Lookup(lclNum);
-    return StructDeaths(aggDeaths, (unsigned)aggInfo->Replacements.size());
+    return StructDeaths(aggDeaths, aggInfo);
 }
 
 //------------------------------------------------------------------------
@@ -820,7 +820,13 @@ StructDeaths PromotionLiveness::GetDeathsForStructLocal(GenTreeLclVarCommon* lcl
 //
 bool StructDeaths::IsRemainderDying() const
 {
-    BitVecTraits traits(1 + m_numFields, nullptr);
+    if (m_aggregate->UnpromotedMax <= m_aggregate->UnpromotedMin)
+    {
+        // No remainder.
+        return true;
+    }
+
+    BitVecTraits traits(1 + (unsigned)m_aggregate->Replacements.size(), nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 0);
 }
 
@@ -833,7 +839,9 @@ bool StructDeaths::IsRemainderDying() const
 //
 bool StructDeaths::IsReplacementDying(unsigned index) const
 {
-    BitVecTraits traits(1 + m_numFields, nullptr);
+    assert(index < m_aggregate->Replacements.size());
+
+    BitVecTraits traits(1 + (unsigned)m_aggregate->Replacements.size(), nullptr);
     return BitVecOps::IsMember(&traits, m_deaths, 1 + index);
 }
 

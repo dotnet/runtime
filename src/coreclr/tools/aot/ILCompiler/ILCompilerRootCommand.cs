@@ -51,6 +51,8 @@ namespace ILCompiler
             new("--verbose") { Description = "Enable verbose logging" };
         public CliOption<string> SystemModuleName { get; } =
             new("--systemmodule") { DefaultValueFactory = _ => Helpers.DefaultSystemModule, Description = "System module name (default: System.Private.CoreLib)" };
+        public CliOption<string> Win32ResourceModuleName { get; } =
+            new("--win32resourcemodule") { Description = "Name of the module from which to copy Win32 resources (Windows target only)" };
         public CliOption<bool> MultiFile { get; } =
             new("--multifile") { Description = "Compile only input files (do not compile referenced assemblies)" };
         public CliOption<bool> WaitForDebugger { get; } =
@@ -180,6 +182,7 @@ namespace ILCompiler
             Options.Add(GenerateFullScanDgmlLog);
             Options.Add(IsVerbose);
             Options.Add(SystemModuleName);
+            Options.Add(Win32ResourceModuleName);
             Options.Add(MultiFile);
             Options.Add(WaitForDebugger);
             Options.Add(Resilient);

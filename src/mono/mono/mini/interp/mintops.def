@@ -347,7 +347,8 @@ OPDEF(MINT_BLT_UN_I8_IMM_SP, "blt.un.i8.imm.sp", 4, 0, 1, MintOpShortAndShortBra
 OPDEF(MINT_SWITCH, "switch", 0, 0, 1, MintOpSwitch)
 
 OPDEF(MINT_LDSTR, "ldstr", 3, 1, 0, MintOpShortInt)
-OPDEF(MINT_LDSTR_TOKEN, "ldstr.token", 3, 1, 0, MintOpShortInt)
+OPDEF(MINT_LDSTR_DYNAMIC, "ldstr.dynamic", 3, 1, 0, MintOpShortInt)
+OPDEF(MINT_LDSTR_CSTR, "ldstr.cstr", 3, 1, 0, MintOpShortInt)
 
 OPDEF(MINT_JMP, "jmp", 2, 0, 0, MintOpMethodToken)
 

@@ -102,6 +102,7 @@ struct _MonoMethodWrapper {
 struct _MonoDynamicMethod {
 	MonoMethodWrapper method;
 	MonoAssembly *assembly;
+	MonoMemPool *mp;
 };
 
 struct _MonoMethodPInvoke {
@@ -1420,6 +1421,9 @@ mono_method_has_no_body (MonoMethod *method);
 // Internal callers expected to use ERROR_DECL. External callers are not.
 MONO_COMPONENT_API MonoMethodHeader*
 mono_method_get_header_internal (MonoMethod *method, MonoError *error);
+
+gboolean
+mono_method_metadata_has_header (MonoMethod *method);
 
 MONO_COMPONENT_API void
 mono_method_get_param_names_internal (MonoMethod *method, const char **names);

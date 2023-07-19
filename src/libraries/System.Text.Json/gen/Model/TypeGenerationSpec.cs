@@ -56,7 +56,17 @@ namespace System.Text.Json.SourceGeneration
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
         public required JsonObjectCreationHandling? PreferredPropertyObjectCreationHandling { get; init; }
 
+        /// <summary>
+        /// List of all properties without conflict resolution or sorting to be generated for the metadata-based serializer.
+        /// </summary>
         public required ImmutableEquatableArray<PropertyGenerationSpec> PropertyGenSpecs { get; init; }
+
+        /// <summary>
+        /// List of properties with compile-time conflict resolution and sorting to be generated for the fast-path serializer.
+        /// Contains indices pointing to <see cref="PropertyGenSpecs"/>. A <see cref="null"/> value in the case of object types
+        /// indicates that a naming conflict was found and that an exception throwing stub should be emitted in the fast-path method.
+        /// </summary>
+        public required ImmutableEquatableArray<int>? FastPathPropertyIndices { get; init; }
 
         public required ImmutableEquatableArray<ParameterGenerationSpec> CtorParamGenSpecs { get; init; }
 

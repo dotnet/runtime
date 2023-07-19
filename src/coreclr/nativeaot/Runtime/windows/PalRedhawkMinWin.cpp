@@ -438,6 +438,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HAND
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 {
+    __asan_handle_no_return();
     RtlRestoreContext(pCtx, NULL);
 }
 

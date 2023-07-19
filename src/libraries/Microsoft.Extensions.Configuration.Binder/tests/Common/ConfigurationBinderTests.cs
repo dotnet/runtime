@@ -19,7 +19,17 @@ namespace Microsoft.Extensions
 #endif
     .Configuration.Binder.Tests
 {
-    public partial class ConfigurationBinderTests
+    public abstract class ConfigurationBinderTestsBase
+    {
+        public ConfigurationBinderTestsBase()
+        {
+#if LAUNCH_DEBUGGER
+if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launch(); }
+#endif
+        }
+    }
+
+    public sealed partial class ConfigurationBinderTests : ConfigurationBinderTestsBase
     {
         [Fact]
         public void BindWithNestedTypesWithReadOnlyProperties()
@@ -1869,6 +1879,91 @@ namespace Microsoft.Extensions
             configuration.Bind(obj);
             Assert.Equal(0, obj.Int32);
             Assert.False(obj.Boolean);
+        }
+
+        [Fact]
+        public void AllowsCaseInsensitiveMatch()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "vaLue": "MyString",
+                }
+                """);
+
+            GenericOptions<string> obj = new();
+            configuration.Bind(obj);
+            Assert.Equal("MyString", obj.Value);
+
+            GenericOptionsRecord<string> obj1 = configuration.Get<GenericOptionsRecord<string>>();
+            Assert.Equal("MyString", obj1.Value);
+
+            GenericOptionsWithParamCtor<string> obj2 = configuration.Get<GenericOptionsWithParamCtor<string>>();
+            Assert.Equal("MyString", obj2.Value);
+        }
+
+        [Fact]
+        public void ObjWith_TypeConverter()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "Location":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
+
+            GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
+            ValidateGeolocation(obj.Location);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(""" { "Geolocation": "3, 4", } """);
+            obj = configuration.Get<GeolocationWrapper>();
+            Assert.Equal(Geolocation.Zero, obj.Location);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Dictionary_Element()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "First":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            Geolocation obj = configuration.Get<IDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<IReadOnlyDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Enumerable_Element()
+        {
+            var  configuration = TestHelpers.GetConfigurationFromJsonString("""{ "Enumerable": [{ "Latitude": 3, "Longitude": 4 }] }""")
+                .GetSection("Enumerable");
+
+            Geolocation obj = configuration.Get<IList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<Geolocation[]>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<IReadOnlyList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+        }
+
+        private void ValidateGeolocation(Geolocation location)
+        {
+            Assert.Equal(3, location.Latitude);
+            Assert.Equal(4, location.Longitude);
         }
     }
 }

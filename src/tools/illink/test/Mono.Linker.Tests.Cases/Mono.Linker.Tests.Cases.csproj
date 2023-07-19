@@ -65,9 +65,6 @@
     <Folder Include="BCLFeatures\" />
     <Folder Include="BCLFeatures\ETW\" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Security.Permissions" Version="$(SystemSecurityPermissionsVersion)" />

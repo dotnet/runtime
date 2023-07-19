@@ -58,6 +58,7 @@ extern bool ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *bu
 extern void * ep_rt_mono_thread_attach (bool background_thread);
 extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
 extern void ep_rt_mono_thread_detach (void);
+extern void ep_rt_mono_component_init (void);
 extern void ep_rt_mono_init (void);
 extern void ep_rt_mono_init_finish (void);
 extern void ep_rt_mono_fini (void);
@@ -382,8 +383,6 @@ void
 ep_rt_init (void)
 {
 	ep_rt_mono_init ();
-
-	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
 }
 
 static
@@ -401,8 +400,6 @@ ep_rt_shutdown (void)
 {
 	mono_lazy_cleanup (managed_command_line_get_init (), managed_command_line_lazy_clean);
 	mono_lazy_cleanup (os_command_line_get_init (), os_command_line_lazy_clean);
-
-	ep_rt_spin_lock_free (ep_rt_mono_config_lock_get ());
 
 	ep_rt_mono_fini ();
 }
@@ -1818,90 +1815,7 @@ ep_rt_volatile_store_ptr_without_barrier (
  */
 
 bool
-ep_rt_mono_write_event_ee_startup_start (void);
-
-typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
-
-void
-ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
-
-int
-ep_rt_mono_log_single_type (
-	BulkTypeEventLogger *p_type_logger,
-	MonoType *mono_type);
-
-void
-ep_rt_mono_log_type_and_parameters (
-	BulkTypeEventLogger *p_type_logger,
-	MonoType *mono_type);
-
-void
-ep_rt_mono_log_type_and_parameters_if_necessary (
-	BulkTypeEventLogger *p_type_logger,
-	MonoType *mono_type);
-
-void
-ep_rt_mono_send_method_details_event (MonoMethod *method);
-
-bool
-ep_rt_mono_write_event_jit_start (MonoMethod *method);
-
-bool
-ep_rt_mono_write_event_method_il_to_native_map (
-	MonoMethod *method,
-	MonoJitInfo *ji);
-
-bool
-ep_rt_mono_write_event_method_load (
-	MonoMethod *method,
-	MonoJitInfo *ji);
-
-bool
-ep_rt_mono_write_event_module_load (MonoImage *image);
-
-bool
-ep_rt_mono_write_event_module_unload (MonoImage *image);
-
-bool
-ep_rt_mono_write_event_assembly_load (MonoAssembly *assembly);
-
-bool
-ep_rt_mono_write_event_assembly_unload (MonoAssembly *assembly);
-
-bool
-ep_rt_mono_write_event_thread_created (ep_rt_thread_id_t tid);
-
-bool
-ep_rt_mono_write_event_thread_terminated (ep_rt_thread_id_t tid);
-
-bool
-ep_rt_mono_write_event_type_load_start (MonoType *type);
-
-bool
-ep_rt_mono_write_event_type_load_stop (MonoType *type);
-
-bool
-ep_rt_mono_write_event_exception_thrown (MonoObject *object);
-
-bool
-ep_rt_mono_write_event_exception_clause (
-	MonoMethod *method,
-	uint32_t clause_num,
-	MonoExceptionEnum clause_type,
-	MonoObject *obj);
-
-bool
-ep_rt_mono_write_event_monitor_contention_start (MonoObject *obj);
-
-bool
-ep_rt_mono_write_event_monitor_contention_stop (MonoObject *obj);
-
-bool
-ep_rt_mono_write_event_method_jit_memory_allocated_for_code (
-	const uint8_t *buffer,
-	uint64_t size,
-	MonoProfilerCodeBufferType type,
-	const void *data);
+ep_rt_write_event_ee_startup_start (void);
 
 bool
 ep_rt_write_event_threadpool_worker_thread_start (
@@ -2053,6 +1967,64 @@ EventPipeEtwCallbackDotNETRuntimeMonoProfiler (
 	EventFilterDescriptor *filter_data,
 	void *callback_data);
 
+/*
+* Shared EventPipe provider defines/types/functions.
+*/
+
+#define GC_KEYWORD 0x1
+#define GC_HANDLE_KEYWORD 0x2
+#define LOADER_KEYWORD 0x8
+#define JIT_KEYWORD 0x10
+#define APP_DOMAIN_RESOURCE_MANAGEMENT_KEYWORD 0x800
+#define CONTENTION_KEYWORD 0x4000
+#define EXCEPTION_KEYWORD 0x8000
+#define THREADING_KEYWORD 0x10000
+#define TYPE_KEYWORD 0x80000
+#define GC_HEAP_DUMP_KEYWORD 0x100000
+#define GC_ALLOCATION_KEYWORD 0x200000
+#define GC_MOVES_KEYWORD 0x400000
+#define GC_HEAP_COLLECT_KEYWORD 0x800000
+#define GC_HEAP_AND_TYPE_NAMES_KEYWORD 0x1000000
+#define GC_FINALIZATION_KEYWORD 0x1000000
+#define GC_RESIZE_KEYWORD 0x2000000
+#define GC_ROOT_KEYWORD 0x4000000
+#define GC_HEAP_DUMP_VTABLE_CLASS_REF_KEYWORD 0x8000000
+#define METHOD_TRACING_KEYWORD 0x20000000
+#define TYPE_DIAGNOSTIC_KEYWORD 0x8000000000
+#define TYPE_LOADING_KEYWORD 0x8000000000
+#define MONITOR_KEYWORD 0x10000000000
+#define METHOD_INSTRUMENTATION_KEYWORD 0x40000000000
+
+// Custom Mono EventPipe thread data.
+typedef struct _EventPipeMonoThreadData EventPipeMonoThreadData;
+struct _EventPipeMonoThreadData {
+	void *gc_heap_dump_context;
+	bool prevent_profiler_event_recursion;
+};
+
+static
+inline
+bool
+ep_rt_mono_is_runtime_initialized (void)
+{
+	extern gboolean _ep_rt_mono_runtime_initialized;
+	return !!_ep_rt_mono_runtime_initialized;
+}
+
+extern EventPipeMonoThreadData * ep_rt_mono_thread_data_get_or_create (void);
+extern uint64_t ep_rt_mono_session_calculate_and_count_all_keywords (const ep_char8_t *provider, uint64_t keywords[], uint64_t count[], size_t len);
+extern bool ep_rt_mono_sesion_has_all_started (void);
+
+extern void ep_rt_mono_runtime_provider_component_init (void);
+extern void ep_rt_mono_runtime_provider_init (void);
+extern void ep_rt_mono_runtime_provider_fini (void);
+extern void ep_rt_mono_runtime_provider_thread_started_callback (MonoProfiler *prof, uintptr_t tid);
+extern void ep_rt_mono_runtime_provider_thread_stopped_callback (MonoProfiler *prof, uintptr_t tid);
+
+extern void ep_rt_mono_profiler_provider_component_init (void);
+extern void ep_rt_mono_profiler_provider_init (void);
+extern void ep_rt_mono_profiler_provider_fini (void);
+extern bool ep_rt_mono_profiler_provider_parse_options (const char *options);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_RT_MONO_H__ */

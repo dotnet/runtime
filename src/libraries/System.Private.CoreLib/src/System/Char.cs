@@ -1993,6 +1993,8 @@ namespace System
         static char IUtfChar<char>.CastFrom(uint value) => (char)value;
         static char IUtfChar<char>.CastFrom(ulong value) => (char)value;
 
+        static uint IUtfChar<char>.CastToUInt32(char value) => value;
+
         //
         // IBinaryIntegerParseAndFormatInfo
         //

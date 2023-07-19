@@ -495,8 +495,9 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         return NI_Illegal;
     }
 
-    bool isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
-    bool isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    bool     isIsaSupported            = comp->compSupportsHWIntrinsic(isa);
+    bool     isHardwareAcceleratedProp = (strcmp(methodName, "get_IsHardwareAccelerated") == 0);
+    uint32_t vectorByteLength          = 0;
 
 #ifdef TARGET_XARCH
     if (isHardwareAcceleratedProp)
@@ -505,25 +506,21 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // but we want IsHardwareAccelerated to return true only when all of them are (there are
         // still can be cases where e.g. Sse41 might give an additional boost for Vector128, but it's
         // not important enough to bump the minimal Sse version here)
+
         if (strcmp(className, "Vector128") == 0)
         {
-            isa = InstructionSet_SSE2;
+            isa              = InstructionSet_SSE2;
+            vectorByteLength = 16;
         }
         else if (strcmp(className, "Vector256") == 0)
         {
-            if (comp->getPreferredVectorByteLength() < 32)
-            {
-                return NI_IsSupported_False;
-            }
-            isa = InstructionSet_AVX2;
+            isa              = InstructionSet_AVX2;
+            vectorByteLength = 32;
         }
         else if (strcmp(className, "Vector512") == 0)
         {
-            if (comp->getPreferredVectorByteLength() < 64)
-            {
-                return NI_IsSupported_False;
-            }
-            isa = InstructionSet_AVX512F;
+            isa              = InstructionSet_AVX512F;
+            vectorByteLength = 64;
         }
     }
 #endif
@@ -556,7 +553,8 @@ NamedIntrinsic HWIntrinsicInfo::lookupId(Compiler*         comp,
         // When the compiler doesn't support ISA or when it does but the target hardware does
         // not and we aren't in a scenario with support for a dynamic check, we want to return false.
 
-        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa))
+        if (isIsaSupported && comp->compSupportsHWIntrinsic(isa) &&
+            (vectorByteLength <= comp->getPreferredVectorByteLength()))
         {
             if (!comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI) || comp->compExactlyDependsOn(isa))
             {

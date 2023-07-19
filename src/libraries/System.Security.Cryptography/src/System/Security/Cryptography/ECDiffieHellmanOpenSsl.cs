@@ -101,7 +101,7 @@ namespace System.Security.Cryptography
         {
             if (!Interop.OpenSslNoInit.OpenSslIsAvailable)
             {
-                throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_AlgorithmNotSupported, nameof(ECDiffieHellmanOpenSsl)));
+                throw new PlatformNotSupportedException(SR.Format(SR.PlatformNotSupported_CryptographyOpenSSLNotFound, nameof(ECDiffieHellmanOpenSsl)));
             }
         }
     }

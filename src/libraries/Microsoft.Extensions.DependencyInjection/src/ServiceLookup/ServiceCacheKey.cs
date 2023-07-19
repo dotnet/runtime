@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// <summary>
         /// Type of service being cached
         /// </summary>
-        public Type? Type { get; }
+        public ServiceIdentifier? ServiceIdentifier { get; }
 
         /// <summary>
         /// Reverse index of the service when resolved in <c>IEnumerable&lt;Type&gt;</c> where default instance gets slot 0.
@@ -26,9 +26,15 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// </summary>
         public int Slot { get; }
 
-        public ServiceCacheKey(Type? type, int slot)
+        public ServiceCacheKey(object key, Type type, int slot)
         {
-            Type = type;
+            ServiceIdentifier = new ServiceIdentifier(key, type);
+            Slot = slot;
+        }
+
+        public ServiceCacheKey(ServiceIdentifier? type, int slot)
+        {
+            ServiceIdentifier = type;
             Slot = slot;
         }
 
@@ -36,7 +42,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         /// <param name="other">An instance to compare with this instance.</param>
         /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
         public bool Equals(ServiceCacheKey other) =>
-            Type == other.Type && Slot == other.Slot;
+            ServiceIdentifier.Equals(other.ServiceIdentifier) && Slot == other.Slot;
 
         public override bool Equals([NotNullWhen(true)] object? obj) =>
             obj is ServiceCacheKey other && Equals(other);
@@ -45,7 +51,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             unchecked
             {
-                return ((Type?.GetHashCode() ?? 23) * 397) ^ Slot;
+                return ((ServiceIdentifier?.GetHashCode() ?? 23) * 397) ^ Slot;
             }
         }
     }
