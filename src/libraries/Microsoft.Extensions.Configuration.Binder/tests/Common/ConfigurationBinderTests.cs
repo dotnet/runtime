@@ -1900,5 +1900,70 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             GenericOptionsWithParamCtor<string> obj2 = configuration.Get<GenericOptionsWithParamCtor<string>>();
             Assert.Equal("MyString", obj2.Value);
         }
+
+        [Fact]
+        public void ObjWith_TypeConverter()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "Location":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
+
+            GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
+            ValidateGeolocation(obj.Location);
+
+            configuration = TestHelpers.GetConfigurationFromJsonString(""" { "Geolocation": "3, 4", } """);
+            obj = configuration.Get<GeolocationWrapper>();
+            Assert.Equal(Geolocation.Zero, obj.Location);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Dictionary_Element()
+        {
+            var configuration = TestHelpers.GetConfigurationFromJsonString("""
+                {
+                    "First":
+                    {
+                        "Latitude": 3,
+                        "Longitude": 4,
+                    }
+                }
+                """);
+
+            Geolocation obj = configuration.Get<IDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<IReadOnlyDictionary<string, Geolocation>>()["First"];
+            ValidateGeolocation(obj);
+        }
+
+        [Fact]
+        public void ComplexObj_As_Enumerable_Element()
+        {
+            var  configuration = TestHelpers.GetConfigurationFromJsonString("""{ "Enumerable": [{ "Latitude": 3, "Longitude": 4 }] }""")
+                .GetSection("Enumerable");
+
+            Geolocation obj = configuration.Get<IList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<Geolocation[]>()[0];
+            ValidateGeolocation(obj);
+
+            obj = configuration.Get<IReadOnlyList<Geolocation>>()[0];
+            ValidateGeolocation(obj);
+        }
+
+        private void ValidateGeolocation(Geolocation location)
+        {
+            Assert.Equal(3, location.Latitude);
+            Assert.Equal(4, location.Longitude);
+        }
     }
 }

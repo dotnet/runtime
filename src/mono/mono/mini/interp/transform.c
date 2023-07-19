@@ -1287,6 +1287,15 @@ emit_ldptr (TransformData *td, gpointer data)
 static MintICallSig
 interp_get_icall_sig (MonoMethodSignature *sig);
 
+static gpointer
+imethod_alloc0 (TransformData *td, size_t size)
+{
+	if (td->rtm->method->dynamic)
+		return mono_mempool_alloc0 (((MonoDynamicMethod*)td->rtm->method)->mp, (guint)size);
+	else
+		return mono_mem_manager_alloc0 (td->mem_manager, (guint)size);
+}
+
 static void
 interp_generate_icall_throw (TransformData *td, MonoJitICallInfo *icall_info, gpointer arg1, gpointer arg2)
 {
@@ -7657,7 +7666,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				push_simple_type (td, STACK_TYPE_I);
 				interp_ins_set_dreg (td->last_ins, td->sp [-1].local);
 				/* This is a memory slot used by the wrapper */
-				gpointer addr = mono_mem_manager_alloc0 (td->mem_manager, sizeof (gpointer));
+				gpointer addr = imethod_alloc0 (td, sizeof (gpointer));
 				td->last_ins->data [0] = get_data_item_index (td, addr);
 				break;
 			}
@@ -8637,11 +8646,11 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 	size = compute_native_offset_estimates (td);
 
 	// Generate the compacted stream of instructions
-	td->new_code = ip = (guint16*)mono_mem_manager_alloc0 (td->mem_manager, size * sizeof (guint16));
+	td->new_code = ip = (guint16*)imethod_alloc0 (td, size * sizeof (guint16));
 
 	if (td->patchpoint_data_n) {
 		g_assert (mono_interp_tiering_enabled ());
-		td->patchpoint_data = (int*)mono_mem_manager_alloc0 (td->mem_manager, (td->patchpoint_data_n * 2 + 1) * sizeof (int));
+		td->patchpoint_data = (int*)imethod_alloc0 (td, (td->patchpoint_data_n * 2 + 1) * sizeof (int));
 		td->patchpoint_data [td->patchpoint_data_n * 2] = G_MAXINT32;
 	}
 
@@ -8697,7 +8706,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 
 #if HOST_BROWSER
 	if (backward_branch_offsets_count > 0) {
-		rtm->backward_branch_offsets = mono_mem_manager_alloc(td->mem_manager, backward_branch_offsets_count * sizeof(guint16));
+		rtm->backward_branch_offsets = imethod_alloc0 (td, backward_branch_offsets_count * sizeof(guint16));
 		rtm->backward_branch_offsets_count = backward_branch_offsets_count;
 		memcpy(rtm->backward_branch_offsets, backward_branch_offsets, backward_branch_offsets_count * sizeof(guint16));
 	}
@@ -8709,7 +8718,7 @@ generate_compacted_code (InterpMethod *rtm, TransformData *td)
 static void
 interp_mark_reachable_bblocks (TransformData *td)
 {
-	InterpBasicBlock **queue = mono_mem_manager_alloc0 (td->mem_manager, td->bb_count * sizeof (InterpBasicBlock*));
+	InterpBasicBlock **queue = mono_mempool_alloc0 (td->mempool, td->bb_count * sizeof (InterpBasicBlock*));
 	InterpBasicBlock *current;
 	int cur_index = 0;
 	int next_position = 0;
@@ -11208,7 +11217,7 @@ retry:
 	code_len_u8 = GPTRDIFF_TO_UINT32 ((guint8 *) td->new_code_end - (guint8 *) td->new_code);
 	code_len_u16 = GPTRDIFF_TO_UINT32 (td->new_code_end - td->new_code);
 
-	rtm->clauses = (MonoExceptionClause*)mono_mem_manager_alloc0 (td->mem_manager, header->num_clauses * sizeof (MonoExceptionClause));
+	rtm->clauses = (MonoExceptionClause*)imethod_alloc0 (td, header->num_clauses * sizeof (MonoExceptionClause));
 	memcpy (rtm->clauses, header->clauses, header->num_clauses * sizeof(MonoExceptionClause));
 	rtm->code = (gushort*)td->new_code;
 	rtm->init_locals = header->init_locals;
@@ -11232,6 +11241,8 @@ retry:
 	rtm->alloca_size = td->total_locals_size + td->max_stack_size;
 	g_assert ((rtm->alloca_size % MINT_STACK_ALIGNMENT) == 0);
 	rtm->locals_size = td->param_area_offset;
+	// FIXME: Can't allocate this using imethod_alloc0 as its registered with mono_interp_register_imethod_data_items ()
+	//rtm->data_items = (gpointer*)imethod_alloc0 (td, td->n_data_items * sizeof (td->data_items [0]));
 	rtm->data_items = (gpointer*)mono_mem_manager_alloc0 (td->mem_manager, td->n_data_items * sizeof (td->data_items [0]));
 	memcpy (rtm->data_items, td->data_items, td->n_data_items * sizeof (td->data_items [0]));
 
@@ -11245,7 +11256,7 @@ retry:
 	int jinfo_len;
 	jinfo_len = mono_jit_info_size ((MonoJitInfoFlags)0, header->num_clauses, 0);
 	MonoJitInfo *jinfo;
-	jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (td->mem_manager, jinfo_len);
+	jinfo = (MonoJitInfo *)imethod_alloc0 (td, jinfo_len);
 	jinfo->is_interp = 1;
 	rtm->jinfo = jinfo;
 	mono_jit_info_init (jinfo, method, (guint8*)rtm->code, code_len_u8, (MonoJitInfoFlags)0, header->num_clauses, 0);

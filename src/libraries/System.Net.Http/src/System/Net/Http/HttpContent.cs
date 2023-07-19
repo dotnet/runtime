@@ -4,6 +4,7 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Text;
@@ -608,7 +609,7 @@ namespace System.Net.Http
                 // This should only be hit when called directly; HttpClient/HttpClientHandler
                 // will not exceed this limit.
                 throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize,
-                    SR.Format(System.Globalization.CultureInfo.InvariantCulture,
+                    SR.Format(CultureInfo.InvariantCulture,
                         SR.net_http_content_buffersize_limit, HttpContent.MaxBufferSize));
             }
 
@@ -720,7 +721,7 @@ namespace System.Net.Http
         {
             Debug.Assert(StreamCopyExceptionNeedsWrapping(e));
             HttpRequestError error = e is HttpIOException ioEx ? ioEx.HttpRequestError : HttpRequestError.Unknown;
-            return new HttpRequestException(SR.net_http_content_stream_copy_error, e, httpRequestError: error);
+            return new HttpRequestException(error, SR.net_http_content_stream_copy_error, e);
         }
 
         private static int GetPreambleLength(ArraySegment<byte> buffer, Encoding encoding)
@@ -835,7 +836,7 @@ namespace System.Net.Http
 
         private static HttpRequestException CreateOverCapacityException(long maxBufferSize)
         {
-            return new HttpRequestException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize), httpRequestError: HttpRequestError.ConfigurationLimitExceeded);
+            return new HttpRequestException(HttpRequestError.ConfigurationLimitExceeded, SR.Format(CultureInfo.InvariantCulture, SR.net_http_content_buffersize_exceeded, maxBufferSize));
         }
 
         internal sealed class LimitMemoryStream : MemoryStream

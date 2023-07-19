@@ -1,8 +1,8 @@
 <Dependencies>
   <ProductDependencies>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-preview.7.23360.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="8.0.0-preview.7.23367.1">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>5cbe29a3ea16c6d20d8f6c551a80e05c5b714aba</Sha>
+      <Sha>d5c6ceec99d8ed785f0243895a761ca13b6b19cb</Sha>
     </Dependency>
     <Dependency Name="System.Net.MsQuic.Transport" Version="8.0.0-alpha.1.23166.1">
       <Uri>https://github.com/dotnet/msquic</Uri>
@@ -90,9 +90,9 @@
       <Sha>1a6a83a8f50e1119f1007b1e3c211d3289ba6901</Sha>
       <SourceBuild RepoName="cecil" ManagedOnly="true" />
     </Dependency>
-    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-preview.7.23362.1">
+    <Dependency Name="Microsoft.NET.Workload.Emscripten.Current.Manifest-8.0.100.Transport" Version="8.0.0-preview.7.23367.1">
       <Uri>https://github.com/dotnet/emsdk</Uri>
-      <Sha>96c6e0d2c0bb8a90d6b49eb3ffa32593f7df7a18</Sha>
+      <Sha>f69a540dc6c1539f6df09893d41c94d832cd4b28</Sha>
       <SourceBuild RepoName="emsdk" ManagedOnly="true" />
     </Dependency>
     <Dependency Name="Microsoft.SourceBuild.Intermediate.source-build-reference-packages" Version="8.0.0-alpha.1.23266.3">
@@ -346,9 +346,9 @@
       <Uri>https://dev.azure.com/dnceng/internal/_git/dotnet-optimization</Uri>
       <Sha>068998a5d91f55a619d1d072ab3094dacd5d6a4f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23360.1">
+    <Dependency Name="Microsoft.DotNet.HotReload.Utils.Generator.BuildTool" Version="8.0.0-alpha.0.23367.4">
       <Uri>https://github.com/dotnet/hotreload-utils</Uri>
-      <Sha>8362ec8461084d6bcbec2e4371741d0caf2e2e0e</Sha>
+      <Sha>d18e043fcccf4a0f1d61c704e2ab122f363aa82b</Sha>
     </Dependency>
     <Dependency Name="System.Runtime.Numerics.TestData" Version="8.0.0-beta.23360.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
