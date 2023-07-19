@@ -7893,6 +7893,25 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             fgRemoveRestOfBlock = true;
         }
     }
+    else if (!opts.IsReadyToRun() && fgGlobalMorph && opts.OptimizationEnabled() &&
+             (call->gtCallType == CT_USER_FUNC) && !call->IsDelegateInvoke() && !call->IsUnmanaged() &&
+             !call->CanTailCall() && call->gtCallCookie == nullptr)
+    {
+        if ((call->gtFlags & GTF_CALL_VIRT_KIND_MASK) == GTF_CALL_NONVIRT &&
+            ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
+        {
+            CORINFO_CONST_LOOKUP addrInfo;
+            info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
+            if (addrInfo.accessType == IAT_PVALUE)
+            {
+                call->gtCallType = CT_INDIRECT;
+                GenTree* callTarget =
+                    gtNewIconEmbHndNode(nullptr, addrInfo.addr, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
+                call->gtCallAddr = callTarget;
+                return call;
+            }
+        }
+    }
 
     return call;
 }
