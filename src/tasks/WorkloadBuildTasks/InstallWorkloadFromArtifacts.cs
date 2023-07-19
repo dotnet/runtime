@@ -19,7 +19,7 @@ using Microsoft.Build.Utilities;
 
 namespace Microsoft.Workload.Build.Tasks
 {
-    public class InstallWorkloadFromArtifacts : Task
+    public partial class InstallWorkloadFromArtifacts : Task
     {
         [Required, NotNull]
         public ITaskItem[]    WorkloadIds        { get; set; } = Array.Empty<ITaskItem>();
@@ -48,6 +48,9 @@ namespace Microsoft.Workload.Build.Tasks
         private string AllManifestsStampPath => Path.Combine(SdkWithNoWorkloadInstalledPath, ".all-manifests.stamp");
         private string _tempDir = string.Empty;
         private string _nugetCachePath = string.Empty;
+
+        [GeneratedRegex(@"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?")]
+        private static partial Regex bandVersionRegex();
 
         public override bool Execute()
         {
@@ -294,7 +297,7 @@ namespace Microsoft.Workload.Build.Tasks
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
             // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
-            string bandVersion = Regex.Match(version, @"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?").Value;
+            string bandVersion = bandVersionRegex().Match(version).Value;
 
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{bandVersion}",
                                           Version: version,
