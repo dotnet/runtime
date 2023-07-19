@@ -66,7 +66,7 @@ namespace System.Net.Http
         }
 
         public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
-            : base(pool)
+            : base(pool, connection.RemoteEndPoint)
         {
             _pool = pool;
             _authority = authority;
@@ -173,11 +173,6 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
-                        {
-                            queueStartingTimestamp = Stopwatch.GetTimestamp();
-                        }
-
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
@@ -198,15 +193,22 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
+                    if (queueStartingTimestamp != 0)
                     {
-                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
+                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
+
+                        _pool.Settings._metrics!.RequestLeftQueue(Pool, duration, versionMajor: 3);
+
+                        if (HttpTelemetry.Log.IsEnabled())
+                        {
+                            HttpTelemetry.Log.RequestLeftQueue(versionMajor: 3, duration);
+                        }
                     }
                 }
 
                 if (quicStream == null)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 requestStream!.StreamId = quicStream.Id;
@@ -219,7 +221,7 @@ namespace System.Net.Http
 
                 if (goAway)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -235,7 +237,7 @@ namespace System.Net.Http
             {
                 // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
                 // note that _abortException may be null if we closed the connection in response to a GOAWAY frame
-                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {

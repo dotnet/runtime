@@ -132,8 +132,8 @@ namespace System.Net.Http
         private long _keepAlivePingTimeoutTimestamp;
         private volatile KeepAliveState _keepAliveState;
 
-        public Http2Connection(HttpConnectionPool pool, Stream stream)
-            : base(pool)
+        public Http2Connection(HttpConnectionPool pool, Stream stream, IPEndPoint? remoteEndPoint)
+            : base(pool, remoteEndPoint)
         {
             _pool = pool;
             _stream = stream;
@@ -248,6 +248,7 @@ namespace System.Net.Http
                     throw;
                 }
 
+                // TODO: Review this case!
                 throw new IOException(SR.net_http_http2_connection_not_established, e);
             }
 
@@ -488,10 +489,10 @@ namespace System.Net.Http
             return frameHeader;
 
             void ThrowPrematureEOF(int requiredBytes) =>
-                throw new IOException(SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.Format(SR.net_http_invalid_response_premature_eof_bytecount, requiredBytes - _incomingBuffer.ActiveLength));
 
             void ThrowMissingFrame() =>
-                throw new IOException(SR.net_http_invalid_response_missing_frame);
+                throw new HttpIOException(HttpRequestError.ResponseEnded, SR.net_http_invalid_response_missing_frame);
         }
 
         private async Task ProcessIncomingFramesAsync()
@@ -523,10 +524,15 @@ namespace System.Net.Http
 
                     Debug.Assert(InitialSettingsReceived.Task.IsCompleted);
                 }
+                catch (HttpProtocolException e)
+                {
+                    InitialSettingsReceived.TrySetException(e);
+                    throw;
+                }
                 catch (Exception e)
                 {
-                    InitialSettingsReceived.TrySetException(new IOException(SR.net_http_http2_connection_not_established, e));
-                    throw new IOException(SR.net_http_http2_connection_not_established, e);
+                    InitialSettingsReceived.TrySetException(new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e));
+                    throw new HttpIOException(HttpRequestError.InvalidResponse, SR.net_http_http2_connection_not_established, e);
                 }
 
                 // Keep processing frames as they arrive.
@@ -1656,7 +1662,7 @@ namespace System.Net.Http
             ArrayBuffer headerBuffer = default;
             try
             {
-                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
+                if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart(Id);
 
                 // Serialize headers to a temporary buffer, and do as much work to prepare to send the headers as we can
                 // before taking the write lock.
@@ -2096,17 +2102,13 @@ namespace System.Net.Http
 
                 return http2Stream.GetAndClearResponse();
             }
-            catch (Exception e)
+            catch (HttpIOException e)
             {
-                if (e is IOException ||
-                    e is ObjectDisposedException ||
-                    e is HttpProtocolException ||
-                    e is InvalidOperationException)
-                {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, e);
-                }
-
-                throw;
+                throw new HttpRequestException(e.HttpRequestError, e.Message, e);
+            }
+            catch (Exception e) when (e is IOException || e is ObjectDisposedException || e is InvalidOperationException)
+            {
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, e);
             }
         }
 
@@ -2203,10 +2205,10 @@ namespace System.Net.Http
 
         [DoesNotReturn]
         private static void ThrowRetry(string message, Exception? innerException = null) =>
-            throw new HttpRequestException(message, innerException, allowRetry: RequestRetryType.RetryOnConnectionFailure);
+            throw new HttpRequestException(HttpRequestError.Unknown, message, innerException, RequestRetryType.RetryOnConnectionFailure);
 
         private static Exception GetRequestAbortedException(Exception? innerException = null) =>
-            innerException as HttpProtocolException ?? new IOException(SR.net_http_request_aborted, innerException);
+            innerException as HttpIOException ?? new IOException(SR.net_http_request_aborted, innerException);
 
         [DoesNotReturn]
         private static void ThrowRequestAborted(Exception? innerException = null) =>
