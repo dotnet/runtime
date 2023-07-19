@@ -151,10 +151,10 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 ThrowHelper.ThrowObjectDisposedException();
             }
-            ServiceAccessor realizedService = _serviceAccessors.GetOrAdd(serviceIdentifier, _createServiceAccessor);
-            OnResolve(realizedService.CallSite, serviceProviderEngineScope);
+            ServiceAccessor serviceAccessor = _serviceAccessors.GetOrAdd(serviceIdentifier, _createServiceAccessor);
+            OnResolve(serviceAccessor.CallSite, serviceProviderEngineScope);
             DependencyInjectionEventSource.Log.ServiceResolved(this, serviceIdentifier.ServiceType);
-            object? result = realizedService.RealizedService?.Invoke(serviceProviderEngineScope);
+            object? result = serviceAccessor.RealizedService?.Invoke(serviceProviderEngineScope);
             System.Diagnostics.Debug.Assert(result is null || CallSiteFactory.IsService(serviceIdentifier));
             return result;
         }
