@@ -516,7 +516,9 @@ namespace System.Net.Http
                 handler = new DiagnosticsHandler(handler, propagator, settings._allowAutoRedirect);
             }
 
-            handler = new MetricsHandler(handler, _settings._meterFactory);
+            handler = new MetricsHandler(handler, settings._meterFactory, out Meter meter);
+
+            settings._metrics = new SocketsHttpHandlerMetrics(meter);
 
             if (settings._allowAutoRedirect)
             {

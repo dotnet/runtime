@@ -245,7 +245,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         /// <summary>
         /// Encodes a constant value to a blob and adds it to the Blob heap, if it's not there already.
-        /// Uses UTF16 to encode string constants.
+        /// Uses UTF-16 to encode string constants.
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <returns>Handle to the added or existing blob.</returns>
@@ -264,7 +264,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Encodes a string using UTF16 encoding to a blob and adds it to the Blob heap, if it's not there already.
+        /// Encodes a string using UTF-16 encoding to a blob and adds it to the Blob heap, if it's not there already.
         /// </summary>
         /// <param name="value">String.</param>
         /// <returns>Handle to the added or existing blob.</returns>
@@ -289,7 +289,7 @@ namespace System.Reflection.Metadata.Ecma335
         }
 
         /// <summary>
-        /// Encodes a string using UTF8 encoding to a blob and adds it to the Blob heap, if it's not there already.
+        /// Encodes a string using UTF-8 encoding to a blob and adds it to the Blob heap, if it's not there already.
         /// </summary>
         /// <param name="value">Constant value.</param>
         /// <param name="allowUnpairedSurrogates">

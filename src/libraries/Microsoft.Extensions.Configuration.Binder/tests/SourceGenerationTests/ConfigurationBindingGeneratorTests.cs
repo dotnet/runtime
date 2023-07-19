@@ -257,8 +257,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration.Tests
                                              .Split(Environment.NewLine);
 
             var (d, r) = await RunGenerator(testSourceCode, languageVersion);
-            bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText,
-                out string errorMessage);
+            bool success = RoslynTestUtils.CompareLines(expectedLines, r[0].SourceText, out string errorMessage);
 
 #if !SKIP_BASELINES
             Assert.Single(r);

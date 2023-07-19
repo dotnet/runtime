@@ -27,8 +27,10 @@
 #ifndef _VMEVENTTRACE_H_
 #define _VMEVENTTRACE_H_
 
+#include <CommonTypes.h>
 #include "eventtracebase.h"
-#include "gcinterface.h"
+#include <gcenv.base.h>
+#include <gcinterface.h>
 
 #ifdef FEATURE_EVENT_TRACE
 struct ProfilingScanContext : ScanContext
@@ -37,7 +39,14 @@ struct ProfilingScanContext : ScanContext
     void * pvEtwContext;
     void *pHeapId;
 
-    ProfilingScanContext(BOOL fProfilerPinnedParam);
+    ProfilingScanContext(BOOL fProfilerPinnedParam)
+        : ScanContext()
+    {
+        pHeapId = NULL;
+        fProfilerPinned = fProfilerPinnedParam;
+        pvEtwContext = NULL;
+        promotion = true;
+    }
 };
 #endif // defined(FEATURE_EVENT_TRACE)
 
@@ -185,6 +194,7 @@ namespace ETW
         static void MovedReference(BYTE * pbMemBlockStart, BYTE * pbMemBlockEnd, ptrdiff_t cbRelocDistance, size_t profilingContext, BOOL fCompacting, BOOL fAllowProfApiNotification = TRUE);
         static void EndMovedReferences(size_t profilingContext, BOOL fAllowProfApiNotification = TRUE);
         static void WalkStaticsAndCOMForETW();
+        static void WalkHeap();
     };
 };
 
@@ -210,6 +220,7 @@ inline void ETW::GCLog::RootReference(
     ProfilingScanContext * profilingScanContext,
     DWORD dwGCFlags,
     DWORD rootFlags) { }
+inline void ETW::GCLog::WalkHeap() { }
 #endif
 
 #endif //_VMEVENTTRACE_H_

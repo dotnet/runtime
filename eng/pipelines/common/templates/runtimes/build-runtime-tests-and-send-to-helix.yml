@@ -6,7 +6,6 @@ parameters:
   testBuildArgs: ''
   crossBuild: false
   readyToRun: false
-  liveLibrariesBuildConfig: ''
   compositeBuildMode: false
   helixQueues: ''
   displayNameArgs: ''
@@ -36,7 +35,6 @@ steps:
       osSubgroup: ${{ parameters.osSubgroup }}
       archType: ${{ parameters.archType }}
       buildConfig: ${{ parameters.buildConfig }}
-      liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
       testBuildArgs: ${{ parameters.testBuildArgs }}
 
   # Build a Mono LLVM AOT cross-compiler for non-amd64 targets (in this case, just arm64)

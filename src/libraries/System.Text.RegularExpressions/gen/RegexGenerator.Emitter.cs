@@ -1063,25 +1063,49 @@ namespace System.Text.RegularExpressions.Generator
                         (true, _) => $"{span}.Slice(i + {primarySet.Distance})",
                     };
 
-                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
-
-                    string indexOf =
-                        primarySet.Chars is not null ? primarySet.Chars.Length switch
+                    // Get the IndexOf* expression to use to perform the search.
+                    string indexOf;
+                    if (primarySet.Chars is not null)
+                    {
+                        // We have a chars array, so we can use IndexOf{Any}{Except} to search for it. Choose the best overload.
+                        string indexOfName = "IndexOf", indexOfAnyName = "IndexOfAny";
+                        if (primarySet.Negated)
                         {
-                            1 => $"{span}.IndexOf({Literal(primarySet.Chars[0])})",
-                            2 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
-                            3 => $"{span}.IndexOfAny({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
-                            _ => $"{span}.IndexOfAny({EmitSearchValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
-                        } :
-                        primarySet.AsciiSet is not null ? $"{span}.IndexOfAny({EmitSearchValues(primarySet.AsciiSet, requiredHelpers)})" :
-                        primarySet.Range is not null ? (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
+                            indexOfName = indexOfAnyName = "IndexOfAnyExcept";
+                        }
+
+                        indexOf = primarySet.Chars.Length switch
+                        {
+                            1 => $"{span}.{indexOfName}({Literal(primarySet.Chars[0])})",
+                            2 => $"{span}.{indexOfAnyName}({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
+                            3 => $"{span}.{indexOfAnyName}({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
+                            _ => $"{span}.{indexOfAnyName}({EmitSearchValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+                        };
+                    }
+                    else if (primarySet.AsciiSet is not null)
+                    {
+                        // We have a set of ASCII chars, so we can use IndexOfAny(SearchValues) to search for it.
+                        Debug.Assert(!primarySet.Negated);
+                        indexOf = $"{span}.IndexOfAny({EmitSearchValues(primarySet.AsciiSet, requiredHelpers)})";
+                    }
+                    else if (primarySet.Range is not null)
+                    {
+                        // We have a range, so we can use IndexOfAny{Except}InRange to search for it.  In the corner case,
+                        // where we end up with a set of a single char, we can use IndexOf instead.
+                        indexOf = (primarySet.Range.Value.LowInclusive == primarySet.Range.Value.HighInclusive, primarySet.Negated) switch
                         {
                             (false, false) => $"{span}.IndexOfAnyInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, false) => $"{span}.IndexOf({Literal(primarySet.Range.Value.LowInclusive)})",
                             (false, true) => $"{span}.IndexOfAnyExceptInRange({Literal(primarySet.Range.Value.LowInclusive)}, {Literal(primarySet.Range.Value.HighInclusive)})",
                             (true, true) => $"{span}.IndexOfAnyExcept({Literal(primarySet.Range.Value.LowInclusive)})",
-                        } :
-                        $"{span}.{EmitIndexOfAnyCustomHelper(primarySet.Set, requiredHelpers, checkOverflow)}()";
+                        };
+                    }
+                    else
+                    {
+                        // We have an arbitrary set of characters that includes at least one non-ASCII char.  We use a custom IndexOfAny helper that
+                        // will perform the search as efficiently as possible.
+                        indexOf = $"{span}.{EmitIndexOfAnyCustomHelper(primarySet.Set, requiredHelpers, checkOverflow)}()";
+                    }
 
                     if (needLoop)
                     {
@@ -1184,6 +1208,7 @@ namespace System.Text.RegularExpressions.Generator
 
                 if (set.Chars is { Length: 1 })
                 {
+                    Debug.Assert(!set.Negated);
                     writer.WriteLine($"pos = inputSpan.Slice(0, pos).LastIndexOf({Literal(set.Chars[0])});");
                     using (EmitBlock(writer, "if (pos >= 0)"))
                     {
@@ -3307,7 +3332,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     if (iterationCount is null &&
                         node.Kind is RegexNodeKind.Notonelazy &&
-                        subsequent?.FindStartingLiteral(4) is RegexNode.StartingLiteralData literal && // 5 == max optimized by IndexOfAny, and we need to reserve 1 for node.Ch
+                        subsequent?.FindStartingLiteral(4) is RegexNode.StartingLiteralData literal && // 5 == max efficiently optimized by IndexOfAny, and we need to reserve 1 for node.Ch
                         !literal.Negated && // not negated; can't search for both the node.Ch and a negated subsequent char with an IndexOf* method
                         (literal.String is not null ||
                          literal.SetChars is not null ||

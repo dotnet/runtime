@@ -74,7 +74,7 @@ extends:
           - linux_x64
           jobParameters:
             testGroup: innerloop
-            testResultsFormat: 'vstest'
+            enablePublishTestResults: true
             timeoutInMinutes: 120
             nameSuffix: ILLink_Runtime_Testing
             condition:
