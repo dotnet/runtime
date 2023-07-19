@@ -1793,8 +1793,15 @@ namespace System
             else if (IsPointer)
             {
                 Type? vtype = value.GetType();
-                if (vtype == typeof(IntPtr) || vtype == typeof(UIntPtr))
+                if (vtype == typeof(IntPtr))
                     return CheckValueStatus.Success;
+
+                if (vtype == typeof(UIntPtr))
+                {
+                    value = (IntPtr)(UIntPtr)value;
+                    return CheckValueStatus.Success;
+                }
+
                 if (value is Pointer pointer)
                 {
                     Type pointerType = pointer.GetPointerType();
