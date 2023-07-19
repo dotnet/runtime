@@ -13,6 +13,8 @@
     <ForceBuildMobileManifests Condition="'$(DotNetBuildFromSource)' == 'true'">true</ForceBuildMobileManifests>
   </PropertyGroup>
 
+  <!-- TODO: Revert. This is just so that CI runs against all legs... -->
+
   <PropertyGroup Label="CalculateTargetOS">
     <_hostOS>linux</_hostOS>
     <_hostOS Condition="$([MSBuild]::IsOSPlatform('OSX'))">osx</_hostOS>
