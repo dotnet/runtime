@@ -1652,9 +1652,7 @@ public:
         WRAPPER_NO_CONTRACT;
         if (this == GetThreadNULLOk())
         {
-            void* curSP;
-            curSP = (void *)GetCurrentSP();
-            _ASSERTE(IsExecutingOnAltStack() || (curSP <= m_pFrame && m_pFrame < m_CacheStackBase) || m_pFrame == (Frame*) -1);
+            _ASSERTE(IsExecutingOnAltStack() || IsAddressInCurrentStack(m_pFrame) || m_pFrame == (Frame*) -1);
         }
 #endif
 
@@ -1672,9 +1670,7 @@ public:
         WRAPPER_NO_CONTRACT;
         if (this == GetThreadNULLOk())
         {
-            void* curSP;
-            curSP = (void *)GetCurrentSP();
-            _ASSERTE((m_pGCFrame == NULL) || (curSP <= m_pGCFrame && m_pGCFrame < m_CacheStackBase));
+            _ASSERTE((m_pGCFrame == NULL) || IsAddressInCurrentStack(m_pGCFrame));
         }
 #endif
 
@@ -2928,6 +2924,13 @@ private:
     PTR_VOID    m_CacheStackLimit;
     UINT_PTR    m_CacheStackSufficientExecutionLimit;
     UINT_PTR    m_CacheStackStackAllocNonRiskyExecutionLimit;
+#ifdef DEBUG
+    // A pointer that represents the fake stack for the current thread.
+    // Currently used only by AddressSanitizer when use-after-return validation is enabled.
+    // We include it on all debug builds to ensure that the DAC's implementation of Thread has the same layout
+    // as the runtime's implementation.
+    PTR_VOID    m_fakeStack;
+#endif
 
 #define HARD_GUARD_REGION_SIZE GetOsPageSize()
 
@@ -2983,6 +2986,12 @@ public:
 
     BOOL IsAddressInStack (PTR_VOID addr) const
     {
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+        if (__asan_addr_is_in_fake_stack(m_fakeStack, addr, nullptr, nullptr))
+        {
+            return TRUE;
+        }
+#endif // HAS_ADDRESS_SANITIZER
         LIMITED_METHOD_DAC_CONTRACT;
         _ASSERTE(m_CacheStackBase != NULL);
         _ASSERTE(m_CacheStackLimit != NULL);
@@ -2999,10 +3008,35 @@ public:
             return FALSE;
         }
 
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+        if (__asan_addr_is_in_fake_stack(m_fakeStack, addr, nullptr, nullptr))
+        {
+            return TRUE;
+        }
+#endif // HAS_ADDRESS_SANITIZER
+
         PTR_VOID sp = dac_cast<PTR_VOID>(GetCurrentSP());
         _ASSERTE(currentThread->m_CacheStackBase != NULL);
         _ASSERTE(sp < currentThread->m_CacheStackBase);
         return sp < addr && addr <= currentThread->m_CacheStackBase;
+    }
+
+    BOOL IsStackPointerBefore(TADDR sp1, TADDR sp2)
+    {
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+        // Resolve any fake stack pointers to their addresses on the real stack.
+        void* realSp1 = __asan_addr_is_in_fake_stack(m_fakeStack, sp1, nullptr, nullptr);
+        void* realSp2 = __asan_addr_is_in_fake_stack(m_fakeStack, sp2, nullptr, nullptr);
+        if (realSp1 != nullptr)
+        {
+            sp1 = dac_cast<TADDR>(realSp1);
+        }
+        if (realSp2 != nullptr)
+        {
+            sp2 = dac_cast<TADDR>(realSp2);
+        }
+#endif
+        return sp1 < sp2;
     }
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function

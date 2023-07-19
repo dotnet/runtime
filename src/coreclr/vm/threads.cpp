@@ -47,6 +47,8 @@
 #include "asmconstants.h"
 #endif
 
+#include <minipal/utils.h>
+
 static const PortableTailCallFrame g_sentinelTailCallFrame = { NULL, NULL };
 
 TailCallTls::TailCallTls()
@@ -238,7 +240,7 @@ void  Thread::SetFrame(Frame *pFrame)
     if (g_pConfig->fAssertOnFailFast() == false)
         return;
 
-    Frame* espVal = (Frame*)GetCurrentSP();
+    void* espVal = (void*)GetCurrentSP();
 
     while (pFrame != (Frame*) -1)
     {
@@ -246,8 +248,14 @@ void  Thread::SetFrame(Frame *pFrame)
         if (pFrame == stopFrame)
             _ASSERTE(!"SetFrame frame == stopFrame");
 
-        _ASSERTE(IsExecutingOnAltStack() || espVal < pFrame);
-        _ASSERTE(IsExecutingOnAltStack() || pFrame < m_CacheStackBase);
+        if (!IsExecutingOnAltStack())
+        {
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+            _ASSERTE(__asan_addr_is_in_fake_stack(m_fakeStack, pFrame, nullptr, nullptr) || (espVal < pFrame && pFrame < m_CacheStackBase));
+#else
+            _ASSERTE(espVal < pFrame && pFrame < m_CacheStackBase);
+#endif
+        }
         _ASSERTE(pFrame->GetFrameType() < Frame::TYPE_COUNT);
 
         pFrame = pFrame->m_Next;
@@ -6334,6 +6342,10 @@ BOOL Thread::SetStackLimits(SetStackLimitScope scope)
     }
     CONTRACTL_END;
 
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+    m_fakeStack = __asan_get_current_fake_stack();
+#endif
+
     if (scope == fAll)
     {
         m_CacheStackBase  = GetStackUpperBound();
@@ -7674,7 +7686,11 @@ Frame * Thread::NotifyFrameChainOfExceptionUnwind(Frame* pStartFrame, LPVOID pvL
     while (pFrame < pvLimitSP)
     {
         CONSISTENCY_CHECK(pFrame != PTR_NULL);
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+        CONSISTENCY_CHECK(__asan_addr_is_in_fake_stack(m_fakeStack, pFrame, nullptr, nullptr) || (pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
+#else
         CONSISTENCY_CHECK((pFrame) > static_cast<Frame *>((LPVOID)GetCurrentSP()));
+#endif
         pFrame->ExceptionUnwind();
         pFrame = pFrame->Next();
     }

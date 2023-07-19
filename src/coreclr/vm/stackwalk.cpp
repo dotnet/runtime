@@ -433,7 +433,7 @@ void ExInfoWalker::WalkToPosition(
     SUPPORTS_DAC;
 
     while (m_pExInfo &&
-           ((GetSPFromContext() < taMinimum) ||
+           (m_pThread->IsStackPointerBefore(GetSPFromContext(), taMinimum) ||
             (GetSPFromContext() == NULL)) )
     {
         // Try the next ExInfo, if there is one.
@@ -1351,7 +1351,7 @@ BOOL StackFrameIterator::ResetRegDisp(PREGDISPLAY pRegDisp,
         while (m_crawl.pFrame != FRAME_TOP)
         {
             // this check is sufficient on WIN64
-            if (dac_cast<TADDR>(m_crawl.pFrame) >= curSP)
+            if (m_pThread->IsStackPointerBefore(curSP, dac_cast<TADDR>(m_crawl.pFrame)))
             {
 #if defined(TARGET_X86)
                 // check the IP
@@ -2418,7 +2418,7 @@ StackWalkAction StackFrameIterator::NextRaw(void)
         // FaultingExceptionFrame is special case where it gets
         // pushed on the stack after the frame is running
         _ASSERTE((m_crawl.pFrame == FRAME_TOP) ||
-                 ((TADDR)GetRegdisplaySP(m_crawl.pRD) < dac_cast<TADDR>(m_crawl.pFrame)) ||
+                 m_pThread->IsStackPointerBefore((TADDR)GetRegdisplaySP(m_crawl.pRD), dac_cast<TADDR>(m_crawl.pFrame)) ||
                  (m_crawl.pFrame->GetVTablePtr() == FaultingExceptionFrame::GetMethodFrameVPtr()));
 #endif // !defined(ELIMINATE_FEF)
 
@@ -2524,9 +2524,9 @@ StackWalkAction StackFrameIterator::NextRaw(void)
 
         PTR_VOID newSP = PTR_VOID((TADDR)GetRegdisplaySP(m_crawl.pRD));
 #ifndef NO_FIXED_STACK_LIMIT
-        FAIL_IF_SPECULATIVE_WALK(m_crawl.pThread->IsExecutingOnAltStack() || newSP >= m_crawl.pThread->GetCachedStackLimit());
+        FAIL_IF_SPECULATIVE_WALK(m_crawl.pThread->IsExecutingOnAltStack() || m_crawl.pThread->IsStackPointerBefore(dac_cast<TADDR>(m_crawl.pThread->GetCachedStackLimit()), dac_cast<TADDR>(newSP)));
 #endif // !NO_FIXED_STACK_LIMIT
-        FAIL_IF_SPECULATIVE_WALK(m_crawl.pThread->IsExecutingOnAltStack() || newSP < m_crawl.pThread->GetCachedStackBase());
+        FAIL_IF_SPECULATIVE_WALK(m_crawl.pThread->IsExecutingOnAltStack() || m_crawl.pThread->IsStackPointerBefore(dac_cast<TADDR>(newSP), dac_cast<TADDR>(m_crawl.pThread->GetCachedStackBase())));
 
 #undef FAIL_IF_SPECULATIVE_WALK
 
@@ -2829,7 +2829,7 @@ void StackFrameIterator::ProcessCurrentFrame(void)
             //  the pContext.
             // There are still a few cases in which a FaultingExceptionFrame is linked in.  If
             //  the next frame is one of them, we don't want to override it.  THIS IS PROBABLY BAD!!!
-            if ( (pContextSP < dac_cast<TADDR>(m_crawl.pFrame)) &&
+            if ( m_pThread->IsStackPointerBefore(pContextSP, dac_cast<TADDR>(m_crawl.pFrame)) &&
                  ((m_crawl.GetFrame() == FRAME_TOP) ||
                   (m_crawl.GetFrame()->GetVTablePtr() != FaultingExceptionFrame::GetMethodFrameVPtr() ) ) )
             {
@@ -2980,7 +2980,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
 #endif // PROCESS_EXPLICIT_FRAME_BEFORE_MANAGED_FRAME
 
     if ( !( (m_crawl.pFrame != FRAME_TOP) &&
-            (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP) )
+            m_pThread->IsStackPointerBefore(dac_cast<TADDR>(m_crawl.pFrame), pvReferenceSP) )
        )
     {
         return FALSE;
@@ -2991,7 +2991,7 @@ BOOL StackFrameIterator::CheckForSkippedFrames(void)
     // We might have skipped past some Frames.
     // This happens with InlinedCallFrames.
     while ( (m_crawl.pFrame != FRAME_TOP) &&
-            (dac_cast<TADDR>(m_crawl.pFrame) < pvReferenceSP)
+            m_pThread->IsStackPointerBefore(dac_cast<TADDR>(m_crawl.pFrame), pvReferenceSP)
           )
     {
         BOOL fReportInteropMD =

@@ -208,11 +208,13 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # define the preprocessor define ourselves.
       add_compile_definitions($<$<COMPILE_LANGUAGE:ASM,ASM_MASM>:HAS_ADDRESS_SANITIZER>)
 
-      # Disable the use-after-return check for ASAN on Clang. This is because we have a lot of code that
-      # depends on the fact that our locals are not saved in a parallel stack, so we can't enable this today.
-      # If we ever have a way to detect a parallel stack and track its bounds, we can re-enable this check.
-      add_compile_options($<$<COMPILE_LANG_AND_ID:C,Clang>:-fsanitize-address-use-after-return=never>)
-      add_compile_options($<$<COMPILE_LANG_AND_ID:CXX,Clang>:-fsanitize-address-use-after-return=never>)
+      # Disable the use-after-return check for ASAN on release builds. We track the fake-stack used by use-after-return
+      # checking only on Debug/Checked builds.
+      # On Debug and Checked builds, always enable the use-after-return check to reduce code-size.
+      add_compile_options($<$AND:$<CONFIG:RelWithDebInfo, Release>,$<COMPILE_LANG_AND_ID:C,Clang>>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$AND:$<CONFIG:RelWithDebInfo, Release>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$AND:$<CONFIG:Debug, Checked>,$<COMPILE_LANG_AND_ID:C,Clang>>:-fsanitize-address-use-after-return=always>)
+      add_compile_options($<$AND:$<CONFIG:Debug, Checked>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-fsanitize-address-use-after-return=always>)
     endif()
   endif()
 
