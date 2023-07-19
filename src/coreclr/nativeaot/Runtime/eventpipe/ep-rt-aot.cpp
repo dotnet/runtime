@@ -717,7 +717,7 @@ void ep_rt_aot_create_activity_id (uint8_t *activity_id, uint32_t activity_id_le
 #ifdef HOST_WIN32
     CoCreateGuid (reinterpret_cast<GUID *>(activity_id));
 #else
-    if(SystemNative_GetCryptographicallySecureRandomBytes(activity_id, activity_id_len)==-1)
+    if(minipal_get_cryptographically_secure_random_bytes(activity_id, activity_id_len)==-1)
     {
         *activity_id=0;
         return;

@@ -1180,3 +1180,6 @@ check_c_source_compiles(
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
+    ${CMAKE_CURRENT_BINARY_DIR}/Common/config.h)

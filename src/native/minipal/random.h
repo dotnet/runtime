@@ -3,14 +3,15 @@
 
 #pragma once
 
-#include <libs/Common/pal_compiler.h>
+#include "compiler.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif // __cplusplus
 
-PALEXPORT void SystemNative_GetNonCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);
-PALEXPORT int32_t SystemNative_GetCryptographicallySecureRandomBytes(uint8_t* buffer, int32_t bufferLength);
+PALEXPORT void minipal_get_non_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength);
+PALEXPORT int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength);
+
 
 #ifdef __cplusplus
 }
