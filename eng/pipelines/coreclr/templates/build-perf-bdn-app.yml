@@ -89,7 +89,7 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
 
   - pwsh: |
-      $BenchmarkDotNetVersionCapture = Get-Content .\performance\eng\Versions.props | Select-String -Pattern '<BenchmarkDotNetVersion>(.*)</BenchmarkDotNetVersion>'
+      $BenchmarkDotNetVersionCapture = Get-Content .\performance\eng\Versions.props | Select-String -Pattern '<BenchmarkDotNetVersion>(.+?)</BenchmarkDotNetVersion>'
       if ($BenchmarkDotNetVersionCapture.Length -eq 0) {
         Write-Error "BenchmarkDotNetVersion not found in Versions.props"
         exit 1
