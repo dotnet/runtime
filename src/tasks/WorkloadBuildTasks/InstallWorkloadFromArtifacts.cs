@@ -10,6 +10,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -292,8 +293,10 @@ namespace Microsoft.Workload.Build.Tasks
             }
 
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
+            // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
+            string bandVersion = Regex.Match(version, @"^\d+\.\d+\.\d+(-[A-z]*\.*\d*)?").Value;
 
-            PackageReference pkgRef = new(Name: $"{name}.Manifest-{VersionBandForManifestPackages}",
+            PackageReference pkgRef = new(Name: $"{name}.Manifest-{bandVersion}",
                                           Version: version,
                                           OutputDir: outputDir,
                                           relativeSourceDir: "data");
