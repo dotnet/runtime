@@ -34,13 +34,22 @@ namespace Microsoft.Interop
                     IsFunctionPointer: false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
+                if (context.CurrentStage == StubCodeContext.Stage.AssignOut)
+                {
+                    var assignOut = this.GeneratePointerAssignOut(info, context);
+                    if (assignOut != null)
+                    {
+                        yield return assignOut;
+                    }
+                    yield break;
+                }
+
                 if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
                 {
                     yield break;
                 }
 
                 var (managed, native) = context.GetIdentifiers(info);
-
                 // <managed> = ComWrappers.ComInterfaceDispatch.GetInstance<<managedType>>(<native>);
                 yield return ExpressionStatement(
                     AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,

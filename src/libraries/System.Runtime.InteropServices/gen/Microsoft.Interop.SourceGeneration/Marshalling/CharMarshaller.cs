@@ -117,6 +117,10 @@ namespace Microsoft.Interop
                     }
 
                     break;
+                case StubCodeContext.Stage.AssignOut:
+                    if (this.GeneratePointerAssignOut(info, context) is { } assignOut)
+                        yield return assignOut;
+                    break;
                 default:
                     break;
             }

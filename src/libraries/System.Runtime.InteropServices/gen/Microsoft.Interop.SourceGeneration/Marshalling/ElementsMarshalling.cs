@@ -55,6 +55,7 @@ namespace Microsoft.Interop
 
         public abstract StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
         public abstract StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
+        public abstract StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context);
     }
 
 #pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
@@ -238,6 +239,21 @@ namespace Microsoft.Interop
 
         public override StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
         public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
+        public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
+        {
+            ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
+            ExpressionSyntax destination = CollectionSource.GetUnmanagedValuesDestination(info, context);
+
+            // <source>.CopyTo(<destination>);
+            return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        source,
+                        IdentifierName("CopyTo")))
+                .AddArgumentListArguments(
+                    Argument(destination)));
+        }
     }
 
     /// <summary>
@@ -655,5 +671,21 @@ namespace Microsoft.Interop
                             null,
                             EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))))
                 : EmptyStatement();
+
+        public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
+        {
+            ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
+            ExpressionSyntax destination = CollectionSource.GetUnmanagedValuesDestination(info, context);
+
+            // <source>.CopyTo(<destination>);
+            return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        source,
+                        IdentifierName("CopyTo")))
+                .AddArgumentListArguments(
+                    Argument(destination)));
+        }
     }
 }

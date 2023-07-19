@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
@@ -99,6 +100,9 @@ namespace Microsoft.Interop
                     break;
                 case StubCodeContext.Stage.Cleanup:
                     return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                case StubCodeContext.Stage.AssignOut:
+                    Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+                    return _nativeTypeMarshaller.GenerateAssignOutStatements(info, (AssignOutContext)context);
                 default:
                     break;
             }

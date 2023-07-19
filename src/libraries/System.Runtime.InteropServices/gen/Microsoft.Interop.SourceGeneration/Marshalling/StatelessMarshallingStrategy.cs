@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -138,6 +139,12 @@ namespace Microsoft.Interop
         {
             return Array.Empty<StatementSyntax>();
         }
+
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
+        {
+            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+            return this.GenerateDefaultAssignOutStatement(info, context);
+        }
     }
 
     /// <summary>
@@ -251,6 +258,7 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
 
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context) => _innerMarshaller.GenerateAssignOutStatements(info, context);
     }
 
     internal sealed class StatelessFreeMarshalling : ICustomTypeMarshallingStrategy
@@ -265,6 +273,7 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context) => _innerMarshaller.GenerateAssignOutStatements(info, context);
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
@@ -314,6 +323,12 @@ namespace Microsoft.Interop
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
         {
             return _unmanagedType;
+        }
+
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
+        {
+            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+            return this.GenerateDefaultAssignOutStatement(info, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
@@ -553,6 +568,19 @@ namespace Microsoft.Interop
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
+        {
+            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+            if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                yield return _elementsMarshalling.GenerateElementsAssignOutStatement(info, context);
+            }
+            else
+            {
+                foreach (var s in _spaceMarshallingStrategy.GenerateAssignOutStatements(info, context))
+                    yield return s;
+            }
+        }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {

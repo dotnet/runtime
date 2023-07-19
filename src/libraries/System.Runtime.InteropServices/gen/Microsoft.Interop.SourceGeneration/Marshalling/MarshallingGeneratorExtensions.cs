@@ -155,7 +155,7 @@ namespace Microsoft.Interop
                     CustomTypeMarshallerData defaultMarshallerData = collectionMarshalling.Marshallers.GetModeOrDefault(MarshalMode.Default);
                     if ((defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_ArrayMarshaller}<")
                         || defaultMarshallerData.MarshallerType.FullTypeName.StartsWith($"{TypeNames.System_Runtime_InteropServices_PointerArrayMarshaller}<"))
-                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo {  UnmanagedType: not UnmanagedType.CustomMarshaler })
+                        && defaultMarshallerData.CollectionElementMarshallingInfo is NoMarshallingInfo or MarshalAsInfo { UnmanagedType: not UnmanagedType.CustomMarshaler })
                     {
                         countInfo = collectionMarshalling.ElementCountInfo;
                         elementMarshallingInfo = defaultMarshallerData.CollectionElementMarshallingInfo;
@@ -260,6 +260,24 @@ namespace Microsoft.Interop
         {
             string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
             return RefExpression(PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(paramIdentifier)));
+        }
+
+        public static ExpressionSyntax GenerateNativeDereferencedInitialization(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
+        {
+            string paramIdentifier = context.GetAdditionalIdentifier(info, ParameterIdentifierSuffix);
+            return PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(paramIdentifier));
+        }
+
+        /// <summary>
+        /// If the parameter should marshal to a local and assign out, generates a statement to copy the pointed to value to the parameter. If the parameter does not need it, returns null
+        /// </summary>
+        public static ExpressionStatementSyntax? GeneratePointerAssignOut(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
+        {
+            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+            {
+                return MarshallerHelpers.GenerateAssignmentToPointerValue(generator.AsParameter(info, context).Identifier.ToString(), context.GetIdentifiers(info).native);
+            }
+            return null;
         }
     }
 }

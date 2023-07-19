@@ -278,20 +278,20 @@ namespace Microsoft.Interop
 
                 FreeStrategy freeStrategy = GetFreeStrategy(info, context);
 
-                if (freeStrategy == FreeStrategy.FreeOriginal)
-                {
-                    marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
-                }
+                //if (freeStrategy == FreeStrategy.FreeOriginal)
+                //{
+                //    marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
+                //}
 
                 if (freeStrategy != FreeStrategy.NoFree && marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerData.MarshallerType.Syntax);
                 }
 
-                if (freeStrategy == FreeStrategy.FreeOriginal)
-                {
-                    marshallingStrategy = new CleanupOwnedOriginalValueMarshalling(marshallingStrategy);
-                }
+                //if (freeStrategy == FreeStrategy.FreeOriginal)
+                //{
+                //    marshallingStrategy = new CleanupOwnedOriginalValueMarshalling(marshallingStrategy);
+                //}
             }
 
             IMarshallingGenerator marshallingGenerator = new CustomTypeMarshallingGenerator(marshallingStrategy, ByValueMarshalKindSupportDescriptor.Default, marshallerData.Shape.HasFlag(MarshallerShape.StatelessPinnableReference));
@@ -373,17 +373,17 @@ namespace Microsoft.Interop
                 IElementsMarshallingCollectionSource collectionSource = new StatefulLinearCollectionSource();
                 ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
-                if (freeStrategy == FreeStrategy.FreeOriginal)
-                {
-                    marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
-                }
+                //if (freeStrategy == FreeStrategy.FreeOriginal)
+                //{
+                //    marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
+                //}
 
                 marshallingStrategy = new StatefulLinearCollectionMarshalling(marshallingStrategy, marshallerData.Shape, numElementsExpression, elementsMarshalling, freeStrategy != FreeStrategy.NoFree);
 
-                if (freeStrategy == FreeStrategy.FreeOriginal)
-                {
-                    marshallingStrategy = new CleanupOwnedOriginalValueMarshalling(marshallingStrategy);
-                }
+                //if (freeStrategy == FreeStrategy.FreeOriginal)
+                //{
+                //    marshallingStrategy = new CleanupOwnedOriginalValueMarshalling(marshallingStrategy);
+                //}
 
                 if (marshallerData.Shape.HasFlag(MarshallerShape.Free))
                 {
@@ -397,10 +397,10 @@ namespace Microsoft.Interop
                 var freeStrategy = GetFreeStrategy(info, context);
 
                 IElementsMarshallingCollectionSource collectionSource = new StatelessLinearCollectionSource(marshallerTypeSyntax);
-                if (freeStrategy == FreeStrategy.FreeOriginal)
-                {
-                    marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
-                }
+                //if (freeStrategy == FreeStrategy.FreeOriginal)
+                //{
+                //    marshallingStrategy = new UnmanagedToManagedOwnershipTrackingStrategy(marshallingStrategy);
+                //}
 
                 ElementsMarshalling elementsMarshalling = CreateElementsMarshalling(marshallerData, elementInfo, elementMarshaller, unmanagedElementType, collectionSource);
 
@@ -420,10 +420,10 @@ namespace Microsoft.Interop
                     marshallingStrategy = new StatelessFreeMarshalling(marshallingStrategy, marshallerTypeSyntax);
                 }
 
-                if (freeStrategy == FreeStrategy.FreeOriginal)
-                {
-                    marshallingStrategy = new CleanupOwnedOriginalValueMarshalling(marshallingStrategy);
-                }
+                //if (freeStrategy == FreeStrategy.FreeOriginal)
+                //{
+                //    marshallingStrategy = new CleanupOwnedOriginalValueMarshalling(marshallingStrategy);
+                //}
             }
 
             ByValueMarshalKindSupportDescriptor byValueMarshalKindSupport;

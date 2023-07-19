@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -190,6 +191,9 @@ namespace Microsoft.Interop
         {
             return context.GetAdditionalIdentifier(info, MarshallerIdentifier);
         }
+
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
+            => this.GenerateDefaultAssignOutStatement(info, context);
     }
 
     /// <summary>
@@ -284,6 +288,8 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateGuaranteedUnmarshalStatements(info, context);
         public IEnumerable<StatementSyntax> GenerateNotifyForSuccessfulInvokeStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateNotifyForSuccessfulInvokeStatements(info, context);
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
+            => _innerMarshaller.GenerateAssignOutStatements(info, context);
     }
 
     internal sealed class StatefulLinearCollectionSource : IElementsMarshallingCollectionSource
@@ -488,6 +494,19 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
+        {
+            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+            if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                yield return _elementsMarshalling.GenerateElementsAssignOutStatement(info, context);
+            }
+            else
+            {
+                foreach (var s in _innerMarshaller.GenerateAssignOutStatements(info, context))
+                    yield return s;
+            }
+        }
     }
 
     /// <summary>
@@ -534,5 +553,6 @@ namespace Microsoft.Interop
         public IEnumerable<StatementSyntax> GenerateUnmarshalCaptureStatements(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.GenerateUnmarshalCaptureStatements(info, context);
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => _innerMarshaller.UsesNativeIdentifier(info, context);
+        public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context) => _innerMarshaller.GenerateAssignOutStatements(info, context);
     }
 }

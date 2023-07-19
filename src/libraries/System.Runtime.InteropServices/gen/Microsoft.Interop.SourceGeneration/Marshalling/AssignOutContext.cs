@@ -2,19 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
 
 namespace Microsoft.Interop
 {
-    internal sealed record MarshalToLocalContext : StubCodeContext
+    public sealed record AssignOutContext : StubCodeContext
     {
         internal StubCodeContext InnerContext { get; init; }
+        public string ParameterIdentifier { get; init; }
 
-        internal MarshalToLocalContext(StubCodeContext inner)
+        internal AssignOutContext(StubCodeContext inner, string parameterIdentifier)
         {
             InnerContext = inner;
-            CurrentStage = inner.CurrentStage;
+            Debug.Assert(inner.CurrentStage == Stage.AssignOut);
+            CurrentStage = Stage.AssignOut;
             Direction = inner.Direction;
             ParentContext = inner.ParentContext;
+            ParameterIdentifier = parameterIdentifier;
         }
 
         public override (TargetFramework framework, Version version) GetTargetFramework() => InnerContext.GetTargetFramework();
@@ -24,8 +28,7 @@ namespace Microsoft.Interop
         public override bool AdditionalTemporaryStateLivesAcrossStages => InnerContext.AdditionalTemporaryStateLivesAcrossStages;
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
-        //=> InnerContext.GetIdentifiers(info);
-        => (InnerContext.GetIdentifiers(info).managed, InnerContext.GetAdditionalIdentifier(info, "out"));
+            => (InnerContext.GetIdentifiers(info).managed, InnerContext.GetAdditionalIdentifier(info, "out"));
 
         public override string GetAdditionalIdentifier(TypePositionInfo info, string name) => InnerContext.GetAdditionalIdentifier(info, name);
     }

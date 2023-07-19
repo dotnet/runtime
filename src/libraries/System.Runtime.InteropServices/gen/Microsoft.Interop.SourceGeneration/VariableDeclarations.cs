@@ -4,7 +4,6 @@
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
@@ -196,7 +195,7 @@ namespace Microsoft.Interop
                             // The rest of the code we generate will work as expected, and we don't need
                             // to manually propogate back the updated values after the call.
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
-                                RefType(localType),
+                                localType,
                                 native,
                                 marshaller.Generator.GenerateNativeByRefInitialization(info, context)));
                         }

@@ -110,6 +110,8 @@ namespace Microsoft.Interop
                 allStatements.AddRange(tryStatements);
             }
 
+            allStatements.AddRange(statements.AssignOut);
+
             // Return
             if (!_marshallers.IsUnmanagedVoidReturn)
                 allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.NativeReturnMarshaller.TypeInfo).native)));

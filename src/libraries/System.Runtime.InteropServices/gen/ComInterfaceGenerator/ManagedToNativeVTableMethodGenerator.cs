@@ -220,6 +220,8 @@ namespace Microsoft.Interop
                 allStatements.Add(MarshallerHelpers.CreateSetLastPInvokeErrorStatement(LastErrorIdentifier));
             }
 
+            allStatements.AddRange(statements.AssignOut);
+
             // Return
             if (!_marshallers.IsManagedVoidReturn)
                 allStatements.Add(ReturnStatement(IdentifierName(_context.GetIdentifiers(_marshallers.ManagedReturnMarshaller.TypeInfo).managed)));

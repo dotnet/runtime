@@ -74,10 +74,18 @@ namespace Microsoft.Interop
             foreach (BoundGenerator marshaller in marshallers.SignatureMarshallers)
             {
                 StubCodeContext localContext = context;
-                if (context.CurrentStage is StubCodeContext.Stage.Marshal
+                if (context.CurrentStage is StubCodeContext.Stage.Marshal or StubCodeContext.Stage.AssignOut
                     && MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                 {
                     localContext = new MarshalToLocalContext(context);
+                }
+                // Right now, MarshalsOutToLocal is the only way we determine if we assign out, so we can return early here for perf
+                if (context.CurrentStage is StubCodeContext.Stage.AssignOut)
+                {
+                    if (!MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
+                        continue;
+                    else
+                        localContext = new AssignOutContext(localContext, marshaller.Generator.AsParameter(marshaller.TypeInfo, context).Identifier.ToString());
                 }
                 statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, localContext));
             }
@@ -197,6 +205,7 @@ namespace Microsoft.Interop
                 StubCodeContext.Stage.Cleanup => "Perform required cleanup.",
                 StubCodeContext.Stage.NotifyForSuccessfulInvoke => "Keep alive any managed objects that need to stay alive across the call.",
                 StubCodeContext.Stage.GuaranteedUnmarshal => "Convert native data to managed data even in the case of an exception during the non-cleanup phases.",
+                StubCodeContext.Stage.AssignOut => "Assign to parameters",
                 _ => throw new ArgumentOutOfRangeException(nameof(stage))
             };
 

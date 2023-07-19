@@ -13,6 +13,8 @@ namespace Microsoft.Interop
     {
         ManagedTypeInfo AsNativeType(TypePositionInfo info);
 
+        IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context);
+
         IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context);
 
         IEnumerable<StatementSyntax> GenerateGuaranteedUnmarshalStatements(TypePositionInfo info, StubCodeContext context);

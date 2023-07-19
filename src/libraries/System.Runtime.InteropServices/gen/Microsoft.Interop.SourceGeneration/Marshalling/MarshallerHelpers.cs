@@ -404,9 +404,18 @@ namespace Microsoft.Interop
             => context.Direction is MarshalDirection.UnmanagedToManaged
                 && (info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref
                     || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
-                    || info.IsManagedReturnPosition);
+                    || (info.IsManagedReturnPosition && !info.IsNativeReturnPosition));
 
-        internal static StatementSyntax CreateDiscardStatement(string identifier)
+        public static StatementSyntax CreateDiscardStatement(string identifier)
             => ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName("_"), IdentifierName(identifier)));
+
+        public static ExpressionStatementSyntax GenerateAssignmentToPointerValue(string pointerIdentifier, string valueIdentifier)
+        {
+            return ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(pointerIdentifier)),
+                    IdentifierName(valueIdentifier)));
+        }
     }
 }
