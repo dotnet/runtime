@@ -111,6 +111,7 @@ struct HostStruct
     MonoObject* (*unity_assembly_get_attribute)(MonoAssembly* assembly, MonoClass* attr_klass);
     MonoClass* (*unity_class_get)(MonoImage* image, guint32 token);
     MonoObject* (*unity_class_get_attribute)(MonoClass* klass, MonoClass* attr_klass);
+    gboolean (*unity_class_is_abstract)(MonoClass* klass);
     MonoClassField* (*unity_field_from_token_checked)(MonoImage* image, guint32 token, MonoClass** retklass);
     MonoObject* (*unity_field_get_attribute)(MonoClass* klass, MonoClassField* field, MonoClass* attr_class);
     MonoObject* (*unity_method_get_attribute)(MonoMethod* method, MonoClass* attr_class);
@@ -2790,15 +2791,7 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_has_failure (MonoClass
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_abstract(MonoClass* klass)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-    GC_NOTRIGGER;
-    PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    return reinterpret_cast<MonoClass_clr*>(klass)->IsAbstract() ? TRUE : FALSE;
+    return g_HostStruct->unity_class_is_abstract(klass);
 }
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_interface(MonoClass* klass)
