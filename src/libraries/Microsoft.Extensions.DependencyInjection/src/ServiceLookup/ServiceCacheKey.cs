@@ -8,8 +8,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 {
     internal readonly struct ServiceCacheKey : IEquatable<ServiceCacheKey>
     {
-        public static ServiceCacheKey Empty { get; } = new ServiceCacheKey(null, 0);
-
         /// <summary>
         /// Type of service being cached
         /// </summary>
