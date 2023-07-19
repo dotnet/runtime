@@ -34,7 +34,20 @@ public class DownloadResourceProgressTests : AppTestBase
             TestScenario: "DownloadResourceProgressTest",
             BrowserQueryString: new Dictionary<string, string> { ["failFirstAssemblyDownload"] = failFirstAssemblyDownload.ToString().ToLowerInvariant() }
         ));
-        Assert.True(result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")), "The download progress test didn't emit expected error message");
+        Assert.True(
+            result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
+            "The download progress test didn't emit expected error message"
+        );
+        Assert.True(
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download")) == failFirstAssemblyDownload,
+            failFirstAssemblyDownload
+                ? "The download progress test didn't emit expected message about retrying download"
+                : "The download progress test did emit unexpected message about retrying download"
+        );
+        Assert.False(
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download (2)")),
+            "The download progress test did emit unexpected message about second download retry"
+        );
         Assert.True(
             result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failFirstAssemblyDownload),
             failFirstAssemblyDownload
