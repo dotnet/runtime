@@ -6,10 +6,10 @@
 #include <stddef.h>
 
 #include "cpufeatures.h"
+#include "cpuid.h"
 
 #if TARGET_WINDOWS
 
-#include <intrin.h>
 #include <Windows.h>
 
 #else // TARGET_WINDOWS
@@ -29,40 +29,6 @@
 
 #if defined(TARGET_UNIX)
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-//
-// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
-
-#if !__has_builtin(__cpuid)
-static void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-        );
-}
-#else
-void __cpuid(int cpuInfo[4], int function_id);
-#endif
-
-#if !__has_builtin(__cpuidex)
-static void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-        );
-}
-#else
-void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#endif
 
 static uint32_t xmmYmmStateSupport()
 {
@@ -107,12 +73,12 @@ static uint32_t avx512StateSupport()
 #endif
 }
 
-static bool PalIsAvxEnabled()
+static bool IsAvxEnabled()
 {
     return true;
 }
 
-static bool PalIsAvx512Enabled()
+static bool IsAvx512Enabled()
 {
     return true;
 }
@@ -138,7 +104,7 @@ static HMODULE LoadKernel32dll()
     return LoadLibraryExW(L"kernel32", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
 }
 
-static bool PalIsAvxEnabled()
+static bool IsAvxEnabled()
 {
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
@@ -163,7 +129,7 @@ static bool PalIsAvxEnabled()
     return TRUE;
 }
 
-static bool PalIsAvx512Enabled()
+static bool IsAvx512Enabled()
 {
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
@@ -258,7 +224,7 @@ int minipal_getcpufeatures(void)
 
                             if ((cpuidInfo[CPUID_ECX] & requiredAvxEcxFlags) == requiredAvxEcxFlags)
                             {
-                                if (PalIsAvxEnabled() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
+                                if (IsAvxEnabled() && (xmmYmmStateSupport() == 1))                                   // XGETBV == 11
                                 {
                                     result |= XArchIntrinsicConstants_Avx;
 
@@ -276,7 +242,7 @@ int minipal_getcpufeatures(void)
                                             result |= XArchIntrinsicConstants_Avx2;
                                             result |= XArchIntrinsicConstants_VectorT256;
 
-                                            if (PalIsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
+                                            if (IsAvx512Enabled() && (avx512StateSupport() == 1))                    // XGETBV XRC0[7:5] == 111
                                             {
                                                 if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                            // AVX512F
                                                 {

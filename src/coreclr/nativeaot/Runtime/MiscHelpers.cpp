@@ -39,7 +39,7 @@
 #include "GCMemoryHelpers.inl"
 #include "yieldprocessornormalized.h"
 #include "RhConfig.h"
-#include <minipal/cpufeatures.h>
+#include <minipal/cpuid.h>
 
 COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 {
@@ -412,6 +412,6 @@ COOP_PINVOKE_HELPER(uint32_t, RhGetKnobValues, (char *** pResultKeys, char *** p
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
 EXTERN_C NATIVEAOT_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
 {
-    minipal_cpuidex(cpuInfo, functionId, subFunctionId);
+    __cpuidex(cpuInfo, functionId, subFunctionId);
 }
 #endif

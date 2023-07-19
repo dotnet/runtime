@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using System;
+using System.Diagnostics;
 
 using Internal.JitInterface;
 using Internal.TypeSystem;
@@ -36,7 +36,7 @@ namespace ILCompiler
             }
         }
 
-        // Keep these enumerations in sync with startup.cpp in the native runtime.
+        // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class XArchIntrinsicConstants
         {
             // SSE and SSE2 are baseline ISAs - they're always available
@@ -207,6 +207,7 @@ namespace ILCompiler
             }
         }
 
+        // Keep these enumerations in sync with cpufeatures.h in the minipal.
         private static class Arm64IntrinsicConstants
         {
             public const int AdvSimd = 0x0001;
