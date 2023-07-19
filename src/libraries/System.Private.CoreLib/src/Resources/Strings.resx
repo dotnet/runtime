@@ -193,6 +193,9 @@
   <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
     <value>Ambiguous match found for '{0} {1}'.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException_UnsafeAccessor" xml:space="preserve">
+    <value>Ambiguity in binding of UnsafeAccessorAttribute.</value>
+  </data>
   <data name="Arg_ApplicationException" xml:space="preserve">
     <value>Error in the application.</value>
   </data>
@@ -449,7 +452,7 @@
     <value>The signature Type array contains some invalid type (i.e. null, void)</value>
   </data>
   <data name="Arg_InvalidUTF8String" xml:space="preserve">
-    <value>The UTF8 string passed in could not be converted to Unicode.</value>
+    <value>The UTF-8 string passed in could not be converted to Unicode.</value>
   </data>
   <data name="Arg_IOException" xml:space="preserve">
     <value>I/O error occurred.</value>
@@ -1289,7 +1292,7 @@
     <value>The NativeDigits array must contain exactly ten members.</value>
   </data>
   <data name="Argument_InvalidNativeDigitValue" xml:space="preserve">
-    <value>Each member of the NativeDigits array must be a single text element (one or more UTF16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
+    <value>Each member of the NativeDigits array must be a single text element (one or more UTF-16 code points) with a Unicode Nd (Number, Decimal Digit) property indicating it is a digit.</value>
   </data>
   <data name="Argument_InvalidNeutralRegionName" xml:space="preserve">
     <value>The region name {0} should not correspond to neutral culture; a specific culture name is required.</value>
@@ -1390,8 +1393,14 @@
   <data name="Argument_MustBeRuntimeFieldInfo" xml:space="preserve">
     <value>FieldInfo must be a runtime FieldInfo object.</value>
   </data>
+  <data name="Argument_MustBeRuntimeConstructorInfo" xml:space="preserve">
+    <value>ConstructorInfo must be a runtime ConstructorInfo object.</value>
+  </data>
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
+  </data>
+  <data name="Argument_MustBeRuntimeMethod" xml:space="preserve">
+    <value>Method must be a runtime MethodInfo, ConstructorInfo or DynamicMethod object.</value>
   </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
@@ -2605,6 +2614,9 @@
   <data name="InvalidOperation_HandleIsNotPinned" xml:space="preserve">
     <value>Handle is not pinned.</value>
   </data>
+  <data name="InvalidOperation_InvalidUtf8" xml:space="preserve">
+    <value>Formatted string contains characters not representable as valid UTF-8.</value>
+  </data>
   <data name="InvalidOperation_HashInsertFailed" xml:space="preserve">
     <value>Hashtable insert failed. Load factor too high. The most common cause is multiple threads writing to the Hashtable simultaneously.</value>
   </data>
@@ -3509,6 +3521,9 @@
   <data name="Task_WaitMulti_NullTask" xml:space="preserve">
     <value>The tasks array included at least one null element.</value>
   </data>
+  <data name="TaskT_ConfigureAwait_InvalidOptions" xml:space="preserve">
+    <value>Task&lt;TResult&gt;.ConfigureAwait does not support ConfigureAwaitOptions.SuppressThrowing. To suppress throwing, instead cast the Task&lt;TResult&gt; to its base class Task and await that with SuppressThrowing.</value>
+  </data>
   <data name="TaskCanceledException_ctor_DefaultMessage" xml:space="preserve">
     <value>A task was canceled.</value>
   </data>
@@ -4060,6 +4075,9 @@
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptions" xml:space="preserve">
     <value>CompareOptions = {0} are not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
+  </data>
+  <data name="PlatformNotSupported_HybridGlobalizationWithMixedCompositions" xml:space="preserve">
+    <value>Mixed compositions in string not supported when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>
   </data>
   <data name="PlatformNotSupported_HybridGlobalizationWithCompareOptionsForCulture" xml:space="preserve">
     <value>CompareOptions = {0} are not supported for culture = {1} when HybridGlobalization=true on this platform. Disable it to load larger ICU bundle, then use this option.</value>

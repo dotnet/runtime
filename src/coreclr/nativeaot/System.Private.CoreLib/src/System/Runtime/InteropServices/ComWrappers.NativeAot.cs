@@ -409,23 +409,16 @@ namespace System.Runtime.InteropServices
 #pragma warning restore CS8500
             }
 
-            private ManagedObjectWrapper* _wrapper;
-            private object _wrappedObject;
+            private readonly ManagedObjectWrapper* _wrapper;
+            private readonly ManagedObjectWrapperReleaser _releaser;
+            private readonly object _wrappedObject;
 
             public ManagedObjectWrapperHolder(ManagedObjectWrapper* wrapper, object wrappedObject)
             {
                 _wrapper = wrapper;
                 _wrappedObject = wrappedObject;
-            }
-
-            public void InitializeHandle()
-            {
-                IntPtr handle = RuntimeImports.RhHandleAllocRefCounted(this);
-                IntPtr prev = Interlocked.CompareExchange(ref _wrapper->HolderHandle, handle, IntPtr.Zero);
-                if (prev != IntPtr.Zero)
-                {
-                    RuntimeImports.RhHandleFree(handle);
-                }
+                _releaser = new ManagedObjectWrapperReleaser(wrapper);
+                _wrapper->HolderHandle = RuntimeImports.RhHandleAllocRefCounted(this);
             }
 
             public unsafe IntPtr ComIp => _wrapper->As(in ComWrappers.IID_IUnknown);
@@ -433,13 +426,34 @@ namespace System.Runtime.InteropServices
             public object WrappedObject => _wrappedObject;
 
             public uint AddRef() => _wrapper->AddRef();
+        }
 
-            ~ManagedObjectWrapperHolder()
+        internal unsafe class ManagedObjectWrapperReleaser
+        {
+            private ManagedObjectWrapper* _wrapper;
+
+            public ManagedObjectWrapperReleaser(ManagedObjectWrapper* wrapper)
             {
+                _wrapper = wrapper;
+            }
+
+            ~ManagedObjectWrapperReleaser()
+            {
+                IntPtr refCountedHandle = _wrapper->HolderHandle;
+                if (refCountedHandle != IntPtr.Zero && RuntimeImports.RhHandleGet(refCountedHandle) != null)
+                {
+                    // The ManagedObjectWrapperHolder has not been fully collected, so it is still
+                    // potentially reachable via the Conditional Weak Table.
+                    // Keep ourselves alive in case the wrapped object is resurrected.
+                    GC.ReRegisterForFinalize(this);
+                    return;
+                }
+
                 // Release GC handle created when MOW was built.
                 if (_wrapper->Destroy())
                 {
                     NativeMemory.Free(_wrapper);
+                    _wrapper = null;
                 }
                 else
                 {
@@ -531,7 +545,7 @@ namespace System.Runtime.InteropServices
                 ManagedObjectWrapper* value = CreateCCW(c, flags);
                 return new ManagedObjectWrapperHolder(value, c);
             });
-            ccwValue.InitializeHandle();
+            ccwValue.AddRef();
             return ccwValue.ComIp;
         }
 
@@ -581,7 +595,7 @@ namespace System.Runtime.InteropServices
             }
 
             mow->HolderHandle = IntPtr.Zero;
-            mow->RefCount = 1;
+            mow->RefCount = 0;
             mow->UserDefinedCount = userDefinedCount;
             mow->UserDefined = userDefined;
             mow->Flags = (CreateComInterfaceFlagsEx)flags;

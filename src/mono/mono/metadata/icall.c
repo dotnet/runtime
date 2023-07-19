@@ -38,7 +38,6 @@
 #endif
 
 #include "mono/metadata/icall-internals.h"
-#include "mono/utils/mono-membar.h"
 #include <mono/metadata/object.h>
 #include <mono/metadata/threads.h>
 #include <mono/metadata/threads-types.h>
@@ -985,7 +984,7 @@ ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_GetSpanDataFrom (MonoCl
 		return NULL;
 	}
 
-	MonoType *type = targetTypeHandle;
+	MonoType *type = mono_type_get_underlying_type (targetTypeHandle);
 	if (MONO_TYPE_IS_REFERENCE (type) || type->type == MONO_TYPE_VALUETYPE) {
 		mono_error_set_argument (error, "array", "Cannot initialize array of non-primitive type");
 		return NULL;
@@ -6606,7 +6605,8 @@ ves_icall_MonoCustomAttrs_IsDefinedInternal (MonoObjectHandle obj, MonoReflectio
 	mono_class_init_checked (attr_class, error);
 	return_val_if_nok (error, FALSE);
 
-	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error);
+	// fetching custom attributes defined on the reflection handle should always respect custom attribute visibility
+	MonoCustomAttrInfo *cinfo = mono_reflection_get_custom_attrs_info_checked (obj, error, TRUE);
 	return_val_if_nok (error, FALSE);
 
 	if (!cinfo)

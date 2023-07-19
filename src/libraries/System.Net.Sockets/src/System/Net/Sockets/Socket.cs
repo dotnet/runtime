@@ -797,10 +797,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             ValidateBlockingMode();
 
@@ -839,10 +836,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             ValidateForMultiConnect(isMultiEndpoint: false); // needs to come before CanTryAddressFamily call
 
@@ -902,10 +896,7 @@ namespace System.Net.Sockets
                 throw new NotSupportedException(SR.net_invalidversion);
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             ValidateForMultiConnect(isMultiEndpoint: true); // needs to come before CanTryAddressFamily call
 
@@ -2422,11 +2413,7 @@ namespace System.Net.Sockets
         {
             Task<int> ti = TaskToAsyncResult.Unwrap<int>(asyncResult);
 
-            if (!ti.IsCompleted)
-            {
-                // TODO https://github.com/dotnet/runtime/issues/17148: Wait without throwing
-                ((IAsyncResult)ti).AsyncWaitHandle.WaitOne();
-            }
+            ((Task)ti).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing).GetAwaiter().GetResult();
 
             if (ti.IsCompletedSuccessfully)
             {
@@ -2662,10 +2649,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_sockets_mustnotlisten);
             }
 
-            if (_isConnected)
-            {
-                throw new SocketException((int)SocketError.IsConnected);
-            }
+            ThrowIfConnectedStreamSocket();
 
             // Prepare SocketAddress.
             EndPoint? endPointSnapshot = e.RemoteEndPoint;
@@ -3748,6 +3732,14 @@ namespace System.Net.Sockets
         private void ThrowIfDisposed()
         {
             ObjectDisposedException.ThrowIf(Disposed, this);
+        }
+
+        private void ThrowIfConnectedStreamSocket()
+        {
+            if (_isConnected && _socketType == SocketType.Stream)
+            {
+                throw new SocketException((int)SocketError.IsConnected);
+            }
         }
 
         private bool IsConnectionOriented => _socketType == SocketType.Stream;

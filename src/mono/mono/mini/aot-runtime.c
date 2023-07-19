@@ -1066,6 +1066,15 @@ decode_method_ref_with_target (MonoAotModule *module, MethodRef *ref, MonoMethod
 				if (!m)
 					return FALSE;
 				ref->method = mono_marshal_get_array_accessor_wrapper (m);
+			} else if (subtype == WRAPPER_SUBTYPE_UNSAFE_ACCESSOR) {
+				MonoMethod *m = decode_resolve_method_ref (module, p, &p, error);
+				if (!m)
+					return FALSE;
+				MonoUnsafeAccessorKind kind = (MonoUnsafeAccessorKind) decode_value (p, &p);
+				uint32_t name_len = decode_value (p, &p);
+				const char *member_name = (const char*)p;
+				p += name_len + 1;
+				ref->method = mono_marshal_get_unsafe_accessor_wrapper (m, kind, member_name);
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_IN) {
 				ref->method = mono_marshal_get_gsharedvt_in_wrapper ();
 			} else if (subtype == WRAPPER_SUBTYPE_GSHAREDVT_OUT) {
@@ -4097,7 +4106,8 @@ decode_patch (MonoAotModule *aot_module, MonoMemPool *mp, MonoJumpInfo *ji, guin
 			case MONO_PATCH_INFO_DELEGATE_INFO:
 			case MONO_PATCH_INFO_VIRT_METHOD:
 			case MONO_PATCH_INFO_GSHAREDVT_METHOD:
-			case MONO_PATCH_INFO_GSHAREDVT_CALL: {
+			case MONO_PATCH_INFO_GSHAREDVT_CALL:
+			case MONO_PATCH_INFO_SIGNATURE: {
 				MonoJumpInfo tmp;
 				tmp.type = patch_type;
 				if (!decode_patch (aot_module, mp, &tmp, p, &p))

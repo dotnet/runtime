@@ -1,0 +1,13 @@
+<Project>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)Graph.cs" Link="Common\Compiler\GenericCycleDetection\Graph.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Graph.Cycles.cs" Link="Common\Compiler\GenericCycleDetection\Graph.Cycles.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Graph.Vertex.cs" Link="Common\Compiler\GenericCycleDetection\Graph.Vertex.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GraphBuilder.cs" Link="Common\Compiler\GenericCycleDetection\GraphBuilder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GraphBuilder.ForEach.cs" Link="Common\Compiler\GenericCycleDetection\GraphBuilder.ForEach.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)GraphBuilder.MethodCall.cs" Link="Common\Compiler\GenericCycleDetection\GraphBuilder.MethodCall.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ModuleCycleInfo.cs" Link="Common\Compiler\GenericCycleDetection\ModuleCycleInfo.cs" />
+  </ItemGroup>
+
+</Project>

@@ -46,15 +46,24 @@ unw_addr_space_t unw_local_addr_space = &local_addr_space;
 static inline void *
 uc_addr (unw_tdep_context_t *uc, int reg)
 {
+  if (reg == UNW_AARCH64_VG)
+    {
+      /*
+       * Support for saving the vector length in the context needs to be
+       * added to get_context() for this path to work.
+       */
+      Debug(1, "Accessing VG register from context is not supported\n");
+      return NULL;
+    }
 #ifdef __FreeBSD__
   if (reg >= UNW_AARCH64_X0 && reg < UNW_AARCH64_X30)
     return &uc->uc_mcontext.mc_gpregs.gp_x[reg];
   else if (reg == UNW_AARCH64_X30)
     return &uc->uc_mcontext.mc_gpregs.gp_lr;
   else if (reg == UNW_AARCH64_SP)
-    return &uc->uc_mcontext.sp;
+    return &uc->uc_mcontext.mc_gpregs.gp_sp;
   else if (reg == UNW_AARCH64_PC)
-    return &uc->uc_mcontext.gp_elr;
+    return &uc->uc_mcontext.mc_gpregs.gp_elr;
   else if (reg >= UNW_AARCH64_V0 && reg <= UNW_AARCH64_V31)
     return &GET_FPCTX(uc)->uc_mcontext.mc_fpregs.fp_q[reg - UNW_AARCH64_V0];
   else
@@ -427,6 +436,11 @@ get_static_proc_name (unw_addr_space_t as, unw_word_t ip,
   return _Uelf64_get_proc_name (as, getpid (), ip, buf, buf_len, offp);
 }
 
+static unw_word_t empty_ptrauth_mask(unw_addr_space_t addr_space_unused, void *as_arg_unused)
+{
+  return 0;
+}
+
 HIDDEN void
 aarch64_local_addr_space_init (void)
 {
@@ -440,6 +454,7 @@ aarch64_local_addr_space_init (void)
   local_addr_space.acc.access_fpreg = access_fpreg;
   local_addr_space.acc.resume = aarch64_local_resume;
   local_addr_space.acc.get_proc_name = get_static_proc_name;
+  local_addr_space.acc.ptrauth_insn_mask = empty_ptrauth_mask;
   local_addr_space.big_endian = target_is_big_endian();
   unw_flush_cache (&local_addr_space, 0, 0);
 }

@@ -297,9 +297,10 @@ regMaskTP LinearScan::getMatchingConstants(regMaskTP mask, Interval* currentInte
     regMaskTP result     = RBM_NONE;
     while (candidates != RBM_NONE)
     {
-        regMaskTP candidateBit = genFindLowestBit(candidates);
-        candidates &= ~candidateBit;
-        regNumber  regNum        = genRegNumFromMask(candidateBit);
+        regNumber regNum       = genFirstRegNumFromMask(candidates);
+        regMaskTP candidateBit = genRegMask(regNum);
+        candidates ^= candidateBit;
+
         RegRecord* physRegRecord = getRegisterRecord(regNum);
         if (isMatchingConstant(physRegRecord, refPosition))
         {
@@ -1921,6 +1922,9 @@ void           LinearScan::identifyCandidates()
                             fieldVarDsc->lvLRACandidate                = 0;
                             localVarIntervals[fieldVarDsc->lvVarIndex] = nullptr;
                             VarSetOps::RemoveElemD(compiler, registerCandidateVars, fieldVarDsc->lvVarIndex);
+#if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+                            VarSetOps::RemoveElemD(compiler, largeVectorVars, fieldVarDsc->lvVarIndex);
+#endif
                             JITDUMP("*");
                         }
                         // This is not accurate, but we need a non-zero refCnt for the parent so that it will
@@ -2002,12 +2006,6 @@ void           LinearScan::identifyCandidates()
             }
             JITDUMP("  ");
             DBEXEC(VERBOSE, newInt->dump(compiler));
-        }
-        else
-        {
-            // Added code just to check if we ever reach here. If not delete this if-else.
-            assert(false);
-            localVarIntervals[varDsc->lvVarIndex] = nullptr;
         }
     }
 
@@ -3848,9 +3846,8 @@ void LinearScan::spillGCRefs(RefPosition* killRefPosition)
     INDEBUG(bool killedRegs = false);
     while (candidateRegs != RBM_NONE)
     {
-        regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
-        candidateRegs &= ~nextRegBit;
-        regNumber  nextReg          = genRegNumFromMask(nextRegBit);
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+
         RegRecord* regRecord        = getRegisterRecord(nextReg);
         Interval*  assignedInterval = regRecord->assignedInterval;
         if (assignedInterval == nullptr || (assignedInterval->isActive == false))
@@ -3945,9 +3942,7 @@ regNumber LinearScan::rotateBlockStartLocation(Interval* interval, regNumber tar
         regNumber newReg        = REG_NA;
         while (candidateRegs != RBM_NONE)
         {
-            regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
-            candidateRegs &= ~nextRegBit;
-            regNumber nextReg = genRegNumFromMask(nextRegBit);
+            regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
             if (nextReg > targetReg)
             {
                 newReg = nextReg;
@@ -4440,6 +4435,9 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
         resetRegState();
         setRegsInUse(liveRegs);
     }
+
+#ifdef TARGET_ARM
+
     for (regNumber reg = REG_FIRST; reg < AVAILABLE_REG_COUNT; reg = REG_NEXT(reg))
     {
         RegRecord* physRegRecord = getRegisterRecord(reg);
@@ -4472,7 +4470,6 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
                 }
 
-#ifdef TARGET_ARM
                 // unassignPhysReg, above, may have restored a 'previousInterval', in which case we need to
                 // get the value of 'physRegRecord->assignedInterval' rather than using 'assignedInterval'.
                 if (physRegRecord->assignedInterval != nullptr)
@@ -4486,10 +4483,8 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                     reg = REG_NEXT(reg);
                     makeRegAvailable(reg, physRegRecord->registerType);
                 }
-#endif // TARGET_ARM
             }
         }
-#ifdef TARGET_ARM
         else
         {
             Interval* assignedInterval = physRegRecord->assignedInterval;
@@ -4501,8 +4496,46 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock)
                 reg = REG_NEXT(reg);
             }
         }
-#endif // TARGET_ARM
     }
+#else
+    regMaskTP deadCandidates = ~liveRegs;
+
+    // Only focus on actual registers present
+    deadCandidates &= actualRegistersMask;
+
+    while (deadCandidates != RBM_NONE)
+    {
+        regNumber  reg           = genFirstRegNumFromMaskAndToggle(deadCandidates);
+        RegRecord* physRegRecord = getRegisterRecord(reg);
+
+        makeRegAvailable(reg, physRegRecord->registerType);
+        Interval* assignedInterval = physRegRecord->assignedInterval;
+
+        if (assignedInterval != nullptr)
+        {
+            assert(assignedInterval->isLocalVar || assignedInterval->isConstant || assignedInterval->IsUpperVector());
+
+            if (!assignedInterval->isConstant && assignedInterval->assignedReg == physRegRecord)
+            {
+                assignedInterval->isActive = false;
+                if (assignedInterval->getNextRefPosition() == nullptr)
+                {
+                    unassignPhysReg(physRegRecord, nullptr);
+                }
+                if (!assignedInterval->IsUpperVector())
+                {
+                    inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
+                }
+            }
+            else
+            {
+                // This interval may still be active, but was in another register in an
+                // intervening block.
+                clearAssignedInterval(physRegRecord ARM_ARG(assignedInterval->registerType));
+            }
+        }
+    }
+#endif // TARGET_ARM
 }
 
 //------------------------------------------------------------------------
@@ -4668,15 +4701,14 @@ void LinearScan::freeRegisters(regMaskTP regsToFree)
     makeRegsAvailable(regsToFree);
     while (regsToFree != RBM_NONE)
     {
-        regMaskTP nextRegBit = genFindLowestBit(regsToFree);
-        regsToFree &= ~nextRegBit;
-        regNumber  nextReg   = genRegNumFromMask(nextRegBit);
+        regNumber nextReg = genFirstRegNumFromMaskAndToggle(regsToFree);
+
         RegRecord* regRecord = getRegisterRecord(nextReg);
 #ifdef TARGET_ARM
         if (regRecord->assignedInterval != nullptr && (regRecord->assignedInterval->registerType == TYP_DOUBLE))
         {
             assert(genIsValidDoubleReg(nextReg));
-            regsToFree &= ~(nextRegBit << 1);
+            regsToFree ^= genRegMask(regNumber(nextReg + 1));
         }
 #endif
         freeRegister(regRecord);
@@ -4798,9 +4830,7 @@ void LinearScan::allocateRegisters()
         regMaskTP tempRegsToMakeInactive = (regsToMakeInactive | delayRegsToMakeInactive);
         while (tempRegsToMakeInactive != RBM_NONE)
         {
-            regMaskTP nextRegBit = genFindLowestBit(tempRegsToMakeInactive);
-            tempRegsToMakeInactive &= ~nextRegBit;
-            regNumber  nextReg   = genRegNumFromMask(nextRegBit);
+            regNumber  nextReg   = genFirstRegNumFromMaskAndToggle(tempRegsToMakeInactive);
             RegRecord* regRecord = getRegisterRecord(nextReg);
             clearSpillCost(regRecord->regNum, regRecord->registerType);
             makeRegisterInactive(regRecord);
@@ -8841,9 +8871,9 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     regMaskTP targetCandidates = targetRegsToDo;
     while (targetCandidates != RBM_NONE)
     {
-        regMaskTP targetRegMask = genFindLowestBit(targetCandidates);
-        targetCandidates &= ~targetRegMask;
-        regNumber targetReg = genRegNumFromMask(targetRegMask);
+        regNumber targetReg     = genFirstRegNumFromMask(targetCandidates);
+        regMaskTP targetRegMask = genRegMask(targetReg);
+        targetCandidates ^= targetRegMask;
         if (location[targetReg] == REG_NA)
         {
 #ifdef TARGET_ARM
@@ -8872,10 +8902,10 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     {
         while (targetRegsReady != RBM_NONE)
         {
-            regMaskTP targetRegMask = genFindLowestBit(targetRegsReady);
-            targetRegsToDo &= ~targetRegMask;
-            targetRegsReady &= ~targetRegMask;
-            regNumber targetReg = genRegNumFromMask(targetRegMask);
+            regNumber targetReg     = genFirstRegNumFromMask(targetRegsReady);
+            regMaskTP targetRegMask = genRegMask(targetReg);
+            targetRegsToDo ^= targetRegMask;
+            targetRegsReady ^= targetRegMask;
             assert(location[targetReg] != targetReg);
             assert(targetReg < REG_COUNT);
             regNumber sourceReg = (regNumber)source[targetReg];
@@ -8943,8 +8973,8 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
         }
         if (targetRegsToDo != RBM_NONE)
         {
-            regMaskTP targetRegMask = genFindLowestBit(targetRegsToDo);
-            regNumber targetReg     = genRegNumFromMask(targetRegMask);
+            regNumber targetReg     = genFirstRegNumFromMask(targetRegsToDo);
+            regMaskTP targetRegMask = genRegMask(targetReg);
 
             // Is it already there due to other moves?
             // If not, move it to the temp reg, OR swap it with another register
@@ -9006,9 +9036,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
                         regMaskTP mask = targetRegsToDo;
                         while (mask != RBM_NONE && otherTargetReg == REG_NA)
                         {
-                            regMaskTP nextRegMask = genFindLowestBit(mask);
-                            regNumber nextReg     = genRegNumFromMask(nextRegMask);
-                            mask &= ~nextRegMask;
+                            regNumber nextReg = genFirstRegNumFromMaskAndToggle(mask);
                             if (location[source[nextReg]] == targetReg)
                             {
                                 otherTargetReg = nextReg;
@@ -9111,9 +9139,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
     // All the target regs will be empty at this point
     while (targetRegsFromStack != RBM_NONE)
     {
-        regMaskTP targetRegMask = genFindLowestBit(targetRegsFromStack);
-        targetRegsFromStack &= ~targetRegMask;
-        regNumber targetReg = genRegNumFromMask(targetRegMask);
+        regNumber targetReg = genFirstRegNumFromMaskAndToggle(targetRegsFromStack);
 
         Interval* interval = stackToRegIntervals[targetReg];
         assert(interval != nullptr);
@@ -11166,9 +11192,8 @@ void LinearScan::verifyFinalAllocation()
                     regMaskTP candidateRegs = currentRefPosition.registerAssignment;
                     while (candidateRegs != RBM_NONE)
                     {
-                        regMaskTP nextRegBit = genFindLowestBit(candidateRegs);
-                        candidateRegs &= ~nextRegBit;
-                        regNumber  nextReg          = genRegNumFromMask(nextRegBit);
+                        regNumber nextReg = genFirstRegNumFromMaskAndToggle(candidateRegs);
+
                         RegRecord* regRecord        = getRegisterRecord(nextReg);
                         Interval*  assignedInterval = regRecord->assignedInterval;
                         assert(assignedInterval == nullptr || !varTypeIsGC(assignedInterval->registerType));
@@ -11724,9 +11749,9 @@ void LinearScan::RegisterSelection::try_BEST_FIT()
     LsraLocation bestFitLocation = earliestIsBest ? MaxLocation : MinLocation;
     for (regMaskTP bestFitCandidates = candidates; bestFitCandidates != RBM_NONE;)
     {
-        regMaskTP bestFitCandidateBit = genFindLowestBit(bestFitCandidates);
-        bestFitCandidates &= ~bestFitCandidateBit;
-        regNumber bestFitCandidateRegNum = genRegNumFromMask(bestFitCandidateBit);
+        regNumber bestFitCandidateRegNum = genFirstRegNumFromMask(bestFitCandidates);
+        regMaskTP bestFitCandidateBit    = genRegMask(bestFitCandidateRegNum);
+        bestFitCandidates ^= bestFitCandidateBit;
 
         // Find the next RefPosition of the register.
         LsraLocation nextIntervalLocation = linearScan->getNextIntervalRef(bestFitCandidateRegNum, regType);
@@ -11813,10 +11838,11 @@ void LinearScan::RegisterSelection::try_REG_ORDER()
     regMaskTP lowestRegOrderBit = RBM_NONE;
     for (regMaskTP regOrderCandidates = candidates; regOrderCandidates != RBM_NONE;)
     {
-        regMaskTP regOrderCandidateBit = genFindLowestBit(regOrderCandidates);
-        regOrderCandidates &= ~regOrderCandidateBit;
-        regNumber regOrderCandidateRegNum = genRegNumFromMask(regOrderCandidateBit);
-        unsigned  thisRegOrder            = linearScan->getRegisterRecord(regOrderCandidateRegNum)->regOrder;
+        regNumber regOrderCandidateRegNum = genFirstRegNumFromMask(regOrderCandidates);
+        regMaskTP regOrderCandidateBit    = genRegMask(regOrderCandidateRegNum);
+        regOrderCandidates ^= regOrderCandidateBit;
+
+        unsigned thisRegOrder = linearScan->getRegisterRecord(regOrderCandidateRegNum)->regOrder;
         if (thisRegOrder < lowestRegOrder)
         {
             lowestRegOrder    = thisRegOrder;
@@ -11848,9 +11874,10 @@ void LinearScan::RegisterSelection::try_SPILL_COST()
 
     for (regMaskTP spillCandidates = candidates; spillCandidates != RBM_NONE;)
     {
-        regMaskTP spillCandidateBit = genFindLowestBit(spillCandidates);
-        spillCandidates &= ~spillCandidateBit;
-        regNumber    spillCandidateRegNum    = genRegNumFromMask(spillCandidateBit);
+        regNumber spillCandidateRegNum = genFirstRegNumFromMask(spillCandidates);
+        regMaskTP spillCandidateBit    = genRegMask(spillCandidateRegNum);
+        spillCandidates ^= spillCandidateBit;
+
         RegRecord*   spillCandidateRegRecord = &linearScan->physRegs[spillCandidateRegNum];
         Interval*    assignedInterval        = spillCandidateRegRecord->assignedInterval;
         RefPosition* recentRefPosition = assignedInterval != nullptr ? assignedInterval->recentRefPosition : nullptr;
@@ -11956,9 +11983,9 @@ void LinearScan::RegisterSelection::try_FAR_NEXT_REF()
     regMaskTP    farthestSet      = RBM_NONE;
     for (regMaskTP farthestCandidates = candidates; farthestCandidates != RBM_NONE;)
     {
-        regMaskTP farthestCandidateBit = genFindLowestBit(farthestCandidates);
-        farthestCandidates &= ~farthestCandidateBit;
-        regNumber farthestCandidateRegNum = genRegNumFromMask(farthestCandidateBit);
+        regNumber farthestCandidateRegNum = genFirstRegNumFromMask(farthestCandidates);
+        regMaskTP farthestCandidateBit    = genRegMask(farthestCandidateRegNum);
+        farthestCandidates ^= farthestCandidateBit;
 
         // Find the next RefPosition of the register.
         LsraLocation nextIntervalLocation =
@@ -11989,11 +12016,11 @@ void LinearScan::RegisterSelection::try_PREV_REG_OPT()
     regMaskTP prevRegOptSet = RBM_NONE;
     for (regMaskTP prevRegOptCandidates = candidates; prevRegOptCandidates != RBM_NONE;)
     {
-        regMaskTP prevRegOptCandidateBit = genFindLowestBit(prevRegOptCandidates);
-        prevRegOptCandidates &= ~prevRegOptCandidateBit;
-        regNumber prevRegOptCandidateRegNum = genRegNumFromMask(prevRegOptCandidateBit);
-        Interval* assignedInterval          = linearScan->physRegs[prevRegOptCandidateRegNum].assignedInterval;
-        bool      foundPrevRegOptReg        = true;
+        regNumber prevRegOptCandidateRegNum = genFirstRegNumFromMask(prevRegOptCandidates);
+        regMaskTP prevRegOptCandidateBit    = genRegMask(prevRegOptCandidateRegNum);
+        prevRegOptCandidates ^= prevRegOptCandidateBit;
+        Interval* assignedInterval   = linearScan->physRegs[prevRegOptCandidateRegNum].assignedInterval;
+        bool      foundPrevRegOptReg = true;
 #ifdef DEBUG
         bool hasAssignedInterval = false;
 #endif
@@ -12094,9 +12121,9 @@ void LinearScan::RegisterSelection::calculateCoversSets()
     regMaskTP coversCandidates = (preferenceSet == RBM_NONE) ? candidates : preferenceSet;
     for (; coversCandidates != RBM_NONE;)
     {
-        regMaskTP coversCandidateBit = genFindLowestBit(coversCandidates);
-        coversCandidates &= ~coversCandidateBit;
-        regNumber coversCandidateRegNum = genRegNumFromMask(coversCandidateBit);
+        regNumber coversCandidateRegNum = genFirstRegNumFromMask(coversCandidates);
+        regMaskTP coversCandidateBit    = genRegMask(coversCandidateRegNum);
+        coversCandidates ^= coversCandidateBit;
 
         // If we have a single candidate we don't need to compute the preference-related sets, but we
         // do need to compute the unassignedSet.
@@ -12397,9 +12424,10 @@ regMaskTP LinearScan::RegisterSelection::select(Interval*    currentInterval,
         regMaskTP checkConflictMask = candidates & linearScan->fixedRegs;
         while (checkConflictMask != RBM_NONE)
         {
-            regMaskTP checkConflictBit = genFindLowestBit(checkConflictMask);
-            checkConflictMask &= ~checkConflictBit;
-            regNumber    checkConflictReg      = genRegNumFromMask(checkConflictBit);
+            regNumber checkConflictReg = genFirstRegNumFromMask(checkConflictMask);
+            regMaskTP checkConflictBit = genRegMask(checkConflictReg);
+            checkConflictMask ^= checkConflictBit;
+
             LsraLocation checkConflictLocation = linearScan->nextFixedRef[checkConflictReg];
 
             if ((checkConflictLocation == refPosition->nodeLocation) ||

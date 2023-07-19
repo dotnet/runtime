@@ -3,7 +3,7 @@
 
 import { MonoType, MonoMethod } from "./types/internal";
 import { NativePointer, Int32Ptr, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import {
     getU8, getI32_unaligned, getU32_unaligned, setU32_unchecked, receiveWorkerHeapViews
 } from "./memory";
@@ -404,7 +404,7 @@ export function mono_interp_flush_jitcall_queue(): void {
         for (let i = 0; i < trampImports.length; i++)
             builder.markImportAsUsed(trampImports[i][0]);
 
-        builder._generateImportSection();
+        builder._generateImportSection(false);
 
         // Function section
         builder.beginSection(3);

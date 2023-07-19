@@ -1,26 +1,17 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/*============================================================
-**
-**
-**
-** Purpose: An exception for OS 'access denied' types of
-**          errors, including IO and limited security types
-**          of errors.
-**
-**
-===========================================================*/
-
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 
 namespace System
 {
-    // The UnauthorizedAccessException is thrown when access errors
-    // occur from IO or other OS methods.
+    /// <summary>
+    /// The exception that is thrown when the operating system denies access because of an I/O error or a specific type of security error.
+    /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class UnauthorizedAccessException : SystemException
     {
         public UnauthorizedAccessException()

@@ -49,6 +49,10 @@ fi
     ./crasher backing_files
 ) 2>/dev/null
 COREFILE=$TEMPDIR/core*
+if ! test -f "$COREFILE"; then
+    echo "crasher process did not produce coredump, test skipped"
+    exit 77
+fi
 
 # magic option -testcase enables checking for the specific contents of the stack
 ./test-coredump-unwind $COREFILE -testcase `cat $TEMPDIR/backing_files`

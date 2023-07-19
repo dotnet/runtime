@@ -389,6 +389,49 @@ namespace System.Tests
         }
 
         [Theory]
+        [MemberData(nameof(Parse_ValidWithOffsetCount_TestData))]
+        public static void Parse_Utf8Span_Valid(string value, int offset, int count, NumberStyles style, IFormatProvider provider, sbyte expected)
+        {
+            sbyte result;
+            ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value, offset, count);
+
+            // Default style and provider
+            if (style == NumberStyles.Integer && provider == null)
+            {
+                Assert.True(sbyte.TryParse(valueUtf8, out result));
+                Assert.Equal(expected, result);
+            }
+
+            Assert.Equal(expected, sbyte.Parse(valueUtf8, style, provider));
+
+            Assert.True(sbyte.TryParse(valueUtf8, style, provider, out result));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Utf8Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                sbyte result;
+                ReadOnlySpan<byte> valueUtf8 = Encoding.UTF8.GetBytes(value);
+
+                // Default style and provider
+                if (style == NumberStyles.Integer && provider == null)
+                {
+                    Assert.False(sbyte.TryParse(valueUtf8, out result));
+                    Assert.Equal(0, result);
+                }
+
+                Assert.Throws(exceptionType, () => sbyte.Parse(Encoding.UTF8.GetBytes(value), style, provider));
+
+                Assert.False(sbyte.TryParse(valueUtf8, style, provider, out result));
+                Assert.Equal(0, result);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(ToString_TestData))]
         public static void TryFormat(sbyte i, string format, IFormatProvider provider, string expected) =>
             NumberFormatTestHelper.TryFormatNumberTest(i, format, provider, expected);

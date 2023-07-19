@@ -12,6 +12,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
         void* IIUnknownStrategy.CreateInstancePointer(void* unknown)
         {
+            Marshal.AddRef((nint)unknown);
             return unknown;
         }
 

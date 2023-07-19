@@ -31,6 +31,8 @@ internal sealed class TerminalFormatStrings
     public readonly string? Bell;
     /// <summary>The format string to use to clear the terminal.</summary>
     public readonly string? Clear;
+    /// <summary>The format string to use to clear the terminal scrollback buffer, if supported.</summary>
+    public readonly string? ClearScrollbackBuffer;
     /// <summary>The format string to use to set the position of the cursor.</summary>
     public readonly string? CursorAddress;
     /// <summary>The format string to use to move the cursor to the left.</summary>
@@ -73,6 +75,7 @@ internal sealed class TerminalFormatStrings
         Reset = db.GetString(TermInfo.WellKnownStrings.OrigPairs) ?? db.GetString(TermInfo.WellKnownStrings.OrigColors);
         Bell = db.GetString(TermInfo.WellKnownStrings.Bell);
         Clear = db.GetString(TermInfo.WellKnownStrings.Clear);
+        ClearScrollbackBuffer = db.GetExtendedString("E3");
         Columns = db.GetNumber(TermInfo.WellKnownNumbers.Columns);
         Lines = db.GetNumber(TermInfo.WellKnownNumbers.Lines);
         CursorVisible = db.GetString(TermInfo.WellKnownStrings.CursorVisible);

@@ -1338,6 +1338,9 @@ void EEJitManager::SetCpuInfo()
 
     CORJIT_FLAGS CPUCompileFlags;
 
+    // Get the maximum bitwidth of Vector<T>, rounding down to the nearest multiple of 128-bits
+    uint32_t maxVectorTBitWidth = (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_MaxVectorTBitWidth) / 128) * 128;
+
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
     CPUCompileFlags.Set(InstructionSet_X86Base);
 
@@ -1401,6 +1404,7 @@ void EEJitManager::SetCpuInfo()
 
     CPUCompileFlags.Set(InstructionSet_SSE);
     CPUCompileFlags.Set(InstructionSet_SSE2);
+    CPUCompileFlags.Set(InstructionSet_VectorT128);
 
     if ((cpuidInfo[CPUID_ECX] & (1 << 25)) != 0)                                                          // AESNI
     {
@@ -1460,11 +1464,21 @@ void EEJitManager::SetCpuInfo()
                                 {
                                     CPUCompileFlags.Set(InstructionSet_AVX2);
 
+                                    if ((maxVectorTBitWidth == 0) || (maxVectorTBitWidth >= 256))
+                                    {
+                                        // We allow 256-bit Vector<T> by default
+                                        CPUCompileFlags.Clear(InstructionSet_VectorT128);
+                                        CPUCompileFlags.Set(InstructionSet_VectorT256);
+                                    }
+
                                     if (DoesOSSupportAVX512() && (avx512StateSupport() == 1))             // XGETBV XRC0[7:5] == 111
                                     {
                                         if ((cpuidInfo[CPUID_EBX] & (1 << 16)) != 0)                      // AVX512F
                                         {
                                             CPUCompileFlags.Set(InstructionSet_AVX512F);
+
+                                            // TODO-XArch: Add support for 512-bit Vector<T>
+                                            assert(!CPUCompileFlags.IsSet(InstructionSet_VectorT512));
 
                                             bool isAVX512_VLSupported = false;
                                             if ((cpuidInfo[CPUID_EBX] & (1 << 31)) != 0)                  // AVX512VL
@@ -1526,11 +1540,6 @@ void EEJitManager::SetCpuInfo()
         }
     }
 
-    if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_SIMD16ByteOnly) != 0)
-    {
-        CPUCompileFlags.Clear(InstructionSet_AVX2);
-    }
-
     if (maxCpuId >= 0x07)
     {
         __cpuidex(cpuidInfo, 0x00000007, 0x00000000);
@@ -1581,6 +1590,7 @@ void EEJitManager::SetCpuInfo()
     // FP and SIMD support are enabled by default
     CPUCompileFlags.Set(InstructionSet_ArmBase);
     CPUCompileFlags.Set(InstructionSet_AdvSimd);
+    CPUCompileFlags.Set(InstructionSet_VectorT128);
 
     // PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE (30)
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
@@ -1792,7 +1802,6 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Clear(InstructionSet_X86Serialize);
     }
-
 #elif defined(TARGET_ARM64)
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {

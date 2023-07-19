@@ -384,6 +384,24 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
+static uint32_t g_RhPageSize;
+
+void InitializeOsPageSize()
+{
+    g_RhPageSize = (uint32_t)sysconf(_SC_PAGE_SIZE);
+
+#if defined(HOST_AMD64)
+    ASSERT(g_RhPageSize == 0x1000);
+#elif defined(HOST_APPLE)
+    ASSERT(g_RhPageSize == 0x4000);
+#endif
+}
+
+REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize()
+{
+    return g_RhPageSize;
+}
+
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
 static pthread_key_t key;
 #endif
@@ -411,6 +429,8 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
     InitializeCpuCGroup();
 
     InitializeCurrentProcessCpuCount();
+
+    InitializeOsPageSize();
 
 #if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
     if (pthread_key_create(&key, RuntimeThreadShutdown) != 0)
@@ -613,7 +633,7 @@ extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
+REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const WCHAR* pName)
 {
     UnixEvent event = UnixEvent(manualReset, initialState);
     if (!event.Initialize())
@@ -872,13 +892,12 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     //
     // As a workaround, we call __builtin___clear_cache on each page separately.
 
-    const size_t pageSize = getpagesize();
     uint8_t* begin = (uint8_t*)pAddress;
     uint8_t* end = begin + size;
 
     while (begin < end)
     {
-        uint8_t* endOrNextPageBegin = ALIGN_UP(begin + 1, pageSize);
+        uint8_t* endOrNextPageBegin = ALIGN_UP(begin + 1, OS_PAGE_SIZE);
         if (endOrNextPageBegin > end)
             endOrNextPageBegin = end;
 
@@ -890,12 +909,6 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
 #else
     __builtin___clear_cache((char *)pAddress, (char *)pAddress + size);
 #endif
-}
-
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
 }
 
 extern "C" HANDLE GetCurrentProcess()
@@ -1446,7 +1459,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 #ifdef HWCAP_ASIMD
     if (hwCap & HWCAP_ASIMD)
-        *flags |= ARM64IntrinsicConstants_AdvSimd;
+        *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif
 #ifdef HWCAP_ASIMDRDM
     if (hwCap & HWCAP_ASIMDRDM)
@@ -1545,7 +1558,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 #endif // HAVE_AUXV_HWCAP_H
 }
 #endif

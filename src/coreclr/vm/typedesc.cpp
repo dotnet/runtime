@@ -841,6 +841,14 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         else
         {
             _ASSERTE(TypeFromToken(defToken) == mdtTypeDef);
+
+            bool foundResult = false;
+            if (!GetModule()->m_pTypeGenericInfoMap->HasConstraints(defToken, &foundResult) && foundResult)
+            {
+                m_numConstraints = 0;
+                return;
+            }
+
             TypeHandle genericType = LoadOwnerType();
             _ASSERTE(genericType.IsGenericTypeDefinition());
 
@@ -1603,7 +1611,8 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                                 if (pMD->IsVirtual() &&
                                     pMD->IsStatic() &&
                                     (pMD->IsAbstract() && !thElem.AsMethodTable()->ResolveVirtualStaticMethod(
-                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE)))
+                                        pInterfaceMT, pMD, /* allowNullResult */ TRUE, /* verifyImplemented */ TRUE,
+                                        /*allowVariantMatches*/ TRUE, /*uniqueResolution*/ NULL, CLASS_DEPENDENCIES_LOADED)))
                                 {
                                     virtualStaticResolutionCheckFailed = true;
                                     break;

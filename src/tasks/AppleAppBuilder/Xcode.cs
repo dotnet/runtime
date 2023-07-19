@@ -256,7 +256,7 @@ internal sealed class Xcode
         bool useNativeAOTRuntime = false)
     {
         // bundle everything as resources excluding native files
-        var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt_*" };
+        var predefinedExcludes = new List<string> { ".dll.o", ".dll.s", ".dwarf", ".m", ".h", ".a", ".bc", "libmonosgen-2.0.dylib", "libcoreclr.dylib", "icudt*" };
         predefinedExcludes = predefinedExcludes.Concat(excludes).ToList();
         if (!preferDylibs)
         {
@@ -268,7 +268,8 @@ internal sealed class Xcode
         }
 
         string[] resources = Directory.GetFileSystemEntries(workspace, "", SearchOption.TopDirectoryOnly)
-            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase))))
+            .Where(f => !predefinedExcludes.Any(e => (!e.EndsWith('*') && f.EndsWith(e, StringComparison.InvariantCultureIgnoreCase)) || (e.EndsWith('*') && Path.GetFileName(f).StartsWith(e.TrimEnd('*'), StringComparison.InvariantCultureIgnoreCase) &&
+            !(hybridGlobalization ? Path.GetFileName(f) == "icudt_hybrid.dat" : Path.GetFileName(f) == "icudt.dat"))))
             .ToArray();
 
         if (string.IsNullOrEmpty(nativeMainSource))
@@ -411,16 +412,12 @@ internal sealed class Xcode
             frameworks = "\"-framework GSS\"";
         }
 
-        string appLinkerArgs = "";
-        foreach(string linkerArg in extraLinkerArgs)
-        {
-            appLinkerArgs += $"    \"{linkerArg}\"{Environment.NewLine}";
-        }
-
-        appLinkerArgs += $"    {frameworks}{Environment.NewLine}";
+        string appLinkLibraries = $"    {frameworks}{Environment.NewLine}";
+        string extraLinkerArgsConcat = $"\"{string.Join('\n', extraLinkerArgs)}\"";
 
         cmakeLists = cmakeLists.Replace("%NativeLibrariesToLink%", toLink);
-        cmakeLists = cmakeLists.Replace("%APP_LINKER_ARGS%", appLinkerArgs);
+        cmakeLists = cmakeLists.Replace("%APP_LINK_LIBRARIES%", appLinkLibraries);
+        cmakeLists = cmakeLists.Replace("%EXTRA_LINKER_ARGS%", extraLinkerArgsConcat);
         cmakeLists = cmakeLists.Replace("%AotSources%", aotSources);
         cmakeLists = cmakeLists.Replace("%AotTargetsList%", aotList);
         cmakeLists = cmakeLists.Replace("%AotModulesSource%", string.IsNullOrEmpty(aotSources) ? "" : "modules.m");

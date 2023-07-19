@@ -14,6 +14,7 @@ using ReadyToRunSectionType = Internal.Runtime.ReadyToRunSectionType;
 using ReflectionMapBlob = Internal.Runtime.ReflectionMapBlob;
 using DependencyList = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.DependencyList;
 using CombinedDependencyList = System.Collections.Generic.List<ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry>;
+using CombinedDependencyListEntry = ILCompiler.DependencyAnalysisFramework.DependencyNodeCore<ILCompiler.DependencyAnalysis.NodeFactory>.CombinedDependencyListEntry;
 using MethodIL = Internal.IL.MethodIL;
 using CustomAttributeValue = System.Reflection.Metadata.CustomAttributeValue<Internal.TypeSystem.TypeDesc>;
 
@@ -65,6 +66,7 @@ namespace ILCompiler
         private HashSet<NativeLayoutTemplateMethodSignatureVertexNode> _templateMethodEntries = new HashSet<NativeLayoutTemplateMethodSignatureVertexNode>();
         private readonly SortedSet<TypeDesc> _typeTemplates = new SortedSet<TypeDesc>(TypeSystemComparer.Instance);
         private readonly SortedSet<MetadataType> _typesWithGenericStaticBaseInfo = new SortedSet<MetadataType>(TypeSystemComparer.Instance);
+        private readonly SortedSet<MethodDesc> _genericMethodHashtableEntries = new SortedSet<MethodDesc>(TypeSystemComparer.Instance);
 
         private List<(DehydratableObjectNode Node, ObjectNode.ObjectData Data)> _dehydratableData = new List<(DehydratableObjectNode Node, ObjectNode.ObjectData data)>();
 
@@ -301,6 +303,11 @@ namespace ILCompiler
             {
                 _typesWithGenericStaticBaseInfo.Add(genericStaticBaseInfo.Type);
             }
+
+            if (obj is GenericMethodsHashtableEntryNode genericMethodsHashtableEntryNode)
+            {
+                _genericMethodHashtableEntries.Add(genericMethodsHashtableEntryNode.Method);
+            }
         }
 
         protected virtual bool AllMethodsCanBeReflectable => false;
@@ -377,6 +384,29 @@ namespace ILCompiler
                 return false;
 
             return true;
+        }
+
+        public void GetDependenciesDueToGenericDictionary(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
+        {
+            MetadataCategory category = GetMetadataCategory(method.GetCanonMethodTarget(CanonicalFormKind.Specific));
+
+            if ((category & MetadataCategory.RuntimeMapping) != 0)
+            {
+                // If the method is visible from reflection, we need to keep track of this statically generated
+                // dictionary to make sure MakeGenericMethod works even without a type loader template
+                dependencies ??= new DependencyList();
+                dependencies.Add(factory.GenericMethodsHashtableEntry(method), "Reflection visible dictionary");
+            }
+        }
+
+        public IEnumerable<CombinedDependencyListEntry> GetConditionalDependenciesDueToGenericDictionary(NodeFactory factory, MethodDesc method)
+        {
+            // If there's a template for this method, we need to keep track of the dictionary so that we
+            // don't accidentally create a new dictionary for the same method at runtime.
+            yield return new CombinedDependencyListEntry(
+                factory.GenericMethodsHashtableEntry(method),
+                factory.NativeLayout.TemplateMethodEntry(method.GetCanonMethodTarget(CanonicalFormKind.Specific)),
+                "Runtime-constructable dictionary");
         }
 
         /// <summary>
@@ -732,6 +762,11 @@ namespace ILCompiler
         public IEnumerable<MetadataType> GetTypesWithGenericStaticBaseInfos()
         {
             return _typesWithGenericStaticBaseInfo;
+        }
+
+        public IEnumerable<MethodDesc> GetGenericMethodHashtableEntries()
+        {
+            return _genericMethodHashtableEntries;
         }
 
         internal IEnumerable<IMethodBodyNode> GetCompiledMethodBodies()

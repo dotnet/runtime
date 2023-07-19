@@ -3,23 +3,30 @@
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
 import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
+import { mono_exit } from "./exit";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
 // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
 let parallel_count = 0;
 
-// don't `fetch` javaScript files
-const skipDownloadsByAssetTypes: {
+const jsModulesAssetTypes: {
     [k: string]: boolean
 } = {
     "js-module-threads": true,
     "js-module-runtime": true,
     "js-module-native": true,
     "js-module-dotnet": true,
+};
+
+// don't `fetch` javaScript and wasm files
+const skipDownloadsByAssetTypes: {
+    [k: string]: boolean
+} = {
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
 };
 
@@ -39,10 +46,7 @@ const containedInSnapshotByAssetTypes: {
     "pdb": true,
     "heap": true,
     "icu": true,
-    "js-module-threads": true,
-    "js-module-runtime": true,
-    "js-module-native": true,
-    "js-module-dotnet": true,
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
 };
 
@@ -50,10 +54,7 @@ const containedInSnapshotByAssetTypes: {
 const skipInstantiateByAssetTypes: {
     [k: string]: boolean
 } = {
-    "js-module-threads": true,
-    "js-module-runtime": true,
-    "js-module-native": true,
-    "js-module-dotnet": true,
+    ...jsModulesAssetTypes,
     "dotnetwasm": true,
     "symbols": true,
 };
@@ -153,10 +154,6 @@ export async function mono_download_assets(): Promise<void> {
                         await runtimeHelpers.memorySnapshotSkippedOrDone.promise;
                         runtimeHelpers.instantiate_asset(asset, url, data);
                     }
-                    if (asset.behavior === "symbols") {
-                        await runtimeHelpers.instantiate_symbols_asset(asset);
-                        cleanupAsset(asset);
-                    }
                 } else {
                     const headersOnly = skipBufferByAssetTypes[asset.behavior];
                     if (!headersOnly) {
@@ -168,6 +165,11 @@ export async function mono_download_assets(): Promise<void> {
                             loaderHelpers.expected_instantiated_assets_count--;
                         }
                     } else {
+                        if (asset.behavior === "symbols") {
+                            await runtimeHelpers.instantiate_symbols_asset(asset);
+                            cleanupAsset(asset);
+                        }
+
                         if (skipBufferByAssetTypes[asset.behavior]) {
                             ++loaderHelpers.actual_downloaded_assets_count;
                         }
@@ -180,9 +182,10 @@ export async function mono_download_assets(): Promise<void> {
         // and we are not awating it here
         Promise.all(promises_of_asset_instantiation).then(() => {
             runtimeHelpers.allAssetsInMemory.promise_control.resolve();
-        }).catch(e => {
-            loaderHelpers.err("Error in mono_download_assets: " + e);
-            loaderHelpers.abort_startup(e, true);
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
@@ -367,10 +370,7 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
         } else {
             attemptUrl = sourcePrefix + asset.name;
         }
-        attemptUrl = loaderHelpers.locateFile(attemptUrl);
-        if (loaderHelpers.assetUniqueQuery) {
-            attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
-        }
+        attemptUrl = appendUniqueQuery(loaderHelpers.locateFile(attemptUrl), asset.behavior);
     }
     else {
         attemptUrl = asset.resolvedUrl;
@@ -378,6 +378,17 @@ function resolve_path(asset: AssetEntry, sourcePrefix: string): string {
     mono_assert(attemptUrl && typeof attemptUrl == "string", "attemptUrl need to be path or url string");
     return attemptUrl;
 }
+
+export function appendUniqueQuery(attemptUrl: string, behavior: AssetBehaviours): string {
+    // apply unique query to js modules to make the module state independent of the other runtime instances
+    if (loaderHelpers.modulesUniqueQuery && jsModulesAssetTypes[behavior]) {
+        attemptUrl = attemptUrl + loaderHelpers.modulesUniqueQuery;
+    }
+
+    return attemptUrl;
+}
+
+
 
 function download_resource(request: ResourceRequest): LoadingResource {
     try {

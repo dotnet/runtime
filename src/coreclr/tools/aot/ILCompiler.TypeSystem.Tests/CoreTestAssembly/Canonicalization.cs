@@ -62,4 +62,8 @@ namespace Canonicalization
     class GenericStructTypeWithThreeParams<T, U, V>
     {
     }
+
+    interface InterfaceGenericType<T>
+    {
+    }
 }

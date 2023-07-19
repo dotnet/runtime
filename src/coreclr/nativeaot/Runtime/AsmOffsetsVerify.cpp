@@ -16,7 +16,6 @@
 #include "RuntimeInstance.h"
 #include "CachedInterfaceDispatch.h"
 #include "shash.h"
-#include "CallDescr.h"
 
 class AsmOffsets
 {

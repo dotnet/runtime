@@ -22,7 +22,6 @@ namespace System.ComponentModel.Tests
         [InlineData("category", false)]
         [InlineData("Misc", true)]
         [InlineData("misc", false)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws a NullReferenceException")]
         public void Ctor_String(string category, bool expectedIsDefaultAttribute)
         {
             var attribute = new CategoryAttribute(category);

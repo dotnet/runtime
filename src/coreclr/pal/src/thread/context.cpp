@@ -1858,6 +1858,17 @@ DBG_FlushInstructionCache(
         __builtin___clear_cache((char *)begin, (char *)endOrNextPageBegin);
         begin = endOrNextPageBegin;
     }
+#elif defined(HOST_RISCV64)
+    // __clear_cache() expanded from __builtin___clear_cache() is not implemented
+    // on Linux/RISCV64, at least in Clang 14, and we have to make syscall directly.
+    //
+    // TODO-RISCV64: use __builtin___clear_cache() in future. See https://github.com/llvm/llvm-project/issues/63551
+
+#ifndef __NR_riscv_flush_icache
+    #define __NR_riscv_flush_icache 259
+#endif
+
+    syscall(__NR_riscv_flush_icache, (char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize), 0 /* all harts */);
 #else
     __builtin___clear_cache((char *)lpBaseAddress, (char *)((INT_PTR)lpBaseAddress + dwSize));
 #endif

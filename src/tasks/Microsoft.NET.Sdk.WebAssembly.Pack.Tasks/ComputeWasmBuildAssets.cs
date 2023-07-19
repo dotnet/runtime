@@ -50,6 +50,8 @@ public class ComputeWasmBuildAssets : Task
 
     public bool EnableThreads { get; set; }
 
+    public bool EmitSourceMap { get; set; }
+
     [Output]
     public ITaskItem[] AssetCandidates { get; set; }
 
@@ -84,7 +86,7 @@ public class ComputeWasmBuildAssets : Task
             for (int i = 0; i < Candidates.Length; i++)
             {
                 var candidate = Candidates[i];
-                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, EnableThreads, out var reason))
+                if (AssetsComputingHelper.ShouldFilterCandidate(candidate, TimeZoneSupport, InvariantGlobalization, CopySymbols, customIcuCandidateFilename, EnableThreads, EmitSourceMap, out var reason))
                 {
                     Log.LogMessage(MessageImportance.Low, "Skipping asset '{0}' because '{1}'", candidate.ItemSpec, reason);
                     filesToRemove.Add(candidate);

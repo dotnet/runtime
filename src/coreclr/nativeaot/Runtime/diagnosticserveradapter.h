@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef __DIAGNOSTIC_SERVER_ADAPTER_H__
-#define __DIAGNOSTIC_SERVER_ADAPTER_H__
+#ifndef DIAGNOSTIC_SERVER_ADAPTER_H
+#define DIAGNOSTIC_SERVER_ADAPTER_H
 
 #if defined(FEATURE_PERFTRACING)
 
@@ -39,4 +39,4 @@ public:
 
 #endif // FEATURE_PERFTRACING
 
-#endif // __DIAGNOSTIC_SERVER_ADAPTER_H__
+#endif // DIAGNOSTIC_SERVER_ADAPTER_H

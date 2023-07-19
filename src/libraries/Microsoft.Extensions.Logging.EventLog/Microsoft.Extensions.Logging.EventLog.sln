@@ -47,6 +47,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.EventLog
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Diagnostics.EventLog", "..\System.Diagnostics.EventLog\src\System.Diagnostics.EventLog.csproj", "{204919F3-8E5C-4D4D-9E3B-ADFB1E453972}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ComInterfaceGenerator", "..\System.Runtime.InteropServices\gen\ComInterfaceGenerator\ComInterfaceGenerator.csproj", "{F47FCBE9-78EB-40FE-B2F9-3D5DD4BDF9DF}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{7D8210EC-014D-4901-97D4-0C8AC919804E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{82D7CA6B-8647-49A1-B4A1-40A8C6B9D7C2}"
@@ -161,6 +163,10 @@ Global
 		{204919F3-8E5C-4D4D-9E3B-ADFB1E453972}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{204919F3-8E5C-4D4D-9E3B-ADFB1E453972}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{204919F3-8E5C-4D4D-9E3B-ADFB1E453972}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F47FCBE9-78EB-40FE-B2F9-3D5DD4BDF9DF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F47FCBE9-78EB-40FE-B2F9-3D5DD4BDF9DF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F47FCBE9-78EB-40FE-B2F9-3D5DD4BDF9DF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F47FCBE9-78EB-40FE-B2F9-3D5DD4BDF9DF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{7D8210EC-014D-4901-97D4-0C8AC919804E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{7D8210EC-014D-4901-97D4-0C8AC919804E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D8210EC-014D-4901-97D4-0C8AC919804E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -203,6 +209,7 @@ Global
 		{2F5646F6-8247-42E5-ACF5-8732ACB7067A} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{AA692D58-2C6C-4307-A13F-0884B6164026} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{4F09A07F-70C7-4288-A6F3-EFBD5306E1F7} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
+		{F47FCBE9-78EB-40FE-B2F9-3D5DD4BDF9DF} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{7D8210EC-014D-4901-97D4-0C8AC919804E} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 		{82D7CA6B-8647-49A1-B4A1-40A8C6B9D7C2} = {677D11A9-4811-41EA-8F93-F8DB15BF27DD}
 	EndGlobalSection

@@ -85,11 +85,6 @@ namespace Internal.IL
                 return UnsafeIntrinsics.EmitIL(method);
             }
 
-            if (mdType.Name == "Volatile" && mdType.Namespace == "System.Threading")
-            {
-                return VolatileIntrinsics.EmitIL(method);
-            }
-
             if (mdType.Name == "Interlocked" && mdType.Namespace == "System.Threading")
             {
                 return InterlockedIntrinsics.EmitIL(_compilationModuleGroup, method);

@@ -169,7 +169,7 @@ namespace System.Xml
             Debug.Assert(startPos <= str.Length);
             Debug.Assert(startPos + len <= str.Length);
 
-            return str.AsSpan(startPos, len).IndexOfAnyExceptInRange('0', '9') < 0;
+            return !str.AsSpan(startPos, len).ContainsAnyExceptInRange('0', '9');
         }
 
         internal static int IsPublicId(string str) =>

@@ -1045,10 +1045,8 @@ private:
 
 #if FEATURE_PARTIAL_SIMD_CALLEE_SAVE
     void buildUpperVectorSaveRefPositions(GenTree* tree, LsraLocation currentLoc, regMaskTP fpCalleeKillSet);
-    void buildUpperVectorRestoreRefPosition(Interval*    lclVarInterval,
-                                            LsraLocation currentLoc,
-                                            GenTree*     node,
-                                            bool         isUse);
+    void buildUpperVectorRestoreRefPosition(
+        Interval* lclVarInterval, LsraLocation currentLoc, GenTree* node, bool isUse, unsigned multiRegIdx);
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
 
 #if defined(UNIX_AMD64_ABI) || defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
@@ -1661,8 +1659,8 @@ private:
     VarToRegMap* outVarToRegMaps;
 
     // A temporary VarToRegMap used during the resolution of critical edges.
-    VarToRegMap sharedCriticalVarToRegMap;
-
+    VarToRegMap          sharedCriticalVarToRegMap;
+    PhasedVar<regMaskTP> actualRegistersMask;
     PhasedVar<regMaskTP> availableIntRegs;
     PhasedVar<regMaskTP> availableFloatRegs;
     PhasedVar<regMaskTP> availableDoubleRegs;

@@ -310,6 +310,10 @@ CONFIG_DWORD_INFO(INTERNAL_JitGCStress, W("JitGCStress"), 0, "GC stress mode for
 CONFIG_DWORD_INFO(INTERNAL_JitHeartbeat, W("JitHeartbeat"), 0, "")
 CONFIG_DWORD_INFO(INTERNAL_JitHelperLogging, W("JitHelperLogging"), 0, "")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JITMinOpts, W("JITMinOpts"), 0, "Forces MinOpts")
+
+// *Some* relocs are just opportunistic optimizations and can be non-deterministic - it might produce
+// noise for jit-diff like tools.
+RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_JitEnableOptionalRelocs, W("JitEnableOptionalRelocs"), 1, "Allow optional relocs")
 RETAIL_CONFIG_STRING_INFO(EXTERNAL_JitName, W("JitName"), "Primary jit to use")
 CONFIG_STRING_INFO(INTERNAL_JitPath, W("JitPath"), "Full path to primary jit to use")
 #if defined(ALLOW_SXS_JIT)
@@ -346,12 +350,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_JitRegisterFP, W("JitRegisterFP"), 3, "Control
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitELTHookEnabled, W("JitELTHookEnabled"), 0, "On ARM, setting this will emit Enter/Leave/TailCall callbacks")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitMemStats, W("JitMemStats"), 0, "Display JIT memory usage statistics")
 RETAIL_CONFIG_DWORD_INFO(INTERNAL_JitVNMapSelBudget, W("JitVNMapSelBudget"), 100, "Max # of MapSelect's considered for a particular top-level invocation.")
-#if defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64)
-#define EXTERNAL_FeatureSIMD_Default 1
-#else // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-#define EXTERNAL_FeatureSIMD_Default 0
-#endif // !(defined(TARGET_AMD64) || defined(TARGET_X86) || defined(TARGET_ARM64))
-RETAIL_CONFIG_DWORD_INFO(INTERNAL_SIMD16ByteOnly, W("SIMD16ByteOnly"), 0, "Limit maximum SIMD vector length to 16 bytes (used by x64_arm64_altjit)")
 RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_TrackDynamicMethodDebugInfo, W("TrackDynamicMethodDebugInfo"), 0, "Specifies whether debug info should be generated and tracked for dynamic methods")
 
 #ifdef FEATURE_MULTICOREJIT
@@ -483,7 +481,7 @@ RETAIL_CONFIG_DWORD_INFO(UNSUPPORTED_ProfAPI_ValidateNGENInstrumentation, W("Pro
 
 #ifdef FEATURE_PERFMAP
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapEnabled, W("PerfMapEnabled"), 0, "This flag is used on Linux to enable writing /tmp/perf-$pid.map. It is disabled by default")
-RETAIL_CONFIG_STRING_INFO(EXTERNAL_PerfMapJitDumpPath, W("PerfMapJitDumpPath"), "Specifies a path to write the perf jitdump file. Defaults to GetTempPathA()")
+RETAIL_CONFIG_STRING_INFO_EX(EXTERNAL_PerfMapJitDumpPath, W("PerfMapJitDumpPath"), "Specifies a path to write the perf jitdump file. Defaults to /tmp", CLRConfig::LookupOptions::TrimWhiteSpaceFromStringValue)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapIgnoreSignal, W("PerfMapIgnoreSignal"), 0, "When perf map is enabled, this option will configure the specified signal to be accepted and ignored as a marker in the perf logs.  It is disabled by default")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_PerfMapShowOptimizationTiers, W("PerfMapShowOptimizationTiers"), 1, "Shows optimization tiers in the perf map for methods, as part of the symbol name. Useful for seeing separate stack frames for different optimization tiers of each method.")
 #endif
@@ -734,15 +732,17 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 #endif
 
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum decimal width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
+
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h
 //
 #if defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 //TODO: should implement LoongArch64's features.
 //TODO-RISCV64-CQ: should implement RISCV64's features.
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  0, "Allows Base+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         0, "Allows Base+ hardware intrinsics to be disabled")
 #else
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1, "Allows Base+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableHWIntrinsic,            W("EnableHWIntrinsic"),         1, "Allows Base+ hardware intrinsics to be disabled")
 #endif // defined(TARGET_LOONGARCH64) || defined(TARGET_RISCV64)
 
 #if defined(TARGET_AMD64) || defined(TARGET_X86)

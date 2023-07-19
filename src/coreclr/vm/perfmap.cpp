@@ -19,6 +19,14 @@
 
 #define FMT_CODE_ADDR "%p"
 
+#ifndef __ANDROID__
+#define TEMP_DIRECTORY_PATH "/tmp"
+#else
+// On Android, "/tmp/" doesn't exist; temporary files should go to
+// /data/local/tmp/
+#define TEMP_DIRECTORY_PATH "/data/local/tmp"
+#endif
+
 Volatile<bool> PerfMap::s_enabled = false;
 PerfMap * PerfMap::s_Current = nullptr;
 bool PerfMap::s_ShowOptimizationTiers = false;
@@ -36,6 +44,16 @@ void PerfMap::Initialize()
     PerfMap::Enable(perfMapType, false);
 }
 
+const char * PerfMap::InternalConstructPath()
+{
+    CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
+    if (value.IsSet())
+    {
+        return value.AsString();
+    }
+    return TEMP_DIRECTORY_PATH;
+}
+
 void PerfMap::Enable(PerfMapType type, bool sendExisting)
 {
     LIMITED_METHOD_CONTRACT;
@@ -47,6 +65,8 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
 
     {
         CrstHolder ch(&(s_csPerfMap));
+
+        const char* basePath = InternalConstructPath();
 
         if (s_Current == nullptr && (type == PerfMapType::ALL || type == PerfMapType::PERFMAP))
         {
@@ -64,27 +84,13 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
             }
 
             int currentPid = GetCurrentProcessId();
-            s_Current->OpenFileForPid(currentPid);
+            s_Current->OpenFileForPid(currentPid, basePath);
             s_enabled = true;
         }
 
         if (!PAL_PerfJitDump_IsStarted() && (type == PerfMapType::ALL || type == PerfMapType::JITDUMP))
-        {   
-            const char* jitdumpPath;
-            char jitdumpPathBuffer[4096];
-
-            CLRConfigNoCache value = CLRConfigNoCache::Get("PerfMapJitDumpPath");
-            if (value.IsSet())
-            {
-                jitdumpPath = value.AsString();
-            }
-            else
-            {
-                GetTempPathA(sizeof(jitdumpPathBuffer) - 1, jitdumpPathBuffer);
-                jitdumpPath = jitdumpPathBuffer;
-            }
-
-            PAL_PerfJitDump_Start(jitdumpPath);
+        {
+            PAL_PerfJitDump_Start(basePath);
 
             if (CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_PerfMapShowOptimizationTiers) != 0)
             {
@@ -157,6 +163,7 @@ void PerfMap::Enable(PerfMapType type, bool sendExisting)
                 IJitManager::MethodRegionInfo methodRegionInfo;
                 codeInfo.GetMethodRegionInfo(&methodRegionInfo);
                 _ASSERTE(methodRegionInfo.hotStartAddress == codeStart);
+                _ASSERTE(methodRegionInfo.hotSize > 0);
                     
                 PrepareCodeConfig config(!nativeCodeVersion.IsNull() ? nativeCodeVersion : NativeCodeVersion(pMethod), FALSE, FALSE);
                 PerfMap::LogJITCompiledMethod(pMethod, codeStart, methodRegionInfo.hotSize, &config);
@@ -208,23 +215,15 @@ PerfMap::~PerfMap()
     m_PerfInfo = nullptr;
 }
 
-void PerfMap::OpenFileForPid(int pid)
+void PerfMap::OpenFileForPid(int pid, const char* basePath)
 {
-    // Build the path to the map file on disk.
-    WCHAR tempPath[MAX_LONGPATH+1];
-    if(!GetTempPathW(MAX_LONGPATH, tempPath))
-    {
-        return;
-    }
-
-    SString path;
-    path.Append(tempPath);
-    path.AppendPrintf("perf-%d.map", pid);
+    SString fullPath;
+    fullPath.Printf("%s/perf-%d.map", basePath, pid);
 
     // Open the map file for writing.
-    OpenFile(path);
+    OpenFile(fullPath);
 
-    m_PerfInfo = new PerfInfo(pid);
+    m_PerfInfo = new PerfInfo(pid, basePath);
 }
 
 // Open the specified destination map file.

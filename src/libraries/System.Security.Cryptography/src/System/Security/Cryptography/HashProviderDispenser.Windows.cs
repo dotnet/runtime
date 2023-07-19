@@ -41,6 +41,8 @@ namespace System.Security.Cryptography
                 case HashAlgorithmNames.SHA3_256:
                 case HashAlgorithmNames.SHA3_384:
                 case HashAlgorithmNames.SHA3_512:
+                case HashAlgorithmNames.CSHAKE128:
+                case HashAlgorithmNames.CSHAKE256:
                     return BCryptAlgorithmCache.IsBCryptAlgorithmSupported(
                         hashAlgorithmId,
                         BCryptOpenAlgorithmProviderFlags.None);
@@ -105,6 +107,12 @@ namespace System.Security.Cryptography
 
                     return hashSize;
                 }
+            }
+
+            public static void HashDataXof(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
+            {
+                Debug.Assert(Interop.BCrypt.PseudoHandlesSupported);
+                HashDataUsingPseudoHandle(hashAlgorithmId, source, key: default, isHmac: false, destination, out _);
             }
 
             public static unsafe int HashData(string hashAlgorithmId, ReadOnlySpan<byte> source, Span<byte> destination)
@@ -208,6 +216,16 @@ namespace System.Security.Cryptography
                         Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_SHA3_512_ALG_HANDLE;
                     digestSizeInBytes = SHA3_512.HashSizeInBytes;
                 }
+                else if (hashAlgorithmId == HashAlgorithmNames.CSHAKE128)
+                {
+                    algHandle = Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE128_ALG_HANDLE;
+                    digestSizeInBytes = destination.Length;
+                }
+                else if (hashAlgorithmId == HashAlgorithmNames.CSHAKE256)
+                {
+                    algHandle = Interop.BCrypt.BCryptAlgPseudoHandle.BCRYPT_CSHAKE256_ALG_HANDLE;
+                    digestSizeInBytes = destination.Length;
+                }
                 else
                 {
                     Debug.Fail("Unknown hash algorithm.");
@@ -222,7 +240,7 @@ namespace System.Security.Cryptography
 
                 fixed (byte* pKey = &MemoryMarshal.GetReference(key))
                 fixed (byte* pSrc = &MemoryMarshal.GetReference(source))
-                fixed (byte* pDest = &MemoryMarshal.GetReference(destination))
+                fixed (byte* pDest = &Helpers.GetNonNullPinnableReference(destination))
                 {
                     NTSTATUS ntStatus = Interop.BCrypt.BCryptHash((uint)algHandle, pKey, key.Length, pSrc, source.Length, pDest, digestSizeInBytes);
 

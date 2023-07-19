@@ -52,6 +52,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(TypeWithDerivedAttribute), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(PolymorphicClass), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr), GenerationMode = JsonSourceGenerationMode.Metadata)]
     internal partial class MetadataWithPerTypeAttributeContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
@@ -154,13 +155,14 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(TypeWithValidationAttributes))]
     [JsonSerializable(typeof(TypeWithDerivedAttribute))]
     [JsonSerializable(typeof(PolymorphicClass))]
+    [JsonSerializable(typeof(PocoWithNumberHandlingAttr))]
     internal partial class MetadataContext : JsonSerializerContext, ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode => JsonSourceGenerationMode.Metadata;
         public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
     }
 
-    [JsonConverter(typeof(JsonStringEnumConverter))]
+    [JsonConverter(typeof(JsonStringEnumConverter<EnumWrittenAsString>))]
     public enum EnumWrittenAsString
     {
         A = 1
@@ -233,7 +235,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void EnsureHelperMethodGenerated_TypeFactory()
         {
             // There are 2 helper methods generated for obtaining a converter from a factory:
@@ -254,7 +255,6 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79311", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void EnsureHelperMethodGenerated_ImplicitPropertyFactory()
         {
             // ContextWithImplicitStringEnum does not have an entry for EnumWrittenAsString since it is

@@ -3,12 +3,12 @@
 
 import MonoWasmThreads from "consts:monoWasmThreads";
 import { NativePointer, ManagedPointer, VoidPtr } from "./types/emscripten";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, mono_assert, runtimeHelpers } from "./globals";
 import { WasmOpcode, WasmSimdOpcode } from "./jiterpreter-opcodes";
 import { MintOpcode } from "./mintops";
 import cwraps from "./cwraps";
 import { mono_log_error, mono_log_info } from "./logging";
-import { localHeapViewU8 } from "./memory";
+import { localHeapViewU8, localHeapViewU32 } from "./memory";
 import { utf8ToString } from "./strings";
 
 export const maxFailures = 2,
@@ -242,7 +242,7 @@ export class WasmBuilder {
         const result: any = {
             c: <any>this.getConstants(),
             m: { h: (<any>Module).asm.memory },
-            f: { f: getWasmFunctionTable() },
+            // f: { f: getWasmFunctionTable() },
         };
 
         const importsToEmit = this.getImportsToEmit();
@@ -297,9 +297,10 @@ export class WasmBuilder {
         return this.current.appendU8(value);
     }
 
-    appendSimd(value: WasmSimdOpcode) {
+    appendSimd(value: WasmSimdOpcode, allowLoad?: boolean) {
         this.current.appendU8(WasmOpcode.PREFIX_simd);
         // Yes that's right. We're using LEB128 to encode 8-bit opcodes. Why? I don't know
+        mono_assert(((value | 0) !== 0) || ((value === WasmSimdOpcode.v128_load) && (allowLoad === true)), "Expected non-v128_load simd opcode or allowLoad==true");
         return this.current.appendULeb(value);
     }
 
@@ -386,13 +387,22 @@ export class WasmBuilder {
                 this.i52_const(0);
                 this.appendSimd(WasmSimdOpcode.i64x2_splat);
             */
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            for (let i = 0; i < 16; i++)
-                this.appendU8(0);
+            this.local("v128_zero");
         } else if (typeof (value) === "object") {
             mono_assert(value.byteLength === 16, "Expected v128_const arg to be 16 bytes in size");
-            this.appendSimd(WasmSimdOpcode.v128_const);
-            this.appendBytes(value);
+            let isZero = true;
+            for (let i = 0; i < 16; i++) {
+                if (value[i] !== 0)
+                    isZero = false;
+            }
+
+            if (isZero) {
+                // mono_log_info("Detected that literal v128_const was zero");
+                this.local("v128_zero");
+            } else {
+                this.appendSimd(WasmSimdOpcode.v128_const);
+                this.appendBytes(value);
+            }
         } else {
             throw new Error("Expected v128_const arg to be 0 or a Uint8Array");
         }
@@ -510,6 +520,9 @@ export class WasmBuilder {
         const importsToEmit = this.getImportsToEmit();
         this.lockImports = true;
 
+        if (includeFunctionTable !== false)
+            throw new Error("function table imports are disabled");
+
         // Import section
         this.beginSection(2);
         this.appendULeb(
@@ -626,9 +639,21 @@ export class WasmBuilder {
                 exportCount++;
 
             this.beginFunction(func.typeName, func.locals);
-            func.blob = func.generator();
-            if (!func.blob)
-                func.blob = this.endFunction(false);
+            try {
+                func.blob = func.generator();
+            } finally {
+                // If func.generator failed due to an error or didn't return a blob, we want
+                //  to call endFunction to pop the stack and create the blob automatically.
+                // We may be in the middle of handling an exception so don't let this automatic
+                //  logic throw and suppress the original exception being handled
+                try {
+                    if (!func.blob)
+                        func.blob = this.endFunction(false);
+                } catch {
+                    // eslint-disable-next-line @typescript-eslint/no-extra-semi
+                    ;
+                }
+            }
         }
 
         this._generateImportSection(includeFunctionTable);
@@ -665,7 +690,9 @@ export class WasmBuilder {
         this.endSection();
     }
 
-    call_indirect(functionTypeName: string, tableIndex: number) {
+    call_indirect(/* functionTypeName: string, tableIndex: number */) {
+        throw new Error("call_indirect unavailable");
+        /*
         const type = this.functionTypes[functionTypeName];
         if (!type)
             throw new Error("No function type named " + functionTypeName);
@@ -673,6 +700,7 @@ export class WasmBuilder {
         this.appendU8(WasmOpcode.call_indirect);
         this.appendULeb(typeIndex);
         this.appendULeb(tableIndex);
+        */
     }
 
     callImport(name: string) {
@@ -723,6 +751,7 @@ export class WasmBuilder {
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
@@ -734,34 +763,39 @@ export class WasmBuilder {
         const offi32 = 0,
             offi64 = counts[WasmValtype.i32],
             offf32 = offi64 + counts[WasmValtype.i64],
-            offf64 = offf32 + counts[WasmValtype.f32];
+            offf64 = offf32 + counts[WasmValtype.f32],
+            offv128 = offf64 + counts[WasmValtype.f64];
 
         counts[WasmValtype.i32] = 0;
         counts[WasmValtype.i64] = 0;
         counts[WasmValtype.f32] = 0;
         counts[WasmValtype.f64] = 0;
+        counts[WasmValtype.v128] = 0;
 
         for (const k in locals) {
             const ty = locals[k];
-            let idx = 0;
+            let idx = 0, offset;
             switch (ty) {
                 case WasmValtype.i32:
-                    idx = (counts[ty]++) + offi32 + base;
-                    this.locals.set(k, idx);
+                    offset = offi32;
                     break;
                 case WasmValtype.i64:
-                    idx = (counts[ty]++) + offi64 + base;
-                    this.locals.set(k, idx);
+                    offset = offi64;
                     break;
                 case WasmValtype.f32:
-                    idx = (counts[ty]++) + offf32 + base;
-                    this.locals.set(k, idx);
+                    offset = offf32;
                     break;
                 case WasmValtype.f64:
-                    idx = (counts[ty]++) + offf64 + base;
-                    this.locals.set(k, idx);
+                    offset = offf64;
                     break;
+                case WasmValtype.v128:
+                    offset = offv128;
+                    break;
+                default:
+                    throw new Error(`Unimplemented valtype: ${ty}`);
             }
+            idx = (counts[ty]++) + offset + base;
+            this.locals.set(k, idx);
             // mono_log_info(`local ${k} ${locals[k]} -> ${idx}`);
         }
 
@@ -780,7 +814,7 @@ export class WasmBuilder {
         this.locals.clear();
         this.branchTargets.clear();
         let counts: any = {};
-        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64];
+        const tk = [WasmValtype.i32, WasmValtype.i64, WasmValtype.f32, WasmValtype.f64, WasmValtype.v128];
 
         // We first assign the parameters local indices and then
         //  we assign the named locals indices, because parameters
@@ -966,6 +1000,7 @@ export class BlobBuilder {
     }
 
     appendULeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendULeb expected number but got ${value}`);
         mono_assert(value >= 0, "cannot pass negative value to appendULeb");
         if (value < 0x7F) {
             if (this.size + 1 >= this.capacity)
@@ -986,6 +1021,7 @@ export class BlobBuilder {
     }
 
     appendLeb(value: number) {
+        mono_assert(typeof (value) === "number", () => `appendLeb expected number but got ${value}`);
         if (this.size + 8 >= this.capacity)
             throw new Error("Buffer full");
 
@@ -1093,10 +1129,17 @@ type CfgBranch = {
     from: MintOpcodePtr;
     target: MintOpcodePtr;
     isBackward: boolean; // FIXME: This should be inferred automatically
-    isConditional: boolean;
+    branchType: CfgBranchType;
 }
 
 type CfgSegment = CfgBlob | CfgBranchBlockHeader | CfgBranch;
+
+export const enum CfgBranchType {
+    Unconditional,
+    Conditional,
+    SafepointUnconditional,
+    SafepointConditional,
+}
 
 class Cfg {
     builder: WasmBuilder;
@@ -1177,7 +1220,7 @@ class Cfg {
         this.overheadBytes += 1; // each branch block just costs us an end
     }
 
-    branch(target: MintOpcodePtr, isBackward: boolean, isConditional: boolean) {
+    branch(target: MintOpcodePtr, isBackward: boolean, branchType: CfgBranchType) {
         this.observedBranchTargets.add(target);
         this.appendBlob();
         this.segments.push({
@@ -1185,7 +1228,7 @@ class Cfg {
             from: this.ip,
             target,
             isBackward,
-            isConditional,
+            branchType: branchType,
         });
         // some branches will generate bailouts instead so we allocate 4 bytes per branch
         //  to try and balance this out and avoid underestimating too much
@@ -1197,6 +1240,14 @@ class Cfg {
             // i32.const <n>
             // set_local <disp>
             this.overheadBytes += 11;
+        }
+
+        // Account for the size of the safepoint
+        if (
+            (branchType === CfgBranchType.SafepointConditional) ||
+            (branchType === CfgBranchType.SafepointUnconditional)
+        ) {
+            this.overheadBytes += 17;
         }
     }
 
@@ -1360,10 +1411,32 @@ class Cfg {
                     }
 
                     if ((indexInStack >= 0) || successfulBackBranch) {
-                        // Conditional branches are nested in an extra block, so the depth is +1
-                        const offset = segment.isConditional ? 1 : 0;
-                        this.builder.appendU8(WasmOpcode.br);
+                        let offset = 0;
+                        switch (segment.branchType) {
+                            case CfgBranchType.SafepointUnconditional:
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.SafepointConditional:
+                                // Wrap the safepoint + branch in an if
+                                this.builder.block(WasmValtype.void, WasmOpcode.if_);
+                                append_safepoint(this.builder, segment.from);
+                                this.builder.appendU8(WasmOpcode.br);
+                                offset = 1;
+                                break;
+                            case CfgBranchType.Unconditional:
+                                this.builder.appendU8(WasmOpcode.br);
+                                break;
+                            case CfgBranchType.Conditional:
+                                this.builder.appendU8(WasmOpcode.br_if);
+                                break;
+                            default:
+                                throw new Error("Unimplemented branch type");
+                        }
+
                         this.builder.appendULeb(offset + indexInStack);
+                        if (offset) // close the if
+                            this.builder.endBlock();
                         if (this.trace > 1)
                             mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} breaking out ${offset + indexInStack + 1} level(s)`);
                     } else {
@@ -1374,7 +1447,14 @@ class Cfg {
                             else if (this.trace > 1)
                                 mono_log_info(`br from ${(<any>segment.from).toString(16)} to ${(<any>segment.target).toString(16)} failed (outside of trace 0x${base.toString(16)} - 0x${(<any>this.exitIp).toString(16)})`);
                         }
+
+                        const isConditional = (segment.branchType === CfgBranchType.Conditional) ||
+                            (segment.branchType === CfgBranchType.SafepointConditional);
+                        if (isConditional)
+                            this.builder.block(WasmValtype.void, WasmOpcode.if_);
                         append_bailout(this.builder, segment.target, BailoutReason.Branch);
+                        if (isConditional)
+                            this.builder.endBlock();
                     }
                     break;
                 }
@@ -1412,6 +1492,7 @@ export const enum WasmValtype {
     i64 = 0x7E,
     f32 = 0x7D,
     f64 = 0x7C,
+    v128 = 0x7B,
 }
 
 let wasmTable: WebAssembly.Table | undefined;
@@ -1446,6 +1527,20 @@ export const _now = (globalThis.performance && globalThis.performance.now)
     : Date.now;
 
 let scratchBuffer: NativePointer = <any>0;
+
+export function append_safepoint(builder: WasmBuilder, ip: MintOpcodePtr) {
+    // Check whether a safepoint is required
+    builder.ptr_const(cwraps.mono_jiterp_get_polling_required_address());
+    builder.appendU8(WasmOpcode.i32_load);
+    builder.appendMemarg(0, 2);
+    // If the polling flag is set we call mono_jiterp_do_safepoint()
+    builder.block(WasmValtype.void, WasmOpcode.if_);
+    builder.local("frame");
+    // Not ip_const, because we can't pass relative IP to do_safepoint
+    builder.i32_const(ip);
+    builder.callImport("safepoint");
+    builder.endBlock();
+}
 
 export function append_bailout(builder: WasmBuilder, ip: MintOpcodePtr, reason: BailoutReason) {
     builder.ip_const(ip);
@@ -1531,9 +1626,9 @@ export function try_append_memset_fast(builder: WasmBuilder, localOffset: number
     if (value !== 0)
         return false;
 
-    const destLocal = destOnStack ? "math_lhs32" : "pLocals";
+    const destLocal = destOnStack ? "memop_dest" : "pLocals";
     if (destOnStack)
-        builder.local("math_lhs32", WasmOpcode.set_local);
+        builder.local(destLocal, WasmOpcode.set_local);
 
     let offset = destOnStack ? 0 : localOffset;
 
@@ -1616,8 +1711,9 @@ export function try_append_memmove_fast(
         return false;
 
     if (addressesOnStack) {
-        destLocal = destLocal || "math_lhs32";
-        srcLocal = srcLocal || "math_rhs32";
+        destLocal = destLocal || "memop_dest";
+        srcLocal = srcLocal || "memop_src";
+        // Stack layout is [..., dest, src]
         builder.local(srcLocal, WasmOpcode.set_local);
         builder.local(destLocal, WasmOpcode.set_local);
     } else if (!destLocal || !srcLocal) {
@@ -1634,7 +1730,7 @@ export function try_append_memmove_fast(
         while (count >= sizeofV128) {
             builder.local(destLocal);
             builder.local(srcLocal);
-            builder.appendSimd(WasmSimdOpcode.v128_load);
+            builder.appendSimd(WasmSimdOpcode.v128_load, true);
             builder.appendMemarg(srcOffset, 0);
             builder.appendSimd(WasmSimdOpcode.v128_store);
             builder.appendMemarg(destOffset, 0);
@@ -1784,6 +1880,8 @@ export function bytesFromHex(hex: string): Uint8Array {
     return bytes;
 }
 
+let observedTaintedZeroPage: boolean | undefined;
+
 export function isZeroPageReserved(): boolean {
     // FIXME: This check will always return true on worker threads.
     // Right now the jiterpreter is disabled when threading is active, so that's not an issue.
@@ -1793,14 +1891,26 @@ export function isZeroPageReserved(): boolean {
     if (!cwraps.mono_wasm_is_zero_page_reserved())
         return false;
 
+    // If we ever saw garbage written to the zero page, never use it
+    if (observedTaintedZeroPage === true)
+        return false;
+
     // Determine whether emscripten's stack checker or some other troublemaker has
     //  written junk at the start of memory. The previous cwraps call will have
     //  checked whether the stack starts at zero or not (on the main thread).
     // We can't do this in the C helper because emcc/asan might be checking pointers.
-    return (Module.HEAPU32[0] === 0) &&
-        (Module.HEAPU32[1] === 0) &&
-        (Module.HEAPU32[2] === 0) &&
-        (Module.HEAPU32[3] === 0);
+    const heapU32 = localHeapViewU32();
+    for (let i = 0; i < 8; i++) {
+        if (heapU32[i] !== 0) {
+            if (observedTaintedZeroPage === false)
+                mono_log_error(`Zero page optimizations are enabled but garbage appeared in memory at address ${i * 4}: ${heapU32[i]}`);
+            observedTaintedZeroPage = true;
+            return false;
+        }
+    }
+
+    observedTaintedZeroPage = false;
+    return true;
 }
 
 export type JiterpreterOptions = {

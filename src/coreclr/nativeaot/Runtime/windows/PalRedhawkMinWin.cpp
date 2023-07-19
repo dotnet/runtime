@@ -438,6 +438,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalSetThreadContext(HAND
 
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PalRestoreContext(CONTEXT * pCtx)
 {
+    __asan_handle_no_return();
     RtlRestoreContext(pCtx, NULL);
 }
 
@@ -769,12 +770,6 @@ REDHAWK_PALEXPORT void PalFlushInstructionCache(_In_ void* pAddress, size_t size
     FlushInstructionCache(GetCurrentProcess(), pAddress, size);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
-{
-    static void* pBuffer;
-    return InterlockedExchangePointer(&pBuffer, pNewBuffer);
-}
-
 #if defined(HOST_ARM64)
 
 #include "IntrinsicConstants.h"
@@ -796,7 +791,7 @@ REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif
 
     // FP and SIMD support are enabled by default
-    *flags |= ARM64IntrinsicConstants_AdvSimd;
+    *flags |= ARM64IntrinsicConstants_AdvSimd | ARM64IntrinsicConstants_VectorT128;
 
     if (IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE))
     {

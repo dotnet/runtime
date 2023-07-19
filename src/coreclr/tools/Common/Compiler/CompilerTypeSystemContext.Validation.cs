@@ -45,6 +45,14 @@ namespace ILCompiler
 
         private static TypeDesc EnsureLoadableTypeUncached(TypeDesc type)
         {
+            if (type.TypeIdentifierData != null)
+            {
+                if (!type.TypeHasCharacteristicsRequiredToBeLoadableTypeEquivalentType)
+                {
+                    ThrowHelper.ThrowTypeLoadException(ExceptionStringID.ClassLoadGeneral, type);
+                }
+            }
+
             if (type.IsParameterizedType)
             {
                 // Validate parameterized types

@@ -65,22 +65,22 @@ fcall: dest:f len:8 clob:c
 lcall: dest:a len:16 clob:c
 lcall_membase: dest:a src1:b len:8 clob:c
 
-store_membase_reg: dest:b src1:i len:4
-storei1_membase_reg: dest:b src1:i len:4
-storei2_membase_reg: dest:b src1:i len:4
-storei4_membase_reg: dest:b src1:i len:4
-storei8_membase_reg: dest:b src1:i len:4
+store_membase_reg: dest:b src1:i len:24
+storei1_membase_reg: dest:b src1:i len:24
+storei2_membase_reg: dest:b src1:i len:24
+storei4_membase_reg: dest:b src1:i len:24
+storei8_membase_reg: dest:b src1:i len:24
 storer4_membase_reg: dest:b src1:f len:4
 storer8_membase_reg: dest:b src1:f len:4
 
 load_membase: dest:i src1:b len:24
-loadu1_membase: dest:i src1:b len:16
-loadi1_membase: dest:i src1:b len:16
-loadu2_membase: dest:i src1:b len:16
-loadi2_membase: dest:i src1:b len:16
-loadu4_membase: dest:i src1:b len:16
-loadi4_membase: dest:i src1:b len:16
-loadi8_membase: dest:i src1:b len:16
+loadu1_membase: dest:i src1:b len:24
+loadi1_membase: dest:i src1:b len:24
+loadu2_membase: dest:i src1:b len:24
+loadi2_membase: dest:i src1:b len:24
+loadu4_membase: dest:i src1:b len:24
+loadi4_membase: dest:i src1:b len:24
+loadi8_membase: dest:i src1:b len:24
 loadr4_membase: dest:f src1:b len:16
 loadr8_membase: dest:f src1:b len:16
 
@@ -110,10 +110,14 @@ int_sub: dest:i src1:i src2:i len:4
 long_sub: dest:i src1:i src2:i len:4
 int_mul: dest:i src1:i src2:i len:4
 r4_mul: dest:f src1:f src2:f len:4
+long_mul: dest:i src1:i src2:i len:4
 float_mul: dest:f src1:f src2:f len:4
+int_div: dest:i src1:i src2:i len:32
 long_div: dest:i src1:i src2:i len:32
+int_div_un: dest:i src1:i src2:i len:32
 long_div_un: dest:i src1:i src2:i len:32
 r4_div: dest:f src1:f src2:f len:36
+float_div: dest:f src1:f src2:f len:4
 int_rem: dest:i src1:i src2:i len:32
 long_rem: dest:i src1:i src2:i len:32
 int_rem_un: dest:i src1:i src2:i len:32
@@ -173,11 +177,11 @@ riscv_bge: src1:i src2:i len:8
 riscv_bgeu: src1:i src2:i len:8
 riscv_blt: src1:i src2:i len:8
 riscv_bltu: src1:i src2:i len:8
-riscv_exc_beq: src1:i src2:i len:32
-riscv_exc_bne: src1:i src2:i len:32
-riscv_exc_bgeu: src1:i src2:i len:32
-riscv_exc_blt: src1:i src2:i len:32
-riscv_exc_bltu: src1:i src2:i len:32
+riscv_exc_beq: src1:i src2:i len:12
+riscv_exc_bne: src1:i src2:i len:12
+riscv_exc_bgeu: src1:i src2:i len:12
+riscv_exc_blt: src1:i src2:i len:12
+riscv_exc_bltu: src1:i src2:i len:12
 riscv_slt: dest:i src1:i src2:i len:4
 riscv_sltu: dest:i src1:i src2:i len:4
 riscv_slti: dest:i src1:i len:4

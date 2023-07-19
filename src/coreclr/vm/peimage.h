@@ -232,8 +232,6 @@ private:
     static BOOL CompareImage(UPTR image1, UPTR image2);
     static BOOL CompareIJWDataBase(UPTR base, UPTR mapping);
 
-    void DECLSPEC_NORETURN ThrowFormat(HRESULT hr);
-
 public:
     class IJWFixupData
     {

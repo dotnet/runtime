@@ -230,13 +230,18 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
                     LikelyClassMethodHistogramEntry sortedEntries[HISTOGRAM_MAX_SIZE_COUNT];
 
                     // Since this method can be invoked without a jit instance we can't use any existing allocators
-                    unsigned knownHandles = 0;
+                    unsigned knownHandles           = 0;
+                    unsigned containsUnknownHandles = false;
                     for (unsigned m = 0; m < h.countHistogramElements; m++)
                     {
                         LikelyClassMethodHistogramEntry const hist = h.HistogramEntryAt(m);
                         if (!ICorJitInfo::IsUnknownHandle(hist.m_handle))
                         {
                             sortedEntries[knownHandles++] = hist;
+                        }
+                        else
+                        {
+                            containsUnknownHandles = true;
                         }
                     }
 
@@ -268,7 +273,7 @@ static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*              
 
                     // Distribute the rounding error and just apply it to the first entry.
                     // Assume that there is no error If we have unknown handles.
-                    if (numberOfClasses == h.m_totalCount)
+                    if (!containsUnknownHandles)
                     {
                         assert(numberOfClasses > 0);
                         assert(totalLikelihood > 0);

@@ -376,8 +376,8 @@ def partition_files(src_directory, dst_directory, max_size, exclude_directories=
         index += 1
 
 
-def setup_microbenchmark(workitem_directory, arch):
-    """ Perform setup of microbenchmarks
+def setup_benchmark(workitem_directory, arch):
+    """ Perform setup of microbenchmarks/realworld
 
     Args:
         workitem_directory (string): Path to work
@@ -485,9 +485,9 @@ def main(main_args):
     print('Copying {} -> {}'.format(coreclr_args.core_root_directory, core_root_dst_directory))
     copy_directory(coreclr_args.core_root_directory, core_root_dst_directory, verbose_output=True, match_func=acceptable_copy)
 
-    if coreclr_args.collection_name == "benchmarks":
-        # Setup microbenchmarks
-        setup_microbenchmark(workitem_payload_directory, arch)
+    if coreclr_args.collection_name == "benchmarks" or coreclr_args.collection_name == "realworld":
+        # Setup benchmarks
+        setup_benchmark(workitem_payload_directory, arch)
     else:
         # Setup for pmi/crossgen2 runs
 

@@ -17,6 +17,8 @@
 
 #include <sal.h>
 #include <stdarg.h>
+#include "CommonTypes.h"
+#include "CommonMacros.h"
 #include "gcenv.structs.h" // CRITICAL_SECTION
 #include "IntrinsicConstants.h"
 #include "PalRedhawkCommon.h"
@@ -90,13 +92,6 @@ typedef union _LARGE_INTEGER {
     } u;
     int64_t QuadPart;
 } LARGE_INTEGER, *PLARGE_INTEGER;
-
-typedef struct _GUID {
-    uint32_t Data1;
-    uint16_t Data2;
-    uint16_t Data3;
-    uint8_t Data4[8];
-} GUID;
 
 #define DECLARE_HANDLE(_name) typedef HANDLE _name
 
@@ -731,6 +726,7 @@ struct UNIX_CONTEXT;
 #endif
 
 #ifdef TARGET_UNIX
+REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalGetOsPageSize();
 REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #else
 REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
@@ -751,8 +747,6 @@ REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventRegister(const GUID * arg1, vo
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventUnregister(REGHANDLE arg1);
 REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t arg3, EVENT_DATA_DESCRIPTOR * arg4);
 #endif
-
-REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
 
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
 REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
