@@ -76,7 +76,7 @@ internal sealed class TerminalFormatStrings
         Clear = db.GetString(TermInfo.WellKnownStrings.Clear);
         if (db.GetExtendedString("E3") is string clearScrollbackBuffer)
         {
-            Clear = clearScrollbackBuffer + Clear;
+            Clear += clearScrollbackBuffer; // the E3 command must come after the Clear command
         }
         Columns = db.GetNumber(TermInfo.WellKnownNumbers.Columns);
         Lines = db.GetNumber(TermInfo.WellKnownNumbers.Lines);
