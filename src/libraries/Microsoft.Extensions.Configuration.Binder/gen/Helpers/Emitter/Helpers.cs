@@ -129,7 +129,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any) ||
                 ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Any);
 
-            public void EmitStartScope(string? source = null)
+            /// <summary>
+            /// Starts a block of source code.
+            /// </summary>
+            /// <param name="source">Source to write after the open brace.</param>
+            public void EmitStartBlock(string? source = null)
             {
                 if (source is not null)
                 {
@@ -140,15 +144,21 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 _writer.Indentation++;
             }
 
-            public void EmitEndScope(string? source = null, string? extra = null)
+            /// <summary>
+            /// Ends a block of source code.
+            /// </summary>
+            /// <param name="source">Source to write before the close brace.</param>
+            /// <param name="endBraceTrailingSource">Trailing source after the end brace, e.g. ";" to end an init statement.</param>
+            public void EmitEndBlock(string? source = null, string? endBraceTrailingSource = null)
             {
                 if (source is not null)
                 {
                     _writer.WriteLine(source);
                 }
 
+                string endBlockSource = endBraceTrailingSource is null ? "}" : $"}}{endBraceTrailingSource}";
                 _writer.Indentation--;
-                _writer.WriteLine($"}}{extra}");
+                _writer.WriteLine(endBlockSource);
             }
 
             private void EmitBlankLineIfRequired()
@@ -198,10 +208,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private void EmitRootBindingClassStartScope(string className)
+            private void EmitRootBindingClassStartBlock(string className)
             {
                 EmitBlankLineIfRequired();
-                EmitStartScope($$"""
+                EmitStartBlock($$"""
                     /// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
                     {{GetGeneratedCodeAttributeSrc()}}
                     internal static class {{className}}

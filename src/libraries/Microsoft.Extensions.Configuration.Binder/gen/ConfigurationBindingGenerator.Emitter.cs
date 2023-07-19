@@ -132,14 +132,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!checkForNullSectionValue)
                 {
-                    writeOnSuccess?.Invoke(parsedValueExpr);
+                    InvokeWriteOnSuccess();
                 }
                 else
                 {
-                    EmitStartScope($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
-                    writeOnSuccess?.Invoke(parsedValueExpr);
-                    EmitEndScope();
+                    EmitStartBlock($"if ({sectionValueExpr} is string {nonNull_StringValue_Identifier})");
+                    InvokeWriteOnSuccess();
+                    EmitEndBlock();
                 }
+
+                void InvokeWriteOnSuccess() => writeOnSuccess?.Invoke(parsedValueExpr);
             }
 
             private bool EmitObjectInit(TypeSpec type, string memberAccessExpr, InitializationKind initKind, string configArgExpr)
