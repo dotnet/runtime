@@ -438,7 +438,8 @@ namespace System.Buffers
                 {
                     int candidateOffset = BitOperations.TrailingZeroCount(candidateMask);
 
-                    object bucket = _buckets[candidateOffset];
+                    object? bucket = _buckets[candidateOffset];
+                    Debug.Assert(bucket is not null);
 
                     if (TBucketized.Value
                         ? StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string[]>(bucket))
@@ -478,7 +479,8 @@ namespace System.Buffers
                 {
                     int candidateOffset = BitOperations.TrailingZeroCount(candidateMask);
 
-                    object bucket = _buckets[candidateOffset];
+                    object? bucket = _buckets[candidateOffset];
+                    Debug.Assert(bucket is not null);
 
                     if (TBucketized.Value
                         ? StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string[]>(bucket))
@@ -518,7 +520,8 @@ namespace System.Buffers
                 {
                     int candidateOffset = BitOperations.TrailingZeroCount(candidateMask);
 
-                    object bucket = _buckets[candidateOffset];
+                    object? bucket = _buckets[candidateOffset];
+                    Debug.Assert(bucket is not null);
 
                     if (TBucketized.Value
                         ? StartsWith<TCaseSensitivity>(ref matchRef, lengthRemaining, Unsafe.As<string[]>(bucket))
