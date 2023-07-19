@@ -951,7 +951,8 @@ namespace System.Net.Http.Functional.Tests
 
                             await connection.SendResponseAsync(HttpStatusCode.OK);
                         }
-                    });
+                    }, options: new GenericLoopbackOptions { ListenBacklog = NumParallelRequests });
+
                     await WaitForEventCountersAsync(events);
                 });
 
