@@ -1206,7 +1206,7 @@ BOOL StackFrameIterator::Init(Thread *    pThread,
     // Walk the ExInfo chain, past any specified starting frame.
     m_exInfoWalk.Init(&(pThread->GetExceptionState()->m_currentExInfo));
     // false means don't reset UseExInfoForStackwalk
-    m_exInfoWalk.WalkToPosition(pThread->GetRealStackPointer(m_pStartFrame), false);
+    m_exInfoWalk.WalkToPosition(dac_cast<TADDR>(pThread->GetRealStackPointer(m_pStartFrame)), false);
 #endif // ELIMINATE_FEF
 
     //
