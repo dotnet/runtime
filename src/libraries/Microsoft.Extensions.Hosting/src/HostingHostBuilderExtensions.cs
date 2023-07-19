@@ -315,6 +315,11 @@ namespace Microsoft.Extensions.Hosting
                         ActivityTrackingOptions.ParentId;
                 });
             });
+
+            services.AddMetrics(metrics =>
+            {
+                metrics.AddConfiguration(hostingContext.Configuration.GetSection("Metrics"));
+            });
         }
 
         internal static ServiceProviderOptions CreateDefaultServiceProviderOptions(HostBuilderContext context)
@@ -393,7 +398,26 @@ namespace Microsoft.Extensions.Hosting
             return hostBuilder.UseConsoleLifetime(configureOptions).Build().RunAsync(cancellationToken);
         }
 
-        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<IMetricsBuilder> configureMetrics) => throw null!;
-        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<HostBuilderContext, IMetricsBuilder> configureMetrics) => throw null!;
+        /// <summary>
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This may be called multiple times.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<IMetricsBuilder> configureMetrics)
+        {
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(builder)));
+        }
+
+        /// <summary>
+        /// Adds a delegate for configuring the provided <see cref="IMetricsBuilder"/>. This may be called multiple times.
+        /// </summary>
+        /// <param name="hostBuilder">The <see cref="IHostBuilder" /> to configure.</param>
+        /// <param name="configureMetrics">The delegate that configures the <see cref="IMetricsBuilder"/>.</param>
+        /// <returns>The same instance of the <see cref="IHostBuilder"/> for chaining.</returns>
+        public static IHostBuilder ConfigureMetrics(this IHostBuilder hostBuilder, Action<HostBuilderContext, IMetricsBuilder> configureMetrics)
+        {
+            return hostBuilder.ConfigureServices((context, collection) => collection.AddMetrics(builder => configureMetrics(context, builder)));
+        }
     }
 }
