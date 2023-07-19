@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.Http
         [InlineData(nameof(SocketsHttpHandler.MaxConnectionsPerServer), 1, "1")] // default value: int.MaxValue
         [InlineData(nameof(SocketsHttpHandler.MaxResponseDrainSize), 10240, "10240")] // default value: 1024 * 1024
         [InlineData(nameof(SocketsHttpHandler.MaxResponseHeadersLength), 32, "32")] // default value: 64 (K)
-        public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AllIntPropeties(string propertyName, int expectedValue, string configValue)
+        public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AllIntProperties(string propertyName, int expectedValue, string configValue)
         {
             TestPropertyIsConfigured(propertyName, expectedValue, configValue);
         }
@@ -137,7 +137,7 @@ namespace Microsoft.Extensions.Http
         [InlineData(nameof(SocketsHttpHandler.PreAuthenticate), true, "true")] // default value: false
         [InlineData(nameof(SocketsHttpHandler.UseCookies), false, "false")] // default value: true
         [InlineData(nameof(SocketsHttpHandler.UseProxy), false, "false")] // default value: true
-        public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AllBoolPropeties(string propertyName, bool expectedValue, string configValue)
+        public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AllBoolProperties(string propertyName, bool expectedValue, string configValue)
         {
             TestPropertyIsConfigured(propertyName, expectedValue, configValue);
         }
@@ -150,7 +150,7 @@ namespace Microsoft.Extensions.Http
         [InlineData(nameof(SocketsHttpHandler.Expect100ContinueTimeout))] // default value: 1s
         [InlineData(nameof(SocketsHttpHandler.KeepAlivePingDelay))] // default value: -1
         [InlineData(nameof(SocketsHttpHandler.KeepAlivePingTimeout))] // default value: 20s
-        public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AllTimeSpanPropeties(string propertyName)
+        public void UseSocketsHttpHandler_ConfiguredByIConfiguration_AllTimeSpanProperties(string propertyName)
         {
             TestPropertyIsConfigured(propertyName, TimeSpan.FromSeconds(30), "00:00:30");
         }
