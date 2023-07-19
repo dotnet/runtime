@@ -159,7 +159,7 @@
 
   /* NOTE: Sync with variable name defined in compiler.h */
   #define RBM_MSK_CALLEE_TRASH_INIT (0)
-  #define RBM_MSK_CALLEE_TRASH_EVEX (0)
+  #define RBM_MSK_CALLEE_TRASH_EVEX RBM_ALLMASK_EVEX
 
   #define RBM_MSK_CALLEE_SAVED    (0)
   #define RBM_MSK_CALLEE_TRASH    get_RBM_MSK_CALLEE_TRASH()

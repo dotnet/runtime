@@ -892,6 +892,10 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     if (!compiler->compFloatingPointUsed)
     {
         killMask &= ~RBM_FLT_CALLEE_TRASH;
+
+#if defined(TARGET_XARCH)
+        killMask &= ~RBM_MSK_CALLEE_TRASH;
+#endif // TARGET_XARCH
     }
 #ifdef TARGET_ARM
     if (call->IsVirtualStub())
@@ -1210,7 +1214,7 @@ bool LinearScan::buildKillPositionsForNode(GenTree* tree, LsraLocation currentLo
                         // If there are no callee-saved registers, the call could kill all the registers.
                         // This is a valid state, so in that case assert should not trigger. The RA will spill in order
                         // to free a register later.
-                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType) == RBM_NONE));
+                        assert(compiler->opts.compDbgEnC || (calleeSaveRegs(varDsc->lvType) == RBM_NONE) || varTypeIsStruct(varDsc->lvType));
                     }
                 }
             }
