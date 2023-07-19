@@ -22,4 +22,13 @@ namespace System.Reflection.Metadata.ApplyUpdate.Test
         }
 
     }
+    public class AddStaticField2
+    {
+        private static int A {get; set;}
+        public static int Test()
+        {
+            A = 11;
+            return A + A;
+        }
+    }
 }

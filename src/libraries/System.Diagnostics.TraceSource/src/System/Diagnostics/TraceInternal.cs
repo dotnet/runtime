@@ -213,6 +213,7 @@ namespace System.Diagnostics
             Fail(message, detailMessage);
         }
 
+        [DoesNotReturn]
         public static void Fail(string? message)
         {
             if (UseGlobalLock)
@@ -245,8 +246,11 @@ namespace System.Diagnostics
                     }
                 }
             }
+#pragma warning disable 8763 // "A method marked [DoesNotReturn] should not return."
         }
+#pragma warning restore 8763
 
+        [DoesNotReturn]
         public static void Fail(string? message, string? detailMessage)
         {
             if (UseGlobalLock)
@@ -279,7 +283,9 @@ namespace System.Diagnostics
                     }
                 }
             }
+#pragma warning disable 8763 // "A method marked [DoesNotReturn] should not return."
         }
+#pragma warning restore 8763
 
         private static void InitializeSettings()
         {

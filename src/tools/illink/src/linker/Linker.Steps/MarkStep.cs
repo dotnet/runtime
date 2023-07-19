@@ -36,6 +36,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
+using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
@@ -127,6 +128,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.ReferencedBySpecialAttribute,
 			DependencyKind.TypePreserve,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.UnsafeAccessorTarget,
 		};
 
 		static readonly DependencyKind[] _typeReasons = new DependencyKind[] {
@@ -211,6 +213,7 @@ namespace Mono.Linker.Steps
 			DependencyKind.FieldMarshalSpec,
 			DependencyKind.ReturnTypeMarshalSpec,
 			DependencyKind.XmlDescriptor,
+			DependencyKind.UnsafeAccessorTarget,
 		};
 #endif
 
@@ -1870,6 +1873,7 @@ namespace Mono.Linker.Steps
 			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.InteropMethodDependency:
 			case DependencyKind.Ldtoken:
+			case DependencyKind.UnsafeAccessorTarget:
 				if (isReflectionAccessCoveredByDAM = Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
@@ -3264,6 +3268,10 @@ namespace Mono.Linker.Steps
 				ProcessInteropMethod (method);
 			}
 
+			if (!method.HasBody || method.Body.CodeSize == 0) {
+				ProcessUnsafeAccessorMethod (method);
+			}
+
 			if (ShouldParseMethodBody (method))
 				MarkMethodBody (method.Body);
 
@@ -3492,6 +3500,11 @@ namespace Mono.Linker.Steps
 				}
 			}
 #pragma warning restore RS0030
+		}
+
+		void ProcessUnsafeAccessorMethod (MethodDefinition method)
+		{
+			(new UnsafeAccessorMarker (Context, this)).ProcessUnsafeAccessorMethod (method);
 		}
 
 		protected virtual bool ShouldParseMethodBody (MethodDefinition method)

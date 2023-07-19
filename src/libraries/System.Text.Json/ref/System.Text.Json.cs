@@ -969,6 +969,12 @@ namespace System.Text.Json.Serialization
         KebabCaseLower = 4,
         KebabCaseUpper = 5,
     }
+    public sealed partial class JsonNumberEnumConverter<TEnum> : System.Text.Json.Serialization.JsonConverterFactory where TEnum : struct
+    {
+        public JsonNumberEnumConverter() { }
+        public override bool CanConvert(System.Type typeToConvert) { throw null; }
+        public override System.Text.Json.Serialization.JsonConverter? CreateConverter(System.Type typeToConvert, System.Text.Json.JsonSerializerOptions options) { throw null; }
+    }
     [System.FlagsAttribute]
     public enum JsonNumberHandling
     {
@@ -1063,6 +1069,7 @@ namespace System.Text.Json.Serialization
         public System.Text.Json.JsonCommentHandling ReadCommentHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnknownTypeHandling UnknownTypeHandling { get { throw null; } set { } }
         public System.Text.Json.Serialization.JsonUnmappedMemberHandling UnmappedMemberHandling { get { throw null; } set { } }
+        public bool UseStringEnumConverter { get { throw null; } set { } }
         public bool WriteIndented { get { throw null; } set { } }
     }
     [System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute("JsonStringEnumConverter cannot be statically analyzed and requires runtime code generation. Applications should use the generic JsonStringEnumConverter<TEnum> instead.")]
