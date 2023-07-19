@@ -2166,6 +2166,18 @@
                 "parameters": {
                   "label": "area-Tools-ILLink"
                 }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-Interop-coreclr"
+                }
+              },
+              {
+                "name": "labelAdded",
+                "parameters": {
+                  "label": "area-System.Runtime.InteropServices"
+                }
               }
             ]
           },
