@@ -197,7 +197,7 @@ namespace Microsoft.Interop
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
                                 localType,
                                 native,
-                                marshaller.Generator.GenerateNativeByRefInitialization(info, context)));
+                                marshaller.Generator.GenerateNativeDereferencedInitialization(info, context)));
                         }
                     }
 

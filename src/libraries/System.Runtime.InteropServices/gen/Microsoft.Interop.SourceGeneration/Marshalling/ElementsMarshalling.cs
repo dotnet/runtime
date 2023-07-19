@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -55,7 +56,62 @@ namespace Microsoft.Interop
 
         public abstract StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context);
         public abstract StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context);
-        public abstract StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context);
+        public StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
+        {
+            ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
+            ExpressionSyntax destination;// = CollectionSource.GetUnmanagedValuesDestination(info, context);
+            destination = GetUnmanagedValuesDestinationFromUnmanagedValuesSource(info, context);
+
+            // <native_out>.CopyTo(<UnmanagedValuesDestination>);
+            return ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        source,
+                        IdentifierName("CopyTo")))
+                .AddArgumentListArguments(
+                    Argument(destination)));
+        }
+
+
+        /// <summary>
+        /// Returns syntax for an invocation that will create a destination for unmanaged values from the unmanaged values source.
+        /// Necessary to marshal ByValue [Out] in unmanaged to managed stubs.
+        /// <code>MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in __GetUnmanagedValuesSource__.GetPinnableReference(), __numElements__))</code>
+        /// </summary>
+        public InvocationExpressionSyntax GetUnmanagedValuesDestinationFromUnmanagedValuesSource(TypePositionInfo info, StubCodeContext context)
+        {
+            return InvocationExpression(
+                MemberAccessExpression(
+                    SyntaxKind.SimpleMemberAccessExpression,
+                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                    IdentifierName("CreateSpan")))
+            .WithArgumentList(
+                ArgumentList(
+                    SeparatedList(
+                        new[]
+                        {
+                            Argument(
+                                InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                        IdentifierName("AsRef")),
+                                    ArgumentList(SingletonSeparatedList(
+                                        Argument(
+                                            InvocationExpression(
+                                                MemberAccessExpression(
+                                                    SyntaxKind.SimpleMemberAccessExpression,
+                                                    CollectionSource.GetUnmanagedValuesSource(info, context),
+                                                    IdentifierName("GetPinnableReference")),
+                                                    ArgumentList()))
+                                        .WithRefKindKeyword(
+                                            Token(SyntaxKind.InKeyword))))))
+                            .WithRefKindKeyword(
+                                Token(SyntaxKind.RefKeyword)),
+                            Argument(
+                                IdentifierName(MarshallerHelpers.GetNumElementsIdentifier(info, context)))
+                        })));
+        }
     }
 
 #pragma warning disable SA1400 // Access modifier should be declared https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3659
@@ -108,7 +164,20 @@ namespace Microsoft.Interop
 
         public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
-            ExpressionSyntax destination = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesSource(info, context));
+            ExpressionSyntax destination;
+            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+            {
+                destination = StackAllocArrayCreationExpression(
+                    ArrayType(_unmanagedElementType,
+                        SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                CollectionSource.GetManagedValuesSource(info, context),
+                                IdentifierName("Length")))))));
+            }
+            else
+            {
+                destination = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesSource(info, context));
+            }
 
             // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
             ExpressionSyntax source = InvocationExpression(
@@ -239,21 +308,21 @@ namespace Microsoft.Interop
 
         public override StatementSyntax GenerateElementCleanupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
         public override StatementSyntax GenerateSetupStatement(TypePositionInfo info, StubCodeContext context) => EmptyStatement();
-        public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
-        {
-            ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
-            ExpressionSyntax destination = CollectionSource.GetUnmanagedValuesDestination(info, context);
+        //public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
+        //{
+        //    ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
+        //    ExpressionSyntax destination = CollectionSource.GetUnmanagedValuesDestination(info, context);
 
-            // <source>.CopyTo(<destination>);
-            return ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        source,
-                        IdentifierName("CopyTo")))
-                .AddArgumentListArguments(
-                    Argument(destination)));
-        }
+        //    // <source>.CopyTo(<destination>);
+        //    return ExpressionStatement(
+        //        InvocationExpression(
+        //            MemberAccessExpression(
+        //                SyntaxKind.SimpleMemberAccessExpression,
+        //                source,
+        //                IdentifierName("CopyTo")))
+        //        .AddArgumentListArguments(
+        //            Argument(destination)));
+        //}
     }
 
     /// <summary>
@@ -498,6 +567,47 @@ namespace Microsoft.Interop
 
             var setNumElements = CollectionSource.GetNumElementsAssignmentFromManagedValuesDestination(info, context);
 
+            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+            {
+                //crazy unsafe source as destination stuff.
+                // var <nativeSpan> = stackalloc <unmanagedType>[numElementsExpression]
+                var nativeSpanDeclaration = LocalDeclarationStatement(VariableDeclaration(
+                    GenericName(
+                        Identifier(TypeNames.System_Span),
+                        TypeArgumentList(
+                            SingletonSeparatedList(_unmanagedElementType))
+                    ),
+                    SingletonSeparatedList(VariableDeclarator(nativeSpanIdentifier).WithInitializer(EqualsValueClause(
+                    StackAllocArrayCreationExpression(
+                        ArrayType(_unmanagedElementType,
+                            SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    CollectionSource.GetManagedValuesSource(info, context),
+                                    IdentifierName("Length"))))))))))));
+
+                LocalDeclarationStatementSyntax managedSpanDeclaration = LocalDeclarationStatement(VariableDeclaration(
+                    GenericName(
+                        Identifier(TypeNames.System_Span),
+                        TypeArgumentList(SingletonSeparatedList(_elementInfo.ManagedType.Syntax))),
+                    SingletonSeparatedList(
+                        VariableDeclarator(
+                            Identifier(managedSpanIdentifier))
+                        .WithInitializer(EqualsValueClause(
+                        CollectionSource.GetManagedValuesDestination(info, context))))));
+                return Block(
+                    setNumElements,
+                    nativeSpanDeclaration,
+                    managedSpanDeclaration,
+                    GenerateContentsMarshallingStatement(
+                        info,
+                        context,
+                        IdentifierName(numElementsIdentifier),
+                        _elementInfo,
+                        new FreeAlwaysOwnedOriginalValueGenerator(_elementMarshaller),
+                        StubCodeContext.Stage.Marshal,
+                        StubCodeContext.Stage.PinnedMarshal,
+                        StubCodeContext.Stage.Cleanup));
+            }
             // Span<TUnmanagedElement> <nativeSpan> = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in <GetUnmanagedValuesSource>.GetPinnableReference(), <numElements>));
             LocalDeclarationStatementSyntax unmanagedValuesSource = LocalDeclarationStatement(VariableDeclaration(
                 GenericName(
@@ -505,37 +615,37 @@ namespace Microsoft.Interop
                     TypeArgumentList(
                         SingletonSeparatedList(_unmanagedElementType))
                 ),
-                SingletonSeparatedList(VariableDeclarator(nativeSpanIdentifier).WithInitializer(EqualsValueClause(
-                    InvocationExpression(
-                        MemberAccessExpression(
-                            SyntaxKind.SimpleMemberAccessExpression,
-                            ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                            IdentifierName("CreateSpan")))
-                    .WithArgumentList(
-                        ArgumentList(
-                            SeparatedList(
-                                new[]
-                                {
-                                    Argument(
-                                        InvocationExpression(
-                                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                                ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-                                                IdentifierName("AsRef")),
-                                            ArgumentList(SingletonSeparatedList(
-                                                Argument(
-                                                    InvocationExpression(
-                                                        MemberAccessExpression(
-                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                            CollectionSource.GetUnmanagedValuesSource(info, context),
-                                                            IdentifierName("GetPinnableReference")),
-                                                            ArgumentList()))
-                                                .WithRefKindKeyword(
-                                                    Token(SyntaxKind.InKeyword))))))
-                                    .WithRefKindKeyword(
-                                        Token(SyntaxKind.RefKeyword)),
-                                    Argument(
-                                        IdentifierName(numElementsIdentifier))
-                                }))))))));
+                SingletonSeparatedList(VariableDeclarator(nativeSpanIdentifier).WithInitializer(EqualsValueClause(GetUnmanagedValuesDestinationFromUnmanagedValuesSource(info, context))))));
+            //InvocationExpression(
+            //    MemberAccessExpression(
+            //        SyntaxKind.SimpleMemberAccessExpression,
+            //        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+            //        IdentifierName("CreateSpan")))
+            //.WithArgumentList(
+            //    ArgumentList(
+            //        SeparatedList(
+            //            new[]
+            //            {
+            //                Argument(
+            //                    InvocationExpression(
+            //                        MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            //                            ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+            //                            IdentifierName("AsRef")),
+            //                        ArgumentList(SingletonSeparatedList(
+            //                            Argument(
+            //                                InvocationExpression(
+            //                                    MemberAccessExpression(
+            //                                        SyntaxKind.SimpleMemberAccessExpression,
+            //                                        CollectionSource.GetUnmanagedValuesSource(info, context),
+            //                                        IdentifierName("GetPinnableReference")),
+            //                                        ArgumentList()))
+            //                            .WithRefKindKeyword(
+            //                                Token(SyntaxKind.InKeyword))))))
+            //                .WithRefKindKeyword(
+            //                    Token(SyntaxKind.RefKeyword)),
+            //                Argument(
+            //                    IdentifierName(numElementsIdentifier))
+            //            }))))))));
 
             // Span<TElement> <managedSpan> = <GetManagedValuesDestination>
             LocalDeclarationStatementSyntax managedValuesDestination = LocalDeclarationStatement(VariableDeclaration(
@@ -672,20 +782,21 @@ namespace Microsoft.Interop
                             EqualsValueClause(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(0)))))))
                 : EmptyStatement();
 
-        public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
-        {
-            ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
-            ExpressionSyntax destination = CollectionSource.GetUnmanagedValuesDestination(info, context);
+        //public override StatementSyntax GenerateElementsAssignOutStatement(TypePositionInfo info, AssignOutContext context)
+        //{
+        //    ExpressionSyntax source = CollectionSource.GetUnmanagedValuesDestination(info, context.InnerContext);
+        //    ExpressionSyntax destination;// = CollectionSource.GetUnmanagedValuesDestination(info, context);
+        //    destination = GetUnmanagedValuesDestinationFromUnmanagedValuesSource(info, context);
 
-            // <source>.CopyTo(<destination>);
-            return ExpressionStatement(
-                InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        source,
-                        IdentifierName("CopyTo")))
-                .AddArgumentListArguments(
-                    Argument(destination)));
-        }
+        //    // <native_out>.CopyTo(<UnmanagedValuesDestination>);
+        //    return ExpressionStatement(
+        //        InvocationExpression(
+        //            MemberAccessExpression(
+        //                SyntaxKind.SimpleMemberAccessExpression,
+        //                source,
+        //                IdentifierName("CopyTo")))
+        //        .AddArgumentListArguments(
+        //            Argument(destination)));
+        //}
     }
 }
