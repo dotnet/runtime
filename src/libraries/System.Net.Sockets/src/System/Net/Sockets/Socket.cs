@@ -1245,14 +1245,9 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public void SendFile(string? fileName, ReadOnlySpan<byte> preBuffer, ReadOnlySpan<byte> postBuffer, TransmitFileOptions flags)
         {
-            if (_protocolType == ProtocolType.Udp)
-            {
-                throw new NotSupportedException(SR.net_notconnected);
-            }
-
             ThrowIfDisposed();
 
-            if (!Connected)
+            if (!IsConnectionOriented || !Connected)
             {
                 throw new NotSupportedException(SR.net_notconnected);
             }
@@ -2329,11 +2324,6 @@ namespace System.Net.Sockets
 
         public IAsyncResult BeginSendFile(string? fileName, byte[]? preBuffer, byte[]? postBuffer, TransmitFileOptions flags, AsyncCallback? callback, object? state)
         {
-            if (_protocolType == ProtocolType.Udp)
-            {
-                throw new NotSupportedException(SR.net_notconnected);
-            }
-
             ThrowIfDisposed();
 
             if (!Connected)

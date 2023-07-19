@@ -670,11 +670,6 @@ namespace System.Net.Sockets
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         public ValueTask SendFileAsync(string? fileName, ReadOnlyMemory<byte> preBuffer, ReadOnlyMemory<byte> postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken = default)
         {
-            if (_protocolType == ProtocolType.Udp)
-            {
-                throw new NotSupportedException(SR.net_notconnected);
-            }
-
             if (cancellationToken.IsCancellationRequested)
             {
                 return ValueTask.FromCanceled(cancellationToken);
@@ -682,8 +677,8 @@ namespace System.Net.Sockets
 
             if (!IsConnectionOriented)
             {
-                var soex = new SocketException((int)SocketError.NotConnected);
-                return ValueTask.FromException(soex);
+                var nsex = new NotSupportedException(SR.net_notconnected);
+                return ValueTask.FromException(nsex);
             }
 
             int packetsCount = 0;
