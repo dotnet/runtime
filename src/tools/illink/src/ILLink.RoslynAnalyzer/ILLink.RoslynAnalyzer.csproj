@@ -9,8 +9,6 @@
     <AnalysisLevel>Latest</AnalysisLevel>
     <NoWarn Condition="'$(DotNetBuildFromSource)' == 'true'">$(NoWarn);CS8524</NoWarn>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <!-- This analyzer doesn't follow the convention for generator projects so we set the property manually. -->
-    <IsGeneratorProject>true</IsGeneratorProject>
   </PropertyGroup>
 
   <ItemGroup>

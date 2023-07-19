@@ -34,8 +34,8 @@
     <Content Include="**\*.props;**\*.targets" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)"
              CopyToOutputDirectory="PreserveNewest" TargetPath="../../%(RecursiveDir)%(Filename)%(Extension)"
              Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'" />
-    <Content Include="..\ILLink.RoslynAnalyzer\**\*.props" Pack="true" PackagePath="%(RecursiveDir)%(Filename)%(Extension)"
-             CopyToOutputDirectory="PreserveNewest" TargetPath="../../%(RecursiveDir)%(Filename)%(Extension)"
+    <Content Include="..\ILLink.RoslynAnalyzer\build\**\*.props" Pack="true" PackagePath="build/%(RecursiveDir)%(Filename)%(Extension)"
+             CopyToOutputDirectory="PreserveNewest" TargetPath="../../build/%(RecursiveDir)%(Filename)%(Extension)"
              Condition="'$(TargetFramework)' == '$(NetCoreAppToolCurrent)'" />
   </ItemGroup>
 

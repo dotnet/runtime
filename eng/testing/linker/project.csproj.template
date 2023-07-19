@@ -1,6 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- Needed for PublishTrimmed -->
+    <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
+  </PropertyGroup>
+
+  <Import Project="$(ToolsILLinkDir)build/Microsoft.NET.ILLink.Tasks.props" />
+
+  <PropertyGroup>
     <TargetFramework>{TargetFramework}</TargetFramework>
     <OutputType>Exe</OutputType>
     <NETCoreAppMaximumVersion>{NetCoreAppMaximumVersion}</NETCoreAppMaximumVersion>
@@ -29,9 +36,6 @@
     <RepositoryEngineeringDir>{RepositoryEngineeringDir}</RepositoryEngineeringDir>
     <_ExtraTrimmerArgs>{ExtraTrimmerArgs} $(_ExtraTrimmerArgs)</_ExtraTrimmerArgs>
     {AdditionalProperties}
-
-    <!-- Needed for PublishTrimmed -->
-    <ToolsILLinkDir>{ToolsILLinkDir}</ToolsILLinkDir>
 
     <!-- Needed for PublishAot -->
     <IlcToolsPath>{IlcToolsPath}</IlcToolsPath>
