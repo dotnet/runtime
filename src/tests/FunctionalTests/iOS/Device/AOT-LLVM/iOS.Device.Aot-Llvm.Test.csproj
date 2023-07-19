@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk" TreatAsLocalProperty="MonoForceInterpreter">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <OutputPath>bin</OutputPath>
@@ -9,7 +8,6 @@
     <TargetOS Condition="'$(TargetOS)' == ''">ios</TargetOS>
     <IncludesTestRunner>false</IncludesTestRunner>
     <ExpectedExitCode>42</ExpectedExitCode>
-    <UseTestRunner>false</UseTestRunner>
     <SelfContained>true</SelfContained>
     <UseConsoleUITemplate>true</UseConsoleUITemplate>
     <ShouldILStrip Condition="'$(ArchiveTests)' != 'true' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true'">true</ShouldILStrip>
