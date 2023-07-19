@@ -3023,20 +3023,19 @@ public:
 
     BOOL IsStackPointerBefore(TADDR sp1, TADDR sp2)
     {
-#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
-        // Resolve any fake stack pointers to their addresses on the real stack.
-        void* realSp1 = __asan_addr_is_in_fake_stack(m_fakeStack, sp1, nullptr, nullptr);
-        void* realSp2 = __asan_addr_is_in_fake_stack(m_fakeStack, sp2, nullptr, nullptr);
-        if (realSp1 != nullptr)
-        {
-            sp1 = dac_cast<TADDR>(realSp1);
-        }
-        if (realSp2 != nullptr)
-        {
-            sp2 = dac_cast<TADDR>(realSp2);
-        }
-#endif
+        sp1 = dac_cast<TADDR>(GetRealStackPointer(dac_cast<PTR_VOID>(sp1)));
+        sp2 = dac_cast<TADDR>(GetRealStackPointer(dac_cast<PTR_VOID>(sp2)));
         return sp1 < sp2;
+    }
+
+    PTR_VOID GetRealStackPointer(PTR_VOID addr)
+    {
+#if defined(DEBUG) && defined(HAS_ADDRESS_SANITIZER)
+        void* realAddr = __asan_addr_is_in_fake_stack(m_fakeStack, sp1, nullptr, nullptr);
+        return realAddr ? realAddr : addr;
+#else
+        return addr;
+#endif
     }
 
     // DetermineIfGuardPagePresent returns TRUE if the thread's stack contains a proper guard page. This function
