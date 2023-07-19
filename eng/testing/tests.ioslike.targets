@@ -22,7 +22,7 @@
     <_ResetSimulatorSwitch Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">--reset-simulator</_ResetSimulatorSwitch>
     <_SignalAppEndSwitch Condition="'$(TargetOS)' == 'ios' or '$(TargetOS)' == 'tvos'">--signal-app-end</_SignalAppEndSwitch>
 
-    <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</UseTestRunner>
+    <IncludesTestRunner Condition="'$(IncludesTestRunner)' == ''">true</IncludesTestRunner>
 
     <_AppleBuildCommand Condition="'$(IncludesTestRunner)' == 'true'">apple test</_AppleBuildCommand>
     <_AppleBuildCommand Condition="'$(IncludesTestRunner)' != 'true'">apple run</_AppleBuildCommand>
