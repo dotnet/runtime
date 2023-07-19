@@ -3,6 +3,8 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Numerics
 {
@@ -16,14 +18,14 @@ namespace System.Numerics
             // Executes the division for one big and one 32-bit integer.
             // Thus, we've similar code than below, but there is no loop for
             // processing the 32-bit integer, since it's a single element.
-
+            ref uint quotientPtr = ref MemoryMarshal.GetReference(quotient);
             ulong carry = 0UL;
 
             for (int i = left.Length - 1; i >= 0; i--)
             {
                 ulong value = (carry << 32) | left[i];
                 ulong digit = value / right;
-                quotient[i] = (uint)digit;
+                Unsafe.Add(ref quotientPtr, i) = (uint)digit;
                 carry = value - digit * right;
             }
             remainder = (uint)carry;
@@ -35,13 +37,14 @@ namespace System.Numerics
             Debug.Assert(quotient.Length == left.Length);
 
             // Same as above, but only computing the quotient.
-
+            ref uint quotientPtr = ref MemoryMarshal.GetReference(quotient);
             ulong carry = 0UL;
+
             for (int i = left.Length - 1; i >= 0; i--)
             {
                 ulong value = (carry << 32) | left[i];
                 ulong digit = value / right;
-                quotient[i] = (uint)digit;
+                Unsafe.Add(ref quotientPtr, i) = (uint)digit;
                 carry = value - digit * right;
             }
         }
@@ -199,11 +202,12 @@ namespace System.Numerics
 
             // Repairs the dividend, if the last subtract was too much
 
+            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
             ulong carry = 0UL;
 
             for (int i = 0; i < right.Length; i++)
             {
-                ref uint leftElement = ref left[i];
+                ref uint leftElement = ref Unsafe.Add(ref leftPtr, i);
                 ulong digit = (leftElement + carry) + right[i];
                 leftElement = unchecked((uint)digit);
                 carry = digit >> 32;
@@ -220,6 +224,7 @@ namespace System.Numerics
             // Combines a subtract and a multiply operation, which is naturally
             // more efficient than multiplying and then subtracting...
 
+            ref uint leftPtr = ref MemoryMarshal.GetReference(left);
             ulong carry = 0UL;
 
             for (int i = 0; i < right.Length; i++)
@@ -227,7 +232,7 @@ namespace System.Numerics
                 carry += right[i] * q;
                 uint digit = unchecked((uint)carry);
                 carry >>= 32;
-                ref uint leftElement = ref left[i];
+                ref uint leftElement = ref Unsafe.Add(ref leftPtr, i);
                 if (leftElement < digit)
                     ++carry;
                 leftElement = unchecked(leftElement - digit);
