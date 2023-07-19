@@ -39,7 +39,7 @@ namespace System.Diagnostics.Tracing
         private PollingCounter? _committedCounter;
         private IncrementingPollingCounter? _exceptionCounter;
         private PollingCounter? _gcTimeCounter;
-        private IncrementingPollingCounter? _totalGcTimeCounter;
+        private IncrementingPollingCounter? _totalGcPauseTimeCounter;
         private PollingCounter? _gen0SizeCounter;
         private PollingCounter? _gen1SizeCounter;
         private PollingCounter? _gen2SizeCounter;
@@ -116,7 +116,7 @@ namespace System.Diagnostics.Tracing
                 _committedCounter ??= new PollingCounter("gc-committed", this, () => ((double)GC.GetGCMemoryInfo().TotalCommittedBytes / 1_000_000)) { DisplayName = "GC Committed Bytes", DisplayUnits = "MB" };
                 _exceptionCounter ??= new IncrementingPollingCounter("exception-count", this, () => Exception.GetExceptionCount()) { DisplayName = "Exception Count", DisplayRateTimeScale = new TimeSpan(0, 0, 1) };
                 _gcTimeCounter ??= new PollingCounter("time-in-gc", this, () => GC.GetLastGCPercentTimeInGC()) { DisplayName = "% Time in GC since last GC", DisplayUnits = "%" };
-                _totalGcTimeCounter ??= new IncrementingPollingCounter("total-time-in-gc", this, () => GC.GetTotalPauseDuration().TotalMilliseconds) { DisplayName = "Time spent in GC", DisplayUnits = "ms" };
+                _totalGcPauseTimeCounter ??= new IncrementingPollingCounter("total-pause-time-by-gc", this, () => GC.GetTotalPauseDuration().TotalMilliseconds) { DisplayName = "Time paused by GC", DisplayUnits = "ms" };
                 _gen0SizeCounter ??= new PollingCounter("gen-0-size", this, () => GC.GetGenerationSize(0)) { DisplayName = "Gen 0 Size", DisplayUnits = "B" };
                 _gen1SizeCounter ??= new PollingCounter("gen-1-size", this, () => GC.GetGenerationSize(1)) { DisplayName = "Gen 1 Size", DisplayUnits = "B" };
                 _gen2SizeCounter ??= new PollingCounter("gen-2-size", this, () => GC.GetGenerationSize(2)) { DisplayName = "Gen 2 Size", DisplayUnits = "B" };

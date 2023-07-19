@@ -270,6 +270,7 @@ usage()
     echo "-portablebuild: pass -portablebuild=false to force a non-portable build."
     echo "-skipconfigure: skip build configuration."
     echo "-keepnativesymbols: keep native/unmanaged debug symbols."
+    echo "-fsanitize: Enable native sanitizers"
     echo "-verbose: optional argument to enable verbose build output."
     echo ""
     echo "Additional Options:"
@@ -390,6 +391,17 @@ while :; do
 
         keepnativesymbols|-keepnativesymbols)
             __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_KEEP_NATIVE_SYMBOLS=true"
+            ;;
+
+        -fsanitize)
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_ENABLE_SANITIZERS=$2"
+            EnableNativeSanitizers=$2
+            shift
+            ;;
+        -fsanitize=*)
+            sanitizers="${lowerI/#-fsanitize=/}" # -fsanitize=address => address
+            __CMakeArgs="$__CMakeArgs -DCLR_CMAKE_ENABLE_SANITIZERS=$sanitizers"
+            EnableNativeSanitizers=$sanitizers
             ;;
 
         ninja|-ninja)
