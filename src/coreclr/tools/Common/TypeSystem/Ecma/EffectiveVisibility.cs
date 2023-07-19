@@ -126,6 +126,18 @@ namespace Internal.TypeSystem
             return visibility;
         }
 
+        public static EffectiveVisibility GetAttributeEffectiveVisibility(this MethodDesc method)
+        {
+            if (method.GetTypicalMethodDefinition() is EcmaMethod ecmaMethod)
+            {
+                return ecmaMethod.Attributes.ToEffectiveVisibility();
+            }
+            else
+            {
+                return EffectiveVisibility.Public;
+            }
+        }
+
         public static EffectiveVisibility GetEffectiveVisibility(this EcmaType type)
         {
             EffectiveVisibility visibility = type.Attributes.ToEffectiveVisibility();

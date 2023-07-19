@@ -372,45 +372,67 @@ namespace Internal.IL
         {
             TypeDesc targetType = context.TargetType;
 
+            bool skipPrivate = false;
             MethodDesc targetMaybe = null;
-            foreach (MethodDesc md in targetType.GetMethods())
+            do
             {
-                // Check the target and current method match static/instance state.
-                if (context.IsTargetStatic != md.Signature.IsStatic)
+                foreach (MethodDesc md in targetType.GetMethods())
                 {
-                    continue;
-                }
-
-                // Check for matching name
-                if (!md.Name.Equals(name))
-                {
-                    continue;
-                }
-
-                // Check signature
-                if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context, md, ignoreCustomModifiers))
-                {
-                    continue;
-                }
-
-                // Check if there is some ambiguity.
-                if (targetMaybe != null)
-                {
-                    if (ignoreCustomModifiers)
+                    // Respect private visibility for inheritance scenarios.
+                    if (skipPrivate
+                        && md.GetAttributeEffectiveVisibility() == EffectiveVisibility.Private)
                     {
-                        // We have detected ambiguity when ignoring custom modifiers.
-                        // Start over, but look for a match requiring custom modifiers
-                        // to match precisely.
-                        if (TrySetTargetMethod(ref context, name, out isAmbiguous, ignoreCustomModifiers: false))
-                            return true;
+                        continue;
                     }
 
-                    isAmbiguous = true;
-                    return false;
+                    // Check the target and current method match static/instance state.
+                    if (context.IsTargetStatic != md.Signature.IsStatic)
+                    {
+                        continue;
+                    }
+
+                    // Check for matching name
+                    if (!md.Name.Equals(name))
+                    {
+                        continue;
+                    }
+
+                    // Check signature
+                    if (!DoesMethodMatchUnsafeAccessorDeclaration(ref context, md, ignoreCustomModifiers))
+                    {
+                        continue;
+                    }
+
+                    // Check if there is some ambiguity.
+                    if (targetMaybe != null)
+                    {
+                        if (ignoreCustomModifiers)
+                        {
+                            // We have detected ambiguity when ignoring custom modifiers.
+                            // Start over, but look for a match requiring custom modifiers
+                            // to match precisely.
+                            if (TrySetTargetMethod(ref context, name, out isAmbiguous, ignoreCustomModifiers: false))
+                                return true;
+                        }
+
+                        isAmbiguous = true;
+                        return false;
+                    }
+
+                    targetMaybe = md;
                 }
 
-                targetMaybe = md;
-            }
+                // Ignore base class constructors as they can be ambiguous.
+                if (targetMaybe != null && targetMaybe.IsConstructor)
+                {
+                    break;
+                }
+
+                // After the most derived type, we skip private members to simulate
+                // .NET OOP visibility rules.
+                skipPrivate = true;
+                targetType = targetType.BaseType;
+            } while (targetType != null);
 
             isAmbiguous = false;
             context.TargetMethod = targetMaybe;

@@ -421,9 +421,11 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89212")] // This passes on CoreCLR, but fails on Mono and NativeAOT
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89212", TestRuntimes.Mono)]
     public static void Verify_InheritanceMethodResolution_BaseViaDerived()
     {
+        Console.WriteLine($"Running {nameof(Verify_InheritanceMethodResolution_BaseViaDerived)}");
+
         var instance = new InheritanceDerived();
 
         Assert.Equal($"{nameof(InheritanceBase)}.{nameof(BaseVirtual)}", BaseVirtual(instance));
@@ -467,7 +469,7 @@ static unsafe class UnsafeAccessorsTests
             () => FieldNotFound(null));
         AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
             isNativeAot ? null : UserDataClass.StaticFieldName,
-            () => 
+            () =>
             {
                 UserDataValue value = default;
                 FieldNotFoundStaticMismatch1(ref value);
@@ -520,6 +522,8 @@ static unsafe class UnsafeAccessorsTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidTargetUnsafeAccessorAmbiguousMatch()
     {
+        Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessorAmbiguousMatch)}");
+
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
