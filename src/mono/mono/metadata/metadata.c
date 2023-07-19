@@ -49,7 +49,7 @@ typedef struct {
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
 					 const char *ptr, const char **rptr, MonoError *error);
 
-static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only);
+static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only, gboolean skip_cmods_check);
 static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
 static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
@@ -1901,7 +1901,7 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
 	for (guint i = 0; i < a->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], signature_only))
+		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], signature_only, FALSE))
 			return FALSE;
 	}
 	return TRUE;
@@ -5690,10 +5690,10 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return mono_metadata_class_equal (c1_type->data.klass, c2_type->data.klass, signature_only);
 	if (signature_only &&
 	    (c1_type->type == MONO_TYPE_ARRAY) && (c2_type->type == MONO_TYPE_ARRAY))
-		return do_mono_metadata_type_equal (c1_type, c2_type, signature_only);
+		return do_mono_metadata_type_equal (c1_type, c2_type, signature_only, FALSE);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_PTR) && (c2_type->type == MONO_TYPE_PTR))
-		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only);
+		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only, FALSE);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_FNPTR) && (c2_type->type == MONO_TYPE_FNPTR))
 		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only);
@@ -5715,7 +5715,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 		return FALSE;
 	if (s1->explicit_this != s2->explicit_this)
 		return FALSE;
-	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, signature_only))
+	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, signature_only, FALSE))
 		return FALSE;
 	if (s1->param_count != s2->param_count)
 		return FALSE;
@@ -5726,7 +5726,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 
 		if (t1 == NULL || t2 == NULL)
 			return (t1 == t2);
-		if (! do_mono_metadata_type_equal (t1, t2, signature_only))
+		if (! do_mono_metadata_type_equal (t1, t2, signature_only, FALSE))
 			return FALSE;
 	}
 }
@@ -5755,7 +5755,7 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
 		if (cm1_required != cm2_required)
 			return FALSE;
 
-		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, signature_only))
+		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, signature_only, FALSE))
 			return FALSE;
 	}
 	return TRUE;
@@ -5771,17 +5771,19 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
  * Returns: #TRUE if @t1 and @t2 are equal.
  */
 static gboolean
-do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only)
+do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only, gboolean skip_cmods_check)
 {
 	if (t1->type != t2->type || m_type_is_byref (t1) != m_type_is_byref (t2))
 		return FALSE;
 
 	gboolean cmod_reject = FALSE;
 
-	if (t1->has_cmods != t2->has_cmods)
-		cmod_reject = TRUE;
-	else if (t1->has_cmods && t2->has_cmods) {
-		cmod_reject = !mono_metadata_custom_modifiers_equal (t1, t2, signature_only);
+	if (!skip_cmods_check) {
+		if (t1->has_cmods != t2->has_cmods)
+			cmod_reject = TRUE;
+		else if (t1->has_cmods && t2->has_cmods) {
+			cmod_reject = !mono_metadata_custom_modifiers_equal (t1, t2, signature_only);
+		}
 	}
 
 	gboolean result = FALSE;
@@ -5813,7 +5815,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
 		break;
 	case MONO_TYPE_PTR:
-		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only);
+		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only, skip_cmods_check);
 		break;
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
@@ -5850,7 +5852,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
-	return do_mono_metadata_type_equal (t1, t2, FALSE);
+	return do_mono_metadata_type_equal (t1, t2, FALSE, FALSE);
 }
 
 /**
@@ -5867,11 +5869,12 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
-	return do_mono_metadata_type_equal (t1, t2, signature_only);
+	return do_mono_metadata_type_equal (t1, t2, signature_only, FALSE);
 }
 
 enum {
 	SIG_EQUIV_FLAG_NO_RET = 1,
+	SIG_EQUIV_FLAG_IGNORE_CMODS = 2,
 };
 
 gboolean
@@ -5899,6 +5902,11 @@ mono_metadata_signature_equal_no_ret (MonoMethodSignature *sig1, MonoMethodSigna
 	return signature_equiv (sig1, sig2, SIG_EQUIV_FLAG_NO_RET);
 }
 
+gboolean
+mono_metadata_signature_equal_ignore_custom_modifier (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	return signature_equiv (sig1, sig2, SIG_EQUIV_FLAG_IGNORE_CMODS);
+}
 
 gboolean
 signature_equiv (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv_flags)
@@ -5927,13 +5935,53 @@ signature_equiv (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv
 		/* if (p1->attrs != p2->attrs)
 			return FALSE;
 		*/
-		if (!do_mono_metadata_type_equal (p1, p2, TRUE))
+		if (!do_mono_metadata_type_equal (p1, p2, TRUE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
 			return FALSE;
 	}
 
-	if ((equiv_flags & SIG_EQUIV_FLAG_NO_RET) != 0)
+	if (equiv_flags == SIG_EQUIV_FLAG_NO_RET)
 		return TRUE;
-	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, TRUE))
+	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, TRUE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
+		return FALSE;
+	return TRUE;
+}
+
+gboolean
+signature_equiv_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv_flags);
+
+gboolean
+mono_metadata_signature_equal_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	return signature_equiv_vararg (sig1, sig2, 0);
+}
+
+gboolean
+mono_metadata_signature_equal_vararg_ignore_custom_modifier (MonoMethodSignature *sig1, MonoMethodSignature *sig2)
+{
+	return signature_equiv_vararg (sig1, sig2, SIG_EQUIV_FLAG_IGNORE_CMODS);
+}
+
+gboolean
+signature_equiv_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv_flags)
+{
+	int i;
+
+	if (sig1->hasthis != sig2->hasthis ||
+	    sig1->sentinelpos != sig2->sentinelpos)
+		return FALSE;
+
+	for (i = 0; i < sig1->sentinelpos; i++) {
+		MonoType *p1 = sig1->params[i];
+		MonoType *p2 = sig2->params[i];
+
+		/*if (p1->attrs != p2->attrs)
+			return FALSE;
+		*/
+		if (!do_mono_metadata_type_equal (p1, p2, FALSE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
+			return FALSE;
+	}
+
+	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, FALSE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
 		return FALSE;
 	return TRUE;
 }
