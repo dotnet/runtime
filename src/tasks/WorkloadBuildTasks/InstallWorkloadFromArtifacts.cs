@@ -298,6 +298,10 @@ namespace Microsoft.Workload.Build.Tasks
             string outputDir = FindSubDirIgnoringCase(manifestVersionBandDir, name);
             // regex matching the version band, e.g. 6.0.100-preview.3.21202.5 => 6.0.100-preview.3
             string bandVersion = bandVersionRegex().Match(version).Value;
+            // use VersionBandForManifestPackages for CI/dev builds
+            // ideally we could compare against PackageVersion but that isn't available in the task
+            if (bandVersion.EndsWith("-ci") || bandVersion.EndsWith("-dev"))
+                bandVersion = VersionBandForManifestPackages;
 
             PackageReference pkgRef = new(Name: $"{name}.Manifest-{bandVersion}",
                                           Version: version,
