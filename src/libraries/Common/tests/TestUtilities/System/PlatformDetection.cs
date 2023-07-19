@@ -253,6 +253,7 @@ namespace System
         public static bool IsNotDomainJoinedMachine => !IsDomainJoinedMachine;
 
         public static bool IsOpenSslSupported => IsLinux || IsFreeBSD || Isillumos || IsSolaris;
+        public static bool OpenSslNotPresentOnSystem => !OpenSslPresentOnSystem;
 
         public static bool UsesAppleCrypto => IsOSX || IsMacCatalyst || IsiOS || IstvOS;
         public static bool UsesMobileAppleCrypto => IsMacCatalyst || IsiOS || IstvOS;

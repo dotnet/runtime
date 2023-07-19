@@ -474,6 +474,15 @@ dotnet_diagnostic.CA1860.severity = warning
 # CA1861: Avoid constant arrays as arguments
 dotnet_diagnostic.CA1861.severity = warning
 
+# CA1862: Prefer using 'StringComparer'/'StringComparison' to perform case-insensitive string comparisons
+dotnet_diagnostic.CA1862.severity = warning
+
+# CA1863: Use 'CompositeFormat'
+dotnet_diagnostic.CA1863.severity = suggestion
+
+# CA1864: Prefer the 'IDictionary.TryAdd(TKey, TValue)' method
+dotnet_diagnostic.CA1864.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -657,6 +666,9 @@ dotnet_diagnostic.CA2259.severity = warning
 
 # CA2260: Use correct type parameter
 dotnet_diagnostic.CA2260.severity = warning
+
+# CA2261: Do not use ConfigureAwaitOptions.SuppressThrowing with Task<TResult>
+dotnet_diagnostic.CA2261.severity = warning
 
 # CA2300: Do not use insecure deserializer BinaryFormatter
 dotnet_diagnostic.CA2300.severity = none

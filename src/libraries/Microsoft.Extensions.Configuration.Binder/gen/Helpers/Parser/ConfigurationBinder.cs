@@ -111,7 +111,6 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
                     typeSpecs.Add(typeSpec);
-                    RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.BindCore, typeSpec);
                 }
 
                 static ITypeSymbol? ResolveType(IOperation conversionOperation) =>
@@ -124,6 +123,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         IMethodReferenceOperation m when m.Method.MethodKind == MethodKind.Constructor => m.Method.ContainingType,
                         IMethodReferenceOperation m => m.Method.ReturnType,
                         IAnonymousFunctionOperation f => f.Symbol.ReturnType,
+                        IParameterReferenceOperation p => p.Parameter.Type,
                         _ => null
                     };
             }

@@ -256,9 +256,13 @@ namespace XarchHardwareIntrinsicTest._CpuId
                     }
                 }
 
-                if (isVector512Throttling)
+                if (isAvx512HierarchyDisabled || isVector512Throttling)
                 {
                     preferredVectorByteLength = 256 / 8;
+                }
+                else
+                {
+                    preferredVectorByteLength = 512 / 8;
                 }
             }
 
@@ -369,7 +373,7 @@ namespace XarchHardwareIntrinsicTest._CpuId
         static bool IsBitIncorrect(int register, int bitNumber, Type isa, bool isSupported, string name, ref bool isHierarchyDisabled)
         {
             bool isSupportedByHardware = (register & (1 << bitNumber)) != 0;
-            isHierarchyDisabled |= !GetDotnetEnable(name);
+            isHierarchyDisabled |= (!isSupported || !GetDotnetEnable(name));
 
             if (isSupported)
             {

@@ -3,6 +3,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
@@ -34,6 +36,15 @@ namespace Microsoft.Extensions
         public class GenericOptions<T>
         {
             public T Value { get; set; }
+        }
+
+        public record GenericOptionsRecord<T>(T Value);
+
+        public class GenericOptionsWithParamCtor<T>
+        {
+            public GenericOptionsWithParamCtor(T value) => Value = value;
+
+            public T Value { get; }
         }
 
         public class OptionsWithNesting
@@ -654,6 +665,36 @@ namespace Microsoft.Extensions
             public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
 
             public int MyInt { get; }
+        }
+
+        [TypeConverter(typeof(GeolocationTypeConverter))]
+        public struct Geolocation
+        {
+            public static readonly Geolocation Zero = new(0, 0);
+
+            public Geolocation(double latitude, double longitude)
+            {
+                Latitude = latitude;
+                Longitude = longitude;
+            }
+
+            public double Latitude { get; set; }
+
+            public double Longitude { get; set; }
+
+            private sealed class GeolocationTypeConverter : TypeConverter
+            {
+                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                    throw new NotImplementedException();
+
+                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                    throw new NotImplementedException();
+            }
+        }
+
+        public class GeolocationWrapper
+        {
+            public Geolocation Location { get; set; }
         }
     }
 }

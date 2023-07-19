@@ -185,6 +185,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\AssemblyExtensions.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\Metadata\MetadataUpdater.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBase.CoreCLR.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodBaseInvoker.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\MethodInvoker.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\ModifiedType.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Reflection\RtFieldInfo.cs" />

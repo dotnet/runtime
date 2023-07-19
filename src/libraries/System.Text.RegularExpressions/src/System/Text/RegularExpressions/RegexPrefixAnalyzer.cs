@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -192,7 +191,12 @@ namespace System.Text.RegularExpressions
             // Find all fixed-distance sets.
             var results = new List<RegexFindOptimizations.FixedDistanceSet>();
             int distance = 0;
-            TryFindFixedSets(root, results, ref distance, thorough);
+            TryFindRawFixedSets(root, results, ref distance, thorough);
+#if DEBUG
+            results.ForEach(r => Debug.Assert(
+                !r.Negated && r.Chars is null && r.AsciiSet is null && r.Range is null,
+                $"{nameof(TryFindRawFixedSets)} should have only populated {nameof(r.Set)} and {nameof(r.Distance)}"));
+#endif
 
             // Remove any sets that match everything; they're not helpful.  (This check exists primarily to weed
             // out use of . in Singleline mode, but also filters out explicit sets like [\s\S].)
@@ -221,7 +225,7 @@ namespace System.Text.RegularExpressions
 
             // For every entry, try to get the chars that make up the set, if there are few enough.
             // For any for which we couldn't get the small chars list, see if we can get other useful info.
-            Span<char> scratch = stackalloc char[5]; // max optimized by IndexOfAny today
+            Span<char> scratch = stackalloc char[5]; // max efficiently optimized by IndexOfAny today
             for (int i = 0; i < results.Count; i++)
             {
                 RegexFindOptimizations.FixedDistanceSet result = results[i];
@@ -229,7 +233,7 @@ namespace System.Text.RegularExpressions
 
                 int count = RegexCharClass.GetSetChars(result.Set, scratch);
 
-                if (!result.Negated && count > 0)
+                if (count > 0)
                 {
                     result.Chars = scratch.Slice(0, count).ToArray();
                 }
@@ -258,8 +262,10 @@ namespace System.Text.RegularExpressions
             // is at a fixed distance, in which case distance will have been updated to include the full length
             // of the node.  If it returns false, the node isn't entirely fixed, in which case subsequent nodes
             // shouldn't be examined and distance should no longer be trusted.  However, regardless of whether it
-            // returns true or false, it may have populated results, and all populated results are valid.
-            static bool TryFindFixedSets(RegexNode node, List<RegexFindOptimizations.FixedDistanceSet> results, ref int distance, bool thorough)
+            // returns true or false, it may have populated results, and all populated results are valid. All
+            // FixedDistanceSet result will only have its Set string and Distance populated; the rest is left
+            // to be populated by FindFixedDistanceSets after this returns.
+            static bool TryFindRawFixedSets(RegexNode node, List<RegexFindOptimizations.FixedDistanceSet> results, ref int distance, bool thorough)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
@@ -357,7 +363,7 @@ namespace System.Text.RegularExpressions
                     case RegexNodeKind.Atomic:
                     case RegexNodeKind.Group:
                     case RegexNodeKind.Capture:
-                        return TryFindFixedSets(node.Child(0), results, ref distance, thorough);
+                        return TryFindRawFixedSets(node.Child(0), results, ref distance, thorough);
 
                     case RegexNodeKind.Lazyloop or RegexNodeKind.Loop when node.M > 0:
                         // This effectively only iterates the loop once.  If deemed valuable,
@@ -366,7 +372,7 @@ namespace System.Text.RegularExpressions
                         // summed distance for all node.M iterations.  If node.M == node.N,
                         // this would then also allow continued evaluation of the rest of the
                         // expression after the loop.
-                        TryFindFixedSets(node.Child(0), results, ref distance, thorough);
+                        TryFindRawFixedSets(node.Child(0), results, ref distance, thorough);
                         return false;
 
                     case RegexNodeKind.Concatenate:
@@ -374,7 +380,7 @@ namespace System.Text.RegularExpressions
                             int childCount = node.ChildCount();
                             for (int i = 0; i < childCount; i++)
                             {
-                                if (!TryFindFixedSets(node.Child(i), results, ref distance, thorough))
+                                if (!TryFindRawFixedSets(node.Child(i), results, ref distance, thorough))
                                 {
                                     return false;
                                 }
@@ -394,7 +400,7 @@ namespace System.Text.RegularExpressions
                             {
                                 localResults.Clear();
                                 int localDistance = 0;
-                                allSameSize &= TryFindFixedSets(node.Child(i), localResults, ref localDistance, thorough);
+                                allSameSize &= TryFindRawFixedSets(node.Child(i), localResults, ref localDistance, thorough);
 
                                 if (localResults.Count == 0)
                                 {
@@ -475,64 +481,75 @@ namespace System.Text.RegularExpressions
                 int s1RangeLength = s1.Range is not null ? GetRangeLength(s1.Range.Value, s1Negated) : 0;
                 int s2RangeLength = s2.Range is not null ? GetRangeLength(s2.Range.Value, s2Negated) : 0;
 
-                Debug.Assert(!s1Negated || s1Chars is null);
-                Debug.Assert(!s2Negated || s2Chars is null);
-
-                // If both have chars, prioritize the one with the smaller frequency for those chars.
-                if (s1Chars is not null && s2Chars is not null)
+                // If one set is negated and the other isn't, prefer the non-negated set. In general, negated
+                // sets are large and thus likely to match more frequently, making them slower to search for.
+                if (s1Negated != s2Negated)
                 {
-                    // Prefer sets with less frequent values.  The frequency is only an approximation,
-                    // used as a tie-breaker when we'd otherwise effectively be picking randomly.
-                    // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    float s1Frequency = SumFrequencies(s1Chars);
-                    float s2Frequency = SumFrequencies(s2Chars);
+                    return s2Negated ? -1 : 1;
+                }
 
-                    if (s1Frequency != s2Frequency)
-                    {
-                        return s1Frequency.CompareTo(s2Frequency);
-                    }
+                // If we extracted only a few chars and the sets are negated, they both represent very large
+                // sets that are difficult to compare for quality.
+                if (!s1Negated)
+                {
+                    Debug.Assert(!s2Negated);
 
-                    if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                    // If both have chars, prioritize the one with the smaller frequency for those chars.
+                    if (s1Chars is not null && s2Chars is not null)
                     {
-                        // Prefer the set with fewer values.
-                        return s1CharsLength.CompareTo(s2CharsLength);
-                    }
+                        // Prefer sets with less frequent values.  The frequency is only an approximation,
+                        // used as a tie-breaker when we'd otherwise effectively be picking randomly.
+                        // True frequencies will vary widely based on the actual data being searched, the language of the data, etc.
+                        float s1Frequency = SumFrequencies(s1Chars);
+                        float s2Frequency = SumFrequencies(s2Chars);
 
-                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    static float SumFrequencies(char[] chars)
-                    {
-                        float sum = 0;
-                        foreach (char c in chars)
+                        if (s1Frequency != s2Frequency)
                         {
-                            // Lookup each character in the table.  Values >= 128 are ignored
-                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
-                            // and it is primarily meant for disambiguation of ASCII letters.
-                            if (c < 128)
-                            {
-                                sum += Frequency[c];
-                            }
+                            return s1Frequency.CompareTo(s2Frequency);
                         }
-                        return sum;
-                    }
-                }
 
-                // If one has chars and the other has a range, prefer the shorter set.
-                if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
-                {
-                    int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
-                    if (c != 0)
+                        if (!RegexCharClass.IsAscii(s1Chars) && !RegexCharClass.IsAscii(s2Chars))
+                        {
+                            // Prefer the set with fewer values.
+                            return s1CharsLength.CompareTo(s2CharsLength);
+                        }
+
+                        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                        static float SumFrequencies(char[] chars)
+                        {
+                            float sum = 0;
+                            foreach (char c in chars)
+                            {
+                                // Lookup each character in the table.  Values >= 128 are ignored
+                                // and thus we'll get skew in the data.  It's already a gross approximation, though,
+                                // and it is primarily meant for disambiguation of ASCII letters.
+                                if (c < 128)
+                                {
+                                    sum += Frequency[c];
+                                }
+                            }
+                            return sum;
+                        }
+                    }
+
+                    // If one has chars and the other has a range, prefer the shorter set.
+                    if ((s1CharsLength > 0 && s2RangeLength > 0) || (s1RangeLength > 0 && s2CharsLength > 0))
                     {
-                        return c;
+                        int c = Math.Max(s1CharsLength, s1RangeLength).CompareTo(Math.Max(s2CharsLength, s2RangeLength));
+                        if (c != 0)
+                        {
+                            return c;
+                        }
+
+                        // If lengths are the same, prefer the chars.
+                        return s1CharsLength > 0 ? -1 : 1;
                     }
 
-                    // If lengths are the same, prefer the chars.
-                    return s1CharsLength > 0 ? -1 : 1;
-                }
-
-                // If one has chars and the other doesn't, prioritize the one with chars.
-                if ((s1CharsLength > 0) != (s2CharsLength > 0))
-                {
-                    return s1CharsLength > 0 ? -1 : 1;
+                    // If one has chars and the other doesn't, prioritize the one with chars.
+                    if ((s1CharsLength > 0) != (s2CharsLength > 0))
+                    {
+                        return s1CharsLength > 0 ? -1 : 1;
+                    }
                 }
 
                 // If one has a range and the other doesn't, prioritize the one with a range.

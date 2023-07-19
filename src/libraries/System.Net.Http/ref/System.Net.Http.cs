@@ -135,6 +135,8 @@ namespace System.Net.Http
         public long MaxRequestContentBufferSize { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool PreAuthenticate { get { throw null; } set { } }
         public System.Collections.Generic.IDictionary<string, object?> Properties { get { throw null; } }
@@ -201,6 +203,11 @@ namespace System.Net.Http
         protected virtual System.Threading.Tasks.Task SerializeToStreamAsync(System.IO.Stream stream, System.Net.TransportContext? context, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal abstract bool TryComputeLength(out long length);
     }
+    public class HttpIOException : System.IO.IOException
+    {
+        public System.Net.Http.HttpRequestError HttpRequestError { get { throw null; } }
+        public HttpIOException(System.Net.Http.HttpRequestError httpRequestError, string? message = null, System.Exception? innerException = null) { }
+    }
     public abstract partial class HttpMessageHandler : System.IDisposable
     {
         protected HttpMessageHandler() { }
@@ -239,10 +246,25 @@ namespace System.Net.Http
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public override string ToString() { throw null; }
     }
-    public sealed class HttpProtocolException : System.IO.IOException
+    public sealed class HttpProtocolException : System.Net.Http.HttpIOException
     {
-        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) { }
+        public HttpProtocolException(long errorCode, string? message, System.Exception? innerException) : base (default(System.Net.Http.HttpRequestError), default(string?), default(System.Exception?)) { }
         public long ErrorCode { get { throw null; } }
+    }
+    public enum HttpRequestError
+    {
+        Unknown = 0,
+        NameResolutionError,
+        ConnectionError,
+        SecureConnectionError,
+        HttpProtocolError,
+        ExtendedConnectNotSupported,
+        VersionNegotiationError,
+        UserAuthenticationError,
+        ProxyTunnelError,
+        InvalidResponse,
+        ResponseEnded,
+        ConfigurationLimitExceeded,
     }
     public partial class HttpRequestException : System.Exception
     {
@@ -250,6 +272,8 @@ namespace System.Net.Http
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
+        public HttpRequestException(System.Net.Http.HttpRequestError httpRequestError, string? message = null, System.Exception? inner = null, System.Net.HttpStatusCode? statusCode = null) { }
+        public System.Net.Http.HttpRequestError HttpRequestError { get { throw null; } }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable
@@ -397,6 +421,8 @@ namespace System.Net.Http
         public int MaxConnectionsPerServer { get { throw null; } set { } }
         public int MaxResponseDrainSize { get { throw null; } set { } }
         public int MaxResponseHeadersLength { get { throw null; } set { } }
+        [System.CLSCompliantAttribute(false)]
+        public System.Diagnostics.Metrics.IMeterFactory? MeterFactory { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionIdleTimeout { get { throw null; } set { } }
         public System.TimeSpan PooledConnectionLifetime { get { throw null; } set { } }
         public bool PreAuthenticate { get { throw null; } set { } }
@@ -899,5 +925,17 @@ namespace System.Net.Http.Headers
         object System.ICloneable.Clone() { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? input, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] out System.Net.Http.Headers.WarningHeaderValue? parsedValue) { throw null; }
+    }
+}
+namespace System.Net.Http.Metrics
+{
+    public sealed class HttpMetricsEnrichmentContext
+    {
+        internal HttpMetricsEnrichmentContext() { }
+        public System.Net.Http.HttpRequestMessage Request { get { throw null; } }
+        public System.Net.Http.HttpResponseMessage? Response { get { throw null; } }
+        public System.Exception? Exception { get { throw null; } }
+        public void AddCustomTag(string name, object? value) { throw null; }
+        public static void AddCallback(System.Net.Http.HttpRequestMessage request, System.Action<System.Net.Http.Metrics.HttpMetricsEnrichmentContext> callback) { throw null; }
     }
 }
