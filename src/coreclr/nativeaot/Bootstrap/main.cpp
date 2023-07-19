@@ -3,10 +3,6 @@
 
 #include <stdint.h>
 
-#ifdef HAS_ADDRESS_SANITIZER
-#include "minipal/utils.h"
-#endif
-
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
 // startup of the application.
