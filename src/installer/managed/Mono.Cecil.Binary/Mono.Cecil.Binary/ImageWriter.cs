@@ -32,40 +32,23 @@ namespace Mono.Cecil.Binary
     using System.Text;
     using Mono.Cecil.Metadata;
 
-    sealed class ImageWriter : BaseImageVisitor
+    public sealed class ImageWriter : BaseImageVisitor
     {
         Image m_img;
-        AssemblyKind m_kind;
-        MetadataWriter m_mdWriter;
         BinaryWriter m_binaryWriter;
 
-        Section m_textSect;
-        MemoryBinaryWriter m_textWriter;
-        Section m_relocSect;
-        MemoryBinaryWriter m_relocWriter;
         Section m_rsrcSect;
         MemoryBinaryWriter m_rsrcWriter;
 
-        public ImageWriter(MetadataWriter writer, AssemblyKind kind, BinaryWriter bw)
+        public ImageWriter(Image img, BinaryWriter bw)
         {
-            m_mdWriter = writer;
-            m_img = writer.GetMetadataRoot().GetImage();
-            m_kind = kind;
+            m_img = img;
             m_binaryWriter = bw;
-
-            m_textWriter = new MemoryBinaryWriter();
-            m_textWriter.BaseStream.Position = 80;
-            m_relocWriter = new MemoryBinaryWriter();
         }
 
         public Image GetImage()
         {
             return m_img;
-        }
-
-        public MemoryBinaryWriter GetTextWriter()
-        {
-            return m_textWriter;
         }
 
         public uint GetAligned(uint integer, uint alignWith)
@@ -81,12 +64,9 @@ namespace Mono.Cecil.Binary
             uint sectAlign = img.PEOptionalHeader.NTSpecificFields.SectionAlignment;
             uint fileAlign = img.PEOptionalHeader.NTSpecificFields.FileAlignment;
 
-            m_textSect = img.TextSection;
             foreach (Section s in img.Sections)
             {
-                if (s.Name == Section.Relocs)
-                    m_relocSect = s;
-                else if (s.Name == Section.Resources)
+                if (s.Name == Section.Resources)
                 {
                     m_rsrcSect = s;
                     m_rsrcWriter = new MemoryBinaryWriter();
@@ -96,21 +76,16 @@ namespace Mono.Cecil.Binary
                 }
             }
 
+            uint oldRsrcSectSizeOfData = m_rsrcSect?.SizeOfRawData ?? 0;
+
             // size computations, fields setting, etc.
             uint nbSects = (uint)img.Sections.Count;
             img.PEFileHeader.NumberOfSections = (ushort)nbSects;
 
-            // build the reloc section data
-            uint relocSize = 12;
-            m_relocWriter.Write((uint)0);
-            m_relocWriter.Write(relocSize);
-            m_relocWriter.Write((ushort)0);
-            m_relocWriter.Write((ushort)0);
-
-            m_textSect.VirtualSize = (uint)m_textWriter.BaseStream.Length;
-            m_relocSect.VirtualSize = (uint)m_relocWriter.BaseStream.Length;
             if (m_rsrcSect != null)
                 m_rsrcSect.VirtualSize = (uint)m_rsrcWriter.BaseStream.Length;
+
+            var rvaMapping = new RVAMapping[img.Sections.Count];
 
             // start counting before sections headers
             // section start + section header sixe * number of sections
@@ -119,11 +94,13 @@ namespace Mono.Cecil.Binary
             uint sectOffset = sectAlign;
             uint imageSize = 0;
 
-            foreach (Section sect in img.Sections)
+            for (int i = 0; i < img.Sections.Count; i++)
             {
+                Section sect = img.Sections[i];
                 fileOffset = GetAligned(fileOffset, fileAlign);
                 sectOffset = GetAligned(sectOffset, sectAlign);
 
+                rvaMapping[i] = new RVAMapping(sect.VirtualAddress, sectOffset, sect.SizeOfRawData);
                 sect.PointerToRawData = new RVA(fileOffset);
                 sect.VirtualAddress = new RVA(sectOffset);
                 sect.SizeOfRawData = GetAligned(sect.VirtualSize, fileAlign);
@@ -133,61 +110,89 @@ namespace Mono.Cecil.Binary
                 imageSize += GetAligned(sect.SizeOfRawData, sectAlign);
             }
 
-            if (m_textSect.VirtualAddress.Value != 0x2000)
-                throw new ImageFormatException("Wrong RVA for .text section");
+            MapRVAPointers(rvaMapping, img);
 
             if (resWriter != null)
                 resWriter.Patch();
 
-            img.PEOptionalHeader.StandardFields.CodeSize = GetAligned(
-                m_textSect.SizeOfRawData, fileAlign);
-            img.PEOptionalHeader.StandardFields.InitializedDataSize = m_textSect.SizeOfRawData;
+            img.PEOptionalHeader.StandardFields.InitializedDataSize -= oldRsrcSectSizeOfData;
             if (m_rsrcSect != null)
                 img.PEOptionalHeader.StandardFields.InitializedDataSize += m_rsrcSect.SizeOfRawData;
-            img.PEOptionalHeader.StandardFields.BaseOfCode = m_textSect.VirtualAddress;
-            img.PEOptionalHeader.StandardFields.BaseOfData = m_relocSect.VirtualAddress;
 
             imageSize += headersEnd;
             img.PEOptionalHeader.NTSpecificFields.ImageSize = GetAligned(imageSize, sectAlign);
 
-            img.PEOptionalHeader.DataDirectories.BaseRelocationTable = new DataDirectory(
-                m_relocSect.VirtualAddress, m_relocSect.VirtualSize);
             if (m_rsrcSect != null)
                 img.PEOptionalHeader.DataDirectories.ResourceTable = new DataDirectory(
                     m_rsrcSect.VirtualAddress, (uint)m_rsrcWriter.BaseStream.Length);
+        }
 
-            if (m_kind == AssemblyKind.Dll)
+        void MapRVAPointers(RVAMapping[] mappings, Image image)
+        {
+            MapRVAPointer(ref image.PEOptionalHeader.StandardFields.EntryPointRVA, mappings);
+            MapRVAPointer(ref image.PEOptionalHeader.StandardFields.BaseOfCode, mappings);
+            MapRVAPointer(ref image.PEOptionalHeader.StandardFields.BaseOfData, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ExportTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ImportTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ResourceTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ExceptionTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.CertificateTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.BaseRelocationTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.Debug, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.Copyright, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.GlobalPtr, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.TLSTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.LoadConfigTable, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.BoundImport, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.IAT, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.DelayImportDescriptor, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.CLIHeader, mappings);
+            MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.Reserved, mappings);
+            foreach (Section imageSection in image.Sections)
             {
-                img.PEFileHeader.Characteristics = ImageCharacteristics.CILOnlyDll;
-                img.HintNameTable.RuntimeMain = HintNameTable.RuntimeMainDll;
-                img.PEOptionalHeader.NTSpecificFields.DLLFlags = 0x400;
+                MapRVAPointer(ref imageSection.PointerToRelocations, mappings);
+                MapRVAPointer(ref imageSection.PointerToLineNumbers, mappings);
             }
-            else
+        }
+
+        void MapRVAPointer(ref RVA rva, RVAMapping[] mappings)
+        {
+            if (rva == default) return;
+
+            foreach (RVAMapping mapping in mappings)
             {
-                img.PEFileHeader.Characteristics = ImageCharacteristics.CILOnlyExe;
-                img.HintNameTable.RuntimeMain = HintNameTable.RuntimeMainExe;
+                if (rva >= mapping.OriginalVirtualAddress &&
+                    rva < mapping.OriginalVirtualAddress + mapping.SizeOfRawDataOfRawData)
+                {
+                    rva = rva - mapping.OriginalVirtualAddress + mapping.TargetVirtualAddress;
+                    return;
+                }
             }
 
-            switch (m_kind)
+            throw new ArgumentOutOfRangeException(nameof(rva), "Cannot map the rva to any section");
+        }
+
+        void MapDataDirectory(ref DataDirectory directory, RVAMapping[] mappings)
+        {
+            if (directory == default) return;
+            if (directory.VirtualAddress == default) return;
+            var rva = directory.VirtualAddress;
+            MapRVAPointer(ref rva, mappings);
+            directory.VirtualAddress = rva;
+        }
+
+        struct RVAMapping
+        {
+            public readonly RVA OriginalVirtualAddress;
+            public readonly RVA TargetVirtualAddress;
+            public readonly uint SizeOfRawDataOfRawData;
+
+            public RVAMapping(RVA originalVirtualAddress, RVA targetVirtualAddress, uint sizeOfRawData)
             {
-                case AssemblyKind.Dll:
-                case AssemblyKind.Console:
-                    img.PEOptionalHeader.NTSpecificFields.SubSystem = SubSystem.WindowsCui;
-                    break;
-                case AssemblyKind.Windows:
-                    img.PEOptionalHeader.NTSpecificFields.SubSystem = SubSystem.WindowsGui;
-                    break;
+                OriginalVirtualAddress = originalVirtualAddress;
+                TargetVirtualAddress = targetVirtualAddress;
+                SizeOfRawDataOfRawData = sizeOfRawData;
             }
-
-            RVA importTable = new RVA(img.TextSection.VirtualAddress + m_mdWriter.ImportTablePosition);
-
-            img.PEOptionalHeader.DataDirectories.ImportTable = new DataDirectory(importTable, 0x57);
-
-            img.ImportTable.ImportLookupTable = new RVA((uint)importTable + 0x28);
-
-            img.ImportLookupTable.HintNameRVA = img.ImportAddressTable.HintNameTableRVA =
-                new RVA((uint)img.ImportTable.ImportLookupTable + 0x14);
-            img.ImportTable.Name = new RVA((uint)img.ImportLookupTable.HintNameRVA + 0xe);
         }
 
         public override void VisitDOSHeader(DOSHeader header)
@@ -314,130 +319,39 @@ namespace Mono.Cecil.Binary
 
         public override void VisitImportAddressTable(ImportAddressTable iat)
         {
-            m_textWriter.BaseStream.Position = 0;
-            m_textWriter.Write(iat.HintNameTableRVA.Value);
-            m_textWriter.Write(new byte [4]);
         }
 
         public override void VisitCLIHeader(CLIHeader header)
         {
-            m_textWriter.Write(header.Cb);
-
-            if (m_mdWriter.TargetRuntime >= TargetRuntime.NET_2_0)
-            {
-                m_textWriter.Write((ushort)2);
-                m_textWriter.Write((ushort)5);
-            }
-            else
-            {
-                m_textWriter.Write((ushort)2);
-                m_textWriter.Write((ushort)0);
-            }
-
-            m_textWriter.Write(header.Metadata.VirtualAddress);
-            m_textWriter.Write(header.Metadata.Size);
-            m_textWriter.Write((uint)header.Flags);
-            m_textWriter.Write(header.EntryPointToken);
-            m_textWriter.Write(header.Resources.VirtualAddress);
-            m_textWriter.Write(header.Resources.Size);
-            m_textWriter.Write(header.StrongNameSignature.VirtualAddress);
-            m_textWriter.Write(header.StrongNameSignature.Size);
-            m_textWriter.Write(header.CodeManagerTable.VirtualAddress);
-            m_textWriter.Write(header.CodeManagerTable.Size);
-            m_textWriter.Write(header.VTableFixups.VirtualAddress);
-            m_textWriter.Write(header.VTableFixups.Size);
-            m_textWriter.Write(header.ExportAddressTableJumps.VirtualAddress);
-            m_textWriter.Write(header.ExportAddressTableJumps.Size);
-            m_textWriter.Write(header.ManagedNativeHeader.VirtualAddress);
-            m_textWriter.Write(header.ManagedNativeHeader.Size);
         }
 
         public override void VisitDebugHeader(DebugHeader header)
         {
-            m_textWriter.BaseStream.Position = m_mdWriter.DebugHeaderPosition;
-            uint sizeUntilData = 0x1c;
-            header.AddressOfRawData = m_img.TextSection.VirtualAddress + m_mdWriter.DebugHeaderPosition + sizeUntilData;
-            header.PointerToRawData = 0x200 + m_mdWriter.DebugHeaderPosition + sizeUntilData;
-            header.SizeOfData = 0x18 + (uint)header.FileName.Length + 1;
-
-            m_textWriter.Write(header.Characteristics);
-            m_textWriter.Write(header.TimeDateStamp);
-            m_textWriter.Write(header.MajorVersion);
-            m_textWriter.Write(header.MinorVersion);
-            m_textWriter.Write((uint)header.Type);
-            m_textWriter.Write(header.SizeOfData);
-            m_textWriter.Write(header.AddressOfRawData.Value);
-            m_textWriter.Write(header.PointerToRawData);
-
-            m_textWriter.Write(header.Magic);
-            m_textWriter.Write(header.Signature.ToByteArray());
-            m_textWriter.Write(header.Age);
-            m_textWriter.Write(Encoding.ASCII.GetBytes(header.FileName));
-            m_textWriter.Write((byte)0);
         }
 
         public override void VisitImportTable(ImportTable it)
         {
-            m_textWriter.BaseStream.Position = m_mdWriter.ImportTablePosition;
-            m_textWriter.Write(it.ImportLookupTable.Value);
-            m_textWriter.Write(it.DateTimeStamp);
-            m_textWriter.Write(it.ForwardChain);
-            m_textWriter.Write(it.Name.Value);
-            m_textWriter.Write(it.ImportAddressTable.Value);
-            m_textWriter.Write(new byte [20]);
         }
 
         public override void VisitImportLookupTable(ImportLookupTable ilt)
         {
-            m_textWriter.Write(ilt.HintNameRVA.Value);
-            m_textWriter.Write(new byte [16]);
         }
 
         public override void VisitHintNameTable(HintNameTable hnt)
         {
-            m_textWriter.Write(hnt.Hint);
-            m_textWriter.Write(Encoding.ASCII.GetBytes(hnt.RuntimeMain));
-            m_textWriter.Write('\0');
-            m_textWriter.Write(Encoding.ASCII.GetBytes(hnt.RuntimeLibrary));
-            m_textWriter.Write('\0');
-            m_textWriter.Write(new byte [4]);
-
-            // patch header with ep rva
-            RVA ep = m_img.TextSection.VirtualAddress +
-                     (uint)m_textWriter.BaseStream.Position;
-            long pos = m_binaryWriter.BaseStream.Position;
-            m_binaryWriter.BaseStream.Position = 0xa8;
-            m_binaryWriter.Write(ep.Value);
-            m_binaryWriter.BaseStream.Position = pos;
-
-            // patch reloc Sect with ep
-            uint reloc = (ep.Value + 2) % 0x1000;
-            uint rva = (ep.Value + 2) - reloc;
-
-            m_relocWriter.BaseStream.Position = 0;
-            m_relocWriter.Write(rva);
-            m_relocWriter.BaseStream.Position = 8;
-            m_relocWriter.Write((ushort)((3 << 12) | reloc));
-
-            m_textWriter.Write(hnt.EntryPoint);
-            m_textWriter.Write(hnt.RVA);
         }
 
         public override void TerminateImage(Image img)
         {
-            m_binaryWriter.BaseStream.Position = 0x200;
-
-            WriteSection(m_textSect, m_textWriter);
-            WriteSection(m_relocSect, m_relocWriter);
             if (m_rsrcSect != null)
                 WriteSection(m_rsrcSect, m_rsrcWriter);
         }
 
         void WriteSection(Section sect, MemoryBinaryWriter sectWriter)
         {
+            m_binaryWriter.BaseStream.Position = sect.VirtualAddress.Value;
             sectWriter.MemoryStream.WriteTo(m_binaryWriter.BaseStream);
-            m_binaryWriter.Write(new byte [
-                sect.SizeOfRawData - sectWriter.BaseStream.Length]);
+            m_binaryWriter.Write(new byte [sect.SizeOfRawData - sectWriter.BaseStream.Length]);
         }
     }
 }

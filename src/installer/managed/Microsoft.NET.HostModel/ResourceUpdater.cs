@@ -206,7 +206,9 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
-            // TODO: write to file
+            var writer = new ImageWriter(image, new BinaryWriter(stream));
+            writer.Initialize();
+            image.Accept(writer);
         }
 
         public void Dispose()
