@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdint.h>
-#include "minipal/utils.h"
 
 //
 // This is the mechanism whereby multiple linked modules contribute their global data for initialization at
@@ -219,11 +218,14 @@ int main(int argc, char* argv[])
     return __managed__Main(argc, argv);
 }
 
+#ifdef HAS_ADDRESS_SANITIZER
 // We need to build the bootstrapper as a single object file, to ensure
 // the linker can detect that we have ASAN components early enough in the build.
 // Include our asan support sources for executable projects here to ensure they
 // are compiled into the bootstrapper object.
 #include "minipal/asansupport.cpp"
+#endif // HAS_ADDRESS_SANITIZER
+
 #endif // !NATIVEAOT_DLL
 
 #ifdef NATIVEAOT_DLL
