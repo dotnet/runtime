@@ -5,7 +5,7 @@ import MonoWasmThreads from "consts:monoWasmThreads";
 
 import { GCHandle, MarshalerToCs, MarshalerToJs, MarshalerType, MonoMethod } from "./types/internal";
 import cwraps from "./cwraps";
-import { runtimeHelpers, Module } from "./globals";
+import { runtimeHelpers, Module, loaderHelpers, mono_assert } from "./globals";
 import { alloc_stack_frame, get_arg, get_arg_gc_handle, set_arg_type, set_gc_handle } from "./marshal";
 import { invoke_method_and_handle_exception } from "./invoke-cs";
 import { marshal_array_to_cs, marshal_array_to_cs_impl, marshal_exception_to_cs, marshal_intptr_to_cs } from "./marshal-to-cs";
@@ -43,6 +43,7 @@ export function init_managed_exports(): void {
     mono_assert(load_lazy_assembly_method, "Can't find LoadLazyAssembly method");
 
     runtimeHelpers.javaScriptExports.call_entry_point = async (entry_point: MonoMethod, program_args?: string[]): Promise<number> => {
+        loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             Module.runtimeKeepalivePush();
@@ -95,6 +96,7 @@ export function init_managed_exports(): void {
     };
     runtimeHelpers.javaScriptExports.release_js_owned_object_by_gc_handle = (gc_handle: GCHandle) => {
         mono_assert(gc_handle, "Must be valid gc_handle");
+        loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);
@@ -108,6 +110,7 @@ export function init_managed_exports(): void {
     };
     runtimeHelpers.javaScriptExports.create_task_callback = () => {
         const sp = Module.stackSave();
+        loaderHelpers.assert_runtime_running();
         try {
             const args = alloc_stack_frame(2);
             invoke_method_and_handle_exception(create_task_callback_method, args);
@@ -118,6 +121,7 @@ export function init_managed_exports(): void {
         }
     };
     runtimeHelpers.javaScriptExports.complete_task = (holder_gc_handle: GCHandle, error?: any, data?: any, res_converter?: MarshalerToCs) => {
+        loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(5);
@@ -139,6 +143,7 @@ export function init_managed_exports(): void {
         }
     };
     runtimeHelpers.javaScriptExports.call_delegate = (callback_gc_handle: GCHandle, arg1_js: any, arg2_js: any, arg3_js: any, res_converter?: MarshalerToJs, arg1_converter?: MarshalerToCs, arg2_converter?: MarshalerToCs, arg3_converter?: MarshalerToCs) => {
+        loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(6);
@@ -172,6 +177,7 @@ export function init_managed_exports(): void {
         }
     };
     runtimeHelpers.javaScriptExports.get_managed_stack_trace = (exception_gc_handle: GCHandle) => {
+        loaderHelpers.assert_runtime_running();
         const sp = Module.stackSave();
         try {
             const args = alloc_stack_frame(3);

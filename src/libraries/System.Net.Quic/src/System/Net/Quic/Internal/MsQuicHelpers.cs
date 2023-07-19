@@ -69,7 +69,7 @@ internal static class MsQuicHelpers
 
         if (StatusFailed(status))
         {
-            throw ThrowHelper.GetExceptionForMsQuicStatus(status, $"GetParam({handle}, {parameter}) failed");
+            ThrowHelper.ThrowMsQuicException(status, $"GetParam({handle}, {parameter}) failed");
         }
 
         return value;
@@ -86,7 +86,7 @@ internal static class MsQuicHelpers
 
         if (StatusFailed(status))
         {
-            throw ThrowHelper.GetExceptionForMsQuicStatus(status, $"SetParam({handle}, {parameter}) failed");
+            ThrowHelper.ThrowMsQuicException(status, $"SetParam({handle}, {parameter}) failed");
         }
     }
 }

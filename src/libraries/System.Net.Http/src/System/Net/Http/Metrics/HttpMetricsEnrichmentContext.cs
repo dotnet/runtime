@@ -53,7 +53,7 @@ namespace System.Net.Http.Metrics
         public HttpResponseMessage? Response => _response;
 
         /// <summary>
-        /// Gets the exception that occured or <see langword="null"/> if there was no error.
+        /// Gets the exception that occurred or <see langword="null"/> if there was no error.
         /// </summary>
         /// <remarks>
         /// This property must not be used from outside of the enrichment callbacks.

@@ -1230,6 +1230,30 @@ void CodeGen::inst_RV_RV_TT(
     if (IsEmbBroadcast)
     {
         instOptions = INS_OPTS_EVEX_b;
+        if (emitter::IsBitwiseInstruction(ins) && varTypeIsLong(op2->AsHWIntrinsic()->GetSimdBaseType()))
+        {
+            switch (ins)
+            {
+                case INS_pand:
+                    ins = INS_vpandq;
+                    break;
+
+                case INS_pandn:
+                    ins = INS_vpandnq;
+                    break;
+
+                case INS_por:
+                    ins = INS_vporq;
+                    break;
+
+                case INS_pxor:
+                    ins = INS_vpxorq;
+                    break;
+
+                default:
+                    unreached();
+            }
+        }
     }
 #endif //  TARGET_XARCH && FEATURE_HW_INTRINSICS
     OperandDesc op2Desc = genOperandDesc(op2);
@@ -2280,7 +2304,10 @@ instruction CodeGen::ins_MathOp(genTreeOps oper, var_types type)
 //
 instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
 {
-    // AVX: For now we support only conversion from Int/Long -> float
+    // AVX: Supports following conversions
+    //   srcType = int16/int64                     castToType = float
+    // AVX512: Supports following conversions
+    //   srcType = ulong                           castToType = double/float
 
     switch (from)
     {
@@ -2349,6 +2376,17 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from, emitAttr attr)
                     unreached();
             }
             break;
+
+        case TYP_ULONG:
+            switch (to)
+            {
+                case TYP_DOUBLE:
+                    return INS_vcvtusi2sd64;
+                case TYP_FLOAT:
+                    return INS_vcvtusi2ss64;
+                default:
+                    unreached();
+            }
 
         default:
             unreached();
