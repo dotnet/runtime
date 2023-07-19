@@ -785,24 +785,24 @@ extends:
       #           eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
       #           eq(variables['isRollingBuild'], true))
 
-       - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - linux_x64
-          jobParameters:
-            runtimeVariant: crossaot
-            dependsOn:
-            - mono_linux_offsets
-            monoCrossAOTTargetOS:
-            - linux
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
+      - template: /eng/pipelines/common/platform-matrix.yml
+      parameters:
+        jobTemplate: /eng/pipelines/mono/templates/build-job.yml
+        runtimeFlavor: mono
+        buildConfig: release
+        platforms:
+        - linux_x64
+        jobParameters:
+          runtimeVariant: crossaot
+          dependsOn:
+          - mono_linux_offsets
+          monoCrossAOTTargetOS:
+          - linux
+          condition: >-
+            or(
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+              eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+              eq(variables['isRollingBuild'], true))
 
       # #
       # # Build Mono release
