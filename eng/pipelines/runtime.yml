@@ -737,8 +737,8 @@ extends:
           platforms:
           - linux_x64
           - linux_musl_x64
-          # - linux_arm64
-          # - linux_musl_arm64
+          - linux_arm64
+          - linux_musl_arm64
           - windows_x64
           # - windows_x86
           # - windows_arm64
@@ -763,6 +763,7 @@ extends:
           buildConfig: release
           platforms:
           - osx_x64
+          - osx_arm64
           jobParameters:
             runtimeVariant: crossaot
             dependsOn:
@@ -777,27 +778,6 @@ extends:
             - tvos
             - ios
             - maccatalyst
-            condition: >-
-              or(
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
-                eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
-                eq(variables['isRollingBuild'], true))
-
-      - template: /eng/pipelines/common/platform-matrix.yml
-        parameters:
-          jobTemplate: /eng/pipelines/mono/templates/build-job.yml
-          runtimeFlavor: mono
-          buildConfig: release
-          platforms:
-          - linux_arm64
-          - linux_musl_arm64
-          - osx_arm64
-          jobParameters:
-            runtimeVariant: crossaot
-            dependsOn:
-            - mono_browser_offsets
-            monoCrossAOTTargetOS:
-            - browser
             condition: >-
               or(
                 eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),

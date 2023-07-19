@@ -901,8 +901,6 @@ namespace System.Text.RegularExpressions
                         Ldloc(textSpanLocal);
                     }
 
-                    Debug.Assert(!primarySet.Negated || (primarySet.Chars is null && primarySet.AsciiSet is null));
-
                     if (primarySet.Chars is not null)
                     {
                         switch (primarySet.Chars.Length)
@@ -910,14 +908,14 @@ namespace System.Text.RegularExpressions
                             case 1:
                                 // tmp = ...IndexOf(setChars[0]);
                                 Ldc(primarySet.Chars[0]);
-                                Call(s_spanIndexOfChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptChar : s_spanIndexOfChar);
                                 break;
 
                             case 2:
                                 // tmp = ...IndexOfAny(setChars[0], setChars[1]);
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
-                                Call(s_spanIndexOfAnyCharChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharChar : s_spanIndexOfAnyCharChar);
                                 break;
 
                             case 3:
@@ -925,13 +923,13 @@ namespace System.Text.RegularExpressions
                                 Ldc(primarySet.Chars[0]);
                                 Ldc(primarySet.Chars[1]);
                                 Ldc(primarySet.Chars[2]);
-                                Call(s_spanIndexOfAnyCharCharChar);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
                                 break;
 
                             default:
                                 Ldstr(new string(primarySet.Chars));
                                 Call(s_stringAsSpanMethod);
-                                Call(s_spanIndexOfAnySpan);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
                                 break;
                         }
                     }
@@ -1166,6 +1164,8 @@ namespace System.Text.RegularExpressions
 
                 if (set.Chars is { Length: 1 })
                 {
+                    Debug.Assert(!set.Negated);
+
                     // pos = inputSpan.Slice(0, pos).LastIndexOf(set.Chars[0]);
                     Ldloca(inputSpan);
                     Ldc(0);
