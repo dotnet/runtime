@@ -654,7 +654,11 @@
 
   <!-- Build AOT cross compiler (if available) -->
   <Target Name="BuildMonoCross" Condition="'$(BuildMonoAOTCrossCompiler)' == 'true'" DependsOnTargets="BuildMonoRuntime">
-
+    <!-- Linux specific options -->
+    <PropertyGroup Condition="'$(TargetsLinux)' == 'true'">
+      <_MonoSkipInitCompiler>true</_MonoSkipInitCompiler>
+      <MonoUseCrossTool>true</MonoUseCrossTool>
+    </PropertyGroup>
     <!-- iOS/tvOS specific options -->
     <PropertyGroup Condition="'$(TargetstvOS)' == 'true' or '$(TargetsiOS)' == 'true'">
       <!-- FIXME: Disable for simulator -->
