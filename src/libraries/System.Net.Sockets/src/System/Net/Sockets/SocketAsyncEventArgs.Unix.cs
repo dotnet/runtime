@@ -70,7 +70,7 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationConnect(SafeSocketHandle handle)
         {
-            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.SocketBuffer, ConnectCompletionCallback);
+            SocketError socketError = handle.AsyncContext.ConnectAsync(_socketAddress!.Buffer, ConnectCompletionCallback);
             if (socketError != SocketError.IOPending)
             {
                 FinishOperationSync(socketError, 0, SocketFlags.None);
@@ -148,11 +148,11 @@ namespace System.Net.Sockets
             int socketAddressLen;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer.Slice(_offset, _count), _socketFlags, _socketAddress!.SocketBuffer, out socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback, cancellationToken);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer.Slice(_offset, _count), _socketFlags, _socketAddress!.Buffer, out socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback, cancellationToken);
             }
             else
             {
-                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferListInternal!, _socketFlags, _socketAddress!.SocketBuffer, out socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveFromAsync(_bufferListInternal!, _socketFlags, _socketAddress!.Buffer, out socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
@@ -197,7 +197,7 @@ namespace System.Net.Sockets
             if (socketError != SocketError.IOPending)
             {
                 _socketAddress.Size = socketAddressSize;
-                CompleteReceiveMessageFromOperation(_socketAddress.SocketBuffer, socketAddressSize, receivedFlags, ipPacketInformation);
+                CompleteReceiveMessageFromOperation(_socketAddress.Buffer, socketAddressSize, receivedFlags, ipPacketInformation);
                 FinishOperationSync(socketError, bytesReceived, receivedFlags);
             }
             return socketError;
@@ -296,16 +296,16 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress!.SocketBuffer, out bytesSent, TransferCompletionCallback, cancellationToken);
+                errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress!.Buffer, out bytesSent, TransferCompletionCallback, cancellationToken);
             }
             else
             {
-                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal!, _socketFlags, _socketAddress!.SocketBuffer, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendToAsync(_bufferListInternal!, _socketFlags, _socketAddress!.Buffer, out bytesSent, TransferCompletionCallback);
             }
 
             if (errorCode != SocketError.IOPending)
             {
-                CompleteTransferOperation(_socketAddress.SocketBuffer, _socketAddress.Size, SocketFlags.None);
+                CompleteTransferOperation(_socketAddress.Buffer, _socketAddress.Size, SocketFlags.None);
                 FinishOperationSync(errorCode, bytesSent, SocketFlags.None);
             }
 
@@ -331,7 +331,7 @@ namespace System.Net.Sockets
 
         private SocketError FinishOperationAccept(Internals.SocketAddress remoteSocketAddress)
         {
-            System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.Buffer, 0, _acceptAddressBufferCount);
+            System.Buffer.BlockCopy(_acceptBuffer!, 0, remoteSocketAddress.InternalBuffer, 0, _acceptAddressBufferCount);
             Socket acceptedSocket = _currentSocket!.CreateAcceptSocket(
                 SocketPal.CreateSocket(_acceptedFileDescriptor),
                 _currentSocket._rightEndPoint!.Create(remoteSocketAddress));

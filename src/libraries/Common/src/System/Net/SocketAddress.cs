@@ -28,7 +28,7 @@ namespace System.Net.Internals
 #pragma warning restore CA1802
 
         internal int InternalSize;
-        internal byte[] Buffer;
+        internal byte[] InternalBuffer;
 
         private const int MinSize = 2;
         private const int MaxSize = 32; // IrDA requires 32 bytes
@@ -40,7 +40,7 @@ namespace System.Net.Internals
         {
             get
             {
-                return SocketAddressPal.GetAddressFamily(Buffer);
+                return SocketAddressPal.GetAddressFamily(InternalBuffer);
             }
         }
 
@@ -52,7 +52,7 @@ namespace System.Net.Internals
             }
             set
             {
-                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, Buffer.Length);
+                ArgumentOutOfRangeException.ThrowIfGreaterThan(value, InternalBuffer.Length);
                 ArgumentOutOfRangeException.ThrowIfLessThan(value, MinSize);
                 InternalSize = value;
             }
@@ -70,7 +70,7 @@ namespace System.Net.Internals
                 {
                     throw new IndexOutOfRangeException();
                 }
-                return Buffer[offset];
+                return InternalBuffer[offset];
             }
             set
             {
@@ -78,11 +78,11 @@ namespace System.Net.Internals
                 {
                     throw new IndexOutOfRangeException();
                 }
-                if (Buffer[offset] != value)
+                if (InternalBuffer[offset] != value)
                 {
                     _changed = true;
                 }
-                Buffer[offset] = value;
+                InternalBuffer[offset] = value;
             }
         }
 
@@ -101,10 +101,10 @@ namespace System.Net.Internals
             // The following formula will extend 'size' to the alignment boundary then add IntPtr.Size more bytes.
             size = (size + IntPtr.Size -  1) / IntPtr.Size * IntPtr.Size + IntPtr.Size;
 #endif
-            Buffer = new byte[size];
-            Buffer[0] = (byte)InternalSize;
+            InternalBuffer = new byte[size];
+            InternalBuffer[0] = (byte)InternalSize;
 
-            SocketAddressPal.SetAddressFamily(Buffer, family);
+            SocketAddressPal.SetAddressFamily(InternalBuffer, family);
         }
 
         internal SocketAddress(IPAddress ipAddress)
@@ -112,7 +112,7 @@ namespace System.Net.Internals
                 ((ipAddress.AddressFamily == AddressFamily.InterNetwork) ? IPv4AddressSize : IPv6AddressSize))
         {
             // No Port.
-            SocketAddressPal.SetPort(Buffer, 0);
+            SocketAddressPal.SetPort(InternalBuffer, 0);
 
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
@@ -120,7 +120,7 @@ namespace System.Net.Internals
                 ipAddress.TryWriteBytes(addressBytes, out int bytesWritten);
                 Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
 
-                SocketAddressPal.SetIPv6Address(Buffer, addressBytes, (uint)ipAddress.ScopeId);
+                SocketAddressPal.SetIPv6Address(InternalBuffer, addressBytes, (uint)ipAddress.ScopeId);
             }
             else
             {
@@ -129,32 +129,32 @@ namespace System.Net.Internals
 #pragma warning restore CS0618
 
                 Debug.Assert(ipAddress.AddressFamily == AddressFamily.InterNetwork);
-                SocketAddressPal.SetIPv4Address(Buffer, address);
+                SocketAddressPal.SetIPv4Address(InternalBuffer, address);
             }
         }
 
         internal SocketAddress(IPAddress ipaddress, int port)
             : this(ipaddress)
         {
-            SocketAddressPal.SetPort(Buffer, unchecked((ushort)port));
+            SocketAddressPal.SetPort(InternalBuffer, unchecked((ushort)port));
         }
 
         internal SocketAddress(AddressFamily addressFamily, ReadOnlySpan<byte> buffer)
         {
-            Buffer = buffer.ToArray();
+            InternalBuffer = buffer.ToArray();
             InternalSize = Buffer.Length;
-            SocketAddressPal.SetAddressFamily(Buffer, addressFamily);
+            SocketAddressPal.SetAddressFamily(InternalBuffer, addressFamily);
         }
 
         /// <summary>This represents underlying memory that can be passed to native OS calls.</summary>
         /// <remarks>
         /// This memory can be invalidated if <see cref="Size"/> is changed or if the SocketAddress is used in another receive call.
         /// </remarks>
-        public Memory<byte> SocketBuffer
+        public Memory<byte> Buffer
         {
             get
             {
-                return new Memory<byte>(Buffer, 0, InternalSize);
+                return new Memory<byte>(InternalBuffer, 0, InternalSize);
             }
         }
 
@@ -166,14 +166,14 @@ namespace System.Net.Internals
 
                 Span<byte> address = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
                 uint scope;
-                SocketAddressPal.GetIPv6Address(Buffer, address, out scope);
+                SocketAddressPal.GetIPv6Address(InternalBuffer, address, out scope);
 
                 return new IPAddress(address, (long)scope);
             }
             else if (Family == AddressFamily.InterNetwork)
             {
                 Debug.Assert(Size >= IPv4AddressSize);
-                long address = (long)SocketAddressPal.GetIPv4Address(Buffer) & 0x0FFFFFFFF;
+                long address = (long)SocketAddressPal.GetIPv4Address(InternalBuffer) & 0x0FFFFFFFF;
                 return new IPAddress(address);
             }
             else
@@ -186,7 +186,7 @@ namespace System.Net.Internals
             }
         }
 
-        internal int GetPort() => (int)SocketAddressPal.GetPort(Buffer);
+        internal int GetPort() => (int)SocketAddressPal.GetPort(InternalBuffer);
 
         internal IPEndPoint GetIPEndPoint()
         {
@@ -198,22 +198,22 @@ namespace System.Net.Internals
         internal void CopyAddressSizeIntoBuffer()
         {
             int addressSizeOffset = GetAddressSizeOffset();
-            Buffer[addressSizeOffset] = unchecked((byte)(InternalSize));
-            Buffer[addressSizeOffset + 1] = unchecked((byte)(InternalSize >> 8));
-            Buffer[addressSizeOffset + 2] = unchecked((byte)(InternalSize >> 16));
-            Buffer[addressSizeOffset + 3] = unchecked((byte)(InternalSize >> 24));
+            InternalBuffer[addressSizeOffset] = unchecked((byte)(InternalSize));
+            InternalBuffer[addressSizeOffset + 1] = unchecked((byte)(InternalSize >> 8));
+            InternalBuffer[addressSizeOffset + 2] = unchecked((byte)(InternalSize >> 16));
+            InternalBuffer[addressSizeOffset + 3] = unchecked((byte)(InternalSize >> 24));
         }
 
         // Can be called after the above method did work.
         internal int GetAddressSizeOffset()
         {
-            return Buffer.Length - IntPtr.Size;
+            return InternalBuffer.Length - IntPtr.Size;
         }
 #endif
 
         public override bool Equals(object? comparand) =>
             comparand is SocketAddress other &&
-            Buffer.AsSpan(0, Size).SequenceEqual(other.Buffer.AsSpan(0, other.Size));
+            InternalBuffer.AsSpan(0, Size).SequenceEqual(other.InternalBuffer.AsSpan(0, other.Size));
 
         public override int GetHashCode()
         {
@@ -227,7 +227,7 @@ namespace System.Net.Internals
 
                 for (i = 0; i < size; i += 4)
                 {
-                    _hash ^= BinaryPrimitives.ReadInt32LittleEndian(Buffer.AsSpan(i));
+                    _hash ^= BinaryPrimitives.ReadInt32LittleEndian(InternalBuffer.AsSpan(i));
                 }
                 if ((Size & 3) != 0)
                 {
@@ -236,7 +236,7 @@ namespace System.Net.Internals
 
                     for (; i < Size; ++i)
                     {
-                        remnant |= ((int)Buffer[i]) << shift;
+                        remnant |= ((int)InternalBuffer[i]) << shift;
                         shift += 8;
                     }
                     _hash ^= remnant;
@@ -276,7 +276,7 @@ namespace System.Net.Internals
             result[length++] = ':';
             result[length++] = '{';
 
-            byte[] buffer = Buffer;
+            byte[] buffer = InternalBuffer;
             for (int i = DataOffset; i < Size; i++)
             {
                 if (i > DataOffset)

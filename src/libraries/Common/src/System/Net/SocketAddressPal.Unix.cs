@@ -13,6 +13,8 @@ namespace System.Net
     {
         public static readonly int IPv6AddressSize = GetIPv6AddressSize();
         public static readonly int IPv4AddressSize = GetIPv4AddressSize();
+        //public static readonly int IPv4AddressSize = GetUdsAddressSize();
+        //public static readonly int IPv4AddressSize = GetMaxAddressSize();
 
         private static unsafe int GetIPv6AddressSize()
         {

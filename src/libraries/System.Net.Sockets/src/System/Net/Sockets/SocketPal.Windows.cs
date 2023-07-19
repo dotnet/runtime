@@ -448,7 +448,7 @@ namespace System.Net.Sockets
             receiveAddress = socketAddress;
             ipPacketInformation = default(IPPacketInformation);
             fixed (byte* bufferPtr = &MemoryMarshal.GetReference(buffer))
-            fixed (byte* ptrSocketAddress = socketAddress.Buffer)
+            fixed (byte* ptrSocketAddress = &MemoryMarshal.GetReference(socketAddress.Buffer.Span))
             {
                 Interop.Winsock.WSAMsg wsaMsg;
                 wsaMsg.socketAddress = (IntPtr)ptrSocketAddress;

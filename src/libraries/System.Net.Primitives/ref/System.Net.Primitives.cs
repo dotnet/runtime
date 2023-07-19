@@ -356,7 +356,7 @@ namespace System.Net
         public System.Net.Sockets.AddressFamily Family { get { throw null; } }
         public byte this[int offset] { get { throw null; } set { } }
         public int Size { get { throw null; } set { } }
-        public System.Memory<byte> SocketBuffer { get { throw null; } }
+        public System.Memory<byte> Buffer { get { throw null; } }
         public override bool Equals(object? comparand) { throw null; }
         public override int GetHashCode() { throw null; }
         public override string ToString() { throw null; }

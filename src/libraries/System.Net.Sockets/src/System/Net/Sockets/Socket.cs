@@ -304,7 +304,7 @@ namespace System.Net.Sockets
 
                     unsafe
                     {
-                        fixed (byte* buffer = socketAddress.Buffer)
+                        fixed (byte* buffer = socketAddress.InternalBuffer)
                         fixed (int* bufferSize = &socketAddress.InternalSize)
                         {
                             // This may throw ObjectDisposedException.
@@ -346,7 +346,7 @@ namespace System.Net.Sockets
                     // This may throw ObjectDisposedException.
                     SocketError errorCode = SocketPal.GetPeerName(
                         _handle,
-                        socketAddress.Buffer,
+                        socketAddress.InternalBuffer,
                         ref socketAddress.InternalSize);
 
                     if (errorCode != SocketError.Success)
@@ -765,7 +765,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketPal.Bind(
                 _handle,
                 _protocolType,
-                socketAddress.Buffer,
+                socketAddress.InternalBuffer,
                 socketAddress.Size);
 
             // Throw an appropriate SocketException if the native call fails.
@@ -1019,7 +1019,7 @@ namespace System.Net.Sockets
             {
                 errorCode = SocketPal.Accept(
                     _handle,
-                    socketAddress.SocketBuffer,
+                    socketAddress.Buffer,
                     out socketAddressLen,
                     out acceptedSocketHandle);
                 socketAddress.Size = socketAddressLen;
@@ -1284,7 +1284,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.SocketBuffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1356,7 +1356,7 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = Serialize(ref remoteEP);
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.SocketBuffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1395,7 +1395,7 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.SocketBuffer, out bytesTransferred);
+            SocketError errorCode = SocketPal.SendTo(_handle, buffer, socketFlags, socketAddress.Buffer, out bytesTransferred);
 
             // Throw an appropriate SocketException if the native call fails.
             if (errorCode != SocketError.Success)
@@ -1886,19 +1886,19 @@ namespace System.Net.Sockets
         /// </summary>
         /// <param name="buffer">A span of bytes that is the storage location for received data.</param>
         /// <param name="socketFlags">A bitwise combination of the <see cref="SocketFlags"/> values.</param>
-        /// <param name="socketAddress">An <see cref="SocketAddress"/>, passed by reference, that represents the remote server.</param>
+        /// <param name="receivedSocketAddress">An <see cref="SocketAddress"/>, that will be updated with value of the remote peer.</param>
         /// <returns>The number of bytes received.</returns>
         /// <exception cref="ArgumentNullException"><c>remoteEP</c> is <see langword="null" />.</exception>
         /// <exception cref="SocketException">An error occurred when attempting to access the socket.</exception>
         /// <exception cref="ObjectDisposedException">The <see cref="Socket"/> has been closed.</exception>
-        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress socketAddress)
+        public int ReceiveFrom(Span<byte> buffer, SocketFlags socketFlags, SocketAddress receivedSocketAddress)
         {
             ThrowIfDisposed();
 
             ValidateBlockingMode();
 
             int bytesTransferred;
-            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, socketAddress.SocketBuffer, out int socketAddressSize, out bytesTransferred);
+            SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, socketFlags, receivedSocketAddress.Buffer, out int socketAddressSize, out bytesTransferred);
 
             UpdateReceiveSocketErrorForDisposed(ref errorCode, bytesTransferred);
             // If the native call fails we'll throw a SocketException.
@@ -1925,7 +1925,7 @@ namespace System.Net.Sockets
                 throw socketException;
             }
 
-            socketAddress.Size = socketAddressSize;
+            receivedSocketAddress.Size = socketAddressSize;
 
             return bytesTransferred;
         }
@@ -3172,7 +3172,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             try
             {
-                errorCode = SocketPal.Connect(_handle, socketAddress.SocketBuffer);
+                errorCode = SocketPal.Connect(_handle, socketAddress.Buffer);
             }
             catch (Exception ex)
             {
