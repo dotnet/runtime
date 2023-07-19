@@ -1438,6 +1438,42 @@ extends:
       #       timeoutInMinutes: 95
       #       condition: eq(variables['isRollingBuild'], true)
 
+      #
+      # Build Mono AOT offset headers once, for consumption elsewhere
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/mono/templates/generate-offsets.yml
+          buildConfig: release
+          platforms:
+          - linux_arm64
+          jobParameters:
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+
+      #
+      # Build Mono release AOT cross-compiler
+      #
+      - template: /eng/pipelines/common/platform-matrix.yml
+        parameters:
+          jobTemplate: /eng/pipelines/common/global-build-job.yml
+          runtimeFlavor: mono
+          buildConfig: release
+          platforms:
+          - linux_x64
+          jobParameters:
+            buildArgs: -s mono+packs -c $(_BuildConfig)
+                      /p:MonoCrossAOTTargetOS=linux /p:SkipMonoCrossJitConfigure=true /p:BuildMonoAOTCrossCompilerOnly=true
+            nameSuffix: CrossAOT_Mono
+            runtimeVariant: crossaot
+            dependsOn:
+            - mono_linux_offsets
+            monoCrossAOTTargetOS:
+            - linux
+            isOfficialBuild: ${{ variables.isOfficialBuild }}
+            extraStepsTemplate: /eng/pipelines/common/upload-intermediate-artifacts-step.yml
+            extraStepsParameters:
+              name: MonoRuntimePacks
+
       # 
       # Mono CoreCLR runtime Test executions using live libraries and LLVM Full AOT
       # Only when Mono is changed
@@ -1449,7 +1485,7 @@ extends:
           buildConfig: Release
           runtimeFlavor: mono
           platforms:
-            - linux_x64
+            # - linux_x64
             - linux_arm64
           variables:
             - name: timeoutPerTestInMinutes
