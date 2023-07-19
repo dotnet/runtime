@@ -211,10 +211,10 @@ if (CLR_CMAKE_ENABLE_SANITIZERS)
       # Disable the use-after-return check for ASAN on release builds. We track the fake-stack used by use-after-return
       # checking only on Debug/Checked builds.
       # On Debug and Checked builds, always enable the use-after-return check to reduce code-size.
-      add_compile_options($<$AND:$<CONFIG:RelWithDebInfo, Release>,$<COMPILE_LANG_AND_ID:C,Clang>>:-fsanitize-address-use-after-return=never>)
-      add_compile_options($<$AND:$<CONFIG:RelWithDebInfo, Release>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-fsanitize-address-use-after-return=never>)
-      add_compile_options($<$AND:$<CONFIG:Debug, Checked>,$<COMPILE_LANG_AND_ID:C,Clang>>:-fsanitize-address-use-after-return=always>)
-      add_compile_options($<$AND:$<CONFIG:Debug, Checked>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-fsanitize-address-use-after-return=always>)
+      add_compile_options($<$AND:$<CONFIG:RelWithDebInfo,Release>,$<COMPILE_LANG_AND_ID:C,Clang>>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$AND:$<CONFIG:RelWithDebInfo,Release>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-fsanitize-address-use-after-return=never>)
+      add_compile_options($<$AND:$<CONFIG:Debug,Checked>,$<COMPILE_LANG_AND_ID:C,Clang>>:-fsanitize-address-use-after-return=always>)
+      add_compile_options($<$AND:$<CONFIG:Debug,Checked>,$<COMPILE_LANG_AND_ID:CXX,Clang>>:-fsanitize-address-use-after-return=always>)
     endif()
   endif()
 
