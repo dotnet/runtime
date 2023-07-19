@@ -25,13 +25,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
 
                 _emitBlankLineBeforeNextStatement = false;
-                EmitRootBindingClassStartScope(Identifier.GeneratedConfigurationBinder);
+                EmitRootBindingClassStartBlock(Identifier.GeneratedConfigurationBinder);
 
                 EmitGetMethods();
                 EmitGetValueMethods();
                 EmitBindMethods_ConfigurationBinder();
 
-                EmitEndScope();
+                EmitEndBlock();
                 _emitBlankLineBeforeNextStatement = true;
             }
 

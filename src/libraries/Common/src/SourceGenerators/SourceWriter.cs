@@ -64,18 +64,14 @@ namespace SourceGenerators
         public SourceText ToSourceText()
         {
             Debug.Assert(_indentation == 0 && _sb.Length > 0);
-            return SourceText.From(ToString(), Encoding.UTF8);
+            return SourceText.From(_sb.ToString(), Encoding.UTF8);
         }
 
-        public override string ToString() => _sb.ToString();
-
-        #region Test utilities.
         public void Reset()
         {
-            _indentation = 0;
             _sb.Clear();
+            _indentation = 0;
         }
-        #endregion
 
         private void AddIndentation()
             => _sb.Append(IndentationChar, CharsPerIndentation * _indentation);

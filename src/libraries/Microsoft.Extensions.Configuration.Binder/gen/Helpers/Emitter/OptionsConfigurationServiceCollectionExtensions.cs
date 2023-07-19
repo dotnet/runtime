@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     return;
                 }
 
-                EmitRootBindingClassStartScope(Identifier.GeneratedServiceCollectionBinder);
+                EmitRootBindingClassStartBlock(Identifier.GeneratedServiceCollectionBinder);
 
                 const string defaultNameExpr = "string.Empty";
                 const string configureMethodString = $"global::{Identifier.GeneratedServiceCollectionBinder}.{Identifier.Configure}";
@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     EmitStartMethod(configParam);
                     _writer.WriteLine($"return {configureMethodString}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
-                    EmitEndScope();
+                    EmitEndBlock();
                 }
 
                 if (ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Configure_T_name))
@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartMethod(
                         paramList: $"string? {Identifier.name}, " + configParam);
                     _writer.WriteLine($"return {configureMethodString}<{Identifier.TOptions}>({Identifier.services}, {Identifier.name}, {Identifier.configuration}, {Identifier.configureOptions}: null);");
-                    EmitEndScope();
+                    EmitEndBlock();
                 }
 
                 if (ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Configure_T_BinderOptions))
@@ -42,10 +42,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitStartMethod(
                         paramList: configParam + $", {FullyQualifiedDisplayString.ActionOfBinderOptions}? {Identifier.configureOptions}");
                     _writer.WriteLine($"return {configureMethodString}<{Identifier.TOptions}>({Identifier.services}, {defaultNameExpr}, {Identifier.configuration}, {Identifier.configureOptions});");
-                    EmitEndScope();
+                    EmitEndBlock();
                 }
 
-                // Core Configure method implementation that the others call into.
+                // Core Configure method that the other overloads call.
+                // Like the others, it is public API that could be called directly by users.
+                // So, it is always generated whenever a Configure overload is called.
                 string optionsNamespaceName = "global::Microsoft.Extensions.Options";
                 string bindCoreUntypedDisplayString = GetHelperMethodDisplayString(nameof(MethodsToGen_CoreBindingHelper.BindCoreUntyped));
 
@@ -57,9 +59,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     {{FullyQualifiedDisplayString.AddSingleton}}<{{FullyQualifiedDisplayString.IOptionsChangeTokenSource}}<{{Identifier.TOptions}}>>({{Identifier.services}}, new {{FullyQualifiedDisplayString.ConfigurationChangeTokenSource}}<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.configuration}}));
                     return {{FullyQualifiedDisplayString.AddSingleton}}<{{optionsNamespaceName}}.IConfigureOptions<{{Identifier.TOptions}}>>({{Identifier.services}}, new {{optionsNamespaceName}}.ConfigureNamedOptions<{{Identifier.TOptions}}>({{Identifier.name}}, {{Identifier.obj}} => {{bindCoreUntypedDisplayString}}({{Identifier.configuration}}, {{Identifier.obj}}, typeof({{Identifier.TOptions}}), {{Identifier.configureOptions}})));
                     """);
-                EmitEndScope();
+                EmitEndBlock();
 
-                EmitEndScope();
+                EmitEndBlock();
                 _emitBlankLineBeforeNextStatement = true;
             }
 
@@ -68,7 +70,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 paramList = $"this {FullyQualifiedDisplayString.IServiceCollection} {Identifier.services}, {paramList}";
 
                 EmitBlankLineIfRequired();
-                EmitStartScope($$"""
+                EmitStartBlock($$"""
                     /// <summary>Registers a configuration instance which TOptions will bind against.</summary>
                     public static {{FullyQualifiedDisplayString.IServiceCollection}} {{Identifier.Configure}}<{{Identifier.TOptions}}>({{paramList}}) where {{Identifier.TOptions}} : class
                     """);

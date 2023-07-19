@@ -10,8 +10,6 @@
              Link="Common\System\Collections\DictionaryExtensions.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs"
              Link="Common\System\Security\Cryptography\ByteUtils.cs" />
-    <Compile Include="$(CommonTestPath)SourceGenerators\RoslynTestUtils.cs"
-             Link="Common\System\SourceGenerators\RoslynTestUtils.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\cgroups\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
