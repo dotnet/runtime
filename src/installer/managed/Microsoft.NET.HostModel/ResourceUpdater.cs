@@ -2,9 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Mono.Cecil.Binary;
 
 namespace Microsoft.NET.HostModel
@@ -102,6 +100,13 @@ namespace Microsoft.NET.HostModel
             return directory;
         }
 
+        private static ResourceDirectoryTable FindOrCreateChildDirectory(ResourceDirectoryTable table, ResourceDirectoryEntry keyHolder)
+        {
+            return keyHolder.IdentifiedByName
+                ? FindOrCreateChildDirectory(table, keyHolder.Name.String)
+                : FindOrCreateChildDirectory(table, keyHolder.ID);
+        }
+
         /// <summary>
         /// Add all resources from a source PE file. It is assumed
         /// that the input is a valid PE file. If it is not, an
@@ -111,45 +116,25 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public ResourceUpdater AddResourcesFromPEImage(string peFile)
         {
-            if (hUpdate.IsInvalid)
-            {
-                ThrowExceptionForInvalidUpdate();
-            }
+            var module = ImageReader.Read(peFile).Image;
 
-            // Using both flags lets the OS loader decide how to load
-            // it most efficiently. Either mode will prevent other
-            // processes from modifying the module while it is loaded.
-            IntPtr hModule = Kernel32.LoadLibraryEx(peFile, IntPtr.Zero,
-                                                    Kernel32.LoadLibraryFlags.LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE |
-                                                    Kernel32.LoadLibraryFlags.LOAD_LIBRARY_AS_IMAGE_RESOURCE);
-            if (hModule == IntPtr.Zero)
+            foreach (ResourceDirectoryEntry lpType in module.ResourceDirectoryRoot.Entries)
             {
-                ThrowExceptionForLastWin32Error();
-            }
-
-            var enumTypesCallback = new Kernel32.EnumResTypeProc(EnumAndUpdateTypesCallback);
-            var errorInfo = new EnumResourcesErrorInfo();
-            GCHandle errorInfoHandle = GCHandle.Alloc(errorInfo);
-            var errorInfoPtr = GCHandle.ToIntPtr(errorInfoHandle);
-
-            try
-            {
-                if (!Kernel32.EnumResourceTypes(hModule, enumTypesCallback, errorInfoPtr))
+                var typeDirectory = FindOrCreateChildDirectory(image.ResourceDirectoryRoot, lpType);
+                foreach (ResourceDirectoryEntry lpName in ((ResourceDirectoryTable)lpType.Child).Entries)
                 {
-                    if (Marshal.GetHRForLastWin32Error() != Kernel32.ResourceDataNotFoundHRESULT)
+                    var nameDirectory = FindOrCreateChildDirectory(typeDirectory, lpName);
+                    foreach (ResourceDirectoryEntry wLang in ((ResourceDirectoryTable)lpName.Child).Entries)
                     {
-                        CaptureEnumResourcesErrorInfo(errorInfoPtr);
-                        errorInfo.ThrowException();
+                        var hResource = (ResourceDataEntry)wLang.Child;
+                        var entry = FindOrCreateEntry(nameDirectory, wLang.ID);
+                        entry.Child = new ResourceDataEntry
+                        {
+                            Codepage = hResource.Codepage,
+                            Reserved = hResource.Reserved,
+                            ResourceData = hResource.ResourceData,
+                        };
                     }
-                }
-            }
-            finally
-            {
-                errorInfoHandle.Free();
-
-                if (!Kernel32.FreeLibrary(hModule))
-                {
-                    ThrowExceptionForLastWin32Error();
                 }
             }
 
@@ -222,110 +207,6 @@ namespace Microsoft.NET.HostModel
         public void Update()
         {
             // TODO: write to file
-        }
-
-        private bool EnumAndUpdateTypesCallback(IntPtr hModule, IntPtr lpType, IntPtr lParam)
-        {
-            var enumNamesCallback = new Kernel32.EnumResNameProc(EnumAndUpdateNamesCallback);
-            if (!Kernel32.EnumResourceNames(hModule, lpType, enumNamesCallback, lParam))
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-            return true;
-        }
-
-        private bool EnumAndUpdateNamesCallback(IntPtr hModule, IntPtr lpType, IntPtr lpName, IntPtr lParam)
-        {
-            var enumLanguagesCallback = new Kernel32.EnumResLangProc(EnumAndUpdateLanguagesCallback);
-            if (!Kernel32.EnumResourceLanguages(hModule, lpType, lpName, enumLanguagesCallback, lParam))
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-            return true;
-        }
-
-        private bool EnumAndUpdateLanguagesCallback(IntPtr hModule, IntPtr lpType, IntPtr lpName, ushort wLang, IntPtr lParam)
-        {
-            IntPtr hResource = Kernel32.FindResourceEx(hModule, lpType, lpName, wLang);
-            if (hResource == IntPtr.Zero)
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-
-            // hResourceLoaded is just a handle to the resource, which
-            // can be used to get the resource data
-            IntPtr hResourceLoaded = Kernel32.LoadResource(hModule, hResource);
-            if (hResourceLoaded == IntPtr.Zero)
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-
-            // This doesn't actually lock memory. It just retrieves a
-            // pointer to the resource data. The pointer is valid
-            // until the module is unloaded.
-            IntPtr lpResourceData = Kernel32.LockResource(hResourceLoaded);
-            if (lpResourceData == IntPtr.Zero)
-            {
-                ((EnumResourcesErrorInfo)GCHandle.FromIntPtr(lParam).Target).failedToLockResource = true;
-            }
-
-            if (!Kernel32.UpdateResource(hUpdate, lpType, lpName, wLang, lpResourceData, Kernel32.SizeofResource(hModule, hResource)))
-            {
-                CaptureEnumResourcesErrorInfo(lParam);
-                return false;
-            }
-
-            return true;
-        }
-
-        private sealed class EnumResourcesErrorInfo
-        {
-            public int hResult;
-            public bool failedToLockResource;
-
-            public void ThrowException()
-            {
-                if (failedToLockResource)
-                {
-                    Debug.Assert(hResult == 0);
-                    throw new ResourceNotAvailableException("Failed to lock resource");
-                }
-
-                Debug.Assert(hResult != 0);
-                throw new HResultException(hResult);
-            }
-        }
-
-        private static void CaptureEnumResourcesErrorInfo(IntPtr errorInfoPtr)
-        {
-            int hResult = Marshal.GetHRForLastWin32Error();
-            if (hResult != Kernel32.UserStoppedResourceEnumerationHRESULT)
-            {
-                GCHandle errorInfoHandle = GCHandle.FromIntPtr(errorInfoPtr);
-                var errorInfo = (EnumResourcesErrorInfo)errorInfoHandle.Target;
-                errorInfo.hResult = hResult;
-            }
-        }
-
-        private sealed class ResourceNotAvailableException : Exception
-        {
-            public ResourceNotAvailableException(string message) : base(message)
-            {
-            }
-        }
-
-        private static void ThrowExceptionForLastWin32Error()
-        {
-            throw new HResultException(Marshal.GetHRForLastWin32Error());
-        }
-
-        private static void ThrowExceptionForInvalidUpdate()
-        {
-            throw new InvalidOperationException("Update handle is invalid. This instance may not be used for further updates");
         }
 
         public void Dispose()
