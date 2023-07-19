@@ -233,9 +233,9 @@ namespace System.Numerics
                 uint digit = unchecked((uint)carry);
                 carry >>= 32;
                 ref uint leftElement = ref Unsafe.Add(ref leftPtr, i);
-                if (leftElement < digit)
-                    ++carry;
-                leftElement = unchecked(leftElement - digit);
+                ulong newDigit = unchecked((ulong)leftElement - digit);
+                carry += (newDigit >> 32) & 0x1; // This is the same as if (leftElement < digit) ++carry
+                leftElement = unchecked((uint)newDigit);
             }
 
             return (uint)carry;
