@@ -362,7 +362,7 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         const regex = new RegExp(`^((?!${ignoredPart}|[0-9]).)*$`);
         const filteredEra = dateParts.filter(part => regex.test(part));
         if (filteredEra.length == 0)
-            throw new Error(`Internal error, era format for locale ${locale} was in non-standard format.`);
+            throw new Error(`Internal error, era for locale ${locale} was in non-standard format.`);
         return filteredEra[0].trim();
     }
 

@@ -35,10 +35,11 @@ namespace System.Globalization
                 throw new Exception((string)exResult);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
-            if (subresults.Length < 2)
+            if (subresults.Length < 3)
                 throw new Exception("CultureInfo recieved from the Browser is in icorrect format.");
             culture._sAM1159 = subresults[0];
             culture._sPM2359 = subresults[1];
+            culture._saShortTimes = new string[] { subresults[2] };
             return culture;
         }
     }
