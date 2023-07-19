@@ -261,7 +261,7 @@ namespace Microsoft.Extensions.DependencyInjection
             public bool IsScope => !_serviceProvider.Root.IsRootScope;
         }
 
-        private class ServiceAccessor
+        private sealed class ServiceAccessor
         {
             public ServiceCallSite? CallSite { get; set; }
             public Func<ServiceProviderEngineScope, object?>? RealizedService { get; set; }
