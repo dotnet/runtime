@@ -62,7 +62,6 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [PlatformSpecific(TestPlatforms.Windows)]
         public async Task UdpConnection_ThrowsException(bool usePreAndPostbufferOverload)
         {
             // Create file to send
