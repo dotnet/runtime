@@ -208,7 +208,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.sfx+libs.native -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
@@ -245,7 +245,7 @@ extends:
           jobParameters:
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.sfx+libs.native -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
@@ -288,7 +288,7 @@ extends:
             testGroup: innerloop
             timeoutInMinutes: 120
             nameSuffix: NativeAOT
-            buildArgs: -s clr.aot+host.native+libs.sfx -rc $(_BuildConfig) -lc Release -hc Release
+            buildArgs: -s clr.aot+host.native+libs.sfx+libs.native -rc $(_BuildConfig) -lc Release -hc Release
             extraStepsTemplate: /eng/pipelines/coreclr/nativeaot-post-build-steps.yml
             extraStepsParameters:
               creator: dotnet-bot
