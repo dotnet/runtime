@@ -9,3 +9,10 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IServiceCollection AddMetrics(this Microsoft.Extensions.DependencyInjection.IServiceCollection services, System.Action<Microsoft.Extensions.Diagnostics.Metrics.IMetricsBuilder> configure) { throw null; }
     }
 }
+namespace Microsoft.Extensions.Diagnostics.Metrics
+{
+    public static class MetricsBuilderConsoleExtensions
+    {
+        public static IMetricsBuilder AddConsole(this IMetricsBuilder builder) => throw null!;
+    }
+}
