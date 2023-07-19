@@ -24,6 +24,10 @@
     <PackageReference Include="System.Text.Json" Version="$(SystemTextJsonVersion)" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Mono.Cecil.Binary\Mono.Cecil.Binary.csproj" />
+  </ItemGroup>
+
 </Project>
 
 
