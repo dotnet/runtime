@@ -6,13 +6,12 @@ using System.Diagnostics.Metrics;
 
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
-    public class InstrumentEnableRule
+    public class InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, Func<string?, Instrument, bool>? filter)
     {
-        public InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, Action<string?, Instrument, bool> filter) { }
-        public string? ListenerName { get; }
-        public string? MeterName { get; }
-        public MeterScope Scopes { get; }
-        public string? InstrumentName { get; }
-        public Func<string?, Instrument, bool>? Filter { get; }
+        public string? ListenerName { get; } = listenerName;
+        public string? MeterName { get; } = meterName;
+        public MeterScope Scopes { get; } = scopes;
+        public string? InstrumentName { get; } = instrumentName;
+        public Func<string?, Instrument, bool>? Filter { get; } = filter;
     }
 }

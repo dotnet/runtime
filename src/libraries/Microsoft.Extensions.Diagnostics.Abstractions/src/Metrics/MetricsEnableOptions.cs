@@ -7,6 +7,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     public class MetricsEnableOptions
     {
-        public IList<InstrumentEnableRule> Rules { get; } = null!;
+        public IList<InstrumentEnableRule> Rules { get; } = new List<InstrumentEnableRule>();
     }
 }

@@ -13,10 +13,12 @@
 
   <ItemGroup>
     <Compile Include="$(CommonPath)System\Diagnostics\DiagnosticsHelper.cs" Link="Common\System\Diagnostics\DiagnosticsHelper.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs" Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Diagnostics.Abstractions\src\Microsoft.Extensions.Diagnostics.Abstractions.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Options\src\Microsoft.Extensions.Options.csproj" />
   </ItemGroup>
 
 </Project>

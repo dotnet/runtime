@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     }
     public class InstrumentEnableRule
     {
-        public InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, Action<string?, System.Diagnostics.Metrics.Instrument, bool> filter) { }
+        public InstrumentEnableRule(string? listenerName, string? meterName, MeterScope scopes, string? instrumentName, Func<string?, System.Diagnostics.Metrics.Instrument, bool>? filter) { }
         public string? ListenerName { get; }
         public string? MeterName { get; }
         public MeterScope Scopes { get; }
@@ -38,38 +38,6 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     {
         Global,
         Local
-    }
-    public static class MetricsBuilderEnableExtensions
-    {
-        // common overloads
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName) => throw null!;
-        public static IMetricsBuilder EnableMetrics<T>(this IMetricsBuilder builder, string? meterName) where T : IMetricsListener => throw null!;
-
-        // less common overloads
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, string? instrumentName) => throw null!;
-        public static IMetricsBuilder EnableMetrics<T>(this IMetricsBuilder builder, string? meterName, string? instrumentName) where T : IMetricsListener => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, Func<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
-        public static IMetricsBuilder EnableMetrics<T>(this IMetricsBuilder builder, Func<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, MeterScope scopes) => throw null!;
-        public static IMetricsBuilder EnableMetrics<T>(this IMetricsBuilder builder, string? meterName, MeterScope scopes) where T : IMetricsListener => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, Action<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
-        public static IMetricsBuilder EnableMetrics<T>(this IMetricsBuilder builder, string? meterName, Action<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
-        public static IMetricsBuilder EnableMetrics(this IMetricsBuilder builder, string? meterName, MeterScope scopes, Action<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
-        public static IMetricsBuilder EnableMetrics<T>(this IMetricsBuilder builder, string? meterName, MeterScope scopes, Action<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
-
-        // all the same extension methods on MetricsEnableOptions
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName) => throw null!;
-        public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName) where T : IMetricsListener => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, string? instrumentName) => throw null!;
-        public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, string? instrumentName) where T : IMetricsListener => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, Func<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
-        public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, Func<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, MeterScope scopes) => throw null!;
-        public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, MeterScope scopes) where T : IMetricsListener => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, Action<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
-        public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, Action<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
-        public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, MeterScope scopes, Action<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
-        public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, MeterScope scopes, Action<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
     }
     public static class MetricsBuilderExtensions
     {
