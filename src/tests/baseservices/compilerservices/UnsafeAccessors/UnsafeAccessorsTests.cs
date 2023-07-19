@@ -421,7 +421,7 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89212")] // This passes on CoreCLR, but fails on Mono and NativeAOT
     public static void Verify_InheritanceMethodResolution_BaseViaDerived()
     {
         var instance = new InheritanceDerived();
