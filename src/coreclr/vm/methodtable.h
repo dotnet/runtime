@@ -25,6 +25,7 @@
 #include "contractimpl.h"
 #include "generics.h"
 #include "gcinfotypes.h"
+#include "enum_class_flags.h"
 
 /*
  * Forward Declarations
@@ -62,6 +63,28 @@ class ClassFactoryBase;
 #endif // FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
 class ArgDestination;
 enum class WellKnownAttribute : DWORD;
+
+enum class ResolveVirtualStaticMethodFlags
+{
+    None = 0,
+    AllowNullResult = 1,
+    VerifyImplemented = 2,
+    AllowVariantMatches = 4,
+    InstantiateResultOverFinalMethodDesc = 8,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
+
+
+enum class FindDefaultInterfaceImplementationFlags
+{
+    None,
+    AllowVariance = 1,
+    ThrowOnConflict = 2,
+    InstantiateFoundMethodDesc = 4,
+
+    support_use_as_flags // Enable the template functions in enum_class_flags.h
+};
 
 //============================================================================
 // This is the in-memory structure of a class and it will evolve.
@@ -2084,7 +2107,6 @@ public:
     MethodDesc *GetMethodDescForComInterfaceMethod(MethodDesc *pItfMD, bool fNullOk);
 #endif // FEATURE_COMINTEROP
 
-
     // Resolve virtual static interface method pInterfaceMD on this type.
     //
     // Specify allowNullResult to return NULL instead of throwing if the there is no implementation
@@ -2096,9 +2118,7 @@ public:
     MethodDesc *ResolveVirtualStaticMethod(
         MethodTable* pInterfaceType,
         MethodDesc* pInterfaceMD,
-        BOOL allowNullResult,
-        BOOL verifyImplemented = FALSE,
-        BOOL allowVariantMatches = TRUE,
+        ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags,
         BOOL *uniqueResolution = NULL,
         ClassLoadLevel level = CLASS_LOADED);
 
@@ -2178,8 +2198,7 @@ public:
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod,
-        BOOL allowVariance,
-        BOOL throwOnConflict,
+        FindDefaultInterfaceImplementationFlags findDefaultImplementationFlags,
         ClassLoadLevel level = CLASS_LOADED);
 #endif // DACCESS_COMPILE
 
@@ -2219,7 +2238,7 @@ public:
 
     // Try to resolve a given static virtual method override on this type. Return nullptr
     // when not found.
-    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, BOOL verifyImplemented, BOOL allowVariance, ClassLoadLevel level);
+    MethodDesc *TryResolveVirtualStaticMethodOnThisType(MethodTable* pInterfaceType, MethodDesc* pInterfaceMD, ResolveVirtualStaticMethodFlags resolveVirtualStaticMethodFlags, ClassLoadLevel level);
 
 public:
     static MethodDesc *MapMethodDeclToMethodImpl(MethodDesc *pMDDecl);

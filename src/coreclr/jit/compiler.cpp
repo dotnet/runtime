@@ -4732,6 +4732,9 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     //
     DoPhase(this, PHASE_PHYSICAL_PROMOTION, &Compiler::PhysicalPromotion);
 
+    // Expose candidates for implicit byref last-use copy elision.
+    DoPhase(this, PHASE_IMPBYREF_COPY_OMISSION, &Compiler::fgMarkImplicitByRefCopyOmissionCandidates);
+
     // Locals tree list is no longer kept valid.
     fgNodeThreading = NodeThreading::None;
 

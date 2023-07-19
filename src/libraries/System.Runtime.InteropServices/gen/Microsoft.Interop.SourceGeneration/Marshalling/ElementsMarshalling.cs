@@ -164,51 +164,37 @@ namespace Microsoft.Interop
 
         public override StatementSyntax GenerateUnmanagedToManagedByValueOutMarshalStatement(TypePositionInfo info, StubCodeContext context)
         {
-            ExpressionSyntax destination;
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
-            {
-                destination = StackAllocArrayCreationExpression(
-                    ArrayType(_unmanagedElementType,
-                        SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                CollectionSource.GetManagedValuesSource(info, context),
-                                IdentifierName("Length")))))));
-            }
-            else
-            {
-                destination = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesSource(info, context));
-            }
-
-            // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
-            ExpressionSyntax source = InvocationExpression(
-                MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                    IdentifierName("CreateSpan")),
-                ArgumentList(
-                    SeparatedList(new[]
-                    {
-                        Argument(
-                            InvocationExpression(
+            // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetUnmanagedValuesSource>), <GetUnmanagedValuesSource>.Length)
+            ExpressionSyntax destination = CastToManagedIfNecessary(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                        IdentifierName("CreateSpan")),
+                    ArgumentList(
+                        SeparatedList(new[]
+                        {
+                            Argument(
+                                InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                                        IdentifierName("GetReference")),
+                                    ArgumentList(SingletonSeparatedList(
+                                        Argument(CollectionSource.GetUnmanagedValuesSource(info, context))))))
+                                .WithRefKindKeyword(
+                                    Token(SyntaxKind.RefKeyword)),
+                            Argument(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                                    IdentifierName("GetReference")),
-                                ArgumentList(SingletonSeparatedList(
-                                    Argument(CollectionSource.GetManagedValuesDestination(info, context))))))
-                            .WithRefKindKeyword(
-                                Token(SyntaxKind.RefKeyword)),
-                        Argument(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                CollectionSource.GetManagedValuesDestination(info, context),
-                                IdentifierName("Length")))
-                    })));
+                                    CollectionSource.GetUnmanagedValuesSource(info, context),
+                                    IdentifierName("Length")))
+                        }))));
 
-            // <source>.CopyTo(<destination>);
+            // <GetManagedValuesDestination>.CopyTo(<source>);
             return ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
-                        source,
+                        CollectionSource.GetManagedValuesDestination(info, context),
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
                     Argument(destination)));
@@ -233,39 +219,41 @@ namespace Microsoft.Interop
         {
             ExpressionSyntax source = CastToManagedIfNecessary(CollectionSource.GetUnmanagedValuesDestination(info, context));
 
+            var assignLength = CollectionSource.GetNumElementsAssignmentFromManagedValuesDestination(info, context);
             // MemoryMarshal.CreateSpan(ref MemoryMarshal.GetReference(<GetManagedValuesSource>), <GetManagedValuesSource>.Length)
-            ExpressionSyntax destination = InvocationExpression(
-                MemberAccessExpression(
-                    SyntaxKind.SimpleMemberAccessExpression,
-                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                    IdentifierName("CreateSpan")),
-                ArgumentList(
-                    SeparatedList(new[]
-                    {
-                        Argument(
-                            InvocationExpression(
-                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                    ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
-                                    IdentifierName("GetReference")),
-                                ArgumentList(SingletonSeparatedList(
-                                    Argument(CollectionSource.GetManagedValuesSource(info, context))))))
-                            .WithRefKindKeyword(
-                                Token(SyntaxKind.RefKeyword)),
-                        Argument(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                CollectionSource.GetManagedValuesSource(info, context),
-                                IdentifierName("Length")))
-                    })));
+            ExpressionSyntax destination =GetUnmanagedValuesDestinationFromUnmanagedValuesSource(info, context);
+                // InvocationExpression(
+                // MemberAccessExpression(
+                //     SyntaxKind.SimpleMemberAccessExpression,
+                //     ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                //     IdentifierName("CreateSpan")),
+                // ArgumentList(
+                //     SeparatedList(new[]
+                //     {
+                //         Argument(
+                //             InvocationExpression(
+                //                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                //                     ParseName(TypeNames.System_Runtime_InteropServices_MemoryMarshal),
+                //                     IdentifierName("GetReference")),
+                //                 ArgumentList(SingletonSeparatedList(
+                //                     Argument(CollectionSource.GetManagedValuesSource(info, context))))))
+                //             .WithRefKindKeyword(
+                //                 Token(SyntaxKind.RefKeyword)),
+                //         Argument(
+                //             MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                //                 CollectionSource.GetManagedValuesSource(info, context),
+                //                 IdentifierName("Length")))
+                //     })));
 
             // <source>.CopyTo(<destination>);
-            return ExpressionStatement(
+            return Block(assignLength, ExpressionStatement(
                 InvocationExpression(
                     MemberAccessExpression(
                         SyntaxKind.SimpleMemberAccessExpression,
                         source,
                         IdentifierName("CopyTo")))
                 .AddArgumentListArguments(
-                    Argument(destination)));
+                    Argument(destination))));
         }
 
         public override StatementSyntax GenerateUnmarshalStatement(TypePositionInfo info, StubCodeContext context)
