@@ -2,6 +2,7 @@ parameters:
   buildConfig: 'Debug'
   osGroup: ''
   osSubGroup: ''
+  archType: 'x64'
   platform: ''
   container: ''
   timeoutInMinutes: ''
@@ -47,7 +48,7 @@ jobs:
     - name: osOverride
       value: -os linux
     - name: archType
-      value: x64
+      value: ${{ parameters.archType }}
     - ${{ parameters.variables }}
 
     steps:
