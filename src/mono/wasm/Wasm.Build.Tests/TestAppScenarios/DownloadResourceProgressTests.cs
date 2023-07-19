@@ -23,7 +23,7 @@ public class DownloadResourceProgressTests : AppTestBase
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task DownloadProgressFinishes(bool failFirstAssemblyDownload)
+    public async Task DownloadProgressFinishes(bool failSingleAssemblyDownload)
     {
         CopyTestAsset("WasmBasicTestApp", "DownloadResourceProgressTests");
         PublishProject("Debug");
@@ -32,15 +32,15 @@ public class DownloadResourceProgressTests : AppTestBase
             Configuration: "Debug",
             ForPublish: true,
             TestScenario: "DownloadResourceProgressTest",
-            BrowserQueryString: new Dictionary<string, string> { ["failFirstAssemblyDownload"] = failFirstAssemblyDownload.ToString().ToLowerInvariant() }
+            BrowserQueryString: new Dictionary<string, string> { ["failSingleAssemblyDownload"] = failSingleAssemblyDownload.ToString().ToLowerInvariant() }
         ));
         Assert.True(
             result.TestOutput.Any(m => m.Contains("DownloadResourceProgress: Finished")),
             "The download progress test didn't emit expected error message"
         );
         Assert.True(
-            result.ConsoleOutput.Any(m => m.Contains("Retrying download")) == failFirstAssemblyDownload,
-            failFirstAssemblyDownload
+            result.ConsoleOutput.Any(m => m.Contains("Retrying download")) == failSingleAssemblyDownload,
+            failSingleAssemblyDownload
                 ? "The download progress test didn't emit expected message about retrying download"
                 : "The download progress test did emit unexpected message about retrying download"
         );
@@ -49,8 +49,8 @@ public class DownloadResourceProgressTests : AppTestBase
             "The download progress test did emit unexpected message about second download retry"
         );
         Assert.True(
-            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failFirstAssemblyDownload),
-            failFirstAssemblyDownload
+            result.TestOutput.Any(m => m.Contains("Throw error instead of downloading resource") == failSingleAssemblyDownload),
+            failSingleAssemblyDownload
                 ? "The download progress test didn't emit expected message about failing download"
                 : "The download progress test did emit unexpected message about failing download"
         );

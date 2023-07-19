@@ -26,14 +26,15 @@ switch (testCase) {
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
         break;
     case "DownloadResourceProgressTest":
-        if (params.get("failFirstAssemblyDownload") === "true") {
-            let hasFailedFetch = false;
+        if (params.get("failSingleAssemblyDownload") === "true") {
+            let assemblyCounter = 0;
+            let failAtAssemblyNumber = Math.floor(Math.random() * 5);
             dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity) => {
-                if (hasFailedFetch || type !== "assembly")
+                assemblyCounter++;
+                if (failAtAssemblyNumber == assemblyCounter || type !== "assembly")
                     return fetch(defaultUri, { integrity: integrity, cache: 'no-cache' });
 
                 testOutput("Throw error instead of downloading resource");
-                hasFailedFetch = true;
                 const error = new Error("Simulating a failed fetch");
                 error.silent = true;
                 throw error;
