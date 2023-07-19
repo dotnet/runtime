@@ -102,6 +102,15 @@ class Rock : IRock
 {
 }
 
+struct RockLover
+{
+    public Rock FavoriteRock = new Rock();
+
+    public RockLover()
+    {
+    }
+}
+
 abstract class Animal : IAnimal
 {
     public void NonVirtualMethodOnAnimal()
