@@ -4453,8 +4453,18 @@ mini_emit_array_store (MonoCompile *cfg, MonoClass *klass, MonoInst **sp, gboole
 		if (sp [2]->type != STACK_OBJ)
 			return NULL;
 
+		MonoInst *index_ins = sp [1];
+#if SIZEOF_REGISTER == 8
+		if (sp [1]->type == STACK_I4) {
+			// stelemref wrapper recevies index as native int, sign extend it
+			guint32 dreg = alloc_preg (cfg);
+			guint32 sreg = index_ins->dreg;
+			EMIT_NEW_UNALU (cfg, index_ins, OP_SEXT_I4, dreg, sreg);
+		}
+#endif
+
 		iargs [2] = sp [2];
-		iargs [1] = sp [1];
+		iargs [1] = index_ins;
 		iargs [0] = sp [0];
 
 		MonoClass *array_class = sp [0]->klass;
