@@ -51,7 +51,7 @@ internal static class MsQuicHelpers
         Internals.SocketAddress address = IPEndPointExtensions.Serialize(ipEndPoint);
         Debug.Assert(address.Size <= rawAddress.Length);
 
-        address.Buffer.AsSpan(0, address.Size).CopyTo(rawAddress);
+        address.InternalBuffer.AsSpan(0, address.Size).CopyTo(rawAddress);
         return result;
     }
 
