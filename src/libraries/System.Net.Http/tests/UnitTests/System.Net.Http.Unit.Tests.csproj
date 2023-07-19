@@ -192,6 +192,8 @@
              Link="ProductionCode\System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpContent.cs"
              Link="ProductionCode\System\Net\Http\HttpContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpIOException.cs"
+                 Link="ProductionCode\System\Net\Http\HttpIOException.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMessageHandler.cs"
              Link="ProductionCode\System\Net\Http\HttpMessageHandler.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpMessageInvoker.cs"
@@ -200,6 +202,8 @@
              Link="ProductionCode\System\Net\Http\HttpMethod.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpParseResult.cs"
              Link="ProductionCode\System\Net\Http\HttpParseResult.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestError.cs"
+                 Link="ProductionCode\System\Net\Http\HttpRequestError.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestException.cs"
              Link="ProductionCode\System\Net\Http\HttpRequestException.cs" />
     <Compile Include="..\..\src\System\Net\Http\RequestRetryType.cs"

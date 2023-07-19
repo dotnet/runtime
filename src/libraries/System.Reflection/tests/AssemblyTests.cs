@@ -145,8 +145,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "entry assembly won't be xunit.console on browser")]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst | TestPlatforms.Android)]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());
@@ -157,6 +155,21 @@ namespace System.Reflection.Tests
             {
                 // The single file test runner is not 'xunit.console'.
                 correct = assembly.IndexOf("System.Reflection.Tests", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else if (PlatformDetection.IsiOS || PlatformDetection.IstvOS)
+            {
+                // The iOS/tvOS test runner is not 'xunit.console'.
+                correct = assembly.IndexOf("AppleTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else if (PlatformDetection.IsAndroid)
+            {
+                // The Android test runner is not 'xunit.console'.
+                correct = assembly.IndexOf("AndroidTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
+            }
+            else if (PlatformDetection.IsBrowser)
+            {
+                // The browser test runner is not 'xunit.console'.
+                correct = assembly.IndexOf("WasmTestRunner", StringComparison.OrdinalIgnoreCase) != -1;
             }
             else
             {
@@ -778,7 +791,7 @@ namespace System.Reflection.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/36892", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst, "Symbols are in a different location on iOS/tvOS/MacCatalyst")]
         public void AssemblyLoadFromBytesWithSymbols()
         {
             Assembly assembly = typeof(AssemblyTests).Assembly;

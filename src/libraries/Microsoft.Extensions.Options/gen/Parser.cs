@@ -93,8 +93,9 @@ namespace Microsoft.Extensions.Options.Generators
                                 continue;
                             }
 
-                            Location lowerLocationInCompilation = _compilation.ContainsSyntaxTree(modelType.GetLocation().SourceTree)
-                                ? modelType.GetLocation()
+                            Location? modelTypeLocation = modelType.GetLocation();
+                            Location lowerLocationInCompilation = modelTypeLocation is not null && modelTypeLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(modelTypeLocation.SourceTree)
+                                ? modelTypeLocation
                                 : syntax.GetLocation();
 
                             var membersToValidate = GetMembersToValidate(modelType, true, lowerLocationInCompilation, validatorType);
@@ -128,7 +129,7 @@ namespace Microsoft.Extensions.Options.Generators
                         parents.Reverse();
 
                         results.Add(new ValidatorType(
-                            validatorType.ContainingNamespace.IsGlobalNamespace ? string.Empty : validatorType.ContainingNamespace.ToString(),
+                            validatorType.ContainingNamespace.IsGlobalNamespace ? string.Empty : validatorType.ContainingNamespace.ToString()!,
                             GetMinimalFQN(validatorType),
                             GetMinimalFQNWithoutGenerics(validatorType),
                             keyword,
@@ -267,8 +268,9 @@ namespace Microsoft.Extensions.Options.Generators
             var membersToValidate = new List<ValidatedMember>();
             foreach (var member in members)
             {
-                Location location = _compilation.ContainsSyntaxTree(member.GetLocation().SourceTree)
-                    ? member.GetLocation()
+                Location? memberLocation = member.GetLocation();
+                Location location = memberLocation is not null && memberLocation.SourceTree is not null && _compilation.ContainsSyntaxTree(memberLocation.SourceTree)
+                    ? memberLocation
                     : lowerLocationInCompilation;
 
                 var memberInfo = GetMemberInfo(member, speculate, location, validatorType);
@@ -556,7 +558,7 @@ namespace Microsoft.Extensions.Options.Generators
             var validatorTypeName = "__" + mt.Name + "Validator__";
 
             var result = new ValidatorType(
-                mt.ContainingNamespace.IsGlobalNamespace ? string.Empty : mt.ContainingNamespace.ToString(),
+                mt.ContainingNamespace.IsGlobalNamespace ? string.Empty : mt.ContainingNamespace.ToString()!,
                 validatorTypeName,
                 validatorTypeName,
                 "class",
@@ -638,12 +640,12 @@ namespace Microsoft.Extensions.Options.Generators
 
             if (type.SpecialType == SpecialType.System_String)
             {
-                return $@"""{EscapeString(value.ToString())}""";
+                return $@"""{EscapeString(value.ToString()!)}""";
             }
 
             if (type.SpecialType == SpecialType.System_Char)
             {
-                return $@"'{EscapeString(value.ToString())}'";
+                return $@"'{EscapeString(value.ToString()!)}'";
             }
 
             return $"({type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}){Convert.ToString(value, CultureInfo.InvariantCulture)}";

@@ -143,6 +143,8 @@ namespace Mono.Linker
 		PreservedOperator = 87, // operator method preserved on a type
 
 		DynamicallyAccessedMemberOnType = 88, // type with DynamicallyAccessedMembers annotations (including those inherited from base types and interfaces)
+
+		UnsafeAccessorTarget = 89, // the member is referenced via UnsafeAccessor attribute
 	}
 
 	public readonly struct DependencyInfo : IEquatable<DependencyInfo>
