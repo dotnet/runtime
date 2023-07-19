@@ -62,7 +62,7 @@ steps:
       curl -o NuGet.config 'https://raw.githubusercontent.com/dotnet/maui/${{parameters.framework}}/NuGet.config'
       curl -o dotnet-install.sh 'https://dotnet.microsoft.com/download/dotnet/scripts/v1/dotnet-install.sh'
       curl -Lo maui-supported-sdk-version.json 'https://aka.ms/dotnet/sdk/maui/${{parameters.framework}}.json'
-      version=$(sed -nr 's/\s*"version": "(.*)"/\1/p' ./maui-supported-sdk-version.json)
+      version=$(sed -nr 's/\s*"version": "(.+?)"/\1/p' ./maui-supported-sdk-version.json)
       chmod -R a+rx .
       ./dotnet-install.sh --version $version --install-dir .
       ./dotnet --info
@@ -90,6 +90,10 @@ steps:
 
   - pwsh: |
       $BenchmarkDotNetVersionCapture = Get-Content .\performance\eng\Versions.props | Select-String -Pattern '<BenchmarkDotNetVersion>(.*)</BenchmarkDotNetVersion>'
+      if ($BenchmarkDotNetVersionCapture.Length -eq 0) {
+        Write-Error "BenchmarkDotNetVersion not found in Versions.props"
+        exit 1
+      }
       $BenchmarkDotNetVersion = $BenchmarkDotNetVersionCapture.Matches.Groups[1].Value
 
       $instrumentationFileContent = Get-Content .\maui\src\Core\tests\Benchmarks.Droid\MainInstrumentation.cs
