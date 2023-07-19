@@ -13,51 +13,63 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http.Json
 {
-    /// <summary>
-    /// Contains the extensions methods for using JSON as the content-type in HttpClient.
-    /// </summary>
     public static partial class HttpClientJsonExtensions
     {
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
+        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(
+            this HttpClient client,
+            [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri,
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken = default) =>
             GetFromJsonAsAsyncEnumerable<TValue>(client, CreateUri(requestUri), options, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
+        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(
+            this HttpClient client,
+            Uri? requestUri,
+            JsonSerializerOptions? options,
+            CancellationToken cancellationToken = default) =>
             FromJsonStreamAsyncCore<TValue>(s_getAsync, client, requestUri, options, cancellationToken);
 
-        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default) =>
+        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(
+            this HttpClient client,
+            [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            CancellationToken cancellationToken = default) =>
             GetFromJsonAsAsyncEnumerable(client, CreateUri(requestUri), jsonTypeInfo, cancellationToken);
 
-        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(this HttpClient client, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default) =>
+        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(
+            this HttpClient client,
+            Uri? requestUri,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            CancellationToken cancellationToken = default) =>
             FromJsonStreamAsyncCore(s_getAsync, client, requestUri, jsonTypeInfo, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, CancellationToken cancellationToken = default) =>
+        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(
+            this HttpClient client,
+            [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri,
+            CancellationToken cancellationToken = default) =>
             GetFromJsonAsAsyncEnumerable<TValue>(client, requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(this HttpClient client, Uri? requestUri, CancellationToken cancellationToken = default) =>
+        public static IAsyncEnumerable<TValue?> GetFromJsonAsAsyncEnumerable<TValue>(
+            this HttpClient client,
+            Uri? requestUri,
+            CancellationToken cancellationToken = default) =>
             GetFromJsonAsAsyncEnumerable<TValue>(client, requestUri, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
-        private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod, HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default) =>
-            FromJsonStreamAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsyncEnumerable<TValue>(stream, options ?? JsonHelpers.s_defaultSerializerOptions, cancellation), options, cancellationToken);
-
-        private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod, HttpClient client, Uri? requestUri, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken) =>
-            FromJsonStreamAsyncCore(getMethod, client, requestUri, static (stream, options, cancellation) => JsonSerializer.DeserializeAsyncEnumerable(stream, options, cancellation), jsonTypeInfo, cancellationToken);
-
-        private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue, TJsonOptions>(
+        private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
             Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
             HttpClient client,
             Uri? requestUri,
-            Func<Stream, TJsonOptions, CancellationToken, IAsyncEnumerable<TValue?>> deserializeMethod,
-            TJsonOptions jsonOptions,
+            JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
             if (client is null)
@@ -65,6 +77,82 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
+            CancellationTokenSource? linkedCTS = CreateLinkedCTSFromClientTimeout(client, cancellationToken);
+            Task<HttpResponseMessage> responseTask = GetHttpResponseMessageTask(getMethod, client, requestUri, linkedCTS, cancellationToken);
+
+            return Core(client, responseTask, options ?? JsonHelpers.s_defaultSerializerOptions, linkedCTS, cancellationToken);
+
+            static async IAsyncEnumerable<TValue?> Core(
+                HttpClient client,
+                Task<HttpResponseMessage> responseTask,
+                JsonSerializerOptions options,
+                CancellationTokenSource? linkedCTS,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                try
+                {
+                    using HttpResponseMessage response = await EnsureHttpResponseAsync(client, responseTask)
+                        .ConfigureAwait(false);
+
+                    await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
+                        options, cancellationToken))
+                    {
+                        yield return value;
+                    }
+                }
+                finally
+                {
+                    linkedCTS?.Dispose();
+                }
+            }
+        }
+
+        private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
+            Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
+            HttpClient client,
+            Uri? requestUri,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            CancellationToken cancellationToken)
+        {
+            if (client is null)
+            {
+                throw new ArgumentNullException(nameof(client));
+            }
+
+            CancellationTokenSource? linkedCTS = CreateLinkedCTSFromClientTimeout(client, cancellationToken);
+            Task<HttpResponseMessage> responseTask = GetHttpResponseMessageTask(getMethod, client, requestUri, linkedCTS, cancellationToken);
+
+            return Core(client, responseTask, jsonTypeInfo, linkedCTS, cancellationToken);
+
+            static async IAsyncEnumerable<TValue?> Core(
+                HttpClient client,
+                Task<HttpResponseMessage> responseTask,
+                JsonTypeInfo<TValue> jsonTypeInfo,
+                CancellationTokenSource? linkedCTS,
+                [EnumeratorCancellation] CancellationToken cancellationToken)
+            {
+                try
+                {
+                    using HttpResponseMessage response = await EnsureHttpResponseAsync(client, responseTask)
+                        .ConfigureAwait(false);
+
+                    await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
+                        jsonTypeInfo, cancellationToken))
+                    {
+                        yield return value;
+                    }
+                }
+                finally
+                {
+                    linkedCTS?.Dispose();
+                }
+            }
+        }
+
+        private static CancellationTokenSource? CreateLinkedCTSFromClientTimeout(
+            HttpClient client,
+            CancellationToken cancellationToken)
+        {
             TimeSpan timeout = client.Timeout;
 
             // Create the CTS before the initial SendAsync so that the SendAsync counts against the timeout.
@@ -75,6 +163,16 @@ namespace System.Net.Http.Json
                 linkedCTS.CancelAfter(timeout);
             }
 
+            return linkedCTS;
+        }
+
+        private static Task<HttpResponseMessage> GetHttpResponseMessageTask(
+            Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
+            HttpClient client,
+            Uri? requestUri,
+            CancellationTokenSource? linkedCTS,
+            CancellationToken cancellationToken)
+        {
             // We call SendAsync outside of the async Core method to propagate exception even without awaiting the returned task.
             Task<HttpResponseMessage> responseTask;
             try
@@ -88,49 +186,25 @@ namespace System.Net.Http.Json
                 throw;
             }
 
-            bool usingResponseHeadersRead = !ReferenceEquals(getMethod, s_deleteAsync);
+            return responseTask;
+        }
 
-            return Core(client, responseTask, usingResponseHeadersRead, linkedCTS, deserializeMethod, jsonOptions, cancellationToken);
+        private static async Task<HttpResponseMessage> EnsureHttpResponseAsync(
+            HttpClient client,
+            Task<HttpResponseMessage> responseTask)
+        {
+            HttpResponseMessage response = await responseTask.ConfigureAwait(false);
+            response.EnsureSuccessStatusCode();
 
-            static async IAsyncEnumerable<TValue?> Core(
-                HttpClient client,
-                Task<HttpResponseMessage> responseTask,
-                bool usingResponseHeadersRead,
-                CancellationTokenSource? linkedCTS,
-                Func<Stream, TJsonOptions, CancellationToken, IAsyncEnumerable<TValue?>> deserializeMethod,
-                TJsonOptions jsonOptions,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
+            Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
+            int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
+
+            if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
             {
-                try
-                {
-                    using HttpResponseMessage response = await responseTask.ConfigureAwait(false);
-                    response.EnsureSuccessStatusCode();
-
-                    Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-                    int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
-
-                    if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
-                    {
-                        LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
-                    }
-
-                    using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(response.Content, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false);
-
-                    // If ResponseHeadersRead wasn't used, HttpClient will have already buffered the whole response upfront. No need to check the limit again.
-                    Stream readStream = usingResponseHeadersRead
-                        ? new LengthLimitReadStream(contentStream, (int)client.MaxResponseContentBufferSize)
-                        : contentStream;
-
-                    await foreach (TValue value in deserializeMethod(readStream, jsonOptions, linkedCTS?.Token ?? cancellationToken).ConfigureAwait(false))
-                    {
-                        yield return value;
-                    }
-                }
-                finally
-                {
-                    linkedCTS?.Dispose();
-                }
+                LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
             }
+
+            return response;
         }
     }
 }
