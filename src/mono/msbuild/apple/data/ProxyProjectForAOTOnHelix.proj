@@ -41,6 +41,10 @@
     <_targetOS>$(TargetOS)</_targetOS>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(UseNativeAOTRuntime)' == 'true'">
+    <DirectPInvoke Include="__Internal" />
+  </ItemGroup>
+
   <Target Name="BundleTestAppleApp" DependsOnTargets="AppleBuild" />
 
   <Target Name="_PrepareForAppleBuildAppOnHelix" DependsOnTargets="_PublishRuntimePack">
