@@ -47,7 +47,7 @@ jobs:
     - name: osOverride
       value: -os linux
     - name: archType
-      value: ${{ parameters.archType }}
+      value: x64
     - ${{ parameters.variables }}
 
     steps:
