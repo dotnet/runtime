@@ -13861,7 +13861,7 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                     pImplMethodRuntime = NULL;
                 }
                 else if (IsMdFinal(pDeclMethod->GetAttrs()) ||
-                        pDeclMethod->GetMethodTable()->IsValueType() && !pDeclMethod->IsUnboxingStub())
+                        (pDeclMethod->GetMethodTable()->IsValueType() && !pDeclMethod->IsUnboxingStub()))
                 {
                     pImplMethodRuntime = pDeclMethod;
                 }
