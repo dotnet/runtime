@@ -21,6 +21,7 @@
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.cs" Link="Production\ValueListBuilder.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ValueListBuilder.Pop.cs" Link="Production\ValueListBuilder.Pop.cs" />
     <Compile Include="$(CommonPath)\Roslyn\GetBestTypeByMetadataName.cs" Link="Common\Roslyn\GetBestTypeByMetadataName.cs" />
+    <Compile Include="$(CommonPath)\SourceGenerators\SourceWriter.cs" Link="Common\SourceGenerators\SourceWriter.cs" />
     <Compile Include="ConfigurationBindingGenerator.cs" />
     <Compile Include="ConfigurationBindingGenerator.Emitter.cs" />
     <Compile Include="ConfigurationBindingGenerator.Parser.cs" />
@@ -36,7 +37,6 @@
     <Compile Include="Helpers\Parser\Diagnostics.cs" />
     <Compile Include="Helpers\Parser\OptionsBuilderConfigurationExtensions.cs" />
     <Compile Include="Helpers\Parser\OptionsConfigurationServiceCollectionExtensions.cs" />
-    <Compile Include="Helpers\SourceWriter.cs" />
     <Compile Include="Model\CollectionSpec.cs" />
     <Compile Include="Model\ConfigurationSectionSpec.cs" />
     <Compile Include="Model\InitializationStrategy.cs" />

@@ -934,9 +934,9 @@ namespace System
             AdjustmentRule[]? currentRules = _adjustmentRules;
             AdjustmentRule[]? otherRules = other._adjustmentRules;
 
-            if (currentRules is null || otherRules is null)
+            if (currentRules is null && otherRules is null)
             {
-                return currentRules == otherRules;
+                return true;
             }
 
             return currentRules.AsSpan().SequenceEqual(otherRules);

@@ -5313,14 +5313,11 @@ void CodeGen::genStoreLclTypeSimd12(GenTreeLclVarCommon* treeNode)
     {
         // Simply use mov if we move a SIMD12 reg to another SIMD12 reg
         assert(GetEmitter()->isVectorRegister(tgtReg));
-
         inst_Mov(treeNode->TypeGet(), tgtReg, dataReg, /* canSkip */ true);
     }
     else
     {
-        // Need an additional integer register to extract upper 4 bytes from data.
-        regNumber tmpReg = treeNode->GetSingleTempReg();
-        GetEmitter()->emitStoreSimd12ToLclOffset(varNum, offs, dataReg, tmpReg);
+        GetEmitter()->emitStoreSimd12ToLclOffset(varNum, offs, dataReg, treeNode);
     }
     genUpdateLifeStore(treeNode, tgtReg, varDsc);
 }

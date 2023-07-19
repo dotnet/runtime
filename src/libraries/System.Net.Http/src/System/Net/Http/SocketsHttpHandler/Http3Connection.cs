@@ -11,7 +11,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Headers;
-using System.Net.Security;
 
 namespace System.Net.Http
 {
@@ -21,7 +20,6 @@ namespace System.Net.Http
     internal sealed class Http3Connection : HttpConnectionBase
     {
         private readonly HttpConnectionPool _pool;
-        private readonly HttpAuthority? _origin;
         private readonly HttpAuthority _authority;
         private readonly byte[]? _altUsedEncodedHeader;
         private QuicConnection? _connection;
@@ -48,10 +46,6 @@ namespace System.Net.Http
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
 
-        private const int TelemetryStatus_Opened = 1;
-        private const int TelemetryStatus_Closed = 2;
-        private int _markedByTelemetryStatus;
-
         public HttpAuthority Authority => _authority;
         public HttpConnectionPool Pool => _pool;
         public uint MaxHeaderListSize => _maxHeaderListSize;
@@ -71,10 +65,10 @@ namespace System.Net.Http
             }
         }
 
-        public Http3Connection(HttpConnectionPool pool, HttpAuthority? origin, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
+        public Http3Connection(HttpConnectionPool pool, HttpAuthority authority, QuicConnection connection, bool includeAltUsedHeader)
+            : base(pool, connection.RemoteEndPoint)
         {
             _pool = pool;
-            _origin = origin;
             _authority = authority;
             _connection = connection;
 
@@ -91,12 +85,6 @@ namespace System.Net.Http
                 // Previous connections to the same host advertised a limit.
                 // Use this as an initial value before we receive the SETTINGS frame.
                 _maxHeaderListSize = maxHeaderListSize;
-            }
-
-            if (HttpTelemetry.Log.IsEnabled())
-            {
-                HttpTelemetry.Log.Http30ConnectionEstablished();
-                _markedByTelemetryStatus = TelemetryStatus_Opened;
             }
 
             // Errors are observed via Abort().
@@ -168,13 +156,7 @@ namespace System.Net.Http
 
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
 
-                if (HttpTelemetry.Log.IsEnabled())
-                {
-                    if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
-                    {
-                        HttpTelemetry.Log.Http30ConnectionClosed();
-                    }
-                }
+                MarkConnectionAsClosed();
             }
         }
 
@@ -191,16 +173,16 @@ namespace System.Net.Http
                     QuicConnection? conn = _connection;
                     if (conn != null)
                     {
-                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
-                        {
-                            queueStartingTimestamp = Stopwatch.GetTimestamp();
-                        }
-
                         quicStream = await conn.OpenOutboundStreamAsync(QuicStreamType.Bidirectional, cancellationToken).ConfigureAwait(false);
 
                         requestStream = new Http3RequestStream(request, this, quicStream);
                         lock (SyncObj)
                         {
+                            if (_activeRequests.Count == 0)
+                            {
+                                MarkConnectionAsNotIdle();
+                            }
+
                             _activeRequests.Add(quicStream, requestStream);
                         }
                     }
@@ -211,15 +193,22 @@ namespace System.Net.Http
                 catch (QuicException e) when (e.QuicError != QuicError.OperationAborted) { }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
+                    if (queueStartingTimestamp != 0)
                     {
-                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
+                        TimeSpan duration = Stopwatch.GetElapsedTime(queueStartingTimestamp);
+
+                        _pool.Settings._metrics!.RequestLeftQueue(Pool, duration, versionMajor: 3);
+
+                        if (HttpTelemetry.Log.IsEnabled())
+                        {
+                            HttpTelemetry.Log.RequestLeftQueue(versionMajor: 3, duration);
+                        }
                     }
                 }
 
                 if (quicStream == null)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 requestStream!.StreamId = quicStream.Id;
@@ -232,7 +221,7 @@ namespace System.Net.Http
 
                 if (goAway)
                 {
-                    throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
+                    throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_request_aborted, null, RequestRetryType.RetryOnConnectionFailure);
                 }
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"Sending request: {request}");
@@ -248,7 +237,7 @@ namespace System.Net.Http
             {
                 // This will happen if we aborted _connection somewhere and we have pending OpenOutboundStreamAsync call.
                 // note that _abortException may be null if we closed the connection in response to a GOAWAY frame
-                throw new HttpRequestException(SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
+                throw new HttpRequestException(HttpRequestError.Unknown, SR.net_http_client_execution_error, _abortException, RequestRetryType.RetryOnConnectionFailure);
             }
             finally
             {
@@ -352,11 +341,17 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                bool removed = _activeRequests.Remove(stream);
-
-                if (removed && ShuttingDown)
+                if (_activeRequests.Remove(stream))
                 {
-                    CheckForShutdown();
+                    if (ShuttingDown)
+                    {
+                        CheckForShutdown();
+                    }
+
+                    if (_activeRequests.Count == 0)
+                    {
+                        MarkConnectionAsIdle();
+                    }
                 }
             }
         }

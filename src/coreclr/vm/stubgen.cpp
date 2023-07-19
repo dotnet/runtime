@@ -1237,6 +1237,11 @@ void ILCodeStream::EmitCLT_UN()
     WRAPPER_NO_CONTRACT;
     Emit(CEE_CLT_UN, -1, 0);
 }
+void ILCodeStream::EmitCONSTRAINED(int token)
+{
+    WRAPPER_NO_CONTRACT;
+    Emit(CEE_CONSTRAINED, 0, token);
+}
 void ILCodeStream::EmitCONV_I()
 {
     WRAPPER_NO_CONTRACT;

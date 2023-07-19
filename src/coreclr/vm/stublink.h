@@ -467,10 +467,10 @@ class Stub
         UNWIND_INFO_BIT         = 0x08000000,
         THUNK_BIT               = 0x04000000,
 
-        CODEBYTES_MASK          = UNWIND_INFO_BIT - 1,
+        CODEBYTES_MASK          = THUNK_BIT - 1,
         MAX_CODEBYTES           = CODEBYTES_MASK + 1,
     };
-    static_assert_no_msg(CODEBYTES_MASK < UNWIND_INFO_BIT);
+    static_assert_no_msg(CODEBYTES_MASK < THUNK_BIT);
 
     public:
         //-------------------------------------------------------------------

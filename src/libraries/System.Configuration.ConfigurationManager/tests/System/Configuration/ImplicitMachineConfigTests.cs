@@ -5,6 +5,8 @@ using System;
 using System.Configuration;
 using System.Configuration.Internal;
 using System.IO;
+using Microsoft.DotNet.RemoteExecutor;
+
 using Xunit;
 
 namespace System.ConfigurationTests
@@ -16,6 +18,30 @@ namespace System.ConfigurationTests
         {
             var appSettings = ConfigurationManager.AppSettings;
             Assert.NotNull(appSettings);
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RuntimeAppSettingsSystemRuntimeRemotingSectionIsSupported()
+        {
+            using (var temp = new TempConfig(TestData.SystemRuntimeRemotingSectionConfig))
+            {
+                RemoteExecutor.Invoke((string configFilePath) => {
+                    AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", configFilePath);
+                    Assert.NotNull(ConfigurationManager.GetSection("system.runtime.remoting"));
+                }, temp.ConfigPath).Dispose();
+            }
+        }
+
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        public void RuntimeAppSettingsWindowsSectionIsSupported()
+        {
+            using (var temp = new TempConfig(TestData.WindowsSectionConfig))
+            {
+                RemoteExecutor.Invoke((string configFilePath) => {
+                    AppDomain.CurrentDomain.SetData("APP_CONFIG_FILE", configFilePath);
+                    Assert.NotNull(ConfigurationManager.GetSection("windows"));
+                }, temp.ConfigPath).Dispose();
+            }
         }
 
         [Fact]

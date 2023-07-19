@@ -1,8 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { js_owned_gc_handle_symbol, teardown_managed_proxy } from "./gc-handles";
-import { Module, runtimeHelpers } from "./globals";
+import { Module, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { getF32, getF64, getI16, getI32, getI64Big, getU16, getU32, getU8, setF32, setF64, setI16, setI32, setI64Big, setU16, setU32, setU8, localHeapViewF64, localHeapViewI32, localHeapViewU8 } from "./memory";
 import { mono_wasm_new_external_root } from "./roots";
 import { GCHandle, JSHandle, MonoObject, MonoString, GCHandleNull, JSMarshalerArguments, JSFunctionSignature, JSMarshalerType, JSMarshalerArgument, MarshalerToJs, MarshalerToCs, WasmRoot, MarshalerType } from "./types/internal";
@@ -198,7 +200,7 @@ export function get_arg_f64(arg: JSMarshalerArgument): number {
 
 export function set_arg_b8(arg: JSMarshalerArgument, value: boolean): void {
     mono_assert(arg, "Null arg");
-    mono_assert(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
+    mono_check(typeof value === "boolean", () => `Value is not a Boolean: ${value} (${typeof (value)})`);
     setU8(<any>arg, value ? 1 : 0);
 }
 
@@ -229,7 +231,7 @@ export function set_arg_intptr(arg: JSMarshalerArgument, value: VoidPtr): void {
 
 export function set_arg_i52(arg: JSMarshalerArgument, value: number): void {
     mono_assert(arg, "Null arg");
-    mono_assert(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
+    mono_check(Number.isSafeInteger(value), () => `Value is not an integer: ${value} (${typeof (value)})`);
     // we know that conversion to Int64 would be done on C# side
     setF64(<any>arg, value);
 }
@@ -317,6 +319,7 @@ export class ManagedObject implements IDisposable {
 
 export class ManagedError extends Error implements IDisposable {
     private superStack: any;
+    private managed_stack: any;
     constructor(message: string) {
         super(message);
         this.superStack = Object.getOwnPropertyDescriptor(this, "stack"); // this works on Chrome
@@ -333,11 +336,17 @@ export class ManagedError extends Error implements IDisposable {
     }
 
     getManageStack() {
-        const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
-        if (gc_handle) {
-            const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
-            if (managed_stack) {
-                return managed_stack + "\n" + this.getSuperStack();
+        if (this.managed_stack) {
+            return this.managed_stack;
+        }
+        if (loaderHelpers.is_runtime_running() && (!MonoWasmThreads || runtimeHelpers.jsSynchronizationContextInstalled)) {
+            const gc_handle = (<any>this)[js_owned_gc_handle_symbol];
+            if (gc_handle !== GCHandleNull) {
+                const managed_stack = runtimeHelpers.javaScriptExports.get_managed_stack_trace(gc_handle);
+                if (managed_stack) {
+                    this.managed_stack = managed_stack + "\n" + this.getSuperStack();
+                    return this.managed_stack;
+                }
             }
         }
         return this.getSuperStack();
@@ -395,36 +404,36 @@ abstract class MemoryView implements IMemoryView {
     }
 
     set(source: TypedArray, targetOffset?: number): void {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         const targetView = this._unsafe_create_view();
-        mono_assert(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
+        mono_check(source && targetView && source.constructor === targetView.constructor, () => `Expected ${targetView.constructor}`);
         targetView.set(source, targetOffset);
         // TODO consider memory write barrier
     }
 
     copyTo(target: TypedArray, sourceOffset?: number): void {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
-        mono_assert(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
+        mono_check(target && sourceView && target.constructor === sourceView.constructor, () => `Expected ${sourceView.constructor}`);
         const trimmedSource = sourceView.subarray(sourceOffset);
         // TODO consider memory read barrier
         target.set(trimmedSource);
     }
 
     slice(start?: number, end?: number): TypedArray {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         const sourceView = this._unsafe_create_view();
         // TODO consider memory read barrier
         return sourceView.slice(start, end);
     }
 
     get length(): number {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         return this._length;
     }
 
     get byteLength(): number {
-        mono_assert(!this.isDisposed, "ObjectDisposedException");
+        mono_check(!this.isDisposed, "ObjectDisposedException");
         return this._viewType == MemoryViewType.Byte ? this._length
             : this._viewType == MemoryViewType.Int32 ? this._length << 2
                 : this._viewType == MemoryViewType.Double ? this._length << 3
