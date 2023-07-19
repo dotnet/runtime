@@ -9,8 +9,8 @@
     <SdkBandVersion>8.0.100</SdkBandVersion>
     <PackageVersionNet7>7.0.8</PackageVersionNet7>
     <PackageVersionNet6>6.0.$([MSBuild]::Add($([System.Version]::Parse('$(PackageVersionNet7)').Build),11))</PackageVersionNet6>
-    <PreReleaseVersionLabel>preview</PreReleaseVersionLabel>
-    <PreReleaseVersionIteration>7</PreReleaseVersionIteration>
+    <PreReleaseVersionLabel>rc</PreReleaseVersionLabel>
+    <PreReleaseVersionIteration>1</PreReleaseVersionIteration>
     <WorkloadVersionSuffix Condition="'$(PreReleaseVersionLabel)' != 'release'">-$(PreReleaseVersionLabel).$(PreReleaseVersionIteration)</WorkloadVersionSuffix>
     <SdkBandVersionForWorkload_FromRuntimeVersions>$(SdkBandVersion)$(WorkloadVersionSuffix)</SdkBandVersionForWorkload_FromRuntimeVersions>
     <!-- Set assembly version to align with major and minor version,
