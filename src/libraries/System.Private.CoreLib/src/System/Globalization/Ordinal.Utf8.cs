@@ -257,10 +257,13 @@ namespace System.Globalization
 
                 if (length == 3)
                 {
-                    valueAu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charA, byteOffset)) |
-                                Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charA, byteOffset + 1));
-                    valueBu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charB, byteOffset)) |
-                                Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charB, byteOffset + 1));
+                    valueAu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charA, byteOffset));
+                    valueBu32 = Unsafe.ReadUnaligned<ushort>(ref Unsafe.AddByteOffset(ref charB, byteOffset));
+
+                    byteOffset += 2;
+
+                    valueAu32 |= (uint)(Unsafe.AddByteOffset(ref charA, byteOffset) << 16);
+                    valueBu32 |= (uint)(Unsafe.AddByteOffset(ref charB, byteOffset) << 16);
                 }
                 else if (length == 2)
                 {
