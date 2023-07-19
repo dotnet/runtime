@@ -466,6 +466,16 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCLT_UN, dreg, -1);
 		return ins;
+	} else if (!strcmp (cmethod->name, "IsAddressLessThanOrEqualTo")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_ireg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCLE_UN, dreg, -1);
+		return ins;
 	} else if (!strcmp (cmethod->name, "IsAddressGreaterThan")) {
 		g_assert (ctx);
 		g_assert (ctx->method_inst);
@@ -475,6 +485,16 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCGT_UN, dreg, -1);
+		return ins;
+	} else if (!strcmp (cmethod->name, "IsAddressGreaterThanOrEqualTo")) {
+		g_assert (ctx);
+		g_assert (ctx->method_inst);
+		g_assert (ctx->method_inst->type_argc == 1);
+		g_assert (fsig->param_count == 2);
+
+		int dreg = alloc_ireg (cfg);
+		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
+		EMIT_NEW_UNALU (cfg, ins, OP_PCGE_UN, dreg, -1);
 		return ins;
 	} else if (!strcmp (cmethod->name, "Add")) {
 		g_assert (ctx);

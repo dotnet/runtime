@@ -1267,7 +1267,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                             case NI_SRCS_UNSAFE_AreSame:
                             case NI_SRCS_UNSAFE_ByteOffset:
                             case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                            case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
                             case NI_SRCS_UNSAFE_IsAddressLessThan:
+                            case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                             case NI_SRCS_UNSAFE_IsNullRef:
                             case NI_SRCS_UNSAFE_Subtract:
                             case NI_SRCS_UNSAFE_SubtractByteOffset:
@@ -1282,7 +1284,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                                     {
                                         case NI_SRCS_UNSAFE_AreSame:
                                         case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+                                        case NI_SRCS_UNSAFE_IsAddressGreaterThanOrEqualTo:
                                         case NI_SRCS_UNSAFE_IsAddressLessThan:
+                                        case NI_SRCS_UNSAFE_IsAddressLessThanOrEqualTo:
                                         case NI_SRCS_UNSAFE_IsNullRef:
                                         {
                                             fgObserveInlineConstants(opcode, pushedStack, isInlining);
