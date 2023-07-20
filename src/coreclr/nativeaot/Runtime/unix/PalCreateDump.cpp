@@ -5,13 +5,10 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <errno.h>
-#include <cwchar>
 #include <sal.h>
 #include "config.h"
-#include <pthread.h>
 #include <string.h>
-#include <ctype.h>
-#include <cstdarg>
+#include <assert.h>
 #include <unistd.h>
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
@@ -47,9 +44,9 @@
 #include <sys/user.h>
 #endif
 
-#define _ASSERTE(x)
+#define _T(s) s
+#include "RhConfig.h"
 
-#include <clrconfignocache.h>
 #include <generatedumpflags.h>
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
@@ -72,7 +69,7 @@ Function:
 inline uint32_t PlatformGetCurrentThreadId() {
     uint64_t tid;
     pthread_threadid_np(pthread_self(), &tid);
-    return (SIZE_T)tid;
+    return (uint32_t)tid;
 }
 #elif defined(__FreeBSD__)
 #include <pthread_np.h>
@@ -209,7 +206,7 @@ BuildCreateDumpCommandLine(
     argv[argc++] = "--nativeaot";
     argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
-    _ASSERTE(argc < MAX_ARGV_ENTRIES);
+    assert(argc < MAX_ARGV_ENTRIES);
 
     return true;
 }
@@ -267,9 +264,9 @@ CreateCrashDump(
             dup2(child_pipe, STDERR_FILENO);
         }
         // Execute the createdump program
-        if (execve(argv[0], (char* const *)argv, environ) == -1)
+        if (execv(argv[0], (char* const *)argv) == -1)
         {
-            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execve(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
+            fprintf(stderr, "Problem launching createdump (may not have execute permissions): execv(%s) FAILED %s (%d)\n", argv[0], strerror(errno), errno);
             exit(-1);
         }
     }
@@ -401,7 +398,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
             }
 
             argv[argc++] = nullptr;
-            _ASSERTE(argc < MAX_ARGV_ENTRIES);
+            assert(argc < MAX_ARGV_ENTRIES);
         }
 
         CreateCrashDump(argv, nullptr, 0);
@@ -482,52 +479,53 @@ Return
 bool
 PalCreateDumpInitialize()
 {
-    CLRConfigNoCache enabledCfg = CLRConfigNoCache::Get("DbgEnableMiniDump", /*noprefix*/ false, &getenv);
-
-    uint32_t enabled = 0;
-    if (enabledCfg.IsSet() && enabledCfg.TryAsInteger(10, enabled) && enabled)
+    bool enabled = false;
+    RhConfig::Environment::TryGetBooleanValue("DbgEnableMiniDump", &enabled);
+    if (enabled)
     {
-        CLRConfigNoCache dmpNameCfg = CLRConfigNoCache::Get("DbgMiniDumpName", /*noprefix*/ false, &getenv);
-        const char* dumpName = dmpNameCfg.IsSet() ? dmpNameCfg.AsString() : nullptr;
+        char* dumpName = nullptr;
+        RhConfig::Environment::TryGetStringValue("DbgMiniDumpName", &dumpName);
 
-        CLRConfigNoCache dmpLogToFileCfg = CLRConfigNoCache::Get("CreateDumpLogToFile", /*noprefix*/ false, &getenv);
-        const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
+        char* logFilePath = nullptr;
+        RhConfig::Environment::TryGetStringValue("CreateDumpLogToFile", &logFilePath);
 
-        CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
-        uint32_t dumpType = UndefinedDumpType;
-        if (dmpTypeCfg.IsSet())
+        uint64_t dumpType = UndefinedDumpType;
+        if (RhConfig::Environment::TryGetIntegerValue("DbgMiniDumpType", &dumpType, true))
         {
-            (void)dmpTypeCfg.TryAsInteger(10, dumpType);
             if (dumpType < 1 || dumpType > 4)
             {
                 dumpType = UndefinedDumpType;
             }
         }
-
         uint32_t flags = GenerateDumpFlagsNone;
-        CLRConfigNoCache createDumpDiag = CLRConfigNoCache::Get("CreateDumpDiagnostics", /*noprefix*/ false, &getenv);
-        uint32_t val = 0;
-        if (createDumpDiag.IsSet() && createDumpDiag.TryAsInteger(10, val) && val == 1)
+        bool value = false;
+        if (RhConfig::Environment::TryGetBooleanValue("CreateDumpDiagnostics", &value))
         {
-            flags |= GenerateDumpFlagsLoggingEnabled;
+            if (value)
+            {
+                flags |= GenerateDumpFlagsLoggingEnabled;
+            }
         }
-        CLRConfigNoCache createDumpVerboseDiag = CLRConfigNoCache::Get("CreateDumpVerboseDiagnostics", /*noprefix*/ false, &getenv);
-        val = 0;
-        if (createDumpVerboseDiag.IsSet() && createDumpVerboseDiag.TryAsInteger(10, val) && val == 1)
+        if (RhConfig::Environment::TryGetBooleanValue("CreateDumpVerboseDiagnostics", &value))
         {
-            flags |= GenerateDumpFlagsVerboseLoggingEnabled;
+            if (value)
+            {
+                flags |= GenerateDumpFlagsVerboseLoggingEnabled;
+            }
         }
-        CLRConfigNoCache enabledReportCfg = CLRConfigNoCache::Get("EnableCrashReport", /*noprefix*/ false, &getenv);
-        val = 0;
-        if (enabledReportCfg.IsSet() && enabledReportCfg.TryAsInteger(10, val) && val == 1)
+        if (RhConfig::Environment::TryGetBooleanValue("EnableCrashReport", &value))
         {
-            flags |= GenerateDumpFlagsCrashReportEnabled;
+            if (value)
+            {
+                flags |= GenerateDumpFlagsCrashReportEnabled;
+            }
         }
-        CLRConfigNoCache enabledReportOnlyCfg = CLRConfigNoCache::Get("EnableCrashReportOnly", /*noprefix*/ false, &getenv);
-        val = 0;
-        if (enabledReportOnlyCfg.IsSet() && enabledReportOnlyCfg.TryAsInteger(10, val) && val == 1)
+        if (RhConfig::Environment::TryGetBooleanValue("EnableCrashReportOnly", &value))
         {
-            flags |= GenerateDumpFlagsCrashReportOnlyEnabled;
+            if (value)
+            {
+                flags |= GenerateDumpFlagsCrashReportOnlyEnabled;
+            }
         }
 
         // Build the createdump program path for the command line
