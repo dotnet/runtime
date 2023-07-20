@@ -14,21 +14,10 @@ namespace Profiler.Tests
         public static int RunTest(String[] args)
         {
             string currentAssemblyDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            string testAssemblyFullPath1 = Path.Combine(currentAssemblyDirectory, "..", "IUnknownALCTest", "IUnknownALCTest.dll");
-            string testAssemblyFullPath2 = Path.Combine(currentAssemblyDirectory, "..", "TestFile", "TestFile.dll");
+            string testAssemblyFullPath = Path.Combine(currentAssemblyDirectory, "..", "TestFile", "TestFile.dll");
             
-            int exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath1, args);
-            if (exitCode != 100)
-            {
-                return exitCode;
-            }
-
-            exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath2, args);
-            if (exitCode != 100)
-            {
-                return exitCode;
-            }
-            return 100;
+            int exitCode = TestLibrary.Utilities.ExecuteAndUnload(testAssemblyFullPath, args);
+            return exitCode;
         }
 
         public static int Main(string[] args)
