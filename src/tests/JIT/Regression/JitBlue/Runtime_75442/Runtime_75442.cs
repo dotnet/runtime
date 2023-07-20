@@ -13,50 +13,50 @@ using System.Runtime.CompilerServices;
 
 public struct S0
 {
-	public bool F1;
+    public bool F1;
 }
 
 public struct S1
 {
-	public S0 F2;
+    public S0 F2;
 }
 
 public class Runtime_75442
 {
-	public static ushort s_19;
-	public static S1 s_21;
-	public static ushort[] s_32;
+    public static ushort s_19;
+    public static S1 s_21;
+    public static ushort[] s_32;
 
     [Fact]
-	public static int TestEntryPoint()
-	{
-		ulong[] vr0 = new ulong[] { 0 };
-		for (int vr1 = 0; vr1 < UpperBound(); vr1++)
-		{
-			vr0[0] = 1;
-			if (s_21.F2.F1)
-			{
-				s_32[0] = s_19;
-			}
+    public static int TestEntryPoint()
+    {
+        ulong[] vr0 = new ulong[] { 0 };
+        for (int vr1 = 0; vr1 < UpperBound(); vr1++)
+        {
+            vr0[0] = 1;
+            if (s_21.F2.F1)
+            {
+                s_32[0] = s_19;
+            }
 
-			vr0[0] ^= vr0[0];
-			Use(vr1);
-		}
+            vr0[0] ^= vr0[0];
+            Use(vr1);
+        }
 
-		if (vr0[0] != 0)
-		{
-			Console.WriteLine("FAIL: vr0[0] == {0}", vr0[0]);
-			return 101;
-		}
+        if (vr0[0] != 0)
+        {
+            Console.WriteLine("FAIL: vr0[0] == {0}", vr0[0]);
+            return 101;
+        }
 
-		return 100;
-	}
+        return 100;
+    }
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static int UpperBound() => 2;
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int UpperBound() => 2;
 
-	[MethodImpl(MethodImplOptions.NoInlining)]
-	private static void Use(int val)
-	{
-	}
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void Use(int val)
+    {
+    }
 }
