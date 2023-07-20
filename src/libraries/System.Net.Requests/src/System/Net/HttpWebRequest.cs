@@ -1127,7 +1127,7 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
-            var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
+            var request = new HttpRequestMessage(HttpMethod.Parse(_originVerb), _requestUri);
 
             bool disposeRequired = false;
             HttpClient? client = null;
