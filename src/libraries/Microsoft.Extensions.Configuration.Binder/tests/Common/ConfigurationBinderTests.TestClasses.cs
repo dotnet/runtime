@@ -667,8 +667,14 @@ namespace Microsoft.Extensions
             public int MyInt { get; }
         }
 
+        public interface IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
         [TypeConverter(typeof(GeolocationTypeConverter))]
-        public struct Geolocation
+        public struct Geolocation : IGeolocation
         {
             public static readonly Geolocation Zero = new(0, 0);
 
@@ -690,6 +696,18 @@ namespace Microsoft.Extensions
                 public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
                     throw new NotImplementedException();
             }
+        }
+
+        public sealed class GeolocationClass : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public sealed record GeolocationRecord : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
         }
 
         public class GeolocationWrapper
