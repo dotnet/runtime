@@ -45,6 +45,7 @@ CompPhaseNameMacro(PHASE_STR_ADRLCL,                 "Morph - Structs/AddrExp", 
 CompPhaseNameMacro(PHASE_EARLY_LIVENESS,             "Early liveness",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PHYSICAL_PROMOTION,         "Physical promotion",             false, -1, false)
 CompPhaseNameMacro(PHASE_FWD_SUB,                    "Forward Substitution",           false, -1, false)
+CompPhaseNameMacro(PHASE_IMPBYREF_COPY_OMISSION,     "Identify candidates for implicit byref copy omission", false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_IMPBYREF,             "Morph - ByRefs",                 false, -1, false)
 CompPhaseNameMacro(PHASE_PROMOTE_STRUCTS,            "Morph - Promote Structs",        false, -1, false)
 CompPhaseNameMacro(PHASE_MORPH_GLOBAL,               "Morph - Global",                 false, -1, false)

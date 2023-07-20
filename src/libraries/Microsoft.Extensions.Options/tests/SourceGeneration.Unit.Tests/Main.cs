@@ -101,7 +101,7 @@ public class EmitterTests
 namespace __OptionValidationStaticInstances
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    internal static class __Attributes
+    file static class __Attributes
     {
         internal static readonly global::System.ComponentModel.DataAnnotations.RequiredAttribute A1 = new global::System.ComponentModel.DataAnnotations.RequiredAttribute();
 
@@ -113,24 +113,14 @@ namespace __OptionValidationStaticInstances
 namespace __OptionValidationStaticInstances
 {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Extensions.Options.SourceGeneration", "42.42.42.42")]
-    internal static class __Validators
+    file static class __Validators
     {
     }
 }
 
 """;
 
-        var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
-            new Generator(),
-            new[]
-            {
-                Assembly.GetAssembly(typeof(RequiredAttribute))!,
-                Assembly.GetAssembly(typeof(OptionsValidatorAttribute))!,
-                Assembly.GetAssembly(typeof(IValidateOptions<object>))!,
-            },
-            new List<string> { source })
-            .ConfigureAwait(false);
-
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source);
         Assert.Empty(diagnostics);
         _ = Assert.Single(generatedSources);
 
@@ -1211,15 +1201,7 @@ namespace __OptionValidationStaticInstances
         string assemblyName = Path.GetRandomFileName();
         string assemblyPath = Path.Combine(Path.GetTempPath(), assemblyName + ".dll");
 
-        var compilation = CSharpCompilation
-                .Create(assemblyName, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-                .AddReferences(MetadataReference.CreateFromFile(AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "System.Runtime").Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(OptionsValidatorAttribute).Assembly.Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(IValidateOptions<object>).Assembly.Location))
-                .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
-
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(assemblyName, source);
         EmitResult emitResult = compilation.Emit(assemblyPath);
         Assert.True(emitResult.Success);
 
@@ -1243,18 +1225,7 @@ namespace __OptionValidationStaticInstances
 
             Assembly assembly = Assembly.LoadFrom(assemblyFullPath);
 
-            var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
-                    new Generator(),
-                    new[]
-                    {
-                        assembly,
-                        Assembly.GetAssembly(typeof(RequiredAttribute)),
-                        Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
-                        Assembly.GetAssembly(typeof(IValidateOptions<object>)),
-                    },
-                    new List<string> { source1 })
-                .ConfigureAwait(false);
-
+            var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source1, assembly);
             _ = Assert.Single(generatedSources);
             var diag = Assert.Single(diagnostics);
             Assert.Equal(DiagDescriptors.PotentiallyMissingTransitiveValidation.Id, diag.Id);
@@ -1264,6 +1235,138 @@ namespace __OptionValidationStaticInstances
         }, assemblyPath, new RemoteInvokeOptions { TimeOut = 300 * 1000}).Dispose();
 
         File.Delete(assemblyPath); // cleanup
+    }
+
+    [ConditionalTheory(nameof(SupportRemoteExecutionAndNotInBrowser))]
+    [InlineData(LanguageVersion.CSharp10)]
+    [InlineData(LanguageVersion.CSharp11)]
+    public async Task InternalsVisibleToAssembliesTest(LanguageVersion languageVersion)
+    {
+        string assemblyName = Path.GetRandomFileName();
+        string assemblyPath = Path.Combine(Path.GetTempPath(), assemblyName + ".dll");
+
+        string source = $$"""
+            using Microsoft.Extensions.Options;
+            using System.ComponentModel.DataAnnotations;
+
+            // Make this assembly visible to the other assembly
+            [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("{{assemblyName + "0"}}")]
+
+            #nullable enable
+
+            namespace ValidationTest
+            {
+                public class FirstOptions
+                {
+                    [Required]
+                    public string? Prop { get; set; }
+                }
+
+                [OptionsValidator]
+                internal sealed partial class FirstOptionsValidator : IValidateOptions<FirstOptions>
+                {
+                }
+            }
+        """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source, null, languageVersion);
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(assemblyName, source + Environment.NewLine + generatedSources[0].SourceText.ToString());
+        EmitResult emitResult = compilation.Emit(assemblyPath);
+        Assert.True(emitResult.Success);
+
+        RemoteExecutor.Invoke(async (asmName, assemblyFullPath, langVersion) => {
+
+            Assembly assembly = Assembly.LoadFrom(assemblyFullPath);
+
+            string source1 = """
+                using Microsoft.Extensions.Options;
+                using System.ComponentModel.DataAnnotations;
+
+                #nullable enable
+
+                namespace ValidationTest
+                {
+                    public class SecondOptions
+                    {
+                        [Required]
+                        public string? Prop { get; set; }
+                    }
+
+                    [OptionsValidator]
+                    internal sealed partial class SecondOptionsValidator : IValidateOptions<SecondOptions>
+                    {
+                    }
+                }
+            """;
+
+            var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source1, null, (LanguageVersion)Enum.Parse(typeof(LanguageVersion), langVersion));
+            Assert.Empty(diagnostics);
+            _ = Assert.Single(generatedSources);
+
+            CSharpCompilation compilation1 = CreateCompilationForOptionsSource(asmName + "0", source1 + Environment.NewLine + generatedSources[0].SourceText.ToString(), assemblyFullPath);
+            MemoryStream ms = new();
+            EmitResult emitResult1 = compilation1.Emit(ms);
+            Assert.True(emitResult1.Success);
+        }, assemblyName, assemblyPath, languageVersion.ToString(), new RemoteInvokeOptions { TimeOut = 300 * 1000}).Dispose();
+
+        File.Delete(assemblyPath); // cleanup
+    }
+
+    [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotBrowser))]
+    [InlineData(LanguageVersion.Preview)]
+    [InlineData(LanguageVersion.CSharp11)]
+    [InlineData(LanguageVersion.CSharp10)]
+    [InlineData(LanguageVersion.CSharp9)]
+    public async Task GenerateSourceUsingVariousLanguageVersions(LanguageVersion languageVersion)
+    {
+        string source = $$"""
+            using Microsoft.Extensions.Options;
+            using System.ComponentModel.DataAnnotations;
+
+            #nullable enable
+
+            namespace LanguageVersionTest
+            {
+                public class MyOptions
+                {
+                    [Required] public string? Prop { get; set; }
+                    [Range(1, 3)] public int Val { get; set; }
+                }
+
+                [OptionsValidator]
+                internal sealed partial class MyOptionsValidator : IValidateOptions<MyOptions>
+                {
+                }
+            }
+        """;
+
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source, null, languageVersion);
+        Assert.Empty(diagnostics);
+        _ = Assert.Single(generatedSources);
+
+        // Console.WriteLine(generatedSources[0].SourceText.ToString());
+        string generatedSource = generatedSources[0].SourceText.ToString();
+
+        if (languageVersion >= LanguageVersion.CSharp11)
+        {
+            Assert.Contains("file static class __Attributes", generatedSource);
+            Assert.Contains("file static class __Validators", generatedSource);
+        }
+        else
+        {
+            const string attributesClassDefinition = "internal static class __Attributes_";
+            const string validatorsClassDefinition = "internal static class __Validators_";
+            int index = generatedSource.IndexOf(attributesClassDefinition, StringComparison.Ordinal);
+            Assert.True(index > 0, $"{attributesClassDefinition} not found in the generated source");
+            string suffix = generatedSource.Substring(index + attributesClassDefinition.Length, 8);
+            index = generatedSource.IndexOf(validatorsClassDefinition, StringComparison.Ordinal);
+            Assert.True(index > 0, $"{validatorsClassDefinition} not found in the generated source");
+            Assert.True(index + validatorsClassDefinition.Length + 8 <= generatedSource.Length, $"{validatorsClassDefinition} suffix not found in the generated source");
+            Assert.Equal(suffix, generatedSource.Substring(index + validatorsClassDefinition.Length, 8));
+        }
     }
 
     [ConditionalFact(nameof(SupportRemoteExecutionAndNotInBrowser))]
@@ -1299,15 +1402,7 @@ namespace __OptionValidationStaticInstances
         string assemblyName = Path.GetRandomFileName();
         string assemblyPath = Path.Combine(Path.GetTempPath(), assemblyName + ".dll");
 
-        var compilation = CSharpCompilation
-                .Create(assemblyName, options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-                .AddReferences(MetadataReference.CreateFromFile(AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "System.Runtime").Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(OptionsValidatorAttribute).Assembly.Location))
-                .AddReferences(MetadataReference.CreateFromFile(typeof(IValidateOptions<object>).Assembly.Location))
-                .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
-
+        CSharpCompilation compilation = CreateCompilationForOptionsSource(assemblyName, source);
         EmitResult emitResult = compilation.Emit(assemblyPath);
         Assert.True(emitResult.Success);
 
@@ -1344,18 +1439,7 @@ namespace __OptionValidationStaticInstances
 
             Assembly assembly = Assembly.LoadFrom(assemblyFullPath);
 
-            var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
-                    new Generator(),
-                    new[]
-                    {
-                        assembly,
-                        Assembly.GetAssembly(typeof(RequiredAttribute)),
-                        Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
-                        Assembly.GetAssembly(typeof(IValidateOptions<object>)),
-                    },
-                    new List<string> { source0 + source1 + source2 })
-                .ConfigureAwait(false);
-
+            var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source0 + source1 + source2, assembly);
             _ = Assert.Single(generatedSources);
             Assert.Single(diagnostics);
             Assert.Equal(DiagDescriptors.InaccessibleValidationAttribute.Id, diagnostics[0].Id);
@@ -1364,18 +1448,7 @@ namespace __OptionValidationStaticInstances
             Assert.Contains("global::System.ComponentModel.DataAnnotations.RequiredAttribute", generatedSource);
             Assert.DoesNotContain("Timeout", generatedSource);
 
-            // Ensure the generated source compiles
-            var compilation = CSharpCompilation
-                    .Create(Path.GetRandomFileName()+".dll", options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
-                    .AddReferences(MetadataReference.CreateFromFile(AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "System.Runtime").Location))
-                    .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location))
-                    .AddReferences(MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location))
-                    .AddReferences(MetadataReference.CreateFromFile(typeof(OptionsValidatorAttribute).Assembly.Location))
-                    .AddReferences(MetadataReference.CreateFromFile(typeof(IValidateOptions<object>).Assembly.Location))
-                    .AddReferences(MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location))
-                    .AddReferences(MetadataReference.CreateFromFile(assemblyFullPath))
-                    .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source1 + Environment.NewLine + generatedSource));
-
+            CSharpCompilation compilation = CreateCompilationForOptionsSource(Path.GetRandomFileName()+".dll", source1 + Environment.NewLine + generatedSource, assemblyFullPath);
             MemoryStream ms = new();
             EmitResult emitResult = compilation.Emit(ms);
             Assert.True(emitResult.Success);
@@ -1418,17 +1491,7 @@ namespace __OptionValidationStaticInstances
             }
             """;
 
-        var (diagnostics, generatedSources) = await RoslynTestUtils.RunGenerator(
-                new Generator(),
-                new[]
-                {
-                    Assembly.GetAssembly(typeof(RequiredAttribute)),
-                    Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
-                    Assembly.GetAssembly(typeof(IValidateOptions<object>)),
-                },
-                new List<string> { source3 })
-            .ConfigureAwait(false);
-
+        var (diagnostics, generatedSources) = await RunGeneratorOnOptionsSource(source3);
         _ = Assert.Single(generatedSources);
         Assert.Single(diagnostics);
         Assert.Equal(DiagDescriptors.InaccessibleValidationAttribute.Id, diagnostics[0].Id);
@@ -1517,6 +1580,47 @@ namespace __OptionValidationStaticInstances
 
         Assert.Equal(1, diagnostics.Count);
         Assert.Equal(DiagDescriptors.NotEnumerableType.Id, diagnostics[0].Id);
+    }
+
+    private static CSharpCompilation CreateCompilationForOptionsSource(string assemblyName, string source, string? refAssemblyPath = null)
+    {
+        // Ensure the generated source compiles
+        var compilation = CSharpCompilation
+                .Create(Path.GetRandomFileName()+".dll", options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary))
+                .AddReferences(MetadataReference.CreateFromFile(AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == "System.Runtime").Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(string).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(RequiredAttribute).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(OptionsValidatorAttribute).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(IValidateOptions<object>).Assembly.Location))
+                .AddReferences(MetadataReference.CreateFromFile(typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).Assembly.Location))
+                .AddSyntaxTrees(CSharpSyntaxTree.ParseText(source));
+
+        if (refAssemblyPath is not null)
+        {
+            compilation = compilation.AddReferences(MetadataReference.CreateFromFile(refAssemblyPath));
+        }
+
+        return compilation;
+    }
+
+    private static async Task<(IReadOnlyList<Diagnostic>, ImmutableArray<GeneratedSourceResult>)> RunGeneratorOnOptionsSource(
+                                                                                                    string source,
+                                                                                                    Assembly? refAssembly = null,
+                                                                                                    LanguageVersion languageVersion = LanguageVersion.Preview)
+    {
+        List<Assembly> refAssemblies = new()
+        {
+            Assembly.GetAssembly(typeof(RequiredAttribute)),
+            Assembly.GetAssembly(typeof(OptionsValidatorAttribute)),
+            Assembly.GetAssembly(typeof(IValidateOptions<object>)),
+        };
+
+        if (refAssembly is not null)
+        {
+            refAssemblies.Add(refAssembly);
+        }
+
+        return await RoslynTestUtils.RunGenerator(new Generator(), refAssemblies.ToArray(), new List<string> { source }, includeBaseReferences: true, languageVersion).ConfigureAwait(false);
     }
 
     private static async Task<(IReadOnlyList<Diagnostic> diagnostics, ImmutableArray<GeneratedSourceResult> generatedSources)> RunGenerator(

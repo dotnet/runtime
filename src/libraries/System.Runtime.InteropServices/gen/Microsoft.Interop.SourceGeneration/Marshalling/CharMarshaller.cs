@@ -23,16 +23,20 @@ namespace Microsoft.Interop
 
         public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
-            if (!info.IsByRef)
-            {
-                return ValueBoundaryBehavior.ManagedIdentifier;
-            }
-            else if (IsPinningPathSupported(info, context))
+            if (IsPinningPathSupported(info, context))
             {
                 return ValueBoundaryBehavior.NativeIdentifier;
             }
+            else if (!UsesNativeIdentifier(info, context))
+            {
+                return ValueBoundaryBehavior.ManagedIdentifier;
+            }
+            else if (info.IsByRef)
+            {
+                return ValueBoundaryBehavior.AddressOfNativeIdentifier;
+            }
 
-            return ValueBoundaryBehavior.AddressOfNativeIdentifier;
+            return ValueBoundaryBehavior.NativeIdentifier;
         }
 
         public ManagedTypeInfo AsNativeType(TypePositionInfo info)
@@ -124,7 +128,8 @@ namespace Microsoft.Interop
 
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context)
         {
-            return context.IsInStubReturnPosition(info) || (info.IsByRef && !context.SingleFrameSpansNativeContext);
+            MarshalDirection elementMarshalDirection = MarshallerHelpers.GetMarshalDirection(info, context);
+            return !IsPinningPathSupported(info, context) && (elementMarshalDirection != MarshalDirection.ManagedToUnmanaged || info.IsByRef);
         }
 
         private static bool IsPinningPathSupported(TypePositionInfo info, StubCodeContext context)

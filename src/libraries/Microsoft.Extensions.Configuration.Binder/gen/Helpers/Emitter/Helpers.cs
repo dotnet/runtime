@@ -129,11 +129,43 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 ShouldEmitMethods(MethodsToGen_Extensions_OptionsBuilder.Any) ||
                 ShouldEmitMethods(MethodsToGen_Extensions_ServiceCollection.Any);
 
+            /// <summary>
+            /// Starts a block of source code.
+            /// </summary>
+            /// <param name="source">Source to write after the open brace.</param>
+            public void EmitStartBlock(string? source = null)
+            {
+                if (source is not null)
+                {
+                    _writer.WriteLine(source);
+                }
+
+                _writer.WriteLine("{");
+                _writer.Indentation++;
+            }
+
+            /// <summary>
+            /// Ends a block of source code.
+            /// </summary>
+            /// <param name="source">Source to write before the close brace.</param>
+            /// <param name="endBraceTrailingSource">Trailing source after the end brace, e.g. ";" to end an init statement.</param>
+            public void EmitEndBlock(string? source = null, string? endBraceTrailingSource = null)
+            {
+                if (source is not null)
+                {
+                    _writer.WriteLine(source);
+                }
+
+                string endBlockSource = endBraceTrailingSource is null ? "}" : $"}}{endBraceTrailingSource}";
+                _writer.Indentation--;
+                _writer.WriteLine(endBlockSource);
+            }
+
             private void EmitBlankLineIfRequired()
             {
                 if (_emitBlankLineBeforeNextStatement)
                 {
-                    _writer.WriteBlankLine();
+                    _writer.WriteLine();
                 }
 
                 _emitBlankLineBeforeNextStatement = true;
@@ -153,14 +185,14 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     ? "global::System.ArgumentNullException"
                     : "ArgumentNullException";
 
-                _writer.WriteBlock($$"""
+                _writer.WriteLine($$"""
                     if ({{paramName}} is null)
                     {
                         throw new {{exceptionTypeDisplayString}}(nameof({{paramName}}));
                     }
                     """);
 
-                _writer.WriteBlankLine();
+                _writer.WriteLine();
             }
 
             private bool EmitInitException(TypeSpec type)
@@ -176,14 +208,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return false;
             }
 
-            private void EmitRootBindingClassBlockStart(string className)
+            private void EmitRootBindingClassStartBlock(string className)
             {
                 EmitBlankLineIfRequired();
-                _writer.WriteBlock($$"""
+                EmitStartBlock($$"""
                     /// <summary>Generated helper providing an AOT and linking compatible implementation for configuration binding.</summary>
                     {{GetGeneratedCodeAttributeSrc()}}
                     internal static class {{className}}
-                    {
                     """);
 
                 _emitBlankLineBeforeNextStatement = false;
