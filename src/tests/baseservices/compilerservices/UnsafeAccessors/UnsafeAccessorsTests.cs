@@ -393,6 +393,7 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89212", TestRuntimes.Mono)]
     public static void Verify_InheritanceMethodResolution()
     {
         Console.WriteLine($"Running {nameof(Verify_InheritanceMethodResolution)}");
