@@ -485,7 +485,7 @@ extends:
         parameters:
           platforms:
             - browser_wasm_win_arm64
-          alwaysRun: ${{ variables.isRollingBuild }}
+          alwaysRun: true
           extraBuildArgs: /p:AotHostArchitecture=arm64 /p:AotHostOS=$(_hostedOS)
 
       # Wasm Debugger tests
