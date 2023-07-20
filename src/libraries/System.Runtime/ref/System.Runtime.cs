@@ -12615,6 +12615,13 @@ namespace System.Runtime.CompilerServices
     {
         public CallerMemberNameAttribute() { }
     }
+    [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Interface | System.AttributeTargets.Struct, Inherited = false)]
+    public sealed class CollectionBuilderAttribute : Attribute
+    {
+        public CollectionBuilderAttribute(System.Type builderType, string methodName) { }
+        public System.Type BuilderType { get { throw null; } }
+        public string MethodName { get { throw null; } }
+    }
     [System.FlagsAttribute]
     public enum CompilationRelaxations
     {

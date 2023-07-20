@@ -367,7 +367,7 @@ mono_arch_cpu_init (void)
 void
 mono_arch_init (void)
 {
-#if defined(TARGET_IOS) || defined(TARGET_WATCHOS) || defined(TARGET_OSX)
+#if defined(TARGET_IOS) || defined(TARGET_TVOS) || defined(TARGET_WATCHOS) || defined(TARGET_OSX)
 	ios_abi = TRUE;
 #endif
 #ifdef MONO_ARCH_ENABLE_PTRAUTH
@@ -1097,7 +1097,7 @@ mono_arm_emit_aotconst (gpointer ji, guint8 *code, guint8 *code_start, int dreg,
 gboolean
 mono_arch_have_fast_tls (void)
 {
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	return FALSE;
 #else
 	return TRUE;

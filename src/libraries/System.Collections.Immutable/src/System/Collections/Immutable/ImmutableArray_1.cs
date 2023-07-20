@@ -6,10 +6,12 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 
 namespace System.Collections.Immutable
 {
+    [CollectionBuilder(typeof(ImmutableArray), nameof(ImmutableArray.Create))]
     public readonly partial struct ImmutableArray<T> : IReadOnlyList<T>, IList<T>, IEquatable<ImmutableArray<T>>, IList, IImmutableArray, IStructuralComparable, IStructuralEquatable, IImmutableList<T>
     {
         /// <summary>

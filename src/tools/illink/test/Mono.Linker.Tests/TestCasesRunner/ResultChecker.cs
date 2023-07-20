@@ -51,7 +51,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		static void VerifyIL (NPath pathToAssembly, AssemblyDefinition linked)
 		{
-			var verifier = new ILVerifier (pathToAssembly);
+			using var verifier = new ILVerifier (pathToAssembly);
 			foreach (var result in verifier.Results)
 				Assert.Fail (ILVerifier.GetErrorMessage (result));
 		}

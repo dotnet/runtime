@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Security.Authentication.ExtendedProtection;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.Playwright;
@@ -14,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace Wasm.Build.Tests.TestAppScenarios;
 
-public abstract class AppTestBase : BuildTestBase
+public abstract class AppTestBase : BlazorWasmTestBase
 {
     protected AppTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         : base(output, buildContext)
@@ -79,7 +77,12 @@ public abstract class AppTestBase : BuildTestBase
         if (options.BrowserQueryString != null)
             queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
 
-        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => url + queryString);
+        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => 
+        {
+            url += queryString;
+            _testOutput.WriteLine($"Opening browser at {url}");
+            return url;
+        });
 
         void OnConsoleMessage(IConsoleMessage msg)
         {

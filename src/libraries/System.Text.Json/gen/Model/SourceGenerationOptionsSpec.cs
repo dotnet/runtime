@@ -47,6 +47,8 @@ namespace System.Text.Json.SourceGeneration
 
         public required JsonUnmappedMemberHandling? UnmappedMemberHandling { get; init; }
 
+        public required bool? UseStringEnumConverter { get; init; }
+
         public required bool? WriteIndented { get; init; }
 
         public JsonKnownNamingPolicy? GetEffectivePropertyNamingPolicy()
