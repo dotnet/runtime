@@ -3793,9 +3793,8 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (op1->IsIntegralConst())
                 {
-                    int32_t i32Cns = (int32_t)op1->AsIntConCommon()->IconValue();
-                    float   f32Cns = *reinterpret_cast<float*>(&i32Cns);
-                    retNode        = gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
+                    float f32Cns = BitOperations::UInt32BitsToSingle((uint32_t)op1->AsIntConCommon()->IconValue());
+                    retNode      = gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
                 }
                 else
                 {
@@ -3836,7 +3835,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 if (op1->IsCnsFltOrDbl())
                 {
                     float f32Cns = FloatingPointUtils::convertToSingle(op1->AsDblCon()->DconValue());
-                    retNode      = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
+                    retNode      = gtNewIconNode((int32_t)BitOperations::SingleToUInt32Bits(f32Cns));
                 }
                 else
                 {

@@ -2697,9 +2697,9 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
-                        conValTree =
-                            gtNewDconNode(FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&value)),
-                                          TYP_FLOAT);
+                        conValTree = gtNewDconNode(FloatingPointUtils::convertToDouble(
+                                                       BitOperations::UInt32BitsToSingle((uint32_t)value)),
+                                                   TYP_FLOAT);
                         break;
 
                     case TYP_DOUBLE:
