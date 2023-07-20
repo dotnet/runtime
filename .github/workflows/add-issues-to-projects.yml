@@ -1,4 +1,4 @@
-name: Add issues to AppModel project
+name: Add issues to projects
 
 on:
   issues:
