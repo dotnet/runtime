@@ -39,6 +39,7 @@ namespace System.Diagnostics
                 if (value < TraceLevel.Off || value > TraceLevel.Verbose)
                     throw new ArgumentException(SR.TraceSwitchInvalidLevel);
                 SwitchSetting = (int)value;
+                SetSwitchValueString(value.ToString());
             }
         }
 
@@ -94,6 +95,13 @@ namespace System.Diagnostics
         protected override void OnValueChanged()
         {
             SwitchSetting = (int)Enum.Parse<TraceLevel>(Value, true);
+
+            Debug.Assert(Value.Length > 0, "Value.Length > 0");
+            if (char.IsDigit(Value[0]))
+            {
+                // Convert digit value representation to TraceLevel representation
+                SetSwitchValueString(((TraceLevel)SwitchSetting).ToString());
+            }
         }
     }
 }
