@@ -1842,7 +1842,6 @@ private:
         SRC_Null,
         SRC_Void,
         SRC_EmptyExcSet,
-        SRC_EmptyMemDepSet,
 
         SRC_NumSpecialRefConsts
     };
