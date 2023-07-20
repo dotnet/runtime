@@ -6,8 +6,13 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="HybridMode.cs" />
+    <Compile Include="..\NumberFormatInfo\NumberFormatInfoTests.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoThreeLetterISOInfo.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoTwoLetterISOLanguageName.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNumberFormat.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoParent.cs" />
     <Compile Include="..\CultureInfo\CultureInfoNames.cs" />
+    <Compile Include="..\CultureInfo\CultureInfoNativeName.cs" />
     <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoData.cs" />
     <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoFirstDayOfWeek.cs" />
     <Compile Include="..\DateTimeFormatInfo\DateTimeFormatInfoCalendarWeekRule.cs" />

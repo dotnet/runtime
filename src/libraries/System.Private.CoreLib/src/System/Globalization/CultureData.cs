@@ -2360,7 +2360,7 @@ namespace System.Globalization
             return GlobalizationMode.UseNls ? NlsGetLocaleInfo(localeName, type) : IcuGetLocaleInfo(localeName, type, uiCultureName);
 #endif
         }
-
+//
         private int[] GetLocaleInfoCoreUserOverride(LocaleGroupingData type)
         {
             // This is never reached but helps illinker statically remove dependencies
