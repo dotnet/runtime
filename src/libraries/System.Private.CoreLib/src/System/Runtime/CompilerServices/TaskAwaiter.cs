@@ -40,7 +40,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="InvalidOperationException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
@@ -50,7 +50,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="InvalidOperationException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void UnsafeOnCompleted(Action continuation)
@@ -168,7 +168,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
         /// <param name="continueOnCapturedContext">Whether to capture and marshal back to the current context.</param>
         /// <param name="flowExecutionContext">Whether to flow ExecutionContext across the await.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         internal static void OnCompletedInternal(Task task, Action continuation, bool continueOnCapturedContext, bool flowExecutionContext)
@@ -306,7 +306,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void OnCompleted(Action continuation)
@@ -316,7 +316,7 @@ namespace System.Runtime.CompilerServices
 
         /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
         /// <param name="continuation">The action to invoke when the await operation completes.</param>
-        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
         /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
         public void UnsafeOnCompleted(Action continuation)
@@ -404,7 +404,7 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void OnCompleted(Action continuation)
@@ -414,7 +414,7 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void UnsafeOnCompleted(Action continuation)
@@ -486,7 +486,7 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void OnCompleted(Action continuation)
@@ -496,7 +496,7 @@ namespace System.Runtime.CompilerServices
 
             /// <summary>Schedules the continuation onto the <see cref="Task"/> associated with this <see cref="TaskAwaiter"/>.</summary>
             /// <param name="continuation">The action to invoke when the await operation completes.</param>
-            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
+            /// <exception cref="ArgumentNullException">The <paramref name="continuation"/> argument is null (<see langword="Nothing" /> in Visual Basic).</exception>
             /// <exception cref="NullReferenceException">The awaiter was not properly initialized.</exception>
             /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
             public void UnsafeOnCompleted(Action continuation)

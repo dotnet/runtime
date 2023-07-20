@@ -57,8 +57,8 @@
                              message="$(string.RuntimePublisher.GCSampledObjectAllocationHighKeywordMessage)" symbol="CLR_GCHEAPALLOCHIGH_KEYWORD"/>
                     <keyword name="GCHeapSurvivalAndMovementKeyword" mask="0x400000"
                              message="$(string.RuntimePublisher.GCHeapSurvivalAndMovementKeywordMessage)" symbol="CLR_GCHEAPSURVIVALANDMOVEMENT_KEYWORD"/>
-                    <keyword name="GCHeapCollectKeyword" mask="0x800000"
-                             message="$(string.RuntimePublisher.GCHeapCollectKeyword)" symbol="CLR_GCHEAPCOLLECT_KEYWORD"/>
+                    <keyword name="ManagedHeapCollectKeyword" mask="0x800000"
+                             message="$(string.RuntimePublisher.ManagedHeapCollectKeyword)" symbol="CLR_MANAGEDHEAPCOLLECT_KEYWORD"/>
                     <keyword name="GCHeapAndTypeNamesKeyword" mask="0x1000000"
                              message="$(string.RuntimePublisher.GCHeapAndTypeNamesKeyword)" symbol="CLR_GCHEAPANDTYPENAMES_KEYWORD"/>
                     <keyword name="GCSampledObjectAllocationLowKeyword" mask="0x2000000"
@@ -3415,7 +3415,7 @@
                            symbol="GCBulkRootStaticVar" message="$(string.RuntimePublisher.GCBulkRootStaticVarEventMessage)"/>
 
                     <event value="39" version="0" level="win:LogAlways" template="GCDynamicEvent"
-                           keywords= "GCKeyword GCHandleKeyword GCHeapDumpKeyword GCSampledObjectAllocationHighKeyword GCHeapSurvivalAndMovementKeyword GCHeapCollectKeyword GCHeapAndTypeNamesKeyword GCSampledObjectAllocationLowKeyword"
+                           keywords= "GCKeyword GCHandleKeyword GCHeapDumpKeyword GCSampledObjectAllocationHighKeyword GCHeapSurvivalAndMovementKeyword ManagedHeapCollectKeyword GCHeapAndTypeNamesKeyword GCSampledObjectAllocationLowKeyword"
                            opcode="GCDynamicEvent"
                            task="GarbageCollection"
                            symbol="GCDynamicEvent"/>
@@ -9074,7 +9074,7 @@
                 <string id="RuntimePublisher.GCSampledObjectAllocationHighKeywordMessage" value="GCSampledObjectAllocationHigh" />
                 <string id="RuntimePublisher.GCSampledObjectAllocationLowKeywordMessage" value="GCSampledObjectAllocationLow" />
                 <string id="RuntimePublisher.GCHeapSurvivalAndMovementKeywordMessage" value="GCHeapSurvivalAndMovement" />
-                <string id="RuntimePublisher.GCHeapCollectKeyword" value="GCHeapCollect" />
+                <string id="RuntimePublisher.ManagedHeapCollectKeyword" value="ManagedHeapCollect" />
                 <string id="RuntimePublisher.GCHeapAndTypeNamesKeyword" value="GCHeapAndTypeNames" />
                 <string id="RuntimePublisher.GCHandleKeywordMessage" value="GCHandle" />
                 <string id="RuntimePublisher.ThreadTransferKeywordMessage" value="ThreadTransfer" />

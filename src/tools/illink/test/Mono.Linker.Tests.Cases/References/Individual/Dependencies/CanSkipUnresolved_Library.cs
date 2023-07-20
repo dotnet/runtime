@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Mono.Linker.Tests.Cases.References.Individual.Dependencies
+﻿namespace Mono.Linker.Tests.Cases.References.Individual.Dependencies
 {
 	public class CanSkipUnresolved_Library
 	{

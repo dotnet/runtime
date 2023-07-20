@@ -20,7 +20,7 @@ namespace System.Text.Json
         private const int UnseekableStreamInitialRentSize = 4096;
 
         /// <summary>
-        ///   Parse memory as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        ///   Parse memory as UTF-8 encoded text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   <para>
@@ -50,7 +50,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a sequence as UTF-8-encoded text representing a single JSON value into a JsonDocument.
+        ///   Parse a sequence as UTF-8 encoded text representing a single JSON value into a JsonDocument.
         /// </summary>
         /// <remarks>
         ///   <para>
@@ -101,7 +101,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>
@@ -180,7 +180,7 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        ///   Parse a <see cref="Stream"/> as UTF-8-encoded data representing a single JSON value into a
+        ///   Parse a <see cref="Stream"/> as UTF-8 encoded data representing a single JSON value into a
         ///   JsonDocument.  The Stream will be read to completion.
         /// </summary>
         /// <param name="utf8Json">JSON data to parse.</param>

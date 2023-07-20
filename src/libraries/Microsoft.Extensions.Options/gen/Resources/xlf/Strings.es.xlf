@@ -32,6 +32,16 @@
         <target state="translated">No se puede usar “ValidateObjectMembersAttribute” o “ValidateEnumeratedItemsAttribute” en campos o propiedades con tipos genéricos abiertos.</target>
         <note />
       </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberMessage">
+        <source>Can't apply validation attributes to constant or static member {0}.</source>
+        <target state="translated">No se pueden aplicar atributos de validación a un miembro {0}constante o estático.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CantValidateStaticOrConstMemberTitle">
+        <source>Can't validate constants, static fields or properties.</source>
+        <target state="translated">No se pueden validar constantes, campos estáticos ni propiedades.</target>
+        <note />
+      </trans-unit>
       <trans-unit id="CircularTypeReferencesMessage">
         <source>There is a circular type reference involving type {0} preventing it from being used for static validation.</source>
         <target state="translated">Hay una referencia de tipo circular que implica al tipo {0} que impide que se use para la validación estática.</target>
@@ -50,6 +60,16 @@
       <trans-unit id="DoesntImplementIValidateOptionsTitle">
         <source>A type annotated with 'OptionsValidatorAttribute' doesn't implement the necessary interface.</source>
         <target state="translated">Un tipo anotado con “OptionsValidatorAttribute” no implementa la interfaz necesaria.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeMessage">
+        <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
+        <target state="translated">No se puede obtener acceso al atributo de validación '{0}' en el miembro '{1}' desde el tipo de validador '{2}'.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InaccessibleValidationAttributeTitle">
+        <source>Validation attribute on the member is inaccessible from the validator type..</source>
+        <target state="translated">No se puede obtener acceso al atributo de validación en el miembro desde el tipo de validador.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

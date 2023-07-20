@@ -346,6 +346,24 @@ namespace Internal.TypeSystem.Ecma
             return null;
         }
 
+        public override MethodDesc GetMethodWithEquivalentSignature(string name, MethodSignature signature, Instantiation substitution)
+        {
+            var metadataReader = this.MetadataReader;
+            var stringComparer = metadataReader.StringComparer;
+
+            foreach (var handle in _typeDefinition.GetMethods())
+            {
+                if (stringComparer.Equals(metadataReader.GetMethodDefinition(handle).Name, name))
+                {
+                    var method = _module.GetMethod(handle, this);
+                    if (signature == null || signature.EquivalentTo(method.Signature.ApplySubstitution(substitution)))
+                        return method;
+                }
+            }
+
+            return null;
+        }
+
         public override MethodDesc GetStaticConstructor()
         {
             var metadataReader = this.MetadataReader;

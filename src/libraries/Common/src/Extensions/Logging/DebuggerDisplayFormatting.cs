@@ -9,31 +9,10 @@ namespace Microsoft.Extensions.Logging
     {
         internal static string DebuggerToString(string name, ILogger logger)
         {
-            ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
-            {
-                LogLevel.Critical,
-                LogLevel.Error,
-                LogLevel.Warning,
-                LogLevel.Information,
-                LogLevel.Debug,
-                LogLevel.Trace,
-            };
-
-            LogLevel minimumLevel = LogLevel.None;
-
-            // Check log level from highest to lowest. Report the lowest log level.
-            foreach (LogLevel logLevel in logLevels)
-            {
-                if (!logger.IsEnabled(logLevel))
-                {
-                    break;
-                }
-
-                minimumLevel = logLevel;
-            }
+            LogLevel? minimumLevel = CalculateEnabledLogLevel(logger);
 
             var debugText = $@"Name = ""{name}""";
-            if (minimumLevel != LogLevel.None)
+            if (minimumLevel != null)
             {
                 debugText += $", MinLevel = {minimumLevel}";
             }
@@ -48,6 +27,34 @@ namespace Microsoft.Extensions.Logging
             }
 
             return debugText;
+        }
+
+        internal static LogLevel? CalculateEnabledLogLevel(ILogger logger)
+        {
+            ReadOnlySpan<LogLevel> logLevels = stackalloc LogLevel[]
+            {
+                LogLevel.Critical,
+                LogLevel.Error,
+                LogLevel.Warning,
+                LogLevel.Information,
+                LogLevel.Debug,
+                LogLevel.Trace,
+            };
+
+            LogLevel? minimumLevel = null;
+
+            // Check log level from highest to lowest. Report the lowest log level.
+            foreach (LogLevel logLevel in logLevels)
+            {
+                if (!logger.IsEnabled(logLevel))
+                {
+                    break;
+                }
+
+                minimumLevel = logLevel;
+            }
+
+            return minimumLevel;
         }
     }
 }

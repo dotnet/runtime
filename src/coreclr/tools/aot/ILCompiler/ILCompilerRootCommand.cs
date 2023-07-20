@@ -51,6 +51,8 @@ namespace ILCompiler
             new("--verbose") { Description = "Enable verbose logging" };
         public CliOption<string> SystemModuleName { get; } =
             new("--systemmodule") { DefaultValueFactory = _ => Helpers.DefaultSystemModule, Description = "System module name (default: System.Private.CoreLib)" };
+        public CliOption<string> Win32ResourceModuleName { get; } =
+            new("--win32resourcemodule") { Description = "Name of the module from which to copy Win32 resources (Windows target only)" };
         public CliOption<bool> MultiFile { get; } =
             new("--multifile") { Description = "Compile only input files (do not compile referenced assemblies)" };
         public CliOption<bool> WaitForDebugger { get; } =
@@ -62,7 +64,9 @@ namespace ILCompiler
         public CliOption<string[]> RdXmlFilePaths { get; } =
             new("--rdxml") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "RD.XML file(s) for compilation" };
         public CliOption<string[]> LinkTrimFilePaths { get; } =
-            new("--descriptor") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "ILLinkTrim.Descriptor file(s) for compilation" };
+            new("--descriptor") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "ILLink.Descriptor file(s) for compilation" };
+        public CliOption<string[]> SubstitutionFilePaths { get; } =
+            new("--substitution") { DefaultValueFactory = _ => Array.Empty<string>(), Description = "ILLink.Substitution file(s) for compilation" };
         public CliOption<string> MapFileName { get; } =
             new("--map") { Description = "Generate a map file" };
         public CliOption<string> MstatFileName { get; } =
@@ -134,9 +138,9 @@ namespace ILCompiler
         public CliOption<bool> RootDefaultAssemblies { get; } =
             new("--defaultrooting") { Description = "Root assemblies that are not marked [IsTrimmable]" };
         public CliOption<TargetArchitecture> TargetArchitecture { get; } =
-            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation" };
+            new("--targetarch") { CustomParser = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetArchitecture(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target architecture for cross compilation", HelpName = "arg" };
         public CliOption<TargetOS> TargetOS { get; } =
-            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation" };
+            new("--targetos") { CustomParser = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), DefaultValueFactory = result => Helpers.GetTargetOS(result.Tokens.Count > 0 ? result.Tokens[0].Value : null), Description = "Target OS for cross compilation", HelpName = "arg" };
         public CliOption<string> JitPath { get; } =
             new("--jitpath") { Description = "Path to JIT compiler library" };
         public CliOption<string> SingleMethodTypeName { get; } =
@@ -178,12 +182,14 @@ namespace ILCompiler
             Options.Add(GenerateFullScanDgmlLog);
             Options.Add(IsVerbose);
             Options.Add(SystemModuleName);
+            Options.Add(Win32ResourceModuleName);
             Options.Add(MultiFile);
             Options.Add(WaitForDebugger);
             Options.Add(Resilient);
             Options.Add(CodegenOptions);
             Options.Add(RdXmlFilePaths);
             Options.Add(LinkTrimFilePaths);
+            Options.Add(SubstitutionFilePaths);
             Options.Add(MapFileName);
             Options.Add(MstatFileName);
             Options.Add(MetadataLogFileName);
@@ -263,8 +269,8 @@ namespace ILCompiler
 
 #pragma warning disable CA1861 // Avoid constant arrays as arguments. Only executed once during the execution of the program.
                         Helpers.MakeReproPackage(makeReproPath, result.GetValue(OutputFilePath), args, result,
-                            inputOptions : new[] { "r", "reference", "m", "mibc", "rdxml", "directpinvokelist", "descriptor" },
-                            outputOptions : new[] { "o", "out", "exportsfile" });
+                            inputOptions : new[] { "-r", "--reference", "-m", "--mibc", "--rdxml", "--directpinvokelist", "--descriptor", "--satellite" },
+                            outputOptions : new[] { "-o", "--out", "--exportsfile" });
 #pragma warning restore CA1861 // Avoid constant arrays as arguments
                     }
 
@@ -319,9 +325,6 @@ namespace ILCompiler
 
                 foreach (string arch in ValidArchitectures)
                 {
-                    Console.Write(arch);
-                    Console.Write(": ");
-
                     TargetArchitecture targetArch = Helpers.GetTargetArchitecture(arch);
                     bool first = true;
                     foreach (var instructionSet in Internal.JitInterface.InstructionSetFlags.ArchitectureToValidInstructionSets(targetArch))
@@ -331,6 +334,8 @@ namespace ILCompiler
                         {
                             if (first)
                             {
+                                Console.Write(arch);
+                                Console.Write(": ");
                                 first = false;
                             }
                             else
@@ -340,6 +345,8 @@ namespace ILCompiler
                             Console.Write(instructionSet.Name);
                         }
                     }
+
+                    if (first) continue; // no instruction-set found for this architecture
 
                     Console.WriteLine();
                 }

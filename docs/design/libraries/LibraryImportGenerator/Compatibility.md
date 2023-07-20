@@ -20,9 +20,10 @@ Strict blittability checks have been slightly relaxed. A few select types are no
 
 - `System.Runtime.InteropServices.CLong`
 - `System.Runtime.InteropServices.CULong`
+- `System.Runtime.InteropServices.NFloat`
 - `System.Guid`
 
-The first two types are interop intrinsics that were specifically designed to be used at the unmanaged API layer, so they should be considered blittable by all interop systems. `System.Guid` is extremely commonly used in COM-based APIs, and with the move to supporting COM interop in source-generation, this type shows up in signatures quite a bit. As .NET has always maintained that `Guid` is a blittable representation of `GUID` and it is marked as `NonVersionable` (so we have already committed to maintain the shape between multiple versions of the runtime), we have decided to add it to the list of strictly blittable types.
+The first three types are interop intrinsics that were specifically designed to be used at the unmanaged API layer, so they should be considered blittable by all interop systems. `System.Guid` is extremely commonly used in COM-based APIs, and with the move to supporting COM interop in source-generation, this type shows up in signatures quite a bit. As .NET has always maintained that `Guid` is a blittable representation of `GUID` and it is marked as `NonVersionable` (so we have already committed to maintain the shape between multiple versions of the runtime), we have decided to add it to the list of strictly blittable types.
 
 We strive to keep this list of "exceptions" to our strict blittability rules small, but we will continue to evaluate the list of types in the future as we explore new interop scenarios. We will follow these rules to determine if we will consider encoding the type as strictly blittable in the future:
 

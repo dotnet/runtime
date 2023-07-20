@@ -222,6 +222,10 @@ namespace System
         {
             if (!Console.IsOutputRedirected)
             {
+                if (!string.IsNullOrEmpty(TerminalFormatStringsInstance.ClearScrollbackBuffer))
+                {
+                    WriteStdoutAnsiString(TerminalFormatStringsInstance.ClearScrollbackBuffer);
+                }
                 WriteStdoutAnsiString(TerminalFormatStringsInstance.Clear);
             }
         }

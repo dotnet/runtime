@@ -2911,6 +2911,23 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         case CEE_ISINST:
             if (codeAddr + 1 + sizeof(mdToken) + 1 <= codeEndp)
             {
+                // First, let's see if we can fold BOX+ISINST to just null if ISINST is known to return null
+                // for the given argument. Don't make inline observations for this case.
+                if ((opts == BoxPatterns::None) && ((impStackTop().val->gtFlags & GTF_SIDE_EFFECT) == 0) &&
+                    (info.compCompHnd->getBoxHelper(pResolvedToken->hClass) == CORINFO_HELP_BOX))
+                {
+                    CORINFO_RESOLVED_TOKEN isInstTok;
+                    impResolveToken(codeAddr + 1, &isInstTok, CORINFO_TOKENKIND_Casting);
+                    if (info.compCompHnd->compareTypesForCast(pResolvedToken->hClass, isInstTok.hClass) ==
+                        TypeCompareState::MustNot)
+                    {
+                        JITDUMP("\n Importing BOX; ISINST; as null\n");
+                        impPopStack();
+                        impPushOnStack(gtNewNull(), typeInfo(TYP_REF));
+                        return 1 + sizeof(mdToken);
+                    }
+                }
+
                 const BYTE* nextCodeAddr = codeAddr + 1 + sizeof(mdToken);
 
                 switch (nextCodeAddr[0])
@@ -3497,7 +3514,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         assert(bufferSize >= genTypeSize(fieldType));
         if (info.compCompHnd->getStaticFieldContent(field, buffer, genTypeSize(fieldType)))
         {
-            GenTree* cnsValue = impImportCnsTreeFromBuffer(buffer, fieldType);
+            GenTree* cnsValue = gtNewGenericCon(fieldType, buffer);
             if (cnsValue != nullptr)
             {
                 JITDUMP("... success! The value is:\n");
@@ -3620,7 +3637,7 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         unsigned structTempNum = lvaGrabTemp(true DEBUGARG("folding static readonly field struct"));
         lvaSetStruct(structTempNum, fieldClsHnd, false);
 
-        GenTree* constValTree = impImportCnsTreeFromBuffer(buffer, fieldVarType);
+        GenTree* constValTree = gtNewGenericCon(fieldVarType, buffer);
         assert(constValTree != nullptr);
 
         GenTree* fieldStoreTree = gtNewStoreLclFldNode(structTempNum, fieldVarType, fldOffset, constValTree);
@@ -3631,102 +3648,6 @@ GenTree* Compiler::impImportStaticReadOnlyField(CORINFO_FIELD_HANDLE field, CORI
         return impCreateLocalNode(structTempNum DEBUGARG(0));
     }
     return nullptr;
-}
-
-//------------------------------------------------------------------------
-// impImportCnsTreeFromBuffer: read value of the given type from the
-//    given buffer to create a tree representing that constant.
-//
-// Arguments:
-//    buffer    - array of bytes representing the value
-//    valueType - type of the value
-//
-// Return Value:
-//    The tree representing the constant from the given buffer
-//
-GenTree* Compiler::impImportCnsTreeFromBuffer(uint8_t* buffer, var_types valueType)
-{
-    GenTree* tree = nullptr;
-    switch (valueType)
-    {
-// Use memcpy to read from the buffer and create an Icon/Dcon tree
-#define CreateTreeFromBuffer(type, treeFactory)                                                                        \
-    type v##type;                                                                                                      \
-    memcpy(&v##type, buffer, sizeof(type));                                                                            \
-    tree = treeFactory(v##type);
-
-        case TYP_BOOL:
-        {
-            CreateTreeFromBuffer(bool, gtNewIconNode);
-            break;
-        }
-        case TYP_BYTE:
-        {
-            CreateTreeFromBuffer(int8_t, gtNewIconNode);
-            break;
-        }
-        case TYP_UBYTE:
-        {
-            CreateTreeFromBuffer(uint8_t, gtNewIconNode);
-            break;
-        }
-        case TYP_SHORT:
-        {
-            CreateTreeFromBuffer(int16_t, gtNewIconNode);
-            break;
-        }
-        case TYP_USHORT:
-        {
-            CreateTreeFromBuffer(uint16_t, gtNewIconNode);
-            break;
-        }
-        case TYP_UINT:
-        case TYP_INT:
-        {
-            CreateTreeFromBuffer(int32_t, gtNewIconNode);
-            break;
-        }
-        case TYP_LONG:
-        case TYP_ULONG:
-        {
-            CreateTreeFromBuffer(int64_t, gtNewLconNode);
-            break;
-        }
-        case TYP_FLOAT:
-        {
-            CreateTreeFromBuffer(float, gtNewDconNode);
-            break;
-        }
-        case TYP_DOUBLE:
-        {
-            CreateTreeFromBuffer(double, gtNewDconNode);
-            break;
-        }
-        case TYP_REF:
-        {
-            size_t ptr;
-            memcpy(&ptr, buffer, sizeof(ssize_t));
-
-            if (ptr == 0)
-            {
-                tree = gtNewNull();
-            }
-            else
-            {
-                setMethodHasFrozenObjects();
-                tree         = gtNewIconEmbHndNode((void*)ptr, nullptr, GTF_ICON_OBJ_HDL, nullptr);
-                tree->gtType = TYP_REF;
-                INDEBUG(tree->AsIntCon()->gtTargetHandle = ptr);
-            }
-            break;
-        }
-        default:
-            return nullptr;
-    }
-
-    assert(tree != nullptr);
-    tree->gtType = genActualType(valueType);
-    return tree;
 }
 
 //------------------------------------------------------------------------
@@ -5810,7 +5731,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #ifdef FEATURE_ON_STACK_REPLACEMENT
 
-    bool enablePatchpoints = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
+    bool enablePatchpoints =
+        !opts.compDbgCode && opts.jitFlags->IsSet(JitFlags::JIT_FLAG_TIER0) && (JitConfig.TC_OnStackReplacement() > 0);
 
 #ifdef DEBUG
 

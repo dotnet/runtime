@@ -38,6 +38,13 @@ namespace System.Net.Quic;
 /// </remarks>
 public sealed partial class QuicConnection : IAsyncDisposable
 {
+#if DEBUG
+    /// <summary>
+    /// The actual secret structure wrapper passed to MsQuic.
+    /// </summary>
+    private readonly MsQuicTlsSecret? _tlsSecret;
+#endif
+
     /// <summary>
     /// Returns <c>true</c> if QUIC is supported on the current machine and can be used; otherwise, <c>false</c>.
     /// </summary>
@@ -57,7 +64,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     {
         if (!IsSupported)
         {
-            throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            throw new PlatformNotSupportedException(SR.Format(SR.SystemNetQuic_PlatformNotSupported, MsQuicApi.NotSupportedReason));
         }
 
         // Validate and fill in defaults for the options.
@@ -145,7 +152,6 @@ public sealed partial class QuicConnection : IAsyncDisposable
     /// Set when CONNECTED is received.
     /// </summary>
     private SslApplicationProtocol _negotiatedApplicationProtocol;
-
     /// <summary>
     /// The remote endpoint used for this connection.
     /// </summary>
@@ -204,6 +210,10 @@ public sealed partial class QuicConnection : IAsyncDisposable
             context.Free();
             throw;
         }
+
+#if DEBUG
+        _tlsSecret = MsQuicTlsSecret.Create(_handle);
+#endif
     }
 
     /// <summary>
@@ -231,6 +241,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
         _remoteEndPoint = info->RemoteAddress->ToIPEndPoint();
         _localEndPoint = info->LocalAddress->ToIPEndPoint();
+#if DEBUG
+        _tlsSecret = MsQuicTlsSecret.Create(_handle);
+#endif
     }
 
     private async ValueTask FinishConnectAsync(QuicClientConnectionOptions options, CancellationToken cancellationToken = default)
@@ -291,7 +304,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
 
             // RFC 6066 forbids IP literals
             // DNI mapping is handled by MsQuic
-            var hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
+            string hostname = TargetHostNameHelper.IsValidAddress(options.ClientAuthenticationOptions.TargetHost)
                 ? string.Empty
                 : options.ClientAuthenticationOptions.TargetHost ?? string.Empty;
 
@@ -479,9 +492,7 @@ public sealed partial class QuicConnection : IAsyncDisposable
     }
     private unsafe int HandleEventShutdownInitiatedByTransport(ref SHUTDOWN_INITIATED_BY_TRANSPORT_DATA data)
     {
-        // TODO: we should propagate transport error code.
-        // https://github.com/dotnet/runtime/issues/72666
-        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status));
+        Exception exception = ExceptionDispatchInfo.SetCurrentStackTrace(ThrowHelper.GetExceptionForMsQuicStatus(data.Status, (long)data.ErrorCode));
         _connectedTcs.TrySetException(exception);
         _acceptQueue.Writer.TryComplete(exception);
         return QUIC_STATUS_SUCCESS;
@@ -600,6 +611,9 @@ public sealed partial class QuicConnection : IAsyncDisposable
             return;
         }
 
+#if DEBUG
+        _tlsSecret?.Dispose();
+#endif
         // Check if the connection has been shut down and if not, shut it down.
         if (_shutdownTcs.TryInitialize(out ValueTask valueTask, this))
         {

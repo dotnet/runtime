@@ -87,7 +87,7 @@ namespace System.Threading
         /// an attempt is made to retrieve <see cref="Value"/> without it having been previously initialized.
         /// </param>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="valueFactory"/> is a null reference (Nothing in Visual Basic).
+        /// <paramref name="valueFactory"/> is a null reference (<see langword="Nothing" /> in Visual Basic).
         /// </exception>
         public ThreadLocal(Func<T> valueFactory)
         {
@@ -106,7 +106,7 @@ namespace System.Threading
         /// </param>
         /// <param name="trackAllValues">Whether to track all values set on the instance and expose them via the Values property.</param>
         /// <exception cref="ArgumentNullException">
-        /// <paramref name="valueFactory"/> is a null reference (Nothing in Visual Basic).
+        /// <paramref name="valueFactory"/> is a null reference (<see langword="Nothing" /> in Visual Basic).
         /// </exception>
         public ThreadLocal(Func<T> valueFactory, bool trackAllValues)
         {
@@ -207,7 +207,7 @@ namespace System.Threading
         /// <summary>Creates and returns a string representation of this instance for the current thread.</summary>
         /// <returns>The result of calling <see cref="object.ToString"/> on the <see cref="Value"/>.</returns>
         /// <exception cref="NullReferenceException">
-        /// The <see cref="Value"/> for the current thread is a null reference (Nothing in Visual Basic).
+        /// The <see cref="Value"/> for the current thread is a null reference (<see langword="Nothing" /> in Visual Basic).
         /// </exception>
         /// <exception cref="InvalidOperationException">
         /// The initialization function referenced <see cref="Value"/> in an improper manner.

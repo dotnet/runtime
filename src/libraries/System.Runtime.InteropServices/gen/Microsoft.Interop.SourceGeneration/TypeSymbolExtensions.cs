@@ -74,7 +74,8 @@ namespace Microsoft.Interop
                     {
                         // We have a few exceptions to this rule. We allow a select number of types that we know are unmanaged and will always be unmanaged.
                         if (t.ToDisplayString() is TypeNames.System_Runtime_InteropServices_CLong // CLong is an interop intrinsic type for the C long type
-                                or TypeNames.System_Runtime_InteropServices_CULong)// CULong is an interop intrinsic type for the C ulong type
+                                or TypeNames.System_Runtime_InteropServices_CULong // CULong is an interop intrinsic type for the C ulong type
+                                or TypeNames.System_Runtime_InteropServices_NFloat) // NFloat is an interop intrinsic type for a pointer-sized floating point type
                         {
                             return true;
                         }

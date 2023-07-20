@@ -17,23 +17,14 @@
 #include <unistd.h>
 #endif
 
-// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
-// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
-// implemented in some manner that doesn't rely on the Thread class.
-
 #include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "holder.h"
-#include "SpinLock.h"
 
+#ifndef DIRECTORY_SEPARATOR_CHAR
 #ifdef TARGET_UNIX
-// Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
-pthread_key_t eventpipe_tls_key;
-__thread EventPipeThreadHolder* eventpipe_tls_instance;
-#else
-thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
+#define DIRECTORY_SEPARATOR_CHAR '/'
+#else // TARGET_UNIX
+#define DIRECTORY_SEPARATOR_CHAR '\\'
+#endif // TARGET_UNIX
 #endif
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
@@ -41,7 +32,6 @@ thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHo
 ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
 CrstStatic _ep_rt_aot_config_lock;
 
-ep_char8_t *volatile _ep_rt_aot_diagnostics_cmd_line;
 
 #ifndef TARGET_UNIX
 uint32_t *_ep_rt_aot_proc_group_offsets;
@@ -88,9 +78,63 @@ ep_rt_aot_sample_profiler_write_sampling_event_for_threads (
 const ep_char8_t *
 ep_rt_aot_entrypoint_assembly_name_get_utf8 (void) 
 {
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // TODO: Implement EventPipe assembly name - return filename in nativeaot?
-    return reinterpret_cast<const ep_char8_t*>("");
+    // We are (intentionally for now) using the module name rather than entry assembly
+    // Cannot use __cpp_threadsafe_static_init feature since it will bring in the C++ runtime and need to use threadsafe way to initialize entrypoint_assembly_name
+    static const ep_char8_t * entrypoint_assembly_name = nullptr;
+    if (entrypoint_assembly_name == nullptr) {
+        ep_char8_t * entrypoint_assembly_name_local;
+        const TCHAR * wszModuleFileName = NULL;
+        HANDLE moduleHandle = PalGetModuleHandleFromPointer((void*)&ep_rt_aot_entrypoint_assembly_name_get_utf8);
+        if(PalGetModuleFileName(&wszModuleFileName, moduleHandle) == 0) {
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t *>(malloc(1));
+            if(entrypoint_assembly_name_local==NULL) {
+                return NULL;
+            }
+            *entrypoint_assembly_name_local = '\0';
+        }
+        else {
+#ifdef HOST_WINDOWS
+            const wchar_t* process_name_const = wcsrchr(wszModuleFileName, DIRECTORY_SEPARATOR_CHAR);
+            if (process_name_const != NULL) {
+                process_name_const++;
+            }
+            else {
+                process_name_const = reinterpret_cast<const wchar_t *>(wszModuleFileName);
+            }
+            size_t len = -1;
+            const wchar_t* extension = wcsrchr(process_name_const, '.');
+            if (extension != NULL) {
+                len = extension - process_name_const;
+            }
+            entrypoint_assembly_name_local = ep_rt_utf16_to_utf8_string(reinterpret_cast<const ep_char16_t *>(process_name_const), len);
+#else
+            const ep_char8_t* process_name_const = strrchr(wszModuleFileName, DIRECTORY_SEPARATOR_CHAR);
+            if (process_name_const != NULL) {
+                process_name_const++;
+            }
+            else {
+                process_name_const = reinterpret_cast<const ep_char8_t *>(wszModuleFileName);
+            }
+            size_t len = strlen(process_name_const);
+            const ep_char8_t *extension = strrchr(process_name_const, '.');
+            if (extension != NULL) {
+                len = extension - process_name_const;
+            }
+            ep_char8_t* process_name = reinterpret_cast<ep_char8_t *>(malloc(len + 1));
+            if (process_name == NULL) {
+                return NULL;
+            }
+            memcpy(process_name, process_name_const, len);
+            process_name[len] = '\0';
+            entrypoint_assembly_name_local = reinterpret_cast<ep_char8_t*>(process_name);
+#endif // HOST_WINDOWS
+        }
+
+        if (PalInterlockedCompareExchangePointer((void**)(&entrypoint_assembly_name), (void*)(entrypoint_assembly_name_local), nullptr) != nullptr)
+            free(entrypoint_assembly_name_local);
+    }
+
+    return entrypoint_assembly_name;
 }
 
 const ep_char8_t *
@@ -101,9 +145,63 @@ ep_rt_aot_diagnostics_command_line_get (void)
 #ifdef TARGET_WINDOWS
     const ep_char16_t* command_line = reinterpret_cast<const ep_char16_t *>(::GetCommandLineW());
     return ep_rt_utf16_to_utf8_string(command_line, -1);
+#elif TARGET_LINUX
+    FILE *cmdline_file = ::fopen("/proc/self/cmdline", "r");
+    if (cmdline_file == nullptr)
+        return "";
+
+    char *line = NULL;
+    size_t line_len = 0;
+    if (::getline (&line, &line_len, cmdline_file) == -1) {
+        ::fclose (cmdline_file);
+        return "";
+    }
+
+    ::fclose (cmdline_file);
+    return reinterpret_cast<const ep_char8_t*>(line);
 #else
     return "";
 #endif
+}
+
+namespace
+{
+    #ifdef TARGET_UNIX
+    __thread EventPipeThreadHolder* eventpipe_tls_instance;
+    #else
+    thread_local EventPipeThreadHolder* eventpipe_tls_instance;
+    #endif
+
+    void free_thread_holder ()
+    {
+        EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+        if (thread_holder != NULL) {
+            thread_holder_free_func (thread_holder);
+            eventpipe_tls_instance = NULL;
+        }
+    }
+}
+
+EventPipeThread* ep_rt_aot_thread_get (void)
+{
+    EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+    return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
+}
+
+EventPipeThread* ep_rt_aot_thread_get_or_create (void)
+{
+    EventPipeThread *thread = ep_rt_thread_get ();
+    if (thread != NULL)
+        return thread;
+
+    eventpipe_tls_instance = thread_holder_alloc_func ();
+    return ep_thread_holder_get_thread (eventpipe_tls_instance);
+}
+
+void
+ep_rt_aot_thread_exited (void)
+{
+    free_thread_holder ();
 }
 
 uint32_t
@@ -388,10 +486,10 @@ ep_rt_aot_file_close (ep_rt_file_handle_t file_handle)
 
 bool
 ep_rt_aot_file_write (
-	ep_rt_file_handle_t file_handle,
-	const uint8_t *buffer,
-	uint32_t bytes_to_write,
-	uint32_t *bytes_written)
+    ep_rt_file_handle_t file_handle,
+    const uint8_t *buffer,
+    uint32_t bytes_to_write,
+    uint32_t *bytes_written)
 {
 #ifdef TARGET_WINDOWS
     return ::WriteFile (file_handle, buffer, bytes_to_write, reinterpret_cast<LPDWORD>(bytes_written), NULL) != FALSE;
@@ -604,17 +702,6 @@ ep_rt_aot_volatile_store_ptr_without_barrier (
     VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
 }
 
-void unix_tls_callback_fn(void *value) 
-{
-    if (value) {
-        // we need to do the unallocation here
-        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
-        // @TODO - inline
-        thread_holder_free_func (thread_holder_old);
-        value = NULL;
-    }
-}
-
 void ep_rt_aot_init (void)
 {
     extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
@@ -622,11 +709,6 @@ void ep_rt_aot_init (void)
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
     _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
-
-    // Initialize the pthread key used for TLS in Unix
-    #ifdef TARGET_UNIX
-    pthread_key_create(&eventpipe_tls_key, unix_tls_callback_fn);
-    #endif
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)
@@ -669,6 +751,44 @@ bool ep_rt_aot_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
     return false;
 }
 
+#ifndef HOST_WIN32
+#if defined(__APPLE__)
+#if defined (HOST_OSX)
+extern "C" {char ***_NSGetEnviron(void);}
+#define environ (*_NSGetEnviron())
+#else
+static char *_ep_rt_aot_environ[1] = { NULL };
+#define environ _ep_rt_aot_environ
+#endif /* defined (HOST_OSX) */
+#else
+extern "C" {
+extern char **environ;
+}
+#endif /* defined (__APPLE__) */
+#endif /* !defined (HOST_WIN32) */
+
+void ep_rt_aot_os_environment_get_utf16 (dn_vector_ptr_t *env_array)
+{
+    STATIC_CONTRACT_NOTHROW;
+    EP_ASSERT (env_array != NULL);
+
+#ifdef HOST_WIN32
+    ep_char16_t * envs = reinterpret_cast<ep_char16_t *>(GetEnvironmentStringsW ());
+    if (envs) {
+        const ep_char16_t * next = envs;
+        while (*next) {
+            dn_vector_ptr_push_back (env_array, ep_rt_utf16_string_dup (reinterpret_cast<const ep_char16_t *>(next)));
+            next += ep_rt_utf16_string_len (reinterpret_cast<const ep_char16_t *>(next)) + 1;
+        }
+        FreeEnvironmentStringsW (reinterpret_cast<LPWSTR>(envs));
+    }
+#else
+    ep_char8_t **next = NULL;
+    for (next = environ; *next != NULL; ++next)
+        dn_vector_ptr_push_back (env_array, ep_rt_utf8_to_utf16le_string (*next, -1));
+#endif
+}
+
 #ifdef EP_CHECKED_BUILD
 
 void ep_rt_aot_lock_requires_lock_held (const ep_rt_lock_handle_t *lock)
@@ -684,12 +804,12 @@ void ep_rt_aot_lock_requires_lock_not_held (const ep_rt_lock_handle_t *lock)
 void ep_rt_aot_spin_lock_requires_lock_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
     EP_ASSERT (ep_rt_spin_lock_is_valid (spin_lock));
-	EP_ASSERT (spin_lock->lock->OwnedByCurrentThread ());
+    EP_ASSERT (spin_lock->lock->OwnedByCurrentThread ());
 }
 
 void ep_rt_aot_spin_lock_requires_lock_not_held (const ep_rt_spin_lock_handle_t *spin_lock)
 {
-	EP_ASSERT (spin_lock->lock == NULL || !spin_lock->lock->OwnedByCurrentThread ());
+    EP_ASSERT (spin_lock->lock == NULL || !spin_lock->lock->OwnedByCurrentThread ());
 }
 
 #endif /* EP_CHECKED_BUILD */

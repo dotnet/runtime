@@ -289,7 +289,7 @@ namespace System.Collections.Tests
         [MemberData(nameof(ValidCollectionSizes))]
         public void IDictionary_Generic_ItemGet_MissingDefaultKey_ThrowsKeyNotFoundException(int count)
         {
-            if (DefaultValueAllowed)
+            if (DefaultValueAllowed && !IsReadOnly)
             {
                 IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
                 TKey missingKey = default(TKey);
@@ -733,11 +733,14 @@ namespace System.Collections.Tests
             IDictionary<TKey, TValue> dictionary = GenericIDictionaryFactory(count);
             if (DefaultValueAllowed)
             {
-                // returns false
-                TKey missingKey = default(TKey);
-                while (dictionary.ContainsKey(missingKey))
-                    dictionary.Remove(missingKey);
-                Assert.False(dictionary.ContainsKey(missingKey));
+                if (!IsReadOnly)
+                {
+                    // returns false
+                    TKey missingKey = default(TKey);
+                    while (dictionary.ContainsKey(missingKey))
+                        dictionary.Remove(missingKey);
+                    Assert.False(dictionary.ContainsKey(missingKey));
+                }
             }
             else
             {
@@ -934,10 +937,13 @@ namespace System.Collections.Tests
             TValue outValue;
             if (DefaultValueAllowed)
             {
-                TKey missingKey = default(TKey);
-                while (dictionary.ContainsKey(missingKey))
-                    dictionary.Remove(missingKey);
-                Assert.False(dictionary.TryGetValue(missingKey, out outValue));
+                if (!IsReadOnly)
+                {
+                    TKey missingKey = default(TKey);
+                    while (dictionary.ContainsKey(missingKey))
+                        dictionary.Remove(missingKey);
+                    Assert.False(dictionary.TryGetValue(missingKey, out outValue));
+                }
             }
             else
             {
