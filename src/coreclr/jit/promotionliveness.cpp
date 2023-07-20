@@ -352,10 +352,9 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 
     BitVecOps::LivenessD(m_bvTraits, m_liveIn, bbInfo.VarDef, bbInfo.VarUse, bbInfo.LiveOut);
 
-    if (m_compiler->ehBlockHasExnFlowDsc(block))
+    AddHandlerLiveVars(block, m_ehLiveVars);
+    if (!BitVecOps::IsEmpty(m_bvTraits, m_ehLiveVars))
     {
-        BitVecOps::ClearD(m_bvTraits, m_ehLiveVars);
-        AddHandlerLiveVars(block, m_ehLiveVars);
         BitVecOps::UnionD(m_bvTraits, m_liveIn, m_ehLiveVars);
         BitVecOps::UnionD(m_bvTraits, bbInfo.LiveOut, m_ehLiveVars);
         m_hasPossibleBackEdge = true;
@@ -385,51 +384,52 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 //
 void PromotionLiveness::AddHandlerLiveVars(BasicBlock* block, BitVec& ehLiveVars)
 {
-    assert(m_compiler->ehBlockHasExnFlowDsc(block));
-    EHblkDsc* HBtab = m_compiler->ehGetBlockExnFlowDsc(block);
+    BitVecOps::ClearD(m_bvTraits, ehLiveVars);
 
-    do
+    if (m_compiler->ehBlockHasExnFlowDsc(block))
     {
-        // Either we enter the filter first or the catch/finally
-        if (HBtab->HasFilter())
+        EHblkDsc* HBtab = m_compiler->ehGetBlockExnFlowDsc(block);
+
+        do
         {
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdFilter->bbNum].LiveIn);
+            // Either we enter the filter first or the catch/finally
+            if (HBtab->HasFilter())
+            {
+                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdFilter->bbNum].LiveIn);
 #if defined(FEATURE_EH_FUNCLETS)
-            // The EH subsystem can trigger a stack walk after the filter
-            // has returned, but before invoking the handler, and the only
-            // IP address reported from this method will be the original
-            // faulting instruction, thus everything in the try body
-            // must report as live any variables live-out of the filter
-            // (which is the same as those live-in to the handler)
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
+                // The EH subsystem can trigger a stack walk after the filter
+                // has returned, but before invoking the handler, and the only
+                // IP address reported from this method will be the original
+                // faulting instruction, thus everything in the try body
+                // must report as live any variables live-out of the filter
+                // (which is the same as those live-in to the handler)
+                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
 #endif // FEATURE_EH_FUNCLETS
-        }
-        else
-        {
-            BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
-        }
+            }
+            else
+            {
+                BitVecOps::UnionD(m_bvTraits, ehLiveVars, m_bbInfo[HBtab->ebdHndBeg->bbNum].LiveIn);
+            }
 
-        // If we have nested try's edbEnclosing will provide them
-        assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
-               (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
+            // If we have nested try's edbEnclosing will provide them
+            assert((HBtab->ebdEnclosingTryIndex == EHblkDsc::NO_ENCLOSING_INDEX) ||
+                   (HBtab->ebdEnclosingTryIndex > m_compiler->ehGetIndex(HBtab)));
 
-        unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
-        if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
-        {
-            break;
-        }
-        HBtab = m_compiler->ehGetDsc(outerIndex);
+            unsigned outerIndex = HBtab->ebdEnclosingTryIndex;
+            if (outerIndex == EHblkDsc::NO_ENCLOSING_INDEX)
+            {
+                break;
+            }
+            HBtab = m_compiler->ehGetDsc(outerIndex);
 
-    } while (true);
+        } while (true);
+    }
 
     // If this block is within a filter, we also need to report as live
     // any vars live into enclosed finally or fault handlers, since the
     // filter will run during the first EH pass, and enclosed or enclosing
     // handlers will run during the second EH pass. So all these handlers
     // are "exception flow" successors of the filter.
-    //
-    // Note we are relying on ehBlockHasExnFlowDsc to return true
-    // for any filter block that we should examine here.
     if (block->hasHndIndex())
     {
         const unsigned thisHndIndex   = block->getHndIndex();
@@ -508,12 +508,7 @@ void PromotionLiveness::FillInLiveness()
 
         BasicBlockLiveness& bbInfo = m_bbInfo[block->bbNum];
 
-        BitVecOps::ClearD(m_bvTraits, volatileVars);
-
-        if (m_compiler->ehBlockHasExnFlowDsc(block))
-        {
-            AddHandlerLiveVars(block, volatileVars);
-        }
+        AddHandlerLiveVars(block, volatileVars);
 
         BitVecOps::Assign(m_bvTraits, life, bbInfo.LiveOut);
 

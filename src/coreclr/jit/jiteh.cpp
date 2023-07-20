@@ -649,7 +649,7 @@ bool Compiler::ehIsBlockEHLast(BasicBlock* block)
 //------------------------------------------------------------------------
 // ehGetBlockExnFlowDsc:
 //     Get the EH descriptor for the most nested region (if any) that may
-//     handle exceptions raised in the given block
+//     handle exceptions raised in the given block.
 //
 // Arguments:
 //    block - Consider exceptions raised from this block
@@ -658,7 +658,7 @@ bool Compiler::ehIsBlockEHLast(BasicBlock* block)
 //    nullptr - The given block's exceptions propagate to caller
 //    non-null - This region is the innermost handler for exceptions raised in
 //               the given block
-
+//
 EHblkDsc* Compiler::ehGetBlockExnFlowDsc(BasicBlock* block)
 {
     EHblkDsc* hndDesc = ehGetBlockHndDsc(block);
@@ -668,9 +668,10 @@ EHblkDsc* Compiler::ehGetBlockExnFlowDsc(BasicBlock* block)
         // If an exception is thrown in a filter (or escapes a callee in a filter),
         // or if exception_continue_search (0/false) is returned at
         // the end of a filter, the (original) exception is propagated to
-        // the next outer handler.  The "next outer handler" is the handler
-        // of the try region enclosing the try that the filter protects.
-        // This may not be the same as the try region enclosing the filter,
+        // the next outer handler. This is because a new exception thrown in
+        // a filter is discarded and the filter is treated as returning 0.
+        // The "next outer handler" is the handler of the try region enclosing the try
+        // that the filter protects. This may not be the same as the try region enclosing the filter,
         // e.g. in cases like this:
         //    try {
         //      ...

@@ -4899,7 +4899,7 @@ public:
     void fgPerNodeLocalVarLiveness(GenTreeHWIntrinsic* hwintrinsic);
 #endif // FEATURE_HW_INTRINSICS
 
-    VARSET_VALRET_TP fgGetHandlerLiveVars(BasicBlock* block);
+    bool fgGetHandlerLiveVars(BasicBlock* block, VARSET_TP& ehHandlerLiveVars);
 
     void fgLiveVarAnalysis(bool updateInternalOnly = false);
 
