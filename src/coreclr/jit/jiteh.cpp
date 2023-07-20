@@ -347,6 +347,16 @@ bool Compiler::bbInFilterILRange(BasicBlock* blk)
     return HBtab->InFilterRegionILRange(blk);
 }
 
+//------------------------------------------------------------------------
+// bbInFilterBBRange:
+//     Check if this block is part of a filter.
+//
+// Arguments:
+//    blk - The block
+//
+// Return Value:
+//    True if the block is part of a filter clause. Otherwise false.
+//
 bool Compiler::bbInFilterBBRange(BasicBlock* blk)
 {
     EHblkDsc* HBtab = ehGetBlockHndDsc(blk);
@@ -446,7 +456,7 @@ bool Compiler::bbInTryRegions(unsigned regionIndex, BasicBlock* blk)
 // Notes:
 //    For this check, a funclet is considered to be in the region it was
 //    extracted from.
-
+//
 bool Compiler::bbInExnFlowRegions(unsigned regionIndex, BasicBlock* blk)
 {
     assert(regionIndex < EHblkDsc::NO_ENCLOSING_INDEX);
