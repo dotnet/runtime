@@ -2796,15 +2796,7 @@ extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_abstract(MonoClass*
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_interface(MonoClass* klass)
 {
-    CONTRACTL
-    {
-        NOTHROW;
-    GC_NOTRIGGER;
-    PRECONDITION(klass != NULL);
-    }
-    CONTRACTL_END;
-
-    return reinterpret_cast<MonoClass_clr*>(klass)->IsInterface() ? TRUE : FALSE;
+    return g_HostStruct->unity_class_is_interface(klass);
 }
 
 extern "C" EXPORT_API gboolean EXPORT_CC mono_unity_class_is_open_constructed_type (MonoClass * klass)

@@ -653,6 +653,14 @@ static unsafe partial class CoreCLRHost
         return isBlittable;
     }
 
+    [return: NativeCallbackType("gboolean")]
+    public static bool unity_class_is_interface(
+        [NativeCallbackType("MonoClass*")] IntPtr klass)
+    {
+        Type t = klass.TypeFromHandleIntPtr();
+        return t.IsInterface;
+    }
+
     static void Log(string message)
     {
         var bytes = System.Text.Encoding.UTF8.GetBytes(message);

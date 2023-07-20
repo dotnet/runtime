@@ -759,6 +759,18 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(isBlittable, Is.EqualTo(expectedResult));
     }
 
+    [TestCase(typeof(Animal),                               false)]
+    [TestCase(typeof(GenericAnimal<Classification, bool>),  false)]
+    [TestCase(typeof(ValueMammal),                          false)]
+    [TestCase(typeof(ValueMammal*),                         false)]
+    [TestCase(typeof(IAnimal),                               true)]
+    [TestCase(typeof(Classification),                       false)]
+    public void UnityClassIsInterfaceReturnsProperValue(Type klass, bool expectedResult)
+    {
+        bool isInterface = ClrHost.unity_class_is_interface(klass);
+        Assert.That(isInterface, Is.EqualTo(expectedResult));
+    }
+
     static List<object?> FlattenedArray(Array arr)
     {
         var result = new List<object?>();
