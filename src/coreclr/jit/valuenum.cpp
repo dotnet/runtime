@@ -2922,7 +2922,9 @@ void ValueNumStore::MapSelectWorkCacheEntry::SetMemoryDependencies(CompAllocator
     }
 
     for (unsigned i = 0; i < m_numMemoryDependencies; i++)
-        arr[i]      = deps.Bottom(startIndex + i);
+    {
+        arr[i] = deps.Bottom(startIndex + i);
+    }
 }
 
 //------------------------------------------------------------------------------
