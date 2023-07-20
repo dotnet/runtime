@@ -64,7 +64,7 @@ internal static partial class Interop
                 AddressFamily family = (addressLength > Internals.SocketAddress.IPv4AddressSize)
                     ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
                 Internals.SocketAddress sockAddress = new Internals.SocketAddress(family, addressLength);
-                Marshal.Copy(address, sockAddress.Buffer, 0, addressLength);
+                Marshal.Copy(address, sockAddress.InternalBuffer, 0, addressLength);
 
                 return sockAddress.GetIPAddress();
             }

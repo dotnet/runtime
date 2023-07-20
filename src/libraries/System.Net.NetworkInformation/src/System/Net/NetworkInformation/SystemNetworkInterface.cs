@@ -45,7 +45,7 @@ namespace System.Net.NetworkInformation
         {
             int index;
             Internals.SocketAddress address = new Internals.SocketAddress(addr);
-            fixed (byte* buffer = address.Buffer)
+            fixed (byte* buffer = address.InternalBuffer)
             {
                 int error = (int)Interop.IpHlpApi.GetBestInterfaceEx(buffer, &index);
                 if (error != 0)

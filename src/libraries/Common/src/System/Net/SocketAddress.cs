@@ -111,6 +111,7 @@ namespace System.Net.Internals
             : this(ipAddress.AddressFamily,
                 ((ipAddress.AddressFamily == AddressFamily.InterNetwork) ? IPv4AddressSize : IPv6AddressSize))
         {
+
             // No Port.
             SocketAddressPal.SetPort(InternalBuffer, 0);
 
@@ -142,7 +143,7 @@ namespace System.Net.Internals
         internal SocketAddress(AddressFamily addressFamily, ReadOnlySpan<byte> buffer)
         {
             InternalBuffer = buffer.ToArray();
-            InternalSize = Buffer.Length;
+            InternalSize = InternalBuffer.Length;
             SocketAddressPal.SetAddressFamily(InternalBuffer, addressFamily);
         }
 
