@@ -6246,12 +6246,25 @@ bool emitter::HasSideEffect(instruction ins, emitAttr size)
         case INS_kmovb_msk:
         case INS_kmovw_msk:
         case INS_kmovd_msk:
+        {
+            // Zero-extends the source
+            hasSideEffect = true;
+            break;
+        }
+
         case INS_kmovq_msk:
+        {
+            // No side effect, register is 64-bits
+            hasSideEffect = false;
+            break;
+        }
+
         case INS_kmovb_gpr:
         case INS_kmovw_gpr:
         case INS_kmovd_gpr:
         case INS_kmovq_gpr:
         {
+            // Zero-extends the source
             hasSideEffect = true;
             break;
         }

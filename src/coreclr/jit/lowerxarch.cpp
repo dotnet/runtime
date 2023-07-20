@@ -1191,6 +1191,51 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             return LowerHWIntrinsicCmpOp(node, GT_NE);
         }
 
+        case NI_AVX512F_CompareEqualMask:
+        case NI_AVX512F_CompareNotEqualMask:
+        {
+            GenTree* op1 = node->Op(1);
+            GenTree* op2 = node->Op(2);
+
+            if (op2->IsVectorZero())
+            {
+                NamedIntrinsic testIntrinsicId;
+
+                if (intrinsicId == NI_AVX512F_CompareEqualMask)
+                {
+                    // We have `CompareEqual(x, Zero)` where a given element
+                    // equaling zero returns 1. We can therefore use `vptestnm(x, x)`
+                    // since it does `~(x & x)` and setting 1 if the result is zero.
+
+                    testIntrinsicId = NI_AVX512F_PTESTNM;
+                }
+                else
+                {
+                    // We have `CompareNotEqual(x, Zero)` where a given element
+                    // equaling zero returns 0. We can therefore use `vptestm(x, x)`
+                    // since it does `x & x` and setting 0 if the result is zero.
+
+                    assert(intrinsicId == NI_AVX512F_CompareNotEqualMask);
+                    testIntrinsicId = NI_AVX512F_PTESTM;
+                }
+
+                node->Op(1) = op1;
+                BlockRange().Remove(op2);
+
+                LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(op1Use);
+                op1 = node->Op(1);
+
+                op2 = comp->gtClone(op1);
+                BlockRange().InsertAfter(op1, op2);
+                node->Op(2) = op2;
+
+                node->ChangeHWIntrinsicId(testIntrinsicId);
+                return LowerNode(node);
+            }
+            break;
+        }
+
         case NI_Vector128_ToScalar:
         case NI_Vector256_ToScalar:
         case NI_Vector512_ToScalar:
@@ -1665,16 +1710,72 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         // just use PTEST. We can't support it for floating-point, however,
         // as it has both +0.0 and -0.0 where +0.0 == -0.0
 
-        node->Op(1) = op1;
-        BlockRange().Remove(op2);
+        bool skipReplaceOperands = false;
 
-        LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-        ReplaceWithLclVar(op1Use);
-        op1 = node->Op(1);
+        if (op1->OperIsHWIntrinsic())
+        {
+            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
+            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
 
-        op2 = comp->gtClone(op1);
-        BlockRange().InsertAfter(op1, op2);
-        node->Op(2) = op2;
+            switch (op1IntrinsicId)
+            {
+                case NI_SSE_And:
+                case NI_SSE2_And:
+                case NI_AVX_And:
+                case NI_AVX2_And:
+                {
+                    // We can optimize to TestZ(op1.op1, op1.op2)
+
+                    node->Op(1) = op1Intrinsic->Op(1);
+                    node->Op(2) = op1Intrinsic->Op(2);
+
+                    BlockRange().Remove(op1);
+                    BlockRange().Remove(op2);
+
+                    skipReplaceOperands = true;
+                    break;
+                }
+
+                case NI_SSE_AndNot:
+                case NI_SSE2_AndNot:
+                case NI_AVX_AndNot:
+                case NI_AVX2_AndNot:
+                {
+                    // We can optimize to TestC(op1.op1, op1.op2)
+                    cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
+
+                    node->Op(1) = op1Intrinsic->Op(1);
+                    node->Op(2) = op1Intrinsic->Op(2);
+
+                    BlockRange().Remove(op1);
+                    BlockRange().Remove(op2);
+
+                    skipReplaceOperands = true;
+                    break;
+                }
+
+                default:
+                {
+                    break;
+                }
+            }
+        }
+
+        if (!skipReplaceOperands)
+        {
+            // Default handler, emit a TestZ(op1, op1)
+
+            node->Op(1) = op1;
+            BlockRange().Remove(op2);
+
+            LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+            ReplaceWithLclVar(op1Use);
+            op1 = node->Op(1);
+
+            op2 = comp->gtClone(op1);
+            BlockRange().InsertAfter(op1, op2);
+            node->Op(2) = op2;
+        }
 
         if (simdSize == 32)
         {
@@ -1722,6 +1823,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         // For other comparisons, using EVEX allows us to avoid leaving the SIMD domain, avoids
         // needing to use a general-purpose register, and allows us to generate less instructions.
 
+        GenTree* maskNode = node;
         GenTree* nextNode = node->gtNext;
 
         NamedIntrinsic maskIntrinsicId = NI_AVX512F_CompareEqualMask;
@@ -1779,7 +1881,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             // simply consume the mask directly and preserve the intended comparison by tweaking the
             // compare condition passed down into `KORTEST`
 
-            GenTreeHWIntrinsic* maskNode = op1->AsHWIntrinsic()->Op(1)->AsHWIntrinsic();
+            maskNode = op1->AsHWIntrinsic()->Op(1);
             assert(maskNode->TypeIs(TYP_MASK));
 
             bool           isHandled = false;
@@ -1817,7 +1919,14 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 {
                     assert((count == 1) || (count == 2) || (count == 4));
 
-                    switch (maskNode->GetHWIntrinsicId())
+                    maskIntrinsicId = NI_Illegal;
+
+                    if (maskNode->OperIsHWIntrinsic())
+                    {
+                        maskIntrinsicId = maskNode->AsHWIntrinsic()->GetHWIntrinsicId();
+                    }
+
+                    switch (maskIntrinsicId)
                     {
                         case NI_AVX512F_CompareEqualMask:
                         {
@@ -1893,11 +2002,14 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                         default:
                         {
-                            unreached();
+                            maskIntrinsicId = NI_AVX512F_NotMask;
+                            maskNode        = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, maskIntrinsicId,
+                                                                             simdBaseJitType, simdSize);
+                            break;
                         }
                     }
 
-                    maskNode->ChangeHWIntrinsicId(maskIntrinsicId);
+                    maskNode->AsHWIntrinsic()->ChangeHWIntrinsicId(maskIntrinsicId);
                 }
                 else if (cmpOp == GT_EQ)
                 {
@@ -1926,12 +2038,77 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                 BlockRange().Remove(op1);
                 BlockRange().Remove(node);
 
-                node = maskNode;
+                op1 = nullptr;
+                op2 = nullptr;
             }
         }
 
-        if (node->gtType != TYP_MASK)
+        if (!varTypeIsFloating(simdBaseType) && (op2 != nullptr) && op2->IsVectorZero())
         {
+            NamedIntrinsic testIntrinsicId     = NI_AVX512F_PTESTM;
+            bool           skipReplaceOperands = false;
+
+            if (op1->OperIsHWIntrinsic())
+            {
+                GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
+                NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
+
+                switch (op1IntrinsicId)
+                {
+                    case NI_AVX512F_And:
+                    case NI_AVX512DQ_And:
+                    {
+                        // We can optimize since `vptestm` does `(x & y) != 0`
+                        // and `vptestnm` does `(x & y) == 0`.
+
+                        if (cmpOp == GT_EQ)
+                        {
+                            testIntrinsicId = NI_AVX512F_PTESTNM;
+                        }
+
+                        node->Op(1) = op1Intrinsic->Op(1);
+                        node->Op(2) = op1Intrinsic->Op(2);
+
+                        BlockRange().Remove(op1);
+                        BlockRange().Remove(op2);
+
+                        skipReplaceOperands = true;
+                        break;
+                    }
+
+                    default:
+                    {
+                        // We cannot optimize `AndNot` since `vptestnm` does ~(x & y)
+                        break;
+                    }
+                }
+            }
+
+            if (!skipReplaceOperands)
+            {
+                node->Op(1) = op1;
+                BlockRange().Remove(op2);
+
+                LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+                ReplaceWithLclVar(op1Use);
+                op1 = node->Op(1);
+
+                op2 = comp->gtClone(op1);
+                BlockRange().InsertAfter(op1, op2);
+                node->Op(2) = op2;
+            }
+
+            node->gtType = TYP_MASK;
+            node->ChangeHWIntrinsicId(testIntrinsicId);
+
+            LowerNode(node);
+            maskNode = node;
+        }
+
+        if (maskNode->gtType != TYP_MASK)
+        {
+            assert(node == maskNode);
+
             // We have `x == y` or `x != y` both of which where we want to find `AllBitsSet` in the mask since
             // we can directly do the relevant comparison. Given the above tables then when we have a full mask
             // we can simply check against `CF == 1` for `op_Equality` and `ZF == 0` for `op_Inequality`.
@@ -1963,14 +2140,15 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
             node->ChangeHWIntrinsicId(maskIntrinsicId);
 
             LowerNode(node);
+            maskNode = node;
         }
 
         LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
+        if (BlockRange().TryGetUse(maskNode, &use))
         {
             GenTreeHWIntrinsic* cc;
 
-            cc = comp->gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_KORTEST, simdBaseJitType, simdSize);
+            cc = comp->gtNewSimdHWIntrinsicNode(simdType, maskNode, NI_AVX512F_KORTEST, simdBaseJitType, simdSize);
             BlockRange().InsertBefore(nextNode, cc);
 
             use.ReplaceWith(cc);
