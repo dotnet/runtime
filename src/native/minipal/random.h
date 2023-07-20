@@ -3,14 +3,13 @@
 
 #pragma once
 
-#include "compiler.h"
 #ifdef __cplusplus
 extern "C"
 {
 #endif // __cplusplus
 
-PALEXPORT void minipal_get_non_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength);
-PALEXPORT int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength);
+void minipal_get_non_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength);
+int32_t minipal_get_cryptographically_secure_random_bytes(uint8_t* buffer, int32_t bufferLength);
 
 
 #ifdef __cplusplus

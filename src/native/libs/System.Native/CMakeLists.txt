@@ -30,6 +30,7 @@ set(NATIVE_SOURCES
     pal_maphardwaretype.c
     pal_memory.c
     pal_networkstatistics.c
+    pal_random.c
     pal_runtimeinformation.c
     pal_string.c
     pal_tcpstate.c

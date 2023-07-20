@@ -20,7 +20,7 @@
 #include "pal_networking.h"
 #include "pal_networkstatistics.h"
 #include "pal_process.h"
-#include <minipal/random.h>
+#include "pal_random.h"
 #include "pal_runtimeinformation.h"
 #include "pal_searchpath.h"
 #include "pal_signal.h"
@@ -215,8 +215,8 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_SchedSetAffinity)
     DllImportEntry(SystemNative_SchedGetAffinity)
     DllImportEntry(SystemNative_GetProcessPath)
-    DllImportEntry(minipal_get_non_cryptographically_secure_random_bytes)
-    DllImportEntry(minipal_get_cryptographically_secure_random_bytes)
+    DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
+    DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetUnixRelease)
     DllImportEntry(SystemNative_GetUnixVersion)
     DllImportEntry(SystemNative_GetOSArchitecture)
