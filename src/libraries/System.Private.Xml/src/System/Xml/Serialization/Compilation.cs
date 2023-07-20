@@ -59,11 +59,6 @@ namespace System.Xml.Serialization
                 }
             }
 
-#if FALLBACK_TO_CSHARP_GEN_COMPILE
-            // We will make best effort to use RefEmit for assembly generation
-            bool fallbackToCSharpAssemblyGeneration = false;
-#endif
-
             if (!containsSoapMapping && !TempAssembly.UseLegacySerializerGeneration)
             {
                 try
@@ -83,13 +78,6 @@ namespace System.Xml.Serialization
                 //
             }
             else
-#if FALLBACK_TO_CSHARP_GEN_COMPILE
-            {
-                fallbackToCSharpAssemblyGeneration = true;
-            }
-
-            if (fallbackToCSharpAssemblyGeneration)
-#endif
             {
                 throw new PlatformNotSupportedException(SR.CompilingScriptsNotSupported);
             }
