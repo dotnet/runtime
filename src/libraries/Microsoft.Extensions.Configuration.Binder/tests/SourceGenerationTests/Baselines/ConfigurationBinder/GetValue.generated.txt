@@ -61,13 +61,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 return null;
             }
 
-            if (type == typeof(int))
+            if (type == typeof(bool?))
             {
-                return ParseInt(value, () => section.Path);
-            }
-            else if (type == typeof(bool?))
-            {
-                return ParseBool(value, () => section.Path);
+                return ParseBoolean(value, () => section.Path);
             }
             else if (type == typeof(byte[]))
             {
@@ -77,23 +73,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 return ParseCultureInfo(value, () => section.Path);
             }
+            else if (type == typeof(int))
+            {
+                return ParseInt32(value, () => section.Path);
+            }
 
             return null;
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
-            }
-        }
-
-        public static bool ParseBool(string value, Func<string?> getPath)
+        public static bool ParseBoolean(string value, Func<string?> getPath)
         {
             try
             {
@@ -126,6 +114,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             catch (Exception exception)
             {
                 throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(CultureInfo)}'.", exception);
+            }
+        }
+
+        public static int ParseInt32(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
             }
         }
         #endregion Core binding extensions.

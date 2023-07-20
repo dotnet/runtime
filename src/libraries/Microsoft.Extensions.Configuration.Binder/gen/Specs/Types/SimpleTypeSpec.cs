@@ -1,55 +1,28 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
 using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal abstract record SimpleTypeSpec : TypeSpec
+    public abstract record SimpleTypeSpec : TypeSpec
     {
         public SimpleTypeSpec(ITypeSymbol type) : base(type) { }
-
-        public sealed override bool CanBindTo => true;
-
-        public sealed override TypeSpec EffectiveType => this;
-
-        public sealed override bool CanInstantiate => true;
     }
 
     internal sealed record ConfigurationSectionSpec : SimpleTypeSpec
     {
         public ConfigurationSectionSpec(ITypeSymbol type) : base(type) { }
-
-        public override TypeSpecKind SpecKind => TypeSpecKind.IConfigurationSection;
     }
 
-    internal sealed record ParsableFromStringSpec : SimpleTypeSpec
+    public sealed record ParsableFromStringSpec : SimpleTypeSpec
     {
         public ParsableFromStringSpec(ITypeSymbol type) : base(type) { }
 
-        public override TypeSpecKind SpecKind => TypeSpecKind.ParsableFromString;
-
         public required StringParsableTypeKind StringParsableTypeKind { get; init; }
-
-        private string? _parseMethodName;
-        public string ParseMethodName
-        {
-            get
-            {
-                Debug.Assert(StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue);
-
-                _parseMethodName ??= StringParsableTypeKind is StringParsableTypeKind.ByteArray
-                    ? "ParseByteArray"
-                    // MinimalDisplayString.Length is certainly > 2.
-                    : $"Parse{(char.ToUpper(DisplayString[0]) + DisplayString.Substring(1)).Replace(".", "")}";
-
-                return _parseMethodName;
-            }
-        }
     }
 
-    internal enum StringParsableTypeKind
+    public enum StringParsableTypeKind
     {
         None = 0,
 

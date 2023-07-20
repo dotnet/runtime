@@ -50,7 +50,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
         #endregion IConfiguration extensions.
 
         #region Core binding extensions.
-        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop2", "Prop3", "Prop4", "Prop5", "Prop6", "Prop8", "Prop9", "Prop10", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop19", "Prop20", "Prop21", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop7", "Prop11", "Prop12", "Prop18", "Prop22", "Prop28", "Prop29", "Prop30" });
+        private readonly static Lazy<HashSet<string>> s_configKeys_ProgramMyClass = new(() => new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Prop0", "Prop1", "Prop10", "Prop11", "Prop12", "Prop13", "Prop14", "Prop15", "Prop16", "Prop17", "Prop18", "Prop19", "Prop2", "Prop20", "Prop21", "Prop22", "Prop23", "Prop24", "Prop25", "Prop26", "Prop27", "Prop28", "Prop29", "Prop3", "Prop30", "Prop4", "Prop5", "Prop6", "Prop7", "Prop8", "Prop9" });
 
         public static void BindCore(IConfiguration configuration, ref Program.MyClass instance, bool defaultValueIfNotFound, BinderOptions? binderOptions)
         {
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             if (configuration["Prop0"] is string value0)
             {
-                instance.Prop0 = ParseBool(value0, () => configuration.GetSection("Prop0").Path);
+                instance.Prop0 = ParseBoolean(value0, () => configuration.GetSection("Prop0").Path);
             }
             else if (defaultValueIfNotFound)
             {
@@ -74,241 +74,241 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 instance.Prop1 = default;
             }
 
-            if (configuration["Prop2"] is string value2)
+            if (configuration["Prop10"] is string value2)
             {
-                instance.Prop2 = ParseSbyte(value2, () => configuration.GetSection("Prop2").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop2 = default;
-            }
-
-            if (configuration["Prop3"] is string value3)
-            {
-                instance.Prop3 = ParseChar(value3, () => configuration.GetSection("Prop3").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop3 = default;
-            }
-
-            if (configuration["Prop4"] is string value4)
-            {
-                instance.Prop4 = ParseDouble(value4, () => configuration.GetSection("Prop4").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop4 = default;
-            }
-
-            if (configuration["Prop5"] is string value5)
-            {
-                instance.Prop5 = value5;
-            }
-
-            if (configuration["Prop6"] is string value6)
-            {
-                instance.Prop6 = ParseInt(value6, () => configuration.GetSection("Prop6").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop6 = default;
-            }
-
-            if (configuration["Prop8"] is string value7)
-            {
-                instance.Prop8 = ParseShort(value7, () => configuration.GetSection("Prop8").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop8 = default;
-            }
-
-            if (configuration["Prop9"] is string value8)
-            {
-                instance.Prop9 = ParseLong(value8, () => configuration.GetSection("Prop9").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop9 = default;
-            }
-
-            if (configuration["Prop10"] is string value9)
-            {
-                instance.Prop10 = ParseFloat(value9, () => configuration.GetSection("Prop10").Path);
+                instance.Prop10 = ParseSingle(value2, () => configuration.GetSection("Prop10").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop10 = default;
             }
 
-            if (configuration["Prop13"] is string value10)
+            if (configuration["Prop11"] is string value3)
             {
-                instance.Prop13 = ParseUshort(value10, () => configuration.GetSection("Prop13").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop13 = default;
-            }
-
-            if (configuration["Prop14"] is string value11)
-            {
-                instance.Prop14 = ParseUint(value11, () => configuration.GetSection("Prop14").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop14 = default;
-            }
-
-            if (configuration["Prop15"] is string value12)
-            {
-                instance.Prop15 = ParseUlong(value12, () => configuration.GetSection("Prop15").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop15 = default;
-            }
-
-            if (configuration["Prop16"] is string value13)
-            {
-                instance.Prop16 = value13;
-            }
-
-            if (configuration["Prop17"] is string value14)
-            {
-                instance.Prop17 = ParseCultureInfo(value14, () => configuration.GetSection("Prop17").Path);
-            }
-
-            if (configuration["Prop19"] is string value15)
-            {
-                instance.Prop19 = ParseDateTime(value15, () => configuration.GetSection("Prop19").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop19 = default;
-            }
-
-            if (configuration["Prop20"] is string value16)
-            {
-                instance.Prop20 = ParseDateTimeOffset(value16, () => configuration.GetSection("Prop20").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop20 = default;
-            }
-
-            if (configuration["Prop21"] is string value17)
-            {
-                instance.Prop21 = ParseDecimal(value17, () => configuration.GetSection("Prop21").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop21 = default;
-            }
-
-            if (configuration["Prop23"] is string value18)
-            {
-                instance.Prop23 = ParseTimeSpan(value18, () => configuration.GetSection("Prop23").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop23 = default;
-            }
-
-            if (configuration["Prop24"] is string value19)
-            {
-                instance.Prop24 = ParseGuid(value19, () => configuration.GetSection("Prop24").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop24 = default;
-            }
-
-            if (configuration["Prop25"] is string value20)
-            {
-                instance.Prop25 = ParseUri(value20, () => configuration.GetSection("Prop25").Path);
-            }
-
-            if (configuration["Prop26"] is string value21)
-            {
-                instance.Prop26 = ParseVersion(value21, () => configuration.GetSection("Prop26").Path);
-            }
-
-            if (configuration["Prop27"] is string value22)
-            {
-                instance.Prop27 = ParseEnum<DayOfWeek>(value22, () => configuration.GetSection("Prop27").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop27 = default;
-            }
-
-            if (configuration["Prop7"] is string value23)
-            {
-                instance.Prop7 = ParseInt128(value23, () => configuration.GetSection("Prop7").Path);
-            }
-            else if (defaultValueIfNotFound)
-            {
-                instance.Prop7 = default;
-            }
-
-            if (configuration["Prop11"] is string value24)
-            {
-                instance.Prop11 = ParseHalf(value24, () => configuration.GetSection("Prop11").Path);
+                instance.Prop11 = ParseHalf(value3, () => configuration.GetSection("Prop11").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop11 = default;
             }
 
-            if (configuration["Prop12"] is string value25)
+            if (configuration["Prop12"] is string value4)
             {
-                instance.Prop12 = ParseUInt128(value25, () => configuration.GetSection("Prop12").Path);
+                instance.Prop12 = ParseUInt128(value4, () => configuration.GetSection("Prop12").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop12 = default;
             }
 
-            if (configuration["Prop18"] is string value26)
+            if (configuration["Prop13"] is string value5)
             {
-                instance.Prop18 = ParseDateOnly(value26, () => configuration.GetSection("Prop18").Path);
+                instance.Prop13 = ParseUInt16(value5, () => configuration.GetSection("Prop13").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop13 = default;
+            }
+
+            if (configuration["Prop14"] is string value6)
+            {
+                instance.Prop14 = ParseUInt32(value6, () => configuration.GetSection("Prop14").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop14 = default;
+            }
+
+            if (configuration["Prop15"] is string value7)
+            {
+                instance.Prop15 = ParseUInt64(value7, () => configuration.GetSection("Prop15").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop15 = default;
+            }
+
+            if (configuration["Prop16"] is string value8)
+            {
+                instance.Prop16 = value8;
+            }
+
+            if (configuration["Prop17"] is string value9)
+            {
+                instance.Prop17 = ParseCultureInfo(value9, () => configuration.GetSection("Prop17").Path);
+            }
+
+            if (configuration["Prop18"] is string value10)
+            {
+                instance.Prop18 = ParseDateOnly(value10, () => configuration.GetSection("Prop18").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop18 = default;
             }
 
-            if (configuration["Prop22"] is string value27)
+            if (configuration["Prop19"] is string value11)
             {
-                instance.Prop22 = ParseTimeOnly(value27, () => configuration.GetSection("Prop22").Path);
+                instance.Prop19 = ParseDateTime(value11, () => configuration.GetSection("Prop19").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop19 = default;
+            }
+
+            if (configuration["Prop2"] is string value12)
+            {
+                instance.Prop2 = ParseSByte(value12, () => configuration.GetSection("Prop2").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop2 = default;
+            }
+
+            if (configuration["Prop20"] is string value13)
+            {
+                instance.Prop20 = ParseDateTimeOffset(value13, () => configuration.GetSection("Prop20").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop20 = default;
+            }
+
+            if (configuration["Prop21"] is string value14)
+            {
+                instance.Prop21 = ParseDecimal(value14, () => configuration.GetSection("Prop21").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop21 = default;
+            }
+
+            if (configuration["Prop22"] is string value15)
+            {
+                instance.Prop22 = ParseTimeOnly(value15, () => configuration.GetSection("Prop22").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop22 = default;
             }
 
-            if (configuration["Prop28"] is string value28)
+            if (configuration["Prop23"] is string value16)
             {
-                instance.Prop28 = ParseByteArray(value28, () => configuration.GetSection("Prop28").Path);
+                instance.Prop23 = ParseTimeSpan(value16, () => configuration.GetSection("Prop23").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop23 = default;
             }
 
-            if (configuration["Prop29"] is string value29)
+            if (configuration["Prop24"] is string value17)
             {
-                instance.Prop29 = ParseInt(value29, () => configuration.GetSection("Prop29").Path);
+                instance.Prop24 = ParseGuid(value17, () => configuration.GetSection("Prop24").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop24 = default;
+            }
+
+            if (configuration["Prop25"] is string value18)
+            {
+                instance.Prop25 = ParseUri(value18, () => configuration.GetSection("Prop25").Path);
+            }
+
+            if (configuration["Prop26"] is string value19)
+            {
+                instance.Prop26 = ParseVersion(value19, () => configuration.GetSection("Prop26").Path);
+            }
+
+            if (configuration["Prop27"] is string value20)
+            {
+                instance.Prop27 = ParseEnum<DayOfWeek>(value20, () => configuration.GetSection("Prop27").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop27 = default;
+            }
+
+            if (configuration["Prop28"] is string value21)
+            {
+                instance.Prop28 = ParseByteArray(value21, () => configuration.GetSection("Prop28").Path);
+            }
+
+            if (configuration["Prop29"] is string value22)
+            {
+                instance.Prop29 = ParseInt32(value22, () => configuration.GetSection("Prop29").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop29 = default;
             }
 
-            if (configuration["Prop30"] is string value30)
+            if (configuration["Prop3"] is string value23)
             {
-                instance.Prop30 = ParseDateTime(value30, () => configuration.GetSection("Prop30").Path);
+                instance.Prop3 = ParseChar(value23, () => configuration.GetSection("Prop3").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop3 = default;
+            }
+
+            if (configuration["Prop30"] is string value24)
+            {
+                instance.Prop30 = ParseDateTime(value24, () => configuration.GetSection("Prop30").Path);
             }
             else if (defaultValueIfNotFound)
             {
                 instance.Prop30 = default;
+            }
+
+            if (configuration["Prop4"] is string value25)
+            {
+                instance.Prop4 = ParseDouble(value25, () => configuration.GetSection("Prop4").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop4 = default;
+            }
+
+            if (configuration["Prop5"] is string value26)
+            {
+                instance.Prop5 = value26;
+            }
+
+            if (configuration["Prop6"] is string value27)
+            {
+                instance.Prop6 = ParseInt32(value27, () => configuration.GetSection("Prop6").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop6 = default;
+            }
+
+            if (configuration["Prop7"] is string value28)
+            {
+                instance.Prop7 = ParseInt128(value28, () => configuration.GetSection("Prop7").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop7 = default;
+            }
+
+            if (configuration["Prop8"] is string value29)
+            {
+                instance.Prop8 = ParseInt16(value29, () => configuration.GetSection("Prop8").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop8 = default;
+            }
+
+            if (configuration["Prop9"] is string value30)
+            {
+                instance.Prop9 = ParseInt64(value30, () => configuration.GetSection("Prop9").Path);
+            }
+            else if (defaultValueIfNotFound)
+            {
+                instance.Prop9 = default;
             }
         }
 
@@ -335,7 +335,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static bool ParseBool(string value, Func<string?> getPath)
+        public static bool ParseBoolean(string value, Func<string?> getPath)
         {
             try
             {
@@ -359,15 +359,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static sbyte ParseSbyte(string value, Func<string?> getPath)
+        public static byte[] ParseByteArray(string value, Func<string?> getPath)
         {
             try
             {
-                return sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return Convert.FromBase64String(value);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(sbyte)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
             }
         }
 
@@ -383,6 +383,18 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
+        public static decimal ParseDecimal(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return decimal.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(decimal)}'.", exception);
+            }
+        }
+
         public static double ParseDouble(string value, Func<string?> getPath)
         {
             try
@@ -395,43 +407,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static int ParseInt(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
-            }
-        }
-
-        public static short ParseShort(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(short)}'.", exception);
-            }
-        }
-
-        public static long ParseLong(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(long)}'.", exception);
-            }
-        }
-
-        public static float ParseFloat(string value, Func<string?> getPath)
+        public static float ParseSingle(string value, Func<string?> getPath)
         {
             try
             {
@@ -443,51 +419,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static ushort ParseUshort(string value, Func<string?> getPath)
+        public static DateOnly ParseDateOnly(string value, Func<string?> getPath)
         {
             try
             {
-                return ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
+                return DateOnly.Parse(value, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(ushort)}'.", exception);
-            }
-        }
-
-        public static uint ParseUint(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(uint)}'.", exception);
-            }
-        }
-
-        public static ulong ParseUlong(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(ulong)}'.", exception);
-            }
-        }
-
-        public static CultureInfo ParseCultureInfo(string value, Func<string?> getPath)
-        {
-            try
-            {
-                return CultureInfo.GetCultureInfo(value);
-            }
-            catch (Exception exception)
-            {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(CultureInfo)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(DateOnly)}'.", exception);
             }
         }
 
@@ -515,15 +455,79 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static decimal ParseDecimal(string value, Func<string?> getPath)
+        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
         {
             try
             {
-                return decimal.Parse(value, NumberStyles.Float, CultureInfo.InvariantCulture);
+                #if NETFRAMEWORK || NETSTANDARD2_0
+                    return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
+                #else
+                    return Enum.Parse<T>(value, ignoreCase: true);
+                #endif
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(decimal)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
+            }
+        }
+
+        public static CultureInfo ParseCultureInfo(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return CultureInfo.GetCultureInfo(value);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(CultureInfo)}'.", exception);
+            }
+        }
+
+        public static Guid ParseGuid(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return Guid.Parse(value);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Guid)}'.", exception);
+            }
+        }
+
+        public static Half ParseHalf(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return Half.Parse(value, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Half)}'.", exception);
+            }
+        }
+
+        public static Int128 ParseInt128(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return Int128.Parse(value, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Int128)}'.", exception);
+            }
+        }
+
+        public static TimeOnly ParseTimeOnly(string value, Func<string?> getPath)
+        {
+            try
+            {
+                return TimeOnly.Parse(value, CultureInfo.InvariantCulture);
+            }
+            catch (Exception exception)
+            {
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(TimeOnly)}'.", exception);
             }
         }
 
@@ -539,15 +543,15 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static Guid ParseGuid(string value, Func<string?> getPath)
+        public static UInt128 ParseUInt128(string value, Func<string?> getPath)
         {
             try
             {
-                return Guid.Parse(value);
+                return UInt128.Parse(value, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Guid)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(UInt128)}'.", exception);
             }
         }
 
@@ -575,91 +579,87 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             }
         }
 
-        public static T ParseEnum<T>(string value, Func<string?> getPath) where T : struct
+        public static int ParseInt32(string value, Func<string?> getPath)
         {
             try
             {
-                #if NETFRAMEWORK || NETSTANDARD2_0
-                    return (T)Enum.Parse(typeof(T), value, ignoreCase: true);
-                #else
-                    return Enum.Parse<T>(value, ignoreCase: true);
-                #endif
+                return int.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(T)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(int)}'.", exception);
             }
         }
 
-        public static Int128 ParseInt128(string value, Func<string?> getPath)
+        public static long ParseInt64(string value, Func<string?> getPath)
         {
             try
             {
-                return Int128.Parse(value, CultureInfo.InvariantCulture);
+                return long.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Int128)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(long)}'.", exception);
             }
         }
 
-        public static Half ParseHalf(string value, Func<string?> getPath)
+        public static sbyte ParseSByte(string value, Func<string?> getPath)
         {
             try
             {
-                return Half.Parse(value, CultureInfo.InvariantCulture);
+                return sbyte.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(Half)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(sbyte)}'.", exception);
             }
         }
 
-        public static UInt128 ParseUInt128(string value, Func<string?> getPath)
+        public static short ParseInt16(string value, Func<string?> getPath)
         {
             try
             {
-                return UInt128.Parse(value, CultureInfo.InvariantCulture);
+                return short.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(UInt128)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(short)}'.", exception);
             }
         }
 
-        public static DateOnly ParseDateOnly(string value, Func<string?> getPath)
+        public static uint ParseUInt32(string value, Func<string?> getPath)
         {
             try
             {
-                return DateOnly.Parse(value, CultureInfo.InvariantCulture);
+                return uint.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(DateOnly)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(uint)}'.", exception);
             }
         }
 
-        public static TimeOnly ParseTimeOnly(string value, Func<string?> getPath)
+        public static ulong ParseUInt64(string value, Func<string?> getPath)
         {
             try
             {
-                return TimeOnly.Parse(value, CultureInfo.InvariantCulture);
+                return ulong.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(TimeOnly)}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(ulong)}'.", exception);
             }
         }
 
-        public static byte[] ParseByteArray(string value, Func<string?> getPath)
+        public static ushort ParseUInt16(string value, Func<string?> getPath)
         {
             try
             {
-                return Convert.FromBase64String(value);
+                return ushort.Parse(value, NumberStyles.Integer, CultureInfo.InvariantCulture);
             }
             catch (Exception exception)
             {
-                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(byte[])}'.", exception);
+                throw new InvalidOperationException($"Failed to convert configuration value at '{getPath()}' to type '{typeof(ushort)}'.", exception);
             }
         }
         #endregion Core binding extensions.
