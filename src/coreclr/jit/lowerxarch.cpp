@@ -2004,7 +2004,7 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
                         {
                             maskIntrinsicId = NI_AVX512F_NotMask;
                             maskNode        = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, maskIntrinsicId,
-                                                                             simdBaseJitType, simdSize);
+                                                                      simdBaseJitType, simdSize);
                             break;
                         }
                     }
