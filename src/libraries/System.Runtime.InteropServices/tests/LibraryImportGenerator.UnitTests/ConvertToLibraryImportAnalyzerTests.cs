@@ -62,7 +62,7 @@ namespace LibraryImportGenerator.UnitTests
         }
 
         [Fact]
-        public async Task FunctionPointer_ReportsDiagnostic(Type type)
+        public async Task FunctionPointer_ReportsDiagnostic()
         {
             string source = "delegate* unmanaged<void>";
             await VerifyCS.VerifyAnalyzerAsync(
