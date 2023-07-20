@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-//#define LAUNCH_DEBUGGER
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -30,35 +29,36 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                         ? new CompilationData((CSharpCompilation)compilation)
                         : null);
 
-            IncrementalValuesProvider<BinderInvocation?> inputCalls = context.SyntaxProvider
+            IncrementalValueProvider<(SourceGenerationSpec?, ImmutableEquatableArray<DiagnosticInfo>)> genSpec = context.SyntaxProvider
                 .CreateSyntaxProvider(
                     (node, _) => BinderInvocation.IsCandidateSyntaxNode(node),
                     BinderInvocation.Create)
-                .Where(invocation => invocation is not null);
+                .Where(invocation => invocation is not null)
+                .Collect()
+                .Combine(compilationData)
+                .Select((tuple, cancellationToken) =>
+                {
+                    Parser parser = new(tuple.Right);
+                    SourceGenerationSpec spec = parser.ParseSourceGenerationSpec(tuple.Left, cancellationToken);
+                    ImmutableEquatableArray<DiagnosticInfo> diagnostics = parser.Diagnostics.ToImmutableEquatableArray();
+                    return (spec, diagnostics);
+                })
+                .WithTrackingName(nameof(SourceGenerationSpec));
 
-            IncrementalValueProvider<(CompilationData?, ImmutableArray<BinderInvocation>)> inputData = compilationData.Combine(inputCalls.Collect());
-
-            context.RegisterSourceOutput(inputData, (spc, source) => Execute(source.Item1, source.Item2, spc));
+            context.RegisterSourceOutput(genSpec, ReportDiagnosticsAndEmitSource);
         }
 
-        private static void Execute(CompilationData compilationData, ImmutableArray<BinderInvocation> inputCalls, SourceProductionContext context)
+        private static void ReportDiagnosticsAndEmitSource(SourceProductionContext sourceProductionContext, (SourceGenerationSpec? SourceGenerationSpec, ImmutableEquatableArray<DiagnosticInfo> Diagnostics) input)
         {
-            if (inputCalls.IsDefaultOrEmpty)
+            foreach (DiagnosticInfo diagnostic in input.Diagnostics)
             {
-                return;
+                sourceProductionContext.ReportDiagnostic(diagnostic.CreateDiagnostic());
             }
 
-            if (compilationData?.LanguageVersionIsSupported is not true)
+            if (input.SourceGenerationSpec is SourceGenerationSpec spec)
             {
-                context.ReportDiagnostic(Diagnostic.Create(Parser.Diagnostics.LanguageVersionNotSupported, location: null));
-                return;
-            }
-
-            Parser parser = new(context, compilationData.TypeSymbols!, inputCalls);
-            if (parser.GetSourceGenerationSpec() is SourceGenerationSpec spec)
-            {
-                Emitter emitter = new(context, spec);
-                emitter.Emit();
+                Emitter emitter = new(spec);
+                emitter.Emit(sourceProductionContext);
             }
         }
 

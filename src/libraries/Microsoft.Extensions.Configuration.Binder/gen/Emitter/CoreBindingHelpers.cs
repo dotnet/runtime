@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
+using DotnetRuntime.SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -51,7 +52,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
 
                     HashSet<string> keys = new(objectType.ConstructorParameters.Select(m => GetCacheElement(m)));
-                    keys.UnionWith(objectType.Properties.Values.Select(m => GetCacheElement(m)));
+                    keys.UnionWith(objectType.Properties.Select(m => GetCacheElement(m)));
                     static string GetCacheElement(MemberSpec member) => $@"""{member.ConfigurationKeyName}""";
 
                     string configKeysSource = string.Join(", ", keys);
@@ -62,7 +63,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitGetCoreMethod()
             {
-                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(MethodsToGen_CoreBindingHelper.GetCore, out HashSet<TypeSpec>? types))
+                if (_sourceGenSpec.TypesForGen_CoreBindingHelper_GetCore.Count is 0)
                 {
                     return;
                 }
@@ -80,7 +81,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 bool isFirstType = true;
                 foreach (TypeSpec type in types)
                 {
-                    TypeSpec effectiveType = type.EffectiveType;
+                    TypeRef effectiveTypeRef = type.EffectiveTypeRef;
+                    TypeSpec effectiveType = GetTypeSpec(effectiveTypeRef);
                     TypeSpecKind kind = effectiveType.SpecKind;
                     string conditionKindExpr = GetConditionKindExpr(ref isFirstType);
 
@@ -141,7 +143,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitGetValueCoreMethod()
             {
-                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(MethodsToGen_CoreBindingHelper.GetValueCore, out HashSet<TypeSpec>? targetTypes))
+                if (_sourceGenSpec.TypesForGen_CoreBindingHelper_GetValueCore.Count is 0)
                 {
                     return;
                 }
@@ -221,7 +223,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitBindCoreMethods()
             {
-                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(MethodsToGen_CoreBindingHelper.BindCore, out HashSet<TypeSpec>? targetTypes))
+                foreach (TypeWithChildrenSpec type in _sourceGenSpec.TypesForGen_CoreBindingHelper_BindCore)
                 {
                     return;
                 }
@@ -244,21 +246,20 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 {
                     if (effectiveType.InstantiationStrategy is InstantiationStrategy.Array)
                     {
-                        Debug.Assert(type == effectiveType);
-                        EmitPopulationImplForArray((EnumerableSpec)type);
+                        EmitPopulateImplForArray(enumerableType.ElementTypeRef);
                     }
                     else
                     {
-                        EmitPopulationImplForEnumerableWithAdd(enumerable);
+                        EmitPopulateImplForEnumerableWithAdd(enumerableType);
                     }
                 }
-                else if (effectiveType is DictionarySpec dictionary)
+                else if (type is DictionarySpec dictionary)
                 {
                     EmitBindCoreImplForDictionary(dictionary);
                 }
                 else
                 {
-                    EmitBindCoreImplForObject((ObjectSpec)effectiveType);
+                    EmitBindCoreImplForObject((ObjectSpec)type);
                 }
 
                 EmitEndBlock();
@@ -266,12 +267,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
             private void EmitInitializeMethods()
             {
-                if (!_sourceGenSpec.TypesForGen_CoreBindingHelper_Methods.TryGetValue(MethodsToGen_CoreBindingHelper.Initialize, out HashSet<TypeSpec>? targetTypes))
-                {
-                    return;
-                }
-
-                foreach (ObjectSpec type in targetTypes)
+                foreach (ObjectSpec type in _sourceGenSpec.TypesForGen_CoreBindingHelper_Initialize)
                 {
                     EmitBlankLineIfRequired();
                     EmitInitializeMethod(type);
@@ -289,7 +285,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitStartBlock($"public static {type.DisplayString} {GetInitalizeMethodDisplayString(type)}({Identifier.IConfiguration} {Identifier.configuration}, {Identifier.BinderOptions}? {Identifier.binderOptions})");
                 _emitBlankLineBeforeNextStatement = false;
 
-                foreach (ParameterSpec parameter in ctorParams)
+                foreach (ParameterSpec parameter in type.ConstructorParameters)
                 {
                     string name = parameter.Name;
                     string argExpr = parameter.RefKind switch
@@ -433,24 +429,16 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     EmitGetBinderOptionsHelper();
                 }
 
-                bool enumTypeExists = false;
-
-                foreach (ParsableFromStringSpec type in _sourceGenSpec.PrimitivesForHelperGen)
+                if (_sourceGenSpec.GraphContainsEnum)
                 {
                     EmitBlankLineIfRequired();
+                    EmitEnumParseMethod();
+                }
 
-                    if (type.StringParsableTypeKind == StringParsableTypeKind.Enum)
-                    {
-                        if (!enumTypeExists)
-                        {
-                            EmitEnumParseMethod();
-                            enumTypeExists = true;
-                        }
-                    }
-                    else
-                    {
-                        EmitPrimitiveParseMethod(type);
-                    }
+                foreach (ParsableFromStringSpec type in _sourceGenSpec.TypesForGen_CoreBindingHelper_ParsePrimitive)
+                {
+                    EmitBlankLineIfRequired();
+                    EmitPrimitiveParseMethod(type);
                 }
             }
 
@@ -615,7 +603,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 string exceptionArg1 = string.Format(ExceptionMessages.FailedBinding, $"{{{Identifier.getPath}()}}", $"{{typeof({typeDisplayString})}}");
 
-                EmitStartBlock($"public static {typeDisplayString} {type.ParseMethodName}(string {Identifier.value}, Func<string?> {Identifier.getPath})");
+                EmitStartBlock($"public static {typeDisplayString} {type.ToParseMethodName()}(string {Identifier.value}, Func<string?> {Identifier.getPath})");
                 EmitEndBlock($$"""
                     try
                     {
@@ -628,7 +616,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void EmitPopulationImplForArray(EnumerableSpec type)
+            private void EmitPopulateImplForArray(TypeRef elementTypeRef)
             {
                 EnumerableSpec typeToInstantiate = (EnumerableSpec)type.TypeToInstantiate;
 
@@ -637,6 +625,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 EmitBindingLogic(typeToInstantiate, tempIdentifier, Identifier.configuration, InitializationKind.Declaration, ValueDefaulting.None);
 
                 // Resize array and add binded elements.
+                _writer.WriteLine();
                 _writer.WriteLine($$"""
                     {{Identifier.Int32}} {{Identifier.originalCount}} = {{Identifier.instance}}.{{Identifier.Length}};
                     {{Identifier.Array}}.{{Identifier.Resize}}(ref {{Identifier.instance}}, {{Identifier.originalCount}} + {{tempIdentifier}}.{{Identifier.Count}});
@@ -644,10 +633,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     """);
             }
 
-            private void EmitPopulationImplForEnumerableWithAdd(EnumerableSpec type)
+            private void EmitPopulateImplForEnumerableWithAdd(EnumerableSpec type)
             {
                 EmitCollectionCastIfRequired(type, out string instanceIdentifier);
 
+            private void EmitPopulateImplForEnumerableWithAddCore(string bindTargetIdentifier, TypeRef elementTypeRef)
+            {
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
                 string addExpr = $"{instanceIdentifier}.{Identifier.Add}";
@@ -688,8 +679,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 Emit_Foreach_Section_In_ConfigChildren_StartBlock();
 
-                ParsableFromStringSpec keyType = type.KeyType;
-                TypeSpec elementType = type.ElementType;
+                ParsableFromStringSpec effectiveKeyType = (ParsableFromStringSpec)GetEffectiveTypeSpec(type.KeyTypeRef);
+                TypeSpec effectiveElementType = GetEffectiveTypeSpec(type.ElementTypeRef);
 
                 // Parse key
                 EmitBindingLogic(
@@ -764,11 +755,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             {
                 Debug.Assert(type.HasBindableMembers);
 
+                string displayString = type.TypeRef.MinimalDisplayString;
                 string keyCacheFieldName = GetConfigKeyCacheFieldName(type);
                 string validateMethodCallExpr = $"{Identifier.ValidateConfigurationKeys}(typeof({type.DisplayString}), {keyCacheFieldName}, {Identifier.configuration}, {Identifier.binderOptions});";
                 _writer.WriteLine(validateMethodCallExpr);
 
-                foreach (PropertySpec property in type.Properties.Values)
+                foreach (PropertySpec property in type.Properties)
                 {
                     bool noSetter_And_IsReadonly = !property.CanSet && property.Type is CollectionSpec { InstantiationStrategy: InstantiationStrategy.ParameterizedConstructor };
                     if (property.ShouldBindTo && !noSetter_And_IsReadonly)
@@ -784,6 +776,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 }
             }
 
+            /// <summary>
+            /// Emits binding logic for an object property of ctor parameter.
+            /// </summary>
+            /// <returns>True if no exception was thrown, otherwise, false.</returns>
             private bool EmitBindImplForMember(
                 MemberSpec member,
                 string memberAccessExpr,
@@ -861,7 +857,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 InitializationKind initKind;
                 string targetObjAccessExpr;
 
-                if (effectiveMemberType.IsValueType)
+                if (effectiveMemberType.TypeRef.IsValueType)
                 {
                     if (!canSet)
                     {
@@ -888,15 +884,10 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                     targetObjAccessExpr = tempIdentifier;
                 }
-                else if (member.CanGet)
-                {
-                    targetObjAccessExpr = memberAccessExpr;
-                    initKind = InitializationKind.AssignmentWithNullCheck;
-                }
                 else
                 {
                     targetObjAccessExpr = memberAccessExpr;
-                    initKind = InitializationKind.SimpleAssignment;
+                    initKind = canGet ? InitializationKind.AssignmentWithNullCheck : InitializationKind.SimpleAssignment;
                 }
 
                 Action<string>? writeOnSuccess = !canSet

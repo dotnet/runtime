@@ -132,7 +132,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 void EmitMethods(MethodsToGen_ConfigurationBinder method, string additionalParams, string configExpression, bool configureOptions)
                 {
-                    foreach ((ComplexTypeSpec type, List<InterceptorLocationInfo> interceptorInfoList) in _sourceGenSpec.InterceptionInfo_ConfigBinder.GetOverloadInfo(method))
+                    foreach ((ComplexTypeSpec type, List<InterceptorLocationInfo> interceptorInfoList) in _interceptionInfo_ConfigBinder.GetOverloadInfo(method))
                     {
                         EmitBlankLineIfRequired();
                         _writer.WriteLine($"/// <summary>Attempts to bind the given object instance to configuration values by matching property names against configuration keys recursively.</summary>");

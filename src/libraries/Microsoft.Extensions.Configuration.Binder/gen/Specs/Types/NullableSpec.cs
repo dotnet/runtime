@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Microsoft.CodeAnalysis;
+using DotnetRuntime.SourceGenerators;
+using System;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
     internal sealed record NullableSpec : TypeSpec
     {
-        private readonly TypeSpec _underlyingType;
+        private readonly TypeRef _underlyingTypeRef;
 
         public NullableSpec(ITypeSymbol type, TypeSpec underlyingType) : base(type) => _underlyingType = underlyingType;
 
@@ -17,6 +19,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override TypeSpecKind SpecKind => TypeSpecKind.Nullable;
 
-        public override TypeSpec EffectiveType => _underlyingType;
+        public override TypeRef EffectiveTypeRef => _underlyingTypeRef;
+
+        public override bool SkipBinding => false;
     }
 }

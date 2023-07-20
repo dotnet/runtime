@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
     {
         private sealed partial class Parser
         {
-            internal static class Diagnostics
+            private static class DiagnosticDescriptors
             {
                 public static DiagnosticDescriptor TypeNotSupported { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.TypeNotSupported));
                 public static DiagnosticDescriptor MissingPublicInstanceConstructor { get; } = CreateTypeNotSupportedDescriptor(nameof(SR.MissingPublicInstanceConstructor));

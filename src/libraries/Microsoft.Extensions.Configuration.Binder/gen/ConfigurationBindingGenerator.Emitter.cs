@@ -15,13 +15,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private readonly SourceGenerationSpec _sourceGenSpec;
             private readonly SourceWriter _writer = new();
 
-            public Emitter(SourceProductionContext context, SourceGenerationSpec sourceGenSpec)
-            {
-                _context = context;
-                _sourceGenSpec = sourceGenSpec;
-            }
+            public Emitter(SourceGenerationSpec sourceGenSpec) => _sourceGenSpec = sourceGenSpec;
 
-            public void Emit()
+            public void Emit(SourceProductionContext context)
             {
                 if (!ShouldEmitBindingExtensions())
                 {

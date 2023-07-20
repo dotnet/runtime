@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -145,7 +146,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                 // The only time a generated binding method won't have any locations to
                 // intercept is when either of these methods are used as helpers for
                 // other generated OptionsBuilder or ServiceCollection binding extensions.
-                bool interceptsCalls = _sourceGenSpec.InterceptionInfo.TryGetValue(generatedBindingOverload, out List<InterceptorLocationInfo>? infoList);
+                bool interceptsCalls = _interceptionInfo.TryGetValue(generatedBindingOverload, out List<InterceptorLocationInfo>? infoList);
                 Debug.Assert(interceptsCalls ||
                     generatedBindingOverload is MethodsToGen_Extensions_ServiceCollection.Configure_T_name_BinderOptions ||
                     generatedBindingOverload is MethodsToGen_Extensions_OptionsBuilder.Bind_T_BinderOptions);

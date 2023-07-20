@@ -18,9 +18,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public override bool CanInstantiate => InstantiationStrategy is not InstantiationStrategy.None && InitExceptionMessage is null;
 
-        public Dictionary<string, PropertySpec> Properties { get; } = new(StringComparer.OrdinalIgnoreCase);
+        public ImmutableEquatableArray<PropertySpec> Properties { get; set; }
 
-        public List<ParameterSpec> ConstructorParameters { get; } = new();
+        public ImmutableEquatableArray<ParameterSpec> ConstructorParameters { get; set; }
 
         public string? InitExceptionMessage { get; set; }
     }

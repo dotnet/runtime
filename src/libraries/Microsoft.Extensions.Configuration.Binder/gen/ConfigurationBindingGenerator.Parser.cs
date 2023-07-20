@@ -64,7 +64,69 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                     }
                 }
 
-                return _sourceGenSpec;
+                return CreateIncrementalGenerationSpec();
+            }
+
+            private SourceGenerationSpec CreateIncrementalGenerationSpec()
+            {
+                Debug.Assert(_typesForGen_ConfigurationBinder_BindMethods.Count <= 3);
+
+                return new SourceGenerationSpec
+                {
+                    // Type index.
+                    TypeNamespaces = _typeNamespaces.ToImmutableEquatableArray(),
+                    // TODO: add ImmutableEquatableDictionary to give the emitter (via the generation spec).
+                    // https://github.com/dotnet/runtime/issues/89318
+                    TypeList = GetTypesForGen(_typeIndex.Values),
+
+                    // ConfigurationBinder invocation info.
+                    MethodsToGen_ConfigurationBinder = _methodsToGen_ConfigurationBinder,
+                    TypesForGen_ConfigurationBinder_Bind_instance = GetTypesForGen_ConfigurationBinder_Bind(MethodsToGen_ConfigurationBinder.Bind_instance),
+                    TypesForGen_ConfigurationBinder_Bind_instance_BinderOptions = GetTypesForGen_ConfigurationBinder_Bind(MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions),
+                    TypesForGen_ConfigurationBinder_Bind_key_instance = GetTypesForGen_ConfigurationBinder_Bind(MethodsToGen_ConfigurationBinder.Bind_key_instance),
+
+                    // OptionsBuilderExt and ServiceCollection invocation info.
+                    MethodsToGen_OptionsBuilderExt = _methodsToGen_OptionsBuilderExt,
+                    MethodsToGen_ServiceCollectionExt = _methodsToGen_ServiceCollectionExt,
+
+                    // Core binding helper emit info.
+                    GraphContainsEnum = _graphContainsEnum,
+                    MethodsToGen_CoreBindingHelper = _methodsToGen_CoreBindingHelper,
+                    TypesForGen_CoreBindingHelper_GetCore = GetTypesForGen_CoreBindingHelper<TypeSpec>(MethodsToGen_CoreBindingHelper.GetCore),
+                    TypesForGen_CoreBindingHelper_BindCoreUntyped = GetTypesForGen_CoreBindingHelper<TypeSpec>(MethodsToGen_CoreBindingHelper.BindCoreUntyped),
+                    TypesForGen_CoreBindingHelper_GetValueCore = GetTypesForGen_CoreBindingHelper<TypeSpec>(MethodsToGen_CoreBindingHelper.GetValueCore),
+                    TypesForGen_CoreBindingHelper_BindCore = GetTypesForGen_CoreBindingHelper<TypeWithChildrenSpec>(MethodsToGen_CoreBindingHelper.BindCore),
+                    TypesForGen_CoreBindingHelper_Initialize = GetTypesForGen_CoreBindingHelper<ObjectSpec>(MethodsToGen_CoreBindingHelper.Initialize),
+                    TypesForGen_CoreBindingHelper_ParsePrimitive = GetTypesForGen_CoreBindingHelper<ParsableFromStringSpec>(MethodsToGen_CoreBindingHelper.ParsePrimitive),
+                };
+
+                ImmutableEquatableArray<TypeWithChildrenSpec> GetTypesForGen_ConfigurationBinder_Bind(MethodsToGen_ConfigurationBinder overload)
+                {
+                    Debug.Assert(overload is MethodsToGen_ConfigurationBinder.Bind_instance or MethodsToGen_ConfigurationBinder.Bind_instance_BinderOptions or MethodsToGen_ConfigurationBinder.Bind_key_instance);
+                    _typesForGen_ConfigurationBinder_BindMethods.TryGetValue(overload, out HashSet<TypeWithChildrenSpec>? types);
+                    return types is null ? ImmutableEquatableArray<TypeWithChildrenSpec>.Empty : GetTypesForGen(types);
+                }
+
+                ImmutableEquatableArray<TSpec> GetTypesForGen_CoreBindingHelper<TSpec>(MethodsToGen_CoreBindingHelper overload)
+                    where TSpec : TypeSpec, IEquatable<TSpec>
+                {
+                    _typesForGen_CoreBindingHelper.TryGetValue(overload, out HashSet<TypeSpec>? typesAsBase);
+
+                    if (typesAsBase is null)
+                    {
+                        return ImmutableEquatableArray<TSpec>.Empty;
+                    }
+
+                    IEnumerable<TSpec> types = typeof(TSpec) == typeof(TypeSpec)
+                        ? (HashSet<TSpec>)(object)typesAsBase
+                        : typesAsBase.Select(t => (TSpec)t);
+
+                    return GetTypesForGen(types);
+                }
+
+                static ImmutableEquatableArray<TSpec> GetTypesForGen<TSpec>(IEnumerable<TSpec> types)
+                    where TSpec : TypeSpec, IEquatable<TSpec> =>
+                            types.OrderBy(t => t.TypeRef.FullyQualifiedDisplayString).ToImmutableEquatableArray();
             }
 
             private bool IsValidRootConfigType(ITypeSymbol? type)
@@ -229,7 +291,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             /// which is handled by <see cref="RegisterInterceptor"/>
             /// </summary>
             private void RegisterInterceptor(Enum method, IInvocationOperation operation) =>
-                _sourceGenSpec.InterceptionInfo.RegisterCacheEntry(method, new InterceptorLocationInfo(operation));
+                _interceptionInfo.RegisterCacheEntry(method, new InterceptorLocationInfo(operation));
 
             private static bool IsNullable(ITypeSymbol type, [NotNullWhen(true)] out ITypeSymbol? underlyingType)
             {

@@ -3,9 +3,11 @@
 
 using System;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis.Operations;
 using Microsoft.CodeAnalysis;
+using DotnetRuntime.SourceGenerators;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
@@ -87,13 +89,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    _context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CouldNotDetermineTypeInfo, invocation.Location));
+                    Diagnostics.Register(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                     return;
                 }
 
                 if (type!.IsValueType)
                 {
-                    _context.ReportDiagnostic(Diagnostic.Create(Diagnostics.ValueTypesInvalidForBind, invocation.Location, type));
+                    Diagnostics.Register(DiagnosticDescriptors.InvalidBindInput, invocation.Location, type);
                     return;
                 }
 
@@ -248,12 +250,11 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 if (!IsValidRootConfigType(type))
                 {
-                    _context.ReportDiagnostic(Diagnostic.Create(Diagnostics.CouldNotDetermineTypeInfo, invocation.Location));
+                    Diagnostics.Register(DiagnosticDescriptors.CouldNotDetermineTypeInfo, invocation.Location);
                     return;
                 }
 
-                if (IsParsableFromString(effectiveType, out _) &&
-                    GetTargetTypeForRootInvocationCore(type, invocation.Location) is TypeSpec typeSpec)
+                if (IsParsableFromString(effectiveType, out _))
                 {
                     RegisterInvocation(overload, invocation.Operation);
                     RegisterTypeForMethodGen(MethodsToGen_CoreBindingHelper.GetValueCore, typeSpec);
@@ -274,7 +275,7 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
             private void RegisterInterceptor(MethodsToGen_ConfigurationBinder overload, TypeSpec typeSpec, IInvocationOperation operation)
             {
                 _sourceGenSpec.MethodsToGen_ConfigurationBinder |= overload;
-                _sourceGenSpec.InterceptionInfo_ConfigBinder.RegisterOverloadInfo(overload, typeSpec, operation);
+                _interceptionInfo_ConfigBinder.RegisterOverloadInfo(overload, typeSpec, operation);
             }
         }
     }
