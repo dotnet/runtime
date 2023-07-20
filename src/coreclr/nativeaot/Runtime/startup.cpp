@@ -342,6 +342,10 @@ void RuntimeThreadShutdown(void* thread)
 #endif
 
     ThreadStore::DetachCurrentThread();
+    
+#ifdef FEATURE_PERFTRACING
+    EventPipe_ThreadShutdown();
+#endif
 }
 
 extern "C" bool RhInitialize()
