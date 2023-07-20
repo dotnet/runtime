@@ -2062,35 +2062,77 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 
         case NI_AVX512F_KORTEST:
         {
-            op1Reg = op1->GetRegNum();
-
             uint32_t simdSize = node->GetSimdSize();
             uint32_t count    = simdSize / genTypeSize(baseType);
 
-            instruction testIns;
-
             if (count <= 8)
             {
-                testIns = INS_kortestb;
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_kortestb;
             }
             else if (count == 16)
             {
-                testIns = INS_kortestw;
+                ins = INS_kortestw;
             }
             else if (count == 32)
             {
-                testIns = INS_kortestd;
+                ins = INS_kortestd;
             }
             else
             {
                 assert(count == 64);
-                testIns = INS_kortestq;
+                ins = INS_kortestq;
             }
 
-            assert(testIns != INS_invalid);
-            assert(emitter::isMaskReg(op1Reg));
+            op1Reg           = op1->GetRegNum();
+            regNumber op2Reg = op1Reg;
 
-            emit->emitIns_R_R(testIns, EA_8BYTE, op1Reg, op1Reg);
+            if (node->GetOperandCount() == 2)
+            {
+                GenTree* op2 = node->Op(2);
+                op2Reg       = op2->GetRegNum();
+            }
+
+            assert(emitter::isMaskReg(op1Reg));
+            assert(emitter::isMaskReg(op2Reg));
+
+            emit->emitIns_R_R(ins, EA_8BYTE, op1Reg, op1Reg);
+            break;
+        }
+
+        case NI_AVX512F_KTEST:
+        {
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            if (count <= 8)
+            {
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_ktestb;
+            }
+            else if (count == 16)
+            {
+                ins = INS_ktestw;
+            }
+            else if (count == 32)
+            {
+                ins = INS_ktestd;
+            }
+            else
+            {
+                assert(count == 64);
+                ins = INS_ktestq;
+            }
+
+            op1Reg = op1->GetRegNum();
+
+            GenTree*  op2    = node->Op(2);
+            regNumber op2Reg = op2->GetRegNum();
+
+            assert(emitter::isMaskReg(op1Reg));
+            assert(emitter::isMaskReg(op2Reg));
+
+            emit->emitIns_R_R(ins, EA_8BYTE, op1Reg, op1Reg);
             break;
         }
 

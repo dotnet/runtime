@@ -20605,7 +20605,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     var_types simdBaseType = JitType2PreciseVarType(simdBaseJitType);
     assert(varTypeIsArithmetic(simdBaseType));
 
-    NamedIntrinsic intrinsic = NI_Illegal;
+    NamedIntrinsic intrinsic                = NI_Illegal;
+    bool           needsConvertMaskToVector = false;
 
     switch (op)
     {
@@ -20615,15 +20616,8 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
             if (simdSize == 64)
             {
                 assert(IsBaselineVector512IsaSupportedDebugOnly());
-
-                if (varTypeIsSmall(simdBaseType))
-                {
-                    intrinsic = NI_AVX512BW_CompareEqual;
-                }
-                else
-                {
-                    intrinsic = NI_AVX512F_CompareEqual;
-                }
+                intrinsic                = NI_AVX512F_CompareEqualMask;
+                needsConvertMaskToVector = true;
             }
             else if (simdSize == 32)
             {
@@ -20686,31 +20680,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareGreaterThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareGreaterThanOrEqual;
-                    }
-                    break;
-                }
-                else if (!varTypeIsFloating(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareGreaterThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareGreaterThanOrEqual;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareGreaterThanOrEqualMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -20781,31 +20754,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareGreaterThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareGreaterThan;
-                    }
-                    break;
-                }
-                else if (varTypeIsUnsigned(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareGreaterThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareGreaterThan;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareGreaterThanMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -20983,31 +20935,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || !varTypeIsFloating(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareLessThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareLessThanOrEqual;
-                    }
-                    break;
-                }
-                else if (!varTypeIsFloating(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareLessThanOrEqual;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareLessThanOrEqual;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareLessThanOrEqualMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -21078,31 +21009,10 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
         {
             if (IsBaselineVector512IsaSupportedOpportunistically())
             {
-                if (simdSize == 64)
+                if ((simdSize == 64) || varTypeIsUnsigned(simdBaseType))
                 {
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_CompareLessThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_CompareLessThan;
-                    }
-                    break;
-                }
-                else if (varTypeIsUnsigned(simdBaseType))
-                {
-                    assert((simdSize == 16) || (simdSize == 32));
-
-                    if (varTypeIsSmall(simdBaseType))
-                    {
-                        intrinsic = NI_AVX512BW_VL_CompareLessThan;
-                    }
-                    else
-                    {
-                        intrinsic = NI_AVX512F_VL_CompareLessThan;
-                    }
-
+                    intrinsic                = NI_AVX512F_CompareLessThanMask;
+                    needsConvertMaskToVector = true;
                     break;
                 }
             }
@@ -21356,7 +21266,15 @@ GenTree* Compiler::gtNewSimdCmpOpNode(
     assert(intrinsic != NI_Illegal);
 
 #if defined(TARGET_XARCH)
-    return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+    if (needsConvertMaskToVector)
+    {
+        GenTree* retNode = gtNewSimdHWIntrinsicNode(TYP_MASK, op1, op2, intrinsic, simdBaseJitType, simdSize);
+        return gtNewSimdHWIntrinsicNode(type, retNode, NI_AVX512F_ConvertMaskToVector, simdBaseJitType, simdSize);
+    }
+    else
+    {
+        return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
+    }
 #else
     return gtNewSimdHWIntrinsicNode(type, op1, op2, intrinsic, simdBaseJitType, simdSize);
 #endif

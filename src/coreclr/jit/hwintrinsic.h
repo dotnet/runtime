@@ -203,9 +203,6 @@ enum HWIntrinsicFlag : unsigned int
 
     // The intrinsic is an embedded broadcast compatiable intrinsic
     HW_Flag_EmbBroadcastCompatible = 0x8000000,
-
-    // The intrinsic can consume or produce an AVX512 mask register
-    HW_Flag_WithAvx512Mask = 0x10000000,
 #endif // TARGET_XARCH
 };
 
@@ -589,12 +586,6 @@ struct HWIntrinsicInfo
     {
         HWIntrinsicFlag flags = lookupFlags(id);
         return (flags & HW_Flag_EmbBroadcastCompatible) != 0;
-    }
-
-    static bool WithAvx512Mask(NamedIntrinsic id)
-    {
-        HWIntrinsicFlag flags = lookupFlags(id);
-        return (flags & HW_Flag_WithAvx512Mask) != 0;
     }
 #endif // TARGET_XARCH
 

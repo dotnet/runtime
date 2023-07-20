@@ -862,8 +862,7 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
 {
     GenTreeCC* cc = LowerNodeCC(node, condition);
 
-    // TODO-XARCH-AVX512 remove the KORTEST check when its promoted to 2 proper arguments
-    assert(HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 2 || newIntrinsicId == NI_AVX512F_KORTEST);
+    assert((HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 2) || (newIntrinsicId == NI_AVX512F_KORTEST));
     node->ChangeHWIntrinsicId(newIntrinsicId);
     node->gtType = TYP_VOID;
     node->ClearUnusedValue();
@@ -908,9 +907,10 @@ void Lowering::LowerHWIntrinsicCC(GenTreeHWIntrinsic* node, NamedIntrinsic newIn
         }
 
         case NI_AVX512F_KORTEST:
+        case NI_AVX512F_KTEST:
         {
-            // TODO-XARCH-AVX512 remove the KORTEST check when its promoted to 2 proper arguments
-            assert(HWIntrinsicInfo::lookupNumArgs(newIntrinsicId) == 1);
+            // No containment support, so no reason to swap operands
+            canSwapOperands = false;
             break;
         }
 
@@ -1032,16 +1032,6 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     }
 
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
-
-    if (HWIntrinsicInfo::WithAvx512Mask(intrinsicId) && comp->IsBaselineVector512IsaSupportedOpportunistically())
-    {
-        GenTree* nextNode = LowerHWIntrinsicWithAvx512Mask(node);
-
-        if (nextNode != nullptr)
-        {
-            return nextNode;
-        }
-    }
 
     switch (intrinsicId)
     {
@@ -1675,80 +1665,29 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
         // just use PTEST. We can't support it for floating-point, however,
         // as it has both +0.0 and -0.0 where +0.0 == -0.0
 
-        bool skipReplaceOperands = false;
+        node->Op(1) = op1;
+        BlockRange().Remove(op2);
 
-        if (op1->OperIsHWIntrinsic())
-        {
-            GenTreeHWIntrinsic* op1Intrinsic   = op1->AsHWIntrinsic();
-            NamedIntrinsic      op1IntrinsicId = op1Intrinsic->GetHWIntrinsicId();
+        LIR::Use op1Use(BlockRange(), &node->Op(1), node);
+        ReplaceWithLclVar(op1Use);
+        op1 = node->Op(1);
 
-            switch (op1IntrinsicId)
-            {
-                case NI_SSE_And:
-                case NI_SSE2_And:
-                case NI_AVX_And:
-                case NI_AVX2_And:
-                {
-                    // We can optimize to TestZ(op1.op1, op1.op2)
-
-                    node->Op(1) = op1Intrinsic->Op(1);
-                    node->Op(2) = op1Intrinsic->Op(2);
-
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-
-                    skipReplaceOperands = true;
-                    break;
-                }
-
-                case NI_SSE_AndNot:
-                case NI_SSE2_AndNot:
-                case NI_AVX_AndNot:
-                case NI_AVX2_AndNot:
-                {
-                    // We can optimize to TestC(op1.op1, op1.op2)
-                    cmpCnd = (cmpOp == GT_EQ) ? GenCondition::C : GenCondition::NC;
-
-                    node->Op(1) = op1Intrinsic->Op(1);
-                    node->Op(2) = op1Intrinsic->Op(2);
-
-                    BlockRange().Remove(op1);
-                    BlockRange().Remove(op2);
-
-                    skipReplaceOperands = true;
-                    break;
-                }
-
-                default:
-                {
-                    break;
-                }
-            }
-        }
-
-        if (!skipReplaceOperands)
-        {
-            // Default handler, emit a TestZ(op1, op1)
-
-            node->Op(1) = op1;
-            BlockRange().Remove(op2);
-
-            LIR::Use op1Use(BlockRange(), &node->Op(1), node);
-            ReplaceWithLclVar(op1Use);
-            op1 = node->Op(1);
-
-            op2 = comp->gtClone(op1);
-            BlockRange().InsertAfter(op1, op2);
-            node->Op(2) = op2;
-        }
+        op2 = comp->gtClone(op1);
+        BlockRange().InsertAfter(op1, op2);
+        node->Op(2) = op2;
 
         if (simdSize == 32)
         {
+            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
+            node->ChangeHWIntrinsicId(NI_AVX_TestZ);
             LowerHWIntrinsicCC(node, NI_AVX_PTEST, cmpCnd);
         }
         else
         {
             assert(simdSize == 16);
+
+            // TODO-Review: LowerHWIntrinsicCC resets the id again, so why is this needed?
+            node->ChangeHWIntrinsicId(NI_SSE41_TestZ);
             LowerHWIntrinsicCC(node, NI_SSE41_PTEST, cmpCnd);
         }
 
@@ -5087,281 +5026,6 @@ GenTree* Lowering::LowerHWIntrinsicDot(GenTreeHWIntrinsic* node)
 
     BlockRange().Remove(node);
     return tmp1->gtNext;
-}
-
-//----------------------------------------------------------------------------------------------
-// Lowering::LowerHWIntrinsicWithAvx512Mask: Lowers a HWIntrinsic node that utilizes the AVX512 KMASK registers
-//
-//  Arguments:
-//     node - The hardware intrinsic node.
-//
-GenTree* Lowering::LowerHWIntrinsicWithAvx512Mask(GenTreeHWIntrinsic* node)
-{
-    NamedIntrinsic intrinsicId     = node->GetHWIntrinsicId();
-    CorInfoType    simdBaseJitType = node->GetSimdBaseJitType();
-    var_types      simdBaseType    = node->GetSimdBaseType();
-    unsigned       simdSize        = node->GetSimdSize();
-    var_types      simdType        = Compiler::getSIMDTypeForSize(simdSize);
-    size_t         numArgs         = node->GetOperandCount();
-
-    assert(varTypeIsSIMD(simdType));
-    assert(varTypeIsArithmetic(simdBaseType));
-    assert(simdSize != 0);
-
-    NamedIntrinsic maskIntrinsicId = NI_Illegal;
-    GenTree**      maskOperand1    = nullptr;
-    GenTree**      maskOperand2    = nullptr;
-
-    switch (intrinsicId)
-    {
-        case NI_Vector512_ExtractMostSignificantBits:
-        {
-            maskIntrinsicId = NI_AVX512F_MoveMask;
-            maskOperand1    = &node->Op(1);
-            break;
-        }
-
-        case NI_AVX512F_Add:
-        case NI_AVX512BW_Add:
-        {
-            maskIntrinsicId = NI_AVX512F_AddMask;
-            maskOperand1    = &node->Op(1);
-            maskOperand2    = &node->Op(2);
-            break;
-        }
-
-        case NI_AVX512F_And:
-        case NI_AVX512DQ_And:
-        {
-            maskIntrinsicId = NI_AVX512F_AndMask;
-            maskOperand1    = &node->Op(1);
-            maskOperand2    = &node->Op(2);
-            break;
-        }
-
-        case NI_AVX512F_AndNot:
-        case NI_AVX512DQ_AndNot:
-        {
-            maskIntrinsicId = NI_AVX512F_AndNotMask;
-            maskOperand1    = &node->Op(1);
-            maskOperand2    = &node->Op(2);
-            break;
-        }
-
-        case NI_AVX512F_BlendVariable:
-        case NI_AVX512BW_BlendVariable:
-        {
-            maskIntrinsicId = NI_AVX512F_BlendVariableMask;
-            maskOperand1    = &node->Op(3);
-            break;
-        }
-
-        case NI_AVX512F_CompareEqual:
-        case NI_AVX512BW_CompareEqual:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareEqualMask;
-            break;
-        }
-
-        case NI_AVX512F_VL_CompareGreaterThan:
-        case NI_AVX512BW_VL_CompareGreaterThan:
-        {
-            assert(varTypeIsUnsigned(simdBaseType));
-            FALLTHROUGH;
-        }
-
-        case NI_AVX512F_CompareGreaterThan:
-        case NI_AVX512BW_CompareGreaterThan:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareGreaterThanMask;
-            break;
-        }
-
-        case NI_AVX512F_VL_CompareGreaterThanOrEqual:
-        case NI_AVX512BW_VL_CompareGreaterThanOrEqual:
-        {
-            assert(!varTypeIsFloating(simdBaseType));
-            FALLTHROUGH;
-        }
-
-        case NI_AVX512F_CompareGreaterThanOrEqual:
-        case NI_AVX512BW_CompareGreaterThanOrEqual:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareGreaterThanOrEqualMask;
-            break;
-        }
-
-        case NI_AVX512F_VL_CompareLessThan:
-        case NI_AVX512BW_VL_CompareLessThan:
-        {
-            assert(!varTypeIsFloating(simdBaseType));
-            FALLTHROUGH;
-        }
-
-        case NI_AVX512F_CompareLessThan:
-        case NI_AVX512BW_CompareLessThan:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareLessThanMask;
-            break;
-        }
-
-        case NI_AVX512F_VL_CompareLessThanOrEqual:
-        case NI_AVX512BW_VL_CompareLessThanOrEqual:
-        {
-            assert(!varTypeIsFloating(simdBaseType));
-            FALLTHROUGH;
-        }
-
-        case NI_AVX512F_CompareLessThanOrEqual:
-        case NI_AVX512BW_CompareLessThanOrEqual:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareLessThanOrEqualMask;
-            break;
-        }
-
-        case NI_AVX512F_VL_CompareNotEqual:
-        case NI_AVX512BW_VL_CompareNotEqual:
-        {
-            assert(!varTypeIsFloating(simdBaseType));
-            FALLTHROUGH;
-        }
-
-        case NI_AVX512F_CompareNotEqual:
-        case NI_AVX512BW_CompareNotEqual:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareNotEqualMask;
-            break;
-        }
-
-        case NI_AVX512F_CompareNotGreaterThan:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanMask;
-            break;
-        }
-
-        case NI_AVX512F_CompareNotGreaterThanOrEqual:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareNotGreaterThanOrEqualMask;
-            break;
-        }
-
-        case NI_AVX512F_CompareNotLessThan:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareNotLessThanMask;
-            break;
-        }
-
-        case NI_AVX512F_CompareNotLessThanOrEqual:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareNotLessThanOrEqualMask;
-            break;
-        }
-
-        case NI_AVX512F_CompareOrdered:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareOrderedMask;
-            break;
-        }
-
-        case NI_AVX512F_CompareUnordered:
-        {
-            maskIntrinsicId = NI_AVX512F_CompareUnorderedMask;
-            break;
-        }
-
-        case NI_AVX512F_Or:
-        case NI_AVX512DQ_Or:
-        {
-            maskIntrinsicId = NI_AVX512F_OrMask;
-            maskOperand1    = &node->Op(1);
-            maskOperand2    = &node->Op(2);
-            break;
-        }
-
-        case NI_AVX512F_Xor:
-        case NI_AVX512DQ_Xor:
-        {
-            maskIntrinsicId = NI_AVX512F_XorMask;
-            maskOperand1    = &node->Op(1);
-            maskOperand2    = &node->Op(2);
-            break;
-        }
-
-        default:
-        {
-            unreached();
-        }
-    }
-
-    assert(maskIntrinsicId != NI_Illegal);
-    bool insertMaskToVector = false;
-
-    if (maskOperand1 != nullptr)
-    {
-        GenTree* maskOp1 = *maskOperand1;
-        GenTree* maskOp2 = (maskOperand2 != nullptr) ? *maskOperand2 : nullptr;
-
-        GenTree* op1 = *maskOperand1;
-
-        if (maskOp1->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) &&
-            (genTypeSize(maskOp1->AsHWIntrinsic()->GetSimdBaseType()) == genTypeSize(simdBaseType)))
-        {
-            if (maskOp2 != nullptr)
-            {
-                if (!maskOp2->OperIsHWIntrinsic(NI_AVX512F_ConvertMaskToVector) ||
-                    (genTypeSize(maskOp2->AsHWIntrinsic()->GetSimdBaseType()) != genTypeSize(simdBaseType)))
-                {
-                    // We don't want to handle this case, so return
-                    return nullptr;
-                }
-
-                GenTreeHWIntrinsic* maskToVector2 = maskOp2->AsHWIntrinsic();
-                *maskOperand2                     = maskToVector2->Op(1);
-                BlockRange().Remove(maskOp2);
-
-                insertMaskToVector = true;
-            }
-
-            GenTreeHWIntrinsic* maskToVector1 = maskOp1->AsHWIntrinsic();
-            *maskOperand1                     = maskToVector1->Op(1);
-            BlockRange().Remove(maskOp1);
-        }
-        else if (maskOp2 == nullptr)
-        {
-            assert((maskIntrinsicId == NI_AVX512F_MoveMask) || (maskIntrinsicId == NI_AVX512F_BlendVariableMask));
-
-            GenTree* vectorToMask = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskOp1, NI_AVX512F_ConvertVectorToMask,
-                                                                   simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(maskOp1, vectorToMask);
-            *maskOperand1 = vectorToMask;
-        }
-        else
-        {
-            // We don't want to handle this case, so return
-            return nullptr;
-        }
-    }
-    else
-    {
-        insertMaskToVector = true;
-    }
-
-    if (insertMaskToVector)
-    {
-        node->gtType = TYP_MASK;
-
-        LIR::Use use;
-        if (BlockRange().TryGetUse(node, &use))
-        {
-            GenTree* maskToVector = comp->gtNewSimdHWIntrinsicNode(simdType, node, NI_AVX512F_ConvertMaskToVector,
-                                                                   simdBaseJitType, simdSize);
-            BlockRange().InsertAfter(node, maskToVector);
-            use.ReplaceWith(maskToVector);
-        }
-    }
-
-    node->ChangeHWIntrinsicId(maskIntrinsicId);
-    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------

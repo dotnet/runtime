@@ -19172,6 +19172,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insLatency += opSize == EA_32BYTE ? PERFSCORE_LATENCY_6C : PERFSCORE_LATENCY_4C;
             break;
 
+        case INS_vptestmb:
+        case INS_vptestmd:
+        case INS_vptestmq:
+        case INS_vptestmw:
+        case INS_vptestnmb:
+        case INS_vptestnmd:
+        case INS_vptestnmq:
+        case INS_vptestnmw:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+            result.insLatency += PERFSCORE_LATENCY_4C;
+            break;
+        }
+
         case INS_mpsadbw:
             result.insThroughput = PERFSCORE_THROUGHPUT_2C;
             result.insLatency += PERFSCORE_LATENCY_4C;
