@@ -3,9 +3,10 @@
 
 import type { AssetEntryInternal, PromiseAndController } from "../types/internal";
 import type { AssetBehaviours, AssetEntry, LoadingResource, ResourceRequest } from "../types";
-import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, runtimeHelpers } from "./globals";
+import { ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, loaderHelpers, mono_assert, runtimeHelpers } from "./globals";
 import { createPromiseController } from "./promise-controller";
 import { mono_log_debug } from "./logging";
+import { mono_exit } from "./exit";
 
 
 let throttlingPromise: PromiseAndController<void> | undefined;
@@ -181,9 +182,10 @@ export async function mono_download_assets(): Promise<void> {
         // and we are not awating it here
         Promise.all(promises_of_asset_instantiation).then(() => {
             runtimeHelpers.allAssetsInMemory.promise_control.resolve();
-        }).catch(e => {
-            loaderHelpers.err("Error in mono_download_assets: " + e);
-            loaderHelpers.abort_startup(e, true);
+        }).catch(err => {
+            loaderHelpers.err("Error in mono_download_assets: " + err);
+            mono_exit(1, err);
+            throw err;
         });
         // OPTIMIZATION explained:
         // we do it this way so that we could allocate memory immediately after asset is downloaded (and after onRuntimeInitialized which happened already)
@@ -228,11 +230,14 @@ export async function start_asset_download(asset: AssetEntryInternal): Promise<A
         // second attempt only after all first attempts are queued
         await loaderHelpers.allDownloadsQueued.promise;
         try {
+            mono_log_debug(`Retrying download '${asset.name}'`);
             return await start_asset_download_with_throttle(asset);
         } catch (err) {
             asset.pendingDownloadInternal = undefined;
             // third attempt after small delay
             await delay(100);
+
+            mono_log_debug(`Retrying download (2) '${asset.name}' after delay`);
             return await start_asset_download_with_throttle(asset);
         }
     }

@@ -732,7 +732,7 @@ RETAIL_CONFIG_DWORD_INFO(INTERNAL_GDBJitEmitDebugFrame, W("GDBJitEmitDebugFrame"
 #endif
 #endif
 
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.")
+RETAIL_CONFIG_DWORD_INFO_EX(EXTERNAL_MaxVectorTBitWidth,           W("MaxVectorTBitWidth"),        0, "The maximum decimal width, in bits, that Vector<T> is allowed to be. A value less than 128 is treated as the system default.", CLRConfig::LookupOptions::ParseIntegerAsBase10)
 
 //
 // Hardware Intrinsic ISAs; keep in sync with jitconfigvalues.h

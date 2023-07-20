@@ -195,6 +195,7 @@
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePush" />
       <EmccExportedRuntimeMethod Include="runtimeKeepalivePop" />
       <EmccExportedRuntimeMethod Include="maybeExit" />
+      <EmccExportedRuntimeMethod Include="abort" />
 
       <EmccExportedFunction Include="_free" />
       <EmccExportedFunction Include="_htons" />

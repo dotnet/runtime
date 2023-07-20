@@ -10,6 +10,8 @@
 
 #ifdef FEATURE_ETW
 
+#include "EtwEvents.h"
+
 // Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
 #define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context
 #define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context

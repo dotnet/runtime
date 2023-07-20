@@ -289,7 +289,6 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            ArgumentNullException.ThrowIfNull(request);
             bool? allowAutoRedirect = _isAllowAutoRedirectTouched ? AllowAutoRedirect : null;
 #if FEATURE_WASM_THREADS
             return JSHost.CurrentOrMainJSSynchronizationContext.Send(() =>

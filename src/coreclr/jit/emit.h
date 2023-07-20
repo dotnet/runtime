@@ -2714,6 +2714,10 @@ private:
     void emitMarkStackLvl(unsigned stackLevel);
 #endif
 
+#if defined(FEATURE_SIMD)
+    void emitStoreSimd12ToLclOffset(unsigned varNum, unsigned offset, regNumber dataReg, GenTree* tmpRegProvider);
+#endif // FEATURE_SIMD
+
     int emitNextRandomNop();
 
     //

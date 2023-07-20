@@ -1,17 +1,18 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import { GlobalizationMode } from "../types";
 import { ENVIRONMENT_IS_WEB, loaderHelpers } from "./globals";
 import { mono_log_info, mono_log_debug } from "./logging";
 
 export function init_globalization() {
-    loaderHelpers.invariantMode = loaderHelpers.config.globalizationMode === "invariant";
+    loaderHelpers.invariantMode = loaderHelpers.config.globalizationMode == GlobalizationMode.Invariant;
     loaderHelpers.preferredIcuAsset = get_preferred_icu_asset();
 
     if (!loaderHelpers.invariantMode) {
         if (loaderHelpers.preferredIcuAsset) {
             mono_log_debug("ICU data archive(s) available, disabling invariant mode");
-        } else if (loaderHelpers.config.globalizationMode !== "icu") {
+        } else if (loaderHelpers.config.globalizationMode !== GlobalizationMode.Custom && loaderHelpers.config.globalizationMode !== GlobalizationMode.All && loaderHelpers.config.globalizationMode !== GlobalizationMode.Sharded) {
             mono_log_debug("ICU data archive(s) not available, using invariant globalization mode");
             loaderHelpers.invariantMode = true;
             loaderHelpers.preferredIcuAsset = null;
@@ -25,7 +26,7 @@ export function init_globalization() {
     const invariantEnv = "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT";
     const hybridEnv = "DOTNET_SYSTEM_GLOBALIZATION_HYBRID";
     const env_variables = loaderHelpers.config.environmentVariables!;
-    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === "hybrid") {
+    if (env_variables[hybridEnv] === undefined && loaderHelpers.config.globalizationMode === GlobalizationMode.Hybrid) {
         env_variables[hybridEnv] = "1";
     }
     else if (env_variables[invariantEnv] === undefined && loaderHelpers.invariantMode) {
