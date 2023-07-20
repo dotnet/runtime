@@ -28,143 +28,173 @@ namespace System.Runtime
             //  3- Update ptrToData to point to that newly allocated object
             ptrToData = RuntimeImports.RhNewObject(pEEType);
 
-            Entry entry = LookupInCache(s_cache, pEETypePtr, pEETypePtr);
-            entry ??= CacheMiss(pEETypePtr, pEETypePtr,
-                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
-                    {
-                        IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
-                        if (result == IntPtr.Zero)
-                            result = RuntimeAugments.GetFallbackDefaultConstructor();
-                        return result;
-                    });
-            RawCalliHelper.Call(entry.Result, ptrToData);
+            if (!LookupInCache(pEETypePtr, pEETypePtr, out var v))
+            {
+                v = CacheMiss(pEETypePtr, pEETypePtr,
+                        (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
+                        {
+                            IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
+                            if (result == IntPtr.Zero)
+                                result = RuntimeAugments.GetFallbackDefaultConstructor();
+                            return result;
+                        });
+            }
+
+            RawCalliHelper.Call(v.Result, ptrToData);
         }
 
         //
         // Generic lookup cache
         //
 
-        private class Entry
+        private struct Key : IEquatable<Key>
         {
             public IntPtr Context;
             public IntPtr Signature;
+
+            public Key(nint context, nint signature)
+            {
+                Context = context;
+                Signature = signature;
+            }
+
+            public bool Equals(Key other)
+            {
+                return Context == other.Context && Signature == other.Signature;
+            }
+
+            public override int GetHashCode()
+            {
+                // TODO: VS shift/roll
+                return Context.GetHashCode() ^ Signature.GetHashCode();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is Key && Equals((Key)obj);
+            }
+        }
+
+        private struct Value
+        {
             public IntPtr Result;
             public IntPtr AuxResult;
-            public Entry Next;
+
+            public Value(IntPtr context, IntPtr signature)
+            {
+                Result = context;
+                AuxResult = signature;
+            }
         }
 
         // Initialize the cache eagerly to avoid null checks.
-        // Use array with just single element to make this pay-for-play. The actual cache will be allocated only
-        // once the lazy lookups are actually needed.
-        private static Entry[] s_cache;
-
-        private static Lock s_lock;
-        private static GCHandle s_previousCache;
-
+        private static Cache<Key, Value> s_cache;
         internal static void Initialize()
         {
-            s_cache = new Entry[1];
+            s_cache = new Cache<Key, Value>();
+        }
+
+        private static Value LookupOrAdd(IntPtr context, IntPtr signature)
+        {
+            if (!LookupInCache(context, signature, out var v))
+            {
+                v = CacheMiss(context, signature);
+            }
+
+            return v;
         }
 
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature);
-            return entry.Result;
+            if (!LookupInCache(context, signature, out var v))
+            {
+                v = CacheMiss(context, signature);
+            }
+
+            return v.Result;
         }
 
         public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature);
-            RawCalliHelper.Call(entry.Result, arg);
+            Value v = LookupOrAdd(context, signature);
+            RawCalliHelper.Call(v.Result, arg);
         }
 
         public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature);
-            return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult);
+            Value v = LookupOrAdd(context, signature);
+            return RawCalliHelper.Call<object>(v.Result, v.AuxResult);
         }
 
         public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature);
-            return RawCalliHelper.Call<object>(entry.Result, entry.AuxResult, arg);
+            Value v = LookupOrAdd(context, signature);
+            return RawCalliHelper.Call<object>(v.Result, v.AuxResult, arg);
         }
 
         public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature);
-            RawCalliHelper.Call(entry.Result, entry.AuxResult, arg);
+            Value v = LookupOrAdd(context, signature);
+            RawCalliHelper.Call(v.Result, v.AuxResult, arg);
         }
 
         public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature);
-            return RawCalliHelper.Call<object>(entry.Result, arg, entry.AuxResult);
+            Value v = LookupOrAdd(context, signature);
+            return RawCalliHelper.Call<object>(v.Result, arg, v.AuxResult);
         }
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot));
-            if (entry != null)
-                return entry.Result;
+            if (LookupInCache((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot), out var v))
+                return v.Result;
 
             return GVMLookupForSlotSlow(obj, slot);
         }
 
         private static unsafe IntPtr GVMLookupForSlotSlow(object obj, RuntimeMethodHandle slot)
         {
-            Entry entry = CacheMiss((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot),
+            Value v = CacheMiss((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot),
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
 
-            return entry.Result;
+            return v.Result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {
-            Entry entry = LookupInCache(s_cache, (IntPtr)obj.GetMethodTable(), openResolver);
-            entry ??= CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
-                    (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
-                        => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
-                    obj);
-            return entry.Result;
+            if (!LookupInCache((IntPtr)obj.GetMethodTable(), openResolver, out var v))
+            {
+                v = CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
+                        (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
+                            => Internal.Runtime.CompilerServices.OpenMethodResolver.ResolveMethodWorker(signature, contextObject),
+                        obj);
+            }
+
+            return v.Result;
         }
 
         [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        private static Entry LookupInCache(Entry[] cache, IntPtr context, IntPtr signature)
+        private static bool LookupInCache(IntPtr context, IntPtr signature, out Value entry)
         {
-            int key = ((context.GetHashCode() >> 4) ^ signature.GetHashCode()) & (cache.Length - 1);
-#if DEBUG
-            Entry entry = cache[key];
-#else
-            Entry entry = Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(cache), key);
-#endif
-            while (entry != null)
-            {
-                if (entry.Context == context && entry.Signature == signature)
-                    break;
-                entry = entry.Next;
-            }
-            return entry;
+            Key k = new Key(context, signature);
+            return s_cache.TryGet(k, out entry);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
-            Entry entry = LookupInCache(s_cache, context, signature);
-            entry ??= CacheMiss(context, signature, factory, contextObject);
-            auxResult = entry.AuxResult;
-            return entry.Result;
+            if (!LookupInCache(context, signature, out var v))
+            {
+                v = CacheMiss(context, signature, factory, contextObject);
+            }
+
+            auxResult = v.AuxResult;
+            return v.Result;
         }
 
-        private static Entry CacheMiss(IntPtr ctx, IntPtr sig)
+        private static Value CacheMiss(IntPtr ctx, IntPtr sig)
         {
             return CacheMiss(ctx, sig,
                 (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
@@ -172,161 +202,19 @@ namespace System.Runtime
                 );
         }
 
-        private static unsafe Entry CacheMiss(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject = null)
+        private static unsafe Value CacheMiss(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject = null)
         {
-            IntPtr result = IntPtr.Zero, auxResult = IntPtr.Zero;
-            bool previouslyCached = false;
-
-            //
-            // Try to find the entry in the previous version of the cache that is kept alive by weak reference
-            //
-            if (s_previousCache.IsAllocated)
-            {
-                Entry[]? previousCache = (Entry[]?)s_previousCache.Target;
-                if (previousCache != null)
-                {
-                    Entry previousEntry = LookupInCache(previousCache, context, signature);
-                    if (previousEntry != null)
-                    {
-                        result = previousEntry.Result;
-                        auxResult = previousEntry.AuxResult;
-                        previouslyCached = true;
-                    }
-                }
-            }
-
             //
             // Call into the type loader to compute the target
             //
-            if (!previouslyCached)
-            {
-                result = factory(context, signature, contextObject, ref auxResult);
-            }
+            IntPtr auxResult = default;
+            IntPtr result = factory(context, signature, contextObject, ref auxResult);
 
-            //
-            // Update the cache under the lock
-            //
-            if (s_lock == null)
-                Interlocked.CompareExchange(ref s_lock, new Lock(), null);
+            Key k = new Key(context, signature);
+            Value v = new Value(result, auxResult);
 
-            s_lock.Acquire();
-            try
-            {
-                // Avoid duplicate entries
-                Entry existingEntry = LookupInCache(s_cache, context, signature);
-                if (existingEntry != null)
-                    return existingEntry;
-
-                // Resize cache as necessary
-                Entry[] cache = ResizeCacheForNewEntryAsNecessary();
-
-                int key = ((context.GetHashCode() >> 4) ^ signature.GetHashCode()) & (cache.Length - 1);
-
-                Entry newEntry = new Entry() { Context = context, Signature = signature, Result = result, AuxResult = auxResult, Next = cache[key] };
-                cache[key] = newEntry;
-                return newEntry;
-            }
-            finally
-            {
-                s_lock.Release();
-            }
-        }
-
-        //
-        // Parameters and state used by generic lookup cache resizing algorithm
-        //
-
-        private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
-        private const int DefaultCacheSize = 1024;
-        private const int MaximumCacheSize = 128 * 1024;
-
-        private static long s_tickCountOfLastOverflow;
-        private static int s_entries;
-        private static bool s_roundRobinFlushing;
-
-        private static Entry[] ResizeCacheForNewEntryAsNecessary()
-        {
-            Entry[] cache = s_cache;
-
-            if (cache.Length < InitialCacheSize)
-            {
-                // Start with small cache size so that the cache entries used by startup one-time only initialization will get flushed soon
-                return s_cache = new Entry[InitialCacheSize];
-            }
-
-            int entries = s_entries++;
-
-            // If the cache has spare space, we are done
-            if (2 * entries < cache.Length)
-            {
-                if (s_roundRobinFlushing)
-                {
-                    cache[2 * entries] = null;
-                    cache[2 * entries + 1] = null;
-                }
-                return cache;
-            }
-
-            //
-            // Now, we have cache that is overflowing with the stuff. We need to decide whether to resize it or start flushing the old entries instead
-            //
-
-            // Start over counting the entries
-            s_entries = 0;
-
-            // See how long it has been since the last time the cache was overflowing
-            long tickCount = Environment.TickCount64;
-            long tickCountSinceLastOverflow = tickCount - s_tickCountOfLastOverflow;
-            s_tickCountOfLastOverflow = tickCount;
-
-            bool shrinkCache = false;
-            bool growCache = false;
-
-            if (cache.Length < DefaultCacheSize)
-            {
-                // If the cache have not reached the default size, just grow it without thinking about it much
-                growCache = true;
-            }
-            else
-            {
-                if (tickCountSinceLastOverflow < cache.Length / 128)
-                {
-                    // If the fill rate of the cache is faster than ~0.01ms per entry, grow it
-                    if (cache.Length < MaximumCacheSize)
-                        growCache = true;
-                }
-                else
-                if (tickCountSinceLastOverflow > cache.Length * 16)
-                {
-                    // If the fill rate of the cache is slower than 16ms per entry, shrink it
-                    if (cache.Length > DefaultCacheSize)
-                        shrinkCache = true;
-                }
-                // Otherwise, keep the current size and just keep flushing the entries round robin
-            }
-
-            if (growCache || shrinkCache)
-            {
-                s_roundRobinFlushing = false;
-
-                // Keep the reference to the old cache in a weak handle. We will try to use to avoid
-                // hitting the type loader until GC collects it.
-                if (s_previousCache.IsAllocated)
-                {
-                    s_previousCache.Target = cache;
-                }
-                else
-                {
-                    s_previousCache = GCHandle.Alloc(cache, GCHandleType.Weak);
-                }
-
-                return s_cache = new Entry[shrinkCache ? (cache.Length / 2) : (cache.Length * 2)];
-            }
-            else
-            {
-                s_roundRobinFlushing = true;
-                return cache;
-            }
+            s_cache.TrySet(k, v);
+            return v;
         }
     }
 
