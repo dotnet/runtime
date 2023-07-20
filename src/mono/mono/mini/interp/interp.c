@@ -1286,10 +1286,15 @@ compute_arg_offset (MonoMethodSignature *sig, int index)
 static gpointer
 imethod_alloc0 (InterpMethod *imethod, size_t size)
 {
-	if (imethod->method->dynamic)
-		return mono_mempool_alloc0 (((MonoDynamicMethod*)imethod->method)->mp, (guint)size);
-	else
+	if (imethod->method->dynamic) {
+		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+		jit_mm_lock (jit_mm);
+		gpointer ret = mono_mempool_alloc0 (((MonoDynamicMethod*)imethod->method)->mp, (guint)size);
+		jit_mm_unlock (jit_mm);
+		return ret;
+	} else {
 		return m_method_alloc0 (imethod->method, (guint)size);
+	}
 }
 
 static guint32*
