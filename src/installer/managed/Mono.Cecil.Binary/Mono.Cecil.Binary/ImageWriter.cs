@@ -129,9 +129,6 @@ namespace Mono.Cecil.Binary
 
         void MapRVAPointers(RVAMapping[] mappings, Image image)
         {
-            MapRVAPointer(ref image.PEOptionalHeader.StandardFields.EntryPointRVA, mappings);
-            MapRVAPointer(ref image.PEOptionalHeader.StandardFields.BaseOfCode, mappings);
-            MapRVAPointer(ref image.PEOptionalHeader.StandardFields.BaseOfData, mappings);
             MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ExportTable, mappings);
             MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ImportTable, mappings);
             MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.ResourceTable, mappings);
@@ -148,11 +145,6 @@ namespace Mono.Cecil.Binary
             MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.DelayImportDescriptor, mappings);
             MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.CLIHeader, mappings);
             MapDataDirectory(ref image.PEOptionalHeader.DataDirectories.Reserved, mappings);
-            foreach (Section imageSection in image.Sections)
-            {
-                MapRVAPointer(ref imageSection.PointerToRelocations, mappings);
-                MapRVAPointer(ref imageSection.PointerToLineNumbers, mappings);
-            }
         }
 
         void MapRVAPointer(ref RVA rva, RVAMapping[] mappings)
