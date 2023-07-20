@@ -10345,7 +10345,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
 
         case TYP_FLOAT:
         {
-            float f32Cns = FloatingPointUtils::convertDoubleToFloat(tree->AsDblCon()->DconValue());
+            float f32Cns = FloatingPointUtils::convertToSingle(tree->AsDblCon()->DconValue());
             tree->gtVNPair.SetBoth(vnStore->VNForFloatCon(f32Cns));
             break;
         }

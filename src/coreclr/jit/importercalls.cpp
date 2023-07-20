@@ -3795,7 +3795,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                 {
                     int32_t i32Cns = (int32_t)op1->AsIntConCommon()->IconValue();
                     float   f32Cns = *reinterpret_cast<float*>(&i32Cns);
-                    retNode        = gtNewDconNode(FloatingPointUtils::convertFloatToDouble(f32Cns), TYP_FLOAT);
+                    retNode        = gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
                 }
                 else
                 {
@@ -3835,7 +3835,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
 
                 if (op1->IsCnsFltOrDbl())
                 {
-                    float f32Cns = FloatingPointUtils::convertDoubleToFloat(op1->AsDblCon()->DconValue());
+                    float f32Cns = FloatingPointUtils::convertToSingle(op1->AsDblCon()->DconValue());
                     retNode      = gtNewIconNode(*reinterpret_cast<int32_t*>(&f32Cns));
                 }
                 else
@@ -4142,7 +4142,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                     else
                     {
                         assert(fromType == TYP_FLOAT);
-                        float f32Cns = FloatingPointUtils::convertDoubleToFloat(op1->AsDblCon()->DconValue());
+                        float f32Cns = FloatingPointUtils::convertToSingle(op1->AsDblCon()->DconValue());
                         return gtNewIconNode(static_cast<int32_t>(BitOperations::SingleToUInt32Bits(f32Cns)));
                     }
                 }
@@ -4183,7 +4183,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
 
                         uint32_t u32Cns = static_cast<uint32_t>(op1->AsIntConCommon()->IconValue());
                         float    f32Cns = BitOperations::UInt32BitsToSingle(u32Cns);
-                        return gtNewDconNode(FloatingPointUtils::convertFloatToDouble(f32Cns), TYP_FLOAT);
+                        return gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
                     }
                 }
                 else

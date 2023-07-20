@@ -729,9 +729,9 @@ public:
 
     static unsigned __int64 convertDoubleToUInt64(double d);
 
-    static double convertFloatToDouble(float f32);
+    static double convertToDouble(float f);
 
-    static float convertDoubleToFloat(double f64);
+    static float convertToSingle(double d);
 
     static double round(double x);
 

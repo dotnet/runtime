@@ -1200,17 +1200,8 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     }
                     else
                     {
-                        /* If we have an NaN value then don't record it */
                         noway_assert(op2->gtOper == GT_CNS_DBL);
-#ifdef TARGET_RISCV64
-                        if (op2->TypeGet() == TYP_FLOAT)
-                        {
-                            if (_isnan(FloatingPointUtils::convertDoubleToFloat(op2->AsDblCon()->DconValue())))
-                            {
-                                goto DONE_ASSERTION;
-                            }
-                        }
-#endif // TARGET_RISCV64
+                        /* If we have an NaN value then don't record it */
                         if (_isnan(op2->AsDblCon()->DconValue()))
                         {
                             goto DONE_ASSERTION; // Don't make an assertion
@@ -2596,17 +2587,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
             {
                 // Implicit conversion to float or double
                 assert(varTypeIsFloating(tree->TypeGet()));
-
-#ifdef TARGET_RISCV64
-                if (tree->TypeGet() == TYP_FLOAT)
-                {
-                    conValTree = gtNewDconNode(FloatingPointUtils::convertFloatToDouble(value), tree->TypeGet());
-                }
-                else
-#endif // TARGET_RISCV64
-                {
-                    conValTree = gtNewDconNode(value, tree->TypeGet());
-                }
+                conValTree = gtNewDconNode(FloatingPointUtils::convertToDouble(value), tree->TypeGet());
             }
             break;
         }
@@ -2717,7 +2698,7 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
                     case TYP_FLOAT:
                         // Same sized reinterpretation of bits to float
                         conValTree =
-                            gtNewDconNode(FloatingPointUtils::convertFloatToDouble(*reinterpret_cast<float*>(&value)),
+                            gtNewDconNode(FloatingPointUtils::convertToDouble(*reinterpret_cast<float*>(&value)),
                                           TYP_FLOAT);
                         break;
 
