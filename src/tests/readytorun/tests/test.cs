@@ -438,6 +438,24 @@ static class OpenClosedDelegateExtensionTest
     }
 }
 
+public interface IDefaultVsExactStaticVirtual
+{
+    static virtual string Method() =>
+#if V2
+        "Error - IDefaultVsExactStaticVirtual.Method shouldn't be used in V2"
+#else
+        "DefaultVsExactStaticVirtualMethod"
+#endif
+    ;
+}
+
+public class DefaultVsExactStaticVirtualClass : IDefaultVsExactStaticVirtual
+{
+#if V2
+    static string IDefaultVsExactStaticVirtual.Method() => "DefaultVsExactStaticVirtualMethod";
+#endif
+}
+
 // Test dependent versioning details
 public class ILInliningVersioningTest<T>
 {
@@ -877,6 +895,8 @@ public class ILInliningVersioningTest<T>
         Console.WriteLine(actualMethodCallResult);
         Assert.AreEqual(ILInliningTest.TestDifferentIntValue(), actualMethodCallResult);
     }
+
+    
 
     private static void ValidateTestHasCrossModuleImplementation(string testName, List<string> testMethodData, bool expectedToBePresent = true)
     {
