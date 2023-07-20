@@ -15,19 +15,9 @@ namespace System.Runtime.CompilerServices
         MaybeCast = 2
     }
 
-#if NATIVEAOT
-    [EagerStaticClassConstruction]
-#endif
-    internal static unsafe class CastCache
+    internal unsafe struct CastCacheImpl
     {
-
-#if CORECLR
-        // In coreclr the table is written to only on the native side. T
-        // This is all we need to implement TryGet.
-        private static int[]? s_table;
-#else
-
-  #if DEBUG
+#if DEBUG
         private const int INITIAL_CACHE_SIZE = 8;    // MUST BE A POWER OF TWO
         private const int MAXIMUM_CACHE_SIZE = 512;  // make this lower than release to make it easier to reach this in tests.
   #else
@@ -37,25 +27,39 @@ namespace System.Runtime.CompilerServices
 
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
+        private const int BUCKET_SIZE = 8;
 
-        // A trivial 2-elements table used for "flushing" the cache. Nothing is ever stored in this table.
-        // It is required that we are able to allocate this.
-        private static int[] s_sentinelTable = CreateCastCache(2, throwOnFail: true)!;
-
-        // when flushing, remember the last size.
-        private static int s_lastFlushSize = INITIAL_CACHE_SIZE;
+        // nothing is ever stored into this, so we can use a static instance.
+        private static int[]? s_sentinelTable;
 
         // The actual storage.
-        // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
-        private static int[] s_table =
-  #if !DEBUG
+        private int[] _table;
+
+        // when flushing, remember the last size.
+        private int _lastFlushSize;
+
+        // wraps existing table
+        public CastCacheImpl(int[] table)
+        {
+            _table = table;
+        }
+
+        // creates a new cache instance
+        public CastCacheImpl()
+        {
+            // A trivial 2-elements table used for "flushing" the cache.
+            // Nothing is ever stored in such a small table and identity of the sentinel is not important.
+            // It is required that we are able to allocate this, we may need this in OOM cases.
+            s_sentinelTable ??= CreateCastCache(2, throwOnFail: true);
+
+            _table =
+#if !DEBUG
+            // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
             CreateCastCache(INITIAL_CACHE_SIZE) ??
-  #endif
-            s_sentinelTable;
-
-#endif // CORECLR
-
-        private const int BUCKET_SIZE = 8;
+#endif
+            s_sentinelTable!;
+            _lastFlushSize = INITIAL_CACHE_SIZE;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct CastCacheEntry
@@ -139,10 +143,10 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static CastResult TryGet(nuint source, nuint target)
+        internal CastResult TryGet(nuint source, nuint target)
         {
             // table is always initialized and is not null.
-            ref int tableData = ref TableData(s_table!);
+            ref int tableData = ref TableData(_table!);
 
             int index = KeyToBucket(ref tableData, source, target);
             for (int i = 0; i < BUCKET_SIZE;)
@@ -159,7 +163,7 @@ namespace System.Runtime.CompilerServices
 
                 if (entrySource == source)
                 {
-                    // in CoreCLR we do ordinary reads of the entry parts and
+                    // we do ordinary reads of the entry parts and
                     // Interlocked.ReadMemoryBarrier() before reading the version
                     nuint entryTargetAndResult = pEntry._targetAndResult;
                     // target never has its lower bit set.
@@ -204,7 +208,6 @@ namespace System.Runtime.CompilerServices
         // in CoreClr the cache is only updated in the native code
         //
         // The following helpers must match native implementations in castcache.h and castcache.cpp
-#if !CORECLR
 
         // we generally do not OOM in casts, just return null unless throwOnFail is specified.
         private static int[]? CreateCastCache(int size, bool throwOnFail = false)
@@ -252,20 +255,20 @@ namespace System.Runtime.CompilerServices
             return table;
         }
 
-        internal static void TrySet(nuint source, nuint target, bool result)
+        internal void TrySet(nuint source, nuint target, bool result)
         {
             int bucket;
             ref int tableData = ref *(int*)0;
 
             do
             {
-                tableData = ref TableData(s_table);
+                tableData = ref TableData(_table);
                 if (TableMask(ref tableData) == 1)
                 {
                     // 2-element table is used as a sentinel.
                     // we did not allocate a real table yet or have flushed it.
                     // try replacing the table, but do not insert anything.
-                    MaybeReplaceCacheWithLarger(s_lastFlushSize);
+                    MaybeReplaceCacheWithLarger(_lastFlushSize);
                     return;
                 }
 
@@ -333,7 +336,7 @@ namespace System.Runtime.CompilerServices
             } while (TryGrow(ref tableData));
 
             // reread tableData after TryGrow.
-            tableData = ref TableData(s_table);
+            tableData = ref TableData(_table);
 
             if (TableMask(ref tableData) == 1)
             {
@@ -381,19 +384,22 @@ namespace System.Runtime.CompilerServices
             return TableMask(ref tableData) + 1;
         }
 
-        private static void FlushCurrentCache()
+        private void FlushCurrentCache()
         {
-            ref int tableData = ref TableData(s_table);
+            ref int tableData = ref TableData(_table);
             int lastSize = CacheElementCount(ref tableData);
             if (lastSize < INITIAL_CACHE_SIZE)
                 lastSize = INITIAL_CACHE_SIZE;
 
-            s_lastFlushSize = lastSize;
+            // store the last size to use when creating a new table
+            // it is just a hint, not needed for correctness, so no synchronization
+            // with the writing of the table
+            _lastFlushSize = lastSize;
             // flushing is just replacing the table with a sentinel.
-            s_table = s_sentinelTable;
+            _table = s_sentinelTable!;
         }
 
-        private static bool MaybeReplaceCacheWithLarger(int size)
+        private bool MaybeReplaceCacheWithLarger(int size)
         {
             int[]? newTable = CreateCastCache(size);
             if (newTable == null)
@@ -401,11 +407,11 @@ namespace System.Runtime.CompilerServices
                 return false;
             }
 
-            s_table = newTable;
+            _table = newTable;
             return true;
         }
 
-        private static bool TryGrow(ref int tableData)
+        private bool TryGrow(ref int tableData)
         {
             int newSize = CacheElementCount(ref tableData) * 2;
             if (newSize <= MAXIMUM_CACHE_SIZE)
@@ -415,6 +421,5 @@ namespace System.Runtime.CompilerServices
 
             return false;
         }
-#endif   // !CORECLR
     }
 }

@@ -9,8 +9,16 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
+    internal static class CastCache
+    {
+        // In coreclr the table is allocated and written to on the native side.
+        internal static int[]? s_table;
+    }
+
     internal static unsafe class CastHelpers
     {
+        private static CastCacheImpl CastCacheInstance => new CastCacheImpl(CastCache.s_table!);
+
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);
 
@@ -36,7 +44,7 @@ namespace System.Runtime.CompilerServices
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
                 {
-                    CastResult result = CastCache.TryGet((nuint)mt, (nuint)toTypeHnd);
+                    CastResult result = CastCacheInstance.TryGet((nuint)mt, (nuint)toTypeHnd);
                     if (result == CastResult.CanCast)
                     {
                         // do nothing
@@ -186,7 +194,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? IsInstance_Helper(void* toTypeHnd, object obj)
         {
-            CastResult result = CastCache.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
+            CastResult result = CastCacheInstance.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
             {
                 return obj;
@@ -215,7 +223,7 @@ namespace System.Runtime.CompilerServices
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
                 {
-                    result = CastCache.TryGet((nuint)mt, (nuint)toTypeHnd);
+                    result = CastCacheInstance.TryGet((nuint)mt, (nuint)toTypeHnd);
                     if (result != CastResult.CanCast)
                     {
                         goto slowPath;
@@ -239,7 +247,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static object? ChkCast_Helper(void* toTypeHnd, object obj)
         {
-            CastResult result = CastCache.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
+            CastResult result = CastCacheInstance.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)toTypeHnd);
             if (result == CastResult.CanCast)
             {
                 return obj;
@@ -456,7 +464,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void StelemRef_Helper(ref object? element, void* elementType, object obj)
         {
-            CastResult result = CastCache.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
+            CastResult result = CastCacheInstance.TryGet((nuint)RuntimeHelpers.GetMethodTable(obj), (nuint)elementType);
             if (result == CastResult.CanCast)
             {
                 WriteBarrier(ref element, obj);

@@ -21,8 +21,11 @@ namespace System.Runtime
     //
     /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    [EagerStaticClassConstruction]
     internal static class TypeCast
     {
+        private static CastCacheImpl s_castCache = new CastCacheImpl();
+
         [Flags]
         internal enum AssignmentVariation
         {
@@ -1159,7 +1162,7 @@ namespace System.Runtime
                 return true;
 
             nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            CastResult result = CastCache.TryGet(sourceAndVariation, (nuint)(pTargetType));
+            CastResult result = s_castCache.TryGet(sourceAndVariation, (nuint)(pTargetType));
             if (result != CastResult.MaybeCast)
             {
                 return result == CastResult.CanCast;
@@ -1187,7 +1190,7 @@ namespace System.Runtime
             // Update the cache
             //
             nuint sourceAndVariation = (nuint)pSourceType + (uint)variation;
-            CastCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
+            s_castCache.TrySet(sourceAndVariation, (nuint)pTargetType, result);
 
             return result;
         }
