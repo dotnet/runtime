@@ -775,40 +775,6 @@ find_method_in_class_unsafe_accessor (MonoClass *klass, const char *name, const 
 	return NULL;
 }
 
-static MonoMethod *
-find_method_unsafe_accessor (MonoClass *in_class, const char* name, MonoMethodSignature *sig, MonoClass *from_class, gboolean ignore_cmods, MonoError *error)
-{
-	char *qname, *fqname;
-	MonoMethod *result_maybe = NULL;
-
-	error_init (error);
-	qname = fqname = NULL;
-
-	while (in_class) {
-		g_assert (from_class);
-		MonoMethod * result = find_method_in_class_unsafe_accessor (in_class, name, qname, fqname, sig, from_class, ignore_cmods, error);
-		if (!is_ok (error))
-			return NULL;
-
-		if (result) {
-			if (result_maybe != NULL) {
-				if (ignore_cmods)
-					return find_method_unsafe_accessor (in_class, name, sig, from_class, FALSE, error);
-				//Throw Arg_AmbiguousMatchException_UnsafeAccessor exception
-			}
-			result_maybe = result;
-		}
-
-		// FIXME: don't support failing to lazily load the interfaces of one of the types. See find_method for more info
-
-		in_class = m_class_get_parent (in_class);
-		from_class = m_class_get_parent (from_class);
-	}
-	g_assert (!in_class == !from_class);
-
-	return result_maybe;
-}
-
 static MonoMethodSignature*
 inflate_generic_signature_checked (MonoImage *image, MonoMethodSignature *sig, MonoGenericContext *context, MonoError *error)
 {
@@ -1154,14 +1120,14 @@ fail:
 MonoMethod*
 mono_unsafe_accessor_find_ctor (MonoClass *in_class, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
 {
-	return find_method_unsafe_accessor (in_class, ".ctor", sig, from_class, TRUE, error);
+	return find_method_in_class_unsafe_accessor (in_class, ".ctor", /*qname*/NULL, /*fqname*/NULL, sig, from_class, TRUE, error);
 }
 
 MonoMethod*
 mono_unsafe_accessor_find_method (MonoClass *in_class, const char *name, MonoMethodSignature *sig, MonoClass *from_class, MonoError *error)
 {
 	// This doesn't work for constructors because find_method explicitly disallows ".ctor" and ".cctor"
-	return find_method_unsafe_accessor (in_class, name, sig, from_class, TRUE, error);
+	return find_method_in_class_unsafe_accessor (in_class, name, /*qname*/NULL, /*fqname*/NULL, sig, from_class, TRUE, error);
 }
 
 

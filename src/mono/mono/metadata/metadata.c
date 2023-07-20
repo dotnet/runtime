@@ -46,10 +46,15 @@ typedef struct {
 	MonoGenericContext context;
 } MonoInflatedMethodSignature;
 
+enum {
+	MONO_TYPE_EQ_FLAGS_SIG_ONLY = 1,
+	MONO_TYPE_EQ_FLAG_IGNORE_CMODS = 2
+};
+
 static gboolean do_mono_metadata_parse_type (MonoType *type, MonoImage *m, MonoGenericContainer *container, gboolean transient,
 					 const char *ptr, const char **rptr, MonoError *error);
 
-static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only, gboolean skip_cmods_check);
+static gboolean do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags);
 static gboolean mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only);
 static gboolean mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gboolean signature_only);
 static gboolean _mono_metadata_generic_class_equal (const MonoGenericClass *g1, const MonoGenericClass *g2,
@@ -1901,7 +1906,7 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
 	for (guint i = 0; i < a->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], signature_only, FALSE))
+		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 			return FALSE;
 	}
 	return TRUE;
@@ -5690,10 +5695,10 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return mono_metadata_class_equal (c1_type->data.klass, c2_type->data.klass, signature_only);
 	if (signature_only &&
 	    (c1_type->type == MONO_TYPE_ARRAY) && (c2_type->type == MONO_TYPE_ARRAY))
-		return do_mono_metadata_type_equal (c1_type, c2_type, signature_only, FALSE);
+		return do_mono_metadata_type_equal (c1_type, c2_type, MONO_TYPE_EQ_FLAGS_SIG_ONLY);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_PTR) && (c2_type->type == MONO_TYPE_PTR))
-		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only, FALSE);
+		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, MONO_TYPE_EQ_FLAGS_SIG_ONLY);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_FNPTR) && (c2_type->type == MONO_TYPE_FNPTR))
 		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only);
@@ -5715,7 +5720,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 		return FALSE;
 	if (s1->explicit_this != s2->explicit_this)
 		return FALSE;
-	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, signature_only, FALSE))
+	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 		return FALSE;
 	if (s1->param_count != s2->param_count)
 		return FALSE;
@@ -5726,7 +5731,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 
 		if (t1 == NULL || t2 == NULL)
 			return (t1 == t2);
-		if (! do_mono_metadata_type_equal (t1, t2, signature_only, FALSE))
+		if (! do_mono_metadata_type_equal (t1, t2, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 			return FALSE;
 	}
 }
@@ -5755,7 +5760,7 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
 		if (cm1_required != cm2_required)
 			return FALSE;
 
-		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, signature_only, FALSE))
+		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
 			return FALSE;
 	}
 	return TRUE;
@@ -5771,18 +5776,18 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
  * Returns: #TRUE if @t1 and @t2 are equal.
  */
 static gboolean
-do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only, gboolean skip_cmods_check)
+do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, int equiv_flags)
 {
 	if (t1->type != t2->type || m_type_is_byref (t1) != m_type_is_byref (t2))
 		return FALSE;
 
 	gboolean cmod_reject = FALSE;
 
-	if (!skip_cmods_check) {
+	if ((equiv_flags & MONO_TYPE_EQ_FLAG_IGNORE_CMODS) == 0) {
 		if (t1->has_cmods != t2->has_cmods)
 			cmod_reject = TRUE;
 		else if (t1->has_cmods && t2->has_cmods) {
-			cmod_reject = !mono_metadata_custom_modifiers_equal (t1, t2, signature_only);
+			cmod_reject = !mono_metadata_custom_modifiers_equal (t1, t2, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		}
 	}
 
@@ -5812,31 +5817,31 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 	case MONO_TYPE_VALUETYPE:
 	case MONO_TYPE_CLASS:
 	case MONO_TYPE_SZARRAY:
-		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, signature_only);
+		result = mono_metadata_class_equal (t1->data.klass, t2->data.klass, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_PTR:
-		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, signature_only, skip_cmods_check);
+		result = do_mono_metadata_type_equal (t1->data.type, t2->data.type, equiv_flags);
 		break;
 	case MONO_TYPE_ARRAY:
 		if (t1->data.array->rank != t2->data.array->rank)
 			result = FALSE;
 		else
-			result = mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass, signature_only);
+			result = mono_metadata_class_equal (t1->data.array->eklass, t2->data.array->eklass, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_GENERICINST:
 		result = _mono_metadata_generic_class_equal (
-			t1->data.generic_class, t2->data.generic_class, signature_only);
+			t1->data.generic_class, t2->data.generic_class, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_VAR:
 		result = mono_metadata_generic_param_equal_internal (
-			t1->data.generic_param, t2->data.generic_param, signature_only);
+			t1->data.generic_param, t2->data.generic_param, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_MVAR:
 		result = mono_metadata_generic_param_equal_internal (
-			t1->data.generic_param, t2->data.generic_param, signature_only);
+			t1->data.generic_param, t2->data.generic_param, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	case MONO_TYPE_FNPTR:
-		result = mono_metadata_fnptr_equal (t1->data.method, t2->data.method, signature_only);
+		result = mono_metadata_fnptr_equal (t1->data.method, t2->data.method, (equiv_flags & MONO_TYPE_EQ_FLAGS_SIG_ONLY) != 0);
 		break;
 	default:
 		g_error ("implement type compare for %0x!", t1->type);
@@ -5852,7 +5857,7 @@ do_mono_metadata_type_equal (MonoType *t1, MonoType *t2, gboolean signature_only
 gboolean
 mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 {
-	return do_mono_metadata_type_equal (t1, t2, FALSE, FALSE);
+	return do_mono_metadata_type_equal (t1, t2, 0);
 }
 
 /**
@@ -5869,12 +5874,12 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
-	return do_mono_metadata_type_equal (t1, t2, signature_only, FALSE);
+	return do_mono_metadata_type_equal (t1, t2, MONO_TYPE_EQ_FLAGS_SIG_ONLY);
 }
 
 enum {
 	SIG_EQUIV_FLAG_NO_RET = 1,
-	SIG_EQUIV_FLAG_IGNORE_CMODS = 2,
+	SIG_EQUIV_FLAG_IGNORE_CMODS = 2
 };
 
 gboolean
@@ -5919,6 +5924,8 @@ signature_equiv (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv
 	if (sig1->generic_param_count != sig2->generic_param_count)
 		return FALSE;
 
+	int flag = MONO_TYPE_EQ_FLAGS_SIG_ONLY | (((equiv_flags & SIG_EQUIV_FLAG_IGNORE_CMODS) != 0) ? MONO_TYPE_EQ_FLAG_IGNORE_CMODS : 0);
+
 	/*
 	 * We're just comparing the signatures of two methods here:
 	 *
@@ -5935,13 +5942,13 @@ signature_equiv (MonoMethodSignature *sig1, MonoMethodSignature *sig2, int equiv
 		/* if (p1->attrs != p2->attrs)
 			return FALSE;
 		*/
-		if (!do_mono_metadata_type_equal (p1, p2, TRUE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
+		if (!do_mono_metadata_type_equal (p1, p2, flag))
 			return FALSE;
 	}
 
-	if (equiv_flags == SIG_EQUIV_FLAG_NO_RET)
+	if ((equiv_flags & SIG_EQUIV_FLAG_NO_RET) != 0)
 		return TRUE;
-	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, TRUE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
+	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, flag))
 		return FALSE;
 	return TRUE;
 }
@@ -5969,6 +5976,8 @@ signature_equiv_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2, in
 	if (sig1->hasthis != sig2->hasthis ||
 	    sig1->sentinelpos != sig2->sentinelpos)
 		return FALSE;
+	
+	int flag = MONO_TYPE_EQ_FLAGS_SIG_ONLY | (((equiv_flags & SIG_EQUIV_FLAG_IGNORE_CMODS) != 0) ? MONO_TYPE_EQ_FLAG_IGNORE_CMODS : 0);
 
 	for (i = 0; i < sig1->sentinelpos; i++) {
 		MonoType *p1 = sig1->params[i];
@@ -5977,11 +5986,11 @@ signature_equiv_vararg (MonoMethodSignature *sig1, MonoMethodSignature *sig2, in
 		/*if (p1->attrs != p2->attrs)
 			return FALSE;
 		*/
-		if (!do_mono_metadata_type_equal (p1, p2, FALSE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
+		if (!do_mono_metadata_type_equal (p1, p2, flag))
 			return FALSE;
 	}
 
-	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, FALSE, equiv_flags == SIG_EQUIV_FLAG_IGNORE_CMODS))
+	if (!do_mono_metadata_type_equal (sig1->ret, sig2->ret, flag))
 		return FALSE;
 	return TRUE;
 }
