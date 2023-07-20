@@ -14,7 +14,7 @@
 #include <CommonCrypto/CommonRandom.h>
 #endif
 
-#include "config.h"
+#include "minipalconfig.h"
 #include "random.h"
 
 /*

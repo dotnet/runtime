@@ -39,6 +39,7 @@ if(CLR_CMAKE_HOST_UNIX)
     ds-ipc-pal-socket.h
   )
 
+  include(${CLR_SRC_NATIVE_DIR}/minipal/configure.cmake)
   list(APPEND MINIPAL_SOURCES
     random.c
   )
