@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 using Mono.Cecil.Binary;
 
 namespace Microsoft.NET.HostModel
@@ -40,8 +41,8 @@ namespace Microsoft.NET.HostModel
             stream = null;
             try
             {
-                stream = new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite);
-                image = ImageReader.Read(stream).Image;
+                stream = new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+                image = ImageReader.Read(new BinaryReader(stream, Encoding.UTF8, true)).Image;
             }
             catch (Exception)
             {
@@ -206,6 +207,9 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
+            stream.Position = 0;
+            if (!stream.CanWrite)
+                throw new ArgumentException("Can not write to stream");
             var writer = new ImageWriter(image, new BinaryWriter(stream));
             writer.Initialize();
             image.Accept(writer);

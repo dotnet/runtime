@@ -55,9 +55,11 @@ namespace Mono.Cecil.Binary
             m_binaryReader = reader;
         }
 
-        static ImageReader Read(Image img, Stream stream)
+        static ImageReader Read(Image img, Stream stream) => Read(img, new BinaryReader(stream));
+
+        static ImageReader Read(Image img, BinaryReader binaryReader)
         {
-            ImageReader reader = new ImageReader(img, new BinaryReader(stream));
+            ImageReader reader = new ImageReader(img, binaryReader);
             img.Accept(reader);
             return reader;
         }
@@ -113,6 +115,14 @@ namespace Mono.Cecil.Binary
                 throw new ArgumentException("Can not read from stream");
 
             return Read(new Image(), stream);
+        }
+
+        public static ImageReader Read(BinaryReader reader)
+        {
+            if (reader == null)
+                throw new ArgumentNullException(nameof(reader));
+
+            return Read(new Image(), reader);
         }
 
         public BinaryReader GetReader()
