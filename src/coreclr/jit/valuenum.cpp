@@ -2882,8 +2882,11 @@ ValueNum ValueNumStore::VNForMapSelectInner(ValueNumKind vnk, var_types type, Va
     // The remaining budget should always be between [0..m_mapSelectBudget]
     assert((budget >= 0) && (budget <= m_mapSelectBudget));
 
-    // If the current tree is in a loop then record memory dependencies for hoisting.
-    if (m_pComp->compCurBB->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
+    // If the current tree is in a loop then record memory dependencies for
+    // hoisting. Note that this function may be called by other phases than VN
+    // (such as VN-based dead store removal).
+    if ((m_pComp->compCurBB != nullptr) && (m_pComp->compCurTree != nullptr) &&
+        m_pComp->compCurBB->bbNatLoopNum != BasicBlock::NOT_IN_LOOP)
     {
         for (int i = 0; i < memoryDependencies.Height(); i++)
         {
