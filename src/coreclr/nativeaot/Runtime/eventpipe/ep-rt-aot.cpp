@@ -17,10 +17,6 @@
 #include <unistd.h>
 #endif
 
-#if defined(__APPLE__) && __APPLE__
-#include <CommonCrypto/CommonRandom.h>
-#endif
-
 #include <minipal/random.h>
 
 // The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
