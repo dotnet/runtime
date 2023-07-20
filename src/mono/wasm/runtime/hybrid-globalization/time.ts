@@ -20,10 +20,11 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
             PmDesignator: "",
             ShortTimePattern: "",
         };
-        const designators = getAmPmDesignators(locale);
+        const canonicalLocale = normalizeLocale(locale);
+        const designators = getAmPmDesignators(canonicalLocale);
         cultureInfo.AmDesignator = designators.am;
         cultureInfo.PmDesignator = designators.pm;
-        const shortTimePattern = getShortTimePattern(locale, designators);
+        const shortTimePattern = getShortTimePattern(canonicalLocale, designators);
         cultureInfo.ShortTimePattern = shortTimePattern;
         const result = Object.values(cultureInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
@@ -41,6 +42,18 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
     finally {
         cultureRoot.release();
         exceptionRoot.release();
+    }
+}
+
+function normalizeLocale(locale: string | undefined)
+{
+    try
+    {
+        return (Intl as any).getCanonicalLocales(locale?.replace("_", "-"));
+    }
+    catch(ex: any)
+    {
+        throw new Error(`Get culture info failed for culture = ${locale} with error: ${ex}`);
     }
 }
 
