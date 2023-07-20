@@ -55,9 +55,19 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
 
 function normalizeLocale(locale: string | undefined)
 {
+    if (!locale)
+        return undefined;
     try
     {
-        return (Intl as any).getCanonicalLocales(locale?.replace("_", "-"));
+        locale = locale.toLocaleLowerCase();
+        if (locale.includes("zh"))
+        {
+            // browser does not recognize "zh-chs" and "zh-cht" as equivalents of "zh-HANS" "zh-HANT", we are helping, otherwise
+            // it would throw on getCanonicalLocales with "RangeError: Incorrect locale information provided"
+            locale = locale.replace("chs", "HANS").replace("cht", "HANT");
+        }
+        const canonicalLocales = (Intl as any).getCanonicalLocales(locale.replace("_", "-"));
+        return canonicalLocales.length > 0 ? canonicalLocales[0] : undefined;
     }
     catch(ex: any)
     {
@@ -82,10 +92,10 @@ function getAmPmDesignators(locale: any)
         const withoutDesignator = time.toLocaleTimeString(locale, { hourCycle: "h24"});
         const designator = withDesignator.replace(withoutDesignator, "").trim();
         if (new RegExp("[0-9]$").test(designator)){
-            const designatorLikeParts = withDesignator.split(" ").filter(part => new RegExp("^((?![0-9]).)*$").test(part));
-            if (!designatorLikeParts || designatorLikeParts.length == 0)
+            const designatorParts = withDesignator.split(" ").filter(part => new RegExp("^((?![0-9]).)*$").test(part));
+            if (!designatorParts || designatorParts.length == 0)
                 return "";
-            return designatorLikeParts.join(" ");
+            return designatorParts.join(" ");
         }
         return designator;
     }
