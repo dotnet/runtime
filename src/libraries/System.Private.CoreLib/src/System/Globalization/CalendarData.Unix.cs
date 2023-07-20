@@ -13,8 +13,9 @@ namespace System.Globalization
             return GlobalizationMode.Hybrid ?
                 JSLoadCalendarDataFromBrowser(localeName, calendarId) :
                 IcuLoadCalendarDataFromSystem(localeName, calendarId);
-#endif
+#else
             return IcuLoadCalendarDataFromSystem(localeName, calendarId);
+#endif
         }
 
 #pragma warning disable IDE0060
