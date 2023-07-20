@@ -24,6 +24,7 @@
 #include <sys/wait.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/stat.h>
 #include <dlfcn.h>
 
 #ifdef __APPLE__
@@ -48,6 +49,7 @@
 #define _T(s) s
 #include "RhConfig.h"
 
+#include <minipal/utils.h>
 #include <generatedumpflags.h>
 
 // Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
@@ -82,6 +84,9 @@ inline uint32_t PlatformGetCurrentThreadId() {
 #define PlatformGetCurrentThreadId() (uint32_t)pthread_self()
 #endif
 
+const size_t MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
+const size_t MaxUnsigned64BitDecString = ARRAY_SIZE("18446744073709551615") - 1;
+
 /*++
 Function:
     FormatInt
@@ -93,10 +98,10 @@ static
 char*
 FormatInt(uint32_t value)
 {
-    char* buffer = (char*)malloc(128);
+    char* buffer = (char*)malloc(MaxUnsigned32BitDecString);
     if (buffer != nullptr)
     {
-        if (snprintf(buffer, 128, "%d", value) < 0)
+        if (snprintf(buffer, MaxUnsigned32BitDecString, "%" PRIu32, value) < 0)
         {
             free(buffer);
             buffer = nullptr;
@@ -116,10 +121,10 @@ static
 char*
 FormatInt64(uint64_t value)
 {
-    char* buffer = (char*)malloc(128);
+    char* buffer = (char*)malloc(MaxUnsigned64BitDecString);
     if (buffer != nullptr)
     {
-        if (snprintf(buffer, 128, "%" PRIu64, value) < 0)
+        if (snprintf(buffer, MaxUnsigned64BitDecString, "%" PRIu64, value) < 0)
         {
             free(buffer);
             buffer = nullptr;
@@ -553,6 +558,13 @@ PalCreateDumpInitialize()
             program[0] = '\0';
         }
         strncat(program, DumpGeneratorName, programLen);
+
+        struct stat fileData;
+        if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
+        {
+            fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
+            return false;
+        }
         g_szCreateDumpPath = program;
 
         // Format the app pid for the createdump command line
