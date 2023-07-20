@@ -1325,47 +1325,6 @@ QueueUserAPC(
          IN HANDLE hThread,
          IN ULONG_PTR dwData);
 
-#ifndef __has_builtin
-#define __has_builtin(x) 0
-#endif
-
-#if defined(HOST_X86) || defined(HOST_AMD64)
-// MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
-// We define matching signatures for use on Unix platforms.
-//
-// IMPORTANT: Unlike MSVC, Unix does not explicitly zero ECX for __cpuid
-
-#if __has_builtin(__cpuid)
-extern "C" void __cpuid(int cpuInfo[4], int function_id);
-#else
-inline void __cpuid(int cpuInfo[4], int function_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id)
-    );
-}
-#endif // __cpuid
-
-#if __has_builtin(__cpuidex)
-extern "C" void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#else
-inline void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    // Based on the Clang implementation provided in cpuid.h:
-    // https://github.com/llvm/llvm-project/blob/main/clang/lib/Headers/cpuid.h
-
-    __asm("  cpuid\n" \
-        : "=a"(cpuInfo[0]), "=b"(cpuInfo[1]), "=c"(cpuInfo[2]), "=d"(cpuInfo[3]) \
-        : "0"(function_id), "2"(subFunction_id)
-    );
-}
-#endif // __cpuidex
-#endif // HOST_X86 || HOST_AMD64
-
 #ifdef HOST_X86
 
 //
@@ -4517,19 +4476,6 @@ PALIMPORT
 void _mm_setcsr(unsigned int i);
 
 /******************* PAL functions for CPU capability detection *******/
-
-#ifdef  __cplusplus
-
-#if defined(HOST_ARM64) && defined(TARGET_ARM64)
-class CORJIT_FLAGS;
-
-PALIMPORT
-VOID
-PALAPI
-PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags);
-#endif // HOST_ARM64 && TARGET_ARM64
-
-#endif
 
 #ifdef __cplusplus
 
