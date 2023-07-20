@@ -1377,7 +1377,6 @@ ep_rt_utf8_string_replace (
     return false;
 }
 
-#define MINIPAL_MB_NO_REPLACE_INVALID_CHARS 0x00000008
 
 static
 ep_char16_t *
@@ -1392,8 +1391,6 @@ ep_rt_utf8_to_utf16le_string (
 
     int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS;
 
-    ep_char16_t* lpDestStr = NULL;
-
     if (len == (size_t) -1)
         len = strlen(str) + 1;
 
@@ -1402,11 +1399,11 @@ ep_rt_utf8_to_utf16le_string (
     if (ret <= 0)
         return NULL;
 
-    lpDestStr = reinterpret_cast<ep_char16_t *>(malloc((ret + 1) * sizeof(ep_char16_t)));
-    ret = minipal_convert_utf8_to_utf16 (str, len, reinterpret_cast<CHAR16_T*>(lpDestStr), ret, flags);
+    CHAR16_T * lpDestStr = reinterpret_cast<CHAR16_T *>(malloc((ret + 1) * sizeof(CHAR16_T)));
+    ret = minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
     lpDestStr[ret] = '\0';
 
-    return lpDestStr;
+    return reinterpret_cast<ep_char16_t*>(lpDestStr);
 }
 
 static
@@ -1458,7 +1455,6 @@ ep_rt_utf16_to_utf8_string (
     if (!str)
         return NULL;
 
-    ep_char8_t* lpDestStr = NULL;
     if (len == (size_t) -1)
         len = ep_rt_utf16_string_len (str) + 1;
 
@@ -1467,11 +1463,11 @@ ep_rt_utf16_to_utf8_string (
     if (ret <= 0)
         return NULL;
 
-    lpDestStr = reinterpret_cast<ep_char8_t *>(malloc((ret + 1) * sizeof(ep_char8_t)));
+    char* lpDestStr = reinterpret_cast<char *>(malloc((ret + 1) * sizeof(char)));
     ret = minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
     lpDestStr[ret] = '\0';
 
-    return lpDestStr;
+    return reinterpret_cast<ep_char8_t*>(lpDestStr);
 }
 
 static
