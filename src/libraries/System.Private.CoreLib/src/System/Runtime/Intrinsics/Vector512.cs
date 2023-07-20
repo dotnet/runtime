@@ -324,10 +324,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> ConvertToDouble(Vector512<long> vector)
         {
-            return Create(
-                Vector256.ConvertToDouble(vector._lower),
-                Vector256.ConvertToDouble(vector._upper)
-            );
+            if (Avx512DQ.IsSupported)
+            {
+                return Avx512DQ.ConvertToVector512Double(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.ConvertToDouble(vector._lower),
+                    Vector256.ConvertToDouble(vector._upper)
+                );
+            }
         }
 
         /// <summary>Converts a <see cref="Vector512{UInt64}" /> to a <see cref="Vector512{Double}" />.</summary>
@@ -338,10 +345,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<double> ConvertToDouble(Vector512<ulong> vector)
         {
-            return Create(
-                Vector256.ConvertToDouble(vector._lower),
-                Vector256.ConvertToDouble(vector._upper)
-            );
+            if (Avx512DQ.IsSupported)
+            {
+                return Avx512DQ.ConvertToVector512Double(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.ConvertToDouble(vector._lower),
+                    Vector256.ConvertToDouble(vector._upper)
+                );
+            }
         }
 
         /// <summary>Converts a <see cref="Vector512{Single}" /> to a <see cref="Vector512{Int32}" />.</summary>
@@ -364,10 +378,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<long> ConvertToInt64(Vector512<double> vector)
         {
-            return Create(
-                Vector256.ConvertToInt64(vector._lower),
-                Vector256.ConvertToInt64(vector._upper)
-            );
+            if (Avx512DQ.IsSupported)
+            {
+                return Avx512DQ.ConvertToVector512Int64(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.ConvertToInt64(vector._lower),
+                    Vector256.ConvertToInt64(vector._upper)
+                );
+            }
         }
 
         /// <summary>Converts a <see cref="Vector512{Int32}" /> to a <see cref="Vector512{Single}" />.</summary>
@@ -405,10 +426,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<uint> ConvertToUInt32(Vector512<float> vector)
         {
-            return Create(
-                Vector256.ConvertToUInt32(vector._lower),
-                Vector256.ConvertToUInt32(vector._upper)
-            );
+            if (Avx512DQ.IsSupported)
+            {
+                return Avx512DQ.ConvertToVector512UInt32(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.ConvertToUInt32(vector._lower),
+                    Vector256.ConvertToUInt32(vector._upper)
+                );
+            }
         }
 
         /// <summary>Converts a <see cref="Vector512{Double}" /> to a <see cref="Vector512{UInt64}" />.</summary>
@@ -419,10 +447,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector512<ulong> ConvertToUInt64(Vector512<double> vector)
         {
-            return Create(
-                Vector256.ConvertToUInt64(vector._lower),
-                Vector256.ConvertToUInt64(vector._upper)
-            );
+            if (Avx512DQ.IsSupported)
+            {
+                return Avx512DQ.ConvertToVector512UInt64(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector256.ConvertToUInt64(vector._lower),
+                    Vector256.ConvertToUInt64(vector._upper)
+                );
+            }
         }
 
         /// <summary>Copies a <see cref="Vector512{T}" /> to a given array.</summary>

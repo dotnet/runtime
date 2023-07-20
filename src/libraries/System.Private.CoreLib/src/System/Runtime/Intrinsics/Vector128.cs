@@ -393,7 +393,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> ConvertToDouble(Vector128<long> vector)
         {
-            if (Sse2.IsSupported)
+            if (Avx512DQ.VL.IsSupported)
+            {
+                return Avx512DQ.VL.ConvertToVector128Double(vector);
+            }
+            else if (Sse2.IsSupported)
             {
                 // Based on __m256d int64_to_double_fast_precise(const __m256i v)
                 // from https://stackoverflow.com/a/41223013/12860347. CC BY-SA 4.0
@@ -434,7 +438,11 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<double> ConvertToDouble(Vector128<ulong> vector)
         {
-            if (Sse2.IsSupported)
+            if (Avx512DQ.VL.IsSupported)
+            {
+                return Avx512DQ.VL.ConvertToVector128Double(vector);
+            }
+            else if (Sse2.IsSupported)
             {
                 // Based on __m256d uint64_to_double_fast_precise(const __m256i v)
                 // from https://stackoverflow.com/a/41223013/12860347. CC BY-SA 4.0
@@ -487,10 +495,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<long> ConvertToInt64(Vector128<double> vector)
         {
-            return Create(
-                Vector64.ConvertToInt64(vector._lower),
-                Vector64.ConvertToInt64(vector._upper)
-            );
+            if (Avx512DQ.VL.IsSupported)
+            {
+                return Avx512DQ.VL.ConvertToVector128Int64(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.ConvertToInt64(vector._lower),
+                    Vector64.ConvertToInt64(vector._upper)
+                );
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{Int32}" /> to a <see cref="Vector128{Single}" />.</summary>
@@ -571,10 +586,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<uint> ConvertToUInt32(Vector128<float> vector)
         {
-            return Create(
-                Vector64.ConvertToUInt32(vector._lower),
-                Vector64.ConvertToUInt32(vector._upper)
-            );
+            if (Avx512DQ.VL.IsSupported)
+            {
+                return Avx512DQ.VL.ConvertToVector128UInt32(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.ConvertToUInt32(vector._lower),
+                    Vector64.ConvertToUInt32(vector._upper)
+                );
+            }
         }
 
         /// <summary>Converts a <see cref="Vector128{Double}" /> to a <see cref="Vector128{UInt64}" />.</summary>
@@ -585,10 +607,17 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe Vector128<ulong> ConvertToUInt64(Vector128<double> vector)
         {
-            return Create(
-                Vector64.ConvertToUInt64(vector._lower),
-                Vector64.ConvertToUInt64(vector._upper)
-            );
+            if (Avx512DQ.VL.IsSupported)
+            {
+                return Avx512DQ.VL.ConvertToVector128UInt64(vector);
+            }
+            else
+            {
+                return Create(
+                    Vector64.ConvertToUInt64(vector._lower),
+                    Vector64.ConvertToUInt64(vector._upper)
+                );
+            }
         }
 
         /// <summary>Copies a <see cref="Vector128{T}" /> to a given array.</summary>
