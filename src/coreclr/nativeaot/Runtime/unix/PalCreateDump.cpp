@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <sal.h>
 #include "config.h"
+#include <pthread.h>
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
