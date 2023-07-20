@@ -7893,7 +7893,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
             fgRemoveRestOfBlock = true;
         }
     }
-#if defined(TARGET_ARMARCH)
+#if defined(TARGET_ARM64)
     // Most managed-to-managed calls are indirect - it's not a problem for x64 which can use IP-relative addressing
     // in call instructions, e.g.:
     //
@@ -7910,23 +7910,28 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     //
     // So, to be able to do CSE/hoisting for call targets (up to 4 instructions to populate a 64-bit constant) we morph
     // calls to indirect early (instead of doing exactly the same in lowering where it's too late for CSE).
+    // It's not profitable to do it on arm32 with 32-bit constants, hence, limitted to TARGET_ARM64.
     //
-    else if (!opts.IsReadyToRun() && fgGlobalMorph && opts.OptimizationEnabled() && !compCurBB->isRunRarely() &&
-             (call->gtCallType == CT_USER_FUNC) && !call->IsVirtual() && !call->IsDelegateInvoke() &&
-             !call->IsUnmanaged() && !call->IsSpecialIntrinsic() && (call->gtCallCookie == nullptr))
+    // NAOT doesn't need this since it uses direct calls (which do support relocs)
+    // R2R already expands calls to have indirect cells from the beginning
+    //
+    // This optimization comes with a TP cost, so we limit it to blocks with BBF_BACKWARD_JUMP,
+    // mainly, to hoist call targets.
+    else if (fgGlobalMorph && opts.OptimizationEnabled() && ((compCurBB->bbFlags & BBF_BACKWARD_JUMP) != 0) &&
+             !compCurBB->isRunRarely() && !opts.IsReadyToRun() && (call->gtCallType == CT_USER_FUNC) &&
+             !call->IsVirtual() && !call->IsDelegateInvoke() && !call->IsUnmanaged() && !call->IsSpecialIntrinsic() &&
+             (call->gtCallCookie == nullptr))
     {
         CORINFO_CONST_LOOKUP addrInfo;
         info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
-        // Only do it for indirect targets
+        // Only do it for indirect targets, direct targets may use "bl reloc"
         if (addrInfo.accessType == IAT_PVALUE)
         {
             assert(addrInfo.addr != nullptr);
-            // NOTE: We should not use GTF_IND_INVARIANT here as the target might point to a mutable data (e.g. VM
-            // updates it
-            // when the target method is tiered up).
-            call->gtCallAddr = gtNewIndir(TYP_I_IMPL, gtNewIconHandleNode((size_t)addrInfo.addr, GTF_ICON_FTN_ADDR),
-                                          GTF_IND_NONFAULTING);
+            // NOTE: We should not use GTF_IND_INVARIANT as the content of ICON_FTN_ADDR may not be invariant
             call->gtCallType = CT_INDIRECT;
+            call->gtCallAddr = gtNewIndir(TYP_I_IMPL, gtNewIconHandleNode((size_t)addrInfo.addr, GTF_ICON_FTN_ADDR),
+                                          GTF_IND_NONFAULTING | GTF_IND_NONNULL);
         }
     }
 #endif
