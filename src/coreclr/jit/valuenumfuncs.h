@@ -16,6 +16,9 @@ ValueNumFuncDef(PhiDef, 3, false, false, false, false)             // Args: 0: l
 ValueNumFuncDef(PhiMemoryDef, 2, false, false, false, false)       // Args: 0: VN for basic block pointer, 1: VN of definition
 ValueNumFuncDef(Phi, 2, false, false, false, false)                // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 
+ValueNumFuncDef(ValWithMem, 2, false, false, false, false)         // Args: 0: value number; 1: value number representing memory dependencies
+ValueNumFuncDef(MemDepSetCons, 2, false, false, false, false)      // Args: 0: memory VN; 1: Memory dependency set
+
 ValueNumFuncDef(PtrToLoc, 2, false, true, false, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: local's number, 1: offset.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: offset.
 ValueNumFuncDef(PtrToStatic, 3, false, true, false, false)         // Pointer (byref) to a static variable (or possibly a field thereof, if the static variable is a struct).
