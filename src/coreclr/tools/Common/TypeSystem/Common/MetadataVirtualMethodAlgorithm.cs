@@ -1002,7 +1002,8 @@ namespace Internal.TypeSystem
             {
                 if (methodImpl.Decl == interfaceMethodDefinition)
                 {
-                    TypeDesc bodyOwningType = methodImpl.Body.OwningType;
+                    MethodDesc resolvedMethodImpl = methodImpl.Body;
+                    TypeDesc bodyOwningType = resolvedMethodImpl.OwningType;
                     TypeDesc checkOwningType = constrainedType;
                     bool isValidMethodImpl = (bodyOwningType == checkOwningType);
                     if (!isValidMethodImpl)
