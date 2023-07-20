@@ -3960,7 +3960,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'tvos' or '$(TargetOS)' == 'tvossimulator'">
+    <ItemGroup Condition="'$(TargetOS)' == 'tvos'">
         <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/StaticVirtualMethods/RegressionTests/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
@@ -3969,7 +3969,7 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator'">
+    <ItemGroup Condition="'$(TargetOS)' == 'iossimulator' or '$(TargetOS)' == 'tvossimulator'">
         <ExcludeList Include="$(XunitTestBinBase)/JIT/RyuJIT/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
