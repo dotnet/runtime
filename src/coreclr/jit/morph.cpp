@@ -5797,7 +5797,7 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
 #endif
     };
 
-    if (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC)
+    if (call->IsSpecialIntrinsic())
     {
         failTailCall("Might turn into an intrinsic");
         return nullptr;
@@ -7742,7 +7742,7 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     // Morph Type.op_Equality, Type.op_Inequality, and Enum.HasFlag
     //
     // We need to do these before the arguments are morphed
-    if (!call->gtArgs.AreArgsComplete() && (call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC))
+    if (!call->gtArgs.AreArgsComplete() && call->IsSpecialIntrinsic())
     {
         // See if this is foldable
         GenTree* optTree = gtFoldExprCall(call);
@@ -7913,15 +7913,19 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
     //
     else if (!opts.IsReadyToRun() && fgGlobalMorph && opts.OptimizationEnabled() && !compCurBB->isRunRarely() &&
              (call->gtCallType == CT_USER_FUNC) && !call->IsVirtual() && !call->IsDelegateInvoke() &&
-             !call->IsUnmanaged() && !call->CanTailCall() && (call->gtCallCookie == nullptr) &&
-             ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0))
+             !call->IsUnmanaged() && !call->IsSpecialIntrinsic() && (call->gtCallCookie == nullptr))
     {
         CORINFO_CONST_LOOKUP addrInfo;
         info.compCompHnd->getFunctionEntryPoint(call->gtCallMethHnd, &addrInfo);
         // Only do it for indirect targets
         if (addrInfo.accessType == IAT_PVALUE)
         {
-            call->gtCallAddr = gtNewIconEmbHndNode(nullptr, addrInfo.addr, GTF_ICON_FTN_ADDR, call->gtCallMethHnd);
+            assert(addrInfo.addr != nullptr);
+            // NOTE: We should not use GTF_IND_INVARIANT here as the target might point to a mutable data (e.g. VM
+            // updates it
+            // when the target method is tiered up).
+            call->gtCallAddr = gtNewIndir(TYP_I_IMPL, gtNewIconHandleNode((size_t)addrInfo.addr, GTF_ICON_FTN_ADDR),
+                                          GTF_IND_NONFAULTING);
             call->gtCallType = CT_INDIRECT;
         }
     }

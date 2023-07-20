@@ -5114,6 +5114,10 @@ struct GenTreeCall final : public GenTree
     {
         return (gtFlags & GTF_CALL_INLINE_CANDIDATE) != 0;
     }
+    bool IsSpecialIntrinsic() const
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0;
+    }
 
     bool IsR2ROrVirtualStubRelativeIndir()
     {
