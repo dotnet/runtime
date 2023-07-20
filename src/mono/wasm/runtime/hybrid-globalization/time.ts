@@ -18,13 +18,16 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
         const cultureInfo = {
             AmDesignator: "",
             PmDesignator: "",
+            LongTimePattern: "",
             ShortTimePattern: "",
         };
         const canonicalLocale = normalizeLocale(locale);
         const designators = getAmPmDesignators(canonicalLocale);
         cultureInfo.AmDesignator = designators.am;
         cultureInfo.PmDesignator = designators.pm;
-        const shortTimePattern = getShortTimePattern(canonicalLocale, designators);
+        const longTimePattern = getLongTimePattern(canonicalLocale, designators);
+        cultureInfo.LongTimePattern = longTimePattern;
+        const shortTimePattern = getShortTimePattern(longTimePattern);
         cultureInfo.ShortTimePattern = shortTimePattern;
         const result = Object.values(cultureInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
@@ -83,20 +86,20 @@ function getAmPmDesignators(locale: any)
     }
 }
 
-function getShortTimePattern(locale: string | undefined, designators: any) : string
+function getLongTimePattern(locale: string | undefined, designators: any) : string
 {
-    const hourIn24Format = 18; // later hours in some locales have night designators (instead of AM)
+    const hourIn24Format = 18; // later hours than 18 have night designators in some locales (instead of AM designator)
     const hourIn12Format = 6;
-    const localizedHour24 = (hourIn24Format).toLocaleString(locale);
+    const localizedHour24 = (hourIn24Format).toLocaleString(locale); // not all locales use arabic numbers
     const localizedHour12 = (hourIn12Format).toLocaleString(locale);
-    const pmTime = new Date(`August 19, 1975 ${hourIn24Format}:15:30`); // in the comments, en-US locale was used
+    const pmTime = new Date(`August 19, 1975 ${hourIn24Format}:15:30`); // in the comments, en-US locale is used:
     const shortTime = new Intl.DateTimeFormat(locale, { timeStyle: "medium" });
     const shortPmStyle = shortTime.format(pmTime); // 12:15:30 PM
     const minutes = pmTime.toLocaleTimeString(locale, { minute: "numeric" }); // 15
-    let shortPattern = shortPmStyle.replace(designators.pm, "tt").replace(minutes, "mm"); // 12:mm:30 tt
-    shortPattern = removeSeconds(shortPattern, pmTime); // 12:mm tt
+    const seconds = pmTime.toLocaleTimeString(locale, { second: "numeric" }); // 30
+    let pattern = shortPmStyle.replace(designators.pm, "tt").replace(minutes, "mm").replace(seconds, "ss"); // 12:mm:ss tt
 
-    const isISOStyle = shortPattern.includes(localizedHour24); // 24h or 12h pattern?
+    const isISOStyle = pattern.includes(localizedHour24); // 24h or 12h pattern?
     const localized0 = (0).toLocaleString(locale);
     const hour12WithPrefix = `${localized0}${localizedHour12}`; // 06
     const amTime = new Date(`August 19, 1975 ${hourIn12Format}:15:30`);
@@ -106,27 +109,33 @@ function getShortTimePattern(locale: string | undefined, designators: any) : str
     {
         const hasPrefix = h12Style.includes(hour12WithPrefix);
         hourPattern = hasPrefix ? "HH" : "H";
-        shortPattern = shortPattern.replace(localizedHour24, hourPattern);
+        pattern = pattern.replace(localizedHour24, hourPattern);
     }
     else // 12h
     {
         const hasPrefix = h12Style.includes(hour12WithPrefix);
         hourPattern = hasPrefix ? "hh" : "h";
-        shortPattern = shortPattern.replace(hasPrefix ? hour12WithPrefix : localizedHour12, hourPattern);
+        pattern = pattern.replace(hasPrefix ? hour12WithPrefix : localizedHour12, hourPattern);
     }
+
+    return pattern;
+}
+
+function getShortTimePattern(longTimePattern: string) : string
+{
+    const shortPattern = removeSeconds(longTimePattern); // h:mm tt
 
     return shortPattern;
 
-    function removeSeconds(shortPattern: string, pmTime: Date)
+    function removeSeconds(shortPattern: string)
     {
         // short dotnet pattern does not contain seconds while JS always contains them
-        const seconds = pmTime.toLocaleTimeString(locale, { second: "numeric" });
-        const secondsIdx = shortPattern.indexOf(seconds); // 12
+        const secondsIdx = shortPattern.indexOf("ss");
         if (secondsIdx > 0)
         {
-            const secondsWithSeparator = `${shortPattern[secondsIdx - 1]}${seconds}`;
-            // en-US: 12:mm:30 tt -> 12:mm tt;
-            // fr-CA: 12 h mm min 30 s -> 12 h mm min s
+            const secondsWithSeparator = `${shortPattern[secondsIdx - 1]}ss`;
+            // en-US: 12:mm:ss tt -> 12:mm tt;
+            // fr-CA: 12 h mm min ss s -> 12 h mm min s
             const shortPatternNoSecondsDigits = shortPattern.replace(secondsWithSeparator, "");
             if (shortPatternNoSecondsDigits.length > secondsIdx && shortPatternNoSecondsDigits[shortPatternNoSecondsDigits.length - 1] != "t")
             {

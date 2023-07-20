@@ -197,7 +197,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, "HH:mm" };
             yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, "HH:mm" };
-            yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, "HH:mm" }; // H:mm
+            yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, "HH:mm" }; // tth:mm
             yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, "tth:mm" };
             yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, "tth:mm" };
             yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, "tth:mm" };
