@@ -12,14 +12,10 @@ namespace System.IO.Tests
         [Fact]
         public void FlushFileOpenedForReading()
         {
-            // Save test file path so we can refer to the same file throughout the test.
             string testFilePath = GetTestFilePath();
 
-            // Write random bytes to file so it exists for reading later below.
-            const int FileByteCount = 100;
-            File.WriteAllBytes(testFilePath, RandomNumberGenerator.GetBytes(FileByteCount));
+            File.WriteAllBytes(testFilePath, RandomNumberGenerator.GetBytes(count: 100));
 
-            // Open the file for reading.
             using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read))
             {
                 // On Windows, flushing a file opened for reading should throw an exception. The docs

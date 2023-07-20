@@ -245,7 +245,6 @@ namespace System.IO.Tests
         [Fact]
         public void ReadFromDiskAfterFlushToDisk()
         {
-            // Save test file path so we can refer to the same file throughout the test.
             string testFilePath = GetTestFilePath();
 
             // Generate random bytes to write to file. NOTE: since we use unbuffered I/O,
@@ -260,7 +259,6 @@ namespace System.IO.Tests
             int byteCount = Random.Shared.Next(1, 10) * Environment.SystemPageSize;
             byte[] randomBytes = RandomNumberGenerator.GetBytes(byteCount);
 
-            // Create a new file and open it for writing.
             using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.CreateNew, FileAccess.Write))
             {
                 // Write random bytes to file. NOTE: this write does NOT use unbuffered I/O, i.e. the written bytes
@@ -279,14 +277,9 @@ namespace System.IO.Tests
             using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.Open, FileAccess.Read, options: NoBuffering))
             using (SectorAlignedMemory<byte> buffer = SectorAlignedMemory<byte>.Allocate(randomBytes.Length))
             {
-                // Since the Read() function may return fewer bytes than we requested, we need to keep track of
-                // how far into the file we are and how many bytes we read each time so we can continue reading
-                // until we have read the entire file.
                 int currentBytesRead = 0;
                 int nextFileReadOffset = 0;
 
-                // Keep reading until we reach the end of the file. When we reach the end of the file, the Read()
-                // function will return a count of 0 bytes which will cause the loop to terminate.
                 do
                 {
                     // Read bytes from disk. NOTE: this read uses unbuffered I/O, i.e. the bytes are read directly from
@@ -296,17 +289,11 @@ namespace System.IO.Tests
                     // of from disk, which would defeat the purpose of this test.
                     currentBytesRead = RandomAccess.Read(handle, buffer.GetSpan(), fileOffset: nextFileReadOffset);
 
-                    // Extract the actual and expected bytes as we go along. We are basically reading chunks of bytes from
-                    // the file and comparing them to the corresponding chunks of bytes we wrote to the file earlier. NOTE:
-                    // when we reach the end of the file, the Read() function will return a count of 0 bytes which will cause
-                    // the spans created below to be zero length - this is NOT an error and does not need special handling.
                     Span<byte> expectedBytes = randomBytes.AsSpan(nextFileReadOffset, currentBytesRead);
                     Span<byte> actualBytes = buffer.GetSpan().Slice(0, currentBytesRead);
 
-                    // Confirm the chunk of bytes we read match the corresponding chunk of bytes we wrote earlier.
                     Assert.True(expectedBytes.SequenceEqual(actualBytes));
 
-                    // Update the offset into the file so we can read the next chunk of bytes.
                     nextFileReadOffset += currentBytesRead;
                 }
                 while (currentBytesRead != 0);
