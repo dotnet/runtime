@@ -4,6 +4,7 @@ import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { OUTER_SEPARATOR } from "./helpers";
+import { getFirstDayOfWeek, getFirstWeekOfYear } from "./locales";
 
 /* eslint-disable no-console */
 /* eslint-disable no-inner-declarations */
@@ -20,6 +21,8 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
             PmDesignator: "",
             LongTimePattern: "",
             ShortTimePattern: "",
+            FirstDayOfWeek: -1,
+            FirstWeekOfYear: -1,
         };
         const canonicalLocale = normalizeLocale(locale);
         const designators = getAmPmDesignators(canonicalLocale);
@@ -29,6 +32,8 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
         cultureInfo.LongTimePattern = longTimePattern;
         const shortTimePattern = getShortTimePattern(longTimePattern);
         cultureInfo.ShortTimePattern = shortTimePattern;
+        cultureInfo.FirstDayOfWeek = getFirstDayOfWeek(canonicalLocale);
+        cultureInfo.FirstWeekOfYear = getFirstWeekOfYear(canonicalLocale);
         const result = Object.values(cultureInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
         {
@@ -149,3 +154,4 @@ function getShortTimePattern(longTimePattern: string) : string
         return shortPattern;
     }
 }
+

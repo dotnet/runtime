@@ -10,20 +10,6 @@ namespace System.Globalization
     internal sealed partial class CultureData
     {
         private const int CULTURE_INFO_BUFFER_LEN = 100;
-        private int JsGetLocaleInfo(LocaleNumberData type) //should we incorporate this method into JSLoadCultureInfoFromBrowser?
-        {
-            Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
-
-            int result = Interop.JsGlobalization.GetLocaleInfoInt(_sWindowsName, (uint)type, out int exception, out object ex_result);
-            if (exception != 0)
-            {
-                // Failed, just use 0
-                Debug.Fail($"[CultureData.IcuGetLocaleInfo(LocaleNumberData)] failed with {ex_result}");
-                result = 0;
-            }
-
-            return result;
-        }
 
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {
@@ -35,12 +21,16 @@ namespace System.Globalization
                 throw new Exception((string)exResult);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
-            if (subresults.Length < 4)
+            if (subresults.Length < 6)
                 throw new Exception("CultureInfo recieved from the Browser is in incorrect format.");
             culture._sAM1159 = subresults[0];
             culture._sPM2359 = subresults[1];
             culture._saLongTimes = new string[] { subresults[2] };
             culture._saShortTimes = new string[] { subresults[3] };
+            if (int.TryParse(subresults[4], out int firstDayOfWeek) && firstDayOfWeek != -1)
+                culture._iFirstDayOfWeek = firstDayOfWeek;
+            if (int.TryParse(subresults[5], out int firstWeekOfYear) && firstWeekOfYear != -1)
+                culture._iFirstWeekOfYear = firstWeekOfYear;
             return culture;
         }
     }

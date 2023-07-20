@@ -8,8 +8,6 @@ internal static partial class Interop
     internal static unsafe partial class JsGlobalization
     {
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern unsafe int GetLocaleInfoInt(in string culture, uint localeNumberData, out int exceptionalResult, out object result);
-        [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern unsafe int GetCultureInfo(in string culture, char* buffer, int bufferLength, out int exceptionalResult, out object result);
     }
 }

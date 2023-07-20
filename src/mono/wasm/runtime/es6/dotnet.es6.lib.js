@@ -119,7 +119,6 @@ let linked_functions = [
     "mono_wasm_ends_with",
     "mono_wasm_index_of",
     "mono_wasm_get_calendar_info",
-    "mono_wasm_get_locale_info",
     "mono_wasm_get_culture_info",
 
     "icudt68_dat",

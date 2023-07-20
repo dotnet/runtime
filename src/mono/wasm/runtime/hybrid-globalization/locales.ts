@@ -1,38 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { wrap_error_root } from "../invoke-js";
-import { mono_wasm_new_external_root } from "../roots";
-import { monoStringToString } from "../strings";
-import { Int32Ptr } from "../types/emscripten";
-import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-
-
-export function mono_wasm_get_locale_info(culture: MonoStringRef, localeNumberData: number, isException: Int32Ptr, exAddress: MonoObjectRef): number{
-
-    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
-        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
-    try {
-        const cultureName = monoStringToString(cultureRoot);
-        const locale : any = cultureName ? cultureName : undefined;
-        if (localeNumberData == 0x0000100C)
-            return getFirstDayOfWeek(locale);
-        if (localeNumberData == 0x0000100D)
-            return getFirstWeeOfYear(locale);
-        // other functions are still supported by ICU, this function should not be called for them
-        throw new Error(`LocaleNumberData of value ${localeNumberData} should be supported by ICU.`);
-    }
-    catch (ex: any) {
-        wrap_error_root(isException, ex, exceptionRoot);
-        return -1;
-    }
-    finally {
-        cultureRoot.release();
-        exceptionRoot.release();
-    }
-}
-
-function getFirstDayOfWeek(locale: string)
+export function getFirstDayOfWeek(locale: string)
 {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo)
@@ -57,7 +26,7 @@ function getFirstDayOfWeek(locale: string)
     return 1;
 }
 
-function getFirstWeeOfYear(locale: string)
+export function getFirstWeekOfYear(locale: string)
 {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo)
