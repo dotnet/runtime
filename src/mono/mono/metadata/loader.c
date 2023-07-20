@@ -651,7 +651,8 @@ find_method_simple (MonoClass *klass, const char *name, const char *qname, const
 						if (method_maybe != NULL) {
 							if (ignore_cmods)
 								return find_method_simple (klass, name, qname, fqname, sig, from_class, FALSE, error);
-							// Throw Arg_AmbiguousMatchException_UnsafeAccessor exception
+							mono_error_set_generic_error (error, "System.Reflection", "AmbiguousMatchException", "Ambiguity in binding of UnsafeAccessorAttribute.");
+							return NULL;
 						}
 						method_maybe = method;
 					}
@@ -716,7 +717,8 @@ find_method_slow (MonoClass *klass, const char *name, const char *qname, const c
 			if (matched) {
 				if (ignore_cmods)
 					return find_method_slow (klass, name, qname, fqname, sig, FALSE, error);
-				// Throw Arg_AmbiguousMatchException_UnsafeAccessor exception
+				mono_error_set_generic_error (error, "System.Reflection", "AmbiguousMatchException", "Ambiguity in binding of UnsafeAccessorAttribute.");
+				return NULL;
 			}
 			matched = TRUE;
 			result->i = i;
@@ -737,6 +739,8 @@ find_method_in_class_unsafe_accessor (MonoClass *klass, const char *name, const 
 		method = find_method_simple (klass, name, qname, fqname, sig, from_class, ignore_cmods, error);
 	if (method)
 		return method;
+	if (!is_ok(error) && mono_error_get_error_code (error) == MONO_ERROR_GENERIC)
+		return NULL;
 
 	mono_class_setup_methods (klass); /* FIXME don't swallow the error here. */
 	/*
@@ -753,8 +757,12 @@ find_method_in_class_unsafe_accessor (MonoClass *klass, const char *name, const 
 	}
 	
 	MethodLookupResultInfo *result = find_method_slow (klass, name, qname, fqname, sig, ignore_cmods, error);
+	if (!is_ok(error) && mono_error_get_error_code (error) == MONO_ERROR_GENERIC)
+		return NULL;
+
 	int mcount = mono_class_get_method_count (klass);
 
+	g_assert (result != NULL);
 	if (result->matched) {
 		if (result->i < mcount)
 			return mono_class_get_method_by_index (from_class, result->i);
