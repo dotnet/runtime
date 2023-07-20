@@ -77,7 +77,12 @@ public abstract class AppTestBase : BlazorWasmTestBase
         if (options.BrowserQueryString != null)
             queryString += "&" + string.Join("&", options.BrowserQueryString.Select(kvp => $"{kvp.Key}={kvp.Value}"));
 
-        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => url + queryString);
+        page = await runner.RunAsync(runCommand, runArgs, onConsoleMessage: OnConsoleMessage, modifyBrowserUrl: url => 
+        {
+            url += queryString;
+            _testOutput.WriteLine($"Opening browser at {url}");
+            return url;
+        });
 
         void OnConsoleMessage(IConsoleMessage msg)
         {
