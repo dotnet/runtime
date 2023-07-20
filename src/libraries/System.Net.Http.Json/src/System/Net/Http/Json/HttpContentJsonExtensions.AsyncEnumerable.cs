@@ -14,6 +14,37 @@ namespace System.Net.Http.Json
 {
     public static partial class HttpContentJsonExtensions
     {
+        /// <summary>
+        /// Reads the HTTP content and returns the value that results from deserializing the content as
+        /// JSON in an async enumerable operation.
+        /// </summary>
+        /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
+        /// <param name="content"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>An <see cref="IAsyncEnumerable{TValue}"/> that represents the deserialized response body.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="content"/> is <see langword="null"/>.
+        /// </exception>
+        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
+        public static IAsyncEnumerable<TValue?> ReadFromJsonAsAsyncEnumerable<TValue>(
+            this HttpContent content,
+            CancellationToken cancellationToken = default) =>
+            ReadFromJsonAsAsyncEnumerable<TValue>(content, options: null, cancellationToken: cancellationToken);
+
+        /// <summary>
+        /// Reads the HTTP content and returns the value that results from deserializing the content as
+        /// JSON in an async enumerable operation.
+        /// </summary>
+        /// <typeparam name="TValue">The target type to deserialize to.</typeparam>
+        /// <param name="content">The content to read from.</param>
+        /// <param name="options">Options to control the behavior during deserialization.
+        /// The default options are those specified by <see cref="JsonSerializerDefaults.Web"/>.</param>
+        /// <param name="cancellationToken"></param>
+        /// <returns>An <see cref="IAsyncEnumerable{TValue}"/> that represents the deserialized response body.</returns>
+        /// <exception cref="ArgumentNullException">
+        /// The <paramref name="content"/> is <see langword="null"/>.
+        /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
         public static IAsyncEnumerable<TValue?> ReadFromJsonAsAsyncEnumerable<TValue>(
@@ -27,15 +58,6 @@ namespace System.Net.Http.Json
             }
 
             return ReadFromJsonAsAsyncEnumerableCore<TValue>(content, options, cancellationToken);
-        }
-
-        [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        public static IAsyncEnumerable<TValue?> ReadFromJsonAsAsyncEnumerable<TValue>(
-            this HttpContent content,
-            CancellationToken cancellationToken = default)
-        {
-            return ReadFromJsonAsAsyncEnumerable<TValue>(content, options: null, cancellationToken: cancellationToken);
         }
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
