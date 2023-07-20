@@ -896,8 +896,6 @@ public class ILInliningVersioningTest<T>
         Assert.AreEqual(ILInliningTest.TestDifferentIntValue(), actualMethodCallResult);
     }
 
-    
-
     private static void ValidateTestHasCrossModuleImplementation(string testName, List<string> testMethodData, bool expectedToBePresent = true)
     {
         Console.WriteLine(testName);
