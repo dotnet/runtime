@@ -399,6 +399,7 @@ static unsafe class UnsafeAccessorsTests
 
         var instance = new InheritanceDerived();
         Assert.Throws<MissingMethodException>(() => OnBase(instance));
+        Assert.Throws<MissingMethodException>(() => BaseVirtual(instance));
         Assert.Equal(nameof(OnDerived), OnDerived(instance));
         Assert.Equal($"{nameof(InheritanceDerived)}.{nameof(Abstract)}", Abstract(instance));
         Assert.Equal($"{nameof(InheritanceDerived)}.{nameof(Virtual)}", Virtual(instance));
@@ -406,6 +407,9 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnBase))]
         extern static string OnBase(InheritanceDerived i);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(BaseVirtual))]
+        extern static string BaseVirtual(InheritanceDerived target);
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnDerived))]
         extern static string OnDerived(InheritanceDerived i);
@@ -418,20 +422,6 @@ static unsafe class UnsafeAccessorsTests
 
         [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(NewVirtual))]
         extern static string NewVirtual(InheritanceBase target);
-    }
-
-    [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/89212", TestRuntimes.Mono)]
-    public static void Verify_InheritanceMethodResolution_BaseViaDerived()
-    {
-        Console.WriteLine($"Running {nameof(Verify_InheritanceMethodResolution_BaseViaDerived)}");
-
-        var instance = new InheritanceDerived();
-
-        Assert.Equal($"{nameof(InheritanceBase)}.{nameof(BaseVirtual)}", BaseVirtual(instance));
-
-        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(BaseVirtual))]
-        extern static string BaseVirtual(InheritanceDerived target);
     }
 
     [Fact]
