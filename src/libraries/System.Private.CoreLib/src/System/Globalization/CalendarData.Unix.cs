@@ -7,13 +7,14 @@ namespace System.Globalization
 {
     internal sealed partial class CalendarData
     {
-        private bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId)
+        private static bool LoadCalendarDataFromSystemCore(string localeName, CalendarId calendarId)
         {
 #if TARGET_BROWSER
             return GlobalizationMode.Hybrid ?
                 JSLoadCalendarDataFromBrowser(localeName, calendarId) :
                 IcuLoadCalendarDataFromSystem(localeName, calendarId);
 #endif
+                IcuLoadCalendarDataFromSystem(localeName, calendarId);
         }
 
 #pragma warning disable IDE0060
