@@ -20,6 +20,11 @@ namespace System.Text.Json.Tests
         public static List<float> Floats { get; set; }
         public static List<double> Doubles { get; set; }
         public static List<decimal> Decimals { get; set; }
+#if NETCOREAPP
+        public static List<Int128> Int128s { get; set; }
+        public static List<UInt128> UInt128s { get; set; }
+        public static List<Half> Halfs { get; set; }
+#endif
 
         public static List<byte?> NullableBytes { get; set; }
         public static List<sbyte?> NullableSBytes { get; set; }
@@ -32,6 +37,11 @@ namespace System.Text.Json.Tests
         public static List<float?> NullableFloats { get; set; }
         public static List<double?> NullableDoubles { get; set; }
         public static List<decimal?> NullableDecimals { get; set; }
+#if NETCOREAPP
+        public static List<Int128?> NullableInt128s { get; set; }
+        public static List<UInt128?> NullableUInt128s { get; set; }
+        public static List<Half?> NullableHalfs { get; set; }
+#endif
 
         public static byte[] JsonData { get; set; }
 
@@ -237,6 +247,58 @@ namespace System.Text.Json.Tests
             }
             #endregion
 
+#if NETCOREAPP
+            #region generate Int128s
+            Int128s = new List<Int128>
+            {
+                0,
+                (Int128)long.MaxValue + 1,
+                (Int128)long.MinValue - 1,
+                Int128.MaxValue,
+                Int128.MinValue
+            };
+            for (int i = 0; i < numberOfItems; i++)
+            {
+                Int128 value = random.Next(int.MinValue, int.MaxValue);
+                if (value < 0)
+                    value += Int128.MinValue;
+                else
+                    value += Int128.MaxValue;
+                Int128s.Add(value);
+            }
+            #endregion
+
+            #region generate UInt128s
+            UInt128s = new List<UInt128>
+            {
+                (UInt128)ulong.MaxValue + 1,
+                UInt128.MaxValue,
+                UInt128.MinValue
+            };
+            for (int i = 0; i < numberOfItems; i++)
+            {
+                UInt128 value = (UInt128)random.Next(int.MinValue, int.MaxValue);
+                UInt128s.Add(value);
+            }
+            #endregion
+
+            #region generate Halfs
+            Halfs = new List<Half>
+            {
+                (Half)0.000,
+                (Half)1.1234e1,
+                (Half)(-1.1234e1),
+                Half.MaxValue,
+                Half.MinValue
+            };
+            for (int i = 0; i < numberOfItems; i++)
+            {
+                Half value = JsonTestHelper.NextHalf(random);
+                Halfs.Add(value);
+            }
+            #endregion
+#endif
+
             #region generate the json
             var builder = new StringBuilder();
             builder.Append("{");
@@ -319,6 +381,11 @@ namespace System.Text.Json.Tests
             NullableFloats = new List<float?>(Floats.Select(num => (float?)num));
             NullableDoubles = new List<double?>(Doubles.Select(num => (double?)num));
             NullableDecimals = new List<decimal?>(Decimals.Select(num => (decimal?)num));
+#if NETCOREAPP
+            NullableInt128s = new List<Int128?>(Int128s.Select(num => (Int128?)num));
+            NullableUInt128s = new List<UInt128?>(UInt128s.Select(num => (UInt128?)num));
+            NullableHalfs = new List<Half?>(Halfs.Select(num => (Half?)num));
+#endif
 
             string jsonString = builder.ToString();
             JsonData = Encoding.UTF8.GetBytes(jsonString);

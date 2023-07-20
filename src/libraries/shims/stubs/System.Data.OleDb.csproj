@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ForwardedType Include="System.Data.OleDb.OleDbCommand" />
+    <ForwardedType Include="System.Data.OleDb.OleDbCommandBuilder" />
+    <ForwardedType Include="System.Data.OleDb.OleDbConnection" />
+    <ForwardedType Include="System.Data.OleDb.OleDbConnectionStringBuilder"
+                   InnerClass="OleDbServiceValues;OleDbServicesConverter;OleDbConnectionStringBuilderConverter" />
+    <ForwardedType Include="System.Data.OleDb.OleDbDataAdapter" />
+    <ForwardedType Include="System.Data.OleDb.OleDbDataReader" />
+    <ForwardedType Include="System.Data.OleDb.OleDbEnumerator" />
+    <ForwardedType Include="System.Data.OleDb.OleDbError" />
+    <ForwardedType Include="System.Data.OleDb.OleDbErrorCollection" />
+    <ForwardedType Include="System.Data.OleDb.OleDbException"
+                   InnerClass="ErrorCodeConverter" />
+    <ForwardedType Include="System.Data.OleDb.OleDbFactory" />
+    <ForwardedType Include="System.Data.OleDb.OleDbInfoMessageEventArgs" />
+    <ForwardedType Include="System.Data.OleDb.OleDbInfoMessageEventHandler" />
+    <ForwardedType Include="System.Data.OleDb.OleDbLiteral" />
+    <ForwardedType Include="System.Data.OleDb.OleDbMetaDataCollectionNames" />
+    <ForwardedType Include="System.Data.OleDb.OleDbMetaDataColumnNames" />
+    <ForwardedType Include="System.Data.OleDb.OleDbParameter"
+                   InnerClass="OleDbParameterConverter" />
+    <ForwardedType Include="System.Data.OleDb.OleDbParameterCollection" />
+    <ForwardedType Include="System.Data.OleDb.OleDbRowUpdatedEventArgs" />
+    <ForwardedType Include="System.Data.OleDb.OleDbRowUpdatedEventHandler" />
+    <ForwardedType Include="System.Data.OleDb.OleDbRowUpdatingEventArgs" />
+    <ForwardedType Include="System.Data.OleDb.OleDbRowUpdatingEventHandler" />
+    <ForwardedType Include="System.Data.OleDb.OleDbSchemaGuid" />
+    <ForwardedType Include="System.Data.OleDb.OleDbTransaction" />
+    <ForwardedType Include="System.Data.OleDb.OleDbType" />
+  </ItemGroup>
+
+</Project>

@@ -16,7 +16,9 @@ The .NET Foundation licenses this file to you under the MIT license.
   <PropertyGroup>
     <CppLinker>link</CppLinker>
     <CppLibCreator>lib</CppLibCreator>
+    <ObjectSuffix>.obj</ObjectSuffix>
     <LibrarySuffix>.lib</LibrarySuffix>
+    <ObjectSuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.obj</ObjectSuffix>
     <LibrarySuffix Condition="'$(ControlFlowGuard)' == 'Guard'">.GuardCF.lib</LibrarySuffix>
     <FullRuntimeName>Runtime.WorkstationGC</FullRuntimeName>
     <FullRuntimeName Condition="'$(ServerGarbageCollection)' == 'true' or '$(ControlFlowGuard)' == 'Guard'">Runtime.ServerGC</FullRuntimeName>
@@ -35,7 +37,7 @@ The .NET Foundation licenses this file to you under the MIT license.
   <Target Name="SetupOSSpecificProps" DependsOnTargets="$(IlcDynamicBuildPropertyDependencies)">
 
     <ItemGroup>
-      <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(LibrarySuffix)" />
+      <NativeLibrary Include="$(IlcSdkPath)$(BootstrapperName)$(ObjectSuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(FullRuntimeName)$(LibrarySuffix)" />
       <NativeLibrary Include="$(IlcSdkPath)$(EventPipeName)$(LibrarySuffix)" />
       <NativeLibrary Condition="'$(_targetArchitecture)' == 'x64'" Include="$(IlcSdkPath)$(VxSortSupportName)$(LibrarySuffix)" />

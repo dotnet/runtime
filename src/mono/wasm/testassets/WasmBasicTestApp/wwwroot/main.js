@@ -10,6 +10,10 @@ if (testCase == null) {
     exit(2, new Error("Missing test scenario. Supply query argument 'test'."));
 }
 
+function testOutput(msg) {
+    console.log(`TestOutput -> ${msg}`);
+}
+
 // Prepare base runtime parameters
 dotnet
     .withElementOnExit()
@@ -20,6 +24,37 @@ dotnet
 switch (testCase) {
     case "AppSettingsTest":
         dotnet.withApplicationEnvironment(params.get("applicationEnvironment"));
+        break;
+    case "DownloadResourceProgressTest":
+        if (params.get("failAssemblyDownload") === "true") {
+            let assemblyCounter = 0;
+            let failAtAssemblyNumbers = [
+                Math.floor(Math.random() * 5),
+                Math.floor(Math.random() * 5) + 5,
+                Math.floor(Math.random() * 5) + 10
+            ];
+            dotnet.withDiagnosticTracing(true).withResourceLoader((type, name, defaultUri, integrity) => {
+                if (type !== "assembly")
+                    return defaultUri;
+
+                assemblyCounter++;
+                if (!failAtAssemblyNumbers.includes(assemblyCounter))
+                    return defaultUri;
+
+                testOutput("Throw error instead of downloading resource");
+                const error = new Error("Simulating a failed fetch");
+                error.silent = true;
+                throw error;
+            });
+        }
+        dotnet.withModuleConfig({
+            onDownloadResourceProgress: (loaded, total) => {
+                console.log(`DownloadResourceProgress: ${loaded} / ${total}`);
+                if (loaded === total && loaded !== 0) {
+                    testOutput("DownloadResourceProgress: Finished");
+                }
+            }
+        });
         break;
 }
 
@@ -48,9 +83,13 @@ try {
             exports.AppSettingsTest.Run();
             exit(0);
             break;
+        case "DownloadResourceProgressTest":
+            exit(0);
+            break;
         default:
             console.error(`Unknown test case: ${testCase}`);
             exit(3);
+            break;
     }
 } catch (e) {
     exit(1, e);

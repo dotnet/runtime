@@ -115,6 +115,10 @@ jobs:
         - name: _monoAotCrossCompileArg
           value: 'cross'
 
+      # Set no native sanitizers by default
+      - name: _nativeSanitizersArg
+        value: ''
+
       - ${{ each variableTemplate in parameters.extraVariablesTemplates }}:
         - template: ${{ variableTemplate.template }}
           parameters:
@@ -138,7 +142,6 @@ jobs:
 
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
-
     steps:
     - checkout: self
       clean: true
