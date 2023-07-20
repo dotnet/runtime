@@ -571,10 +571,3 @@ int minipal_getcpufeatures(void)
 
     return result;
 }
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-void minipal_cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
-{
-    __cpuidex(cpuInfo, function_id, subFunction_id);
-}
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)

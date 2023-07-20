@@ -73,10 +73,6 @@ extern "C"
 
 int minipal_getcpufeatures(void);
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-void minipal_cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
-#endif
-
 #ifdef __cplusplus
 }
 #endif // __cplusplus
