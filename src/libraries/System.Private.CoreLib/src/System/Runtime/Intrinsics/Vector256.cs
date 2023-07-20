@@ -412,7 +412,7 @@ namespace System.Runtime.Intrinsics
         {
             if (Avx512DQ.VL.IsSupported)
             {
-                return Avx512DQ.VL.ConvertToVector256Int64(vector);
+                return Avx512DQ.VL.ConvertToVector256Int64WithTruncation(vector);
             }
             else
             {
@@ -493,7 +493,7 @@ namespace System.Runtime.Intrinsics
         {
             if (Avx512DQ.VL.IsSupported)
             {
-                return Avx512DQ.VL.ConvertToVector256UInt32(vector);
+                return Avx512DQ.VL.ConvertToVector256UInt32WithTruncation(vector);
             }
             else
             {
@@ -514,7 +514,7 @@ namespace System.Runtime.Intrinsics
         {
             if (Avx512DQ.VL.IsSupported)
             {
-                return Avx512DQ.VL.ConvertToVector256UInt64(vector);
+                return Avx512DQ.VL.ConvertToVector256UInt64WithTruncation(vector);
             }
             else
             {
