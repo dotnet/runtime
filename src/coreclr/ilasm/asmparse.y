@@ -142,6 +142,7 @@
 
         /* newly added tokens go here */
 %token  CONSTRAINT_
+%token  CONST_
 
         /* nonTerminals */
 %type <string> dottedName id methodName atOpt slashedName
@@ -495,7 +496,8 @@ typarAttribs            : /* EMPTY */                       { $$ = 0; }
                         | typarAttrib typarAttribs          { $$ = $1 | $2; }
                         ;
 
-typars                  : typarAttribs tyBound dottedName typarsRest {$$ = new TyParList($1, $2, $3, $4);}
+typars                  : CONST_ type dottedName typarsRest {$$ = new TyParList($2, NULL, $3, $4); }
+                        | typarAttribs tyBound dottedName typarsRest {$$ = new TyParList($1, $2, $3, $4);}
                         | typarAttribs dottedName typarsRest   {$$ = new TyParList($1, NULL, $2, $3);}
                         ;
 

@@ -63,6 +63,12 @@ public:
         bound->appendInt32(0); // zero terminator
         attrs = a; name = n; next = nx;
     };
+    TyParList(BinStr* a, BinStr* b, LPCUTF8 n, TyParList* nx = NULL)
+    {
+        bound  = (b == NULL) ? new BinStr() : b;
+        bound->appendInt32(0); // zero terminator
+        type = a; name = n; next = nx;
+    };
     ~TyParList()
     {
         if( bound) delete bound;
@@ -171,6 +177,7 @@ public:
     BinStr* Bound() { return bound; };
 private:
     BinStr* bound;
+    BinStr* type;
     LPCUTF8 name;
     TyParList* next;
     DWORD   attrs;
