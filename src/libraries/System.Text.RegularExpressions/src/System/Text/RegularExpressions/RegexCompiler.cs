@@ -903,6 +903,7 @@ namespace System.Text.RegularExpressions
 
                     if (primarySet.Chars is not null)
                     {
+                        Debug.Assert(primarySet.Chars.Length > 0);
                         switch (primarySet.Chars.Length)
                         {
                             case 1:
@@ -926,18 +927,22 @@ namespace System.Text.RegularExpressions
                                 Call(primarySet.Negated ? s_spanIndexOfAnyExceptCharCharChar : s_spanIndexOfAnyCharCharChar);
                                 break;
 
-                            default:
+                            case 4 or 5:
+                                // tmp = ...IndexOfAny("abcd");
+                                // Note that this case differs slightly from the source generator, where it might choose to use
+                                // SearchValues instead of a literal, but there's extra cost to doing so for RegexCompiler so
+                                // it just always uses IndexOfAny(span).
                                 Ldstr(new string(primarySet.Chars));
                                 Call(s_stringAsSpanMethod);
                                 Call(primarySet.Negated ? s_spanIndexOfAnyExceptSpan : s_spanIndexOfAnySpan);
                                 break;
+
+                            default:
+                                // tmp = ...IndexOfAny(s_searchValues);
+                                LoadSearchValues(primarySet.Chars);
+                                Call(primarySet.Negated ? s_spanIndexOfAnyExceptSearchValues : s_spanIndexOfAnySearchValues);
+                                break;
                         }
-                    }
-                    else if (primarySet.AsciiSet is not null)
-                    {
-                        Debug.Assert(!primarySet.Negated);
-                        LoadSearchValues(primarySet.AsciiSet);
-                        Call(s_spanIndexOfAnySearchValues);
                     }
                     else if (primarySet.Range is not null)
                     {
