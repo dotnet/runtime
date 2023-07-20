@@ -3973,19 +3973,10 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/RyuJIT/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/RyuJIT/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/regressions/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/44465/*">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Loader/classloader/DefaultInterfaceMethods/regressions/**">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/Loader/classloader/generics/Instantiation/**">
+        <ExcludeList Include="$(XunitTestBinBase)/Regressions/coreclr/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
     </ItemGroup>
