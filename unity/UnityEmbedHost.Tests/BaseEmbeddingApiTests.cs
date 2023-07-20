@@ -771,6 +771,18 @@ public abstract class BaseEmbeddingApiTests
         Assert.That(isInterface, Is.EqualTo(expectedResult));
     }
 
+    [TestCase(typeof(RockLover), nameof(RockLover.GenericMethod), null,  true)]
+    [TestCase(typeof(Cat),       nameof(Cat.Meow),                null, false)]
+    [TestCase(typeof(Cat),       nameof(Cat.VirtualMethodOnCat),  null, false)]
+    [TestCase(typeof(Cat),       nameof(Cat.AbstractOnAnimal),    null, false)]
+    public void UnityMethodIsGenericReturnsProperValue(Type objType, string methodName, Type[]? parameters, bool expectedResult)
+    {
+        var baseMethodInfo = objType.FindInstanceMethodByName(methodName, parameters);
+
+        bool isGeneric = ClrHost.unity_mono_method_is_generic(baseMethodInfo.MethodHandle);
+        Assert.That(isGeneric, Is.EqualTo(expectedResult));
+    }
+
     static List<object?> FlattenedArray(Array arr)
     {
         var result = new List<object?>();

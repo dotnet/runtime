@@ -106,6 +106,8 @@ struct RockLover
 {
     public Rock FavoriteRock = new Rock();
 
+    public void GenericMethod<T>() { }
+
     public RockLover()
     {
     }
