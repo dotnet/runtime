@@ -69,18 +69,11 @@ namespace System.Reflection
 
                 if (parameterType.IsPointer)
                 {
-                    il.Emit(OpCodes.Unbox_Any, typeof(IntPtr));
+                    Unbox(il, typeof(IntPtr));
                 }
                 else if (parameterType.IsValueType)
                 {
-                    if (parameterType.IsNullableOfT)
-                    {
-                        EmitTrueNullableUnbox(il, parameterType);
-                    }
-                    else
-                    {
-                        il.Emit(OpCodes.Unbox_Any, parameterType);
-                    }
+                    Unbox(il, parameterType);
                 }
             }
 
@@ -133,18 +126,11 @@ namespace System.Reflection
 
                 if (parameterType.IsPointer)
                 {
-                    il.Emit(OpCodes.Unbox_Any, typeof(IntPtr));
+                    Unbox(il, typeof(IntPtr));
                 }
                 else if (parameterType.IsValueType)
                 {
-                    if (parameterType.IsNullableOfT)
-                    {
-                        EmitTrueNullableUnbox(il, parameterType);
-                    }
-                    else
-                    {
-                        il.Emit(OpCodes.Unbox_Any, parameterType);
-                    }
+                    Unbox(il, parameterType);
                 }
             }
 
@@ -210,10 +196,11 @@ namespace System.Reflection
             return (InvokeFunc_RefArgs)dm.CreateDelegate(typeof(InvokeFunc_RefArgs), target: null);
         }
 
-        private static void EmitTrueNullableUnbox(ILGenerator il, Type parameterType)
+        private static void Unbox(ILGenerator il, Type parameterType)
         {
-            // Unbox the true Nullable<T> created by reflection to a Nullable<T> without using
-            // OpCodes.Unbox since unboxing that is not necessarily a valid CLI operation.
+            // Unbox without using OpCodes.Unbox\UnboxAny to avoid a type check since that was already done by reflection.
+            // Also required for unboxing true nullables created by reflection since that is not necessarily a valid CLI operation.
+            Debug.Assert(parameterType.IsValueType);
             il.Emit(OpCodes.Call, Methods.Object_GetRawData());
             il.Emit(OpCodes.Ldobj, parameterType);
         }
