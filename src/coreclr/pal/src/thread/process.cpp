@@ -33,6 +33,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #include "pal/stackstring.hpp"
 #include "pal/signal.hpp"
 
+#include <generatedumpflags.h>
 #include <clrconfignocache.h>
 
 #include <errno.h>

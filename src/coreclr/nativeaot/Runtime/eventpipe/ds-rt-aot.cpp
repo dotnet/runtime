@@ -249,22 +249,4 @@ ds_rt_aot_set_environment_variable (const ep_char16_t *name, const ep_char16_t *
 #endif
 }
 
-bool
-ds_rt_aot_generate_core_dump (
-    const ep_char16_t* dumpName,
-    int32_t dumpType,
-    uint32_t flags,
-    ep_char8_t *errorMessageBuffer,
-    int32_t cbErrorMessageBuffer)
-{
-#ifdef TARGET_UNIX
-    ep_char8_t *dumpNameUtf8 = ep_rt_utf16le_to_utf8_string (dumpName, ep_rt_utf16_string_len (dumpName));
-    extern bool PalGenerateCoreDump(const char* dumpName, int dumpType, uint32_t flags, char* errorMessageBuffer, int cbErrorMessageBuffer);
-    return PalGenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer);
-#else
-    return false;
-#endif
-}
-
-
 #endif /* ENABLE_PERFTRACING */

@@ -13,6 +13,8 @@
 #include <ctype.h>
 #include <cstdarg>
 #include <unistd.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -50,11 +52,37 @@
 #include <clrconfignocache.h>
 #include <generatedumpflags.h>
 
-// Crash dump generating program arguments
-#define MAX_ARGV_ENTRIES 16
-const char* g_argvCreateDump[MAX_ARGV_ENTRIES];
+// Crash dump generating program arguments. MAX_ARGV_ENTRIES is the max number
+// of entries if every createdump option/argument is passed.
+#define MAX_ARGV_ENTRIES 32 
+const char* g_argvCreateDump[MAX_ARGV_ENTRIES] = { nullptr };
 char* g_szCreateDumpPath = nullptr;
 char* g_ppidarg  = nullptr;
+
+/*++
+Function:
+    PlatformGetCurrentThreadId
+
+    Returns the current thread id
+*/
+
+#if defined(__linux__)
+#define PlatformGetCurrentThreadId() (uint32_t)syscall(SYS_gettid)
+#elif defined(__APPLE__)
+inline uint32_t PlatformGetCurrentThreadId() {
+    uint64_t tid;
+    pthread_threadid_np(pthread_self(), &tid);
+    return (SIZE_T)tid;
+}
+#elif defined(__FreeBSD__)
+#include <pthread_np.h>
+#define PlatformGetCurrentThreadId() (uint32_t)pthread_getthreadid_np()
+#elif defined(__NetBSD__)
+#include <lwp.h>
+#define PlatformGetCurrentThreadId() (uint32_t)_lwp_self()
+#else
+#define PlatformGetCurrentThreadId() (uint32_t)pthread_self()
+#endif
 
 /*++
 Function:
@@ -83,7 +111,7 @@ FormatInt(uint32_t value)
 Function:
     FormatInt64
 
-    Helper function to format an ULONG64 as a string.
+    Helper function to format an uint64 as a string.
 
 --*/
 static
@@ -93,7 +121,7 @@ FormatInt64(uint64_t value)
     char* buffer = (char*)malloc(128);
     if (buffer != nullptr)
     {
-        if (snprintf(buffer, 128, "%lu", value) < 0)
+        if (snprintf(buffer, 128, "%" PRIu64, value) < 0)
         {
             free(buffer);
             buffer = nullptr;
@@ -303,18 +331,93 @@ Function:
   Creates crash dump of the process (if enabled). Can be called from the unhandled native exception handler.
 
 Parameters:
-    none
+    signal - POSIX signal number or 0
+    siginfo - signal info or nullptr
 
 (no return value)
 --*/
 void
-PalCreateCrashDumpIfEnabled()
+PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
 {
     // If enabled, launch the create minidump utility and wait until it completes
-    if (g_argvCreateDump != nullptr)
+    if (g_argvCreateDump[0] != nullptr)
     {
-        CreateCrashDump(g_argvCreateDump, nullptr, 0);
+        const char* argv[MAX_ARGV_ENTRIES];
+        char* signalArg = nullptr;
+        char* crashThreadArg = nullptr;
+        char* signalCodeArg = nullptr;
+        char* signalErrnoArg = nullptr;
+        char* signalAddressArg = nullptr;
+
+        // Copy the createdump argv
+        int argc = 0;
+        for (; argc < MAX_ARGV_ENTRIES; argc++)
+        {
+            argv[argc] = g_argvCreateDump[argc];
+            if (g_argvCreateDump[argc] == nullptr)
+            {
+                break;
+            }
+        }
+
+        if (signal != 0)
+        {
+            // Add the signal number to the command line
+            signalArg = FormatInt(signal);
+            if (signalArg != nullptr)
+            {
+                argv[argc++] = "--signal";
+                argv[argc++] = signalArg;
+            }
+
+            // Add the current thread id to the command line. This function is always called on the crashing thread.
+            crashThreadArg = FormatInt(PlatformGetCurrentThreadId());
+            if (crashThreadArg != nullptr)
+            {
+                argv[argc++] = "--crashthread";
+                argv[argc++] = crashThreadArg;
+            }
+
+            if (siginfo != nullptr)
+            {
+                signalCodeArg = FormatInt(siginfo->si_code);
+                if (signalCodeArg != nullptr)
+                {
+                    argv[argc++] = "--code";
+                    argv[argc++] = signalCodeArg;
+                }
+                signalErrnoArg = FormatInt(siginfo->si_errno);
+                if (signalErrnoArg != nullptr)
+                {
+                    argv[argc++] = "--errno";
+                    argv[argc++] = signalErrnoArg;
+                }
+                signalAddressArg = FormatInt64((uint64_t)siginfo->si_addr);
+                if (signalAddressArg != nullptr)
+                {
+                    argv[argc++] = "--address";
+                    argv[argc++] = signalAddressArg;
+                }
+            }
+
+            argv[argc++] = nullptr;
+            _ASSERTE(argc < MAX_ARGV_ENTRIES);
+        }
+
+        CreateCrashDump(argv, nullptr, 0);
+
+        free(signalArg);
+        free(crashThreadArg);
+        free(signalCodeArg);
+        free(signalErrnoArg);
+        free(signalAddressArg);
     }
+}
+
+void
+PalCreateCrashDumpIfEnabled()
+{
+    PalCreateCrashDumpIfEnabled(SIGABRT, nullptr);
 }
 
 /*++
@@ -467,4 +570,3 @@ PalCreateDumpInitialize()
     }
     return true;
 }
-

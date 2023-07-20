@@ -407,8 +407,6 @@ PALAPI
 PAL_SetCreateDumpCallback(
     IN PCREATEDUMP_CALLBACK callback); 
 
-#include <generatedumpflags.h>
-
 PALIMPORT
 BOOL
 PALAPI

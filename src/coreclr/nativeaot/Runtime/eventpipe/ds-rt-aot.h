@@ -191,14 +191,15 @@ ds_rt_generate_core_dump (
     }
     const ep_char16_t *dumpName = ds_generate_core_dump_command_payload_get_dump_name (payload);
     int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
-
-    extern bool ds_rt_aot_generate_core_dump (const ep_char16_t* dumpName, int32_t dumpType, uint32_t flags, ep_char8_t *errorMessageBuffer, int32_t cbErrorMessageBuffer);
-    if (ds_rt_aot_generate_core_dump(dumpName, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
+#ifdef TARGET_UNIX
+    ep_char8_t *dumpNameUtf8 = ep_rt_utf16le_to_utf8_string (dumpName, ep_rt_utf16_string_len (dumpName));
+    extern bool PalGenerateCoreDump(const char* dumpName, int dumpType, uint32_t flags, char* errorMessageBuffer, int cbErrorMessageBuffer);
+    if (PalGenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))
     {
         result = DS_IPC_S_OK;
     }
-
-    return 0;
+#endif
+    return result;
 }
 
 /*
