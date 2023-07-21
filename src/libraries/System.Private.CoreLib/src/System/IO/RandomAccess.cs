@@ -274,6 +274,11 @@ namespace System.IO
         /// </remarks>
         public static void FlushToDisk(SafeFileHandle handle)
         {
+            // NOTE: we need to allow unseekable handles when validating the input because the FlushFileBuffers()
+            // function on Windows DOES support unseekable handles (e.g. pipe handles). The fsync() function on
+            // Unix does NOT support unseekable handles however, the code that ultimately runs on Unix when we
+            // call FileStreamHelpers.FlushToDisk() later below, will silently ignore those errors, effectively
+            // making FlushToDisk() a no-op on Unix when used with unseekable handles.
             ValidateInput(handle, fileOffset: 0, allowUnseekableHandles: true);
 
             FileStreamHelpers.FlushToDisk(handle);
