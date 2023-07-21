@@ -9,7 +9,7 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    internal static class CastCache
+    internal static class CastCacheContainer
     {
         // In coreclr the table is allocated and written to on the native side.
         internal static int[]? s_table;
@@ -17,7 +17,7 @@ namespace System.Runtime.CompilerServices
 
     internal static unsafe class CastHelpers
     {
-        private static CastCacheImpl CastCacheInstance => new CastCacheImpl(CastCache.s_table!);
+        private static CastCache CastCacheInstance => new CastCache(CastCacheContainer.s_table!);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern object IsInstanceOfAny_NoCacheLookup(void* toTypeHnd, object obj);

@@ -8,7 +8,7 @@ namespace System.Runtime.CompilerServices
     }
 
     // trivial implementation of the cast cache
-    internal unsafe struct CastCacheImpl
+    internal unsafe struct CastCache
     {
         internal CastResult TryGet(nuint source, nuint target)
         {

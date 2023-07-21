@@ -11,45 +11,65 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    internal enum CastResult
+    // Unmanaged part of cache entry
+    // it is not nested in GenericCache because generic types cannot have explicit layout.
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct UnmanagedPart
     {
-        CannotCast = 0,
-        CanCast = 1,
-        MaybeCast = 2
+        // version has the following structure:
+        // [ distance:3bit |  versionNum:29bit ]
+        //
+        // distance is how many iterations the entry is from it ideal position.
+        // we use that for preemption.
+        //
+        // versionNum is a monotonically increasing numerical tag.
+        // Writer "claims" entry by atomically incrementing the tag. Thus odd number indicates an entry in progress.
+        // Upon completion of adding an entry the tag is incremented again making it even. Even number indicates a complete entry.
+        //
+        // Readers will read the version twice before and after retrieving the entry.
+        // To have a usable entry both reads must yield the same even version.
+        //
+        [FieldOffset(0)]
+        internal uint _version;
+        [FieldOffset(sizeof(int))]
+        internal int _hash;
+
+        // AuxData
+        [FieldOffset(0)]
+        internal int tableMask;
+        [FieldOffset(sizeof(int))]
+        internal byte hashShift;
+        [FieldOffset(sizeof(int) + 1)]
+        internal byte victimCounter;
     }
 
-    internal unsafe struct CastCache
+    // TKey may contain references, but we want it to be a struct,
+    // so that equality is devirtualized.
+    internal unsafe struct GenericCache<TKey, TValue>
+        where TKey: struct, IEquatable<TKey>
     {
-#if DEBUG
-        private const int INITIAL_CACHE_SIZE = 8;    // MUST BE A POWER OF TWO
-        private const int MAXIMUM_CACHE_SIZE = 512;  // make this lower than release to make it easier to reach this in tests.
-  #else
-        private const int INITIAL_CACHE_SIZE = 128;  // MUST BE A POWER OF TWO
-        private const int MAXIMUM_CACHE_SIZE = 4096; // 4096 * sizeof(CastCacheEntry) is 98304 bytes on 64bit. We will rarely need this much though.
-  #endif // DEBUG
-
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
 
         // nothing is ever stored into this, so we can use a static instance.
-        private static int[]? s_sentinelTable;
+        private static Entry[]? s_sentinelTable;
 
         // The actual storage.
-        private int[] _table;
+        private Entry[] _table;
 
         // when flushing, remember the last size.
         private int _lastFlushSize;
 
-        // wraps existing table
-        public CastCache(int[] table)
-        {
-            _table = table;
-        }
+        private int _initialCacheSize;
+        private int _maxCacheSize;
 
         // creates a new cache instance
-        public CastCache()
+        public GenericCache(int initialCacheSize, int maxCacheSize)
         {
+            _initialCacheSize = initialCacheSize;
+            _maxCacheSize = maxCacheSize;
+
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
@@ -58,140 +78,105 @@ namespace System.Runtime.CompilerServices
             _table =
 #if !DEBUG
             // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
-            CreateCastCache(INITIAL_CACHE_SIZE) ??
+            CreateCastCache(initialCacheSize) ??
 #endif
             s_sentinelTable!;
-            _lastFlushSize = INITIAL_CACHE_SIZE;
+            _lastFlushSize = initialCacheSize;
         }
 
-        [StructLayout(LayoutKind.Sequential)]
-        private struct CastCacheEntry
+        private struct Entry
         {
-            // version has the following structure:
-            // [ distance:3bit |  versionNum:29bit ]
-            //
-            // distance is how many iterations the entry is from it ideal position.
-            // we use that for preemption.
-            //
-            // versionNum is a monotonically increasing numerical tag.
-            // Writer "claims" entry by atomically incrementing the tag. Thus odd number indicates an entry in progress.
-            // Upon completion of adding an entry the tag is incremented again making it even. Even number indicates a complete entry.
-            //
-            // Readers will read the version twice before and after retrieving the entry.
-            // To have a usable entry both reads must yield the same even version.
-            //
-            internal uint _version;
-            internal nuint _source;
-            // pointers have unused lower bits due to alignment, we use one for the result
-            internal nuint _targetAndResult;
+            internal UnmanagedPart _unmanagedPart;
+            internal TKey _key;
+            internal TValue _value;
 
-            internal void SetEntry(nuint source, nuint target, bool result)
-            {
-                _source = source;
-                _targetAndResult = target | (nuint)(result ? 1 : 0);
-            }
+            [UnscopedRef]
+            public ref uint Version => ref _unmanagedPart._version;
+            [UnscopedRef]
+            public ref int Hash => ref _unmanagedPart._hash;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int KeyToBucket(ref int tableData, nuint source, nuint target)
+        private static int HashToBucket(ref Entry tableData, int hash)
         {
-            // upper bits of addresses do not vary much, so to reduce loss due to cancelling out,
-            // we do `rotl(source, <half-size>) ^ target` for mixing inputs.
-            // then we use fibonacci hashing to reduce the value to desired size.
-
-            int hashShift = HashShift(ref tableData);
+            byte hashShift = HashShift(ref tableData);
 #if TARGET_64BIT
-            ulong hash = BitOperations.RotateLeft((ulong)source, 32) ^ (ulong)target;
-            return (int)((hash * 11400714819323198485ul) >> hashShift);
+            return (int)(((ulong)hash * 11400714819323198485ul) >> hashShift);
 #else
-            uint hash = BitOperations.RotateLeft((uint)source, 16) ^ (uint)target;
-            return (int)((hash * 2654435769u) >> hashShift);
+            return (int)(((uint)hash * 2654435769u) >> hashShift);
 #endif
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int TableData(int[] table)
+        private static ref Entry TableData(Entry[] table)
         {
-            // element 0 is used for embedded aux data
-            //
-            // AuxData: { hashShift, tableMask, victimCounter }
-            return ref Unsafe.As<byte, int>(ref Unsafe.AddByteOffset(ref table.GetRawData(), (nint)sizeof(nint)));
+            // points to element 0, which is used for embedded aux data
+            return ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int HashShift(ref int tableData)
+        private static ref byte HashShift(ref Entry tableData)
         {
-            return ref tableData;
+            return ref tableData._unmanagedPart.hashShift;
         }
 
         // TableMask is "size - 1"
         // we need that more often that we need size
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int TableMask(ref int tableData)
+        private static ref int TableMask(ref Entry tableData)
         {
-            return ref Unsafe.Add(ref tableData, 1);
+            return ref tableData._unmanagedPart.tableMask;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref uint VictimCounter(ref int tableData)
+        private static ref byte VictimCounter(ref Entry tableData)
         {
-            return ref Unsafe.As<int, uint>(ref Unsafe.Add(ref tableData, 2));
+            return ref tableData._unmanagedPart.victimCounter;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref CastCacheEntry Element(ref int tableData, int index)
+        private static ref Entry Element(ref Entry tableData, int index)
         {
             // element 0 is used for embedded aux data, skip it
-            return ref Unsafe.Add(ref Unsafe.As<int, CastCacheEntry>(ref tableData), index + 1);
+            return ref Unsafe.Add(ref tableData, index + 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal CastResult TryGet(nuint source, nuint target)
+        internal bool TryGet(TKey key, out TValue? value)
         {
             // table is always initialized and is not null.
-            ref int tableData = ref TableData(_table!);
-
-            int index = KeyToBucket(ref tableData, source, target);
+            ref Entry tableData = ref TableData(_table!);
+            int hash = key!.GetHashCode();
+            int index = HashToBucket(ref tableData, hash);
             for (int i = 0; i < BUCKET_SIZE;)
             {
-                ref CastCacheEntry pEntry = ref Element(ref tableData, index);
+                ref Entry pEntry = ref Element(ref tableData, index);
 
                 // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
-                uint version = Volatile.Read(ref pEntry._version);
-                nuint entrySource = pEntry._source;
-                // mask the lower version bit to make it even.
-                // This way we can check if version is odd or changing in just one compare.
-                version &= unchecked((uint)~1);
+                uint version = Volatile.Read(ref pEntry.Version);
 
-                if (entrySource == source)
+                if (hash == pEntry.Hash && key.Equals(pEntry._key))
                 {
-                    // we do ordinary reads of the entry parts and
+                    // we do ordinary reads of the value and
                     // Interlocked.ReadMemoryBarrier() before reading the version
-                    nuint entryTargetAndResult = pEntry._targetAndResult;
-                    // target never has its lower bit set.
-                    // a matching entryTargetAndResult would the have same bits, except for the lowest one, which is the result.
-                    entryTargetAndResult ^= target;
-                    if (entryTargetAndResult <= 1)
+                    value = pEntry._value;
+
+                    // make sure the second read of 'version' happens after reading '_value'
+                    Interlocked.ReadMemoryBarrier();
+
+                    // mask the lower version bit to make it even.
+                    // This way we can check if version is odd or changing in just one compare.
+                    version &= unchecked((uint)~1);
+                    if (version != pEntry.Version)
                     {
-                        // make sure the second read of 'version' happens after reading 'source' and 'targetAndResults'
-                        //
-                        // We can either:
-                        // - use acquires for both _source and _targetAndResults or
-                        // - issue a load barrier before reading _version
-                        // benchmarks on available hardware (Jan 2020) show that use of a read barrier is cheaper.
-                        Interlocked.ReadMemoryBarrier();
-
-                        if (version != pEntry._version)
-                        {
-                            // oh, so close, the entry is in inconsistent state.
-                            // it is either changing or has changed while we were reading.
-                            // treat it as a miss.
-                            break;
-                        }
-
-                        return (CastResult)entryTargetAndResult;
+                        // oh, so close, the entry is in inconsistent state.
+                        // it is either changing or has changed while we were reading.
+                        // treat it as a miss.
+                        break;
                     }
+
+                    return true;
                 }
 
                 if (version == 0)
@@ -204,26 +189,23 @@ namespace System.Runtime.CompilerServices
                 i++;
                 index = (index + i) & TableMask(ref tableData);
             }
-            return CastResult.MaybeCast;
+
+            value = default;
+            return false;
         }
 
-        // the rest is the support for updating the cache.
-        // in CoreClr the cache is only updated in the native code
-        //
-        // The following helpers must match native implementations in castcache.h and castcache.cpp
-
         // we generally do not OOM in casts, just return null unless throwOnFail is specified.
-        private static int[]? CreateCastCache(int size, bool throwOnFail = false)
+        private Entry[]? CreateCastCache(int size, bool throwOnFail = false)
         {
             // size must be positive
             Debug.Assert(size > 1);
             // size must be a power of two
             Debug.Assert((size & (size - 1)) == 0);
 
-            int[]? table = null;
+            Entry[]? table = null;
             try
             {
-                table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
+                table = new Entry[size + 1];
             }
             catch (OutOfMemoryException) when (!throwOnFail)
             {
@@ -231,10 +213,10 @@ namespace System.Runtime.CompilerServices
 
             if (table == null)
             {
-                size = INITIAL_CACHE_SIZE;
+                size = _initialCacheSize;
                 try
                 {
-                    table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
+                    table = new Entry[size + 1];
                 }
                 catch (OutOfMemoryException)
                 {
@@ -246,7 +228,7 @@ namespace System.Runtime.CompilerServices
                 return table;
             }
 
-            ref int tableData = ref TableData(table);
+            ref Entry tableData = ref TableData(table);
 
             // set the table mask. we need it often, do not want to compute each time.
             TableMask(ref tableData) = size - 1;
@@ -258,10 +240,11 @@ namespace System.Runtime.CompilerServices
             return table;
         }
 
-        internal void TrySet(nuint source, nuint target, bool result)
+        internal void TrySet(TKey key, TValue value)
         {
             int bucket;
-            ref int tableData = ref *(int*)0;
+            int hash = key!.GetHashCode();
+            ref Entry tableData = ref Unsafe.NullRef<Entry>();
 
             do
             {
@@ -275,9 +258,9 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                bucket = KeyToBucket(ref tableData, source, target);
+                bucket = HashToBucket(ref tableData, hash);
                 int index = bucket;
-                ref CastCacheEntry pEntry = ref Element(ref tableData, index);
+                ref Entry pEntry = ref Element(ref tableData, index);
 
                 for (int i = 0; i < BUCKET_SIZE;)
                 {
@@ -291,7 +274,7 @@ namespace System.Runtime.CompilerServices
                     //        If we used Robin Hood strategy we could eventually end up with all
                     //        entries in the table being maximally "poor".
 
-                    uint version = pEntry._version;
+                    uint version = pEntry.Version;
 
                     // mask the lower version bit to make it even.
                     // This way we will detect both if version is changing (odd) or has changed (even, but different).
@@ -309,20 +292,22 @@ namespace System.Runtime.CompilerServices
                     if (version == 0 || (version >> VERSION_NUM_SIZE) > i)
                     {
                         uint newVersion = ((uint)i << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
-                        uint versionOrig = Interlocked.CompareExchange(ref pEntry._version, newVersion, version);
+                        uint versionOrig = Interlocked.CompareExchange(ref pEntry.Version, newVersion, version);
                         if (versionOrig == version)
                         {
-                            pEntry.SetEntry(source, target, result);
+                            pEntry.Hash = hash;
+                            pEntry._key = key;
+                            pEntry._value = value;
 
                             // entry is in inconsistent state and cannot be read or written to until we
                             // update the version, which is the last thing we do here
-                            Volatile.Write(ref pEntry._version, newVersion + 1);
+                            Volatile.Write(ref pEntry.Version, newVersion + 1);
                             return;
                         }
                         // someone snatched the entry. try the next one in the bucket.
                     }
 
-                    if (pEntry._source == source && ((pEntry._targetAndResult ^ target) <= 1))
+                    if (hash == pEntry.Hash && key.Equals(pEntry._key))
                     {
                         // looks like we already have an entry for this.
                         // duplicate entries are harmless, but a bit of a waste.
@@ -349,14 +334,14 @@ namespace System.Runtime.CompilerServices
 
             // pick a victim somewhat randomly within a bucket
             // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-            uint victimDistance = VictimCounter(ref tableData)++ & (BUCKET_SIZE - 1);
+            byte victimDistance = (byte)(VictimCounter(ref tableData)++ & (BUCKET_SIZE - 1));
             // position the victim in a quadratic reprobe bucket
-            uint victim = (victimDistance * victimDistance + victimDistance) / 2;
+            int victim = (victimDistance * victimDistance + victimDistance) / 2;
 
             {
-                ref CastCacheEntry pEntry = ref Element(ref tableData, (bucket + (int)victim) & TableMask(ref tableData));
+                ref Entry pEntry = ref Element(ref tableData, (bucket + victim) & TableMask(ref tableData));
 
-                uint version = pEntry._version;
+                uint version = pEntry.Version;
 
                 // mask the lower version bit to make it even.
                 // This way we will detect both if version is changing (odd) or has changed (even, but different).
@@ -371,28 +356,30 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                uint newVersion = (victimDistance << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1;
-                uint versionOrig = Interlocked.CompareExchange(ref pEntry._version, newVersion, version);
+                uint newVersion = (uint)((victimDistance << VERSION_NUM_SIZE) + (version & VERSION_NUM_MASK) + 1);
+                uint versionOrig = Interlocked.CompareExchange(ref pEntry.Version, newVersion, version);
 
                 if (versionOrig == version)
                 {
-                    pEntry.SetEntry(source, target, result);
-                    Volatile.Write(ref pEntry._version, newVersion + 1);
+                    pEntry.Hash = hash;
+                    pEntry._key = key;
+                    pEntry._value = value;
+                    Volatile.Write(ref pEntry.Version, newVersion + 1);
                 }
             }
         }
 
-        private static int CacheElementCount(ref int tableData)
+        private static int CacheElementCount(ref Entry tableData)
         {
             return TableMask(ref tableData) + 1;
         }
 
         private void FlushCurrentCache()
         {
-            ref int tableData = ref TableData(_table);
+            ref Entry tableData = ref TableData(_table);
             int lastSize = CacheElementCount(ref tableData);
-            if (lastSize < INITIAL_CACHE_SIZE)
-                lastSize = INITIAL_CACHE_SIZE;
+            if (lastSize < _initialCacheSize)
+                lastSize = _initialCacheSize;
 
             // store the last size to use when creating a new table
             // it is just a hint, not needed for correctness, so no synchronization
@@ -404,7 +391,7 @@ namespace System.Runtime.CompilerServices
 
         private bool MaybeReplaceCacheWithLarger(int size)
         {
-            int[]? newTable = CreateCastCache(size);
+            Entry[]? newTable = CreateCastCache(size);
             if (newTable == null)
             {
                 return false;
@@ -414,10 +401,10 @@ namespace System.Runtime.CompilerServices
             return true;
         }
 
-        private bool TryGrow(ref int tableData)
+        private bool TryGrow(ref Entry tableData)
         {
             int newSize = CacheElementCount(ref tableData) * 2;
-            if (newSize <= MAXIMUM_CACHE_SIZE)
+            if (newSize <= _maxCacheSize)
             {
                 return MaybeReplaceCacheWithLarger(newSize);
             }

@@ -105,10 +105,10 @@ namespace System.Runtime
 
 
         // Initialize the cache eagerly to avoid null checks.
-        private static Cache<Key, Value> s_cache;
+        private static GenericCache<Key, Value> s_cache;
         internal static void Initialize()
         {
-            s_cache = new Cache<Key, Value>(InitialCacheSize, MaximumCacheSize);
+            s_cache = new GenericCache<Key, Value>(InitialCacheSize, MaximumCacheSize);
         }
 
         private static Value LookupOrAdd(IntPtr context, IntPtr signature)

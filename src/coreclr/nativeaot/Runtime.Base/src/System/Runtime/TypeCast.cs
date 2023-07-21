@@ -24,7 +24,7 @@ namespace System.Runtime
     [EagerStaticClassConstruction]
     internal static class TypeCast
     {
-        private static CastCacheImpl s_castCache = new CastCacheImpl();
+        private static CastCache s_castCache = new CastCache();
 
         [Flags]
         internal enum AssignmentVariation
