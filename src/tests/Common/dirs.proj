@@ -15,6 +15,8 @@
       <DisabledProjects Include="$(TestRoot)Performance\Scenario\JitBench\unofficial_dotnet\JitBench.csproj" /> <!-- no official build support for SDK-style netcoreapp2.0 projects -->
       <DisabledProjects Include="$(TestRoot)TestWrappers*\**\*.csproj" />
       <DisabledProjects Include="$(TestRoot)nativeaot\**\*.csproj" Condition="'$(TestBuildMode)' != 'nativeaot'" />
+      <!-- Projects can't be build for mobile platforms: No entrypoint module -->
+      <DisabledProjects Include="$(TestRoot)nativeaot\SmokeTests\SharedLibrary\**\*.csproj;$(TestRoot)nativeaot\SmokeTests\Reflection\**\*.csproj" Condition="'$(TestBuildMode)' == 'nativeaot' and '$(TargetsAppleMobile)' == 'true'" />
     </ItemGroup>
 
     <ItemGroup>
