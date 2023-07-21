@@ -1,7 +1,55 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-export function getFirstDayOfWeek(locale: string)
+import { wrap_error_root } from "../invoke-js";
+import { mono_wasm_new_external_root } from "../roots";
+import { monoStringToString } from "../strings";
+import { Int32Ptr } from "../types/emscripten";
+import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
+import { normalizeLocale } from "./helpers";
+
+
+export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number{
+
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+    try {
+        const cultureName = monoStringToString(cultureRoot);
+        const locale : any = cultureName ? cultureName : undefined;
+        const canonicalLocale = normalizeLocale(locale);
+        return getFirstDayOfWeek(canonicalLocale);        
+    }
+    catch (ex: any) {
+        wrap_error_root(isException, ex, exceptionRoot);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+        exceptionRoot.release();
+    }
+}
+
+export function mono_wasm_get_first_week_of_year(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number{
+
+    const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
+        exceptionRoot = mono_wasm_new_external_root<MonoObject>(exAddress);
+    try {
+        const cultureName = monoStringToString(cultureRoot);
+        const locale : any = cultureName ? cultureName : undefined;
+        const canonicalLocale = normalizeLocale(locale);
+        return getFirstWeekOfYear(canonicalLocale);
+    }
+    catch (ex: any) {
+        wrap_error_root(isException, ex, exceptionRoot);
+        return -1;
+    }
+    finally {
+        cultureRoot.release();
+        exceptionRoot.release();
+    }
+}
+
+function getFirstDayOfWeek(locale: string)
 {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo)
@@ -26,7 +74,7 @@ export function getFirstDayOfWeek(locale: string)
     return 1;
 }
 
-export function getFirstWeekOfYear(locale: string)
+function getFirstWeekOfYear(locale: string)
 {
     const weekInfo = getWeekInfo(locale);
     if (weekInfo)

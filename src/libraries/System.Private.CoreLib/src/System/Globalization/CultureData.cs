@@ -1560,6 +1560,16 @@ namespace System.Globalization
                 {
 #if TARGET_OSX || TARGET_MACCATALYST || TARGET_IOS || TARGET_TVOS
                     _iFirstDayOfWeek = GlobalizationMode.Hybrid ? GetLocaleInfoNative(LocaleNumberData.FirstDayOfWeek) : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+#elif TARGET_BROWSER
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        Debug.Assert(_sName != null, "[FirstDayOfWeek] Expected _sName to be populated already");
+                        _iFirstDayOfWeek = GetFirstDayOfWeek(_sName);
+                    }
+                    else
+                    {
+                        _iFirstDayOfWeek = IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
+                    }
 #else
                     _iFirstDayOfWeek = ShouldUseUserOverrideNlsData ? NlsGetFirstDayOfWeek() : IcuGetLocaleInfo(LocaleNumberData.FirstDayOfWeek);
 #endif
@@ -1578,7 +1588,19 @@ namespace System.Globalization
             {
                 if (_iFirstWeekOfYear == undef)
                 {
+#if TARGET_BROWSER
+                    if (GlobalizationMode.Hybrid)
+                    {
+                        Debug.Assert(_sName != null, "[CalendarWeekRule] Expected _sName to be populated already");
+                        _iFirstWeekOfYear = GetFirstWeekOfYear(_sName);
+                    }
+                    else
+                    {
+                        _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
+                    }
+#else
                     _iFirstWeekOfYear = GetLocaleInfoCoreUserOverride(LocaleNumberData.FirstWeekOfYear);
+#endif
                 }
                 return _iFirstWeekOfYear;
             }

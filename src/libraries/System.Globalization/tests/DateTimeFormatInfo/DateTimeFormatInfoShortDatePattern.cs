@@ -43,7 +43,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-BZ").DateTimeFormat, "dd/MM/yyyy" };
             yield return new object[] { new CultureInfo("en-CA").DateTimeFormat, "yyyy-MM-dd" };
             yield return new object[] { new CultureInfo("en-CC").DateTimeFormat, "dd/MM/yyyy" };
-            yield return new object[] { new CultureInfo("en-CH").DateTimeFormat, "dd/MM/yyyy" };
+            yield return new object[] { new CultureInfo("en-CH").DateTimeFormat, PlatformDetection.IsBrowserDomSupportedOrNodeJS ? "dd.MM.yyyy" : "dd/MM/yyyy" }; // should be "dd/MM/yyyy"
             yield return new object[] { new CultureInfo("en-CK").DateTimeFormat, "dd/MM/yyyy" };
             yield return new object[] { new CultureInfo("en-CM").DateTimeFormat, "dd/MM/yyyy" };
             yield return new object[] { new CultureInfo("en-CX").DateTimeFormat, "dd/MM/yyyy" };

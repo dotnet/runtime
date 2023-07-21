@@ -9,7 +9,7 @@ namespace System.Globalization
 {
     internal sealed partial class CultureData
     {
-        private const int CULTURE_INFO_BUFFER_LEN = 100;
+        private const int CULTURE_INFO_BUFFER_LEN = 50;
 
         private static unsafe CultureData JSLoadCultureInfoFromBrowser(string localeName, CultureData culture)
         {
@@ -21,17 +21,37 @@ namespace System.Globalization
                 throw new Exception((string)exResult);
             string result = new string(buffer, 0, resultLength);
             string[] subresults = result.Split("##");
-            if (subresults.Length < 6)
+            if (subresults.Length < 4)
                 throw new Exception("CultureInfo recieved from the Browser is in incorrect format.");
             culture._sAM1159 = subresults[0];
             culture._sPM2359 = subresults[1];
             culture._saLongTimes = new string[] { subresults[2] };
             culture._saShortTimes = new string[] { subresults[3] };
-            if (int.TryParse(subresults[4], out int firstDayOfWeek) && firstDayOfWeek != -1)
-                culture._iFirstDayOfWeek = firstDayOfWeek;
-            if (int.TryParse(subresults[5], out int firstWeekOfYear) && firstWeekOfYear != -1)
-                culture._iFirstWeekOfYear = firstWeekOfYear;
             return culture;
+        }
+
+        private static unsafe int GetFirstDayOfWeek(string localeName)
+        {
+            int result = Interop.JsGlobalization.GetFirstDayOfWeek(localeName, out int exception, out object ex_result);
+            if (exception != 0)
+            {
+                // Failed, just use 0
+                Debug.Fail($"[CultureData.GetFirstDayOfWeek()] failed with {ex_result}");
+                return 0;
+            }
+            return result;
+        }
+
+        private static unsafe int GetFirstWeekOfYear(string localeName)
+        {
+            int result = Interop.JsGlobalization.GetFirstWeekOfYear(localeName, out int exception, out object ex_result);
+            if (exception != 0)
+            {
+                // Failed, just use 0
+                Debug.Fail($"[CultureData.GetFirstWeekOfYear()] failed with {ex_result}");
+                return 0;
+            }
+            return result;
         }
     }
 }

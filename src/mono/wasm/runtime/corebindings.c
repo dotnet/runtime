@@ -57,6 +57,8 @@ extern mono_bool mono_wasm_ends_with(MonoString **culture, const uint16_t* str1,
 extern int mono_wasm_index_of(MonoString **culture, const uint16_t* str1, int32_t str1Length, const uint16_t* str2, int32_t str2Length, int32_t options, mono_bool fromBeginning, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_calendar_info(MonoString **culture, int32_t calendarId, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
 extern int mono_wasm_get_culture_info(MonoString **culture, const uint16_t* result, int32_t resultLength, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_first_day_of_week(MonoString **culture, int *is_exception, MonoObject** ex_result);
+extern int mono_wasm_get_first_week_of_year(MonoString **culture, int *is_exception, MonoObject** ex_result);
 
 void bindings_initialize_internals (void)
 {
@@ -97,4 +99,6 @@ void bindings_initialize_internals (void)
 	mono_add_internal_call ("Interop/JsGlobalization::IndexOf", mono_wasm_index_of);
 	mono_add_internal_call ("Interop/JsGlobalization::GetCalendarInfo", mono_wasm_get_calendar_info);
 	mono_add_internal_call ("Interop/JsGlobalization::GetCultureInfo", mono_wasm_get_culture_info);
+	mono_add_internal_call ("Interop/JsGlobalization::GetFirstDayOfWeek", mono_wasm_get_first_day_of_week);
+	mono_add_internal_call ("Interop/JsGlobalization::GetFirstWeekOfYear", mono_wasm_get_first_week_of_year);
 }

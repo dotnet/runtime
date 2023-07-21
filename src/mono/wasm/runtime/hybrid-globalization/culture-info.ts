@@ -3,10 +3,8 @@ import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
-import { OUTER_SEPARATOR } from "./helpers";
-import { getFirstDayOfWeek, getFirstWeekOfYear } from "./locales";
+import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
 
-/* eslint-disable no-console */
 /* eslint-disable no-inner-declarations */
 
 export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
@@ -20,9 +18,7 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
             AmDesignator: "",
             PmDesignator: "",
             LongTimePattern: "",
-            ShortTimePattern: "",
-            FirstDayOfWeek: -1,
-            FirstWeekOfYear: -1,
+            ShortTimePattern: ""
         };
         const canonicalLocale = normalizeLocale(locale);
         const designators = getAmPmDesignators(canonicalLocale);
@@ -32,8 +28,6 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
         cultureInfo.LongTimePattern = longTimePattern;
         const shortTimePattern = getShortTimePattern(longTimePattern);
         cultureInfo.ShortTimePattern = shortTimePattern;
-        cultureInfo.FirstDayOfWeek = getFirstDayOfWeek(canonicalLocale);
-        cultureInfo.FirstWeekOfYear = getFirstWeekOfYear(canonicalLocale);
         const result = Object.values(cultureInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
         {
@@ -50,28 +44,6 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
     finally {
         cultureRoot.release();
         exceptionRoot.release();
-    }
-}
-
-function normalizeLocale(locale: string | undefined)
-{
-    if (!locale)
-        return undefined;
-    try
-    {
-        locale = locale.toLocaleLowerCase();
-        if (locale.includes("zh"))
-        {
-            // browser does not recognize "zh-chs" and "zh-cht" as equivalents of "zh-HANS" "zh-HANT", we are helping, otherwise
-            // it would throw on getCanonicalLocales with "RangeError: Incorrect locale information provided"
-            locale = locale.replace("chs", "HANS").replace("cht", "HANT");
-        }
-        const canonicalLocales = (Intl as any).getCanonicalLocales(locale.replace("_", "-"));
-        return canonicalLocales.length > 0 ? canonicalLocales[0] : undefined;
-    }
-    catch(ex: any)
-    {
-        throw new Error(`Get culture info failed for culture = ${locale} with error: ${ex}`);
     }
 }
 
