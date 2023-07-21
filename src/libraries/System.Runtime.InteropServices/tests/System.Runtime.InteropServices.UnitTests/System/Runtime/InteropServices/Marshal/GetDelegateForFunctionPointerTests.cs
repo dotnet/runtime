@@ -10,7 +10,6 @@ using Xunit;
 
 namespace System.Runtime.InteropServices.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
     public class GetDelegateForFunctionPointerTests
     {
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMonoAOT))]
@@ -154,9 +153,10 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         public delegate void GenericDelegate<T>(T t);
-        public delegate void NonGenericDelegate(string t);
-        public delegate void OtherNonGenericDelegate(string t);
+        public delegate void NonGenericDelegate(int i);
+        public delegate void OtherNonGenericDelegate(int i);
 
-        private static void Method(string s) { }
+        [UnmanagedCallersOnly]
+        private static void Method(int i) { }
     }
 }
