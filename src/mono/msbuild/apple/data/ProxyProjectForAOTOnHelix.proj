@@ -29,7 +29,7 @@
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
 
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(CustomMain)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
       <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
     </PropertyGroup>
 

@@ -343,13 +343,13 @@
       <UseRuntimeComponents>true</UseRuntimeComponents>
     </PropertyGroup>
 
-    <CustomTask EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
+    <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
       <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
-    </CustomTask>
+    </UpdateRunScriptToHandleMultipleEntryPoints>
   </Target>
 
   <UsingTask
-    TaskName="CustomTask"
+    TaskName="UpdateRunScriptToHandleMultipleEntryPoints"
     TaskFactory="RoslynCodeTaskFactory"
     AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
   <ParameterGroup>

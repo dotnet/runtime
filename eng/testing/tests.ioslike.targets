@@ -67,9 +67,9 @@
         if they match, consider it as the root directory and copy the files there,
         otherwise, copy the files to a subdirectory.
       -->
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and ($([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) == '$(AssemblyName)' or '$(CustomMain)' != 'true')"
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and ($([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) == '$(AssemblyName)' or '$(IsRuntimeTests)' != 'true')"
               Include="@(AppleAssembliesToBundle)"                    TargetDir="publish" />
-      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) != '$(AssemblyName)' and  '$(CustomMain)' == 'true'"
+      <BundleFiles Condition="'%(AppleAssembliesToBundle._IsNative)' != 'true' and $([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)')))) != '$(AssemblyName)' and  '$(IsRuntimeTests)' == 'true'"
                    Include="@(AppleAssembliesToBundle)"               TargetDir="publish\$([System.IO.Path]::GetFileName($([System.IO.Path]::GetDirectoryName('%(AppleAssembliesToBundle.Identity)'))))" />
 
       <BundleFiles Include="@(AppleNativeFilesToBundle)"              TargetDir="publish" />
@@ -112,7 +112,7 @@
       <_ApplePropertyNames Include="AssemblyName" />
       <_ApplePropertyNames Include="MonoEnableLLVM" />
       <_ApplePropertyNames Include="UseRuntimeComponents" />
-      <_ApplePropertyNames Include="CustomMain" />
+      <_ApplePropertyNames Include="IsRuntimeTests" />
 
       <_ApplePropertiesToPass
         Include="$(%(_ApplePropertyNames.Identity))"
@@ -147,7 +147,7 @@
 
     <PropertyGroup>
       <Optimized Condition="'$(Configuration)' == 'Release'">true</Optimized>
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(CustomMain)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true'">AppleTestRunner.dll</MainLibraryFileName>
     
       <AppleBuildDir>$(PublishDir)</AppleBuildDir>
       <AppleBundleDir>$(BundleDir)</AppleBundleDir>
