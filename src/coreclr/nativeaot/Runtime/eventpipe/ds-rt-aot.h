@@ -183,6 +183,7 @@ ds_rt_generate_core_dump (
     STATIC_CONTRACT_NOTHROW;
 
     ds_ipc_result_t result = DS_IPC_E_FAIL;
+#ifdef TARGET_UNIX
     uint32_t flags = ds_generate_core_dump_command_payload_get_flags(payload);
     if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP)
     {
@@ -191,7 +192,6 @@ ds_rt_generate_core_dump (
     }
     const ep_char16_t *dumpName = ds_generate_core_dump_command_payload_get_dump_name (payload);
     int32_t dumpType = static_cast<int32_t>(ds_generate_core_dump_command_payload_get_dump_type (payload));
-#ifdef TARGET_UNIX
     ep_char8_t *dumpNameUtf8 = ep_rt_utf16le_to_utf8_string (dumpName, ep_rt_utf16_string_len (dumpName));
     extern bool PalGenerateCoreDump(const char* dumpName, int dumpType, uint32_t flags, char* errorMessageBuffer, int cbErrorMessageBuffer);
     if (PalGenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer))

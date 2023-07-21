@@ -133,8 +133,6 @@ FormatInt64(uint64_t value)
     return buffer;
 }
 
-static const int UndefinedDumpType = 0;
-
 /*++
 Function
   BuildCreateDumpCommandLine
@@ -171,13 +169,17 @@ BuildCreateDumpCommandLine(
 
     switch (dumpType)
     {
-        case 1: argv[argc++] = "--normal";
+        case DumpTypeNormal:
+            argv[argc++] = "--normal";
             break;
-        case 2: argv[argc++] = "--withheap";
+        case DumpTypeWithHeap:
+            argv[argc++] = "--withheap";
             break;
-        case 3: argv[argc++] = "--triage";
+        case DumpTypeTriage:
+            argv[argc++] = "--triage";
             break;
-        case 4: argv[argc++] = "--full";
+        case DumpTypeFull:
+            argv[argc++] = "--full";
             break;
         default:
             break;
@@ -212,8 +214,11 @@ BuildCreateDumpCommandLine(
     argv[argc++] = "--nativeaot";
     argv[argc++] = g_ppidarg;
     argv[argc++] = nullptr;
-    assert(argc < MAX_ARGV_ENTRIES);
 
+    if (argc >= MAX_ARGV_ENTRIES)
+    {
+        return false;
+    }
     return true;
 }
 
@@ -363,7 +368,7 @@ PalCreateCrashDumpIfEnabled(int signal, siginfo_t* siginfo)
             }
         }
 
-        if (signal != 0)
+        if (signal != 0 && argc < MAX_ARGV_ENTRIES)
         {
             // Add the signal number to the command line
             signalArg = FormatInt(signal);
@@ -453,7 +458,7 @@ PalGenerateCoreDump(
     int cbErrorMessageBuffer)
 {
     const char* argvCreateDump[MAX_ARGV_ENTRIES];
-    if (dumpType < 1 || dumpType > 4)
+    if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
         return false;
     }
@@ -495,12 +500,12 @@ PalCreateDumpInitialize()
         char* logFilePath = nullptr;
         RhConfig::Environment::TryGetStringValue("CreateDumpLogToFile", &logFilePath);
 
-        uint64_t dumpType = UndefinedDumpType;
+        uint64_t dumpType = DumpTypeUnknown;
         if (RhConfig::Environment::TryGetIntegerValue("DbgMiniDumpType", &dumpType, true))
         {
-            if (dumpType < 1 || dumpType > 4)
+            if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
             {
-                dumpType = UndefinedDumpType;
+                dumpType = DumpTypeUnknown;
             }
         }
         uint32_t flags = GenerateDumpFlagsNone;

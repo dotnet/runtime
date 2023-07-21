@@ -2054,8 +2054,6 @@ PROCFormatInt64(ULONG64 value)
     return buffer;
 }
 
-static const INT UndefinedDumpType = 0;
-
 /*++
 Function
   PROCBuildCreateDumpCommandLine
@@ -2120,15 +2118,18 @@ PROCBuildCreateDumpCommandLine(
 
     switch (dumpType)
     {
-        case 1: argv.push_back("--normal");
+        case DumpTypeNormal:
+            argv.push_back("--normal");
             break;
-        case 2: argv.push_back("--withheap");
+        case DumpTypeWithHeap:
+            argv.push_back("--withheap");
             break;
-        case 3: argv.push_back("--triage");
+        case DumpTypeTriage:
+            argv.push_back("--triage");
             break;
-        case 4: argv.push_back("--full");
+        case DumpTypeFull:
+            argv.push_back("--full");
             break;
-        case UndefinedDumpType:
         default:
             break;
     }
@@ -2322,13 +2323,13 @@ PROCAbortInitialize()
         const char* logFilePath = dmpLogToFileCfg.IsSet() ? dmpLogToFileCfg.AsString() : nullptr;
 
         CLRConfigNoCache dmpTypeCfg = CLRConfigNoCache::Get("DbgMiniDumpType", /*noprefix*/ false, &getenv);
-        DWORD dumpType = UndefinedDumpType;
+        DWORD dumpType = DumpTypeUnknown;
         if (dmpTypeCfg.IsSet())
         {
             (void)dmpTypeCfg.TryAsInteger(10, dumpType);
-            if (dumpType < 1 || dumpType > 4)
+            if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
             {
-                dumpType = UndefinedDumpType;
+                dumpType = DumpTypeUnknown;
             }
         }
 
@@ -2399,7 +2400,7 @@ PAL_GenerateCoreDump(
 {
     std::vector<const char*> argvCreateDump;
 
-    if (dumpType < 1 || dumpType > 4)
+    if (dumpType <= DumpTypeUnknown || dumpType > DumpTypeMax)
     {
         return FALSE;
     }
