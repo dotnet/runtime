@@ -57,7 +57,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
     {
-        string runArgs = $"run -c {options.Configuration}";
+        string runArgs = $"run -c {options.Configuration} -p:GenerateRuntimeConfigurationFiles=true";
         string workingDirectory = _projectDir;
 
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
