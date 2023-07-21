@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Collections.Generic;
 using System.IO.Pipes;
 using System.Security.Cryptography;
 using Microsoft.Win32.SafeHandles;
@@ -10,6 +11,14 @@ namespace System.IO.Tests
 {
     public partial class RandomAccess_FlushToDisk : RandomAccess_Base<long>
     {
+        public static IEnumerable<object[]> RandomBufferByteCounts => new[]
+        {
+            // To ensure that flushing works correctly for a variety of sizes, we want to test with
+            // buffers that are smaller than a page (e.g. just 1 byte) and buffers that are several
+            // times larger than a page (e.g. up to 10 pages).
+            new object[] { Random.Shared.Next(1, Environment.SystemPageSize * 10) },
+        };
+
         protected override bool UsesOffsets => false;
 
         protected override bool ThrowsForUnseekableFile => false;
@@ -20,16 +29,16 @@ namespace System.IO.Tests
             return 0;
         }
 
-        [Fact]
-        public void UpdatesFileLastWriteTime()
+        [Theory]
+        [MemberData(nameof(RandomBufferByteCounts))]
+        public void UpdatesFileLastWriteTime(int bufferByteCount)
         {
+            // Sanity check: we expect the byte count to be > 0 so the test uses a non-empty buffer.
+            Assert.True(bufferByteCount > 0, $"{nameof(bufferByteCount)} must be > 0.");
+
             string testFilePath = GetTestFilePath();
 
-            // Generate random bytes to write to file. To ensure that flushing works correctly for a variety of
-            // sizes, we want to test with buffers that are smaller than a page (e.g. just 1 byte) and buffers
-            // that are several times larger than a page (e.g. up to 10 pages).
-            int byteCount = Random.Shared.Next(1, Environment.SystemPageSize * 10);
-            byte[] randomBytes = RandomNumberGenerator.GetBytes(byteCount);
+            byte[] randomBytes = RandomNumberGenerator.GetBytes(bufferByteCount);
 
             using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.CreateNew, FileAccess.Write))
             {

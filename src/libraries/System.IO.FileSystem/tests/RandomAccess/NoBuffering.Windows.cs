@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.Win32.SafeHandles;
@@ -13,6 +14,17 @@ namespace System.IO.Tests
     public class RandomAccess_NoBuffering : FileSystemTest
     {
         private const FileOptions NoBuffering = (FileOptions)0x20000000;
+
+        public static IEnumerable<object[]> RandomBufferByteCountsForUnbufferedIO => new[]
+        {
+            // Unbuffered I/O requires buffer sizes to be a multiple of the storage device's sector size. We could
+            // P/Invoke the DeviceIoControl() function to get the sector size by passing IOCTL_DISK_GET_DRIVE_GEOMETRY
+            // as a parameter, but for the sake of simplicity we will just use the system page size as a proxy. This
+            // works because both the system page size and the storage device's sector size are typically powers of 2
+            // meaning the system page size (which is typically 4,096 bytes) will be a multiple of the sector size
+            // (which is typically 512 bytes) hence meeting the requirements for unbuffered I/O.
+            new object[] { Random.Shared.Next(1, 10) * Environment.SystemPageSize },
+        };
 
         public static IEnumerable<object[]> AllAsyncSyncCombinations()
         {
@@ -242,22 +254,17 @@ namespace System.IO.Tests
             Assert.Equal(fileSize, total);
         }
 
-        [Fact]
-        public void ReadFromDiskAfterFlushToDisk()
+        [Theory]
+        [MemberData(nameof(RandomBufferByteCountsForUnbufferedIO))]
+        public void ReadFromDiskAfterFlushToDisk(int byteCountForUnbufferedIO)
         {
+            // Sanity check: we expect the buffer byte count to be a multiple of the system page size
+            // since we use that as a proxy for the storage sector size.
+            Assert.Equal(0, byteCountForUnbufferedIO % Environment.SystemPageSize);
+
             string testFilePath = GetTestFilePath();
 
-            // Generate random bytes to write to file. NOTE: since we use unbuffered I/O,
-            // the byte count must be a multiple of the storage device's sector size. We
-            // could P/Invoke the DeviceIoControl() function to get the sector size by
-            // passing IOCTL_DISK_GET_DRIVE_GEOMETRY as a parameter, but for the sake of
-            // simplicity we will just use the system page size as a proxy. This works because
-            // both the system page size and the storage device's sector size are typically
-            // powers of 2 meaning the system page size (which is typically 4,096 bytes) will
-            // be a multiple of the sector size (which is typically 512 bytes) hence meeting
-            // the requirements for unbuffered I/O.
-            int byteCount = Random.Shared.Next(1, 10) * Environment.SystemPageSize;
-            byte[] randomBytes = RandomNumberGenerator.GetBytes(byteCount);
+            byte[] randomBytes = RandomNumberGenerator.GetBytes(byteCountForUnbufferedIO);
 
             using (SafeFileHandle handle = File.OpenHandle(testFilePath, FileMode.CreateNew, FileAccess.Write))
             {
