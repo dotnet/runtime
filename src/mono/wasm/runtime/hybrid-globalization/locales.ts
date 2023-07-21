@@ -8,7 +8,6 @@ import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { normalizeLocale } from "./helpers";
 
-
 export function mono_wasm_get_first_day_of_week(culture: MonoStringRef, isException: Int32Ptr, exAddress: MonoObjectRef): number{
 
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),

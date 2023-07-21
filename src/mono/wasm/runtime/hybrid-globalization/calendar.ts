@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-/* eslint-disable no-console */
 /* eslint-disable no-inner-declarations */
 import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
@@ -38,10 +37,7 @@ export function mono_wasm_get_calendar_info(culture: MonoStringRef, calendarId: 
             MonthGenitiveNames: "",
             AbbrevMonthGenitiveNames: "",
         };
-        const year = 999;
-        const month = 11;
-        const day = 22;
-        const date = new Date(year, month - 1, day);
+        const date = new Date(999, 10, 22); // Fri Nov 22 0999 00:00:00 GMT+0124 (Central European Standard Time)
         calendarInfo.EnglishName = getCalendarName(locale);
         const dayNames = getDayNames(locale);
         calendarInfo.DayNames = dayNames.long.join(INNER_SEPARATOR);
@@ -86,11 +82,10 @@ function getCalendarName(locale: any){
     return calendars[0];
 }
 
-
 function getCalendarInfo(locale: string)
 {
     try {
-        // most tools have it implemented as property
+        // most tools have it implemented as a property
         return (new Intl.Locale(locale) as any).calendars;
     }
     catch {
@@ -348,8 +343,8 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         getEraDateParts(date.getFullYear().toString());
 
     return {
-        eraNames: GetEraFromDateParts(eraDateParts.eraDateParts, eraDateParts.ignoredPart),
-        abbreviatedEraNames: GetEraFromDateParts(eraDateParts.abbrEraDateParts, eraDateParts.ignoredPart)
+        eraNames: getEraFromDateParts(eraDateParts.eraDateParts, eraDateParts.ignoredPart),
+        abbreviatedEraNames: getEraFromDateParts(eraDateParts.abbrEraDateParts, eraDateParts.ignoredPart)
     };
 
     function shouldBePopulatedByManagedCode(calendarId: number)
@@ -357,7 +352,7 @@ function getEraNames(date: Date, locale: string | undefined, calendarId: number)
         return (calendarId > 1 && calendarId < 15) || calendarId == 22 || calendarId == 23;
     }
 
-    function GetEraFromDateParts(dateParts: string[], ignoredPart: string) : string
+    function getEraFromDateParts(dateParts: string[], ignoredPart: string) : string
     {
         const regex = new RegExp(`^((?!${ignoredPart}|[0-9]).)*$`);
         const filteredEra = dateParts.filter(part => regex.test(part));

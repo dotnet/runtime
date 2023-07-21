@@ -1,11 +1,13 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/* eslint-disable no-inner-declarations */
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 import { mono_wasm_new_external_root } from "../roots";
 import { monoStringToString, stringToUTF16 } from "../strings";
 import { Int32Ptr } from "../types/emscripten";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { OUTER_SEPARATOR, normalizeLocale } from "./helpers";
-
-/* eslint-disable no-inner-declarations */
 
 export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, dstLength: number, isException: Int32Ptr, exAddress: MonoObjectRef): number
 {
@@ -24,10 +26,8 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
         const designators = getAmPmDesignators(canonicalLocale);
         cultureInfo.AmDesignator = designators.am;
         cultureInfo.PmDesignator = designators.pm;
-        const longTimePattern = getLongTimePattern(canonicalLocale, designators);
-        cultureInfo.LongTimePattern = longTimePattern;
-        const shortTimePattern = getShortTimePattern(longTimePattern);
-        cultureInfo.ShortTimePattern = shortTimePattern;
+        cultureInfo.LongTimePattern = getLongTimePattern(canonicalLocale, designators);
+        cultureInfo.ShortTimePattern = getShortTimePattern(cultureInfo.LongTimePattern);
         const result = Object.values(cultureInfo).join(OUTER_SEPARATOR);
         if (result.length > dstLength)
         {
@@ -49,8 +49,8 @@ export function mono_wasm_get_culture_info(culture: MonoStringRef, dst: number, 
 
 function getAmPmDesignators(locale: any)
 {
-    const pmTime = new Date("August 19, 1975 12:15:30");
-    const amTime = new Date("August 19, 1975 11:15:30");
+    const pmTime = new Date("August 19, 1975 12:15:30"); // do not change, some PM hours result in hour digits change, e.g. 13 -> 01 or 1
+    const amTime = new Date("August 19, 1975 11:15:30"); // do not change, some AM hours result in hour digits change, e.g. 9 -> 09
     const pmDesignator = getDesignator(pmTime, locale);
     const amDesignator = getDesignator(amTime, locale);
     return {
