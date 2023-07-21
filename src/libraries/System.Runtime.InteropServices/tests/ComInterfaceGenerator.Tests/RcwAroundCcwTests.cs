@@ -41,7 +41,7 @@ namespace ComInterfaceGenerator.Tests
         [Fact]
         public void IDerived()
         {
-            var obj = CreateWrapper<Derived, IDerived>();
+            IDerived obj = CreateWrapper<Derived, IDerived>();
             obj.SetInt(1);
             Assert.Equal(1, obj.GetInt());
             obj.SetName("A");
@@ -71,10 +71,14 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<IIntArrayImpl, IIntArray>();
             int[] data = new int[] { 1, 2, 3 };
             int length = data.Length;
-            obj.Set(data, length);
-            Assert.Equal(data, obj.Get(out int _));
-            obj.Get2(out var value);
+            obj.SetContents(data, length);
+            Assert.Equal(data, obj.GetReturn(out int _));
+            obj.GetOut(out var value);
             Assert.Equal(data, value);
+            obj.SwapArray(ref data, data.Length);
+            obj.PassIn(in data, data.Length);
+            // https://github.com/dotnet/runtime/issues/89265
+            //obj.Double(data, data.Length);
         }
 
         [Fact]
@@ -110,14 +114,13 @@ namespace ComInterfaceGenerator.Tests
             var obj = CreateWrapper<ICollectionMarshallingFailsImpl, ICollectionMarshallingFails>();
 
             Assert.Throws<ArgumentException>(() =>
-                _ = obj.Get()
+                _ = obj.Get(out _)
             );
             Assert.Throws<ArgumentException>(() =>
-                obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 })
+                obj.Set(new int[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 0 }, 10)
             );
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/88111")]
         [Fact]
         public void IJaggedArrayMarshallingFails()
         {
@@ -127,8 +130,8 @@ namespace ComInterfaceGenerator.Tests
                 _ = obj.Get(out _, out _)
             );
             var array = new int[][] { new int[] { 1, 2, 3 }, new int[] { 4, 5, }, new int[] { 6, 7, 8, 9 } };
-            var length = 3;
             var widths = new int[] { 3, 2, 4 };
+            var length = 3;
             Assert.Throws<ArgumentException>(() =>
                 obj.Set(array, widths, length)
             );

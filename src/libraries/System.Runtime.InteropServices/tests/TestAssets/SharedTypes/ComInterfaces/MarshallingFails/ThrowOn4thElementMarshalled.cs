@@ -12,6 +12,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
     {
         static int _marshalledCount = 0;
         static int _unmarshalledCount = 0;
+        public static int FreeCount { get; private set; }
         public static nint ConvertToUnmanaged(int managed)
         {
             if (_marshalledCount++ == 3)
@@ -31,6 +32,7 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
             }
             return (int)unmanaged;
         }
+        public static void Free(nint unmanaged) => ++FreeCount;
     }
 
 }

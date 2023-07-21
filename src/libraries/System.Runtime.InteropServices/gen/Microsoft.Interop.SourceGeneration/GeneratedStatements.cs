@@ -22,6 +22,7 @@ namespace Microsoft.Interop
         public ImmutableArray<StatementSyntax> NotifyForSuccessfulInvoke { get; init; }
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Cleanup { get; init; }
+        //public ImmutableArray<StatementSyntax> CleanupNativeOut { get; init; }
         public ImmutableArray<StatementSyntax> AssignOut { get; init; }
 
         public ImmutableArray<CatchClauseSyntax> ManagedExceptionCatchClauses { get; init; }
@@ -40,6 +41,7 @@ namespace Microsoft.Interop
                 NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.NotifyForSuccessfulInvoke }),
                 GuaranteedUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.GuaranteedUnmarshal }),
                 Cleanup = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Cleanup }),
+                //CleanupNativeOut = GenerateStatementsForStubContext(marshallers, new MarshalToLocalContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup })),
                 ManagedExceptionCatchClauses = GenerateCatchClauseForManagedException(marshallers, context),
                 AssignOut = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.AssignOut })
             };
@@ -85,7 +87,12 @@ namespace Microsoft.Interop
                     if (!MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                         continue;
                     else
-                        localContext = new AssignOutContext(localContext, marshaller.Generator.AsParameter(marshaller.TypeInfo, context).Identifier.ToString());
+                        localContext = new AssignOutContext(context, marshaller.Generator.AsParameter(marshaller.TypeInfo, context).Identifier.ToString());
+                }
+                if (context is MarshalToLocalContext && context.CurrentStage == StubCodeContext.Stage.Cleanup)
+                {
+                    if (!MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
+                        continue;
                 }
                 statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, localContext));
             }
@@ -180,6 +187,7 @@ namespace Microsoft.Interop
             catchClauseBuilder.AddRange(
                 managedExceptionMarshaller.Generator.Generate(
                     managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
+            catchClauseBuilder.AddRange(GenerateStatementsForStubContext(marshallers, new MarshalToLocalContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup })));
             if (!marshallers.IsUnmanagedVoidReturn)
             {
                 catchClauseBuilder.Add(ReturnStatement(IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native)));

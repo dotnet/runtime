@@ -11,20 +11,28 @@ namespace SharedTypes.ComInterfaces.MarshallingFails
     [Guid("A4857395-06FB-4A6E-81DB-35461BE999C5")]
     internal partial interface ICollectionMarshallingFails
     {
-        [return: MarshalUsing(ConstantElementCount = 10)]
+        [return: MarshalUsing(CountElementName = nameof(size))]
         [return: MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 1)]
-        public int[] Get();
+        public int[] Get(out int size);
         public void Set(
-            [MarshalUsing(ConstantElementCount = 10)]
+            [MarshalUsing(CountElementName = nameof(size))]
             [MarshalUsing(typeof(ThrowOn4thElementMarshalled), ElementIndirectionDepth = 1)]
-            int[] value);
+            int[] value, int size);
     }
 
     [GeneratedComClass]
     internal partial class ICollectionMarshallingFailsImpl : ICollectionMarshallingFails
     {
-        int[] _data = new[] { 1, 2, 3 };
-        public int[] Get() => _data;
-        public void Set(int[] value) => _data = value;
+        int[] _data = new[] { 1, 2, 3, 4, 5, 6, 7, 8 };
+        public int[] Get(out int size)
+        {
+            size = _data.Length;
+            return _data;
+        }
+        public void Set(int[] value, int size)
+        {
+            _data = new int[size];
+            value.CopyTo(_data, 0);
+        }
     }
 }

@@ -400,8 +400,8 @@ namespace Microsoft.Interop
         /// This is necessary for scenarios with unmanaged callers where the parameter is expected to be modified If and Only If the method returns successfully.
         /// </summary>
         public static bool MarshalsOutToLocal(TypePositionInfo info, StubCodeContext context)
-            // Managed callers will throw if the return is a failure, and so it is less important that the parameters aren't modified before returning a failure.
             => context.Direction is MarshalDirection.UnmanagedToManaged
+                && context.AdditionalTemporaryStateLivesAcrossStages
                 && (info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref
                     || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
                     || (info.IsManagedReturnPosition && !info.IsNativeReturnPosition));

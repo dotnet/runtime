@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -780,11 +779,12 @@ namespace ComInterfaceGenerator.Unit.Tests
                     .WithLocation(1)
                     .WithLocation(2)
                     .WithArguments(SR.InOutAttributes, paramName, SR.PinnedMarshallingIsInOutByDefault);
-            yield return new object[] {
-                ID(),
-                codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
-                new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
-            };
+            // https://github.com/dotnet/runtime/issues/89265
+            //yield return new object[] {
+            //    ID(),
+            //    codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "int[]", paramNameWithLocation),
+            //    new DiagnosticResult[] { inOutAttributeIsDefaultDiagnostic }
+            //};
             yield return new object[] {
                 ID(),
                 codeSnippets.ByValueMarshallingOfType(inAttribute + outAttribute + constElementCount, "char[]", paramNameWithLocation, (StringMarshalling.Utf16, null)),

@@ -208,16 +208,6 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             var arr = GetMultiDimensionalArray<BoolStruct>(10, 10);
             var widths = new int[10] { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
-            //foreach (var throwOn in new int[] { 0, 1, 45, 99 })
-            //{
-            //    EnforceAllElementsCleanedUpBoolStruct.ThrowOnNthUnmarshalledElement(throwOn);
-            //    EnforceAllElementsCleanedUpBoolStruct.ExpectedCleanupNumber = 100;
-            //    Assert.Throws<ArgumentException>(() =>
-            //    {
-            //        NativeExportsNE.MarshallingFails.NegateBoolsOut2D(arr, arr.Length, widths, out BoolStruct[][] boolsOut);
-            //    });
-            //    EnforceAllElementsCleanedUpBoolStruct.AssertAllHaveBeenCleaned();
-            //}
             // Run without throwing - this is okay only because the native code doesn't actually use the array, it creates a whole new one
             EnforceAllElementsCleanedUpBoolStruct.ThrowOnNthUnmarshalledElement(-1);
             EnforceAllElementsCleanedUpBoolStruct.ExpectedCleanupNumber = 100;

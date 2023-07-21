@@ -12,28 +12,62 @@ namespace SharedTypes.ComInterfaces
     internal partial interface IIntArray
     {
         [return: MarshalUsing(CountElementName = nameof(size))]
-        int[] Get(out int size);
-        int Get2([MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out int[] array);
-        void Set([MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
+        int[] GetReturn(out int size);
+        int GetOut([MarshalUsing(CountElementName = MarshalUsingAttribute.ReturnsCountValue)] out int[] array);
+        void SetContents([MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
+        void FillAscending([Out][MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
+        // https://github.com/dotnet/runtime/issues/89265
+        //void Double([In, Out][MarshalUsing(CountElementName = nameof(size))] int[] array, int size);
+        void PassIn([MarshalUsing(CountElementName = nameof(size))] in int[] array, int size);
+        void SwapArray([MarshalUsing(CountElementName = nameof(size))] ref int[] array, int size);
     }
 
     [GeneratedComClass]
     internal partial class IIntArrayImpl : IIntArray
     {
         int[] _data;
-        public int[] Get(out int size)
+        public int[] GetReturn(out int size)
         {
             size = _data.Length;
             return _data;
         }
-        public int Get2(out int[] array)
+        public int GetOut(out int[] array)
         {
             array = _data;
             return array.Length;
         }
-        public void Set(int[] array, int size)
+        public void SetContents(int[] array, int size)
         {
+            _data = new int[size];
+            array.CopyTo(_data, 0);
+        }
+
+        public void FillAscending(int[] array, int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                array[i] = i;
+            }
+        }
+        public void Double(int[] array, int size)
+        {
+            for (int i = 0; i < size; i++)
+            {
+                array[i] = array[i] * 2;
+            }
+
+        }
+
+        public void PassIn([MarshalUsing(CountElementName = "size")] in int[] array, int size)
+        {
+            _data = new int[size];
+            array.CopyTo(_data, 0);
+        }
+        public void SwapArray([MarshalUsing(CountElementName = "size")] ref int[] array, int size)
+        {
+            var temp = _data;
             _data = array;
+            array = temp;
         }
     }
 }

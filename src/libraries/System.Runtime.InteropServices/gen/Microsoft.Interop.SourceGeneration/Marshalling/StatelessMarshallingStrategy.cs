@@ -584,7 +584,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_cleanupElementsAndSpace)
+            if (!_cleanupElementsAndSpace && !(context is MarshalToLocalContext))
             {
                 yield break;
             }
@@ -654,6 +654,16 @@ namespace Microsoft.Interop
             if (elementsSetup is not EmptyStatementSyntax)
             {
                 yield return elementsSetup;
+            }
+            if (MarshallerHelpers.MarshalsOutToLocal(info, context)
+                && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
+            {
+                yield return LocalDeclarationStatement(VariableDeclaration(
+                    GenericName(
+                        Identifier(TypeNames.System_Span),
+                        TypeArgumentList(
+                            SingletonSeparatedList(_elementsMarshalling.UnmanagedElementType))),
+                    SingletonSeparatedList(VariableDeclarator(context.GetAdditionalIdentifier(info, "out")))));
             }
         }
 

@@ -99,7 +99,14 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
+                    // TODO: Correctly clean up the allocated contents that aren't transferred back to the caller
+                    // We don't correctly clean up the [out] parameters
+                    if (context is MarshalToLocalContext
+                        && (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
+                            ))
+                        break;
+                    else
+                        return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
                 case StubCodeContext.Stage.AssignOut:
                     Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
                     return _nativeTypeMarshaller.GenerateAssignOutStatements(info, (AssignOutContext)context);

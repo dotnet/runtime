@@ -94,7 +94,6 @@ namespace Microsoft.Interop
 
             SyntaxList<CatchClauseSyntax> catchClauses = List(statements.ManagedExceptionCatchClauses);
 
-            finallyStatements.AddRange(statements.Cleanup);
             if (finallyStatements.Count > 0)
             {
                 allStatements.Add(
@@ -111,6 +110,7 @@ namespace Microsoft.Interop
             }
 
             allStatements.AddRange(statements.AssignOut);
+            allStatements.AddRange(statements.Cleanup);
 
             // Return
             if (!_marshallers.IsUnmanagedVoidReturn)
