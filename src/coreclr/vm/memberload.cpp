@@ -123,7 +123,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
 }
-
+const DWORD EnCFieldIndex = 0x10000000;
 //---------------------------------------------------------------------------------------
 //
 void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
@@ -365,25 +365,9 @@ void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
 
         if (pFD->IsStatic() && pMT->HasGenericsStaticsInfo())
         {
-            //
-            // <NICE> this is duplicated logic GetFieldDescByIndex </NICE>
-            //         
-
-            DWORD pos = static_cast<DWORD>(pFD - (pMT->GetApproxFieldDescListRaw() + pMT->GetNumStaticFields()));
-            if(!(pos >= 0 && pos < pMT->GetNumStaticFields()))
-            {
-                DWORD fdIndex = pMT->GetIndexForFieldDesc(pFD);
-                pFD = pMT->GetFieldDescByIndex(fdIndex);
-            }
-            else
-            {
-                INDEBUG(mdFieldDef token = pFD->GetMemberDef();)
-                _ASSERTE(pos >= 0 && pos < pMT->GetNumStaticFields());
-                pFD = pMT->GetGenericsStaticFieldDescs() + pos;
-                _ASSERTE(pFD->GetMemberDef() == token);
-                _ASSERTE(!pFD->IsSharedByGenericInstantiations());
-                _ASSERTE(pFD->GetEnclosingMethodTable() == pMT);
-            }
+           MethodTable* pFieldMT = pFD->GetApproxEnclosingMethodTable();
+           DWORD index = pFieldMT->GetIndexForFieldDesc(pFD);
+           pFD = pMT->GetFieldDescByIndex(index);
         }
 
         *ppFD = pFD;
