@@ -1906,7 +1906,7 @@ mono_generic_inst_equal_full (const MonoGenericInst *a, const MonoGenericInst *b
 	if (a->is_open != b->is_open || a->type_argc != b->type_argc)
 		return FALSE;
 	for (guint i = 0; i < a->type_argc; ++i) {
-		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], MONO_TYPE_EQ_FLAGS_SIG_ONLY))
+		if (!do_mono_metadata_type_equal (a->type_argv [i], b->type_argv [i], signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0))
 			return FALSE;
 	}
 	return TRUE;
@@ -5695,10 +5695,10 @@ mono_metadata_class_equal (MonoClass *c1, MonoClass *c2, gboolean signature_only
 		return mono_metadata_class_equal (c1_type->data.klass, c2_type->data.klass, signature_only);
 	if (signature_only &&
 	    (c1_type->type == MONO_TYPE_ARRAY) && (c2_type->type == MONO_TYPE_ARRAY))
-		return do_mono_metadata_type_equal (c1_type, c2_type, MONO_TYPE_EQ_FLAGS_SIG_ONLY);
+		return do_mono_metadata_type_equal (c1_type, c2_type, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_PTR) && (c2_type->type == MONO_TYPE_PTR))
-		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, MONO_TYPE_EQ_FLAGS_SIG_ONLY);
+		return do_mono_metadata_type_equal (c1_type->data.type, c2_type->data.type, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 	if (signature_only &&
 		(c1_type->type == MONO_TYPE_FNPTR) && (c2_type->type == MONO_TYPE_FNPTR))
 		return mono_metadata_fnptr_equal (c1_type->data.method, c2_type->data.method, signature_only);
@@ -5720,7 +5720,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 		return FALSE;
 	if (s1->explicit_this != s2->explicit_this)
 		return FALSE;
-	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
+	if (! do_mono_metadata_type_equal (s1->ret, s2->ret, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0))
 		return FALSE;
 	if (s1->param_count != s2->param_count)
 		return FALSE;
@@ -5731,7 +5731,7 @@ mono_metadata_fnptr_equal (MonoMethodSignature *s1, MonoMethodSignature *s2, gbo
 
 		if (t1 == NULL || t2 == NULL)
 			return (t1 == t2);
-		if (! do_mono_metadata_type_equal (t1, t2, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
+		if (! do_mono_metadata_type_equal (t1, t2, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0))
 			return FALSE;
 	}
 }
@@ -5760,7 +5760,7 @@ mono_metadata_custom_modifiers_equal (MonoType *t1, MonoType *t2, gboolean signa
 		if (cm1_required != cm2_required)
 			return FALSE;
 
-		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, MONO_TYPE_EQ_FLAGS_SIG_ONLY))
+		if (!do_mono_metadata_type_equal (cm1_type, cm2_type, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0))
 			return FALSE;
 	}
 	return TRUE;
@@ -5874,7 +5874,7 @@ mono_metadata_type_equal (MonoType *t1, MonoType *t2)
 gboolean
 mono_metadata_type_equal_full (MonoType *t1, MonoType *t2, gboolean signature_only)
 {
-	return do_mono_metadata_type_equal (t1, t2, MONO_TYPE_EQ_FLAGS_SIG_ONLY);
+	return do_mono_metadata_type_equal (t1, t2, signature_only ? MONO_TYPE_EQ_FLAGS_SIG_ONLY : 0);
 }
 
 enum {
