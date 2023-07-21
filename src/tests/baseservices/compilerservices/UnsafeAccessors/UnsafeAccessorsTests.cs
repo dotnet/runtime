@@ -373,32 +373,56 @@ static unsafe class UnsafeAccessorsTests
         extern static string CallManagedMethod(UserDataClass d, delegate* unmanaged[Cdecl]<void> fptr);
     }
 
-    class InheritanceBase
+    abstract class InheritanceBase
     {
         private static string OnBase() => nameof(OnBase);
         private static string FieldOnBase = nameof(FieldOnBase);
+        protected abstract string Abstract();
+        protected virtual string Virtual() => $"{nameof(InheritanceBase)}.{nameof(Virtual)}";
+        protected virtual string NewVirtual() => $"{nameof(InheritanceBase)}.{nameof(NewVirtual)}";
+        protected virtual string BaseVirtual() => $"{nameof(InheritanceBase)}.{nameof(BaseVirtual)}";
     }
 
     class InheritanceDerived : InheritanceBase
     {
         private static string OnDerived() => nameof(OnDerived);
         private static string FieldOnDerived = nameof(FieldOnDerived);
+        protected override string Abstract() => $"{nameof(InheritanceDerived)}.{nameof(Abstract)}";
+        protected override string Virtual() => $"{nameof(InheritanceDerived)}.{nameof(Virtual)}";
+        protected new virtual string NewVirtual() => $"{nameof(InheritanceDerived)}.{nameof(NewVirtual)}";
     }
 
     [Fact]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/89212", TestRuntimes.Mono)]
     public static void Verify_InheritanceMethodResolution()
     {
         Console.WriteLine($"Running {nameof(Verify_InheritanceMethodResolution)}");
 
         var instance = new InheritanceDerived();
         Assert.Throws<MissingMethodException>(() => OnBase(instance));
+        Assert.Throws<MissingMethodException>(() => BaseVirtual(instance));
         Assert.Equal(nameof(OnDerived), OnDerived(instance));
+        Assert.Equal($"{nameof(InheritanceDerived)}.{nameof(Abstract)}", Abstract(instance));
+        Assert.Equal($"{nameof(InheritanceDerived)}.{nameof(Virtual)}", Virtual(instance));
+        Assert.Equal($"{nameof(InheritanceBase)}.{nameof(NewVirtual)}", NewVirtual(instance));
 
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnBase))]
         extern static string OnBase(InheritanceDerived i);
 
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(BaseVirtual))]
+        extern static string BaseVirtual(InheritanceDerived target);
+
         [UnsafeAccessor(UnsafeAccessorKind.StaticMethod, Name = nameof(OnDerived))]
         extern static string OnDerived(InheritanceDerived i);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Abstract))]
+        extern static string Abstract(InheritanceBase target);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(Virtual))]
+        extern static string Virtual(InheritanceBase target);
+
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = nameof(NewVirtual))]
+        extern static string NewVirtual(InheritanceBase target);
     }
 
     [Fact]
@@ -436,7 +460,7 @@ static unsafe class UnsafeAccessorsTests
             () => FieldNotFound(null));
         AssertExtensions.ThrowsMissingMemberException<MissingFieldException>(
             isNativeAot ? null : UserDataClass.StaticFieldName,
-            () => 
+            () =>
             {
                 UserDataValue value = default;
                 FieldNotFoundStaticMismatch1(ref value);
@@ -489,6 +513,8 @@ static unsafe class UnsafeAccessorsTests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidTargetUnsafeAccessorAmbiguousMatch()
     {
+        Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessorAmbiguousMatch)}");
+
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 
