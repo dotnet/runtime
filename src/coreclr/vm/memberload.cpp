@@ -123,6 +123,7 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
 }
+
 //---------------------------------------------------------------------------------------
 //
 void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
