@@ -96,7 +96,7 @@ namespace System.Diagnostics
         {
             SwitchSetting = (int)Enum.Parse<TraceLevel>(Value, true);
 
-            Debug.Assert(Value.Length > 0, "Value.Length > 0");
+            Debug.Assert(Value.Length > 0, "Unexpected 'Value' zero Length");
             if (char.IsDigit(Value[0]))
             {
                 // Convert digit value representation to TraceLevel representation

@@ -167,7 +167,7 @@ namespace System.Diagnostics
 
         internal void SetSwitchValueString(string switchValueString)
         {
-            Debug.Assert(switchValueString is not null, "switchValueString != null");
+            Debug.Assert(switchValueString is not null, "Unexpected 'switchValueString' null value");
             _switchValueString = switchValueString;
         }
 
