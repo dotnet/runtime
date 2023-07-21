@@ -408,7 +408,7 @@
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
       <TestRelativePath>$(CategoryName)/$([System.String]::Copy('$(_CMDDIR)').Replace("$(CategoryPath)/",""))</TestRelativePath>
-      <AppName>$([System.String]::Copy('$(TestRelativePath)').Replace('/','_'))_$(EntryPoint)</AppName>
+      <AppName>$([System.String]::Copy('$(TestRelativePath)').Replace('/','_'))</AppName>
       <AppleBuildDir>$(IntermediateOutputPath)\iOSApps\$(AppName)</AppleBuildDir>
       <FinalPath>$(XUnitTestBinBase)$(TestRelativePath)\$(AppName).app</FinalPath>
     </PropertyGroup>
