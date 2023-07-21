@@ -11,15 +11,16 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    // Unmanaged part of cache entry
-    // it is not nested in GenericCache because generic types cannot have explicit layout.
+    // unmanaged part of generic cache entries
+    // it is a union, so that we could put some extra info in the element #0 of the table.
+    // the struct is not nested in GenericCache because generic types cannot have explicit layout.
     [StructLayout(LayoutKind.Explicit)]
-    internal struct UnmanagedPart
+    internal struct VersionAndHash
     {
         // version has the following structure:
         // [ distance:3bit |  versionNum:29bit ]
         //
-        // distance is how many iterations the entry is from it ideal position.
+        // distance is how many iterations the entry is from its ideal position.
         // we use that for preemption.
         //
         // versionNum is a monotonically increasing numerical tag.
@@ -34,7 +35,7 @@ namespace System.Runtime.CompilerServices
         [FieldOffset(sizeof(int))]
         internal int _hash;
 
-        // AuxData
+        // AuxData  (to store some data specific to the table in the element #0 )
         [FieldOffset(0)]
         internal int tableMask;
         [FieldOffset(sizeof(int))]
@@ -48,6 +49,18 @@ namespace System.Runtime.CompilerServices
     internal unsafe struct GenericCache<TKey, TValue>
         where TKey: struct, IEquatable<TKey>
     {
+        private struct Entry
+        {
+            internal VersionAndHash _unmanagedPart;
+            internal TKey _key;
+            internal TValue _value;
+
+            [UnscopedRef]
+            public ref uint Version => ref _unmanagedPart._version;
+            [UnscopedRef]
+            public ref int Hash => ref _unmanagedPart._hash;
+        }
+
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
@@ -73,27 +86,15 @@ namespace System.Runtime.CompilerServices
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
-            s_sentinelTable ??= CreateCastCache(2, throwOnFail: true);
+            s_sentinelTable ??= CreateCacheTable(2, throwOnFail: true);
 
             _table =
 #if !DEBUG
             // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
-            CreateCastCache(initialCacheSize) ??
+            CreateCacheTable(initialCacheSize) ??
 #endif
             s_sentinelTable!;
             _lastFlushSize = initialCacheSize;
-        }
-
-        private struct Entry
-        {
-            internal UnmanagedPart _unmanagedPart;
-            internal TKey _key;
-            internal TValue _value;
-
-            [UnscopedRef]
-            public ref uint Version => ref _unmanagedPart._version;
-            [UnscopedRef]
-            public ref int Hash => ref _unmanagedPart._hash;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -157,9 +158,9 @@ namespace System.Runtime.CompilerServices
                 uint version = Volatile.Read(ref pEntry.Version);
 
                 if (hash == pEntry.Hash && key.Equals(pEntry._key))
+//                if (key.Equals(pEntry._key))
                 {
-                    // we do ordinary reads of the value and
-                    // Interlocked.ReadMemoryBarrier() before reading the version
+                    // we use ordinary reads to fetch the value
                     value = pEntry._value;
 
                     // make sure the second read of 'version' happens after reading '_value'
@@ -194,8 +195,8 @@ namespace System.Runtime.CompilerServices
             return false;
         }
 
-        // we generally do not OOM in casts, just return null unless throwOnFail is specified.
-        private Entry[]? CreateCastCache(int size, bool throwOnFail = false)
+        // we generally do not want OOM in cache lookups, just return null unless throwOnFail is specified.
+        private Entry[]? CreateCacheTable(int size, bool throwOnFail = false)
         {
             // size must be positive
             Debug.Assert(size > 1);
@@ -391,7 +392,7 @@ namespace System.Runtime.CompilerServices
 
         private bool MaybeReplaceCacheWithLarger(int size)
         {
-            Entry[]? newTable = CreateCastCache(size);
+            Entry[]? newTable = CreateCacheTable(size);
             if (newTable == null)
             {
                 return false;
