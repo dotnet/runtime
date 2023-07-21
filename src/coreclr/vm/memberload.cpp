@@ -123,7 +123,6 @@ void DECLSPEC_NORETURN MemberLoader::ThrowMissingMethodException(MethodTable* pM
         EX_THROW(EEMessageException, (kMissingMethodException, IDS_EE_MISSING_METHOD, typeName.GetUnicode()));
     }
 }
-const DWORD EnCFieldIndex = 0x10000000;
 //---------------------------------------------------------------------------------------
 //
 void MemberLoader::GetDescFromMemberRef(ModuleBase * pModule,
