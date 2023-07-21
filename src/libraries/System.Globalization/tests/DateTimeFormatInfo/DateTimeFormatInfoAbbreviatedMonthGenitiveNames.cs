@@ -42,8 +42,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("en-AI").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-AS").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } };
             yield return new object[] { new CultureInfo("en-AT").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
-            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", 
-                PlatformDetection.IsBrowserDomSupportedOrNodeJS ? "Sept" : "Sep", "Oct", "Nov", "Dec", "" } }; // "Jun", "Jul", .., "Sep"
+            yield return new object[] { new CultureInfo("en-AU").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "June", "July", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Jun", "Jul", .., "Sep"
             yield return new object[] { new CultureInfo("en-BB").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-BE").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" } }; // "Sep"
             yield return new object[] { new CultureInfo("en-BI").DateTimeFormat, new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } };
