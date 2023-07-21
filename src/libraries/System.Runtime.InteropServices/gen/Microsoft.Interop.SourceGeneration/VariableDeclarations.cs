@@ -91,43 +91,12 @@ namespace Microsoft.Interop
 
                 // Declare variables for parameters
                 AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
-
-                //{
-                //    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
-                //    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
-                //    if (marshaller.Generator.UsesNativeIdentifier(info, context)
-                //        && boundaryBehavior is not
-                //            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
-                //    {
-                //        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
-                //        {
-                //            string outlocal = context.GetAdditionalIdentifier(info, "out");
-                //            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
-                //        }
-                //    }
-                //}
             }
 
             if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
-                //{
-                //    var marshaller = marshallers.ManagedReturnMarshaller;
-                //    var info = marshaller.TypeInfo;
-                //    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
-                //    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
-                //    if (marshaller.Generator.UsesNativeIdentifier(info, context)
-                //        && boundaryBehavior is not
-                //            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
-                //    {
-                //        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
-                //        {
-                //            string outlocal = context.GetAdditionalIdentifier(info, "out");
-                //            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
-                //        }
-                //    }
-                //}
             }
 
             if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
@@ -184,17 +153,15 @@ namespace Microsoft.Interop
                             string outlocal = context.GetAdditionalIdentifier(info, "out");
                             // <nativeType> __param_native_out;
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
-                                marshaller.Generator.AsNativeType(info).Syntax,
+                                localType,
                                 outlocal,
                                 true));
                         }
 
-                        if (boundaryBehavior is ValueBoundaryBehavior.AddressOfNativeIdentifier)
+                        if (boundaryBehavior is ValueBoundaryBehavior.AddressOfNativeIdentifier
+                            && MarshallerHelpers.GetMarshalDirection(info, context) is MarshalDirection.UnmanagedToManaged or MarshalDirection.Bidirectional)
                         {
-                            // To simplify propogating back the value to the "byref" parameter,
-                            // we'll just declare the native identifier as a ref to its type.
-                            // The rest of the code we generate will work as expected, and we don't need
-                            // to manually propogate back the updated values after the call.
+                            // If we need to unmarshal, initialize the native in value
                             statementsToUpdate.Add(MarshallerHelpers.Declare(
                                 localType,
                                 native,

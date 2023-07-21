@@ -76,7 +76,7 @@ namespace Microsoft.Interop
             foreach (BoundGenerator marshaller in marshallers.SignatureMarshallers)
             {
                 StubCodeContext localContext = context;
-                if (context.CurrentStage is StubCodeContext.Stage.Marshal or StubCodeContext.Stage.AssignOut
+                if (context.CurrentStage is StubCodeContext.Stage.Marshal or StubCodeContext.Stage.AssignOut or StubCodeContext.Stage.PinnedMarshal
                     && MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
                 {
                     localContext = new MarshalToLocalContext(context);
