@@ -8690,11 +8690,6 @@ set_value:
 			goto invalid_object;
 		}
 		buffer_add_objid (buf, o);
-		if (CHECK_ICORDBG (TRUE))
-		{
-			MonoType *object_type =  m_class_get_byval_arg (m_class_get_element_class (klass));
-			buffer_add_value (buf, object_type, o, domain);
-		}
 		break;
 	}
 	case CMD_TYPE_GET_SOURCE_FILES:
@@ -8839,7 +8834,7 @@ set_value:
 
 		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
-		buffer_add_objid (buf, obj);
+		buffer_add_objid (buf, obj);	
 		break;
 	}
 	case CMD_TYPE_GET_VALUE_SIZE: {
@@ -10089,10 +10084,14 @@ array_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 	switch (command) {
 	case CMD_ARRAY_REF_GET_TYPE: {
-			buffer_add_byte(buf, m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type);
+			MonoTypeEnum type = m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type;
+			buffer_add_byte(buf, type);
 			buffer_add_int (buf, m_class_get_rank (arr->obj.vtable->klass));
-			if (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))->type == MONO_TYPE_CLASS)
+			if (type == MONO_TYPE_CLASS || type == MONO_TYPE_GENERICINST || type == MONO_TYPE_OBJECT)
+			{
 				buffer_add_typeid (buf, arr->obj.vtable->domain, m_class_get_element_class (arr->obj.vtable->klass));
+				buffer_add_byte (buf, MONO_TYPE_ISSTRUCT (m_class_get_byval_arg (m_class_get_element_class (arr->obj.vtable->klass))));
+			}
 		}
 		break;
 	case CMD_ARRAY_REF_GET_LENGTH:
