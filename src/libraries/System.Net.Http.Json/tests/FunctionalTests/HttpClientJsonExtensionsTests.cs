@@ -367,7 +367,7 @@ namespace System.Net.Http.Json.Functional.Tests
         }
 
         [Fact]
-        public async Task AllowNullRequestUrlAsAsyncEnuermable()
+        public async Task AllowNullRequestUrlAsAsyncEnumerable()
         {
             await HttpMessageHandlerLoopbackServer.CreateClientAndServerAsync(
                 async (handler, uri) =>
