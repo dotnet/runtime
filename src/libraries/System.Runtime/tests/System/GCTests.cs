@@ -1059,10 +1059,55 @@ namespace System.Tests
         }
 
         [Fact]
-        private static void AllocateArrayRefType()
+        private static void AllocateArrayUninitializedPinned_RefType_ThrowsArgumentException()
         {
             GC.AllocateUninitializedArray<string>(100);
             Assert.Throws<ArgumentException>(() => GC.AllocateUninitializedArray<string>(100, pinned: true));
+        }
+
+        struct EmbeddedValueType<T>
+        {
+            public T Value;
+        }
+
+        [Fact]
+        private static void AllocateArrayPinned_ManagedType_DoesNotThrow()
+        {
+            void TryType<T>()
+            {
+                GC.AllocateArray<T>(100);
+                GC.AllocateArray<T>(100, pinned: true);
+
+                GC.AllocateArray<EmbeddedValueType<T>>(100);
+                GC.AllocateArray<EmbeddedValueType<T>>(100, pinned: true);
+            }
+
+            TryType<string>();
+            TryType<object>();
+        }
+
+        [Fact]
+        private unsafe static void AllocateArrayPinned_ManagedValueType_CanRoundtripThroughPointer()
+        {
+            const int k_Length = 100;
+            var rng = new Random(0xAF);
+
+            var array = GC.AllocateArray<EmbeddedValueType<string>>(k_Length, pinned: true);
+            byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]);
+            var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
+
+            for(int i = 0; i < k_Length; ++i)
+            {
+                var idx = rng.Next(k_Length);
+                ref var evt = ref Unsafe.AsRef<EmbeddedValueType<string>>(pointer + size * idx);
+
+                var stringValue = rng.NextSingle().ToString();
+                evt.Value = stringValue;
+
+                Assert.Equal(evt.Value, array[idx].Value);
+            }
+
+            GC.KeepAlive(array);
         }
 
         [Fact]
