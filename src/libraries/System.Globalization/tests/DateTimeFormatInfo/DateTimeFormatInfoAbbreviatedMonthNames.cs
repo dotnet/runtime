@@ -11,10 +11,8 @@ namespace System.Globalization.Tests
         [Fact]
         public void AbbreviatedMonthNames_GetInvariantInfo_ReturnsExpected()
         {
-            string[] expected = PlatformDetection.IsHybridGlobalizationOnBrowser ?
-            new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" } :
-            new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sept", "Oct", "Nov", "Dec", "" };
-            Assert.Equal(expected, DateTimeFormatInfo.InvariantInfo.AbbreviatedMonthNames);
+            Assert.Equal(new string[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "" },
+                DateTimeFormatInfo.InvariantInfo.AbbreviatedMonthNames);
         }
 
         [Fact]

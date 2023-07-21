@@ -200,7 +200,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("zh-TW").DateTimeFormat, new string[] { "1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "" } };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsHybridGlobalizationOnBrowser))]
         [MemberData(nameof(AbbreviatedMonthGenitiveNames_Get_TestData))]
         public void AbbreviatedMonthGenitiveNames_Get_ReturnsExpected(DateTimeFormatInfo format, string[] expected)
         {
