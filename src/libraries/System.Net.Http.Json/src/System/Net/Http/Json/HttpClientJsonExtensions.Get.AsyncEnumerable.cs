@@ -136,39 +136,10 @@ namespace System.Net.Http.Json
             JsonSerializerOptions? options,
             CancellationToken cancellationToken)
         {
-            if (client is null)
-            {
-                throw new ArgumentNullException(nameof(client));
-            }
+            options ??= JsonSerializerOptions.Default;
+            var jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfo(typeof(TValue));
 
-            CancellationTokenSource? linkedCTS = CreateLinkedCTSFromClientTimeout(client, cancellationToken);
-            Task<HttpResponseMessage> responseTask = GetHttpResponseMessageTask(getMethod, client, requestUri, linkedCTS, cancellationToken);
-
-            return Core(client, responseTask, options ?? JsonHelpers.s_defaultSerializerOptions, linkedCTS, cancellationToken);
-
-            static async IAsyncEnumerable<TValue?> Core(
-                HttpClient client,
-                Task<HttpResponseMessage> responseTask,
-                JsonSerializerOptions options,
-                CancellationTokenSource? linkedCTS,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                try
-                {
-                    using HttpResponseMessage response = await EnsureHttpResponseAsync(client, responseTask)
-                        .ConfigureAwait(false);
-
-                    await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
-                        options, cancellationToken))
-                    {
-                        yield return value;
-                    }
-                }
-                finally
-                {
-                    linkedCTS?.Dispose();
-                }
-            }
+            return FromJsonStreamAsyncCore(getMethod, client, requestUri, jsonTypeInfo, cancellationToken);
         }
 
         private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
