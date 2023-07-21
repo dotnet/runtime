@@ -851,18 +851,12 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         public static unsafe T[] AllocateArray<T>(int length, bool pinned = false)
         {
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_NO_FLAGS;
 
             if (pinned)
             {
-                if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-                    ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
-
                 flags = GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
             }
 
