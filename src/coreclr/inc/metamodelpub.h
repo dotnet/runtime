@@ -1414,6 +1414,7 @@ public:
         COL_Flags,                      // flags, for future use
         COL_Owner,                      // typeDef/methodDef
         COL_Name,                       // Purely descriptive, not used for binding purposes
+        COL_Type,
         COL_COUNT,
         COL_KEY = COL_Owner
     };

@@ -1118,7 +1118,7 @@ BOOL Assembler::EmitClass(Class *pClass)
         mdGenericParam tkGP = mdTokenNil;
         for(i = 0; i < pClass->m_NumTyPars; i++)
         {
-            if (FAILED(m_pEmitter->DefineGenericParam(pClass->m_cl, i, pClass->m_TyPars[i].Attrs(), pClass->m_TyPars[i].Name(), 0, &tkNil, &tkGP)))
+            if (FAILED(m_pEmitter->DefineGenericParam(pClass->m_cl, i, pClass->m_TyPars[i].Attrs(), pClass->m_TyPars[i].Name(), pClass->m_TyPars[i].Type(), &tkNil, &tkGP)))
             {
                 report->error("Unable to define generic param: %s'\n", pClass->m_TyPars[i].Name());
             }

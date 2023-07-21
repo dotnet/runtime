@@ -16,6 +16,7 @@ public:
     {
         m_pbsBounds = NULL;
         m_wzName = NULL;
+        m_pbsType = 0;
         m_dwAttrs = 0;
     };
     ~TyParDescr()
@@ -24,9 +25,10 @@ public:
         delete [] m_wzName;
         m_lstCA.RESET(true);
     };
-    void Init(BinStr* bounds, LPCUTF8 name, DWORD attrs)
+    void Init(BinStr* bounds, DWORD type, LPCUTF8 name, DWORD attrs)
     {
         m_pbsBounds = bounds;
+        m_pbsType = type;
         ULONG               cTemp = (ULONG)strlen(name)+1;
         WCHAR *pwzName;
         m_wzName = pwzName = new WCHAR[cTemp];
@@ -38,6 +40,7 @@ public:
         m_dwAttrs = attrs;
     };
     BinStr* Bounds() { return m_pbsBounds; };
+    DWORD   Type() { return m_pbsType; };
     LPCWSTR Name() { return m_wzName; };
     DWORD   Attrs() { return m_dwAttrs; };
     mdToken Token() { return m_token; };
@@ -49,6 +52,7 @@ public:
 
 private:
     BinStr* m_pbsBounds;
+    DWORD   m_pbsType;
     LPCWSTR m_wzName;
     DWORD   m_dwAttrs;
     mdToken m_token;
@@ -61,13 +65,13 @@ public:
     {
         bound  = (b == NULL) ? new BinStr() : b;
         bound->appendInt32(0); // zero terminator
-        attrs = a; name = n; next = nx;
+        attrs = a; type = 0; name = n; next = nx;
     };
-    TyParList(BinStr* a, BinStr* b, LPCUTF8 n, TyParList* nx = NULL)
+    TyParList(DWORD a, DWORD t, BinStr* b, LPCUTF8 n, TyParList* nx = NULL)
     {
         bound  = (b == NULL) ? new BinStr() : b;
         bound->appendInt32(0); // zero terminator
-        type = a; name = n; next = nx;
+        attrs = a; type = t; name = n; next = nx;
     };
     ~TyParList()
     {
@@ -116,10 +120,11 @@ public:
 #pragma warning(disable:6211) // "Leaking memory 'b' due to an exception. Consider using a local catch block to clean up memory"
 #endif /*_PREFAST_ */
 
-    int ToArray(BinStr ***bounds, LPCWSTR** names, DWORD **attrs)
+    int ToArray(BinStr ***bounds, DWORD **types, LPCWSTR** names, DWORD **attrs)
     {
         int n = Count();
         BinStr **b = new BinStr* [n];
+        DWORD  *t = new DWORD [n];
         LPCWSTR *nam = new LPCWSTR [n];
         DWORD *attr = attrs ? new DWORD [n] : NULL;
         TyParList *tp = this;
@@ -133,13 +138,17 @@ public:
             WszMultiByteToWideChar(g_uCodePage,0,tp->name,-1,wzDllName,cTemp);
             nam[i] = (LPCWSTR)wzDllName;
             b[i] = tp->bound;
+            t[i] = tp->type;
             if (attr)
                 attr[i] = tp->attrs;
-            tp->bound = 0; // to avoid deletion by destructor
+            // to avoid deletion by destructor
+            tp->bound = 0;
+            tp->type = 0;
             i++;
             tp = tp->next;
         }
         *bounds = b;
+        *types = t;
         *names = nam;
         if (attrs)
             *attrs = attr;
@@ -163,8 +172,10 @@ public:
                 TyParList *tp = this;
                 while (tp)
                 {
-                    pTPD[i].Init(tp->bound,tp->name,tp->attrs);
-                    tp->bound = 0; // to avoid deletion by destructor
+                    pTPD[i].Init(tp->bound,tp->type,tp->name,tp->attrs);
+                    // to avoid deletion by destructor
+                    tp->bound = 0;
+                    tp->type = 0;
                     i++;
                     tp = tp->next;
                 }
@@ -177,7 +188,7 @@ public:
     BinStr* Bound() { return bound; };
 private:
     BinStr* bound;
-    BinStr* type;
+    DWORD   type;
     LPCUTF8 name;
     TyParList* next;
     DWORD   attrs;

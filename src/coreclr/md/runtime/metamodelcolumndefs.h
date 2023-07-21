@@ -368,6 +368,7 @@
     SCHEMA_ITEM(GenericParam, USHORT, Flags)
     SCHEMA_ITEM_CDTKN(GenericParam, Owner, TypeOrMethodDef)
     SCHEMA_ITEM_STRING(GenericParam, Name)
+    SCHEMA_ITEM_CDTKN(GenericParam, Type, TypeDefOrRef)
     SCHEMA_TABLE_END(GenericParam)
 
     //-------------------------------------------------------------------------

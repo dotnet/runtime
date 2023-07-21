@@ -595,7 +595,7 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
         ULONG        ulParamSeq,            // [IN] Index of the type parameter
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szname,                // [IN] Name
-        DWORD        reserved,              // [IN] For future use (e.g. non-type parameters)
+        mdToken      tkType,                // [IN] Type
         mdToken      rtkConstraints[],      // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
         mdGenericParam *pgp) PURE;          // [OUT] Put GenericParam token here
 
@@ -603,7 +603,7 @@ DECLARE_INTERFACE_(IMetaDataEmit2, IMetaDataEmit)
         mdGenericParam gp,                  // [IN] GenericParam
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Optional name
-        DWORD        reserved,              // [IN] For future use (e.g. non-type parameters)
+        mdToken        tkType,              // [IN] Type
         mdToken      rtkConstraints[]) PURE;// [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 
     STDMETHOD(ResetENCLog)() PURE;          // S_OK or error.

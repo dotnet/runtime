@@ -1082,7 +1082,7 @@ public:
         ULONG        ulParamSeq,            // [IN] Index of the type parameter
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szname,                // [IN] Name
-        DWORD        reserved,              // [IN] For future use (e.g. non-type parameters)
+        mdToken      tkType,                // [IN] Type
         mdToken      rtkConstraints[],      // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
         mdGenericParam *pgp);               // [OUT] Put GenericParam token here
 
@@ -1090,7 +1090,7 @@ public:
         mdGenericParam gp,                  // [IN] GenericParam
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Optional name
-        DWORD        reserved,                // [IN] For future use (e.g. non-type parameters)
+        mdToken      tkType,                // [IN] Type
         mdToken      rtkConstraints[]);     // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 
 #ifdef FEATURE_METADATA_EMIT_PORTABLE_PDB
@@ -1682,7 +1682,7 @@ protected:
         GenericParamRec *pGenericParam,     // [IN] GenericParam record ptr
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Optional name
-        DWORD        reserved,                // [IN] For future use (e.g. non-type parameters)
+        mdToken      tkType,                // [IN] Optional type
         mdToken      rtkConstraints[]);     // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 
     HRESULT _SetTypeDefProps(               // S_OK or error.

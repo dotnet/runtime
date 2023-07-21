@@ -2014,6 +2014,14 @@ public:
         return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 ||
                 (m_Schema.m_major == METAMODEL_MAJOR_VER_B1 && m_Schema.m_minor == METAMODEL_MINOR_VER_B1));
     }// SupportGenerics
+    
+    BOOL SupportsConstGenerics()
+    {
+        return true;
+        // Only 2.1 of the metadata support const generics
+        return (m_Schema.m_major > METAMODEL_MAJOR_VER_V2_0 ||
+                (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 && m_Schema.m_minor >= METAMODEL_MINOR_VER_B1));
+    }// SupportsConstGenerics
 
     protected:
     //*****************************************************************************

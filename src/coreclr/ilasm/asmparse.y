@@ -147,7 +147,7 @@
         /* nonTerminals */
 %type <string> dottedName id methodName atOpt slashedName
 %type <labels> labels
-%type <int32> callConv callKind int32 customHead customHeadWithOwner vtfixupAttr paramAttr ddItemCount variantType repeatOpt truefalse typarAttrib typarAttribs
+%type <int32> callConv callKind int32 customHead customHeadWithOwner vtfixupAttr paramAttr ddItemCount variantType repeatOpt truefalse typarAttrib typarAttribs conTyparAttrib conTyparAttribs
 %type <int32> iidParamIndex genArity genArityNotEmpty
 %type <float64> float64
 %type <int64> int64
@@ -496,7 +496,14 @@ typarAttribs            : /* EMPTY */                       { $$ = 0; }
                         | typarAttrib typarAttribs          { $$ = $1 | $2; }
                         ;
 
-typars                  : CONST_ type dottedName typarsRest {$$ = new TyParList($2, NULL, $3, $4); }
+conTyparAttrib          : FLAGS_ '(' int32 ')'              { $$ = (CorGenericParamAttr)$3; }
+                        ;
+
+conTyparAttribs         : /* EMPTY */                       { $$ = 0; }
+                        | conTyparAttrib conTyparAttribs    { $$ = $1 | $2; }
+                        ;
+
+typars                  : CONST_ conTyparAttribs typeSpec dottedName typarsRest {$$ = new TyParList($2, $3, NULL, $4, $5); }
                         | typarAttribs tyBound dottedName typarsRest {$$ = new TyParList($1, $2, $3, $4);}
                         | typarAttribs dottedName typarsRest   {$$ = new TyParList($1, NULL, $2, $3);}
                         ;

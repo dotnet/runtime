@@ -1638,7 +1638,7 @@ STDMETHODIMP RegMeta::DefineGenericParam(   // S_OK or error.
         ULONG        ulParamSeq,            // [IN] Index of the type parameter
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Name
-        DWORD        reserved,              // [IN] For future use
+        mdToken      tkType,                // [IN] Type
         mdToken      rtkConstraints[],      // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
         mdGenericParam *pgp)                // [OUT] Put GenericParam token here
 {
@@ -1654,11 +1654,10 @@ STDMETHODIMP RegMeta::DefineGenericParam(   // S_OK or error.
 
     IfFailGo(m_pStgdb->m_MiniMd.PreUpdate());
 
-    if (reserved != 0)
-        IfFailGo(META_E_BAD_INPUT_PARAMETER);
-
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
+        IfFailGo(CLDB_E_INCOMPATIBLE);
+    if (!m_pStgdb->m_MiniMd.SupportsConstGenerics())
         IfFailGo(CLDB_E_INCOMPATIBLE);
 
     if ((tkOwnerType == mdtTypeDef) || (tkOwnerType == mdtMethodDef))
@@ -1703,11 +1702,13 @@ STDMETHODIMP RegMeta::DefineGenericParam(   // S_OK or error.
             pGenericParam->SetNumber((USHORT)ulParamSeq);
             IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Owner,
                                                 pGenericParam, tkOwner));
+            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Type,
+                                                pGenericParam, tkType));
             tkRet = TokenFromRid(iGenericParam,mdtGenericParam);
         }
 
         // 2. Set its props
-        IfFailGo(_SetGenericParamProps(tkRet, pGenericParam, dwParamFlags, szName, reserved ,rtkConstraints));
+        IfFailGo(_SetGenericParamProps(tkRet, pGenericParam, dwParamFlags, szName, tkType ,rtkConstraints));
         IfFailGo(UpdateENCLog(tkRet));
     }
     else
@@ -1729,19 +1730,20 @@ STDMETHODIMP RegMeta::SetGenericParamProps(      // S_OK or error.
         mdGenericParam gp,                  // [IN] GenericParam
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Optional name
-        DWORD        reserved,              // [IN] For future use (e.g. non-type parameters)
-        mdToken      rtkConstraints[])     // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
+        mdToken      tkType,                // [IN] Type
+        mdToken      rtkConstraints[])      // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 {
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
     return E_NOTIMPL;
 #else //!FEATURE_METADATA_EMIT_IN_DEBUGGER
     HRESULT hr = S_OK;
 
-    if (reserved != 0)
-        IfFailGo(META_E_BAD_INPUT_PARAMETER);
-
     // See if this version of the metadata can do Generics
     if (!m_pStgdb->m_MiniMd.SupportsGenerics())
+        IfFailGo(CLDB_E_INCOMPATIBLE);
+    
+    // See if this version of the metadata can do Const Generics
+    if (!m_pStgdb->m_MiniMd.SupportsConstGenerics())
         IfFailGo(CLDB_E_INCOMPATIBLE);
 
     if (TypeFromToken(gp) == mdtGenericParam)
@@ -1749,7 +1751,7 @@ STDMETHODIMP RegMeta::SetGenericParamProps(      // S_OK or error.
         GenericParamRec *pGenericParam;
 
         IfFailGo(m_pStgdb->m_MiniMd.GetGenericParamRecord(RidFromToken(gp), &pGenericParam));
-        IfFailGo(_SetGenericParamProps(gp,pGenericParam,dwParamFlags,szName,reserved,rtkConstraints));
+        IfFailGo(_SetGenericParamProps(gp,pGenericParam,dwParamFlags,szName,tkType,rtkConstraints));
         IfFailGo(UpdateENCLog(gp));
     }
     else
@@ -1768,7 +1770,7 @@ HRESULT RegMeta::_SetGenericParamProps(     // S_OK or error.
         GenericParamRec *pGenericParam,     // [IN] GenericParam record ptr
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Optional name
-        DWORD        reserved,              // [IN] For future use (e.g. non-type parameters)
+        mdToken      tkType,                // [IN] Option type
         mdToken      rtkConstraints[])      // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 {
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
@@ -1782,6 +1784,10 @@ HRESULT RegMeta::_SetGenericParamProps(     // S_OK or error.
         if ((szName != NULL) && (*szName != 0))
             IfFailGo(m_pStgdb->m_MiniMd.PutStringW(TBL_GenericParam, GenericParamRec::COL_Name,
                                                 pGenericParam, szName));
+        // If there is a type, set it
+        if (tkType != NULL)
+            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_TypeRef, GenericParamRec::COL_Type,
+                                                pGenericParam, tkType));
 
         // If there are new flags, set them.
         if (dwParamFlags != (DWORD) -1)
