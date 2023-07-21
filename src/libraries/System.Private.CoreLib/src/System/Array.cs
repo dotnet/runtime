@@ -2207,6 +2207,8 @@ namespace System
                 }
             }
 
+            // IntroSort is recursive; block it from being inlined into itself as
+            // this is currenly not profitable.
             [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
@@ -2422,6 +2424,8 @@ namespace System
                 }
             }
 
+            // IntroSort is recursive; block it from being inlined into itself as
+            // this is currenly not profitable.
             [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
