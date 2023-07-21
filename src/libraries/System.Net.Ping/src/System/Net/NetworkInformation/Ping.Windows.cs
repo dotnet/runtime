@@ -194,7 +194,7 @@ namespace System.Net.NetworkInformation
                 IntPtr.Zero,
                 IntPtr.Zero,
                 sourceAddr,
-                remoteAddr.Buffer,
+                remoteAddr.InternalBuffer,
                 _requestBuffer!,
                 (ushort)buffer.Length,
                 ref ipOptions,

@@ -473,8 +473,6 @@ namespace System.Net.Sockets
             int cmsgBufferLen = Interop.Sys.GetControlMessageBufferSize(Convert.ToInt32(isIPv4), Convert.ToInt32(isIPv6));
             byte* cmsgBuffer = stackalloc byte[cmsgBufferLen];
 
-            int sockAddrLen = socketAddress.Length;
-
             Interop.Sys.MessageHeader messageHeader;
 
             long received = 0;
@@ -488,7 +486,7 @@ namespace System.Net.Sockets
 
                 messageHeader = new Interop.Sys.MessageHeader {
                     SocketAddress = rawSocketAddress,
-                    SocketAddressLen = sockAddrLen,
+                    SocketAddressLen = socketAddress.Length,
                     IOVectors = &iov,
                     IOVectorCount = 1,
                     ControlBuffer = cmsgBuffer,
@@ -502,10 +500,8 @@ namespace System.Net.Sockets
                     &received);
 
                 receivedFlags = messageHeader.Flags;
-                sockAddrLen = messageHeader.SocketAddressLen;
+                socketAddressLen = messageHeader.SocketAddressLen;
             }
-
-            socketAddressLen = sockAddrLen;
 
             if (errno != Interop.Error.SUCCESS)
             {
@@ -513,6 +509,12 @@ namespace System.Net.Sockets
                 return -1;
             }
 
+            if (socketAddressLen == 0)
+            {
+                // We can fail to get peer address on TCP
+                socketAddressLen =  socketAddress.Length;
+                SocketAddressPal.Clear(socketAddress);
+            }
             ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
             return checked((int)received);
         }
@@ -574,6 +576,13 @@ namespace System.Net.Sockets
                     if (errno == Interop.Error.SUCCESS)
                     {
                         ipPacketInformation = GetIPPacketInformation(&messageHeader, isIPv4, isIPv6);
+                        if (socketAddressLen == 0)
+                        {
+                            // We can fail to get peer address on TCP
+                            socketAddressLen =  socketAddress.Length;
+                            SocketAddressPal.Clear(socketAddress);
+                        }
+
                         return checked((int)received);
                     }
                     else
@@ -834,6 +843,12 @@ namespace System.Net.Sockets
                     bytesReceived = received;
                     errorCode = SocketError.Success;
                     socketAddressLen = socketAddressLength;
+                    if (socketAddress.Length > 0 && socketAddressLen == 0)
+                    {
+                        // We can fail to get peer address on TCP
+                        socketAddressLen =  socketAddress.Length;
+                        SocketAddressPal.Clear(socketAddress);
+                    }
                     return true;
                 }
 
@@ -872,6 +887,12 @@ namespace System.Net.Sockets
 
                 if (received != -1)
                 {
+                    if (socketAddress.Length > 0 && socketAddressLen == 0)
+                    {
+                        // We can fail to get peer address on TCP
+                        socketAddressLen =  socketAddress.Length;
+                        SocketAddressPal.Clear(socketAddress.Span);
+                    }
                     bytesReceived = received;
                     errorCode = SocketError.Success;
                     return true;

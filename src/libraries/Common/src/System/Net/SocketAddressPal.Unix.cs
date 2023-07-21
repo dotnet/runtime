@@ -13,8 +13,6 @@ namespace System.Net
     {
         public static readonly int IPv6AddressSize = GetIPv6AddressSize();
         public static readonly int IPv4AddressSize = GetIPv4AddressSize();
-        //public static readonly int IPv4AddressSize = GetUdsAddressSize();
-        //public static readonly int IPv4AddressSize = GetMaxAddressSize();
 
         private static unsafe int GetIPv6AddressSize()
         {
@@ -66,7 +64,7 @@ namespace System.Net
             return family;
         }
 
-        public static unsafe void SetAddressFamily(byte[] buffer, AddressFamily family)
+        public static unsafe void SetAddressFamily(Span<byte> buffer, AddressFamily family)
         {
             Interop.Error err;
 
@@ -166,6 +164,14 @@ namespace System.Net
             }
 
             ThrowOnFailure(err);
+        }
+
+        public static unsafe void Clear(Span<byte> buffer)
+        {
+            AddressFamily family = GetAddressFamily(buffer);
+            buffer.Clear();
+            buffer[0] = (byte)buffer.Length;
+            SetAddressFamily(buffer, family);
         }
     }
 }

@@ -10,15 +10,13 @@ namespace System.Net
     {
         public const int IPv6AddressSize = 28;
         public const int IPv4AddressSize = 16;
-        public const int UdsAddressSize = 110;
-        public const int MaxAddressSize = 128;
 
         public static AddressFamily GetAddressFamily(ReadOnlySpan<byte> buffer)
         {
             return (AddressFamily)BitConverter.ToInt16(buffer);
         }
 
-        public static void SetAddressFamily(byte[] buffer, AddressFamily family)
+        public static void SetAddressFamily(Span<byte> buffer, AddressFamily family)
         {
             if ((int)(family) > ushort.MaxValue)
             {
@@ -67,6 +65,13 @@ namespace System.Net
 
             // Address serialization
             address.CopyTo(buffer.AsSpan(8));
+        }
+
+        public static unsafe void Clear(Span<byte> buffer)
+        {
+            AddressFamily family = GetAddressFamily(buffer);
+            buffer.Clear();
+            SetAddressFamily(buffer, family);
         }
     }
 }
