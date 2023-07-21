@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Numerics;
 
 namespace System.Runtime
 {
@@ -28,7 +29,7 @@ namespace System.Runtime
             //  3- Update ptrToData to point to that newly allocated object
             ptrToData = RuntimeImports.RhNewObject(pEEType);
 
-            if (!LookupInCache(pEETypePtr, pEETypePtr, out var v))
+            if (!TryGetFromCache(pEETypePtr, pEETypePtr, out var v))
             {
                 v = CacheMiss(pEETypePtr, pEETypePtr,
                         (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
@@ -40,7 +41,7 @@ namespace System.Runtime
                         });
             }
 
-            RawCalliHelper.Call(v.Result, ptrToData);
+            RawCalliHelper.Call(v._result, ptrToData);
         }
 
         //
@@ -49,24 +50,26 @@ namespace System.Runtime
 
         private struct Key : IEquatable<Key>
         {
-            public IntPtr Context;
-            public IntPtr Signature;
+            public IntPtr _context;
+            public IntPtr _signature;
 
             public Key(nint context, nint signature)
             {
-                Context = context;
-                Signature = signature;
+                _context = context;
+                _signature = signature;
             }
 
             public bool Equals(Key other)
             {
-                return Context == other.Context && Signature == other.Signature;
+                return _context == other._context && _signature == other._signature;
             }
 
             public override int GetHashCode()
             {
-                // TODO: VS shift/roll
-                return Context.GetHashCode() ^ Signature.GetHashCode();
+                // pointers will likely match and cancel out in the upper bits
+                // we will rotate context by 16 bit to keep more varying bits in the hash
+                IntPtr context = (IntPtr)BitOperations.RotateLeft((nuint)_context, 16);
+                return (context ^ _signature).GetHashCode();
             }
 
             public override bool Equals(object obj)
@@ -77,26 +80,40 @@ namespace System.Runtime
 
         private struct Value
         {
-            public IntPtr Result;
-            public IntPtr AuxResult;
+            public IntPtr _result;
+            public IntPtr _auxResult;
 
-            public Value(IntPtr context, IntPtr signature)
+            public Value(IntPtr result, IntPtr auxResult)
             {
-                Result = context;
-                AuxResult = signature;
+                _result = result;
+                _auxResult = auxResult;
             }
         }
+
+        //
+        // Parameters and state used by generic lookup cache resizing algorithm
+        //
+
+#if DEBUG
+        // use smaller numbers to hit resizing/preempting logic in debug
+        private const int InitialCacheSize = 8; // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 512;
+#else
+        private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 128 * 1024;
+#endif // DEBUG
+
 
         // Initialize the cache eagerly to avoid null checks.
         private static Cache<Key, Value> s_cache;
         internal static void Initialize()
         {
-            s_cache = new Cache<Key, Value>();
+            s_cache = new Cache<Key, Value>(InitialCacheSize, MaximumCacheSize);
         }
 
         private static Value LookupOrAdd(IntPtr context, IntPtr signature)
         {
-            if (!LookupInCache(context, signature, out var v))
+            if (!TryGetFromCache(context, signature, out var v))
             {
                 v = CacheMiss(context, signature);
             }
@@ -106,48 +123,48 @@ namespace System.Runtime
 
         public static IntPtr GenericLookup(IntPtr context, IntPtr signature)
         {
-            if (!LookupInCache(context, signature, out var v))
+            if (!TryGetFromCache(context, signature, out var v))
             {
                 v = CacheMiss(context, signature);
             }
 
-            return v.Result;
+            return v._result;
         }
 
         public static void GenericLookupAndCallCtor(object arg, IntPtr context, IntPtr signature)
         {
             Value v = LookupOrAdd(context, signature);
-            RawCalliHelper.Call(v.Result, arg);
+            RawCalliHelper.Call(v._result, arg);
         }
 
         public static object GenericLookupAndAllocObject(IntPtr context, IntPtr signature)
         {
             Value v = LookupOrAdd(context, signature);
-            return RawCalliHelper.Call<object>(v.Result, v.AuxResult);
+            return RawCalliHelper.Call<object>(v._result, v._auxResult);
         }
 
         public static object GenericLookupAndAllocArray(IntPtr context, IntPtr arg, IntPtr signature)
         {
             Value v = LookupOrAdd(context, signature);
-            return RawCalliHelper.Call<object>(v.Result, v.AuxResult, arg);
+            return RawCalliHelper.Call<object>(v._result, v._auxResult, arg);
         }
 
         public static void GenericLookupAndCheckArrayElemType(IntPtr context, object arg, IntPtr signature)
         {
             Value v = LookupOrAdd(context, signature);
-            RawCalliHelper.Call(v.Result, v.AuxResult, arg);
+            RawCalliHelper.Call(v._result, v._auxResult, arg);
         }
 
         public static object GenericLookupAndCast(object arg, IntPtr context, IntPtr signature)
         {
             Value v = LookupOrAdd(context, signature);
-            return RawCalliHelper.Call<object>(v.Result, arg, v.AuxResult);
+            return RawCalliHelper.Call<object>(v._result, arg, v._auxResult);
         }
 
         public static unsafe IntPtr GVMLookupForSlot(object obj, RuntimeMethodHandle slot)
         {
-            if (LookupInCache((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot), out var v))
-                return v.Result;
+            if (TryGetFromCache((IntPtr)obj.GetMethodTable(), RuntimeMethodHandle.ToIntPtr(slot), out var v))
+                return v._result;
 
             return GVMLookupForSlotSlow(obj, slot);
         }
@@ -158,13 +175,13 @@ namespace System.Runtime
                     (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
                         => RuntimeAugments.TypeLoaderCallbacks.ResolveGenericVirtualMethodTarget(new RuntimeTypeHandle(new EETypePtr(context)), *(RuntimeMethodHandle*)&signature));
 
-            return v.Result;
+            return v._result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static unsafe IntPtr OpenInstanceMethodLookup(IntPtr openResolver, object obj)
         {
-            if (!LookupInCache((IntPtr)obj.GetMethodTable(), openResolver, out var v))
+            if (!TryGetFromCache((IntPtr)obj.GetMethodTable(), openResolver, out var v))
             {
                 v = CacheMiss((IntPtr)obj.GetMethodTable(), openResolver,
                         (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult)
@@ -172,11 +189,11 @@ namespace System.Runtime
                         obj);
             }
 
-            return v.Result;
+            return v._result;
         }
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
-        private static bool LookupInCache(IntPtr context, IntPtr signature, out Value entry)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryGetFromCache(IntPtr context, IntPtr signature, out Value entry)
         {
             Key k = new Key(context, signature);
             return s_cache.TryGet(k, out entry);
@@ -185,13 +202,13 @@ namespace System.Runtime
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static IntPtr RuntimeCacheLookupInCache(IntPtr context, IntPtr signature, RuntimeObjectFactory factory, object contextObject, out IntPtr auxResult)
         {
-            if (!LookupInCache(context, signature, out var v))
+            if (!TryGetFromCache(context, signature, out var v))
             {
                 v = CacheMiss(context, signature, factory, contextObject);
             }
 
-            auxResult = v.AuxResult;
-            return v.Result;
+            auxResult = v._auxResult;
+            return v._result;
         }
 
         private static Value CacheMiss(IntPtr ctx, IntPtr sig)
@@ -222,39 +239,39 @@ namespace System.Runtime
 
     internal static unsafe class RawCalliHelper
     {
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Call(System.IntPtr pfn, ref byte data)
             => ((delegate*<ref byte, void>)pfn)(ref data);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, IntPtr arg)
             => ((delegate*<IntPtr, T>)pfn)(arg);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Call(System.IntPtr pfn, object arg)
             => ((delegate*<object, void>)pfn)(arg);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, IntPtr arg1, IntPtr arg2)
             => ((delegate*<IntPtr, IntPtr, T>)pfn)(arg1, arg2);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, IntPtr arg1, IntPtr arg2, object arg3, out IntPtr arg4)
             => ((delegate*<IntPtr, IntPtr, object, out IntPtr, T>)pfn)(arg1, arg2, arg3, out arg4);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Call(System.IntPtr pfn, IntPtr arg1, object arg2)
             => ((delegate*<IntPtr, object, void>)pfn)(arg1, arg2);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(System.IntPtr pfn, object arg1, IntPtr arg2)
             => ((delegate*<object, IntPtr, T>)pfn)(arg1, arg2);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static T Call<T>(IntPtr pfn, string[] arg0)
             => ((delegate*<string[], T>)pfn)(arg0);
 
-        [MethodImplAttribute(MethodImplOptions.AggressiveInlining)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref byte Call(IntPtr pfn, void* arg1, ref byte arg2, ref byte arg3, void* arg4)
             => ref ((delegate*<void*, ref byte, ref byte, void*, ref byte>)pfn)(arg1, ref arg2, ref arg3, arg4);
     }
