@@ -41,6 +41,13 @@ The .NET Foundation licenses this file to you under the MIT license.
     <DynamicCodeSupport Condition="'$(DynamicCodeSupport)' == ''">false</DynamicCodeSupport>
   </PropertyGroup>
 
+  <!-- Configure LINQ expressions -->
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Linq.Expressions.CanEmitObjectArrayDelegate"
+                                    Value="false"
+                                    Trim="true" />
+  </ItemGroup>
+
   <PropertyGroup Condition="'$(SuppressAotAnalysisWarnings)' == 'true'">
     <EnableAotAnalyzer Condition="'$(EnableAotAnalyzer)' == ''">false</EnableAotAnalyzer>
   </PropertyGroup>
@@ -273,11 +280,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Include="@(UnmanagedEntryPointsAssembly->'--generateunmanagedentrypoints:%(Identity)')" />
 
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Reflection.IsReflectionExecutionAvailable=false" />
-
-      <!-- Configure LINQ expressions - disable Emit everywhere -->
-      <IlcArg Include="--feature:System.Linq.Expressions.CanCompileToIL=false" />
-      <IlcArg Include="--feature:System.Linq.Expressions.CanEmitObjectArrayDelegate=false" />
-      <IlcArg Include="--feature:System.Linq.Expressions.CanCreateArbitraryDelegates=false" />
 
       <!-- Linux Bionic doesn't ship GSSAPI, so enable managed implementation -->
       <IlcArg Condition="'$(_linuxLibcFlavor)' == 'bionic'" Include="--feature:System.Net.Security.UseManagedNtlm=true" />
