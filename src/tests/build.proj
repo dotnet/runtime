@@ -468,8 +468,8 @@
 
     <ItemGroup Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'">
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
-      <TestDirectories Remove="$([System.IO.Path]::GetDirectoryName(%(TestExclusions.Identity)))" />
-      <EntryPoints Include="$([System.IO.Directory]::GetDirectories(%(TestDirectories.Identity)))" />
+      <TestDirectories Remove="$([System.IO.Path]::GetDirectoryName('%(TestExclusions.Identity)'))" />
+      <EntryPoints Include="$([System.IO.Directory]::GetDirectories('%(TestDirectories.Identity)'))" />
       <RunProj Include="$(MSBuildProjectFile)">
         <Properties>_CMDDIR=%(EntryPoints.Identity)</Properties>
       </RunProj>
