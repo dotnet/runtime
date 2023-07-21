@@ -1197,7 +1197,7 @@ GenTree* Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
             GenTree* op1 = node->Op(1);
             GenTree* op2 = node->Op(2);
 
-            if (op2->IsVectorZero())
+            if (!varTypeIsFloating(node->GetSimdBaseType()) && op2->IsVectorZero())
             {
                 NamedIntrinsic testIntrinsicId;
 
