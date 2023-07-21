@@ -31,18 +31,11 @@ namespace Mono.Cecil.Binary
     using System;
     using System.IO;
     using System.Text;
-    using Mono.Cecil.Metadata;
 
     public sealed class ImageReader : BaseImageVisitor
     {
-        MetadataReader m_mdReader;
         BinaryReader m_binaryReader;
         Image m_image;
-
-        public MetadataReader MetadataReader
-        {
-            get { return m_mdReader; }
-        }
 
         public Image Image
         {
@@ -132,7 +125,6 @@ namespace Mono.Cecil.Binary
 
         public override void VisitImage(Image img)
         {
-            m_mdReader = new MetadataReader(this);
         }
 
         void SetPositionToAddress(RVA address)
@@ -329,7 +321,6 @@ namespace Mono.Cecil.Binary
                 header.ImageHash = new byte [0];
 
             SetPositionToAddress(m_image.CLIHeader.Metadata.VirtualAddress);
-            m_image.MetadataRoot.Accept(m_mdReader);
         }
 
         public override void VisitDebugHeader(DebugHeader header)

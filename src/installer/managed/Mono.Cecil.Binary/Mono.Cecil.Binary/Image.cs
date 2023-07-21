@@ -30,7 +30,6 @@ namespace Mono.Cecil.Binary
 {
     using System;
     using System.IO;
-    using Mono.Cecil.Metadata;
 
     public sealed class Image : IBinaryVisitable
     {
@@ -49,7 +48,6 @@ namespace Mono.Cecil.Binary
         ExportTable m_exportTable;
 
         DebugHeader m_debugHeader;
-        MetadataRoot m_mdRoot;
 
         ResourceDirectoryTable m_rsrcRoot;
 
@@ -98,11 +96,6 @@ namespace Mono.Cecil.Binary
             set { m_debugHeader = value; }
         }
 
-        public MetadataRoot MetadataRoot
-        {
-            get { return m_mdRoot; }
-        }
-
         public ImportTable ImportTable
         {
             get { return m_importTable; }
@@ -145,7 +138,6 @@ namespace Mono.Cecil.Binary
             m_importTable = new ImportTable();
             m_importLookupTable = new ImportLookupTable();
             m_hintNameTable = new HintNameTable();
-            m_mdRoot = new MetadataRoot(this);
         }
 
         internal Image(FileInfo img) : this()
@@ -231,16 +223,6 @@ namespace Mono.Cecil.Binary
                 return;
 
             visitable.Accept(visitor);
-        }
-
-        public static Image CreateImage()
-        {
-            Image img = new Image();
-
-            ImageInitializer init = new ImageInitializer(img);
-            img.Accept(init);
-
-            return img;
         }
 
         public static Image GetImage(string file)
