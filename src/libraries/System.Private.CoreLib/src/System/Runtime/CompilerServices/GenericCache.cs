@@ -98,9 +98,9 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int HashToBucket(ref Entry tableData, int hash)
+        private static int HashToBucket(Entry[] table, int hash)
         {
-            byte hashShift = HashShift(ref tableData);
+            byte hashShift = HashShift(table);
 #if TARGET_64BIT
             return (int)(((ulong)hash * 11400714819323198485ul) >> hashShift);
 #else
@@ -116,49 +116,49 @@ namespace System.Runtime.CompilerServices
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref byte HashShift(ref Entry tableData)
+        private static ref byte HashShift(Entry[] table)
         {
-            return ref tableData._unmanagedPart.hashShift;
+            return ref TableData(table)._unmanagedPart.hashShift;
         }
 
         // TableMask is "size - 1"
         // we need that more often that we need size
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref int TableMask(ref Entry tableData)
+        private static int TableMask(Entry[] table)
         {
-            return ref tableData._unmanagedPart.tableMask;
+            return table.Length - 2;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref byte VictimCounter(ref Entry tableData)
+        private static ref byte VictimCounter(Entry[] table)
         {
-            return ref tableData._unmanagedPart.victimCounter;
+            return ref TableData(table)._unmanagedPart.victimCounter;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ref Entry Element(ref Entry tableData, int index)
+        private static ref Entry Element(Entry[] table, int index)
         {
             // element 0 is used for embedded aux data, skip it
-            return ref Unsafe.Add(ref tableData, index + 1);
+            return ref Unsafe.Add(ref Unsafe.As<byte, Entry>(ref Unsafe.As<RawArrayData>(table).Data), index + 1);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGet(TKey key, out TValue? value)
         {
             // table is always initialized and is not null.
-            ref Entry tableData = ref TableData(_table!);
+            Entry[] table = _table!;
             int hash = key!.GetHashCode();
-            int index = HashToBucket(ref tableData, hash);
+            int index = HashToBucket(table, hash);
             for (int i = 0; i < BUCKET_SIZE;)
             {
-                ref Entry pEntry = ref Element(ref tableData, index);
+                ref Entry pEntry = ref Element(table, index);
 
                 // we must read in this order: version -> [entry parts] -> version
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry.Version);
 
-                if (hash == pEntry.Hash && key.Equals(pEntry._key))
-//                if (key.Equals(pEntry._key))
+//                if (hash == pEntry.Hash && key.Equals(pEntry._key))
+                if (key.Equals(pEntry._key))
                 {
                     // we use ordinary reads to fetch the value
                     value = pEntry._value;
@@ -188,7 +188,7 @@ namespace System.Runtime.CompilerServices
 
                 // quadratic reprobe
                 i++;
-                index = (index + i) & TableMask(ref tableData);
+                index = (index + i) & TableMask(table);
             }
 
             value = default;
@@ -231,12 +231,9 @@ namespace System.Runtime.CompilerServices
 
             ref Entry tableData = ref TableData(table);
 
-            // set the table mask. we need it often, do not want to compute each time.
-            TableMask(ref tableData) = size - 1;
-
             // Fibonacci hash reduces the value into desired range by shifting right by the number of leading zeroes in 'size-1'
             byte shift = (byte)BitOperations.LeadingZeroCount(size - 1);
-            HashShift(ref tableData) = shift;
+            HashShift(table) = shift;
 
             return table;
         }
@@ -245,12 +242,12 @@ namespace System.Runtime.CompilerServices
         {
             int bucket;
             int hash = key!.GetHashCode();
-            ref Entry tableData = ref Unsafe.NullRef<Entry>();
+            Entry[] table;
 
             do
             {
-                tableData = ref TableData(_table);
-                if (TableMask(ref tableData) == 1)
+                table = _table;
+                if (table.Length == 2)
                 {
                     // 2-element table is used as a sentinel.
                     // we did not allocate a real table yet or have flushed it.
@@ -259,9 +256,9 @@ namespace System.Runtime.CompilerServices
                     return;
                 }
 
-                bucket = HashToBucket(ref tableData, hash);
+                bucket = HashToBucket(table, hash);
                 int index = bucket;
-                ref Entry pEntry = ref Element(ref tableData, index);
+                ref Entry pEntry = ref Element(table, index);
 
                 for (int i = 0; i < BUCKET_SIZE;)
                 {
@@ -318,16 +315,16 @@ namespace System.Runtime.CompilerServices
                     // quadratic reprobe
                     i++;
                     index += i;
-                    pEntry = ref Element(ref tableData, index & TableMask(ref tableData));
+                    pEntry = ref Element(table, index & TableMask(table));
                 }
 
                 // bucket is full.
-            } while (TryGrow(ref tableData));
+            } while (TryGrow(table));
 
             // reread tableData after TryGrow.
-            tableData = ref TableData(_table);
+            table = _table;
 
-            if (TableMask(ref tableData) == 1)
+            if (table.Length == 2)
             {
                 // do not insert into a sentinel.
                 return;
@@ -335,12 +332,12 @@ namespace System.Runtime.CompilerServices
 
             // pick a victim somewhat randomly within a bucket
             // NB: ++ is not interlocked. We are ok if we lose counts here. It is just a number that changes.
-            byte victimDistance = (byte)(VictimCounter(ref tableData)++ & (BUCKET_SIZE - 1));
+            byte victimDistance = (byte)(VictimCounter(table)++ & (BUCKET_SIZE - 1));
             // position the victim in a quadratic reprobe bucket
             int victim = (victimDistance * victimDistance + victimDistance) / 2;
 
             {
-                ref Entry pEntry = ref Element(ref tableData, (bucket + victim) & TableMask(ref tableData));
+                ref Entry pEntry = ref Element(table, (bucket + victim) & TableMask(table));
 
                 uint version = pEntry.Version;
 
@@ -370,15 +367,15 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        private static int CacheElementCount(ref Entry tableData)
+        private static int CacheElementCount(Entry[] table)
         {
-            return TableMask(ref tableData) + 1;
+            return table.Length - 1;
         }
 
         private void FlushCurrentCache()
         {
-            ref Entry tableData = ref TableData(_table);
-            int lastSize = CacheElementCount(ref tableData);
+            Entry[] table = _table;
+            int lastSize = CacheElementCount(table);
             if (lastSize < _initialCacheSize)
                 lastSize = _initialCacheSize;
 
@@ -402,9 +399,9 @@ namespace System.Runtime.CompilerServices
             return true;
         }
 
-        private bool TryGrow(ref Entry tableData)
+        private bool TryGrow(Entry[] table)
         {
-            int newSize = CacheElementCount(ref tableData) * 2;
+            int newSize = CacheElementCount(table) * 2;
             if (newSize <= _maxCacheSize)
             {
                 return MaybeReplaceCacheWithLarger(newSize);
