@@ -89,7 +89,7 @@ int static strnicmp(const char *str1, const char *str2, uint32_t n) {
     return 0;
 }
 
-int32_t static GetParent(const char* localeID, char* parent, int32_t parentCapacity)
+void static GetParent(const char* localeID, char* parent, int32_t parentCapacity)
 {
     const char *lastUnderscore;
     int32_t i;
@@ -119,7 +119,7 @@ int32_t static GetParent(const char* localeID, char* parent, int32_t parentCapac
     if (i >= 0 && i < parentCapacity)
        parent[i] = 0;
 
-    return i;
+    return;
 }
 
 /* ### Data tables **************************************************/
@@ -697,8 +697,8 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             value = "";
             break;
     }
-    value = value ? value : "";
-    return strdup(value);
+
+    return value ? strdup(value) : "";
 }
 
 // invariant character definitions
