@@ -816,10 +816,6 @@ namespace System
                 }
 #endif
             }
-            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                return AllocateArray<T>(length, pinned: true);
-            }
 
             // kept outside of the small arrays hot path to have inlining without big size growth
             return AllocateNewUninitializedArray(length, pinned);
