@@ -1670,9 +1670,7 @@ namespace System.Text
                             break;
                         }
 
-                        (Vector256<ushort> utf16LowVector, Vector256<ushort> utf16HighVector) = Vector256.Widen(asciiVector);
-                        utf16LowVector.Store(pCurrentWriteAddress);
-                        utf16HighVector.Store(pCurrentWriteAddress + Vector256<ushort>.Count);
+                        WritePairUnaligned(ref *(byte*)pCurrentWriteAddress, Vector256.Widen(asciiVector));
 
                         currentOffset += (nuint)Vector256<byte>.Count;
                         pCurrentWriteAddress += (nuint)Vector256<byte>.Count;
@@ -1694,9 +1692,7 @@ namespace System.Text
                             break;
                         }
 
-                        (Vector128<ushort> utf16LowVector, Vector128<ushort> utf16HighVector) = Vector128.Widen(asciiVector);
-                        utf16LowVector.Store(pCurrentWriteAddress);
-                        utf16HighVector.Store(pCurrentWriteAddress + Vector128<ushort>.Count);
+                        WritePairUnaligned(ref *(byte*)pCurrentWriteAddress, Vector128.Widen(asciiVector));
 
                         currentOffset += (nuint)Vector128<byte>.Count;
                         pCurrentWriteAddress += (nuint)Vector128<byte>.Count;
@@ -1716,17 +1712,14 @@ namespace System.Text
                     nuint finalOffsetWhereCanLoop = elementCount - SizeOfVector;
                     do
                     {
-                        Vector<sbyte> asciiVector = Unsafe.ReadUnaligned<Vector<sbyte>>(pAsciiBuffer + currentOffset);
-                        if (Vector.LessThanAny(asciiVector, Vector<sbyte>.Zero))
+                        Vector<byte> asciiVector = Unsafe.ReadUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset);
+                        if (Vector.LessThanAny(Vector.AsVectorSByte(asciiVector), Vector<sbyte>.Zero))
                         {
                             break; // found non-ASCII data
                         }
 
-                        Vector.Widen(Vector.AsVectorByte(asciiVector), out Vector<ushort> utf16LowVector, out Vector<ushort> utf16HighVector);
-
-                        // TODO: Is the below logic also valid for big-endian platforms?
-                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset, utf16LowVector);
-                        Unsafe.WriteUnaligned(pUtf16Buffer + currentOffset + Vector<ushort>.Count, utf16HighVector);
+                        Vector.Widen(asciiVector, out Vector<ushort> lower, out Vector<ushort> upper);
+                        WritePairUnaligned(ref Unsafe.As<char, ushort>(ref pUtf16Buffer[currentOffset]), (lower, upper));
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1752,10 +1745,7 @@ namespace System.Text
                         goto FoundNonAsciiData;
                     }
 
-                    Unsafe.WriteUnaligned(
-                        ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]),
-                        ReadUInt32Widening(ref Unsafe.As<uint, byte>(ref asciiData)));
-
+                    WriteUnalignedWidening(ref Unsafe.As<char, ushort>(ref outputBuffer), value);
                     currentOffset += 4;
                 } while (currentOffset <= finalOffsetWhereCanLoop);
             }
@@ -1774,10 +1764,7 @@ namespace System.Text
                     goto FoundNonAsciiData;
                 }
 
-                Unsafe.WriteUnaligned(
-                    ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]),
-                    ReadUInt32WideningLower(ref Unsafe.As<uint, byte>(ref asciiData)));
-
+                WriteUnalignedWideningLower(ref Unsafe.As<char, ushort>(ref pUtf16Buffer[currentOffset]), asciiData);
                 currentOffset += 2;
             }
 
@@ -1835,10 +1822,8 @@ namespace System.Text
         internal static void WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref char outputBuffer, uint value)
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
-
-            Unsafe.WriteUnaligned(
-                ref Unsafe.As<char, byte>(ref outputBuffer),
-                ReadUInt32Widening(ref Unsafe.As<uint, byte>(ref value)));
+            
+            WriteUnalignedWidening(ref Unsafe.As<char, ushort>(ref outputBuffer), value);
         }
     }
 }

@@ -81,47 +81,73 @@ namespace System.Text
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static ulong ReadUInt32Widening(ref byte source)
+        private static unsafe void WritePairUnaligned<T>(ref byte destination, (T Lower, T Upper) source)
+            where T : unmanaged
         {
-            if (AdvSimd.Arm64.IsSupported)
+            if (BitConverter.IsLittleEndian)
             {
-                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(Unsafe.ReadUnaligned<uint>(ref source)).AsByte();
-                Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
-                return vecWide.ToScalar();
-            }
-            else if (Vector128.IsHardwareAccelerated)
-            {
-                Vector128<byte> vecNarrow = Vector128.CreateScalar(Unsafe.ReadUnaligned<uint>(ref source)).AsByte();
-                Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
-                return vecWide.ToScalar();
+                Unsafe.WriteUnaligned(ref destination, source.Lower);
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, sizeof(T)), source.Upper);
             }
             else
             {
-#if TARGET_64BIT
-                ulong num = Unsafe.ReadUnaligned<uint>(ref source);
-                num |= num << 16;
-                num &= 0x0000FFFF_0000FFFFuL;
-                num |= num << 8;
-                return num & 0x00FF00FF_00FF00FFuL;
-#else
-                return ReadUInt32WideningLower(ref source) | ((ulong)ReadUInt32WideningUpper(ref source) << 32);
-#endif
+                Unsafe.WriteUnaligned(ref destination, source.Upper);
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, sizeof(T)), source.Lower);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint ReadUInt32WideningLower(ref byte source)
+        private static void WriteUnalignedWidening(ref ushort destination, uint value)
         {
-            uint num = Unsafe.ReadUnaligned<uint>(ref source);
-            return ((byte)num | (num << 8)) & 0x00FF00FFu;
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                Vector128<byte> vecNarrow = AdvSimd.DuplicateToVector128(value).AsByte();
+                Vector128<ulong> vecWide = AdvSimd.Arm64.ZipLow(vecNarrow, Vector128<byte>.Zero).AsUInt64();
+                Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref destination), vecWide.ToScalar());
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                Vector128<byte> vecNarrow = Vector128.CreateScalar(value).AsByte();
+                Vector128<ulong> vecWide = Vector128.WidenLower(vecNarrow).AsUInt64();
+                Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref destination), vecWide.ToScalar());
+            }
+            else if (UIntPtr.Size >= sizeof(ulong))
+            {
+                ulong temp = value;
+                temp |= temp << 16;
+                temp &= 0x0000FFFF_0000FFFFuL;
+                temp |= temp << 8;
+                temp &= 0x00FF00FF_00FF00FFuL;
+                Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref destination), temp);
+            }
+            else if (BitConverter.IsLittleEndian)
+            {
+                WriteUnalignedWideningLower(ref destination, value);
+                WriteUnalignedWideningUpper(ref Unsafe.Add(ref destination, sizeof(uint) / sizeof(ushort)), value);
+            }
+            else
+            {
+                WriteUnalignedWideningUpper(ref destination, value);
+                WriteUnalignedWideningLower(ref Unsafe.Add(ref destination, sizeof(uint) / sizeof(ushort)), value);
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static uint ReadUInt32WideningUpper(ref byte source)
+        private static void WriteUnalignedWideningLower(ref ushort destination, uint value)
         {
-            uint num = Unsafe.ReadUnaligned<uint>(ref source);
-            num >>= 16;
-            return (num | (num << 8)) & 0x00FF00FFu;
+            uint lower = (ushort)value;
+            lower |= value << 8;
+            lower &= 0x00FF00FFu;
+            Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref destination), lower);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void WriteUnalignedWideningUpper(ref ushort destination, uint value)
+        {
+            uint upper = value >> 16;
+            upper |= upper << 8;
+            upper &= 0x00FF00FFu;
+            Unsafe.WriteUnaligned(ref Unsafe.As<ushort, byte>(ref destination), upper);
         }
     }
 }
