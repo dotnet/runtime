@@ -1706,16 +1706,17 @@ namespace System.Text
                 // Only bother vectorizing if we have enough data to do so.
                 if (elementCount >= SizeOfVector)
                 {
-                    // Note use of SBYTE instead of BYTE below; we're using the two's-complement
-                    // representation of negative integers to act as a surrogate for "is ASCII?".
-
                     nuint finalOffsetWhereCanLoop = elementCount - SizeOfVector;
                     do
                     {
                         Vector<byte> asciiVector = Unsafe.ReadUnaligned<Vector<byte>>(pAsciiBuffer + currentOffset);
+
+                        // If the high bit of any byte is set, that byte is non-ASCII.
+                        // In two's-complement, the high bit represents the sign of binary number.
                         if (Vector.LessThanAny(Vector.AsVectorSByte(asciiVector), Vector<sbyte>.Zero))
                         {
-                            break; // found non-ASCII data
+                            // Found non-ASCII data.
+                            break;
                         }
 
                         Vector.Widen(asciiVector, out Vector<ushort> lower, out Vector<ushort> upper);
