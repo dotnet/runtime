@@ -9,7 +9,8 @@ namespace ILCompiler.Dataflow
     {
         internal static bool IsGeneratedMemberName(string memberName)
         {
-            return memberName.Length > 0 && memberName[0] == '<';
+            // The GeneratedConfigurationBinder_g part works around https://github.com/dotnet/runtime/issues/89191
+            return memberName.Length > 0 && memberName[0] == '<' && !memberName.Contains("<GeneratedConfigurationBinder_g>");
         }
 
         internal static bool IsLambdaDisplayClass(string className)
