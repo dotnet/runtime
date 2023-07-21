@@ -3,8 +3,12 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+
 using ILCompiler;
+
 using Internal.TypeSystem;
+
 using InstructionSet = Internal.JitInterface.InstructionSet;
 
 namespace System.CommandLine
@@ -12,7 +16,7 @@ namespace System.CommandLine
     internal static partial class Helpers
     {
         public static InstructionSetSupport ConfigureInstructionSetSupport(string instructionSet, int maxVectorTBitWidth, bool isVectorTOptimistic, TargetArchitecture targetArchitecture, TargetOS targetOS,
-            string mustNotBeMessage, string invalidImplicationMessage)
+            string mustNotBeMessage, string invalidImplicationMessage, Logger logger)
         {
             InstructionSetSupportBuilder instructionSetSupportBuilder = new(targetArchitecture);
 
@@ -34,7 +38,27 @@ namespace System.CommandLine
                 }
             }
 
-            if (instructionSet != null)
+            if (instructionSet == "native")
+            {
+                if (GetTargetArchitecture(null) != targetArchitecture)
+                {
+                    throw new CommandLineException("Instruction set 'native' not supported when cross-compiling to a different architecture.");
+                }
+
+                string jitInterfaceLibrary = "jitinterface_" + RuntimeInformation.ProcessArchitecture.ToString().ToLowerInvariant();
+                nint libHandle = NativeLibrary.Load(jitInterfaceLibrary, System.Reflection.Assembly.GetExecutingAssembly(), DllImportSearchPath.ApplicationDirectory);
+                int cpuFeatures;
+                unsafe
+                {
+                    var getCpuFeatures = (delegate* unmanaged<int>)NativeLibrary.GetExport(libHandle, "JitGetProcessorFeatures");
+                    cpuFeatures = getCpuFeatures();
+                }
+                HardwareIntrinsicHelpers.AddRuntimeRequiredIsaFlagsToBuilder(instructionSetSupportBuilder, cpuFeatures);
+
+                if (logger.IsVerbose)
+                    logger.LogMessage($"The 'native' instruction set expanded to {instructionSetSupportBuilder}");
+            }
+            else if (instructionSet != null)
             {
                 List<string> instructionSetParams = new List<string>();
 

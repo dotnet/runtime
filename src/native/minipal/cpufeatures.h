@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#ifndef INTRINSICCONSTANTS_INCLUDED
-#define INTRINSICCONSTANTS_INCLUDED
+#ifndef HAVE_MINIPAL_CPUFEATURES_H
+#define HAVE_MINIPAL_CPUFEATURES_H
 
-// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.Aot.cs
+//
+// Should match the constants defined in the compiler in HardwareIntrinsicHelpers.cs
+//
 
-#if defined(HOST_X86) || defined(HOST_AMD64)
+#if defined(TARGET_X86) || defined(TARGET_AMD64)
 enum XArchIntrinsicConstants
 {
     XArchIntrinsicConstants_Aes = 0x0001,
@@ -39,9 +41,9 @@ enum XArchIntrinsicConstants
     XArchIntrinsicConstants_VectorT256 = 0x8000000,
     XArchIntrinsicConstants_VectorT512 = 0x10000000,
 };
-#endif //HOST_X86 || HOST_AMD64
+#endif // TARGET_X86 || TARGET_AMD64
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_ARM64)
 enum ARM64IntrinsicConstants
 {
     ARM64IntrinsicConstants_AdvSimd = 0x0001,
@@ -56,10 +58,23 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_VectorT128 = 0x0200,
 };
 
+#include <assert.h>
+
 // Bit position for the ARM64IntrinsicConstants_Atomics flags, to be used with tbz / tbnz instructions
-static const int ARM64_ATOMICS_FEATURE_FLAG_BIT = 7;
+#define ARM64_ATOMICS_FEATURE_FLAG_BIT 7
 static_assert((1 << ARM64_ATOMICS_FEATURE_FLAG_BIT) == ARM64IntrinsicConstants_Atomics, "ARM64_ATOMICS_FEATURE_FLAG_BIT must match with ARM64IntrinsicConstants_Atomics");
 
-#endif //HOST_ARM64
+#endif // TARGET_ARM64
 
-#endif //!INTRINSICCONSTANTS_INCLUDED
+#ifdef __cplusplus
+extern "C"
+{
+#endif // __cplusplus
+
+int minipal_getcpufeatures(void);
+
+#ifdef __cplusplus
+}
+#endif // __cplusplus
+
+#endif

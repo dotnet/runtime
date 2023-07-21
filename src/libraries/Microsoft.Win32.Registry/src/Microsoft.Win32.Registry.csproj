@@ -28,6 +28,8 @@
              Link="Common\Interop\Windows\Interop.RegCreateKeyEx.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteKeyEx.cs"
              Link="Common\Interop\Windows\Interop.RegDeleteKeyEx.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteTree.cs"
+             Link="Common\Interop\Windows\Interop.RegDeleteTree.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegDeleteValue.cs"
              Link="Common\Interop\Windows\Interop.RegDeleteValue.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegEnumKeyEx.cs"

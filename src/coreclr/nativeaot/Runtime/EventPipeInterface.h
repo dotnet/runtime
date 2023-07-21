@@ -14,6 +14,8 @@ void DiagnosticServerAdapter_PauseForDiagnosticsMonitor();
 
 void EventPipeAdapter_FinishInitialize();
 
+void EventPipe_ThreadShutdown();
+
 void EventPipeAdapter_Shutdown();
 bool DiagnosticServerAdapter_Shutdown();
 

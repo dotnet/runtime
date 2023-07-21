@@ -1290,10 +1290,15 @@ interp_get_icall_sig (MonoMethodSignature *sig);
 static gpointer
 imethod_alloc0 (TransformData *td, size_t size)
 {
-	if (td->rtm->method->dynamic)
-		return mono_mempool_alloc0 (((MonoDynamicMethod*)td->rtm->method)->mp, (guint)size);
-	else
+	if (td->rtm->method->dynamic) {
+		MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+		jit_mm_lock (jit_mm);
+		gpointer ret = mono_mempool_alloc0 (((MonoDynamicMethod*)td->rtm->method)->mp, (guint)size);
+		jit_mm_unlock (jit_mm);
+		return ret;
+	} else {
 		return mono_mem_manager_alloc0 (td->mem_manager, (guint)size);
+	}
 }
 
 static void
