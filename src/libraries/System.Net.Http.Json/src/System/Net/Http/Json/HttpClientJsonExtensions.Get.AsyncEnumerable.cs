@@ -166,12 +166,6 @@ namespace System.Net.Http.Json
                 response.EnsureSuccessStatusCode();
 
                 Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-                int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
-
-                if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
-                {
-                    LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
-                }
 
                 using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(
                     response.Content, cancellationToken).ConfigureAwait(false);
