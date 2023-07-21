@@ -960,6 +960,9 @@
 /* define if clockgettime exists */
 #cmakedefine HAVE_CLOCK_GETTIME 1
 
+/* work in progress: nollvm method self initialization */
+#cmakedefine ENABLE_WIP_METHOD_NOLLVM_SELF_INIT 0
+
 #if defined(ENABLE_LLVM) && defined(HOST_WIN32) && defined(TARGET_WIN32) && (!defined(TARGET_AMD64) || !defined(_MSC_VER))
 #error LLVM for host=Windows and target=Windows is only supported on x64 MSVC build.
 #endif

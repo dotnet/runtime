@@ -4390,7 +4390,7 @@ load_method (MonoAotModule *amodule, MonoImage *image, MonoMethod *method, guint
 			res = init_method (amodule, NULL, method_index, method, NULL, error);
 			if (!res)
 				goto cleanup;
-#if !defined(ENABLE_LLVM) && defined(TARGET_ARM64)
+#ifdef ENABLE_WIP_METHOD_NOLLVM_SELF_INIT
 			else 
 				mono_bitset_set (mono_aot_get_mono_inited(amodule), method_index);
 #endif

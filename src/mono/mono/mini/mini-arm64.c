@@ -5926,7 +5926,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 
 	/* Call the init wrapper which checks if the methos needs to be initialised or not */
 	/* https://github.com/dotnet/runtime/pull/82711, https://github.com/dotnet/runtime/issues/83378, https://github.com/dotnet/runtime/issues/83379 */
-#if NOLLVM_AOT_METHOD_INIT
+#ifdef ENABLE_WIP_METHOD_NOLLVM_SELF_INIT
 	if (cfg->compile_aot) {
 		code = emit_imm (code, ARMREG_R0, cfg->method_index);
 		code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, (gconstpointer) mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
