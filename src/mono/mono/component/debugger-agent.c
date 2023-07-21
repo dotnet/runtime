@@ -8841,7 +8841,6 @@ set_value:
 			{
 				int nfields = 0;
 				gpointer iter = NULL;
-				MonoClassField *f;
 				while ((f = mono_class_get_fields_internal (klass, &iter))) {
 					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
 						continue;
