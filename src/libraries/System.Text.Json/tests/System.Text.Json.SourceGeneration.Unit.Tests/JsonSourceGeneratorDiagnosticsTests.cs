@@ -357,9 +357,9 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             var expectedDiagnostics = new DiagnosticData[]
             {
-                new(DiagnosticSeverity.Warning, typeAttrLocation, "Attributes deriving from 'JsonConverterAttribute' are not supported by the source generator."),
+                new(DiagnosticSeverity.Warning, typeAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
                 new(DiagnosticSeverity.Warning, jsonSerializableAttrLocation, "Did not generate serialization metadata for type 'HelloWorld.ClassWithConverterDeclaration'."),
-                new(DiagnosticSeverity.Warning, propAttrLocation, "Attributes deriving from 'JsonConverterAttribute' are not supported by the source generator."),
+                new(DiagnosticSeverity.Warning, propAttrLocation, "The custom attribute 'HelloWorld.MyJsonConverterAttribute' deriving from JsonConverterAttribute is not supported by the source generator."),
             };
 
             CompilationHelper.AssertEqualDiagnosticMessages(expectedDiagnostics, result.Diagnostics);

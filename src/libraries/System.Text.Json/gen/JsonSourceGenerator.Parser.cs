@@ -1457,7 +1457,7 @@ namespace System.Text.Json.SourceGeneration
 
                 if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, _knownSymbols.JsonConverterAttributeType))
                 {
-                    ReportDiagnostic(DiagnosticDescriptors.DerivedJsonConverterAttributesNotSupported, attributeData.GetDiagnosticLocation());
+                    ReportDiagnostic(DiagnosticDescriptors.DerivedJsonConverterAttributesNotSupported, attributeData.GetDiagnosticLocation(), attributeData.AttributeClass!.ToDisplayString());
                     return null;
                 }
 
