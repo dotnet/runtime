@@ -5924,7 +5924,7 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 		code = emit_addx_imm (code, cfg->arch.args_reg, ARMREG_FP, cfg->stack_offset);
 	}
 
-	/* Call the init wrapper which checks if the methos needs to be initialised or not */
+	/* Call the init wrapper which checks if the method needs to be initialised or not */
 	/* https://github.com/dotnet/runtime/pull/82711, https://github.com/dotnet/runtime/issues/83378, https://github.com/dotnet/runtime/issues/83379 */
 #ifdef ENABLE_WIP_METHOD_NOLLVM_SELF_INIT
 	if (cfg->compile_aot) {
