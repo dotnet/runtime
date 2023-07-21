@@ -1085,16 +1085,16 @@ namespace System.Tests
         [InlineData(false), InlineData(true)]
         private unsafe static void AllocateArrayPinned_ManagedValueType_CanRoundtripThroughPointer(bool uninitialized)
         {
-            const int k_Length = 100;
+            const int length = 100;
             var rng = new Random(0xAF);
 
-            var array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(k_Length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(k_Length, pinned: true);
+            var array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(length, pinned: true);
             byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]);
             var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
 
-            for(int i = 0; i < k_Length; ++i)
+            for(int i = 0; i < length; ++i)
             {
-                var idx = rng.Next(k_Length);
+                var idx = rng.Next(length);
                 ref var evt = ref Unsafe.AsRef<EmbeddedValueType<string>>(pointer + size * idx);
 
                 var stringValue = rng.NextSingle().ToString();
