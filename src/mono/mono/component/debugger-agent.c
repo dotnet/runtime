@@ -8831,10 +8831,37 @@ set_value:
 	}
 	case CMD_TYPE_CREATE_INSTANCE: {
 		MonoObject *obj;
-
 		obj = mono_object_new_checked (klass, error);
 		mono_error_assert_ok (error);
-		buffer_add_objid (buf, obj);	
+		buffer_add_objid (buf, obj);
+		if (CHECK_ICORDBG (TRUE))
+		{
+			buffer_add_byte(buf, m_class_is_valuetype (klass));
+			if (m_class_is_valuetype (klass))
+			{
+				int nfields = 0;
+				gpointer iter = NULL;
+				MonoClassField *f;
+				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+						continue;
+					if (mono_field_is_deleted (f))
+						continue;
+					nfields ++;
+				}
+				buffer_add_int (buf, nfields);
+
+				iter = NULL;
+				while ((f = mono_class_get_fields_internal (klass, &iter))) {
+					if (f->type->attrs & FIELD_ATTRIBUTE_STATIC)
+						continue;
+					if (mono_field_is_deleted (f))
+						continue;
+					buffer_add_int (buf, mono_class_get_field_token (f));
+					buffer_add_byte (buf, f->type->type);
+				}
+			}
+		}
 		break;
 	}
 	case CMD_TYPE_GET_VALUE_SIZE: {
