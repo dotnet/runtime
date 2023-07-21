@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Tests;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -62,7 +63,7 @@ namespace System.Globalization.Tests
             }
         }
 
-        /*[ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void CurrentRegion_Windows()
         {
@@ -94,7 +95,7 @@ namespace System.Globalization.Tests
                 string expectedName = new RegionInfo(name.ToUpperInvariant()).Name;
                 Assert.Equal(expectedName, resultedName);
             }, regionName).Dispose();
-        }*/
+        }
 
         [Theory]
         [InlineData("en-US", "United States")]
@@ -218,7 +219,7 @@ namespace System.Globalization.Tests
             Assert.Equal(geoId, ri.GeoId);
 
             // Android has its own ICU, which doesn't 100% map to UsingLimitedCultures
-            if (PlatformDetection.IsUsingLimitedCultures && !PlatformDetection.IsAndroid && !PlatformDetection.IsHybridGlobalizationOnOSX)
+            if (PlatformDetection.IsUsingLimitedCultures && !PlatformDetection.IsAndroid)
             {
                 Assert.Equal(currencyShortName, ri.CurrencyEnglishName);
                 Assert.Equal(currencyShortName, ri.CurrencyNativeName);

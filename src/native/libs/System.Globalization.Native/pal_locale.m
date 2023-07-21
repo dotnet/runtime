@@ -44,58 +44,40 @@ const char* GlobalizationNative_GetLocaleNameNative(const char* localeName)
 }
 
 /**
- * NUL-terminate a string no matter what its type.
- * Set warning and error codes accordingly.
- */
-#define __TERMINATE_STRING(dest, destCapacity, length) { \
-        if(length<0) {                                                  \
-            /* assume that the caller handles this */                   \
-        } else if(length<destCapacity) {                                \
-            /* NUL-terminate the string, the NUL fits */                \
-            dest[length]=0;                                             \
-        }                                                               \
-}
-
-/**
  * Useful constant for the maximum size of the whole locale ID
  * (including the terminating NULL and all keywords).
  */
-#define ULOC_FULLNAME_CAPACITY 157
-
-int32_t static TerminateChars(char *dest, int32_t destCapacity, int32_t length) {
-    __TERMINATE_STRING(dest, destCapacity, length);
-    return length;
-}
+#define FULLNAME_CAPACITY 157
 
 int static strnicmp(const char *str1, const char *str2, uint32_t n) {
-    if(str1==NULL) {
-        if(str2==NULL) {
+    if (str1 == NULL) {
+        if (str2 == NULL) {
             return 0;
         } else {
             return -1;
         }
-    } else if(str2==NULL) {
+    } else if (str2 == NULL) {
         return 1;
     } else {
         /* compare non-NULL strings lexically with lowercase */
         int rc;
         unsigned char c1, c2;
 
-        for(; n--;) {
-            c1=(unsigned char)*str1;
-            c2=(unsigned char)*str2;
-            if(c1==0) {
-                if(c2==0) {
+        for (; n--;) {
+            c1 = (unsigned char)*str1;
+            c2 = (unsigned char)*str2;
+            if (c1 == 0) {
+                if (c2 == 0) {
                     return 0;
                 } else {
                     return -1;
                 }
-            } else if(c2==0) {
+            } else if (c2 == 0) {
                 return 1;
             } else {
                 /* compare non-zero characters with lowercase */
-                rc=(int)(unsigned char)tolower(c1)-(int)(unsigned char)tolower(c2);
-                if(rc!=0) {
+                rc = (int)(unsigned char)tolower(c1) - (int)(unsigned char)tolower(c2);
+                if (rc != 0) {
                     return rc;
                 }
             }
@@ -133,7 +115,11 @@ int32_t static GetParent(const char* localeID, char* parent, int32_t parentCapac
         }
     }
 
-    return TerminateChars(parent, parentCapacity, i);
+    // terminate chars 
+    if (i >= 0 && i < parentCapacity)
+       parent[i] = 0;
+
+    return i;
 }
 
 /* ### Data tables **************************************************/
@@ -532,7 +518,6 @@ NULL
 /**
  * Useful constant for the maximum size of the language part of a locale ID.
  * (including the terminating NULL).
- * @stable ICU 2.0
  */
 #define ULOC_LANG_CAPACITY 12
 
@@ -672,8 +657,6 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         case LocaleString_Iso3166CountryName:
             value = [[currentLocale objectForKey:NSLocaleCountryCode] UTF8String];
             break;
-        // TODO find mapping for below cases
-        // https://github.com/dotnet/runtime/issues/83514
         case LocaleString_Digits:
         {
             NSString *digitsString = @"0123456789";
@@ -698,9 +681,9 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         }
         case LocaleString_ParentName:
         {
-            char localeNameTemp[ULOC_FULLNAME_CAPACITY];
+            char localeNameTemp[FULLNAME_CAPACITY];
             const char* lName = [currentLocale.localeIdentifier UTF8String];
-            GetParent(lName, localeNameTemp, ULOC_FULLNAME_CAPACITY);
+            GetParent(lName, localeNameTemp, FULLNAME_CAPACITY);
             value = strdup(localeNameTemp);
             break;
         }
