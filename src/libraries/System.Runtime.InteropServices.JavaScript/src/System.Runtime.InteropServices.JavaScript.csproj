@@ -77,7 +77,9 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'browser' and '$(FeatureWasmThreads)' == 'true'">
     <Compile Include="System\Runtime\InteropServices\JavaScript\WebWorker.cs" />
     <Compile Include="System\Runtime\InteropServices\JavaScript\JSSynchronizationContext.cs" />
-    <ApiCompatSuppressionFile Include="CompatibilitySuppressions.Browser.xml" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MonoWasmBuildVariant)' == 'multithread'">
+    <ApiCompatSuppressionFile Include="CompatibilitySuppressions.xml;CompatibilitySuppressions.WasmThreads.xml" />
   </ItemGroup>
 
   <ItemGroup>
