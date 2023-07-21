@@ -92,42 +92,42 @@ namespace Microsoft.Interop
                 // Declare variables for parameters
                 AppendVariableDeclarations(variables, marshaller, context, initializeToDefault: initializeDeclarations);
 
-                {
-                    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
-                    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
-                    if (marshaller.Generator.UsesNativeIdentifier(info, context)
-                        && boundaryBehavior is not
-                            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
-                    {
-                        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
-                        {
-                            string outlocal = context.GetAdditionalIdentifier(info, "out");
-                            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
-                        }
-                    }
-                }
+                //{
+                //    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
+                //    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
+                //    if (marshaller.Generator.UsesNativeIdentifier(info, context)
+                //        && boundaryBehavior is not
+                //            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
+                //    {
+                //        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+                //        {
+                //            string outlocal = context.GetAdditionalIdentifier(info, "out");
+                //            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
+                //        }
+                //    }
+                //}
             }
 
             if (!marshallers.IsManagedVoidReturn)
             {
                 // Declare variables for stub return value
                 AppendVariableDeclarations(variables, marshallers.ManagedReturnMarshaller, context, initializeToDefault: initializeDeclarations);
-                {
-                    var marshaller = marshallers.ManagedReturnMarshaller;
-                    var info = marshaller.TypeInfo;
-                    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
-                    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
-                    if (marshaller.Generator.UsesNativeIdentifier(info, context)
-                        && boundaryBehavior is not
-                            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
-                    {
-                        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
-                        {
-                            string outlocal = context.GetAdditionalIdentifier(info, "out");
-                            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
-                        }
-                    }
-                }
+                //{
+                //    var marshaller = marshallers.ManagedReturnMarshaller;
+                //    var info = marshaller.TypeInfo;
+                //    // We need to use the 'out' value - This should be removed once the ownership behavior is fixed
+                //    var boundaryBehavior = marshaller.Generator.GetValueBoundaryBehavior(info, context);
+                //    if (marshaller.Generator.UsesNativeIdentifier(info, context)
+                //        && boundaryBehavior is not
+                //            (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
+                //    {
+                //        if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+                //        {
+                //            string outlocal = context.GetAdditionalIdentifier(info, "out");
+                //            initializations.Add(MarshallerHelpers.CreateDiscardStatement(outlocal));
+                //        }
+                //    }
+                //}
             }
 
             if (!marshallers.IsUnmanagedVoidReturn && !marshallers.ManagedNativeSameReturn)
