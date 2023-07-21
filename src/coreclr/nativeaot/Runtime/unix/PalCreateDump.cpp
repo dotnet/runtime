@@ -84,8 +84,8 @@ inline uint32_t PlatformGetCurrentThreadId() {
 #define PlatformGetCurrentThreadId() (uint32_t)pthread_self()
 #endif
 
-const size_t MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
-const size_t MaxUnsigned64BitDecString = ARRAY_SIZE("18446744073709551615") - 1;
+const size_t MaxUnsigned32BitDecString = STRING_LENGTH("4294967295");
+const size_t MaxUnsigned64BitDecString = STRING_LENGTH("18446744073709551615");
 
 /*++
 Function:
@@ -98,7 +98,7 @@ static
 char*
 FormatInt(uint32_t value)
 {
-    char* buffer = (char*)malloc(MaxUnsigned32BitDecString);
+    char* buffer = (char*)malloc(MaxUnsigned32BitDecString + 1);
     if (buffer != nullptr)
     {
         if (snprintf(buffer, MaxUnsigned32BitDecString, "%" PRIu32, value) < 0)
@@ -121,7 +121,7 @@ static
 char*
 FormatInt64(uint64_t value)
 {
-    char* buffer = (char*)malloc(MaxUnsigned64BitDecString);
+    char* buffer = (char*)malloc(MaxUnsigned64BitDecString + 1);
     if (buffer != nullptr)
     {
         if (snprintf(buffer, MaxUnsigned64BitDecString, "%" PRIu64, value) < 0)
