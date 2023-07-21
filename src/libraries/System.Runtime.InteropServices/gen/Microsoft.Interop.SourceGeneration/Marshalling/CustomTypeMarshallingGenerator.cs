@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Microsoft.Interop
@@ -103,7 +104,9 @@ namespace Microsoft.Interop
                     // We don't correctly clean up the [out] parameters
                     if (context is MarshalToLocalContext
                         && (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
-                            ))
+                            || info.RefKind is RefKind.Out))
+                        break;
+                    else if (context.Direction is MarshalDirection.UnmanagedToManaged && info.RefKind is RefKind.Out)
                         break;
                     else
                         return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
