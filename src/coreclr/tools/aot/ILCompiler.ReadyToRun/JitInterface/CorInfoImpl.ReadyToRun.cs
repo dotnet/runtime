@@ -1355,7 +1355,15 @@ namespace Internal.JitInterface
                 }
             }
 
-            context = entityFromContext(pResolvedToken.tokenContext);
+            if (pResolvedToken.tokenType == CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod)
+            {
+                context = null;
+            }
+            else
+            {
+                context = entityFromContext(pResolvedToken.tokenContext);
+            }
+
             return HandleToModuleToken(ref pResolvedToken);
         }
 
@@ -1947,6 +1955,7 @@ namespace Internal.JitInterface
                     exactType = constrainedType;
                     if (isStaticVirtual)
                     {
+                        pResolvedToken.tokenType = CorInfoTokenKind.CORINFO_TOKENKIND_ResolvedStaticVirtualMethod;
                         constrainedType = null;
                     }
                 }
