@@ -491,7 +491,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 
 		for (i = 0; i < 16; ++i)
 			regs [i] = new_ctx->regs [i];
-#ifdef TARGET_IOS
+#if defined (TARGET_IOS) || defined(TARGET_TVOS)
 		/* On IOS, d8..d15 are callee saved. They are mapped to 8..15 in unwind.c */
 		for (i = 0; i < 8; ++i)
 			regs [MONO_MAX_IREGS + i] = *(guint64*)&(new_ctx->fregs [8 + i]);
@@ -509,7 +509,7 @@ mono_arch_unwind_frame (MonoJitTlsData *jit_tls,
 			new_ctx->regs [i] = regs [i];
 		new_ctx->pc = regs [ARMREG_LR];
 		new_ctx->regs [ARMREG_SP] = (gsize)cfa;
-#ifdef TARGET_IOS
+#if defined (TARGET_IOS) || defined(TARGET_TVOS)
 		for (i = 0; i < 8; ++i)
 			new_ctx->fregs [8 + i] = *(double*)&(regs [MONO_MAX_IREGS + i]);
 #endif

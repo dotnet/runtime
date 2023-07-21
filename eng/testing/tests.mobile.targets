@@ -9,6 +9,8 @@
 
     <PublishingTestsRun>true</PublishingTestsRun>
     <PublishTestAsSelfContainedDependsOn Condition="'$(PublishTestAsSelfContainedDependsOn)' == ''">Publish</PublishTestAsSelfContainedDependsOn>
+    <PublishTestAsSelfContainedAfterTargets Condition="'$(PublishTestAsSelfContainedAfterTargets)' == ''">Build</PublishTestAsSelfContainedAfterTargets>
+
 
     <SkipWorkloadsTestingTargetsImport Condition="'$(SkipWorkloadsTestingTargetsImport)' == ''">true</SkipWorkloadsTestingTargetsImport>
   </PropertyGroup>
@@ -155,7 +157,7 @@
 
   <Target Name="PublishTestAsSelfContained"
           Condition="'$(IsCrossTargetingBuild)' != 'true'"
-          AfterTargets="Build"
+          AfterTargets="$(PublishTestAsSelfContainedAfterTargets)"
           DependsOnTargets="$(PublishTestAsSelfContainedDependsOn);$(BundleTestAppTargets);ArchiveTests" />
 
   <Target Name="PrepareForTestUsingWorkloads"

@@ -55,8 +55,13 @@
       <AppleBuildDir>$(OriginalPublishDir)</AppleBuildDir>
       <AppleBundleDir>$(TestRootDir)AppBundle\</AppleBundleDir>
 
-      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(UseNativeAOTRuntime)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
+      <MainLibraryFileName Condition="'$(MainLibraryFileName)' == '' and '$(IsRuntimeTests)' != 'true' and '$(UseNativeAOTRuntime)' != 'true'">$(OriginalPublishDir)AppleTestRunner.dll</MainLibraryFileName>
       <Optimized Condition="'$(Configuration)' != 'Debug'">true</Optimized>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(UseRuntimeComponents)' == 'true'">
+      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
+      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
     </PropertyGroup>
 
     <ItemGroup>

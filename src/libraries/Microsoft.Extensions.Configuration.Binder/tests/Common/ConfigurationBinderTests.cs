@@ -1902,7 +1902,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
         }
 
         [Fact]
-        public void ObjWith_IParsableT_And_TypeConverter()
+        public void ObjWith_TypeConverter()
         {
             var configuration = TestHelpers.GetConfigurationFromJsonString("""
                 {
@@ -1914,7 +1914,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
                 }
                 """);
 
-            // Neither IParsableT or TypeConverter impl are honored (https://github.com/dotnet/runtime/issues/83599).
+            // TypeConverter impl is not honored (https://github.com/dotnet/runtime/issues/83599).
 
             GeolocationWrapper obj = configuration.Get<GeolocationWrapper>();
             ValidateGeolocation(obj.Location);
@@ -1939,9 +1939,18 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Geolocation obj = configuration.Get<IDictionary<string, Geolocation>>()["First"];
             ValidateGeolocation(obj);
-
             obj = configuration.Get<IReadOnlyDictionary<string, Geolocation>>()["First"];
             ValidateGeolocation(obj);
+
+            GeolocationClass obj1 = configuration.Get<IDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+
+            GeolocationRecord obj2 = configuration.Get<IDictionary<string, GeolocationRecord>>()["First"];
+            ValidateGeolocation(obj2);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj2);
         }
 
         [Fact]
@@ -1960,7 +1969,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             ValidateGeolocation(obj);
         }
 
-        private void ValidateGeolocation(Geolocation location)
+        private void ValidateGeolocation(IGeolocation location)
         {
             Assert.Equal(3, location.Latitude);
             Assert.Equal(4, location.Longitude);

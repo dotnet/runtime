@@ -94,7 +94,7 @@ namespace System.Text.Json.Serialization.Tests
             using var cts = new CancellationTokenSource();
 
             IAsyncEnumerable<int> value = CreateEnumerable();
-            await JsonSerializer.SerializeAsync(utf8Stream, value, cancellationToken: cts.Token);
+            await JsonSerializer.SerializeAsync(utf8Stream, value, Serializer.DefaultOptions, cancellationToken: cts.Token);
             Assert.Equal("[1,2]", utf8Stream.AsString());
 
             async IAsyncEnumerable<int> CreateEnumerable([EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -331,7 +331,7 @@ namespace System.Text.Json.Serialization.Tests
             // Regression test for https://github.com/dotnet/runtime/issues/57360
             using var stream = new Utf8MemoryStream();
             using var cts = new CancellationTokenSource(millisecondsDelay: 1000);
-            await Assert.ThrowsAsync<TaskCanceledException>(async () => await JsonSerializer.SerializeAsync(stream, GetNumbersAsync(), cancellationToken: cts.Token));
+            await Assert.ThrowsAsync<TaskCanceledException>(async () => await JsonSerializer.SerializeAsync(stream, GetNumbersAsync(), Serializer.DefaultOptions, cancellationToken: cts.Token));
 
             static async IAsyncEnumerable<int> GetNumbersAsync()
             {
