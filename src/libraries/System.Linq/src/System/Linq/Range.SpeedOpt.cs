@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -39,16 +38,16 @@ namespace System.Linq
 
             private static void Fill(Span<int> destination, int value)
             {
-                Debug.Assert(Vector<int>.Count * sizeof(int) * 8 <= 512);
-
                 ref int pos = ref MemoryMarshal.GetReference(destination);
                 ref int end = ref Unsafe.Add(ref pos, destination.Length);
 
-                if (Vector.IsHardwareAccelerated && destination.Length >= Vector<int>.Count)
+                if (Vector.IsHardwareAccelerated &&
+                    Vector<int>.Count <= 8 &&
+                    destination.Length >= Vector<int>.Count)
                 {
-                    Vector<int> init = new((ReadOnlySpan<int>)new int[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 });
+                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
                     Vector<int> current = new Vector<int>(value) + init;
-                    Vector<int> increment = new(Vector<int>.Count);
+                    Vector<int> increment = new Vector<int>(Vector<int>.Count);
 
                     ref int oneVectorFromEnd = ref Unsafe.Subtract(ref end, Vector<int>.Count);
                     do
@@ -57,7 +56,7 @@ namespace System.Linq
                         current += increment;
                         pos = ref Unsafe.Add(ref pos, Vector<int>.Count);
                     }
-                    while (Unsafe.IsAddressLessThan(ref pos, ref oneVectorFromEnd));
+                    while (!Unsafe.IsAddressGreaterThan(ref pos, ref oneVectorFromEnd));
 
                     value = current[0];
                 }
