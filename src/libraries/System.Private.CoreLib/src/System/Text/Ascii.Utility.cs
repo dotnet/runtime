@@ -1745,7 +1745,7 @@ namespace System.Text
                         goto FoundNonAsciiData;
                     }
 
-                    WriteUnalignedWidening(ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]), asciiData);
+                    WriteUnalignedWidening(ref Unsafe.As<char, ushort>(ref pUtf16Buffer[currentOffset]), asciiData);
                     currentOffset += 4;
                 } while (currentOffset <= finalOffsetWhereCanLoop);
             }
@@ -1822,7 +1822,7 @@ namespace System.Text
         internal static void WidenFourAsciiBytesToUtf16AndWriteToBuffer(ref char outputBuffer, uint value)
         {
             Debug.Assert(AllBytesInUInt32AreAscii(value));
-            
+
             WriteUnalignedWidening(ref Unsafe.As<char, ushort>(ref outputBuffer), value);
         }
     }
