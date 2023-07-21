@@ -9,7 +9,7 @@ namespace System.Buffers
     [InlineArray(8)]
     internal readonly struct EightPackedReferences
     {
-#pragma warning disable CA1823 // Unused field -- TODO: Why is this needed?
+#pragma warning disable CA1823 // Unused field -- https://github.com/dotnet/roslyn-analyzers/issues/6788
         private readonly object? _ref0;
 #pragma warning restore CA1823
 
