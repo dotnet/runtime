@@ -344,7 +344,7 @@ bool PromotionLiveness::PerBlockLiveness(BasicBlock* block)
 
     BasicBlockLiveness& bbInfo = m_bbInfo[block->bbNum];
     BitVecOps::ClearD(m_bvTraits, bbInfo.LiveOut);
-    block->VisitAllSuccs(m_compiler, [=, &bbInfo](BasicBlock* succ) {
+    block->VisitRegularSuccs(m_compiler, [=, &bbInfo](BasicBlock* succ) {
         BitVecOps::UnionD(m_bvTraits, bbInfo.LiveOut, m_bbInfo[succ->bbNum].LiveIn);
         m_hasPossibleBackEdge |= succ->bbNum <= block->bbNum;
         return BasicBlockVisit::Continue;

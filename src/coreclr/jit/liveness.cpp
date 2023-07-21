@@ -1190,8 +1190,11 @@ class LiveVarAnalysis
             }
         }
 
-        // Additionally, union in all the live-in tracked vars of successors.
-        block->VisitAllSuccs(m_compiler, [=](BasicBlock* succ) {
+        // Additionally, union in all the live-in tracked vars of regular
+        // successors. EH successors need to be handled more conservatively
+        // (their live-in state is live in this entire basic block). Those are
+        // handled below.
+        block->VisitRegularSuccs(m_compiler, [=](BasicBlock* succ) {
             VarSetOps::UnionD(m_compiler, m_liveOut, succ->bbLiveIn);
             m_memoryLiveOut |= succ->bbMemoryLiveIn;
             if (succ->bbNum <= block->bbNum)
