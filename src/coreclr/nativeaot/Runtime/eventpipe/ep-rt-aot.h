@@ -1389,10 +1389,22 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
-    int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS;
+    if (len == 0) {
+        // Return an empty string if the length is 0
+        CHAR16_T * lpDestEmptyStr = reinterpret_cast<CHAR16_T *>(malloc(1 * sizeof(CHAR16_T)));
+        if(lpDestEmptyStr==NULL) {
+            return NULL;
+        }
+        *lpDestEmptyStr = '\0';
+        return reinterpret_cast<ep_char16_t*>(lpDestEmptyStr);
+    }
 
-    if (len == (size_t) -1)
+    if (len == (size_t) -1) {
+        // Following the pattern used in EventPipe library where it allocates 1 extra character
         len = strlen(str) + 1;
+    }
+
+    int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS | MINIPAL_TREAT_AS_LITTLE_ENDIAN;
 
     size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
 
@@ -1400,6 +1412,9 @@ ep_rt_utf8_to_utf16le_string (
         return NULL;
 
     CHAR16_T * lpDestStr = reinterpret_cast<CHAR16_T *>(malloc((ret + 1) * sizeof(CHAR16_T)));
+    if(lpDestStr==NULL) {
+        return NULL;
+    }
     ret = minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
     lpDestStr[ret] = '\0';
 
@@ -1455,8 +1470,20 @@ ep_rt_utf16_to_utf8_string (
     if (!str)
         return NULL;
 
-    if (len == (size_t) -1)
+    if (len == 0) {
+        // Return an empty string if the length is 0
+        char * lpDestEmptyStr = reinterpret_cast<char *>(malloc(1 * sizeof(char)));
+        if(lpDestEmptyStr==NULL) {
+            return NULL;
+        }
+        *lpDestEmptyStr = '\0';
+        return reinterpret_cast<ep_char8_t*>(lpDestEmptyStr);
+    }
+
+    if (len == (size_t) -1) {
+        // Following the pattern used in EventPipe library where it allocates 1 extra character
         len = ep_rt_utf16_string_len (str) + 1;
+    }
 
     size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
 
@@ -1464,6 +1491,9 @@ ep_rt_utf16_to_utf8_string (
         return NULL;
 
     char* lpDestStr = reinterpret_cast<char *>(malloc((ret + 1) * sizeof(char)));
+    if(lpDestStr==NULL) {
+        return NULL;
+    }
     ret = minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
     lpDestStr[ret] = '\0';
 
