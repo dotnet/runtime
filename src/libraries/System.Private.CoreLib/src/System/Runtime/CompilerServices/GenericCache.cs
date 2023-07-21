@@ -11,11 +11,11 @@ using System.Threading;
 
 namespace System.Runtime.CompilerServices
 {
-    // unmanaged part of generic cache entries
-    // it is a union, so that we could put some extra info in the element #0 of the table.
+
+    // EntryInfo is a union, so that we could put some extra info in the element #0 of the table.
     // the struct is not nested in GenericCache because generic types cannot have explicit layout.
     [StructLayout(LayoutKind.Explicit)]
-    internal struct VersionAndHash
+    internal struct EntryInfo
     {
         // version has the following structure:
         // [ distance:3bit |  versionNum:29bit ]
@@ -32,15 +32,11 @@ namespace System.Runtime.CompilerServices
         //
         [FieldOffset(0)]
         internal uint _version;
-        [FieldOffset(sizeof(int))]
-        internal int _hash;
 
         // AuxData  (to store some data specific to the table in the element #0 )
         [FieldOffset(0)]
-        internal int tableMask;
-        [FieldOffset(sizeof(int))]
         internal byte hashShift;
-        [FieldOffset(sizeof(int) + 1)]
+        [FieldOffset(1)]
         internal byte victimCounter;
     }
 
@@ -51,14 +47,12 @@ namespace System.Runtime.CompilerServices
     {
         private struct Entry
         {
-            internal VersionAndHash _unmanagedPart;
+            internal EntryInfo _info;
             internal TKey _key;
             internal TValue _value;
 
             [UnscopedRef]
-            public ref uint Version => ref _unmanagedPart._version;
-            [UnscopedRef]
-            public ref int Hash => ref _unmanagedPart._hash;
+            public ref uint Version => ref _info._version;
         }
 
         private const int VERSION_NUM_SIZE = 29;
@@ -118,21 +112,20 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte HashShift(Entry[] table)
         {
-            return ref TableData(table)._unmanagedPart.hashShift;
-        }
-
-        // TableMask is "size - 1"
-        // we need that more often that we need size
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static int TableMask(Entry[] table)
-        {
-            return table.Length - 2;
+            return ref TableData(table)._info.hashShift;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static ref byte VictimCounter(Entry[] table)
         {
-            return ref TableData(table)._unmanagedPart.victimCounter;
+            return ref TableData(table)._info.victimCounter;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static int TableMask(Entry[] table)
+        {
+            // element 0 is used for embedded aux data
+            return table.Length - 2;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -157,7 +150,11 @@ namespace System.Runtime.CompilerServices
                 // if version is odd or changes, the entry is inconsistent and thus ignored
                 uint version = Volatile.Read(ref pEntry.Version);
 
-//                if (hash == pEntry.Hash && key.Equals(pEntry._key))
+                // NOTE: We could store hash as a part of entry info and compare hash before comparing keys.
+                //       Space-wise it would typically be free because of alignment.
+                //       However, hash compare would be advantageous only if it is much cheaper than the key compare.
+                //       That is not the case for current uses of this cache, so for now we do not store
+                //       hash and just do direct comparing of keys. (hash compare can be easily added, if needed)
                 if (key.Equals(pEntry._key))
                 {
                     // we use ordinary reads to fetch the value
@@ -293,7 +290,6 @@ namespace System.Runtime.CompilerServices
                         uint versionOrig = Interlocked.CompareExchange(ref pEntry.Version, newVersion, version);
                         if (versionOrig == version)
                         {
-                            pEntry.Hash = hash;
                             pEntry._key = key;
                             pEntry._value = value;
 
@@ -305,7 +301,7 @@ namespace System.Runtime.CompilerServices
                         // someone snatched the entry. try the next one in the bucket.
                     }
 
-                    if (hash == pEntry.Hash && key.Equals(pEntry._key))
+                    if (key.Equals(pEntry._key))
                     {
                         // looks like we already have an entry for this.
                         // duplicate entries are harmless, but a bit of a waste.
@@ -359,7 +355,6 @@ namespace System.Runtime.CompilerServices
 
                 if (versionOrig == version)
                 {
-                    pEntry.Hash = hash;
                     pEntry._key = key;
                     pEntry._value = value;
                     Volatile.Write(ref pEntry.Version, newVersion + 1);
