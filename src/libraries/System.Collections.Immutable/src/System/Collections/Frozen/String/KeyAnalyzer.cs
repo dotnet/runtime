@@ -109,7 +109,7 @@ namespace System.Collections.Frozen
                 foreach (string s in uniqueStrings)
                 {
                     // Get the span for the substring.
-                    ReadOnlySpan<char> substring = s.AsSpan();
+                    ReadOnlySpan<char> substring = count == 0 ? s.AsSpan() : Slicer(s, index, count);
 
                     // If the substring isn't ASCII, bail out to return the results.
                     if (!IsAllAscii(substring))
