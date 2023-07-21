@@ -399,54 +399,65 @@ namespace System.Text.RegularExpressions.Generator
         }
 
         /// <summary>Adds a SearchValues instance declaration to the required helpers collection.</summary>
-        private static string EmitSearchValues(char[] asciiChars, Dictionary<string, string[]> requiredHelpers)
+        private static string EmitSearchValues(char[] chars, Dictionary<string, string[]> requiredHelpers)
         {
-            Debug.Assert(RegexCharClass.IsAscii(asciiChars));
+            Array.Sort(chars);
 
-            // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
-            byte[] bitmap = new byte[16];
-            foreach (char c in asciiChars)
+            string fieldName;
+            if (RegexCharClass.IsAscii(chars))
             {
-                bitmap[c >> 3] |= (byte)(1 << (c & 7));
+                // The set of ASCII characters can be represented as a 128-bit bitmap. Use the 16-byte hex string as the key.
+                var bitmap = new byte[16];
+                foreach (char c in chars)
+                {
+                    bitmap[c >> 3] |= (byte)(1 << (c & 7));
+                }
+
+                string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
+
+                fieldName = hexBitmap switch
+                {
+                    "FFFFFFFF000000000000000000000080" => "s_asciiControl",
+                    "000000000000FF030000000000000000" => "s_asciiDigits",
+                    "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
+                    "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
+                    "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
+                    "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
+                    "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
+                    "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
+                    "00000000010000000000000000000000" => "s_asciiSeparators",
+                    "00000000100800700000004001000050" => "s_asciiSymbols",
+                    "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
+                    "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
+
+                    "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
+                    "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
+                    "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
+                    "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
+                    "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
+                    "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
+                    "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
+                    "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
+                    "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
+                    "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
+                    "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
+
+                    _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
+                };
             }
-
-            string hexBitmap = BitConverter.ToString(bitmap).Replace("-", string.Empty);
-
-            string fieldName = hexBitmap switch
+            else
             {
-                "FFFFFFFF000000000000000000000080" => "s_asciiControl",
-                "000000000000FF030000000000000000" => "s_asciiDigits",
-                "0000000000000000FEFFFF07FEFFFF07" => "s_asciiLetters",
-                "000000000000FF03FEFFFF07FEFFFF07" => "s_asciiLettersAndDigits",
-                "000000000000FF037E0000007E000000" => "s_asciiHexDigits",
-                "000000000000FF03000000007E000000" => "s_asciiHexDigitsLower",
-                "000000000000FF037E00000000000000" => "s_asciiHexDigitsUpper",
-                "00000000EEF7008C010000B800000028" => "s_asciiPunctuation",
-                "00000000010000000000000000000000" => "s_asciiSeparators",
-                "00000000100800700000004001000050" => "s_asciiSymbols",
-                "003E0000010000000000000000000000" => "s_asciiWhiteSpace",
-                "000000000000FF03FEFFFF87FEFFFF07" => "s_asciiWordChars",
-
-                "00000000FFFFFFFFFFFFFFFFFFFFFF7F" => "s_asciiExceptControl",
-                "FFFFFFFFFFFF00FCFFFFFFFFFFFFFFFF" => "s_asciiExceptDigits",
-                "FFFFFFFFFFFFFFFF010000F8010000F8" => "s_asciiExceptLetters",
-                "FFFFFFFFFFFF00FC010000F8010000F8" => "s_asciiExceptLettersAndDigits",
-                "FFFFFFFFFFFFFFFFFFFFFFFF010000F8" => "s_asciiExceptLower",
-                "FFFFFFFF1108FF73FEFFFF47FFFFFFD7" => "s_asciiExceptPunctuation",
-                "FFFFFFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptSeparators",
-                "FFFFFFFFEFF7FF8FFFFFFFBFFEFFFFAF" => "s_asciiExceptSymbols",
-                "FFFFFFFFFFFFFFFF010000F8FFFFFFFF" => "s_asciiExceptUpper",
-                "FFC1FFFFFEFFFFFFFFFFFFFFFFFFFFFF" => "s_asciiExceptWhiteSpace",
-                "FFFFFFFFFFFF00FC01000078010000F8" => "s_asciiExceptWordChars",
-
-                _ => $"s_ascii_{hexBitmap.TrimStart('0')}"
-            };
+                using (SHA256 sha = SHA256.Create())
+                {
+#pragma warning disable CA1850 // SHA256.HashData isn't available on netstandard2.0
+                    fieldName = $"s_nonAscii_{BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(chars))).Replace("-", "")}";
+#pragma warning restore CA1850
+                }
+            }
 
             if (!requiredHelpers.ContainsKey(fieldName))
             {
-                Array.Sort(asciiChars);
-
-                string setLiteral = Literal(new string(asciiChars));
+                string setLiteral = Literal(new string(chars));
 
                 requiredHelpers.Add(fieldName, new string[]
                 {
@@ -465,12 +476,12 @@ namespace System.Text.RegularExpressions.Generator
             // a sequential walk).  In order to do that search, we actually build up a set for all of the ASCII
             // characters _not_ contained in the set, and then do a search for the inverse of that, which will be
             // all of the target ASCII characters and all of non-ASCII.
-            var asciiChars = new List<char>();
+            var excludedAsciiChars = new List<char>();
             for (int i = 0; i < 128; i++)
             {
                 if (!RegexCharClass.CharInClass((char)i, set))
                 {
-                    asciiChars.Add((char)i);
+                    excludedAsciiChars.Add((char)i);
                 }
             }
 
@@ -538,9 +549,9 @@ namespace System.Text.RegularExpressions.Generator
                 lines.Add($"internal static int {helperName}(this ReadOnlySpan<char> span)");
                 lines.Add($"{{");
                 int uncheckedStart = lines.Count;
-                lines.Add(asciiChars.Count == 128 ?
+                lines.Add(excludedAsciiChars.Count == 128 ?
                           $"    int i = span.IndexOfAnyExceptInRange('\0', '\u007f');" :
-                          $"    int i = span.IndexOfAnyExcept({EmitSearchValues(asciiChars.ToArray(), requiredHelpers)});");
+                          $"    int i = span.IndexOfAnyExcept({EmitSearchValues(excludedAsciiChars.ToArray(), requiredHelpers)});");
                 lines.Add($"    if ((uint)i < (uint)span.Length)");
                 lines.Add($"    {{");
                 lines.Add($"        if (char.IsAscii(span[i]))");
@@ -1067,6 +1078,8 @@ namespace System.Text.RegularExpressions.Generator
                     string indexOf;
                     if (primarySet.Chars is not null)
                     {
+                        Debug.Assert(primarySet.Chars.Length > 0);
+
                         // We have a chars array, so we can use IndexOf{Any}{Except} to search for it. Choose the best overload.
                         string indexOfName = "IndexOf", indexOfAnyName = "IndexOfAny";
                         if (primarySet.Negated)
@@ -1076,17 +1089,18 @@ namespace System.Text.RegularExpressions.Generator
 
                         indexOf = primarySet.Chars.Length switch
                         {
+                            // 1, 2, 3 have dedicated optimized IndexOfAny overloads
                             1 => $"{span}.{indexOfName}({Literal(primarySet.Chars[0])})",
                             2 => $"{span}.{indexOfAnyName}({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])})",
                             3 => $"{span}.{indexOfAnyName}({Literal(primarySet.Chars[0])}, {Literal(primarySet.Chars[1])}, {Literal(primarySet.Chars[2])})",
-                            _ => $"{span}.{indexOfAnyName}({EmitSearchValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+
+                            // 4, 5 have dedicated optimized IndexOfAny overloads accessible via the ReadOnlySpan<char> overload,
+                            // but can also be handled via SearchValues
+                            4 or 5 => $"{span}.{indexOfAnyName}({EmitSearchValuesOrLiteral(primarySet.Chars, requiredHelpers)})",
+
+                            // > 5 can only be handled efficiently via SearchValues
+                            _ => $"{span}.{indexOfAnyName}({EmitSearchValues(primarySet.Chars, requiredHelpers)})",
                         };
-                    }
-                    else if (primarySet.AsciiSet is not null)
-                    {
-                        // We have a set of ASCII chars, so we can use IndexOfAny(SearchValues) to search for it.
-                        Debug.Assert(!primarySet.Negated);
-                        indexOf = $"{span}.IndexOfAny({EmitSearchValues(primarySet.AsciiSet, requiredHelpers)})";
                     }
                     else if (primarySet.Range is not null)
                     {
@@ -1102,8 +1116,8 @@ namespace System.Text.RegularExpressions.Generator
                     }
                     else
                     {
-                        // We have an arbitrary set of characters that includes at least one non-ASCII char.  We use a custom IndexOfAny helper that
-                        // will perform the search as efficiently as possible.
+                        // We have an arbitrary set of characters that's really large or otherwise not enumerable.
+                        // We use a custom IndexOfAny helper that will perform the search as efficiently as possible.
                         indexOf = $"{span}.{EmitIndexOfAnyCustomHelper(primarySet.Set, requiredHelpers, checkOverflow)}()";
                     }
 

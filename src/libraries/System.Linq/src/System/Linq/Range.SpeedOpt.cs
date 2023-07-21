@@ -2,6 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace System.Linq
 {
@@ -16,15 +19,17 @@ namespace System.Linq
 
             public int[] ToArray()
             {
-                int[] array = new int[_end - _start];
-                Fill(array, _start);
+                int start = _start;
+                int[] array = new int[_end - start];
+                Fill(array, start);
                 return array;
             }
 
             public List<int> ToList()
             {
-                List<int> list = new List<int>(_end - _start);
-                Fill(SetCountAndGetSpan(list, _end - _start), _start);
+                (int start, int end) = (_start, _end);
+                List<int> list = new List<int>(end - start);
+                Fill(SetCountAndGetSpan(list, end - start), start);
                 return list;
             }
 
@@ -33,9 +38,33 @@ namespace System.Linq
 
             private static void Fill(Span<int> destination, int value)
             {
-                for (int i = 0; i < destination.Length; i++, value++)
+                ref int pos = ref MemoryMarshal.GetReference(destination);
+                ref int end = ref Unsafe.Add(ref pos, destination.Length);
+
+                if (Vector.IsHardwareAccelerated &&
+                    Vector<int>.Count <= 8 &&
+                    destination.Length >= Vector<int>.Count)
                 {
-                    destination[i] = value;
+                    Vector<int> init = new Vector<int>((ReadOnlySpan<int>)new int[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+                    Vector<int> current = new Vector<int>(value) + init;
+                    Vector<int> increment = new Vector<int>(Vector<int>.Count);
+
+                    ref int oneVectorFromEnd = ref Unsafe.Subtract(ref end, Vector<int>.Count);
+                    do
+                    {
+                        current.StoreUnsafe(ref pos);
+                        current += increment;
+                        pos = ref Unsafe.Add(ref pos, Vector<int>.Count);
+                    }
+                    while (!Unsafe.IsAddressGreaterThan(ref pos, ref oneVectorFromEnd));
+
+                    value = current[0];
+                }
+
+                while (Unsafe.IsAddressLessThan(ref pos, ref end))
+                {
+                    pos = value++;
+                    pos = ref Unsafe.Add(ref pos, 1);
                 }
             }
 
