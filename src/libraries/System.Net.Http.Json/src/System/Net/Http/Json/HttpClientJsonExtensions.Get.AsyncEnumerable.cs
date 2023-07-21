@@ -154,22 +154,50 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            CancellationTokenSource? linkedCTS = CreateLinkedCTSFromClientTimeout(client, cancellationToken);
-            Task<HttpResponseMessage> responseTask = GetHttpResponseMessageTask(getMethod, client, requestUri, linkedCTS, cancellationToken);
-
-            return Core(client, responseTask, jsonTypeInfo, linkedCTS, cancellationToken);
+            return Core(getMethod, client, requestUri, jsonTypeInfo, cancellationToken);
 
             static async IAsyncEnumerable<TValue?> Core(
+                Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
                 HttpClient client,
-                Task<HttpResponseMessage> responseTask,
+                Uri? requestUri,
                 JsonTypeInfo<TValue> jsonTypeInfo,
-                CancellationTokenSource? linkedCTS,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
+                TimeSpan timeout = client.Timeout;
+
+                // Create the CTS before the initial SendAsync so that the SendAsync counts against the timeout.
+                CancellationTokenSource? linkedCTS = null;
+                if (timeout != Timeout.InfiniteTimeSpan)
+                {
+                    linkedCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                    linkedCTS.CancelAfter(timeout);
+                }
+
+                // We call SendAsync outside of the async Core method to propagate exception even without awaiting the returned task.
+                Task<HttpResponseMessage> responseTask;
                 try
                 {
-                    using HttpResponseMessage response = await EnsureHttpResponseAsync(client, responseTask)
-                        .ConfigureAwait(false);
+                    // Intentionally using cancellationToken instead of the linked one here as HttpClient will enforce the Timeout on its own for this part
+                    responseTask = getMethod(client, requestUri, cancellationToken);
+                }
+                catch
+                {
+                    linkedCTS?.Dispose();
+                    throw;
+                }
+
+                try
+                {
+                    using HttpResponseMessage response = await responseTask.ConfigureAwait(false);
+                    response.EnsureSuccessStatusCode();
+
+                    Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
+                    int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
+
+                    if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
+                    {
+                        LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
+                    }
 
                     await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
                         jsonTypeInfo, cancellationToken))
@@ -182,64 +210,6 @@ namespace System.Net.Http.Json
                     linkedCTS?.Dispose();
                 }
             }
-        }
-
-        private static CancellationTokenSource? CreateLinkedCTSFromClientTimeout(
-            HttpClient client,
-            CancellationToken cancellationToken)
-        {
-            TimeSpan timeout = client.Timeout;
-
-            // Create the CTS before the initial SendAsync so that the SendAsync counts against the timeout.
-            CancellationTokenSource? linkedCTS = null;
-            if (timeout != Timeout.InfiniteTimeSpan)
-            {
-                linkedCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                linkedCTS.CancelAfter(timeout);
-            }
-
-            return linkedCTS;
-        }
-
-        private static Task<HttpResponseMessage> GetHttpResponseMessageTask(
-            Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
-            HttpClient client,
-            Uri? requestUri,
-            CancellationTokenSource? linkedCTS,
-            CancellationToken cancellationToken)
-        {
-            // We call SendAsync outside of the async Core method to propagate exception even without awaiting the returned task.
-            Task<HttpResponseMessage> responseTask;
-            try
-            {
-                // Intentionally using cancellationToken instead of the linked one here as HttpClient will enforce the Timeout on its own for this part
-                responseTask = getMethod(client, requestUri, cancellationToken);
-            }
-            catch
-            {
-                linkedCTS?.Dispose();
-                throw;
-            }
-
-            return responseTask;
-        }
-
-        private static async Task<HttpResponseMessage> EnsureHttpResponseAsync(
-            HttpClient client,
-            Task<HttpResponseMessage> responseTask)
-        {
-            HttpResponseMessage response = await responseTask.ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-
-            Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-            int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
-
-            if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
-            {
-                LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
-            }
-
-            return response;
         }
     }
 }
