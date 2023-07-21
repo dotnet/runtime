@@ -3,7 +3,7 @@
 
 import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./globals";
+import { Module, mono_assert } from "./globals";
 import {
     setI32, getU32_unaligned, _zero_region
 } from "./memory";
@@ -298,7 +298,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         for (let i = 0; i < trampImports.length; i++)
             builder.markImportAsUsed(trampImports[i][0]);
 
-        builder._generateImportSection();
+        builder._generateImportSection(false);
 
         // Function section
         builder.beginSection(3);

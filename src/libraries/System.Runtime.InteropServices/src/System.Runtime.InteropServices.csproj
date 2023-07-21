@@ -32,6 +32,7 @@
     <Compile Include="System\Runtime\InteropServices\ImportedFromTypeLibAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\ManagedToNativeComInteropStubAttribute.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComExposedClassAttribute.cs" />
+    <Compile Include="System\Runtime\InteropServices\Marshalling\ComImportInteropInterfaceDetailsStrategy.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComInterfaceOptions.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\UniqueComInterfaceMarshaller.cs" />
     <Compile Include="System\Runtime\InteropServices\Marshalling\ComInterfaceMarshaller.cs" />
@@ -70,6 +71,10 @@
     <Compile Include="System\Runtime\InteropServices\TypeLibVersionAttribute.cs" />
     <Compile Include="System\Security\SecureStringMarshal.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
 
   <ItemGroup>

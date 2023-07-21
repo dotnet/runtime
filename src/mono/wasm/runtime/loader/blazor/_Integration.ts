@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import type { DotnetModuleInternal, MonoConfigInternal } from "../../types/internal";
-import type { AssetBehaviours, AssetEntry, LoadingResource, WebAssemblyBootResourceType, WebAssemblyStartOptions } from "../../types";
+import { GlobalizationMode, type AssetBehaviours, type AssetEntry, type LoadBootResourceCallback, type LoadingResource, type WebAssemblyBootResourceType } from "../../types";
 import type { BootJsonData } from "../../types/blazor";
 
 import { ENVIRONMENT_IS_WEB, INTERNAL, loaderHelpers } from "../globals";
@@ -10,17 +10,18 @@ import { BootConfigResult } from "./BootConfig";
 import { WebAssemblyResourceLoader } from "./WebAssemblyResourceLoader";
 import { hasDebuggingEnabled } from "./_Polyfill";
 import { ICUDataMode } from "../../types/blazor";
+import { appendUniqueQuery } from "../assets";
 
 let resourceLoader: WebAssemblyResourceLoader;
 
 export async function loadBootConfig(config: MonoConfigInternal, module: DotnetModuleInternal) {
-    const bootConfigPromise = BootConfigResult.initAsync(config.startupOptions?.loadBootResource, config.applicationEnvironment);
+    const bootConfigPromise = BootConfigResult.initAsync(loaderHelpers.loadBootResource, config.applicationEnvironment);
     const bootConfigResult: BootConfigResult = await bootConfigPromise;
-    await initializeBootConfig(bootConfigResult, module, config.startupOptions);
+    await initializeBootConfig(bootConfigResult, module, loaderHelpers.loadBootResource);
 }
 
-export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, startupOptions?: Partial<WebAssemblyStartOptions>) {
-    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, startupOptions ?? {});
+export async function initializeBootConfig(bootConfigResult: BootConfigResult, module: DotnetModuleInternal, loadBootResource?: LoadBootResourceCallback) {
+    INTERNAL.resourceLoader = resourceLoader = await WebAssemblyResourceLoader.initAsync(bootConfigResult.bootConfig, loadBootResource);
     mapBootConfigToMonoConfig(loaderHelpers.config, bootConfigResult.applicationEnvironment);
 
     if (ENVIRONMENT_IS_WEB) {
@@ -29,7 +30,7 @@ export async function initializeBootConfig(bootConfigResult: BootConfigResult, m
 }
 
 let resourcesLoaded = 0;
-let totalResources = 0;
+const totalResources = new Set<string>();
 
 const behaviorByName = (name: string): AssetBehaviours | "other" => {
     return name === "dotnet.native.wasm" ? "dotnetwasm"
@@ -60,13 +61,12 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
         const type = monoToBlazorAssetTypeMap[asset.behavior];
         if (type !== undefined) {
             const res = resourceLoader.loadResource(asset.name, asset.resolvedUrl!, asset.hash!, type);
-            asset.pendingDownload = res;
 
-            totalResources++;
+            totalResources.add(asset.name!);
             res.response.then(() => {
                 resourcesLoaded++;
                 if (module.onDownloadResourceProgress)
-                    module.onDownloadResourceProgress(resourcesLoaded, totalResources);
+                    module.onDownloadResourceProgress(resourcesLoaded, totalResources.size);
             });
 
             return res;
@@ -75,14 +75,6 @@ export function setupModuleForBlazor(module: DotnetModuleInternal) {
     };
 
     loaderHelpers.downloadResource = downloadResource; // polyfills were already assigned
-}
-
-function appendUniqueQuery(attemptUrl: string): string {
-    if (loaderHelpers.assetUniqueQuery) {
-        attemptUrl = attemptUrl + loaderHelpers.assetUniqueQuery;
-    }
-
-    return attemptUrl;
 }
 
 export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, applicationEnvironment: string) {
@@ -101,7 +93,16 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     moduleConfig.remoteSources = (resourceLoader.bootConfig.resources as any).remoteSources;
     moduleConfig.assetsHash = resourceLoader.bootConfig.resources.hash;
     moduleConfig.assets = assets;
-    moduleConfig.globalizationMode = "icu";
+    moduleConfig.extensions = resourceLoader.bootConfig.extensions;
+    moduleConfig.resources = {
+        extensions: resources.extensions
+    };
+
+    // Default values (when WasmDebugLevel is not set)
+    // - Build   (debug)    => debugBuild=true  & debugLevel=-1 => -1
+    // - Build   (release)  => debugBuild=true  & debugLevel=0  => 0
+    // - Publish (debug)    => debugBuild=false & debugLevel=-1 => 0
+    // - Publish (release)  => debugBuild=false & debugLevel=0  => 0
     moduleConfig.debugLevel = hasDebuggingEnabled(resourceLoader.bootConfig) ? resourceLoader.bootConfig.debugLevel : 0;
     moduleConfig.mainAssemblyName = resourceLoader.bootConfig.entryAssembly;
 
@@ -133,13 +134,13 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     for (const name in resources.runtimeAssets) {
         const asset = resources.runtimeAssets[name] as AssetEntry;
         asset.name = name;
-        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name));
+        asset.resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name), asset.behavior);
         assets.push(asset);
     }
     for (const name in resources.assembly) {
         const asset: AssetEntry = {
             name,
-            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
+            resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), "assembly"),
             hash: resources.assembly[name],
             behavior: "assembly",
         };
@@ -149,14 +150,14 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         for (const name in resources.pdb) {
             const asset: AssetEntry = {
                 name,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), "pdb"),
                 hash: resources.pdb[name],
                 behavior: "pdb",
             };
             assets.push(asset);
         }
     }
-    const applicationCulture = resourceLoader.startOptions.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
+    const applicationCulture = moduleConfig.applicationCulture || (ENVIRONMENT_IS_WEB ? (navigator.languages && navigator.languages[0]) : Intl.DateTimeFormat().resolvedOptions().locale);
     const icuDataResourceName = getICUResourceName(resourceLoader.bootConfig, moduleConfig, applicationCulture);
     let hasIcuData = false;
     for (const name in resources.runtime) {
@@ -177,7 +178,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
             continue;
         }
 
-        const resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name));
+        const resolvedUrl = appendUniqueQuery(loaderHelpers.locateFile(name), behavior);
         const asset: AssetEntry = {
             name,
             resolvedUrl,
@@ -203,10 +204,11 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
 
     for (let i = 0; i < resourceLoader.bootConfig.config.length; i++) {
         const config = resourceLoader.bootConfig.config[i];
-        if (config === "appsettings.json" || config === `appsettings.${applicationEnvironment}.json`) {
+        const configFileName = fileName(config);
+        if (configFileName === "appsettings.json" || configFileName === `appsettings.${applicationEnvironment}.json`) {
             assets.push({
-                name: config,
-                resolvedUrl: appendUniqueQuery((document ? document.baseURI : "/") + config),
+                name: configFileName,
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(config), "vfs"),
                 behavior: "vfs",
             });
         }
@@ -216,7 +218,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         for (const name in resources.vfs[virtualPath]) {
             const asset: AssetEntry = {
                 name,
-                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name)),
+                resolvedUrl: appendUniqueQuery(loaderHelpers.locateFile(name), "vfs"),
                 hash: resources.vfs[virtualPath][name],
                 behavior: "vfs",
                 virtualPath
@@ -226,7 +228,7 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 
     if (!hasIcuData) {
-        moduleConfig.globalizationMode = "invariant";
+        moduleConfig.globalizationMode = GlobalizationMode.Invariant;
     }
 
     if (resourceLoader.bootConfig.modifiableAssemblies) {
@@ -234,9 +236,14 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
         environmentVariables["DOTNET_MODIFIABLE_ASSEMBLIES"] = resourceLoader.bootConfig.modifiableAssemblies;
     }
 
-    if (resourceLoader.startOptions.applicationCulture) {
+    if (resourceLoader.bootConfig.aspnetCoreBrowserTools) {
+        // See https://github.com/dotnet/aspnetcore/issues/37357#issuecomment-941237000
+        environmentVariables["__ASPNETCORE_BROWSER_TOOLS"] = resourceLoader.bootConfig.aspnetCoreBrowserTools;
+    }
+
+    if (moduleConfig.applicationCulture) {
         // If a culture is specified via start options use that to initialize the Emscripten \  .NET culture.
-        environmentVariables["LANG"] = `${resourceLoader.startOptions.applicationCulture}.UTF-8`;
+        environmentVariables["LANG"] = `${moduleConfig.applicationCulture}.UTF-8`;
     }
 
     if (resourceLoader.bootConfig.startupMemoryCache !== undefined) {
@@ -248,30 +255,39 @@ export function mapBootConfigToMonoConfig(moduleConfig: MonoConfigInternal, appl
     }
 }
 
+function fileName(name: string) {
+    let lastIndexOfSlash = name.lastIndexOf("/");
+    if (lastIndexOfSlash >= 0) {
+        lastIndexOfSlash++;
+    }
+    return name.substring(lastIndexOfSlash);
+}
+
 function getICUResourceName(bootConfig: BootJsonData, moduleConfig: MonoConfigInternal, culture: string | undefined): string {
     if (bootConfig.icuDataMode === ICUDataMode.Custom) {
         const icuFiles = Object
             .keys(bootConfig.resources.runtime)
             .filter(n => n.startsWith("icudt") && n.endsWith(".dat"));
         if (icuFiles.length === 1) {
-            moduleConfig.globalizationMode = "icu";
+            moduleConfig.globalizationMode = GlobalizationMode.Custom;
             const customIcuFile = icuFiles[0];
             return customIcuFile;
         }
     }
 
     if (bootConfig.icuDataMode === ICUDataMode.Hybrid) {
-        moduleConfig.globalizationMode = "hybrid";
+        moduleConfig.globalizationMode = GlobalizationMode.Hybrid;
         const reducedICUResourceName = "icudt_hybrid.dat";
         return reducedICUResourceName;
     }
 
     if (!culture || bootConfig.icuDataMode === ICUDataMode.All) {
-        moduleConfig.globalizationMode = "icu";
+        moduleConfig.globalizationMode = GlobalizationMode.All;
         const combinedICUResourceName = "icudt.dat";
         return combinedICUResourceName;
     }
 
+    moduleConfig.globalizationMode = GlobalizationMode.Sharded;
     const prefix = culture.split("-")[0];
     if (prefix === "en" ||
         [

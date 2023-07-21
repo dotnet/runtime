@@ -2,8 +2,7 @@
   <PropertyGroup>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == '' and '$(GenerateAppBundle)' != ''">$(GenerateAppBundle)</AndroidGenerateAppBundle>
     <AndroidGenerateAppBundle Condition="'$(AndroidGenerateAppBundle)' == ''">true</AndroidGenerateAppBundle>
-    <!-- Unable to properly integrate nativelib into app build, so not supported for now. -->
-    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true'">false</AndroidGenerateAppBundle>
+    <AndroidGenerateAppBundle Condition="'$(_IsLibraryMode)' == 'true' and '$(ForceLibraryModeGenerateAppBundle)' != 'true'">false</AndroidGenerateAppBundle>
 
     <EnableDefaultAssembliesToBundle Condition="'$(EnableDefaultAssembliesToBundle)' == ''">false</EnableDefaultAssembliesToBundle>
   </PropertyGroup>
@@ -47,6 +46,12 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(_IsLibraryMode)' == 'true'">
+      <_CommonLinkerArgs Include="-l:libz.so" />
+      <_CommonLinkerArgs Include="-l:liblog.so" />
+      <_CommonLinkerArgs Include="-l:libc.so" />
+      <_CommonLinkerArgs Include="-l:libm.so" />
+      <_CommonLinkerArgs Include="--build-id=sha1" />
+
       <!-- add all non stub libs first -->
       <!-- if RuntimeComponents is empty, exclude -static.a and include -stub-static.a instead -->
       <!-- if RuntimeComponents is *, we're ok because all -static.a is included -->
@@ -74,6 +79,7 @@
     </PropertyGroup>
 
     <RemoveDir Directories="$(AndroidBundleDir)" />
+    <MakeDir Directories="$(AndroidBundleDir)" />
   </Target>
 
   <Target Name="_AndroidResolveReferences">
@@ -110,6 +116,7 @@
     <PropertyGroup Condition="'$(_IsLibraryMode)' == 'true'">
       <_UsesRuntimeInitCallback>$(UsesRuntimeInitCallback)</_UsesRuntimeInitCallback>
       <_UsesRuntimeInitCallback Condition="'$(_UsesRuntimeInitCallback)' == ''">true</_UsesRuntimeInitCallback>
+      <_AotOutputType>ObjectFile</_AotOutputType>
     </PropertyGroup>
 
     <ItemGroup>
@@ -142,7 +149,7 @@
     </PropertyGroup>
 
     <NdkToolFinderTask
-      Condition="'$(AOTWithLibraryFiles)' == 'true'"
+      Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'"
       Architecture="$(TargetArchitecture)"
       HostOS="$(_HostOS)"
       MinApiLevel="$(AndroidLibraryMinApiLevel)">
@@ -154,7 +161,7 @@
       <Output TaskParameter="ClangPath" PropertyName="_ClangPath" />
     </NdkToolFinderTask>
 
-    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true'">
+    <PropertyGroup Condition="'$(AOTWithLibraryFiles)' == 'true' or '$(_IsLibraryMode)' == 'true'">
       <_AsPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_AsPrefixPath)'))</_AsPrefixPath>
       <_ToolPrefixPath>$([MSBuild]::EnsureTrailingSlash('$(_ToolPrefixPath)'))</_ToolPrefixPath>
     </PropertyGroup>

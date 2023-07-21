@@ -3,9 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -382,24 +379,25 @@ namespace LibraryImportGenerator.UnitTests
             } };
 
             // By value non-array with [In, Out] attributes
-            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In"), new[]
-            {
-                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("{|#1:In|}"), new [] {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.UnnecessaryParameterMarshallingInfo)
                     .WithLocation(0)
-                    .WithArguments("The '[In]' attribute is not supported unless the '[Out]' attribute is also used. The behavior of the '[In]' attribute without the '[Out]' attribute is the same as the default behavior.", "p")
+                    .WithLocation(1)
+                    .WithArguments(SR.InOutAttributes, "p", SR.InAttributeOnlyIsDefault)
+                    .WithSeverity(DiagnosticSeverity.Info)
             } };
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments("The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.", "p")
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
             } };
 
             yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<byte>("In, Out"), new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments("The provided '[In]' and '[Out]' attributes on this parameter are unsupported on this parameter.", "p")
+                    .WithArguments(SR.OutAttributeNotSupportedOnByValueParameters, "p")
             } };
 
             // LCIDConversion
@@ -415,13 +413,13 @@ namespace LibraryImportGenerator.UnitTests
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                     .WithLocation(0)
-                    .WithArguments("Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.", "Method"),
+                    .WithArguments(SR.ArraySizeMustBeSpecified, "Method"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
-                    .WithArguments("Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.", "pRef"),
+                    .WithArguments(SR.ArraySizeMustBeSpecified, "pRef"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(4)
-                    .WithArguments("Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.", "pOut"),
+                    .WithArguments(SR.ArraySizeMustBeSpecified, "pOut"),
             } };
             yield return new object[] { ID(), CodeSnippets.BasicParametersAndModifiers<sbyte[]>(CodeSnippets.DisableRuntimeMarshalling), new[]
             {
@@ -653,7 +651,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.NonStaticMarshallerEntryPoint, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupported).WithLocation(0).WithArguments("S", "p"),
-                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported).WithLocation(10).WithArguments(""),
+                VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported).WithLocation(10).WithArguments(string.Format(SR.MarshallerTypeMustBeStaticClassOrStruct, "Marshaller", "S")),
             } };
             yield return new object[] { ID(), customStructMarshallingCodeSnippets.Stateless.ManagedToNativeOnlyOutParameter, new[]
             {
@@ -727,7 +725,7 @@ namespace LibraryImportGenerator.UnitTests
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(SR.ConstantAndElementCountInfoDisallowed),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
                     .WithArguments("Marshalling an array from unmanaged to managed requires either the 'SizeParamIndex' or 'SizeConst' fields to be set on a 'MarshalAsAttribute' or the 'ConstantElementCount' or 'CountElementName' properties to be set on a 'MarshalUsingAttribute'.", "pRef"),
@@ -752,71 +750,71 @@ namespace LibraryImportGenerator.UnitTests
                     .WithArguments("TestCollection<int>", "p"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(10)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.MarshallerEntryPointTypeMustMatchArity, "Marshaller<T, U, TUnmanagedElement>", "TestCollection<T>")),
             } };
 
             yield return new object[] { ID(), CodeSnippets.MarshalAsAndMarshalUsingOnReturnValue, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.DuplicateMarshallingInfo, "0")),
             } };
             yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingDuplicateElementIndirectionDepth, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.DuplicateMarshallingInfo, "1")),
             } };
             yield return new object[] { ID(), CodeSnippets.CustomElementMarshallingUnusedElementIndirectionDepth, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.ExtraneousMarshallingInfo, "2", "1")),
             } };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnReturnValue, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "return-value")),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnTypeNotSupportedWithDetails)
                     .WithLocation(1)
-                    .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "Method"),
+                    .WithArguments(SR.CollectionSizeParamTypeMustBeIntegral, "Method"),
             } };
             yield return new object[] { ID(), CodeSnippets.RecursiveCountElementNameOnParameter, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "arr")),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
-                    .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "arr"),
+                    .WithArguments(SR.CollectionSizeParamTypeMustBeIntegral, "arr"),
             } };
             yield return new object[] { ID(), CodeSnippets.MutuallyRecursiveCountElementNameOnParameter, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "arr2")),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
                     .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "arr"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(2)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "arr")),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
-                    .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "arr2"),
+                    .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "arr2")
             } };
             yield return new object[] { ID(), CodeSnippets.MutuallyRecursiveSizeParamIndexOnParameter, new[]
             {
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(0)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "arr2")),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(1)
                     .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "arr"),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.MarshallingAttributeConfigurationNotSupported)
                     .WithLocation(2)
-                    .WithArguments(""),
+                    .WithArguments(string.Format(SR.CyclicalCountInfo, "arr")),
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
                     .WithLocation(3)
                     .WithArguments("The specified collection size parameter for an collection must be an integer type. If the size information is applied to a nested collection, the size parameter must be a collection of one less level of nesting with an integral element.", "arr2"),
@@ -833,6 +831,12 @@ namespace LibraryImportGenerator.UnitTests
                 VerifyCS.Diagnostic(GeneratorDiagnostics.ReturnConfigurationNotSupported)
                     .WithLocation(1)
                     .WithArguments("ref return", "Basic.RefReadonlyReturn()"),
+            } };
+            yield return new object[] { ID(), CodeSnippets.ByValueParameterWithModifier<int[]>("In"), new[]
+            {
+                VerifyCS.Diagnostic(GeneratorDiagnostics.ParameterTypeNotSupportedWithDetails)
+                    .WithLocation(0)
+                    .WithArguments(SR.InAttributeOnlyNotSupportedOnPinnedParameters, "p")
             } };
         }
 
@@ -945,7 +949,7 @@ namespace LibraryImportGenerator.UnitTests
         class AllowUnsafeBlocksTest : VerifyCS.Test
         {
             public AllowUnsafeBlocksTest()
-                    :base(referenceAncillaryInterop: false)
+                    : base(referenceAncillaryInterop: false)
             {
             }
 

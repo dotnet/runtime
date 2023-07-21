@@ -54,7 +54,6 @@ void mono_dl_close_handle (MonoDl *module, MonoError *error);
 void* mono_dl_lookup_symbol (MonoDl *module, const char *name);
 int mono_dl_convert_flags (int mono_flags, int native_flags);
 char* mono_dl_current_error_string (void);
-const char* mono_dl_get_system_dir (void);
 
 #endif /* __MONO_UTILS_DL_H__ */
 

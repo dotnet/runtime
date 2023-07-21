@@ -194,9 +194,13 @@ namespace Tracing.Tests.ProcessInfoValidation
             {
                 expectedOSValue = "Android";
             }
-            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            else if (OperatingSystem.IsIOS())
             {
                 expectedOSValue = "iOS";
+            }
+            else if (OperatingSystem.IsTvOS())
+            {
+                expectedOSValue = "tvOS";
             }
             else
             {
@@ -288,7 +292,37 @@ namespace Tracing.Tests.ProcessInfoValidation
             }
             else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                expectedPortableRidOs = "linux";
+                // Check process modules for C library type indication to determine
+                // which linux RID OS is applicable.
+                Logger.logger.Log("Begin checking process modules to determine C library type.");
+                for (int i = 0; i < currentProcess.Modules.Count; i++)
+                {
+                    ProcessModule module = currentProcess.Modules[i];
+                    Logger.logger.Log($"- {module.ModuleName}");
+
+                    if (module.ModuleName.StartsWith("libc.", StringComparison.Ordinal) ||
+                        module.ModuleName.StartsWith("libc-", StringComparison.Ordinal))
+                    {
+                        Logger.logger.Log("Found gnu libc indicator.");
+                        expectedPortableRidOs = "linux";
+                        break;
+                    }
+                    else if (module.ModuleName.StartsWith("ld-musl-", StringComparison.Ordinal))
+                    {
+                        Logger.logger.Log("Found musl libc indicator.");
+                        expectedPortableRidOs = "linux-musl";
+                        break;
+                    }
+                }
+                Logger.logger.Log("Finished checking process modules.");
+            }
+            else if (OperatingSystem.IsIOS() || OperatingSystem.IsTvOS())
+            {
+                expectedPortableRidOs = "unix";
+            }
+            else if (OperatingSystem.IsAndroid())
+            {
+                expectedPortableRidOs = "linux-bionic";
             }
             
             Utils.Assert(!string.IsNullOrEmpty(expectedPortableRidOs), $"Unable to calculate expected portable RID OS.");
