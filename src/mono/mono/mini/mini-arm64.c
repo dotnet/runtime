@@ -1050,14 +1050,14 @@ emit_xinsert_i8_r8 (guint8* code, MonoTypeEnum type, int dreg, int src_reg, int 
 }
 
 static guint8*
-emit_call (MonoCompile *cfg, guint8* code, MonoJumpInfoType patch_type, gconstpointer data, MonoMethod *method)
+emit_call (MonoCompile *cfg, guint8* code, MonoJumpInfoType patch_type, gconstpointer data)
 {
 	/*
 	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, data, MONO_R_ARM64_IMM);
 	code = emit_imm64_template (code, ARMREG_LR);
 	arm_blrx (code, ARMREG_LR);
 	*/
-	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, method ? method : data, MONO_R_ARM64_BL);
+	mono_add_patch_info_rel (cfg, code - cfg->native_code, patch_type, data, MONO_R_ARM64_BL);
 	arm_bl (code, code);
 	cfg->thunk_area += THUNK_SIZE;
 	return code;
@@ -3706,7 +3706,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			 * So instead of emitting a trap, we emit a call a C function and place a
 			 * breakpoint there.
 			 */
-			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break), NULL);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_break));
 			break;
 		case OP_LOCALLOC: {
 			guint8 *buf [16];
@@ -5073,7 +5073,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			call = (MonoCallInst*)ins;
 			const MonoJumpInfoTarget patch = mono_call_to_patch (call);
-			code = emit_call (cfg, code, patch.type, patch.target, NULL);
+			code = emit_call (cfg, code, patch.type, patch.target);
 			code = emit_move_return_value (cfg, code, ins);
 			break;
 		}
@@ -5291,7 +5291,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Slowpath */
 			g_assert (sreg1 == ARMREG_R0);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init), NULL);
+							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_generic_class_init));
 
 			mono_arm_patch (jump, code, MONO_R_ARM64_CBZ);
 			break;
@@ -5312,7 +5312,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (sreg2 != ARMREG_R1)
 				arm_movx (code, ARMREG_R1, sreg2);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							  GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx), NULL);
+							  GUINT_TO_POINTER (MONO_JIT_ICALL_mini_init_method_rgctx));
 
 			mono_arm_patch (jump, code, MONO_R_ARM64_CBZ);
 			break;
@@ -5368,13 +5368,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (sreg1 != ARMREG_R0)
 				arm_movx (code, ARMREG_R0, sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception), NULL);
+							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_throw_exception));
 			break;
 		case OP_RETHROW:
 			if (sreg1 != ARMREG_R0)
 				arm_movx (code, ARMREG_R0, sreg1);
 			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID,
-							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception), NULL);
+							  GUINT_TO_POINTER (MONO_JIT_ICALL_mono_arch_rethrow_exception));
 			break;
 		case OP_CALL_HANDLER:
 			mono_add_patch_info_rel (cfg, offset, MONO_PATCH_INFO_BB, ins->inst_target_bb, MONO_R_ARM64_BL);
@@ -5436,7 +5436,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			/* Call it if it is non-null */
 			buf [0] = code;
 			arm_cbzx (code, ARMREG_IP1, 0);
-			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll), NULL);
+			code = emit_call (cfg, code, MONO_PATCH_INFO_JIT_ICALL_ID, GUINT_TO_POINTER (MONO_JIT_ICALL_mono_threads_state_poll));
 			mono_arm_patch (buf [0], code, MONO_R_ARM64_CBZ);
 			break;
 		}
@@ -5925,9 +5925,13 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	}
 
 	/* Call the init wrapper which checks if the methos needs to be initialised or not */
-	code = emit_imm (code, ARMREG_R0, cfg->method_index);
-	code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
-
+	/* https://github.com/dotnet/runtime/pull/82711, https://github.com/dotnet/runtime/issues/83378, https://github.com/dotnet/runtime/issues/83379 */
+#if NOLLVM_AOT_METHOD_INIT
+	if (cfg->compile_aot) {
+		code = emit_imm (code, ARMREG_R0, cfg->method_index);
+		code = emit_call (cfg, code, MONO_PATCH_INFO_METHOD, NULL, (gconstpointer) mono_marshal_get_aot_init_wrapper (AOT_INIT_METHOD));
+	}
+#endif
 
 	/* Save return area addr received in R8 */
 	if (cfg->vret_addr) {

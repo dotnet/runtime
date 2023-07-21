@@ -6810,9 +6810,8 @@ emit_and_reloc_code (MonoAotCompile *acfg, MonoMethod *method, guint8 *code, gui
 						 * This is a call from a JITted method to the init wrapper emitted by LLVM.
 						 * Disable this assert when nollvm init is enabled
 						 */
-#if !(!defined(ENABLE_LLVM) && defined(TARGET_ARM64))
 						g_assert (acfg->aot_opts.llvm && acfg->aot_opts.direct_extern_calls);
-#endif
+
 						const char *init_name = mono_marshal_get_aot_init_wrapper_name (info->d.aot_init.subtype);
 						char *symbol = g_strdup_printf ("%s%s_%s", acfg->user_symbol_prefix, acfg->global_prefix, init_name);
 
@@ -15202,13 +15201,12 @@ aot_assembly (MonoAssembly *ass, guint32 jit_opts, MonoAotOptions *aot_options)
 			flags = (LLVMModuleFlags)(flags | LLVM_MODULE_FLAG_INTERP);
 		mono_llvm_create_aot_module (acfg->image->assembly, acfg->global_prefix, acfg->nshared_got_entries, flags);
 
-		/* This will need to be moved outside to enable nollvm init method */
 		add_lazy_init_wrappers (acfg);
 		add_method (acfg, mono_marshal_get_llvm_func_wrapper (LLVM_FUNC_WRAPPER_GC_POLL));
 	}
 #endif
 
-#if !defined(ENABLE_LLVM) && defined(TARGET_ARM64)
+#if NOLLVM_AOT_METHOD_INIT
 	add_lazy_init_wrappers (acfg);
 #endif
 

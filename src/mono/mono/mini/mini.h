@@ -87,9 +87,11 @@ typedef struct SeqPointInfo SeqPointInfo;
 #if ENABLE_LLVM
 #define COMPILE_LLVM(cfg) ((cfg)->compile_llvm)
 #define LLVM_ENABLED TRUE
+#define NOLLVM_AOT_METHOD_INIT FALSE
 #else
 #define COMPILE_LLVM(cfg) (0)
 #define LLVM_ENABLED FALSE
+#define NOLLVM_AOT_METHOD_INIT FALSE
 #endif
 
 #ifdef MONO_ARCH_SOFT_FLOAT_FALLBACK
