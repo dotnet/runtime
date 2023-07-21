@@ -128,6 +128,7 @@ namespace System.Collections.Generic
             }
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void IntroSort(Span<T> keys, int depthLimit, Comparison<T> comparer)
         {
             Debug.Assert(!keys.IsEmpty);
@@ -402,6 +403,7 @@ namespace System.Collections.Generic
             j = t;
         }
 
+        [MethodImpl(MethodImplOptions.NoInlining)]
         private static void IntroSort(Span<T> keys, int depthLimit)
         {
             Debug.Assert(!keys.IsEmpty);

@@ -2207,6 +2207,7 @@ namespace System
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
                 Debug.Assert(hi >= lo);
@@ -2421,6 +2422,7 @@ namespace System
                 }
             }
 
+            [MethodImpl(MethodImplOptions.NoInlining)]
             private void IntroSort(int lo, int hi, int depthLimit)
             {
                 Debug.Assert(hi >= lo);
