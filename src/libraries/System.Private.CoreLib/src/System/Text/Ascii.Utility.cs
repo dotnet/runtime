@@ -1719,7 +1719,7 @@ namespace System.Text
                         }
 
                         Vector.Widen(asciiVector, out Vector<ushort> lower, out Vector<ushort> upper);
-                        WritePairUnaligned(ref Unsafe.As<char, ushort>(ref pUtf16Buffer[currentOffset]), (lower, upper));
+                        WritePairUnaligned(ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]), (lower, upper));
 
                         currentOffset += SizeOfVector;
                     } while (currentOffset <= finalOffsetWhereCanLoop);
@@ -1745,7 +1745,7 @@ namespace System.Text
                         goto FoundNonAsciiData;
                     }
 
-                    WriteUnalignedWidening(ref Unsafe.As<char, ushort>(ref outputBuffer), value);
+                    WriteUnalignedWidening(ref Unsafe.As<char, byte>(ref pUtf16Buffer[currentOffset]), asciiData);
                     currentOffset += 4;
                 } while (currentOffset <= finalOffsetWhereCanLoop);
             }
