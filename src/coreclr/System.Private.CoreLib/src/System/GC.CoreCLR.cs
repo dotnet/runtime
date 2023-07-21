@@ -754,16 +754,12 @@ namespace System
 
 #endif
             }
-            else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
-            {
-                return AllocateArray<T>(length, pinned: true);
-            }
 
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
             if (pinned)
                 flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
 
-            return Unsafe.As<T[]>(AllocateNewArray(RuntimeTypeHandle.ToIntPtr(typeof(T[]).TypeHandle), length, flags));
+            return Unsafe.As<T[]>(AllocateNewArray(typeof(T[]).TypeHandle.Value, length, flags));
         }
 
         /// <summary>
