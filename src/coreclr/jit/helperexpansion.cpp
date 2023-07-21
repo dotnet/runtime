@@ -500,10 +500,10 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
         memset(&classCtorRunHelper, 0, sizeof(CORINFO_CONST_LOOKUP));
         memset(&targetSymbol, 0, sizeof(CORINFO_CONST_LOOKUP));
         int size =
-            info.compCompHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(&classCtorRunHelper, &targetSymbol);
+            info.compCompHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(call->gtInitClsHnd, &classCtorRunHelper, &targetSymbol);
 
         // target symbol
-        GenTree* targetSymbolAddr = gtNewIconHandleNode(classCtorRunHelper.addr, GTF_ICON_OBJ_HDL);
+        GenTree* targetSymbolAddr = gtNewIconHandleNode((size_t)classCtorRunHelper.addr, GTF_ICON_OBJ_HDL);
         targetSymbolAddr          = gtNewOperNode(GT_ADD, TYP_I_IMPL, targetSymbolAddr, gtNewIconNode(size, TYP_UINT));
         targetSymbolAddr          = gtNewIndir(TYP_I_IMPL, targetSymbolAddr);
 
@@ -527,7 +527,7 @@ bool Compiler::fgExpandThreadLocalAccessForCallReadyToRun(BasicBlock** pBlock, S
 
         // tlsRootNullCondBB (BBJ_COND):                                    [weight: 1.0]
         //      targetSymbolAddr = [targetSymbol + size]
-        //      if (*targetSymbolAddr == 0)
+        //      if (*targetSymbolAddr != 0)
         //          goto fastPathBb;
         //
         // fallbackBb (BBJ_ALWAYS):                                         [weight: 0] ???? Check if this is true

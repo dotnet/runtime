@@ -107,7 +107,7 @@ struct JitInterfaceCallbacks
     void (* getThreadLocalStaticBlocksInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_THREAD_STATIC_BLOCKS_INFO* pInfo, bool isGCType);
     void (* getTlsRootInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
     void (* getThreadStaticBaseSlowInfo)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
-    void (* getEnsureClassCtorRunAndReturnThreadStaticBaseHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CONST_LOOKUP* addr);
+    int (* getEnsureClassCtorRunAndReturnThreadStaticBaseHelper)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_CLASS_HANDLE cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol);
     bool (* isFieldStatic)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_FIELD_HANDLE fldHnd);
     int (* getArrayOrStringLength)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_OBJECT_HANDLE objHnd);
     void (* getBoundaries)(void * thisHandle, CorInfoExceptionClass** ppException, CORINFO_METHOD_HANDLE ftn, unsigned int* cILOffsets, uint32_t** pILOffsets, ICorDebugInfo::BoundaryTypes* implicitBoundaries);
@@ -1134,12 +1134,15 @@ public:
     if (pException != nullptr) throw pException;
 }
 
-    virtual void getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
-          CORINFO_CONST_LOOKUP* addr)
+    virtual int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          CORINFO_CONST_LOOKUP* targetSymbol)
 {
     CorInfoExceptionClass* pException = nullptr;
-    _callbacks->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(_thisHandle, &pException, addr);
+    int temp = _callbacks->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(_thisHandle, &pException, cls, addr, targetSymbol);
     if (pException != nullptr) throw pException;
+    return temp;
 }
 
     virtual bool isFieldStatic(

@@ -3247,7 +3247,7 @@ namespace Internal.JitInterface
             // Implemented for JIT and NativeAOT only for now.
         }
 
-        private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
+        private int getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(CORINFO_CLASS_STRUCT_* cls, ref CORINFO_CONST_LOOKUP addr, ref CORINFO_CONST_LOOKUP targetSymbol)
         {
             // Implemented for JIT and NativeAOT only for now.
             return 0;

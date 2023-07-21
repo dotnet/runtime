@@ -948,12 +948,15 @@ void WrapICorJitInfo::getThreadStaticBaseSlowInfo(
     API_LEAVE(getThreadStaticBaseSlowInfo);
 }
 
-void WrapICorJitInfo::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
-          CORINFO_CONST_LOOKUP* addr)
+int WrapICorJitInfo::getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(
+          CORINFO_CLASS_HANDLE cls,
+          CORINFO_CONST_LOOKUP* addr,
+          CORINFO_CONST_LOOKUP* targetSymbol)
 {
     API_ENTER(getEnsureClassCtorRunAndReturnThreadStaticBaseHelper);
-    wrapHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(addr);
+    int temp = wrapHnd->getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, addr, targetSymbol);
     API_LEAVE(getEnsureClassCtorRunAndReturnThreadStaticBaseHelper);
+    return temp;
 }
 
 bool WrapICorJitInfo::isFieldStatic(

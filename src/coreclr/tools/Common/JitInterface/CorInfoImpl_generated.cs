@@ -1432,16 +1432,17 @@ namespace Internal.JitInterface
         }
 
         [UnmanagedCallersOnly]
-        private static void _getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_CONST_LOOKUP* addr)
+        private static int _getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(IntPtr thisHandle, IntPtr* ppException, CORINFO_CLASS_STRUCT_* cls, CORINFO_CONST_LOOKUP* addr, CORINFO_CONST_LOOKUP* targetSymbol)
         {
             var _this = GetThis(thisHandle);
             try
             {
-                _this.getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(ref *addr);
+                return _this.getEnsureClassCtorRunAndReturnThreadStaticBaseHelper(cls, ref *addr, ref *targetSymbol);
             }
             catch (Exception ex)
             {
                 *ppException = _this.AllocException(ex);
+                return default;
             }
         }
 
@@ -2647,7 +2648,7 @@ namespace Internal.JitInterface
             callbacks[93] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_THREAD_STATIC_BLOCKS_INFO*, byte, void>)&_getThreadLocalStaticBlocksInfo;
             callbacks[94] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void>)&_getTlsRootInfo;
             callbacks[95] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void>)&_getThreadStaticBaseSlowInfo;
-            callbacks[96] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CONST_LOOKUP*, void>)&_getEnsureClassCtorRunAndReturnThreadStaticBaseHelper;
+            callbacks[96] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_CLASS_STRUCT_*, CORINFO_CONST_LOOKUP*, CORINFO_CONST_LOOKUP*, int>)&_getEnsureClassCtorRunAndReturnThreadStaticBaseHelper;
             callbacks[97] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_FIELD_STRUCT_*, byte>)&_isFieldStatic;
             callbacks[98] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_OBJECT_STRUCT_*, int>)&_getArrayOrStringLength;
             callbacks[99] = (delegate* unmanaged<IntPtr, IntPtr*, CORINFO_METHOD_STRUCT_*, uint*, uint**, BoundaryTypes*, void>)&_getBoundaries;
