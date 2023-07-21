@@ -45,7 +45,8 @@ jobs:
         extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
-# Build the whole product using Mono for iOS/tvOS and run runtime tests with iOS/tvOS devices
+# iOS/tvOS devices
+# Build the whole product using Mono and run runtime tests
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
@@ -82,9 +83,11 @@ jobs:
       extraStepsTemplate: /eng/pipelines/common/templates/runtimes/build-runtime-tests-and-send-to-helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        # FIXME: Currently, tracing/eventpipe tests are only enabled on iOS platforms. It should be expanded to include all runtime tests. Tracking issue: https://github.com/dotnet/runtime/issues/84254
-        testBuildArgs: tree tracing/eventpipe
+        compileOnHelix: true
+        interpreter: true
+        testBuildArgs: /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoForceInterpreter=true /p:BuildTestsOnHelix=true
         testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        extraHelixArguments: /p:NeedsToBuildAppsOnHelix=true
 
 #
 # Build the whole product using NativeAOT for iOS/tvOS and run runtime tests with iOS/tvOS devices

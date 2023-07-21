@@ -281,9 +281,7 @@
       <XUnitWrapperDll>$(CMDDIR_GrandParent)/$(CategoryWithSlash)/$(XUnitWrapperFileName)</XUnitWrapperDll>
       <BuildDir>$(IntermediateOutputPath)\iOSApps\$(Category)</BuildDir>
       <FinalPath>$(XUnitTestBinBase)$(CategoryWithSlash)\$(Category).app</FinalPath>
-      <RuntimeComponents>diagnostics_tracing;marshal-ilgen</RuntimeComponents>
-      <DiagnosticPorts>127.0.0.1:9000,nosuspend,listen</DiagnosticPorts>
-      <RunAOTCompilation>True</RunAOTCompilation>
+      <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
     </PropertyGroup>
 
     <PropertyGroup>
@@ -292,36 +290,26 @@
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'ios'" >ios</RuntimePackOSSuffix>
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvossimulator'" >tvossimulator</RuntimePackOSSuffix>
       <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'tvos'" >tvos</RuntimePackOSSuffix>
+      <RuntimePackOSSuffix Condition="'$(TargetOS)' == 'maccatalyst'" >maccatalyst</RuntimePackOSSuffix>
+
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimePackOSSuffix)-$(TargetArchitecture)/$(Configuration)/runtimes/$(RuntimePackOSSuffix)-$(TargetArchitecture)</MicrosoftNetCoreAppRuntimePackDir>
       <MicrosoftNetCoreAppRuntimePackNativeDir>$(MicrosoftNetCoreAppRuntimePackDir)/native</MicrosoftNetCoreAppRuntimePackNativeDir>
-    </PropertyGroup>
 
-    <PropertyGroup>
-      <!-- FIXME: Currently, tracing/eventpipe tests only work with the Mono Interpreter. Mono interpreter should be only enabled for simulator targets. -->
-      <MonoForceInterpreter>True</MonoForceInterpreter>
+      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
     </PropertyGroup>
     <ItemGroup>
       <AllTestScripts Include="$(_CMDDIR)\**\*.sh" Exclude="$(_CMDDIR)\**\AppBundle\*.sh" />
-    </ItemGroup>
-    <ItemGroup>
       <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
       <TestScripts Include="@(AllTestScripts)" Exclude="@(TestExclusions)" />
       <TestDllPaths Include="$([System.IO.Path]::ChangeExtension('%(TestScripts.Identity)', 'dll'))" />
       <TestDlls Include="%(TestDllPaths.Identity)" Condition="Exists(%(TestDllPaths.Identity))" />
-      <AssembliesInTestDirs Include="%(AllCMDsPresent.RelativeDir)*.dll" Exclude="@(TestAssemblies)"/>
       <RuntimePackLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/**/*.dll" />
-      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
-    </ItemGroup>
-    <ItemGroup>
+      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib;$(MicrosoftNetCoreAppRuntimePackDir)/native/icudt.dat" />
+      <EntryPoints Include="testdir-%(TestDlls.Filename)/%(TestDlls.Filename).dll" />
       <ExtraDlls Include="%(TestDlls.RelativeDir)*.dll" Exclude="@(TestDlls)">
         <TestDllFilename>@(TestDlls->'%(Filename)')</TestDllFilename>
       </ExtraDlls>
-    </ItemGroup>
-    <PropertyGroup>
-      <BundleDir>$([MSBuild]::NormalizeDirectory('$(BuildDir)', 'AppBundle'))</BundleDir>
-    </PropertyGroup>
-    <ItemGroup>
-      <RuntimePackNativeLibs Include="$(MicrosoftNetCoreAppRuntimePackDir)/**/*.dll;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.a;$(MicrosoftNetCoreAppRuntimePackDir)/native/**/*.dylib" />
+      <TestTargetingPathLibs Include="$(TargetingPackPath)/*.dll" />
     </ItemGroup>
 
     <RemoveDir Directories="$(BundleDir)" />
@@ -336,7 +324,6 @@
     <Copy
         SourceFiles="@(RuntimePackLibs)"
         DestinationFolder="$(BuildDir)" />
-
     <Copy
         SourceFiles="@(TestTargetingPathLibs)"
         DestinationFolder="$(BuildDir)" />
@@ -347,131 +334,71 @@
         SourceFiles="%(ExtraDlls.Identity)"
         DestinationFolder="$(BuildDir)/testdir-%(ExtraDlls.TestDllFilename)" />
 
-    <ItemGroup>
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=arm64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=arm64-apple-ios14.2-macabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm'" Include="mtriple=armv7-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' != 'MacCatalyst'" Include="mtriple=x86_64-ios" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x64' and '$(TargetOS)' == 'MacCatalyst'" Include="mtriple=x86_64-apple-ios13.5-macabi" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'x86'" Include="mtriple=i386-ios" />
-      <MonoAOTCompilerDefaultAotArguments Include="static" />
-      <MonoAOTCompilerDefaultAotArguments Include="dwarfdebug" />
-      <MonoAOTCompilerDefaultAotArguments Condition="'$(TargetArchitecture)' == 'arm64' or '$(TargetArchitecture)' == 'arm'" Include="mattr=+crc" /> <!-- enable System.Runtime.Intrinsics.Arm (Crc32 and ArmBase for now) -->
-      <MonoAOTCompilerDefaultAotArguments Include="direct-icalls" />
-
-      <MonoAOTCompilerDefaultAotArguments Include="nimt-trampolines=2000" />
-      <MonoAOTCompilerDefaultAotArguments Include="ntrampolines=40000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
-      <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
-      <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=40000" />
-
-      <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
-    </ItemGroup>
-
-    <PropertyGroup>
-      <_AOTMode Condition="'$(MonoForceInterpreter)' != 'true'">Full</_AOTMode>
-      <_AOTMode Condition="'$(MonoForceInterpreter)' == 'true'">JustInterp</_AOTMode>
-      <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
-      <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
-      <_MobileIntermediateOutputPath>$([MSBuild]::NormalizeDirectory($(IntermediateOutputPath), 'mobile'))</_MobileIntermediateOutputPath>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <_AppleAssembliesInternal Include="$(BuildDir)/**/*.dll" />
-
-        <_AppleAssembliesInternal>
-            <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
-            <_IsNative>false</_IsNative>
-        </_AppleAssembliesInternal>
-
-        <_AotInputAssemblies Include="@(_AppleAssembliesInternal)"
-                            Condition="'%(_AppleAssembliesInternal._InternalForceInterpret)' != 'true'">
-            <AotArguments>$(AotArguments)</AotArguments>
-            <ProcessArguments>$(ProcessArguments)</ProcessArguments>
-        </_AotInputAssemblies>
-
-        <_AOT_InternalForceInterpretAssemblies Include="@(_AppleAssembliesInternal->WithMetadataValue('_InternalForceInterpret', 'true'))" />
-        <_AppleAssembliesInternal Remove="@(_AppleAssembliesInternal)" />
-    </ItemGroup>
-
     <MakeDir Directories="$(_MobileIntermediateOutputPath)" />
 
-    <PropertyGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <_MonoAotCrossCompilerPath>$([MSBuild]::NormalizePath($(MonoAotCrossDir), 'mono-aot-cross'))</_MonoAotCrossCompilerPath>
-      <_MonoAotCrossCompilerPath Condition="$([MSBuild]::IsOSPlatform('WINDOWS'))">$(_MonoAotCrossCompilerPath).exe</_MonoAotCrossCompilerPath>
-      <DevTeamProvisioning>-</DevTeamProvisioning>
+    <PropertyGroup>
+      <PublishDir>$(BuildDir)/</PublishDir>
+      <TestProjectName>$(AssemblyName)</TestProjectName>
+      <IgnoreForCI Condition="@(TestDlls->Count()) == 0">true</IgnoreForCI>
+      <UseRuntimeComponents>true</UseRuntimeComponents>
     </PropertyGroup>
-    <ItemGroup Condition="'$(RuntimeFlavor)' == 'Mono'">
-      <MonoAotCrossCompiler Include="$(_MonoAotCrossCompilerPath)" RuntimeIdentifier="$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())" />
-    </ItemGroup>
 
-    <RemoveDuplicates
-        Inputs="@(_AotInputAssemblies)">
-        <Output
-            TaskParameter="Filtered"
-            ItemName="_AotInputAssembliesDedup"/>
-    </RemoveDuplicates>
-    <Message Text="RunAOTCompilation $(RunAOTCompilation)" Importance="High"/>
-    <MonoAOTCompiler Condition="'$(RunAOTCompilation)' == 'true'"
-        CompilerBinaryPath="@(MonoAotCrossCompiler->WithMetadataValue('RuntimeIdentifier','$(TargetOS.ToLowerInvariant())-$(TargetArchitecture.ToLowerInvariant())'))"
-        OutputDir="$(_MobileIntermediateOutputPath)"
-        Mode="$(_AOTMode)"
-        OutputType="AsmOnly"
-        Assemblies="@(_AotInputAssembliesDedup)"
-        AotModulesTablePath="$(BundleDir)\modules.m"
-        AotModulesTableLanguage="ObjC"
-        IntermediateOutputPath="$(_MobileIntermediateOutputPath)"
-        AdditionalAssemblySearchPaths="$(CORE_ROOT)">
-        <Output TaskParameter="CompiledAssemblies" ItemName="_AppleAssembliesInternal" />
-    </MonoAOTCompiler>
-
-    <ItemGroup>
-      <_AppleAssembliesInternal Include="@(_AOT_InternalForceInterpretAssemblies)" />
-    </ItemGroup>
-
-    <RemoveDuplicates
-        Inputs="@(_AppleAssembliesInternal)">
-        <Output
-            TaskParameter="Filtered"
-            ItemName="_AppleAssembliesInternalDedup"/>
-    </RemoveDuplicates>
-
-    <AppleAppBuilderTask
-        TargetOS="$(TargetOS)"
-        ProjectName="$(AssemblyName)"
-        AppDir="$(BuildDir)"
-        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackNativeDir)/include/mono-2.0"
-        Assemblies="@(_AppleAssembliesInternalDedup)"
-        Arch="$(TargetArchitecture)"
-        OutputDirectory="$(BundleDir)"
-        Optimized="True"
-        DevTeamProvisioning="$(DevTeamProvisioning)"
-        BuildAppBundle="True"
-        GenerateXcodeProject="True"
-        UseConsoleUITemplate="True"
-        ForceAOT="$(RunAOTCompilation)"
-        RuntimeComponents="$(RuntimeComponents)"
-        DiagnosticPorts="$(DiagnosticPorts)"
-        InvariantGlobalization="true"
-        ForceInterpreter="$(MonoForceInterpreter)"
-        EnableAppSandbox="$(EnableAppSandbox)">
-      <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
-      <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
-    </AppleAppBuilderTask>
-
-    <!-- Apparently MSBuild cannot move directories and recursively copying a
-         a directory requires writing some sort of recursive traversal
-         logic yourself. -->
-    <ItemGroup>
-      <RecursiveCopyHack Include="$(AppBundlePath)/**/*.*" />
-    </ItemGroup>
-    <MakeDir Directories="$(FinalPath)" />
-    <Copy SourceFiles="@(RecursiveCopyHack)" DestinationFolder="$(FinalPath)/%(RecursiveDir)" />
-    <RemoveDir Directories="$(AppBundlePath)" />
-    <Message Importance="High" Text="App: $(FinalPath)" />
+    <UpdateRunScriptToHandleMultipleEntryPoints EntryPoints="@(EntryPoints)" RunScriptCommand="$(RunScriptCommand)" AppName="$(Category)" Condition="'$(BuildTestsOnHelix)' == 'true'">
+      <Output TaskParameter="OutputScript" PropertyName="RunScriptCommand" />
+    </UpdateRunScriptToHandleMultipleEntryPoints>
   </Target>
 
+  <UsingTask
+    TaskName="UpdateRunScriptToHandleMultipleEntryPoints"
+    TaskFactory="RoslynCodeTaskFactory"
+    AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+  <ParameterGroup>
+    <EntryPoints ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+    <RunScriptCommand ParameterType="System.String" Required="true" />
+    <AppName ParameterType="System.String" Required="true" />
+    <OutputScript ParameterType="System.String" Output="true" />
+  </ParameterGroup>
+  <Task>
+    <Using Namespace="System"/>
+    <Using Namespace="Microsoft.Build.Framework"/>
+    <Using Namespace="Microsoft.Build.Utilities"/>
+    <Using Namespace="System.Linq"/>
+    <Using Namespace="System.Text"/>
+
+    <!-- 
+      This code fragment updates the default run script for Helix. 
+      With the library tests, there is a single entry point provided as MainLibraryFileName. With the runtime tests, a bundle may have multiple main entry points. The code makes the following changes:
+      - For each main entry point, it adds the mlaunch environment parameter MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
+      - After each execution, it renames the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME entry point
+     -->
+    <Code Type="Fragment" Language="cs">
+      <![CDATA[
+        string[] lines = RunScriptCommand.Split('\n');
+        string lastLine = lines[lines.Length - 1];
+        StringBuilder resultBuilder = new StringBuilder();
+
+        // Iterate over each entry point and modify the run script
+        foreach (ITaskItem item in EntryPoints)
+        {
+            string value = item.ItemSpec;
+            
+            // Add the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME environment parameter to the run script
+            string output = lastLine.Replace("apple test", "apple run").Replace("--signal-app-end", $"--expected-exit-code=100 --set-env=MONO_APPLE_APP_ENTRY_POINT_LIB_NAME={value}") + "&& echo \"Test passed\" || { echo \"Test failed\"; exit 1; }";
+            resultBuilder.AppendLine(output);
+
+            // Rename the log file to match the MONO_APPLE_APP_ENTRY_POINT_LIB_NAME
+            resultBuilder.AppendLine("mv \"${output_directory}/net.dot."+AppName+".log\" \"${output_directory}/"+value.Split('/')[0]+".log\"");
+        }
+
+        StringBuilder outputScriptBuilder = new StringBuilder(string.Join("\n", lines.Take(lines.Length - 1)));
+        outputScriptBuilder.AppendLine();
+        outputScriptBuilder.Append(resultBuilder.ToString());
+
+        OutputScript = outputScriptBuilder.ToString();
+      ]]>
+    </Code>
+  </Task>
+</UsingTask>
 
   <!-- This target builds a Native AOT iOS App -->
   <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
