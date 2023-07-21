@@ -1650,7 +1650,7 @@ namespace System.Text
             // Intrinsified in mono interpreter
             nuint currentOffset = 0;
 
-            if (BitConverter.IsLittleEndian && Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
+            if (Vector128.IsHardwareAccelerated && elementCount >= (uint)Vector128<byte>.Count)
             {
                 ushort* pCurrentWriteAddress = (ushort*)pUtf16Buffer;
 
