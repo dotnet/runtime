@@ -818,13 +818,11 @@ namespace System
             }
 
             // kept outside of the small arrays hot path to have inlining without big size growth
-            return AllocateNewUninitializedArray(length, pinned);
+            return AllocateNewUninitializedArray(length);
 
-            static T[] AllocateNewUninitializedArray(int length, bool pinned)
+            static T[] AllocateNewUninitializedArray(int length)
             {
-                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
-                if (pinned)
-                    flags |= GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
+                GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL | GC_ALLOC_FLAGS.GC_ALLOC_PINNED_OBJECT_HEAP;
 
                 if (length < 0)
                     throw new OverflowException();
