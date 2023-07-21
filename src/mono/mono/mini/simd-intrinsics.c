@@ -2792,7 +2792,7 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 	case SN_Negate:
 	case SN_op_UnaryNegation: {
 #if defined(TARGET_ARM64) || defined(TARGET_AMD64)
-		MonoInst *ins = emit_simd_ins (cfg, klass, OP_NEGATION, args [0]->dreg, -1);
+		ins = emit_simd_ins (cfg, klass, OP_NEGATION, args [0]->dreg, -1);
 		ins->inst_c1 = MONO_TYPE_R4;
 		return ins;
 #else
