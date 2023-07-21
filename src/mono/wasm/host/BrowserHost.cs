@@ -4,7 +4,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -89,54 +91,100 @@ internal sealed class BrowserHost
 
     private async Task<(ServerURLs, IWebHost)> StartWebServerAsync(BrowserArguments args, string[] urls, CancellationToken token)
     {
-        string appPath = args.CommonConfig.AppPath;
-        bool forwardConsole = args.ForwardConsoleOutput ?? false;
-
-        WasmTestMessagesProcessor? logProcessor = null;
-        if (forwardConsole)
+        Func<WebSocket, Task>? onConsoleConnected = null;
+        if (args.ForwardConsoleOutput ?? false)
         {
-            logProcessor = new(_logger);
+            WasmTestMessagesProcessor logProcessor = new(_logger);
+            onConsoleConnected = socket => RunConsoleMessagesPump(socket, logProcessor!, token);
         }
 
-        if (args.CommonConfig.RuntimeConfigPath != null)
-        {
-            var runtimeConfigPath = Path.GetFullPath(args.CommonConfig.RuntimeConfigPath);
+        // If we are using new browser template, use dev server
+        if (TryCreateDevServerOptions(args, urls, onConsoleConnected, out var devServerOptions))
+            return await DevServer.DevServer.StartAsync(devServerOptions, _logger, token);
 
-            DevServerOptions CreateDevServerOptions(string staticWebAssetsPath) => new
-            (
-                OnConsoleConnected: forwardConsole
-                    ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
-                    : null,
-                StaticWebAssetsPath: staticWebAssetsPath,
-                WebServerUseCors: true,
-                WebServerUseCrossOriginPolicy: true,
-                Urls: urls
-            );
-
-            var mainAssemblyPath = Path.Combine(Path.GetDirectoryName(runtimeConfigPath)!, args.CommonConfig.HostProperties.MainAssembly);
-
-            var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, ".staticwebassets.runtime.json");
-            if (File.Exists(staticWebAssetsPath))
-                return await DevServer.DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
-
-            staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, ".StaticWebAssets.xml");
-            if (File.Exists(staticWebAssetsPath))
-                return await DevServer.DevServer.StartAsync(CreateDevServerOptions(staticWebAssetsPath), _logger, token);
-        }
-
-        WebServerOptions options = new
-        (
-            OnConsoleConnected: forwardConsole
-                ? socket => RunConsoleMessagesPump(socket, logProcessor!, token)
-                : null,
-            ContentRootPath: Path.GetFullPath(appPath),
-            WebServerUseCors: true,
-            WebServerUseCrossOriginPolicy: true,
-            Urls: urls
-        );
-
-        (ServerURLs serverURLs, IWebHost host) = await WebServer.StartAsync(options, _logger, token);
+        // Otherwise for old template, use web server
+        WebServerOptions webServerOptions = CreateWebServerOptions(urls, args.CommonConfig.AppPath, onConsoleConnected);
+        (ServerURLs serverURLs, IWebHost host) = await WebServer.StartAsync(webServerOptions, _logger, token);
         return (serverURLs, host);
+    }
+
+    private static WebServerOptions CreateWebServerOptions(string[] urls, string appPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    (
+        OnConsoleConnected: onConsoleConnected,
+        ContentRootPath: Path.GetFullPath(appPath),
+        WebServerUseCors: true,
+        WebServerUseCrossOriginPolicy: true,
+        Urls: urls
+    );
+
+    private static bool TryCreateDevServerOptions(BrowserArguments args, string[] urls, Func<WebSocket, Task>? onConsoleConnected, [NotNullWhen(true)] out DevServerOptions? devServerOptions)
+    {
+        const string staticWebAssetsV1Extension = ".StaticWebAssets.xml";
+        const string staticWebAssetsV2Extension = ".staticwebassets.runtime.json";
+
+        devServerOptions = null;
+
+        string targetDirectory = GetTargetDirectory(args.CommonConfig.RuntimeConfigPath);
+        if (args.CommonConfig.HostProperties.MainAssembly != null)
+        {
+            // If we have main assembly name, try to find static web assets manifest by precise name.
+
+            var mainAssemblyPath = Path.Combine(targetDirectory, args.CommonConfig.HostProperties.MainAssembly);
+            var staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV2Extension);
+            if (File.Exists(staticWebAssetsPath))
+            {
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+            }
+            else
+            {
+                staticWebAssetsPath = Path.ChangeExtension(mainAssemblyPath, staticWebAssetsV1Extension);
+                if (File.Exists(staticWebAssetsPath))
+                    devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+            }
+        }
+        else
+        {
+            // If we don't have main assembly name, try to find static web assets manifest by search in the directory.
+
+            var staticWebAssetsPath = FindFirstFileWithExtension(targetDirectory, staticWebAssetsV2Extension)
+                ?? FindFirstFileWithExtension(targetDirectory, staticWebAssetsV1Extension);
+
+            if (staticWebAssetsPath != null)
+                devServerOptions = CreateDevServerOptions(urls, staticWebAssetsPath, onConsoleConnected);
+        }
+
+        return devServerOptions != null;
+    }
+
+    private static DevServerOptions CreateDevServerOptions(string[] urls, string staticWebAssetsPath, Func<WebSocket, Task>? onConsoleConnected) => new
+    (
+        OnConsoleConnected: onConsoleConnected,
+        StaticWebAssetsPath: staticWebAssetsPath,
+        WebServerUseCors: true,
+        WebServerUseCrossOriginPolicy: true,
+        Urls: urls
+    );
+
+    private static string GetTargetDirectory(string? runtimeConfigPath)
+    {
+        if (!string.IsNullOrEmpty(runtimeConfigPath))
+        {
+            runtimeConfigPath = Path.GetFullPath(runtimeConfigPath);
+            string? targetPath = Path.GetDirectoryName(runtimeConfigPath);
+            if (!string.IsNullOrEmpty(targetPath))
+                return targetPath;
+        }
+
+        return Environment.CurrentDirectory;
+    }
+
+    private static string? FindFirstFileWithExtension(string directory, string extension)
+    {
+        string[] files = Directory.EnumerateFiles(directory, "*" + extension).ToArray();
+        if (files.Length == 0)
+            return null;
+
+        return files[0];
     }
 
     private async Task RunConsoleMessagesPump(WebSocket socket, WasmTestMessagesProcessor messagesProcessor, CancellationToken token)
