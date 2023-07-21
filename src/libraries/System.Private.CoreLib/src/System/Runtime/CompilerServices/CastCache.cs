@@ -20,14 +20,6 @@ namespace System.Runtime.CompilerServices
 
     internal unsafe struct CastCache
     {
-#if DEBUG
-        private const int INITIAL_CACHE_SIZE = 8;    // MUST BE A POWER OF TWO
-        private const int MAXIMUM_CACHE_SIZE = 512;  // make this lower than release to make it easier to reach this in tests.
-  #else
-        private const int INITIAL_CACHE_SIZE = 128;  // MUST BE A POWER OF TWO
-        private const int MAXIMUM_CACHE_SIZE = 4096; // 4096 * sizeof(CastCacheEntry) is 98304 bytes on 64bit. We will rarely need this much though.
-  #endif // DEBUG
-
         private const int VERSION_NUM_SIZE = 29;
         private const uint VERSION_NUM_MASK = (1 << VERSION_NUM_SIZE) - 1;
         private const int BUCKET_SIZE = 8;
@@ -41,6 +33,9 @@ namespace System.Runtime.CompilerServices
         // when flushing, remember the last size.
         private int _lastFlushSize;
 
+        private int _initialCacheSize;
+        private int _maxCacheSize;
+
         // wraps existing table
         public CastCache(int[] table)
         {
@@ -48,8 +43,14 @@ namespace System.Runtime.CompilerServices
         }
 
         // creates a new cache instance
-        public CastCache()
+        public CastCache(int initialCacheSize, int maxCacheSize)
         {
+            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
+            Debug.Assert(BitOperations.PopCount((uint)maxCacheSize) == 1 && maxCacheSize >= initialCacheSize);
+
+            _initialCacheSize = initialCacheSize;
+            _maxCacheSize = maxCacheSize;
+
             // A trivial 2-elements table used for "flushing" the cache.
             // Nothing is ever stored in such a small table and identity of the sentinel is not important.
             // It is required that we are able to allocate this, we may need this in OOM cases.
@@ -58,10 +59,10 @@ namespace System.Runtime.CompilerServices
             _table =
 #if !DEBUG
             // Initialize to the sentinel in DEBUG as if just flushed, to ensure the sentinel can be handled in Set.
-            CreateCastCache(INITIAL_CACHE_SIZE) ??
+            CreateCastCache(_initialCacheSize) ??
 #endif
             s_sentinelTable!;
-            _lastFlushSize = INITIAL_CACHE_SIZE;
+            _lastFlushSize = _initialCacheSize;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -213,7 +214,7 @@ namespace System.Runtime.CompilerServices
         // The following helpers must match native implementations in castcache.h and castcache.cpp
 
         // we generally do not OOM in casts, just return null unless throwOnFail is specified.
-        private static int[]? CreateCastCache(int size, bool throwOnFail = false)
+        private int[]? CreateCastCache(int size, bool throwOnFail = false)
         {
             // size must be positive
             Debug.Assert(size > 1);
@@ -231,7 +232,7 @@ namespace System.Runtime.CompilerServices
 
             if (table == null)
             {
-                size = INITIAL_CACHE_SIZE;
+                size = _initialCacheSize;
                 try
                 {
                     table = new int[(size + 1) * sizeof(CastCacheEntry) / sizeof(int)];
@@ -391,8 +392,8 @@ namespace System.Runtime.CompilerServices
         {
             ref int tableData = ref TableData(_table);
             int lastSize = CacheElementCount(ref tableData);
-            if (lastSize < INITIAL_CACHE_SIZE)
-                lastSize = INITIAL_CACHE_SIZE;
+            if (lastSize < _initialCacheSize)
+                lastSize = _initialCacheSize;
 
             // store the last size to use when creating a new table
             // it is just a hint, not needed for correctness, so no synchronization
@@ -417,7 +418,7 @@ namespace System.Runtime.CompilerServices
         private bool TryGrow(ref int tableData)
         {
             int newSize = CacheElementCount(ref tableData) * 2;
-            if (newSize <= MAXIMUM_CACHE_SIZE)
+            if (newSize <= _maxCacheSize)
             {
                 return MaybeReplaceCacheWithLarger(newSize);
             }

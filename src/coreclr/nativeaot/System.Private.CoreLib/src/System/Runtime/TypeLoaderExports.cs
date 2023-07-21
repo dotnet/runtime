@@ -103,7 +103,6 @@ namespace System.Runtime
         private const int MaximumCacheSize = 128 * 1024;
 #endif // DEBUG
 
-
         // Initialize the cache eagerly to avoid null checks.
         private static GenericCache<Key, Value> s_cache;
         internal static void Initialize()

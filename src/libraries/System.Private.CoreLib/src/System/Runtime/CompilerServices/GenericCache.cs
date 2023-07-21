@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
@@ -40,8 +38,8 @@ namespace System.Runtime.CompilerServices
         internal byte victimCounter;
     }
 
-    // TKey may contain references, but we want it to be a struct,
-    // so that equality is devirtualized.
+    // NOTE: It is ok if TKey contains references, but we want it to be a struct,
+    //       so that equality is devirtualized.
     internal unsafe struct GenericCache<TKey, TValue>
         where TKey: struct, IEquatable<TKey>
     {
@@ -74,6 +72,9 @@ namespace System.Runtime.CompilerServices
         // creates a new cache instance
         public GenericCache(int initialCacheSize, int maxCacheSize)
         {
+            Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
+            Debug.Assert(BitOperations.PopCount((uint)maxCacheSize) == 1 && maxCacheSize >= initialCacheSize);
+
             _initialCacheSize = initialCacheSize;
             _maxCacheSize = maxCacheSize;
 
