@@ -57,8 +57,8 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
     {
-        string runArgs = $"run";
-        string workingDirectory = Path.GetFullPath(Path.Combine(FindBlazorBinFrameworkDir(options.Configuration, forPublish: options.ForPublish), ".."));
+        string runArgs = $"run -c {options.Configuration}";
+        string workingDirectory = _projectDir;
 
         using var runCommand = new RunCommand(s_buildEnv, _testOutput)
             .WithWorkingDirectory(workingDirectory);
