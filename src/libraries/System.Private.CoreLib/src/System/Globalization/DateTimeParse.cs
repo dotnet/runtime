@@ -2515,8 +2515,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (s.Length == 0)
             {
                 result.SetFailure(ParseFailureKind.Format_BadDateTime);
-                throw new Exception("ILONA exception, line 2494");
-                // return false;
+                return false;
             }
 
             Debug.Assert(dtfi != null, "dtfi == null");
@@ -2565,8 +2564,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 if (!Lex(dps, ref str, ref dtok, ref raw, ref result, ref dtfi, styles))
                 {
                     TPTraceExit("0000", dps);
-                    throw new Exception("ILONA exception, line 2544");
-                    // return false;
+                    return false;
                 }
 
                 //
@@ -2586,8 +2584,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         {
                             result.SetBadDateTimeFailure();
                             TPTraceExit("0010", dps);
-                            throw new Exception("ILONA exception, line 2565");
-                            // return false;
+                            return false;
                         }
 
                         dtok.suffix = TokenType.SEP_Unk;  // Reset suffix to SEP_Unk;
@@ -2606,8 +2603,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                         {
                             result.SetBadDateTimeFailure();
                             TPTraceExit("0030", dps);
-                            throw new Exception("ILONA exception, line 2585");
-                            // return false;
+                            return false;
                         }
                     }
 
@@ -2652,8 +2648,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                     {
                         result.SetBadDateTimeFailure();
                         TPTraceExit("0040 (invalid state transition)", dps);
-                        throw new Exception("ILONA exception, line 2631");
-                        // return false;
+                        return false;
                     }
                     else if (dps > DS.ERROR)
                     {
@@ -2662,8 +2657,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             if (!ProcessHebrewTerminalState(dps, ref result, ref styles, ref raw, dtfi))
                             {
                                 TPTraceExit("0050 (ProcessHebrewTerminalState)", dps);
-                                throw new Exception("ILONA exception, line 2641");
-                                // return false;
+                                return false;
                             }
                         }
                         else
@@ -2672,8 +2666,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                             // why don't we pass str here? How can we know what is the requested format of the date? We cannot just take the default CultureInfo's format
                             {
                                 TPTraceExit("0060 (ProcessTerminalState)", dps);
-                                throw new Exception($"ILONA exception, line 2650 {dps}");
-                                // return false;
+                                return false;
                             }
                         }
                         reachTerminalState = true;
@@ -2692,8 +2685,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 result.SetBadDateTimeFailure();
                 TPTraceExit("0070 (did not reach terminal state)", dps);
-                throw new Exception("ILONA exception, line 2670");
-                // return false;
+                return false;
             }
 
             AdjustTimeMark(dtfi, ref raw);
@@ -2701,8 +2693,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 result.SetBadDateTimeFailure();
                 TPTraceExit("0080 (AdjustHour)", dps);
-                throw new Exception("ILONA exception, line 2679");
-                // return false;
+                return false;
             }
 
             // Check if the parsed string only contains hour/minute/second values.
@@ -2715,8 +2706,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (!CheckDefaultDateTime(ref result, ref result.calendar, styles))
             {
                 TPTraceExit("0090 (failed to fill in missing year/month/day defaults)", dps);
-                throw new Exception("ILONA exception, line 2693");
-                // return false;
+                return false;
             }
 
             if (!result.calendar.TryToDateTime(result.Year, result.Month, result.Day,
@@ -2724,8 +2714,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 result.SetFailure(ParseFailureKind.Format_BadDateTimeCalendar);
                 TPTraceExit("0100 (result.calendar.TryToDateTime)", dps);
-                throw new Exception("ILONA exception, line 2702");
-                // return false;
+                return false;
             }
 
             if (raw.fraction > 0)
@@ -2734,8 +2723,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     result.SetBadDateTimeFailure();
                     TPTraceExit("0100 (time.TryAddTicks)", dps);
-                    throw new Exception("ILONA exception, line 2702");
-                    // return false;
+                    return false;
                 }
             }
 
@@ -2752,8 +2740,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 {
                     result.SetFailure(ParseFailureKind.Format_BadDayOfWeek);
                     TPTraceExit("0110 (dayOfWeek check)", dps);
-                    throw new Exception("ILONA exception, line 2730");
-                    // return false;
+                    return false;
                 }
             }
 
@@ -2762,8 +2749,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             if (!DetermineTimeZoneAdjustments(ref result, styles, bTimeOnly))
             {
                 TPTraceExit("0120 (DetermineTimeZoneAdjustments)", dps);
-                throw new Exception("ILONA exception, line 2740");
-                // return false;
+                return false;
             }
             TPTraceExit("0130 (success)", dps);
             return true;
