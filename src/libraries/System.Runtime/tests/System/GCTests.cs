@@ -1058,41 +1058,37 @@ namespace System.Tests
             Assert.Throws<OutOfMemoryException>(() => GC.AllocateUninitializedArray<double>(int.MaxValue, pinned: true));
         }
 
-        [Fact]
-        private static void AllocateArrayUninitializedPinned_RefType_ThrowsArgumentException()
-        {
-            GC.AllocateUninitializedArray<string>(100);
-            Assert.Throws<ArgumentException>(() => GC.AllocateUninitializedArray<string>(100, pinned: true));
-        }
-
         struct EmbeddedValueType<T>
         {
+            unsafe fixed byte _[7];
             public T Value;
         }
 
-        [Fact]
-        private static void AllocateArrayPinned_ManagedType_DoesNotThrow()
+        [Theory]
+        [InlineData(false), InlineData(true)]
+        private static void AllocateArray_UninitializedOrNot_WithManagedType_DoesNotThrow(bool pinned)
         {
             void TryType<T>()
             {
-                GC.AllocateArray<T>(100);
-                GC.AllocateArray<T>(100, pinned: true);
+                GC.AllocateUninitializedArray<T>(100, pinned);
+                GC.AllocateArray<T>(100, pinned);
 
-                GC.AllocateArray<EmbeddedValueType<T>>(100);
-                GC.AllocateArray<EmbeddedValueType<T>>(100, pinned: true);
+                GC.AllocateArray<EmbeddedValueType<T>>(100, pinned);
+                GC.AllocateUninitializedArray<EmbeddedValueType<T>>(100, pinned);
             }
 
             TryType<string>();
             TryType<object>();
         }
 
-        [Fact]
-        private unsafe static void AllocateArrayPinned_ManagedValueType_CanRoundtripThroughPointer()
+        [Theory]
+        [InlineData(false), InlineData(true)]
+        private unsafe static void AllocateArrayPinned_ManagedValueType_CanRoundtripThroughPointer(bool uninitialized)
         {
             const int k_Length = 100;
             var rng = new Random(0xAF);
 
-            var array = GC.AllocateArray<EmbeddedValueType<string>>(k_Length, pinned: true);
+            var array = uninitialized ? GC.AllocateUninitializedArray<EmbeddedValueType<string>>(k_Length, pinned: true) : GC.AllocateArray<EmbeddedValueType<string>>(k_Length, pinned: true);
             byte* pointer = (byte*)Unsafe.AsPointer(ref array[0]);
             var size = Unsafe.SizeOf<EmbeddedValueType<string>>();
 

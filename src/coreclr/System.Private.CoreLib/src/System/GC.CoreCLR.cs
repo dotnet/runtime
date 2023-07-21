@@ -732,9 +732,6 @@ namespace System
         /// <typeparam name="T">Specifies the type of the array element.</typeparam>
         /// <param name="length">Specifies the length of the array.</param>
         /// <param name="pinned">Specifies whether the allocated array must be pinned.</param>
-        /// <remarks>
-        /// If pinned is set to true, <typeparamref name="T"/> must not be a reference type or a type that contains object references.
-        /// </remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // forced to ensure no perf drop for small memory buffers (hot path)
         public static unsafe T[] AllocateUninitializedArray<T>(int length, bool pinned = false) // T[] rather than T?[] to match `new T[length]` behavior
         {
@@ -759,7 +756,7 @@ namespace System
             }
             else if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
             {
-                ThrowHelper.ThrowInvalidTypeWithPointersNotSupported(typeof(T));
+                return AllocateArray<T>(length, pinned: true);
             }
 
             GC_ALLOC_FLAGS flags = GC_ALLOC_FLAGS.GC_ALLOC_ZEROING_OPTIONAL;
