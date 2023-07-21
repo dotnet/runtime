@@ -32,9 +32,9 @@ namespace Mono.Cecil.Binary
 {
     using System.Collections;
 
-    sealed class ResourceWriter
+    public sealed class ResourceWriter
     {
-        Image m_img;
+        ResourceDirectoryTable m_table;
         Section m_rsrc;
         MemoryBinaryWriter m_writer;
 
@@ -44,8 +44,13 @@ namespace Mono.Cecil.Binary
         long m_pos;
 
         public ResourceWriter(Image img, Section rsrc, MemoryBinaryWriter writer)
+            : this(img.ResourceDirectoryRoot, rsrc, writer)
         {
-            m_img = img;
+        }
+
+        public ResourceWriter(ResourceDirectoryTable table, Section rsrc, MemoryBinaryWriter writer)
+        {
+            m_table = table;
             m_rsrc = rsrc;
             m_writer = writer;
 
@@ -55,11 +60,11 @@ namespace Mono.Cecil.Binary
 
         public void Write()
         {
-            if (m_img.ResourceDirectoryRoot == null)
+            if (m_table == null)
                 return;
 
-            ComputeOffset(m_img.ResourceDirectoryRoot);
-            WriteResourceDirectoryTable(m_img.ResourceDirectoryRoot);
+            ComputeOffset(m_table);
+            WriteResourceDirectoryTable(m_table);
         }
 
         public void Patch()

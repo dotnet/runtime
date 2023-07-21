@@ -3,6 +3,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using Mono.Cecil.Binary;
 
@@ -17,6 +18,7 @@ namespace Microsoft.NET.HostModel
     {
         private readonly FileStream stream;
         private readonly Image image;
+        private readonly ResourceDirectoryTable resourceDirectory;
 
         ///<summary>
         /// Determines if the ResourceUpdater is supported by the current operating system.
@@ -43,6 +45,7 @@ namespace Microsoft.NET.HostModel
             {
                 stream = new FileStream(peFile, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
                 image = ImageReader.Read(new BinaryReader(stream, Encoding.UTF8, true)).Image;
+                resourceDirectory = image.ResourceDirectoryRoot;
             }
             catch (Exception)
             {
@@ -121,7 +124,7 @@ namespace Microsoft.NET.HostModel
 
             foreach (ResourceDirectoryEntry lpType in module.ResourceDirectoryRoot.Entries)
             {
-                var typeDirectory = FindOrCreateChildDirectory(image.ResourceDirectoryRoot, lpType);
+                var typeDirectory = FindOrCreateChildDirectory(resourceDirectory, lpType);
                 foreach (ResourceDirectoryEntry lpName in ((ResourceDirectoryTable)lpType.Child).Entries)
                 {
                     var nameDirectory = FindOrCreateChildDirectory(typeDirectory, lpName);
@@ -162,7 +165,7 @@ namespace Microsoft.NET.HostModel
                 throw new ArgumentException("AddResource can only be used with integer resource types");
             }
 
-            var typeDirectory = FindOrCreateChildDirectory(image.ResourceDirectoryRoot, (int)lpType);
+            var typeDirectory = FindOrCreateChildDirectory(resourceDirectory, (int)lpType);
             var nameDirectory = FindOrCreateChildDirectory(typeDirectory, (int)lpName);
             var entry = FindOrCreateEntry(nameDirectory, LangID_LangNeutral_SublangNeutral);
             entry.Child = new ResourceDataEntry
@@ -187,7 +190,7 @@ namespace Microsoft.NET.HostModel
                 throw new ArgumentException("AddResource can only be used with integer resource names");
             }
 
-            var typeDirectory = FindOrCreateChildDirectory(image.ResourceDirectoryRoot, lpType);
+            var typeDirectory = FindOrCreateChildDirectory(resourceDirectory, lpType);
             var nameDirectory = FindOrCreateChildDirectory(typeDirectory, (int)lpName);
             var entry = FindOrCreateEntry(nameDirectory, LangID_LangNeutral_SublangNeutral);
             entry.Child = new ResourceDataEntry
@@ -207,13 +210,165 @@ namespace Microsoft.NET.HostModel
         /// </summary>
         public void Update()
         {
-            stream.Position = 0;
-            if (!stream.CanWrite)
-                throw new ArgumentException("Can not write to stream");
-            var writer = new ImageWriter(image, new BinaryWriter(stream));
-            writer.Initialize();
-            image.Accept(writer);
+            // 20 of data and 4 of magic
+            const uint peMagicSize = 4;
+            const uint peHeaderSize = 20;
+            const uint oneSectionHeaderSize = 40;
+            // offset relative to Lfanew, which is pointer to first byte in header
+            const uint optionalHeaderBase = peMagicSize + peHeaderSize;
+            const uint pe64InitializedDataSizeOffset = optionalHeaderBase + 12;
+            const uint pe64SizeOfImageOffset = optionalHeaderBase + 56;
+            const uint pe64DataDirectoriesOffset = optionalHeaderBase + 112;
+            const uint pe32InitializedDataSizeOffset = optionalHeaderBase + 12;
+            const uint pe32SizeOfImageOffset = optionalHeaderBase + 56;
+            const uint pe32DataDirectoriesOffset = optionalHeaderBase + 96;
+            // offset relative to each section header
+            const uint virtualSizeOffset = 8;
+            const uint virtualAddressOffset = 12;
+            const uint rawSizeOffset = 16;
+            const uint rawPointerOffset = 20;
+
+            int resourceSectionIndex = -1;
+            for (int i = 0; i < image.Sections.Count; i++)
+            {
+                if (image.Sections[i].Name == ".rsrc")
+                {
+                    resourceSectionIndex = i;
+                    break;
+                }
+            }
+
+            if (resourceSectionIndex == -1)
+                throw new InvalidOperationException(".rsrc section not found");
+
+            var isRsrcIsLastSection = image.Sections.Count - 1 == resourceSectionIndex;
+            var resourceSection = image.Sections[resourceSectionIndex];
+
+            var rsrcSectionData = new MemoryBinaryWriter();
+            var resourceWriter = new ResourceWriter(resourceDirectory, resourceSection, rsrcSectionData);
+            resourceWriter.Write();
+            // patch immediate because position of rsrc will not be changed
+            resourceWriter.Patch();
+
+            uint rsrcSectionDataSize = (uint)rsrcSectionData.MemoryStream.Length;
+            uint newSectionSize = GetAligned(rsrcSectionDataSize, image.PEOptionalHeader.NTSpecificFields.FileAlignment);
+            uint newSectionVirtualSize = GetAligned(rsrcSectionDataSize, image.PEOptionalHeader.NTSpecificFields.SectionAlignment);
+
+            int delta = (int)newSectionSize - (int)GetAligned(resourceSection.SizeOfRawData,
+                image.PEOptionalHeader.NTSpecificFields.FileAlignment);
+            int virtualDelta = (int)newSectionVirtualSize - (int)GetAligned(resourceSection.VirtualSize,
+                image.PEOptionalHeader.NTSpecificFields.SectionAlignment);
+            uint sectionBase = image.DOSHeader.Lfanew + peMagicSize + peHeaderSize + image.PEFileHeader.OptionalHeaderSize;
+
+            uint trailingSectionStart = resourceSection.PointerToRawData + resourceSection.SizeOfRawData;
+            uint trailingSectionLength = (uint)stream.Length - trailingSectionStart;
+
+            bool needsMoveTrailingSections = !isRsrcIsLastSection && delta > 0;
+            long finalImageSize = trailingSectionStart + Math.Max(delta, 0) + trailingSectionLength;
+
+            // I wanted to use Memory Mapped File to overwrite some part of file
+            // but it's impossible to achieve open once goal because
+            // CreateFromFile with currentSectionIndex is not exists in
+            // netstandard 2.0. So, I use read to byte[] instead.
+            var buffer = new byte[finalImageSize];
+            var memoryStream = new MemoryStream(buffer);
+            stream.Seek(0, SeekOrigin.Begin);
+            stream.CopyTo(memoryStream);
+
+            if (needsMoveTrailingSections)
+            {
+                Array.Copy(buffer, trailingSectionStart,
+                    buffer, trailingSectionStart + delta,
+                    trailingSectionLength);
+
+                for (int i = resourceSectionIndex + 1; i < image.Sections.Count; i++)
+                {
+                    uint currentSectionBase = sectionBase + oneSectionHeaderSize * (uint)i;
+
+                    ModifyU32(buffer, currentSectionBase + virtualAddressOffset,
+                        pointer => (uint)(pointer + virtualDelta));
+                    ModifyU32(buffer, currentSectionBase + rawPointerOffset,
+                        pointer => (uint)(pointer + delta));
+                }
+            }
+
+            if (newSectionSize != resourceSection.SizeOfRawData)
+            {
+                // update size of .rsrc section
+                uint resourceSectionBase = sectionBase + oneSectionHeaderSize * (uint)resourceSectionIndex;
+                ModifyU32(buffer, resourceSectionBase + virtualSizeOffset, _ => newSectionVirtualSize);
+                ModifyU32(buffer, resourceSectionBase + rawSizeOffset, _ => newSectionSize);
+
+                void PatchRVA(uint offset)
+                {
+                    ModifyU32(buffer, offset,
+                        pointer => pointer >= trailingSectionStart ? (uint)(pointer + virtualDelta) : pointer);
+                }
+
+                // fix header
+                if (image.PEOptionalHeader.StandardFields.IsPE64)
+                {
+                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe64InitializedDataSizeOffset,
+                        size => (uint)(size + delta));
+                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe64SizeOfImageOffset,
+                        size => (uint)(size + virtualDelta));
+
+                    if (delta > 0)
+                    {
+                        // fix RVA in DataDirectory
+                        for (int i = 0; i < image.PEOptionalHeader.NTSpecificFields.NumberOfDataDir; i++)
+                            PatchRVA((uint)(pe64DataDirectoriesOffset + i * 8));
+                    }
+
+                    // index of ResourceTable is 2 in DataDirectories
+                    ModifyU32(buffer, pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                }
+                else
+                {
+                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe32InitializedDataSizeOffset,
+                        size => (uint)(size + delta));
+                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe32SizeOfImageOffset,
+                        size => (uint)(size + virtualDelta));
+
+                    if (delta > 0)
+                    {
+                        // fix RVA in DataDirectory
+                        for (int i = 0; i < image.PEOptionalHeader.NTSpecificFields.NumberOfDataDir; i++)
+                            PatchRVA((uint)(pe32DataDirectoriesOffset + i * 8));
+                    }
+
+                    // index of ResourceTable is 2 in DataDirectories
+                    ModifyU32(buffer, pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                }
+            }
+
+            Array.Copy(rsrcSectionData.MemoryStream.GetBuffer(), 0,
+                buffer, resourceSection.PointerToRawData,
+                rsrcSectionDataSize);
+
+            // write back the buffer data
+            stream.Seek(0, SeekOrigin.Begin);
+            stream.Write(buffer, 0, buffer.Length);
+            stream.SetLength(buffer.LongLength);
+            stream.Flush();
         }
+
+        private static void ModifyU32(byte[] buffer, uint position, Func<uint, uint> modifier)
+        {
+            uint data = buffer[position + 0]
+                   | ((uint)buffer[position + 1] << 8)
+                   | ((uint)buffer[position + 2] << 16)
+                   | ((uint)buffer[position + 3] << 24);
+
+            data = modifier(data);
+
+            buffer[position + 0] = (byte)(data & 0xFF);
+            buffer[position + 1] = (byte)(data >> 8 & 0xFF);
+            buffer[position + 2] = (byte)(data >> 16 & 0xFF);
+            buffer[position + 3] = (byte)(data >> 24 & 0xFF);
+        }
+
+        public static uint GetAligned(uint integer, uint alignWith) => (integer + alignWith - 1) & ~(alignWith - 1);
 
         public void Dispose()
         {
