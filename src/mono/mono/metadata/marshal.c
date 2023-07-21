@@ -2977,7 +2977,6 @@ mono_marshal_get_aot_init_wrapper (MonoAotInitSubtype subtype)
 
 	mb = mono_mb_new (mono_defaults.object_class, name, MONO_WRAPPER_OTHER);
 
-/* Uncomment when working on https://github.com/dotnet/runtime/issues/82224 */
 #ifdef ENABLE_WIP_METHOD_NOLLVM_SELF_INIT
 #ifndef ENABLE_LLVM
 	get_marshal_cb ()->emit_method_init (mb);
