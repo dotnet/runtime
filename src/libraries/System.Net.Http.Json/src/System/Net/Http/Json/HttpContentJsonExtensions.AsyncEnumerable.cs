@@ -62,21 +62,15 @@ namespace System.Net.Http.Json
 
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(SerializationDynamicCodeMessage)]
-        private static async IAsyncEnumerable<TValue?> ReadFromJsonAsAsyncEnumerableCore<TValue>(
+        private static IAsyncEnumerable<TValue?> ReadFromJsonAsAsyncEnumerableCore<TValue>(
             HttpContent content,
             JsonSerializerOptions? options,
-            [EnumeratorCancellation] CancellationToken cancellationToken)
+            CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken)
-                .ConfigureAwait(false))
-            {
-                await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
-                    contentStream, options ?? JsonHelpers.s_defaultSerializerOptions, cancellationToken)
-                    .ConfigureAwait(false))
-                {
-                    yield return value;
-                }
-            }
+            options ??= JsonSerializerOptions.Default;
+            var jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfo(typeof(TValue));
+
+            return ReadFromJsonAsAsyncEnumerableCore(content, jsonTypeInfo, cancellationToken);
         }
 
         public static IAsyncEnumerable<TValue?> ReadFromJsonAsAsyncEnumerable<TValue>(
@@ -97,15 +91,14 @@ namespace System.Net.Http.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            using (Stream contentStream = await GetContentStreamAsync(content, cancellationToken)
+            using Stream contentStream = await GetContentStreamAsync(content, cancellationToken)
+                .ConfigureAwait(false);
+
+            await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
+                contentStream, jsonTypeInfo, cancellationToken)
                 .ConfigureAwait(false))
             {
-                await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
-                    contentStream, jsonTypeInfo, cancellationToken)
-                    .ConfigureAwait(false))
-                {
-                    yield return value;
-                }
+                yield return value;
             }
         }
     }

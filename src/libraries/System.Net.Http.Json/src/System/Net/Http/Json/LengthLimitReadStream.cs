@@ -33,6 +33,8 @@ namespace System.Net.Http.Json
             throw new HttpRequestException(SR.Format(SR.net_http_content_buffersize_exceeded, limit));
         }
 
+        internal void ResetCount() => _remainingLength = _lengthLimit;
+
         public override bool CanRead => _innerStream.CanRead;
         public override bool CanSeek => _innerStream.CanSeek;
         public override bool CanWrite => false;

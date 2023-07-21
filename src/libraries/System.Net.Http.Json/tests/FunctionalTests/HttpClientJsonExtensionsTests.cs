@@ -404,7 +404,8 @@ namespace System.Net.Http.Json.Functional.Tests
                         AssertPeopleEquality(people);
                     }
                 },
-                async server => {
+                async server =>
+                {
                     List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
                     string json = People.Serialize();
 
@@ -544,6 +545,35 @@ namespace System.Net.Http.Json.Functional.Tests
                     }
                     catch { }
                 }));
+            });
+        }
+
+        [Fact]
+        public async Task GetFromJsonAsAsyncEnumerable_CorrectlyExposesDeferredExecutionSemantics()
+        {
+            await LoopbackServer.CreateClientAndServerAsync(async uri =>
+            {
+                using var client = new HttpClient { Timeout = TimeSpan.FromMilliseconds(100) };
+
+                // Get the async enumerable, but don't iterate it - this is used to validate deferred execution.
+                var getAsyncEnumerable = client.GetFromJsonAsAsyncEnumerable<string>(uri);
+
+                // Wait longer than the timeout.
+                await Task.Delay(TimeSpan.FromMilliseconds(150));
+
+                // No exception should be thrown while iterating, timeout doesn't start until iteration begins.
+                await foreach (string? str in getAsyncEnumerable)
+                {
+                    _ = str;
+                }
+            },
+            async server =>
+            {
+                List<HttpHeaderData> headers = new List<HttpHeaderData> { new HttpHeaderData("Content-Type", "application/json") };
+                string[] values = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "10" };
+                string json = JsonSerializer.Serialize(values);
+
+                await server.HandleRequestAsync(content: json, headers: headers);
             });
         }
     }

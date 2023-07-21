@@ -53,7 +53,7 @@ namespace System.Net.Http.Json
             Uri? requestUri,
             JsonSerializerOptions? options,
             CancellationToken cancellationToken = default) =>
-            FromJsonStreamAsyncCore<TValue>(s_getAsync, client, requestUri, options, cancellationToken);
+            FromJsonStreamAsyncCore<TValue>(client, requestUri, options, cancellationToken);
 
         /// <summary>
         /// Sends an <c>HTTP GET</c>request to the specified <paramref name="requestUri"/> and returns the value that results
@@ -89,7 +89,7 @@ namespace System.Net.Http.Json
             Uri? requestUri,
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default) =>
-            FromJsonStreamAsyncCore(s_getAsync, client, requestUri, jsonTypeInfo, cancellationToken);
+            FromJsonStreamAsyncCore(client, requestUri, jsonTypeInfo, cancellationToken);
 
         /// <summary>
         /// Sends an <c>HTTP GET</c>request to the specified <paramref name="requestUri"/> and returns the value that results
@@ -130,7 +130,6 @@ namespace System.Net.Http.Json
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(HttpContentJsonExtensions.SerializationDynamicCodeMessage)]
         private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
-            Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
             HttpClient client,
             Uri? requestUri,
             JsonSerializerOptions? options,
@@ -139,11 +138,10 @@ namespace System.Net.Http.Json
             options ??= JsonSerializerOptions.Default;
             var jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfo(typeof(TValue));
 
-            return FromJsonStreamAsyncCore(getMethod, client, requestUri, jsonTypeInfo, cancellationToken);
+            return FromJsonStreamAsyncCore(client, requestUri, jsonTypeInfo, cancellationToken);
         }
 
         private static IAsyncEnumerable<TValue?> FromJsonStreamAsyncCore<TValue>(
-            Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
             HttpClient client,
             Uri? requestUri,
             JsonTypeInfo<TValue> jsonTypeInfo,
@@ -154,60 +152,38 @@ namespace System.Net.Http.Json
                 throw new ArgumentNullException(nameof(client));
             }
 
-            return Core(getMethod, client, requestUri, jsonTypeInfo, cancellationToken);
+            return Core(client, requestUri, jsonTypeInfo, cancellationToken);
 
             static async IAsyncEnumerable<TValue?> Core(
-                Func<HttpClient, Uri?, CancellationToken, Task<HttpResponseMessage>> getMethod,
                 HttpClient client,
                 Uri? requestUri,
                 JsonTypeInfo<TValue> jsonTypeInfo,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                TimeSpan timeout = client.Timeout;
+                using HttpResponseMessage response = await s_getAsync(client, requestUri, cancellationToken)
+                    .ConfigureAwait(false);
 
-                // Create the CTS before the initial SendAsync so that the SendAsync counts against the timeout.
-                CancellationTokenSource? linkedCTS = null;
-                if (timeout != Timeout.InfiniteTimeSpan)
+                response.EnsureSuccessStatusCode();
+
+                Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
+                int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
+
+                if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
                 {
-                    linkedCTS = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                    linkedCTS.CancelAfter(timeout);
+                    LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
                 }
 
-                // We call SendAsync outside of the async Core method to propagate exception even without awaiting the returned task.
-                Task<HttpResponseMessage> responseTask;
-                try
-                {
-                    // Intentionally using cancellationToken instead of the linked one here as HttpClient will enforce the Timeout on its own for this part
-                    responseTask = getMethod(client, requestUri, cancellationToken);
-                }
-                catch
-                {
-                    linkedCTS?.Dispose();
-                    throw;
-                }
+                using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(
+                    response.Content, cancellationToken).ConfigureAwait(false);
 
-                try
+                using LengthLimitReadStream readStream = new(contentStream, (int)client.MaxResponseContentBufferSize);
+
+                await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
+                    readStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
                 {
-                    using HttpResponseMessage response = await responseTask.ConfigureAwait(false);
-                    response.EnsureSuccessStatusCode();
+                    yield return value;
 
-                    Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
-                    int contentLengthLimit = (int)client.MaxResponseContentBufferSize;
-
-                    if (response.Content.Headers.ContentLength is long contentLength && contentLength > contentLengthLimit)
-                    {
-                        LengthLimitReadStream.ThrowExceededBufferLimit(contentLengthLimit);
-                    }
-
-                    await foreach (TValue? value in response.Content.ReadFromJsonAsAsyncEnumerable<TValue>(
-                        jsonTypeInfo, cancellationToken))
-                    {
-                        yield return value;
-                    }
-                }
-                finally
-                {
-                    linkedCTS?.Dispose();
+                    readStream.ResetCount();
                 }
             }
         }
