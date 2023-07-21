@@ -33,8 +33,6 @@ namespace System.Net.Internals
         private const int MinSize = 2;
         private const int MaxSize = 32; // IrDA requires 32 bytes
         private const int DataOffset = 2;
-        private bool _changed = true;
-        private int _hash;
 
         public AddressFamily Family
         {
@@ -77,10 +75,6 @@ namespace System.Net.Internals
                 if (offset < 0 || offset >= Size)
                 {
                     throw new IndexOutOfRangeException();
-                }
-                if (InternalBuffer[offset] != value)
-                {
-                    _changed = true;
                 }
                 InternalBuffer[offset] = value;
             }
@@ -214,36 +208,13 @@ namespace System.Net.Internals
 
         public override bool Equals(object? comparand) =>
             comparand is SocketAddress other &&
-            InternalBuffer.AsSpan(0, Size).SequenceEqual(other.InternalBuffer.AsSpan(0, other.Size));
+            Buffer.Span.SequenceEqual(other.Buffer.Span);
 
         public override int GetHashCode()
         {
-            if (_changed)
-            {
-                _changed = false;
-                _hash = 0;
-
-                int i;
-                int size = Size & ~3;
-
-                for (i = 0; i < size; i += 4)
-                {
-                    _hash ^= BinaryPrimitives.ReadInt32LittleEndian(InternalBuffer.AsSpan(i));
-                }
-                if ((Size & 3) != 0)
-                {
-                    int remnant = 0;
-                    int shift = 0;
-
-                    for (; i < Size; ++i)
-                    {
-                        remnant |= ((int)InternalBuffer[i]) << shift;
-                        shift += 8;
-                    }
-                    _hash ^= remnant;
-                }
-            }
-            return _hash;
+            HashCode hash = default;
+            hash.AddBytes(Buffer.Span);
+            return hash.ToHashCode();
         }
 
         public override string ToString()
