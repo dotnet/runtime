@@ -2,14 +2,11 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 
 namespace Mono.Linker.Tests.Cases.RequiresCapability
@@ -22,7 +19,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			TestRequiresOnlyThroughReflection ();
 			AccessedThroughReflectionOnGenericType<TestType>.Test ();
-			AccessedThroughGenericParameterAnnotation.Test ();
 			AccessThroughSpecialAttribute.Test ();
 			AccessThroughPInvoke.Test ();
 			AccessThroughNewConstraint.Test<TestType> ();
@@ -31,6 +27,8 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedMethod ();
 			AccessThroughNewConstraint.TestNewConstraintOnTypeParameterInAnnotatedType ();
 			AccessThroughLdToken.Test ();
+			AccessThroughDelegate.Test ();
+			AccessThroughUnsafeAccessor.Test ();
 		}
 
 		class TestType { }
@@ -71,59 +69,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (AccessedThroughReflectionOnGenericType<T>)
 					.GetMethod (nameof (RequiresOnlyThroughReflection))
 					.Invoke (null, new object[0]);
-			}
-		}
-
-		class AccessedThroughGenericParameterAnnotation
-		{
-			class TypeWithRequiresMethod
-			{
-				[RequiresUnreferencedCode("--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-				[RequiresDynamicCode ("--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-				[RequiresAssemblyFiles ("--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-				public static void MethodWhichRequires () { }
-			}
-
-			class TypeWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T>
-			{
-				public TypeWithPublicMethods () { }
-			}
-
-			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			static void TestAccessOnGenericType ()
-			{
-				new TypeWithPublicMethods<TypeWithRequiresMethod> ();
-			}
-
-			static void MethodWithPublicMethods<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> () { }
-
-			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--")]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			static void TestAccessOnGenericMethod ()
-			{
-				MethodWithPublicMethods<TypeWithRequiresMethod> ();
-			}
-
-			static void MethodWithPublicMethodsInference<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)] T> (T instance) { }
-
-			// https://github.com/dotnet/runtime/issues/86032
-			// IL2026 should be produced by the analyzer as well, but it has a bug around inferred generic arguments
-			[ExpectedWarning ("IL2026", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
-			[ExpectedWarning ("IL3002", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL3050", "--AccessedThroughGenericParameterAnnotation.TypeWithRequiresMethod.MethodWhichRequires--", ProducedBy = Tool.NativeAot)]
-			static void TestAccessOnGenericMethodWithInferenceOnMethod ()
-			{
-				MethodWithPublicMethodsInference (new TypeWithRequiresMethod ());
-			}
-
-			public static void Test ()
-			{
-				TestAccessOnGenericType ();
-				TestAccessOnGenericMethod ();
-				TestAccessOnGenericMethodWithInferenceOnMethod ();
 			}
 		}
 
@@ -284,9 +229,179 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			[ExpectedWarning ("IL3002", "--PropertyWithLdToken.get--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--PropertyWithLdToken.get--", ProducedBy = Tool.NativeAot)]
-			public static void Test ()
+			static void TestPropertyLdToken ()
 			{
 				Expression<Func<bool>> getter = () => PropertyWithLdToken;
+			}
+
+			[RequiresUnreferencedCode ("Message for --MethodWithLdToken--")]
+			[RequiresAssemblyFiles ("Message for --MethodWithLdToken--")]
+			[RequiresDynamicCode ("Message for --MethodWithLdToken--")]
+			static void MethodWithLdToken ()
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "--MethodWithLdToken--")]
+			[ExpectedWarning ("IL3002", "--MethodWithLdToken--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithLdToken--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestMethodLdToken ()
+			{
+				Expression<Action> e = () => MethodWithLdToken ();
+			}
+
+			[RequiresUnreferencedCode ("--FieldWithLdToken--")]
+			[RequiresDynamicCode ("--FieldWithLdToken--")]
+			class FieldWithLdTokenType
+			{
+				public static int Field = 0;
+			}
+
+			[ExpectedWarning ("IL2026", "--FieldWithLdToken--")]
+			[ExpectedWarning ("IL3050", "--FieldWithLdToken--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestFieldLdToken ()
+			{
+				Expression<Func<int>> f = () => FieldWithLdTokenType.Field;
+			}
+
+			public static void Test ()
+			{
+				TestPropertyLdToken ();
+				TestMethodLdToken ();
+				TestFieldLdToken ();
+			}
+		}
+
+		class AccessThroughDelegate
+		{
+			[RequiresUnreferencedCode ("Message for --MethodWithDelegate--")]
+			[RequiresAssemblyFiles ("Message for --MethodWithDelegate--")]
+			[RequiresDynamicCode ("Message for --MethodWithDelegate--")]
+			static void MethodWithDelegate ()
+			{
+			}
+
+			[ExpectedWarning ("IL2026", "--MethodWithDelegate--")]
+			[ExpectedWarning ("IL3002", "--MethodWithDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--MethodWithDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void TestMethodWithDelegate ()
+			{
+				Action a = MethodWithDelegate;
+			}
+
+			[ExpectedWarning ("IL2026", "--LambdaThroughDelegate--")]
+			[ExpectedWarning ("IL3002", "--LambdaThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--LambdaThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void LambdaThroughDelegate ()
+			{
+				Action a =
+				[RequiresUnreferencedCode ("--LambdaThroughDelegate--")]
+				[RequiresAssemblyFiles ("--LambdaThroughDelegate--")]
+				[RequiresDynamicCode ("--LambdaThroughDelegate--")]
+				() => { };
+
+				a ();
+			}
+
+			[ExpectedWarning ("IL2026", "--LocalFunctionThroughDelegate--")]
+			[ExpectedWarning ("IL3002", "--LocalFunctionThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--LocalFunctionThroughDelegate--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			static void LocalFunctionThroughDelegate ()
+			{
+				Action a = Local;
+
+				[RequiresUnreferencedCode ("--LocalFunctionThroughDelegate--")]
+				[RequiresAssemblyFiles ("--LocalFunctionThroughDelegate--")]
+				[RequiresDynamicCode ("--LocalFunctionThroughDelegate--")]
+				void Local ()
+				{ }
+			}
+
+			public static void Test ()
+			{
+				TestMethodWithDelegate ();
+				LambdaThroughDelegate ();
+				LocalFunctionThroughDelegate ();
+			}
+		}
+
+		class AccessThroughUnsafeAccessor
+		{
+			// Analyzer has no support for UnsafeAccessor right now
+
+			class Target
+			{
+				[RequiresUnreferencedCode ("--Target..ctor--")]
+				[RequiresAssemblyFiles ("--Target..ctor--")]
+				[RequiresDynamicCode ("--Target..ctor--")]
+				private Target (int i) { }
+
+				[RequiresUnreferencedCode ("--Target.MethodRequires--")]
+				[RequiresAssemblyFiles ("--Target.MethodRequires--")]
+				[RequiresDynamicCode ("--Target.MethodRequires--")]
+				private static void MethodRequires () { }
+			}
+
+			[ExpectedWarning ("IL2026", "--Target.MethodRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--Target.MethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--Target.MethodRequires--", ProducedBy = Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticMethod)]
+			extern static void MethodRequires (Target target);
+
+			[ExpectedWarning ("IL2026", "--Target..ctor--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[ExpectedWarning ("IL3002", "--Target..ctor--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--Target..ctor--", ProducedBy = Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+			extern static Target Constructor (int i);
+
+			[RequiresUnreferencedCode ("--TargetWitRequires--")]
+			class TargetWithRequires
+			{
+				private TargetWithRequires () { }
+
+				private static void StaticMethod () { }
+
+				private void InstanceMethod () { }
+
+				private static int StaticField;
+
+				private int InstanceField;
+			}
+
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.Constructor)]
+			extern static TargetWithRequires TargetRequiresConstructor ();
+
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticMethod, Name = "StaticMethod")]
+			extern static void TargetRequiresStaticMethod (TargetWithRequires target);
+
+			// For trimmer this is a reflection access to an instance method - and as such it must warn (since it's in theory possible
+			// to invoke the method via reflection on a null instance)
+			// For NativeAOT this is a direct call to an instance method (there's no reflection involved) and as such it doesn't need to warn
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer)]
+			[UnsafeAccessor (UnsafeAccessorKind.Method, Name = "InstanceMethod")]
+			extern static void TargetRequiresInstanceMethod (TargetWithRequires target);
+
+			[ExpectedWarning ("IL2026", "--TargetWitRequires--", ProducedBy = Tool.Trimmer | Tool.NativeAot)]
+			[UnsafeAccessor (UnsafeAccessorKind.StaticField, Name = "StaticField")]
+			extern static ref int TargetRequiresStaticField (TargetWithRequires target);
+
+			// Access to instance fields never produces these warnings due to RUC on type
+			[UnsafeAccessor (UnsafeAccessorKind.Field, Name = "InstanceField")]
+			extern static ref int TargetRequiresInstanceField (TargetWithRequires target);
+
+			public static void Test ()
+			{
+				MethodRequires (null);
+				Constructor (0);
+
+				TargetRequiresConstructor ();
+
+				TargetWithRequires targetWithRequires = TargetRequiresConstructor ();
+				TargetRequiresStaticMethod (targetWithRequires);
+				TargetRequiresInstanceMethod (targetWithRequires);
+				TargetRequiresStaticField (targetWithRequires);
+				TargetRequiresInstanceField (targetWithRequires);
 			}
 		}
 	}

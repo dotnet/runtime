@@ -17,7 +17,13 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
         public required CollectionPopulationStrategy PopulationStrategy { get; init; }
 
+        public override bool CanInitialize => ConcreteType?.CanInitialize ?? CanInitComplexObject();
+
+        public override required InitializationStrategy InitializationStrategy { get; set; }
+
         public required string? ToEnumerableMethodCall { get; init; }
+
+        public sealed override bool NeedsMemberBinding => true;
     }
 
     internal sealed record EnumerableSpec : CollectionSpec
@@ -38,9 +44,8 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
     internal enum CollectionPopulationStrategy
     {
-        Unknown,
-        Array,
-        Add,
-        Cast_Then_Add,
+        Unknown = 0,
+        Add = 1,
+        Cast_Then_Add = 2,
     }
 }

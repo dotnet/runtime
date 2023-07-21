@@ -459,11 +459,6 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     unsigned       matchCount  = 0;
     const unsigned matchLimit  = 4;
 
-    if (domBlock == nullptr)
-    {
-        return false;
-    }
-
     // Unpack the tree's VN
     //
     ValueNum treeNormVN;
@@ -482,6 +477,11 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     }
     else
     {
+        if (domBlock == nullptr)
+        {
+            return false;
+        }
+
         JITDUMP("Relop [%06u] " FMT_BB " value unknown, trying inference\n", dspTreeID(tree), block->bbNum);
     }
 
@@ -721,6 +721,7 @@ struct JumpThreadInfo
         , m_numTruePreds(0)
         , m_numFalsePreds(0)
         , m_ambiguousVN(ValueNumStore::NoVN)
+        , m_isPhiBased(false)
     {
     }
 
@@ -750,6 +751,8 @@ struct JumpThreadInfo
     int m_numFalsePreds;
     // Refined VN for ambiguous cases
     ValueNum m_ambiguousVN;
+    // True if this was a phi-based jump thread
+    bool m_isPhiBased;
 };
 
 //------------------------------------------------------------------------
@@ -1270,6 +1273,8 @@ bool Compiler::optJumpThreadPhi(BasicBlock* block, GenTree* tree, ValueNum treeN
     // see if the relop value is correlated with the pred.
     //
     JumpThreadInfo jti(this, block);
+    jti.m_isPhiBased = true;
+
     for (BasicBlock* const predBlock : block->PredBlocks())
     {
         jti.m_numPreds++;
@@ -1585,6 +1590,29 @@ bool Compiler::optJumpThreadCore(JumpThreadInfo& jti)
                     predBlock->bbNum, jti.m_block->bbNum, predBlock->bbNum, jti.m_falseTarget->bbNum);
 
             fgReplaceJumpTarget(predBlock, jti.m_falseTarget, jti.m_block);
+        }
+    }
+
+    // If this is a phi-based threading, and the block we're bypassing has
+    // a memory phi, mark the block with BBF_NO_CSE_IN so we can block CSE propagation
+    // into the block.
+    //
+    if (jti.m_isPhiBased)
+    {
+        for (MemoryKind memoryKind : allMemoryKinds())
+        {
+            if ((memoryKind == ByrefExposed) && byrefStatesMatchGcHeapStates)
+            {
+                continue;
+            }
+
+            if (jti.m_block->bbMemorySsaPhiFunc[memoryKind] != nullptr)
+            {
+                JITDUMP(FMT_BB " has %s memory phi; marking as BBF_NO_CSE_IN\n", jti.m_block->bbNum,
+                        memoryKindNames[memoryKind]);
+                jti.m_block->bbFlags |= BBF_NO_CSE_IN;
+                break;
+            }
         }
     }
 

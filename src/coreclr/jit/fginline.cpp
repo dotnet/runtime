@@ -42,13 +42,15 @@ unsigned Compiler::fgCheckInlineDepthAndRecursion(InlineInfo* inlineInfo)
         assert(inlineContext->GetCode() != nullptr);
         depth++;
 
-        if (inlineContext->GetCode() == candidateCode)
+        if ((inlineContext->GetCallee() == inlineInfo->fncHandle) &&
+            (inlineContext->GetRuntimeContext() == inlineInfo->inlineCandidateInfo->exactContextHnd))
         {
-            // This inline candidate has the same IL code buffer as an already
-            // inlined method does.
+            // This is a recursive inline
+            //
             inlineResult->NoteFatal(InlineObservation::CALLSITE_IS_RECURSIVE);
 
             // No need to note CALLSITE_DEPTH we're already rejecting this candidate
+            //
             return depth;
         }
 
@@ -746,7 +748,7 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
 {
     bool inliningFailed = false;
 
-    InlineCandidateInfo* inlCandInfo = call->GetInlineCandidateInfo();
+    InlineCandidateInfo* inlCandInfo = call->GetSingleInlineCandidateInfo();
 
     // Is this call an inline candidate?
     if (call->IsInlineCandidate())
@@ -771,8 +773,8 @@ void Compiler::fgMorphCallInline(GenTreeCall* call, InlineResult* inlineResult)
             {
 #ifdef DEBUG
                 // In debug we always put all inline attempts into the inline tree.
-                InlineContext* ctx =
-                    m_inlineStrategy->NewContext(call->GetInlineCandidateInfo()->inlinersContext, fgMorphStmt, call);
+                InlineContext* ctx = m_inlineStrategy->NewContext(call->GetSingleInlineCandidateInfo()->inlinersContext,
+                                                                  fgMorphStmt, call);
                 ctx->SetFailed(inlineResult);
 #endif
             }
@@ -1039,7 +1041,7 @@ void Compiler::fgInvokeInlineeCompiler(GenTreeCall* call, InlineResult* inlineRe
     inlineInfo.hasSIMDTypeArgLocalOrReturn = false;
 #endif // FEATURE_SIMD
 
-    InlineCandidateInfo* inlineCandidateInfo = call->GetInlineCandidateInfo();
+    InlineCandidateInfo* inlineCandidateInfo = call->GetSingleInlineCandidateInfo();
     noway_assert(inlineCandidateInfo);
     // Store the link to inlineCandidateInfo into inlineInfo
     inlineInfo.inlineCandidateInfo = inlineCandidateInfo;

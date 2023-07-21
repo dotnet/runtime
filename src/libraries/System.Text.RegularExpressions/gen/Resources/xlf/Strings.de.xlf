@@ -167,11 +167,6 @@
         <target state="translated">Das Ergebnis kann nicht für eine fehlgeschlagene Übereinstimmung aufgerufen werden.</target>
         <note />
       </trans-unit>
-      <trans-unit id="NotSupported_NonBacktrackingAndReplacementsWithSubstitutionsOfGroups">
-        <source>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</source>
-        <target state="translated">RegEx-Ersätze durch Austausch von Gruppen werden bei RegexOptions.NonBacktracking nicht unterstützt.</target>
-        <note>{Locked="RegexOptions.NonBacktracking"}</note>
-      </trans-unit>
       <trans-unit id="NotSupported_ReadOnlyCollection">
         <source>Collection is read-only.</source>
         <target state="translated">Die Sammlung ist schreibgeschützt.</target>

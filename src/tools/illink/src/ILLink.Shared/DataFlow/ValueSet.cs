@@ -15,6 +15,8 @@ namespace ILLink.Shared.DataFlow
 	public readonly struct ValueSet<TValue> : IEquatable<ValueSet<TValue>>, IEnumerable<TValue>, IDeepCopyValue<ValueSet<TValue>>
 		where TValue : notnull
 	{
+		const int MaxValuesInSet = 256;
+
 		// Since we're going to do lot of type checks for this class a lot, it is much more efficient
 		// if the class is sealed (as then the runtime can do a simple method table pointer comparison)
 		private sealed class EnumerableValues : HashSet<TValue>
@@ -194,6 +196,10 @@ namespace ILLink.Shared.DataFlow
 
 			var values = new EnumerableValues (left.DeepCopy ());
 			values.UnionWith (right.DeepCopy ());
+			// Limit the number of values we track, to prevent hangs in case of patterns that
+			// create exponentially many possible values. This will result in analysis holes.
+			if (values.Count > MaxValuesInSet)
+				return default;
 			return new ValueSet<TValue> (values);
 		}
 

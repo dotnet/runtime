@@ -30,7 +30,6 @@ namespace System.Runtime.Intrinsics
     [DebuggerTypeProxy(typeof(Vector128DebugView<>))]
     [StructLayout(LayoutKind.Sequential, Size = Vector128.Size)]
     public readonly struct Vector128<T> : IEquatable<Vector128<T>>
-        where T : struct
     {
         internal readonly Vector64<T> _lower;
         internal readonly Vector64<T> _upper;
@@ -389,6 +388,16 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals([NotNullWhen(true)] object? obj) => (obj is Vector128<T> other) && Equals(other);
 
+        // Account for floating-point equality around NaN
+        // This is in a separate method so it can be optimized by the mono interpreter/jiterpreter
+        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool EqualsFloatingPoint (Vector128<T> lhs, Vector128<T> rhs)
+        {
+            Vector128<T> result = Vector128.Equals(lhs, rhs) | ~(Vector128.Equals(lhs, lhs) | Vector128.Equals(rhs, rhs));
+            return result.AsInt32() == Vector128<int>.AllBitsSet;
+        }
+
         /// <summary>Determines whether the specified <see cref="Vector128{T}" /> is equal to the current instance.</summary>
         /// <param name="other">The <see cref="Vector128{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
@@ -402,8 +411,7 @@ namespace System.Runtime.Intrinsics
             {
                 if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    Vector128<T> result = Vector128.Equals(this, other) | ~(Vector128.Equals(this, this) | Vector128.Equals(other, other));
-                    return result.AsInt32() == Vector128<int>.AllBitsSet;
+                    return EqualsFloatingPoint(this, other);
                 }
                 else
                 {

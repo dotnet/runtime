@@ -270,4 +270,10 @@
   <data name="Arg_InvalidPath" xml:space="preserve">
     <value>The path '{0}' is not valid.</value>
   </data>
+  <data name="Arg_AmbiguousMatchException_RoDefinitionType" xml:space="preserve">
+    <value>Ambiguous match found for '{0}'.</value>
+  </data>
+  <data name="Arg_AmbiguousMatchException_MemberInfo" xml:space="preserve">
+    <value>Ambiguous match found for '{0} {1}'.</value>
+  </data>
 </root>

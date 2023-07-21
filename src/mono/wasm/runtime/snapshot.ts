@@ -97,7 +97,7 @@ export async function storeMemorySnapshot(memory: ArrayBuffer) {
         }
         const copy = MonoWasmThreads
             // storing SHaredArrayBuffer in the cache is not working
-            ? (new Int8Array(memory)).slice(0)
+            ? (new Uint8Array(memory)).slice(0)
             : memory;
 
         const responseToCache = new Response(copy, {
@@ -167,6 +167,7 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.forwardConsoleLogsToWS;
     delete inputs.diagnosticTracing;
     delete inputs.appendElementOnExit;
+    delete inputs.assertAfterExit;
     delete inputs.logExitCode;
     delete inputs.pthreadPoolSize;
     delete inputs.asyncFlushOnExit;
@@ -176,7 +177,6 @@ async function getCacheKey(): Promise<string | null> {
     delete inputs.maxParallelDownloads;
     delete inputs.enableDownloadRetry;
     delete inputs.exitAfterSnapshot;
-    delete inputs.assetUniqueQuery;
 
     inputs.GitHash = GitHash;
     inputs.ProductVersion = ProductVersion;

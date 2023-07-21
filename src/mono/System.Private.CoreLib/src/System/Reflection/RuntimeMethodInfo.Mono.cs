@@ -150,29 +150,25 @@ namespace System.Reflection
 #endregion
         private string? toString;
         private RuntimeType[]? parameterTypes;
-        private InvocationFlags invocationFlags;
-        private MethodInvoker? invoker;
+        private MethodBaseInvoker? invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
-                }
+                InvocationFlags flags = Invoker._invocationFlags;
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        private MethodInvoker Invoker
+        private MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new MethodInvoker(this);
+                invoker ??= new MethodBaseInvoker(this);
                 return invoker;
             }
         }
@@ -720,29 +716,25 @@ namespace System.Reflection
 #endregion
         private string? toString;
         private RuntimeType[]? parameterTypes;
-        private InvocationFlags invocationFlags;
-        private ConstructorInvoker? invoker;
+        private MethodBaseInvoker? invoker;
 
         internal InvocationFlags InvocationFlags
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                InvocationFlags flags = invocationFlags;
-                if ((flags & InvocationFlags.Initialized) == 0)
-                {
-                    flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
-                }
+                InvocationFlags flags = Invoker._invocationFlags;
+                Debug.Assert((flags & InvocationFlags.Initialized) == InvocationFlags.Initialized);
                 return flags;
             }
         }
 
-        internal ConstructorInvoker Invoker
+        internal MethodBaseInvoker Invoker
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                invoker ??= new ConstructorInvoker(this);
+                invoker ??= new MethodBaseInvoker(this);
                 return invoker;
             }
         }

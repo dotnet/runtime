@@ -554,6 +554,7 @@ enum GenTreeFlags : unsigned int
     GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
     GTF_MDARRLOWERBOUND_NONFAULTING = 0x20000000, // GT_MDARR_LOWER_BOUND -- An MD array lower bound operation that cannot fault. Same as GT_IND_NONFAULTING.
+
 };
 
 inline constexpr GenTreeFlags operator ~(GenTreeFlags a)
@@ -1086,7 +1087,7 @@ public:
         return TypeIs(type) || TypeIs(rest...);
     }
 
-    static bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
+    static constexpr bool StaticOperIs(genTreeOps operCompare, genTreeOps oper)
     {
         return operCompare == oper;
     }
@@ -1649,6 +1650,8 @@ public:
     {
         return OperIsHWIntrinsic(gtOper);
     }
+
+    bool OperIsHWIntrinsic(NamedIntrinsic intrinsicId) const;
 
     // This is here for cleaner GT_LONG #ifdefs.
     static bool OperIsLong(genTreeOps gtOper)
@@ -4045,6 +4048,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_DEVIRTUALIZED           = 0x00040000, // this call was devirtualized
     GTF_CALL_M_UNBOXED                 = 0x00080000, // this call was optimized to use the unboxed entry point
     GTF_CALL_M_GUARDED_DEVIRT          = 0x00100000, // this call is a candidate for guarded devirtualization
+    GTF_CALL_M_GUARDED_DEVIRT_EXACT    = 0x80000000, // this call is a candidate for guarded devirtualization without a fallback
     GTF_CALL_M_GUARDED_DEVIRT_CHAIN    = 0x00200000, // this call is a candidate for chained guarded devirtualization
     GTF_CALL_M_GUARDED                 = 0x00400000, // this call was transformed by guarded devirtualization
     GTF_CALL_M_ALLOC_SIDE_EFFECTS      = 0x00800000, // this is a call to an allocator with side effects
@@ -5367,7 +5371,7 @@ struct GenTreeCall final : public GenTree
 
     void ClearGuardedDevirtualizationCandidate()
     {
-        gtCallMoreFlags &= ~GTF_CALL_M_GUARDED_DEVIRT;
+        gtCallMoreFlags &= ~(GTF_CALL_M_GUARDED_DEVIRT | GTF_CALL_M_GUARDED_DEVIRT_EXACT);
     }
 
     void SetIsGuarded()
@@ -5425,20 +5429,38 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
     }
 
-    InlineCandidateInfo* GetInlineCandidateInfo()
+    InlineCandidateInfo* GetSingleInlineCandidateInfo()
     {
+        // gtInlineInfoCount can be 0 (not an inline candidate) or 1
+        if (gtInlineInfoCount == 0)
+        {
+            assert(!IsInlineCandidate());
+            assert(gtInlineCandidateInfo == nullptr);
+            return nullptr;
+        }
+        else if (gtInlineInfoCount > 1)
+        {
+            assert(!"Call has multiple inline candidates");
+        }
         return gtInlineCandidateInfo;
     }
 
-    void SetSingleInlineCadidateInfo(InlineCandidateInfo* candidateInfo);
+    void SetSingleInlineCandidateInfo(InlineCandidateInfo* candidateInfo);
 
-    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index = 0);
+    InlineCandidateInfo* GetGDVCandidateInfo(uint8_t index);
 
-    void AddGDVCandidateInfo(InlineCandidateInfo* candidateInfo);
+    void AddGDVCandidateInfo(Compiler* comp, InlineCandidateInfo* candidateInfo);
+
+    void RemoveGDVCandidateInfo(Compiler* comp, uint8_t index);
 
     void ClearInlineInfo()
     {
-        SetSingleInlineCadidateInfo(nullptr);
+        SetSingleInlineCandidateInfo(nullptr);
+    }
+
+    uint8_t GetInlineCandidatesCount()
+    {
+        return gtInlineInfoCount;
     }
 
     //-----------------------------------------------------------------------------------------
@@ -5526,8 +5548,12 @@ struct GenTreeCall final : public GenTree
     union {
         // only used for CALLI unmanaged calls (CT_INDIRECT)
         GenTree* gtCallCookie;
+
         // gtInlineCandidateInfo is only used when inlining methods
-        InlineCandidateInfo*                 gtInlineCandidateInfo;
+        InlineCandidateInfo* gtInlineCandidateInfo;
+        // gtInlineCandidateInfoList is used when we have more than one GDV candidate
+        jitstd::vector<InlineCandidateInfo*>* gtInlineCandidateInfoList;
+
         HandleHistogramProfileCandidateInfo* gtHandleHistogramProfileCandidateInfo;
         LateDevirtualizationInfo*            gtLateDevirtualizationInfo;
         CORINFO_GENERIC_HANDLE compileTimeHelperArgumentHandle; // Used to track type handle argument of dynamic helpers
@@ -6220,6 +6246,9 @@ struct GenTreeHWIntrinsic : public GenTreeJitIntrinsic
     bool OperIsMemoryStore(GenTree** pAddr = nullptr) const;
     bool OperIsMemoryLoadOrStore() const;
     bool OperIsMemoryStoreOrBarrier() const;
+    bool OperIsEmbBroadcastCompatible() const;
+    bool OperIsBroadcastScalar() const;
+    bool OperIsCreateScalarUnsafe() const;
 
     bool OperRequiresAsgFlag() const;
     bool OperRequiresCallFlag() const;
@@ -6684,6 +6713,10 @@ struct GenTreeVecCon : public GenTree
     GenTreeVecCon(var_types type) : GenTree(GT_CNS_VEC, type)
     {
         assert(varTypeIsSIMD(type));
+
+        // Some uses of GenTreeVecCon do not specify all bits in the vector they are using but failing to zero out the
+        // buffer will cause determinism issues with the compiler.
+        memset(&gtSimdVal, 0, sizeof(gtSimdVal));
 
 #if defined(TARGET_XARCH)
         assert(sizeof(simd_t) == sizeof(simd64_t));

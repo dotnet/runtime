@@ -1421,7 +1421,7 @@ namespace System.Configuration
             return section;
         }
 
-        private ConfigXmlReader FindSectionRecursive(string[] keys, int iKey, XmlUtil xmlUtil, ref int lineNumber)
+        private static ConfigXmlReader FindSectionRecursive(string[] keys, int iKey, XmlUtil xmlUtil, ref int lineNumber)
         {
             string name = keys[iKey];
             ConfigXmlReader section = null;

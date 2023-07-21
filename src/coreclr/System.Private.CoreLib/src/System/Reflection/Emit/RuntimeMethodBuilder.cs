@@ -718,7 +718,7 @@ namespace System.Reflection.Emit
         private void ParseCA(ConstructorInfo con)
         {
             Type? caType = con.DeclaringType;
-            if (caType == typeof(System.Runtime.CompilerServices.MethodImplAttribute))
+            if (caType == typeof(MethodImplAttribute))
             {
                 // dig through the blob looking for the MethodImplAttributes flag
                 // that must be in the MethodCodeType field

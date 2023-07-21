@@ -14,7 +14,7 @@
 //  a1: Exception*
 //
 LEAF_ENTRY RtlRestoreContext, _TEXT
-#ifdef HAS_ASAN
+#ifdef HAS_ADDRESS_SANITIZER
     ld.w  $r21, $a0, CONTEXT_ContextFlags
     ext $r21, $r21, CONTEXT_FLOATING_POINT_BIT, 1
     beq $r21, $r0, LOCAL_LABEL(Restore_CONTEXT_FLOATING_POINT)

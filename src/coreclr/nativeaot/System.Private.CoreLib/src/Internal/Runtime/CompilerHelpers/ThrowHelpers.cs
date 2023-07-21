@@ -118,6 +118,11 @@ namespace Internal.Runtime.CompilerHelpers
             throw TypeLoaderExceptionHelper.CreateMarshalDirectiveException(id);
         }
 
+        public static void ThrowAmbiguousMatchException(ExceptionStringID id)
+        {
+            throw TypeLoaderExceptionHelper.CreateAmbiguousMatchException(id);
+        }
+
         public static void ThrowArgumentException()
         {
             throw new ArgumentException();

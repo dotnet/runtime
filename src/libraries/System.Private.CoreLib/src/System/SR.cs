@@ -67,7 +67,7 @@ namespace System
 #if SYSTEM_PRIVATE_CORELIB
                     // Note: our infrastructure for reporting this exception will again cause resource lookup.
                     // This is the most direct way of dealing with that problem.
-                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {System.CoreLib.Name}. Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.";
+                    string message = $@"Encountered infinite recursion while looking up resource '{key}' in {CoreLib.Name}. Verify the installation of .NET is complete and does not need repairing, and that the state of the process has not become corrupted.";
                     Environment.FailFast(message);
 #endif
                 }

@@ -15,11 +15,11 @@ namespace Microsoft.Interop
     public sealed class StringMarshallingInfoProvider : ITypeBasedMarshallingInfoProvider
     {
         private readonly Compilation _compilation;
-        private readonly IGeneratorDiagnostics _diagnostics;
+        private readonly GeneratorDiagnosticsBag _diagnostics;
         private readonly AttributeData _stringMarshallingCustomAttribute;
         private readonly DefaultMarshallingInfo _defaultMarshallingInfo;
 
-        public StringMarshallingInfoProvider(Compilation compilation, IGeneratorDiagnostics diagnostics, AttributeData stringMarshallingCustomAttribute, DefaultMarshallingInfo defaultMarshallingInfo)
+        public StringMarshallingInfoProvider(Compilation compilation, GeneratorDiagnosticsBag diagnostics, AttributeData stringMarshallingCustomAttribute, DefaultMarshallingInfo defaultMarshallingInfo)
         {
             _compilation = compilation;
             _diagnostics = diagnostics;

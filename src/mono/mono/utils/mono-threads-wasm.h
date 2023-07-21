@@ -75,6 +75,9 @@ extern GSList *jobs;
 void
 mono_threads_wasm_on_thread_attached (void);
 
+void
+mono_threads_wasm_on_thread_detached (void);
+
 #endif /* HOST_WASM*/
 
 #endif /* __MONO_THREADS_WASM_H__ */

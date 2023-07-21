@@ -48,6 +48,7 @@
       <BundleDir>$(AppleBundleDir)</BundleDir>
       <_MonoHeaderPath>$([MSBuild]::NormalizeDirectory($(MicrosoftNetCoreAppRuntimePackRidNativeDir), 'include', 'mono-2.0'))</_MonoHeaderPath>
       <_AotModuleTablePath>$(AppleBundleDir)\modules.m</_AotModuleTablePath>
+      <AppName Condition="'$(AppName)' == ''">$(AssemblyName)</AppName>
     </PropertyGroup>
 
     <!-- common linker arguments for app and library builds -->
@@ -84,6 +85,7 @@
     <PropertyGroup>
       <_AppleRuntimeConfigFilePath Condition="'$(_AppleRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), '$(AssemblyName).runtimeconfig.json'))</_AppleRuntimeConfigFilePath>
       <_ParsedRuntimeConfigFilePath Condition="'$(_ParsedRuntimeConfigFilePath)' == ''">$([MSBuild]::NormalizePath($(AppleBuildDir), 'runtimeconfig.bin'))</_ParsedRuntimeConfigFilePath>
+      <UseConsoleUITemplate Condition="'$(UseConsoleUITemplate)' == ''">true</UseConsoleUITemplate>
     </PropertyGroup>
 
     <RemoveDir Directories="$(AppleBundleDir)" />
@@ -141,7 +143,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
       <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
       <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=50000" />
+      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=110000" />
 
       <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
     </ItemGroup>
@@ -153,6 +155,10 @@
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
+      <_AssembliesToBundleInternal>
+        <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
+        <_IsNative>false</_IsNative>
+      </_AssembliesToBundleInternal>
 
       <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)" 
                            Condition="'%(_AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
@@ -183,6 +189,7 @@
         <AotArguments>@(MonoAOTCompilerDefaultAotArguments, ';')</AotArguments>
         <ProcessArguments>@(MonoAOTCompilerDefaultProcessArguments, ';')</ProcessArguments>
       </_AotInputAssemblies>
+      <_ExcludeFromAppDir Include="$(_iOSLikeDedupAssembly)" />
     </ItemGroup>
 
     <!-- 
@@ -236,6 +243,8 @@
     <Error Condition="'$(NativeMainSource)' != '' and !Exists('$(NativeMainSource)')" Text="Project property NativeMainSource is defined, but the specified file: '$(NativeMainSource)' does not exist." />
 
     <AppleAppBuilderTask
+      UseNativeAOTRuntime="$(UseNativeAOTRuntime)"
+      NativeDependencies="$(NativeDependencies)"
       AppDir="$(AppleBuildDir)"
       Arch="$(TargetArchitecture)"
       Assemblies="@(_AssembliesToBundleInternal)"
@@ -255,10 +264,12 @@
       NativeMainSource="$(NativeMainSource)"
       Optimized="$(Optimized)"
       OutputDirectory="$(AppleBundleDir)"
-      ProjectName="$(AssemblyName)"
+      ProjectName="$(AppName)"
       RuntimeComponents="$(RuntimeComponents)"
       TargetOS="$(TargetOS)"
-      UseConsoleUITemplate="True">
+      StripSymbolTable="$(StripDebugSymbols)"
+      ExcludeFromAppDir="@(_ExcludeFromAppDir)"
+      UseConsoleUITemplate="$(UseConsoleUITemplate)">
         <Output TaskParameter="AppBundlePath" PropertyName="AppBundlePath" />
         <Output TaskParameter="XcodeProjectPath" PropertyName="XcodeProjectPath" />
     </AppleAppBuilderTask>
@@ -274,7 +285,8 @@
   <Target Name="_AppleGenerateRuntimeConfig"
           Inputs="$(_AppleRuntimeConfigFilePath)"
           Outputs="$(_ParsedRuntimeConfigFilePath)"
-          Condition="Exists('$(_AppleRuntimeConfigFilePath)')">
+          Condition="Exists('$(_AppleRuntimeConfigFilePath)')"
+          BeforeTargets="_GenerateBundle">
     <ItemGroup>
       <_RuntimeConfigReservedProperties Include="RUNTIME_IDENTIFIER"/>
       <_RuntimeConfigReservedProperties Include="APP_CONTEXT_BASE_DIRECTORY"/>

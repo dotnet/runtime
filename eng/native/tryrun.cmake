@@ -1,6 +1,21 @@
 set(CROSS_ROOTFS $ENV{ROOTFS_DIR})
 set(TARGET_ARCH_NAME $ENV{TARGET_BUILD_ARCH})
 
+# Also allow building as Android without specifying `-cross`.
+if(NOT DEFINED TARGET_ARCH_NAME AND DEFINED ANDROID_PLATFORM)
+  if(ANDROID_ABI STREQUAL "arm64-v8a")
+    set(TARGET_ARCH_NAME "arm64")
+  elseif(ANDROID_ABI STREQUAL "x86_64")
+    set(TARGET_ARCH_NAME "x64")
+  elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
+    set(TARGET_ARCH_NAME "arm")
+  elseif(ANDROID_ABI STREQUAL "x86")
+    set(TARGET_ARCH_NAME "x86")
+  else()
+    message(FATAL_ERROR "ANDROID_ABI ${ANDROID_ABI} not recognized!")
+  endif()
+endif()
+
 macro(set_cache_value)
   set(${ARGV0} ${ARGV1} CACHE STRING "Result from TRY_RUN" FORCE)
   set(${ARGV0}__TRYRUN_OUTPUT "dummy output" CACHE STRING "Output from TRY_RUN" FORCE)

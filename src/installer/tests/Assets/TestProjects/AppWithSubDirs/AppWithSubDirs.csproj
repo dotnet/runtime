@@ -5,6 +5,7 @@
     <OutputType>Exe</OutputType>
     <RuntimeFrameworkVersion>$(MNAVersion)</RuntimeFrameworkVersion>
     <RuntimeIdentifier>$(TestTargetRid)</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
   </PropertyGroup>
 
   <Target Name="CopyFiles" AfterTargets="Publish">

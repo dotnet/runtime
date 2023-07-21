@@ -856,14 +856,18 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void Parse_String()
+        public static IEnumerable<object[]> Parse_TestData()
         {
-            DateTimeOffset expected = DateTimeOffset.MaxValue;
-            string expectedString = expected.ToString();
+            yield return new object[] { "2021-04-23T13:04:17,307642270+02:00", new DateTimeOffset(637547798573076423, new TimeSpan(2, 0, 0)) };
+            yield return new object[] { DateTimeOffset.MaxValue.ToString("O"), DateTimeOffset.MaxValue };
+        }
 
-            DateTimeOffset result = DateTimeOffset.Parse(expectedString);
-            Assert.Equal(expectedString, result.ToString());
+        [Theory]
+        [MemberData(nameof(Parse_TestData))]
+        public static void Parse_String(string valueForParse, DateTimeOffset expectedValue)
+        {
+            DateTimeOffset actualValue = DateTimeOffset.Parse(valueForParse);
+            Assert.Equal(expectedValue, actualValue);
         }
 
         [Fact]

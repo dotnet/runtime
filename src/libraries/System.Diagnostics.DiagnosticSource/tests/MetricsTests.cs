@@ -1221,6 +1221,16 @@ namespace System.Diagnostics.Metrics.Tests
                 Assert.Equal("8.0", meter8.Version);
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("Key8", "Value8") }, meter8.Tags);
                 Assert.Equal("Scope8", meter8.Scope);
+
+                // Test tags sorting order
+                TagList l = new TagList() { { "f", "a" }, { "d", "b" }, { "w", "b" }, { "h", new object() }, { "N", null }, { "a", "b" }, { "a", null } };
+                using Meter meter9 = new Meter(new MeterOptions("TestMeterCreationWithOptions9") { Version = "8.0", Tags = l, Scope = "Scope8" });
+                var insArray = meter9.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
             }).Dispose();
         }
 
@@ -1297,6 +1307,38 @@ namespace System.Diagnostics.Metrics.Tests
                 UpDownCounter<int> upDownCounter3 = meter.CreateUpDownCounter<int>("name", null, null, list3);
 
                 Assert.False(object.ReferenceEquals(upDownCounter3, upDownCounter1));
+
+                //
+                // Test instrument creation with unordered tags
+                //
+
+                object o = new object();
+                TagList l1 = new TagList() { { "f", "a" }, { "d", "b" }, { "w", "b" }, { "h", o}, { "N", null }, { "a", "b" }, { "a", null } };
+                List<KeyValuePair<string, object?>> l2 = new List<KeyValuePair<string, object?>>()
+                {
+                    new KeyValuePair<string, object?>("w", "b"), new KeyValuePair<string, object?>("h", o), new KeyValuePair<string, object?>("a", null),
+                    new KeyValuePair<string, object?>("d", "b"), new KeyValuePair<string, object?>("f", "a"), new KeyValuePair<string, object?>("N", null),
+                    new KeyValuePair<string, object?>("a", "b")
+                };
+                HashSet<KeyValuePair<string, object?>> l3 = new HashSet<KeyValuePair<string, object?>>()
+                {
+                    new KeyValuePair<string, object?>("d", "b"), new KeyValuePair<string, object?>("f", "a"), new KeyValuePair<string, object?>("a", null),
+                    new KeyValuePair<string, object?>("w", "b"), new KeyValuePair<string, object?>("h", o), new KeyValuePair<string, object?>("a", "b"),
+                    new KeyValuePair<string, object?>("N", null)
+                };
+
+                Counter<int> counter9 = meter.CreateCounter<int>("name9", null, null, l1);
+                Counter<int> counter10 = meter.CreateCounter<int>("name9", null, null, l2);
+                Counter<int> counter11 = meter.CreateCounter<int>("name9", null, null, l3);
+                Assert.Same(counter9, counter10);
+                Assert.Same(counter9, counter11);
+
+                KeyValuePair<string, object?>[] t1 = counter9.Tags.ToArray();
+                Assert.Equal(l1.Count, t1.Length);
+                t1[0] = new KeyValuePair<string, object?>(t1[0].Key, "newValue"); // change value of one item;
+                Counter<int> counter12 = meter.CreateCounter<int>("name9", null, null, t1);
+                Assert.NotSame(counter9, counter12);
+
             }).Dispose();
         }
 
@@ -1342,124 +1384,20 @@ namespace System.Diagnostics.Metrics.Tests
                 Instrument ins12 = meter.CreateObservableGauge<float>("ObservableUpDownCounter3", () => new Measurement<float>[] { new Measurement<float>(3) }, null, null, new TagList() { { "oudc3", "oudc-v3" } });
                 Assert.Equal(new[] { new KeyValuePair<string, object?>("oudc3", "oudc-v3") }, ins12.Tags);
 
-            }).Dispose();
-        }
+                // Test tags sorting order
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestInstrumentRecorderNegativeCases()
-        {
-            RemoteExecutor.Invoke(() => {
-                using Meter meter = new Meter("TestInstrumentRecorderNegativeCases");
-
-                Assert.Throws<ArgumentNullException>(() => new InstrumentRecorder<int>(instrument: null));
-                Assert.Throws<ArgumentNullException>(() => new InstrumentRecorder<int>(scopeFilter: null, meterName: null, instrumentName: "instrumentName"));
-                Assert.Throws<ArgumentNullException>(() => new InstrumentRecorder<int>(scopeFilter:null, meterName:"meterName", instrumentName: null));
-                Assert.Throws<ArgumentNullException>(() => new InstrumentRecorder<int>(meter: null, instrumentName: "instrumentName"));
-                Assert.Throws<ArgumentNullException>(() => new InstrumentRecorder<int>(meter: meter, instrumentName: null));
-
-                // Test InstrumentRecorder generic type mismatch the instrument generic type
-                Instrument instrument = meter.CreateCounter<int>("counter");
-                Assert.Throws<InvalidOperationException>(() => new InstrumentRecorder<long>(instrument: instrument));
+                TagList l = new TagList() { { "z", "a" }, { "y", "b" }, { "x", "b" }, { "m", new object() }, { "N", null }, { "a", "b" }, { "a", null } };
+                Instrument ins13 = meter.CreateCounter<int>("counter", null, null, l);
+                var insArray = ins13.Tags.ToArray();
+                Assert.Equal(l.Count, insArray.Length);
+                for (int i = 0; i < insArray.Length - 1; i++)
+                {
+                    Assert.True(string.Compare(insArray[i].Key, insArray[i + 1].Key, StringComparison.Ordinal) <= 0);
+                }
 
             }).Dispose();
         }
 
-        [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        public void TestInstrumentRecorder()
-        {
-            RemoteExecutor.Invoke(() => {
-                using Meter meter = new Meter("TestInstrumentRecorder1");
-
-                //
-                // Test listening using instrument object
-                //
-
-                Counter<long> instrument = meter.CreateCounter<long>("counter");
-                InstrumentRecorder<long> recorder1 = new InstrumentRecorder<long>(instrument);
-                Assert.Equal(instrument, recorder1.Instrument);
-                Assert.Equal(new Measurement<long>[0], recorder1.GetMeasurements());
-                instrument.Add(1);
-                Assert.Equal(1, recorder1.GetMeasurements().Count());
-                Assert.Equal(1, recorder1.GetMeasurements().ElementAt(0).Value);
-                Assert.Equal(0, recorder1.GetMeasurements().ElementAt(0).Tags.Length);
-
-                recorder1.GetMeasurements(clear: true); // clear previous collected measurements
-                Assert.Equal(0, recorder1.GetMeasurements().Count());
-                instrument.Add(2, new KeyValuePair<string, object?>("k1", "v1"));
-                Assert.Equal(1, recorder1.GetMeasurements().Count());
-                Assert.Equal(2, recorder1.GetMeasurements().ElementAt(0).Value);
-                Assert.Equal(1, recorder1.GetMeasurements().ElementAt(0).Tags.Length);
-                Assert.Equal(new KeyValuePair<string, object?>("k1", "v1"), recorder1.GetMeasurements().ElementAt(0).Tags[0]);
-
-                //
-                // Test listening using instrument name
-                //
-
-                InstrumentRecorder<long> recorder2 = new InstrumentRecorder<long>(meter, "counter");
-                Assert.Equal(instrument, recorder2.Instrument);
-                Assert.Equal(0, recorder2.GetMeasurements().Count());
-                instrument.Add(3);
-                Assert.Equal(2, recorder1.GetMeasurements().Count());
-                Assert.Equal(2, recorder1.GetMeasurements().ElementAt(0).Value);
-                Assert.Equal(3, recorder1.GetMeasurements().ElementAt(1).Value);
-                Assert.Equal(1, recorder2.GetMeasurements().Count());
-                Assert.Equal(3, recorder2.GetMeasurements().ElementAt(0).Value);
-
-                //
-                // Test listening using instrument name with different generic type
-                //
-
-                InstrumentRecorder<int> recorder3 = new InstrumentRecorder<int>(meter, "counter");
-                Assert.Null(recorder3.Instrument);
-                Counter<int> instrument1 = meter.CreateCounter<int>("counter");
-                Assert.Equal(instrument1, recorder3.Instrument);
-                Assert.Equal(0, recorder3.GetMeasurements().Count());
-                instrument1.Add(4);
-                Assert.Equal(1, recorder3.GetMeasurements().Count());
-                Assert.Equal(4, recorder3.GetMeasurements().ElementAt(0).Value);
-
-                //
-                // Test using scope filter
-                //
-
-                // using same existing meter name
-                using Meter meter1 = new Meter("TestInstrumentRecorder1", null, null, "Scope1");
-
-                InstrumentRecorder<long> recorder4 = new InstrumentRecorder<long>(scopeFilter: null, meterName: "TestInstrumentRecorder1", instrumentName: "counter");
-                Assert.Equal(instrument, recorder4.Instrument);
-
-                InstrumentRecorder<long> recorder5 = new InstrumentRecorder<long>(scopeFilter: "Scope1", meterName: "TestInstrumentRecorder1", instrumentName: "counter");
-                Assert.Null(recorder5.Instrument);
-                Counter<long> instrument2 = meter1.CreateCounter<long>("counter");
-                Assert.Equal(instrument2, recorder5.Instrument);
-
-                //
-                // Test meter creating 2 instruments with same name but different unit and ensure listening to the first created one
-                //
-
-                Counter<long> instrument3 = meter.CreateCounter<long>("counter", "myUnit");
-                InstrumentRecorder<long> recorder6 = new InstrumentRecorder<long>(meter: meter, instrumentName: "counter");
-                Assert.Equal(instrument, recorder6.Instrument);
-
-                //
-                // Ensure can listen to the observable instrument
-                //
-
-                InstrumentRecorder<long> recorder7 = new InstrumentRecorder<long>(meter: meter, instrumentName: "observableCounter");
-                Assert.Null(recorder7.Instrument);
-                ObservableCounter<long> instrument4 = meter.CreateObservableCounter<long>("observableCounter", () => 10);
-                Assert.Equal(instrument4, recorder7.Instrument);
-                Measurement<long> measurementWith10Value = new Measurement<long>(10, default);
-                Assert.True(recorder7.GetMeasurements().Same(new Measurement<long>[] { measurementWith10Value }));
-                Assert.True(recorder7.GetMeasurements().Same(new Measurement<long>[] { measurementWith10Value, measurementWith10Value }));
-                Assert.True(recorder7.GetMeasurements(true).Same(new Measurement<long>[] { measurementWith10Value, measurementWith10Value, measurementWith10Value }));
-                Assert.True(recorder7.GetMeasurements().Same(new Measurement<long>[] { measurementWith10Value }));
-                // Assert.Equal(new Measurement<long>[] { measurementWith10Value, measurementWith10Value }, recorder7.GetMeasurements());
-                // Assert.Equal(new Measurement<long>[] { measurementWith10Value, measurementWith10Value, measurementWith10Value }, recorder7.GetMeasurements(clear: true));
-                // Assert.Equal(new Measurement<long>[] { measurementWith10Value }, recorder7.GetMeasurements());
-
-            }).Dispose();
-        }
 
         private void PublishCounterMeasurement<T>(Counter<T> counter, T value, KeyValuePair<string, object?>[] tags) where T : struct
         {

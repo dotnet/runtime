@@ -231,7 +231,26 @@ namespace System.Text.Json
                 Debug.Assert(!_isLocked, "Appending to a locked database");
 
                 byte[] toReturn = _data;
-                _data = ArrayPool<byte>.Shared.Rent(toReturn.Length * 2);
+
+                // Allow the data to grow up to maximum possible capacity (~2G bytes) before encountering overflow.
+                // Note: Array.MaxLength exists only on .NET 6 or greater,
+                // so for the other versions value is hardcoded
+                const int MaxArrayLength = 0x7FFFFFC7;
+#if NET6_0_OR_GREATER
+                Debug.Assert(MaxArrayLength == Array.MaxLength);
+#endif
+
+                int newCapacity = toReturn.Length * 2;
+
+                // Note that this check works even when newCapacity overflowed thanks to the (uint) cast
+                if ((uint)newCapacity > MaxArrayLength) newCapacity = MaxArrayLength;
+
+                // If the maximum capacity has already been reached,
+                // then set the new capacity to be larger than what is possible
+                // so that ArrayPool.Rent throws an OutOfMemoryException for us.
+                if (newCapacity == toReturn.Length) newCapacity = int.MaxValue;
+
+                _data = ArrayPool<byte>.Shared.Rent(newCapacity);
                 Buffer.BlockCopy(toReturn, 0, _data, 0, toReturn.Length);
 
                 // The data in this rented buffer only conveys the positions and

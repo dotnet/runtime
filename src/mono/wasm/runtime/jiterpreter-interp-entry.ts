@@ -3,7 +3,7 @@
 
 import { MonoMethod, MonoType } from "./types/internal";
 import { NativePointer } from "./types/emscripten";
-import { Module } from "./globals";
+import { Module, mono_assert } from "./globals";
 import {
     setI32, getU32_unaligned, _zero_region
 } from "./memory";
@@ -16,6 +16,7 @@ import {
     JiterpreterOptions, getMemberOffset, JiterpMember
 } from "./jiterpreter-support";
 import { mono_log_error, mono_log_info } from "./logging";
+import { utf8ToString } from "./strings";
 
 // Controls miscellaneous diagnostic output.
 const trace = 0;
@@ -166,7 +167,7 @@ export function mono_interp_jit_wasm_entry_trampoline(
 
     const info = new TrampolineInfo(
         imethod, method, argumentCount, pParamTypes,
-        unbox, hasThisReference, hasReturnValue, Module.UTF8ToString(<any>name),
+        unbox, hasThisReference, hasReturnValue, utf8ToString(<any>name),
         defaultImplementation
     );
     if (!fnTable)
@@ -297,7 +298,7 @@ function flush_wasm_entry_trampoline_jit_queue() {
         for (let i = 0; i < trampImports.length; i++)
             builder.markImportAsUsed(trampImports[i][0]);
 
-        builder._generateImportSection();
+        builder._generateImportSection(false);
 
         // Function section
         builder.beginSection(3);

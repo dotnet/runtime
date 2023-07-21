@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+import MonoWasmThreads from "consts:monoWasmThreads";
+
 import { legacy_c_functions as cwraps } from "../cwraps";
-import { Module } from "../globals";
+import { ENVIRONMENT_IS_PTHREAD, Module, mono_assert } from "../globals";
 import { parseFQN } from "../invoke-cs";
 import { setI32, setU32, setF32, setF64, setU52, setI52, setB32, setI32_unchecked, setU32_unchecked, _zero_region, _create_temp_frame, getB32, getI32, getU32, getF32, getF64 } from "../memory";
 import { mono_wasm_new_external_root, mono_wasm_new_root } from "../roots";
-import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root, conv_string_root } from "../strings";
+import { stringToMonoStringRoot, stringToInternedMonoStringRoot, monoStringToString } from "../strings";
 import { MonoMethod, MonoObject, VoidPtrNull, MarshalType, MonoString, MonoObjectNull, WasmRootBuffer, WasmRoot } from "../types/internal";
 import { VoidPtr } from "../types/emscripten";
 import { legacyManagedExports } from "./corebindings";
@@ -15,7 +17,7 @@ import { legacyHelpers } from "./globals";
 import { js_to_mono_obj_root, _js_to_mono_uri_root, js_to_mono_enum } from "./js-to-cs";
 import { _teardown_after_call } from "./method-calls";
 import { mono_log_warn } from "../logging";
-import { assert_legacy_interop } from "../pthreads/shared";
+import { assert_bindings } from "../invoke-js";
 
 
 const escapeRE = /[^A-Za-z0-9_$]/g;
@@ -81,8 +83,8 @@ function _create_rebindable_named_function(name: string, argumentNames: string[]
 export function _create_primitive_converters(): void {
     const result = primitiveConverters;
     result.set("m", { steps: [{}], size: 0 });
-    result.set("s", { steps: [{ convert_root: js_string_to_mono_string_root.bind(Module) }], size: 0, needs_root: true });
-    result.set("S", { steps: [{ convert_root: js_string_to_mono_string_interned_root.bind(Module) }], size: 0, needs_root: true });
+    result.set("s", { steps: [{ convert_root: stringToMonoStringRoot.bind(Module) }], size: 0, needs_root: true });
+    result.set("S", { steps: [{ convert_root: stringToInternedMonoStringRoot.bind(Module) }], size: 0, needs_root: true });
     // note we also bind first argument to false for both _js_to_mono_obj and _js_to_mono_uri,
     // because we will root the reference, so we don't need in-flight reference
     // also as those are callback arguments and we don't have platform code which would release the in-flight reference on C# end
@@ -645,7 +647,7 @@ function _convert_exception_for_method_call(result: WasmRoot<MonoString>, except
     if (exception.value === MonoObjectNull)
         return null;
 
-    const msg = conv_string_root(result);
+    const msg = monoStringToString(result);
     const err = new Error(msg!); //the convention is that invoke_method ToString () any outgoing exception
     // console.warn (`error ${msg} at location ${err.stack});
     return err;
@@ -670,4 +672,11 @@ export function mono_method_resolve(fqn: string): MonoMethod {
 
 export function mono_method_get_call_signature_ref(method: MonoMethod, mono_obj?: WasmRoot<MonoObject>): string/*ArgsMarshalString*/ {
     return legacyManagedExports._get_call_sig_ref(method, mono_obj ? mono_obj.address : legacyHelpers._null_root.address);
+}
+
+export function assert_legacy_interop(): void {
+    if (MonoWasmThreads) {
+        mono_assert(!ENVIRONMENT_IS_PTHREAD, "Legacy interop is not supported with WebAssembly threads.");
+    }
+    assert_bindings();
 }

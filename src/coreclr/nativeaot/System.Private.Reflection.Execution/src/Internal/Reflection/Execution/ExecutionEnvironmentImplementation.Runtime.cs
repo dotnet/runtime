@@ -21,11 +21,6 @@ namespace Internal.Reflection.Execution
     //==========================================================================================================
     internal sealed partial class ExecutionEnvironmentImplementation : ExecutionEnvironment
     {
-        public sealed override object NewObject(RuntimeTypeHandle typeHandle)
-        {
-            return RuntimeAugments.NewObject(typeHandle);
-        }
-
         public sealed override Array NewArray(RuntimeTypeHandle typeHandleForArrayType, int count)
         {
             return RuntimeAugments.NewArray(typeHandleForArrayType, count);
@@ -157,7 +152,7 @@ namespace Internal.Reflection.Execution
             return;
         }
 
-        public override IntPtr GetDynamicInvokeThunk(MethodInvoker invoker)
+        public override IntPtr GetDynamicInvokeThunk(MethodBaseInvoker invoker)
         {
             return ((MethodInvokerWithMethodInvokeInfo)invoker).MethodInvokeInfo.InvokeThunk
                 ;

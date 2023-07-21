@@ -1,12 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 using System.Text.Json.Serialization.Metadata;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
@@ -157,6 +153,108 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<InvalidOperationException>(() => list.Add(new DefaultJsonTypeInfoResolver()));
 
             return list;
+        }
+
+        [Fact]
+        public static void WithAddedModifier_CallsModifierOnResolvedMetadata()
+        {
+            int modifierInvocationCount = 0;
+            JsonSerializerOptions options = new();
+            TestResolver resolver = new(JsonTypeInfo.CreateJsonTypeInfo);
+
+            IJsonTypeInfoResolver resolverWithModifier = resolver.WithAddedModifier(_ => modifierInvocationCount++);
+
+            Assert.NotNull(resolverWithModifier.GetTypeInfo(typeof(int), options));
+            Assert.Equal(1, modifierInvocationCount);
+
+            Assert.NotNull(resolverWithModifier.GetTypeInfo(typeof(string), options));
+            Assert.Equal(2, modifierInvocationCount);
+
+            Assert.NotNull(resolverWithModifier.GetTypeInfo(typeof(int), options));
+            Assert.Equal(3, modifierInvocationCount);
+        }
+
+        [Fact]
+        public static void WithAddedModifier_DoesNotCallModifierOnUnResolvedMetadata()
+        {
+            int modifierInvocationCount = 0;
+            JsonSerializerOptions options = new();
+            TestResolver resolver = new((_,_) => null);
+
+            IJsonTypeInfoResolver resolverWithModifier = resolver.WithAddedModifier(_ => modifierInvocationCount++);
+
+            Assert.Null(resolverWithModifier.GetTypeInfo(typeof(int), options));
+            Assert.Equal(0, modifierInvocationCount);
+
+            Assert.Null(resolverWithModifier.GetTypeInfo(typeof(string), options));
+            Assert.Equal(0, modifierInvocationCount);
+        }
+
+        [Fact]
+        public static void WithAddedModifier_CanChainMultipleModifiers()
+        {
+            int modifier1InvocationCount = 0;
+            int modifier2InvocationCount = 0;
+            JsonSerializerOptions options = new();
+            TestResolver resolver = new(JsonTypeInfo.CreateJsonTypeInfo);
+
+            IJsonTypeInfoResolver resolverWithModifier = resolver
+                .WithAddedModifier(_ => modifier1InvocationCount++)
+                .WithAddedModifier(_ => Assert.Equal(modifier1InvocationCount, ++modifier2InvocationCount)); // Validates order of modifier evaluation.
+
+            Assert.NotNull(resolverWithModifier.GetTypeInfo(typeof(int), options));
+            Assert.Equal(1, modifier1InvocationCount);
+            Assert.Equal(1, modifier2InvocationCount);
+        }
+
+        [Fact]
+        public static void WithAddedModifier_ChainingDoesNotMutateIntermediateResolvers()
+        {
+            int modifier1InvocationCount = 0;
+            int modifier2InvocationCount = 0;
+            JsonSerializerOptions options = new();
+            TestResolver resolver = new(JsonTypeInfo.CreateJsonTypeInfo);
+
+            IJsonTypeInfoResolver resolverWithModifier = resolver
+                .WithAddedModifier(_ => modifier1InvocationCount++);
+
+            IJsonTypeInfoResolver resolverWithChainedModifier = resolverWithModifier
+                .WithAddedModifier(_ => Assert.Equal(modifier1InvocationCount, ++modifier2InvocationCount)); // Validates order of modifier evaluation.
+
+            Assert.NotSame(resolverWithModifier, resolverWithChainedModifier);
+
+            Assert.NotNull(resolverWithChainedModifier.GetTypeInfo(typeof(int), options));
+            Assert.Equal(1, modifier1InvocationCount);
+            Assert.Equal(1, modifier2InvocationCount);
+
+            Assert.NotNull(resolverWithModifier.GetTypeInfo(typeof(int), options));
+            Assert.Equal(2, modifier1InvocationCount);
+            Assert.Equal(1, modifier2InvocationCount);
+        }
+
+        [Fact]
+        public static void WithAddedModifier_ThrowsOnNullArguments()
+        {
+            TestResolver resolver = new(JsonTypeInfo.CreateJsonTypeInfo);
+
+            Assert.Throws<ArgumentNullException>(() => ((IJsonTypeInfoResolver)null!).WithAddedModifier(_ => { }));
+            Assert.Throws<ArgumentNullException>(() => resolver.WithAddedModifier(null));
+        }
+
+        [Fact]
+        public static void NullResolver_ReturnsObjectMetadata()
+        {
+            var options = new JsonSerializerOptions();
+            var resolver = new NullResolver();
+            Assert.Null(resolver.GetTypeInfo(typeof(object), options));
+
+            options.TypeInfoResolver = resolver;
+            Assert.IsAssignableFrom<JsonTypeInfo<object>>(options.GetTypeInfo(typeof(object)));
+        }
+
+        public sealed class NullResolver : IJsonTypeInfoResolver
+        {
+            public JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options) => null;
         }
     }
 }

@@ -7,10 +7,12 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)Analyzers.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
   <Import Project="$(RepositoryEngineeringDir)liveBuilds.targets" />
   <Import Project="$(RepositoryEngineeringDir)generators.targets" />
   <Import Project="$(RepositoryEngineeringDir)python.targets" />
+  <Import Project="$(RepositoryEngineeringDir)generatorProjects.targets" Condition="'$(IsGeneratorProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" Condition="'$(IsSourceProject)' == 'true'" />
   <Import Project="$(RepositoryEngineeringDir)packaging.targets" Condition="'$(IsPackable)' == 'true' and '$(MSBuildProjectExtension)' != '.pkgproj'" />
 
@@ -35,7 +37,6 @@
       unconditionally in Microsoft.NETCoreSdk.BundledVersions.props.
     -->
     <NETCoreAppMaximumVersion>$(MajorVersion).$(MinorVersion)</NETCoreAppMaximumVersion>
-    <EnableNETAnalyzers Condition="'$(EnableNETAnalyzers)' == ''">$(RunAnalyzers)</EnableNETAnalyzers>
     <!-- SDK sets product to assembly but we want it to be our product name -->
     <Product>Microsoft%AE .NET</Product>
     <!-- Use the .NET product branding version for informational version description -->
@@ -115,26 +116,6 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="GetAnalyzerPackFiles"
-          DependsOnTargets="$(GenerateNuspecDependsOn)"
-          Returns="@(_AnalyzerPackFile)">
-    <PropertyGroup>
-      <_analyzerPath>analyzers/dotnet</_analyzerPath>
-      <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
-      <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
-    </PropertyGroup>
-
-    <!-- Filter on netstandard2.0 so that generator projects can multi-target for the purpose of enabling nullable reference type compiler checks. -->
-    <ItemGroup>
-      <_AnalyzerPackFile Include="@(_BuildOutputInPackage->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="false" />
-      <_AnalyzerPackFile Include="@(_TargetPathsToSymbols->WithMetadataValue('TargetFramework', 'netstandard2.0'))" IsSymbol="true" />
-      <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
-    </ItemGroup>
-
-    <Error Text="Analyzers must target netstandard2.0 since they run in the compiler which targets netstandard2.0. $(MSBuildProjectFullPath) targets '$([MSBuild]::ValueOrDefault('$(TargetFrameworks)', '$(TargetFramework)'))' instead."
-           Condition="'@(_AnalyzerPackFile)' == ''" />
-  </Target>
-
   <!-- Allows building against source assemblies when the 'SkipUseReferenceAssembly' attribute is present on ProjectReference items. -->
   <Target Name="HandleReferenceAssemblyAttributeForProjectReferences"
           AfterTargets="ResolveProjectReferences"
@@ -196,6 +177,16 @@
       <_targetingPackExcludedReferenceWithProjectName Include="@(_targetingPackReferenceWithProjectName)"
                                                       Exclude="@(_targetingPackIncludedReferenceWithProjectName)" />
       <Reference Remove="@(_targetingPackExcludedReferenceWithProjectName->Metadata('OriginalIdentity'))" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_targetingPackAnalyzerReferenceWithProjectName Include="@(Analyzer->WithMetadataValue('ExternallyResolved', 'true')->Metadata('Filename'))"
+                                                      OriginalIdentity="%(Identity)" />
+      <_targetingPackIncludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
+                                                              Exclude="@(_targetingPackReferenceExclusion)" />
+      <_targetingPackExcludedAnalyzerReferenceWithProjectName Include="@(_targetingPackAnalyzerReferenceWithProjectName)"
+                                                              Exclude="@(_targetingPackIncludedAnalyzerReferenceWithProjectName)" />
+      <Analyzer Remove="@(_targetingPackExcludedAnalyzerReferenceWithProjectName->Metadata('OriginalIdentity'))" />
     </ItemGroup>
   </Target>
 

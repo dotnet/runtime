@@ -66,6 +66,8 @@ namespace Internal.TypeSystem
                 flags |= TypeFlags.SignatureTypeVariable;
             }
 
+            flags |= TypeFlags.AttributeCacheComputed;
+
             return flags;
         }
 

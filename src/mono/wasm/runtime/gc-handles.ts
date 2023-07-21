@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { runtimeHelpers } from "./globals";
+import { loaderHelpers, runtimeHelpers } from "./globals";
+import { mono_log_warn } from "./logging";
 import { GCHandle, GCHandleNull, JSHandle, JSHandleDisposed, JSHandleNull } from "./types/internal";
 import { create_weak_ref } from "./weak-ref";
 
@@ -108,11 +109,15 @@ export function teardown_managed_proxy(result: any, gc_handle: GCHandle): void {
 
 export function assert_not_disposed(result: any): GCHandle {
     const gc_handle = result[js_owned_gc_handle_symbol];
-    mono_assert(gc_handle != GCHandleNull, "ObjectDisposedException");
+    mono_check(gc_handle != GCHandleNull, "ObjectDisposedException");
     return gc_handle;
 }
 
 function _js_owned_object_finalized(gc_handle: GCHandle): void {
+    if (loaderHelpers.is_exited()) {
+        // We're shutting down, so don't bother doing anything else.
+        return;
+    }
     teardown_managed_proxy(null, gc_handle);
 }
 
@@ -128,3 +133,29 @@ export function _lookup_js_owned_object(gc_handle: GCHandle): any {
     return null;
 }
 
+export function forceDisposeProxies(dump: boolean): void {
+    // dispose all proxies to C# objects
+    const gchandles = [..._js_owned_object_table.keys()];
+    for (const gchandle of gchandles) {
+        const wr = _js_owned_object_table.get(gchandle);
+        const obj = wr.deref();
+        if (obj) {
+            if (dump) {
+                mono_log_warn(`Proxy of C# object with GCHandle ${gchandle} was still alive`);
+            }
+            teardown_managed_proxy(obj, gchandle);
+        }
+    }
+    // TODO: call C# to iterate and release all in JSHostImplementation.ThreadCsOwnedObjects
+
+    // dispose all proxies to JS objects
+    for (const js_obj of _cs_owned_objects_by_js_handle) {
+        if (js_obj) {
+            const js_handle = js_obj[cs_owned_js_handle_symbol];
+            if (js_handle) {
+                mono_log_warn(`Proxy of JS object with JSHandleandle ${js_handle} was still alive`);
+                mono_wasm_release_cs_owned_object(js_handle);
+            }
+        }
+    }
+}

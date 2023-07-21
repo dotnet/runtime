@@ -515,10 +515,11 @@ namespace System
             if (attrib == null || attrib.Length == 0)
                 return null;
 
+            Attribute match = attrib[0];
             if (attrib.Length == 1)
-                return attrib[0];
+                return match;
 
-            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+            throw ThrowHelper.GetAmbiguousMatchException(match);
         }
 
         #endregion
@@ -614,10 +615,11 @@ namespace System
             if (attrib == null || attrib.Length == 0)
                 return null;
 
+            Attribute match = attrib[0];
             if (attrib.Length == 1)
-                return attrib[0];
+                return match;
 
-            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+            throw ThrowHelper.GetAmbiguousMatchException(match);
         }
 
         #endregion
@@ -683,10 +685,11 @@ namespace System
             if (attrib == null || attrib.Length == 0)
                 return null;
 
+            Attribute match = attrib[0];
             if (attrib.Length == 1)
-                return attrib[0];
+                return match;
 
-            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+            throw ThrowHelper.GetAmbiguousMatchException(match);
         }
 
         #endregion
@@ -752,10 +755,11 @@ namespace System
             if (attrib == null || attrib.Length == 0)
                 return null;
 
+            Attribute match = attrib[0];
             if (attrib.Length == 1)
-                return attrib[0];
+                return match;
 
-            throw new AmbiguousMatchException(SR.RFLCT_AmbigCust);
+            throw ThrowHelper.GetAmbiguousMatchException(match);
         }
 
         #endregion

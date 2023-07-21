@@ -2,11 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Helpers;
 
@@ -76,9 +72,6 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				tmp.VirtualMethodRequires ();
 			}
 
-			// https://github.com/dotnet/runtime/issues/86008
-			// This is the "direct reflection" case, which actually behaves differently from indirect (DAM annotation)
-			// in this case even trimmer will warn on both methods.
 			[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--")]
 			[ExpectedWarning ("IL3002", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
@@ -96,13 +89,12 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof(T).GetMethod("VirtualMethodRequires").Invoke(instance, Array.Empty<object> ());
 			}
 
-			// https://github.com/dotnet/runtime/issues/86008
 			[ExpectedWarning ("IL2026", "--BaseType.VirtualMethodRequires--")]
 			[ExpectedWarning ("IL3002", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--BaseType.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-			[ExpectedWarning ("IL2026", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.Analyzer)]
-			//[ExpectedWarning ("IL3002", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
-			//[ExpectedWarning ("IL3050", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "--TypeWhichOverridesMethod.VirtualMethodRequires--")]
+			[ExpectedWarning ("IL3002", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
+			[ExpectedWarning ("IL3050", "--TypeWhichOverridesMethod.VirtualMethodRequires--", ProducedBy = Tool.NativeAot)]
 			static void TestAnnotatedReflectionAccess()
 			{
 				CallMethodWithRequiresOnInstance<TypeWhichOverridesMethod>(new TypeWhichOverridesMethod ());
@@ -209,9 +201,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 				typeof (T).GetMethod ("MethodWithRequires").Invoke (new ImplementationClass (), Array.Empty<object> ());
 			}
 
-			// https://github.com/dotnet/runtime/issues/86008
-			// This is a bug in illink, the fact that there's no warning is an analysis hole
-			[ExpectedWarning ("IL2026", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot | Tool.Analyzer)]
+			[ExpectedWarning ("IL2026", "--ImplementationClass.RequiresMethod--")]
 			[ExpectedWarning ("IL3002", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "--ImplementationClass.RequiresMethod--", ProducedBy = Tool.NativeAot)]
 			static void TestAnnotatedReflectionAccess ()
@@ -317,8 +307,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 			// Reflection triggered warnings are not produced by analyzer for RDC/RAS
 			[ExpectedWarning ("IL3002", "Message for --NewSlotVirtual.Base.RUCMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "Message for --NewSlotVirtual.Base.RUCMethod--", ProducedBy = Tool.NativeAot)]
-			// https://github.com/dotnet/linker/issues/2815
-			[ExpectedWarning ("IL2026", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = Tool.Analyzer | Tool.NativeAot)]
+			[ExpectedWarning ("IL2026", "Message for --NewSlotVirtual.Derived.RUCMethod--")]
 			// Reflection triggered warnings are not produced by analyzer for RDC/RAS
 			[ExpectedWarning ("IL3002", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = Tool.NativeAot)]
 			[ExpectedWarning ("IL3050", "Message for --NewSlotVirtual.Derived.RUCMethod--", ProducedBy = Tool.NativeAot)]

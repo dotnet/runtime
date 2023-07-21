@@ -1359,6 +1359,7 @@ mono_patch_info_equal (gconstpointer ka, gconstpointer kb)
 		return ji1->data.jit_icall_id == ji2->data.jit_icall_id;
 	case MONO_PATCH_INFO_VIRT_METHOD:
 		return ji1->data.virt_method->klass == ji2->data.virt_method->klass && ji1->data.virt_method->method == ji2->data.virt_method->method;
+	case MONO_PATCH_INFO_SIGNATURE:
 	case MONO_PATCH_INFO_GSHAREDVT_IN_WRAPPER:
 		return mono_metadata_signature_equal (ji1->data.sig, ji2->data.sig);
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
@@ -1547,7 +1548,6 @@ mono_resolve_patch_target_ext (MonoMemoryManager *mem_manager, MonoMethod *metho
 		break;
 	case MONO_PATCH_INFO_VTABLE:
 		target = mono_class_vtable_checked (patch_info->data.klass, error);
-		mono_error_assert_ok (error);
 		break;
 	case MONO_PATCH_INFO_DELEGATE_INFO: {
 		MonoDelegateClassMethodPair *del_tramp = patch_info->data.del_tramp;
@@ -2646,6 +2646,22 @@ compile_special (MonoMethod *method, MonoError *error)
 			else
 				out_tinfo = tinfo;
 			return tinfo->code;
+		}
+	}
+
+	gboolean has_header = mono_method_metadata_has_header (method);
+	if (G_UNLIKELY (!has_header)) {
+		char *member_name = NULL;
+		int accessor_kind = -1;
+		if (mono_method_get_unsafe_accessor_attr_data (method, &accessor_kind, &member_name, error)) {
+			MonoMethod *wrapper = mono_marshal_get_unsafe_accessor_wrapper (method, (MonoUnsafeAccessorKind)accessor_kind, member_name);
+			gpointer compiled_wrapper = mono_jit_compile_method_jit_only (wrapper, error);
+			return_val_if_nok (error, NULL);
+			code = mono_get_addr_from_ftnptr (compiled_wrapper);
+			jinfo = mini_jit_info_table_find (code);
+			if (jinfo)
+				MONO_PROFILER_RAISE (jit_done, (method, jinfo));
+			return code;
 		}
 	}
 
@@ -4013,6 +4029,7 @@ mini_init_delegate (MonoDelegateHandle delegate, MonoObjectHandle target, gpoint
 	MonoDelegateTrampInfo *info = NULL;
 
 	if (mono_use_interpreter) {
+		g_assert (method || del->interp_method);
 		mini_get_interp_callbacks ()->init_delegate (del, &info, error);
 		return_if_nok (error);
 	}
@@ -4659,6 +4676,7 @@ mini_init (const char *filename)
 	callbacks.get_frame_info = mono_get_frame_info;
 	callbacks.get_cached_class_info = mono_aot_get_cached_class_info;
 	callbacks.get_class_from_name = mono_aot_get_class_from_name;
+	callbacks.mono_class_set_deferred_type_load_failure_callback = mono_class_set_type_load_failure;
 
 	if (mono_llvm_only) {
 		callbacks.build_imt_trampoline = mini_llvmonly_get_imt_trampoline;
@@ -5075,6 +5093,8 @@ register_icalls (void)
 	register_icall (mini_llvmonly_init_vtable_slot, mono_icall_sig_ptr_ptr_int, FALSE);
 	register_icall (mini_llvmonly_init_delegate, mono_icall_sig_void_object_ptr, TRUE);
 	register_icall (mini_llvmonly_throw_nullref_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_index_out_of_range_exception, mono_icall_sig_void, TRUE);
+	register_icall (mini_llvmonly_throw_invalid_cast_exception, mono_icall_sig_void, TRUE);
 	register_icall (mini_llvmonly_throw_aot_failed_exception, mono_icall_sig_void_ptr, TRUE);
 	register_icall (mini_llvmonly_interp_entry_gsharedvt, mono_icall_sig_void_ptr_ptr_ptr, TRUE);
 
@@ -5095,7 +5115,7 @@ register_icalls (void)
 	register_icall_no_wrapper (mono_monitor_enter_fast, mono_icall_sig_int_obj);
 	register_icall_no_wrapper (mono_monitor_enter_v4_fast, mono_icall_sig_int_obj_ptr);
 
-#ifdef TARGET_IOS
+#if defined(TARGET_IOS) || defined(TARGET_TVOS)
 	register_icall (pthread_getspecific, mono_icall_sig_ptr_ptr, TRUE);
 #endif
 	/* Register tls icalls */

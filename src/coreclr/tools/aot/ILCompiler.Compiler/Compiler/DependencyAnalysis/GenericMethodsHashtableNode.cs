@@ -13,14 +13,13 @@ namespace ILCompiler.DependencyAnalysis
     /// <summary>
     /// Represents a hashtable of all compiled generic method instantiations
     /// </summary>
-    public sealed class GenericMethodsHashtableNode : ObjectNode, ISymbolDefinitionNode
+    public sealed class GenericMethodsHashtableNode : ObjectNode, ISymbolDefinitionNode, INodeWithSize
     {
-        private ObjectAndOffsetSymbolNode _endSymbol;
+        private int? _size;
         private ExternalReferencesTableNode _externalReferences;
 
         public GenericMethodsHashtableNode(ExternalReferencesTableNode externalReferences)
         {
-            _endSymbol = new ObjectAndOffsetSymbolNode(this, 0, "__generic_methods_hashtable_End", true);
             _externalReferences = externalReferences;
         }
 
@@ -29,7 +28,7 @@ namespace ILCompiler.DependencyAnalysis
             sb.Append(nameMangler.CompilationUnitPrefix).Append("__generic_methods_hashtable");
         }
 
-        public ISymbolNode EndSymbol => _endSymbol;
+        int INodeWithSize.Size => _size.Value;
         public int Offset => 0;
         public override bool IsShareable => false;
         public override ObjectNodeSection GetSection(NodeFactory factory) => _externalReferences.GetSection(factory);
@@ -50,14 +49,8 @@ namespace ILCompiler.DependencyAnalysis
             Section nativeSection = nativeWriter.NewSection();
             nativeSection.Place(hashtable);
 
-            foreach (var dictionaryNode in factory.MetadataManager.GetCompiledGenericDictionaries())
+            foreach (MethodDesc method in factory.MetadataManager.GetGenericMethodHashtableEntries())
             {
-                MethodGenericDictionaryNode methodDictionary = dictionaryNode as MethodGenericDictionaryNode;
-                if (methodDictionary == null)
-                    continue;
-
-                MethodDesc method = methodDictionary.OwningMethod;
-
                 Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));
 
                 Vertex fullMethodSignature;
@@ -83,6 +76,7 @@ namespace ILCompiler.DependencyAnalysis
                 }
 
                 // Method's dictionary pointer
+                var dictionaryNode = factory.MethodGenericDictionary(method);
                 Vertex dictionaryVertex = nativeWriter.GetUnsignedConstant(_externalReferences.GetIndex(dictionaryNode));
 
                 Vertex entry = nativeWriter.GetTuple(dictionaryVertex, fullMethodSignature);
@@ -92,13 +86,15 @@ namespace ILCompiler.DependencyAnalysis
 
             byte[] streamBytes = nativeWriter.Save();
 
-            _endSymbol.SetSymbolOffset(streamBytes.Length);
+            _size = streamBytes.Length;
 
-            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this, _endSymbol });
+            return new ObjectData(streamBytes, Array.Empty<Relocation>(), 1, new ISymbolDefinitionNode[] { this });
         }
 
         public static void GetGenericMethodsHashtableDependenciesForMethod(ref DependencyList dependencies, NodeFactory factory, MethodDesc method)
         {
+            dependencies ??= new DependencyList();
+
             Debug.Assert(method.HasInstantiation && !method.IsCanonicalMethod(CanonicalFormKind.Any));
 
             // Method's containing type
@@ -116,9 +112,6 @@ namespace ILCompiler.DependencyAnalysis
             NativeLayoutVertexNode nameAndSig = factory.NativeLayout.MethodNameAndSignatureVertex(method.GetTypicalMethodDefinition());
             NativeLayoutSavedVertexNode placedNameAndSig = factory.NativeLayout.PlacedSignatureVertex(nameAndSig);
             dependencies.Add(new DependencyListEntry(placedNameAndSig, "GenericMethodsHashtable entry signature"));
-
-            ISymbolNode dictionaryNode = factory.MethodGenericDictionary(method);
-            dependencies.Add(new DependencyListEntry(dictionaryNode, "GenericMethodsHashtable entry dictionary"));
         }
 
         protected internal override int Phase => (int)ObjectNodePhase.Ordered;

@@ -275,7 +275,16 @@ namespace System.Net.Http.Functional.Tests
         {
             await StartTransferTypeAndErrorServer(transferType, transferError, async uri =>
             {
-                await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(uri));
+                if (IsWinHttpHandler)
+                {
+                    await Assert.ThrowsAsync<IOException>(() => ReadAsStreamHelper(uri));
+                }
+                else
+                {
+                    HttpIOException exception = await Assert.ThrowsAsync<HttpIOException>(() => ReadAsStreamHelper(uri));
+                    Assert.Equal(HttpRequestError.ResponseEnded, exception.HttpRequestError);
+                }
+                
             });
         }
 

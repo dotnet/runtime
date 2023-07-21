@@ -66,6 +66,8 @@ For `build.sh`
 
 `/p:DisableCrossgen=true` - Skips building the installer if you don't need it (builds faster)
 
+`-p:KeepNativeSymbols=true` - Keep the symbols in the binary instead of stripping them out to a separate file. This helps with debugging Mono with lldb.
+
 The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly

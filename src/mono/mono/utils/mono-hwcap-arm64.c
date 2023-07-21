@@ -25,44 +25,62 @@ mono_hwcap_arch_init (void)
 	val_len = sizeof (val);
 	prop = "hw.optional.armv8_crc32";
 	res = sysctlbyname (prop, val, &val_len, NULL, 0);
-	g_assert (res == 0);
-	g_assert (val_len == 4);
-	mono_hwcap_arm64_has_crc32 = *(int*)val;
+	if (res == 0) {
+		g_assert (val_len == 4);
+		mono_hwcap_arm64_has_crc32 = *(int*)val;
+	} else {
+		mono_hwcap_arm64_has_crc32 = 0;
+	}
 
 	val_len = sizeof (val);
 	prop = "hw.optional.arm.FEAT_RDM";
 	res = sysctlbyname (prop, val, &val_len, NULL, 0);
-	g_assert (res == 0);
-	g_assert (val_len == 4);
-	mono_hwcap_arm64_has_rdm = *(int*)val;
+	if (res == 0) {
+		g_assert (val_len == 4);
+		mono_hwcap_arm64_has_rdm = *(int*)val;
+	} else {
+		mono_hwcap_arm64_has_rdm = 0;
+	}
 
 	val_len = sizeof (val);
 	prop = "hw.optional.arm.FEAT_DotProd";
 	res = sysctlbyname (prop, val, &val_len, NULL, 0);
-	g_assert (res == 0);
-	g_assert (val_len == 4);
-	mono_hwcap_arm64_has_dot = *(int*)val;
+	if (res == 0) {
+		g_assert (val_len == 4);
+		mono_hwcap_arm64_has_dot = *(int*)val;
+	} else {
+		mono_hwcap_arm64_has_dot = 0;
+	}
 
 	val_len = sizeof (val);
 	prop = "hw.optional.arm.FEAT_SHA1";
 	res = sysctlbyname (prop, val, &val_len, NULL, 0);
-	g_assert (res == 0);
-	g_assert (val_len == 4);
-	mono_hwcap_arm64_has_sha1 = *(int*)val;
+	if (res == 0) {
+		g_assert (val_len == 4);
+		mono_hwcap_arm64_has_sha1 = *(int*)val;
+	} else {
+		mono_hwcap_arm64_has_sha1 = 0;
+	}
 
 	val_len = sizeof (val);
 	prop = "hw.optional.arm.FEAT_SHA256";
 	res = sysctlbyname (prop, val, &val_len, NULL, 0);
-	g_assert (res == 0);
-	g_assert (val_len == 4);
-	mono_hwcap_arm64_has_sha256 = *(int*)val;
+	if (res == 0) {
+		g_assert (val_len == 4);
+		mono_hwcap_arm64_has_sha256 = *(int*)val;
+	} else {
+		mono_hwcap_arm64_has_sha256 = 0;
+	}
 
 	val_len = sizeof (val);
 	prop = "hw.optional.arm.FEAT_AES";
 	res = sysctlbyname (prop, val, &val_len, NULL, 0);
-	g_assert (res == 0);
-	g_assert (val_len == 4);
-	mono_hwcap_arm64_has_aes = *(int*)val;
+	if (res == 0) {
+		g_assert (val_len == 4);
+		mono_hwcap_arm64_has_aes = *(int*)val;
+	} else {
+		mono_hwcap_arm64_has_aes = 0;
+	}
 
 #endif
 }

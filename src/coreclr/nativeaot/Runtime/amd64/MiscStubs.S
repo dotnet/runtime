@@ -15,7 +15,7 @@
 //
 // See also https://github.com/dotnet/runtime/issues/9899 for more information.
 
-#define PAGE_SIZE 0x1000
+#define PROBE_STEP 0x1000
 
 NESTED_ENTRY RhpStackProbe, _TEXT, NoHandler
         // On entry:
@@ -32,11 +32,11 @@ NESTED_ENTRY RhpStackProbe, _TEXT, NoHandler
 
     END_PROLOGUE
 
-        and     rsp, -PAGE_SIZE        // rsp points to the **lowest address** on the last probed page
+        and     rsp, -PROBE_STEP        // rsp points to the **lowest address** on the last probed page
                                        // This is done to make the following loop end condition simpler.
 
 LOCAL_LABEL(ProbeLoop):
-        sub     rsp, PAGE_SIZE         // rsp points to the lowest address of the **next page** to probe
+        sub     rsp, PROBE_STEP         // rsp points to the lowest address of the **next page** to probe
         test    dword ptr [rsp], eax   // rsp points to the lowest address on the **last probed** page
         cmp     rsp, r11
         jg      LOCAL_LABEL(ProbeLoop) // if (rsp > r11), then we need to probe at least one more page.
@@ -44,21 +44,3 @@ LOCAL_LABEL(ProbeLoop):
         RESET_FRAME_WITH_RBP
         ret
 NESTED_END RhpStackProbe, _TEXT
-
-NESTED_ENTRY RhpGetInlinedThreadStaticBase, _TEXT, NoHandler
-        // On exit:
-        //   rax - the thread static base for the given type
-
-        // rdi = &tls_InlinedThreadStatics
-        INLINE_GET_TLS_VAR tls_InlinedThreadStatics
-        mov     rdi, rax
-
-        // get per-thread storage
-        mov     rax, [rdi]
-        test    rax, rax
-        jz      C_FUNC(RhpGetInlinedThreadStaticBaseSlow)    // rdi contains the storage ref
-
-        // return it
-        ret
-NESTED_END RhpGetInlinedThreadStaticBase, _TEXT
-

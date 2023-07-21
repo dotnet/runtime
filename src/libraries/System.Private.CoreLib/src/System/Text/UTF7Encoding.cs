@@ -394,14 +394,14 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetBytes]charCount >=0");
 
             // Get encoder info
-            UTF7Encoding.Encoder? encoder = (UTF7Encoding.Encoder?)baseEncoder;
+            Encoder? encoder = (Encoder?)baseEncoder;
 
             // Default bits & count
             int bits = 0;
             int bitCount = -1;
 
             // prepare our helpers
-            Encoding.EncodingByteBuffer buffer = new Encoding.EncodingByteBuffer(
+            EncodingByteBuffer buffer = new EncodingByteBuffer(
                 this, encoder, bytes, byteCount, chars, charCount);
 
             if (encoder is not null)
@@ -543,10 +543,10 @@ namespace System.Text
             Debug.Assert(charCount >= 0, "[UTF7Encoding.GetChars]charCount >=0");
 
             // Might use a decoder
-            UTF7Encoding.Decoder? decoder = (UTF7Encoding.Decoder?)baseDecoder;
+            Decoder? decoder = (Decoder?)baseDecoder;
 
             // Get our output buffer info.
-            Encoding.EncodingCharBuffer buffer = new Encoding.EncodingCharBuffer(
+            EncodingCharBuffer buffer = new EncodingCharBuffer(
                 this, decoder, chars, charCount, bytes, byteCount);
 
             // Get decoder info
@@ -702,14 +702,14 @@ namespace System.Text
             return buffer.Count;
         }
 
-        public override System.Text.Decoder GetDecoder()
+        public override Text.Decoder GetDecoder()
         {
-            return new UTF7Encoding.Decoder(this);
+            return new Decoder(this);
         }
 
-        public override System.Text.Encoder GetEncoder()
+        public override Text.Encoder GetEncoder()
         {
-            return new UTF7Encoding.Encoder(this);
+            return new Encoder(this);
         }
 
         public override int GetMaxByteCount(int charCount)

@@ -3,9 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Text.Json.Serialization;
 using Microsoft.Extensions.Configuration;
 using Xunit;
 
@@ -35,6 +36,15 @@ namespace Microsoft.Extensions
         public class GenericOptions<T>
         {
             public T Value { get; set; }
+        }
+
+        public record GenericOptionsRecord<T>(T Value);
+
+        public class GenericOptionsWithParamCtor<T>
+        {
+            public GenericOptionsWithParamCtor(T value) => Value = value;
+
+            public T Value { get; }
         }
 
         public class OptionsWithNesting
@@ -114,6 +124,11 @@ namespace Microsoft.Extensions
             }
         }
 
+        public class ClassWithPrimaryCtor(string color, int length)
+        {
+            public string Color { get; } = color;
+            public int Length { get; } = length;
+        }
 
         public record RecordTypeOptions(string Color, int Length);
 
@@ -632,6 +647,72 @@ namespace Microsoft.Extensions
             public DateOnly Prop18 { get; set; }
             public TimeOnly Prop22 { get; set; }
 #endif
+        }
+
+        public class ClassWithParameterlessAndParameterizedCtor
+        {
+            public ClassWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public ClassWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
+
+        public struct StructWithParameterlessAndParameterizedCtor
+        {
+            public StructWithParameterlessAndParameterizedCtor() => MyInt = 1;
+
+            public StructWithParameterlessAndParameterizedCtor(int myInt) => MyInt = 10;
+
+            public int MyInt { get; }
+        }
+
+        public interface IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        [TypeConverter(typeof(GeolocationTypeConverter))]
+        public struct Geolocation : IGeolocation
+        {
+            public static readonly Geolocation Zero = new(0, 0);
+
+            public Geolocation(double latitude, double longitude)
+            {
+                Latitude = latitude;
+                Longitude = longitude;
+            }
+
+            public double Latitude { get; set; }
+
+            public double Longitude { get; set; }
+
+            private sealed class GeolocationTypeConverter : TypeConverter
+            {
+                public override bool CanConvertFrom(ITypeDescriptorContext? context, Type sourceType) =>
+                    throw new NotImplementedException();
+
+                public override object? ConvertFrom(ITypeDescriptorContext? context, CultureInfo? culture, object value) =>
+                    throw new NotImplementedException();
+            }
+        }
+
+        public sealed class GeolocationClass : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public sealed record GeolocationRecord : IGeolocation
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+        }
+
+        public class GeolocationWrapper
+        {
+            public Geolocation Location { get; set; }
         }
     }
 }

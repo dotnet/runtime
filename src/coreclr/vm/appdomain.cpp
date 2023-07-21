@@ -665,7 +665,6 @@ void BaseDomain::InitVSD()
     GetLoaderAllocator()->InitVirtualCallStubManager(this);
 }
 
-#ifdef HOST_WINDOWS
 void BaseDomain::InitThreadStaticBlockTypeMap()
 {
     STANDARD_VM_CONTRACT;
@@ -673,7 +672,6 @@ void BaseDomain::InitThreadStaticBlockTypeMap()
     m_NonGCThreadStaticBlockTypeIDMap.Init();
     m_GCThreadStaticBlockTypeIDMap.Init();
 }
-#endif // HOST_WINDOWS
 
 void BaseDomain::ClearBinderContext()
 {
@@ -958,7 +956,6 @@ void SystemDomain::Attach()
 
     // Initialize stub managers
     PrecodeStubManager::Init();
-    DelegateInvokeStubManager::Init();
     JumpStubStubManager::Init();
     RangeSectionStubManager::Init();
     ILStubManager::Init();
@@ -1548,8 +1545,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__DYNAMICMETHOD,
         CLASS__DELEGATE,
         CLASS__MULTICAST_DELEGATE,
-        CLASS__METHOD_INVOKER,
-        CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__METHODBASEINVOKER,
     };
 
     static bool fInited = false;
@@ -1771,10 +1767,8 @@ void AppDomain::Create()
     // allocate a Virtual Call Stub Manager for the default domain
     pDomain->InitVSD();
 
-#ifdef HOST_WINDOWS
     // allocate a thread static block to index map
     pDomain->InitThreadStaticBlockTypeMap();
-#endif
 
     pDomain->SetStage(AppDomain::STAGE_OPEN);
     pDomain->CreateDefaultBinder();
@@ -3262,7 +3256,7 @@ PVOID AppDomain::GetFriendlyNameNoSet(bool* isUtf8)
 
 #ifndef DACCESS_COMPILE
 
-BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BOOL fAllowFailure)
+BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly)
 {
     CONTRACTL
     {
@@ -3274,25 +3268,10 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
     }
     CONTRACTL_END;
 
-    {
-        GCX_PREEMP();
-        DomainCacheCrstHolderForGCCoop holder(this);
+    GCX_PREEMP();
+    DomainCacheCrstHolderForGCCoop holder(this);
 
-        // !!! suppress exceptions
-        if(!m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly) && !fAllowFailure)
-        {
-            // TODO: Disabling the below assertion as currently we experience
-            // inconsistency on resolving the Microsoft.Office.Interop.MSProject.dll
-            // This causes below assertion to fire and crashes the VS. This issue
-            // is being tracked with Dev10 Bug 658555. Brought back it when this bug
-            // is fixed.
-            // _ASSERTE(FALSE);
-
-            EEFileLoadException::Throw(pSpec, FUSION_E_CACHEFILE_FAILED, NULL);
-        }
-    }
-
-    return TRUE;
+    return m_AssemblyCache.StorePEAssembly(pSpec, pPEAssembly);
 }
 
 BOOL AppDomain::AddAssemblyToCache(AssemblySpec* pSpec, DomainAssembly *pAssembly)
@@ -3505,10 +3484,10 @@ BOOL AppDomain::PostBindResolveAssembly(AssemblySpec  *pPrePolicySpec,
             // The binder does a re-fetch of the
             // original binding spec and therefore will not cause inconsistency here.
             // For the purposes of the resolve event, failure to add to the cache still is a success.
-            AddFileToCache(pPrePolicySpec, result, TRUE /* fAllowFailure */);
+            AddFileToCache(pPrePolicySpec, result);
             if (*ppFailedSpec != pPrePolicySpec)
             {
-                AddFileToCache(pPostPolicySpec, result, TRUE /* fAllowFailure */ );
+                AddFileToCache(pPostPolicySpec, result);
             }
         }
     }
@@ -3569,7 +3548,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                     // Failure to add simply means someone else beat us to it. In that case
                     // the FindCachedFile call below (after catch block) will update result
                     // to the cached value.
-                    AddFileToCache(pSpec, result, TRUE /*fAllowFailure*/);
+                    AddFileToCache(pSpec, result);
                 }
                 else
                 {
@@ -4679,7 +4658,6 @@ PTR_MethodTable BaseDomain::LookupType(UINT32 id) {
     return pMT;
 }
 
-#ifdef HOST_WINDOWS
 //------------------------------------------------------------------------
 UINT32 BaseDomain::GetNonGCThreadStaticTypeIndex(PTR_MethodTable pMT)
 {
@@ -4730,7 +4708,6 @@ PTR_MethodTable BaseDomain::LookupGCThreadStaticBlockType(UINT32 id) {
     CONSISTENCY_CHECK(CheckPointer(pMT));
     return pMT;
 }
-#endif // HOST_WINDOWS
 
 #ifndef DACCESS_COMPILE
 //---------------------------------------------------------------------------------------

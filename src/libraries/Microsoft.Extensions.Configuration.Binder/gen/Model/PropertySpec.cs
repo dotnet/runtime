@@ -5,31 +5,30 @@ using Microsoft.CodeAnalysis;
 
 namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 {
-    internal sealed record PropertySpec
+    internal sealed record PropertySpec : MemberSpec
     {
-        public PropertySpec(IPropertySymbol property)
+        public PropertySpec(IPropertySymbol property) : base(property)
         {
-            Name = property.Name;
+            IMethodSymbol? setMethod = property.SetMethod;
+            bool setterIsPublic = setMethod?.DeclaredAccessibility is Accessibility.Public;
+            bool isInitOnly = setMethod?.IsInitOnly is true;
+
             IsStatic = property.IsStatic;
-            CanGet = property.GetMethod is IMethodSymbol { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
-            CanSet = property.SetMethod is IMethodSymbol { DeclaredAccessibility: Accessibility.Public, IsInitOnly: false };
+            SetOnInit = setterIsPublic && (property.IsRequired || isInitOnly);
+            CanSet = setterIsPublic && !isInitOnly;
+            CanGet = property.GetMethod?.DeclaredAccessibility is Accessibility.Public;
         }
 
-        public string Name { get; }
+        public ParameterSpec? MatchingCtorParam { get; set; }
 
         public bool IsStatic { get; }
 
-        public bool CanGet { get; }
+        public bool SetOnInit { get; }
 
-        public bool CanSet { get; }
+        public override bool CanGet { get; }
 
-        public required TypeSpec? Type { get; init; }
+        public override bool CanSet { get; }
 
-        public required string ConfigurationKeyName { get; init; }
-
-        public bool ShouldBind() =>
-            (CanGet || CanSet) &&
-            Type is not null &&
-            !(!CanSet && (Type as CollectionSpec)?.ConstructionStrategy is ConstructionStrategy.ParameterizedConstructor);
+        public bool ShouldBind() => CanGet || CanSet;
     }
 }

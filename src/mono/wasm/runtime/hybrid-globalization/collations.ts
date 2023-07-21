@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { mono_wasm_new_external_root } from "../roots";
-import { conv_string_root, string_decoder } from "../strings";
+import { monoStringToString, utf16ToString } from "../strings";
 import { MonoObject, MonoObjectRef, MonoString, MonoStringRef } from "../types/internal";
 import { Int32Ptr } from "../types/emscripten";
 import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
@@ -10,13 +10,13 @@ import { wrap_error_root, wrap_no_error_root } from "../invoke-js";
 const COMPARISON_ERROR = -2;
 const INDEXING_ERROR = -1;
 
-export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef) : number{
+export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
-    try{
-        const cultureName = conv_string_root(cultureRoot);
-        const string1 = string_decoder.decode(<any>str1, <any>(str1 + 2*str1Length));
-        const string2 = string_decoder.decode(<any>str2, <any>(str2 + 2*str2Length));
+    try {
+        const cultureName = monoStringToString(cultureRoot);
+        const string1 = utf16ToString(<any>str1, <any>(str1 + 2 * str1Length));
+        const string2 = utf16ToString(<any>str2, <any>(str2 + 2 * str2Length));
         const casePicker = (options & 0x1f);
         const locale = cultureName ? cultureName : undefined;
         wrap_no_error_root(is_exception, exceptionRoot);
@@ -32,11 +32,11 @@ export function mono_wasm_compare_string(culture: MonoStringRef, str1: number, s
     }
 }
 
-export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number{
+export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
-    try{
-        const cultureName = conv_string_root(cultureRoot);
+    try {
+        const cultureName = monoStringToString(cultureRoot);
         const prefix = decode_to_clean_string(str2, str2Length);
         // no need to look for an empty string
         if (prefix.length == 0)
@@ -63,11 +63,11 @@ export function mono_wasm_starts_with(culture: MonoStringRef, str1: number, str1
     }
 }
 
-export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number{
+export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Length: number, str2: number, str2Length: number, options: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
-    try{
-        const cultureName = conv_string_root(cultureRoot);
+    try {
+        const cultureName = monoStringToString(cultureRoot);
         const suffix = decode_to_clean_string(str2, str2Length);
         if (suffix.length == 0)
             return 1; // true
@@ -94,26 +94,24 @@ export function mono_wasm_ends_with(culture: MonoStringRef, str1: number, str1Le
     }
 }
 
-export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number{
+export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, needleLength: number, srcPtr: number, srcLength: number, options: number, fromBeginning: number, is_exception: Int32Ptr, ex_address: MonoObjectRef): number {
     const cultureRoot = mono_wasm_new_external_root<MonoString>(culture),
         exceptionRoot = mono_wasm_new_external_root<MonoObject>(ex_address);
     try {
-        const needle = string_decoder.decode(<any>needlePtr, <any>(needlePtr + 2*needleLength));
+        const needle = utf16ToString(<any>needlePtr, <any>(needlePtr + 2 * needleLength));
         // no need to look for an empty string
-        if (clean_string(needle).length == 0)
-        {
+        if (clean_string(needle).length == 0) {
             wrap_no_error_root(is_exception, exceptionRoot);
             return fromBeginning ? 0 : srcLength;
         }
 
-        const source = string_decoder.decode(<any>srcPtr, <any>(srcPtr + 2*srcLength));
+        const source = utf16ToString(<any>srcPtr, <any>(srcPtr + 2 * srcLength));
         // no need to look in an empty string
-        if (clean_string(source).length == 0)
-        {
+        if (clean_string(source).length == 0) {
             wrap_no_error_root(is_exception, exceptionRoot);
             return fromBeginning ? 0 : srcLength;
         }
-        const cultureName = conv_string_root(cultureRoot);
+        const cultureName = monoStringToString(cultureRoot);
         const locale = cultureName ? cultureName : undefined;
         const casePicker = (options & 0x1f);
 
@@ -125,8 +123,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
         let segmentWidth = 0;
         let index = 0;
         let nextIndex = 0;
-        while (!stop)
-        {
+        while (!stop) {
             // we need to restart the iterator in this outer loop because we have shifted it in the inner loop
             const iteratorSrc = segmenter.segment(source.slice(i, source.length))[Symbol.iterator]();
             let srcNext = iteratorSrc.next();
@@ -137,19 +134,15 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
             let matchFound = check_match_found(srcNext.value.segment, needleSegments[0], locale, casePicker);
             index = nextIndex;
             srcNext = iteratorSrc.next();
-            if (srcNext.done)
-            {
+            if (srcNext.done) {
                 result = matchFound ? index : result;
                 break;
             }
             segmentWidth = srcNext.value.index;
             nextIndex = index + segmentWidth;
-            if (matchFound)
-            {
-                for(let j=1; j<needleSegments.length; j++)
-                {
-                    if (srcNext.done)
-                    {
+            if (matchFound) {
+                for (let j = 1; j < needleSegments.length; j++) {
+                    if (srcNext.done) {
                         stop = true;
                         break;
                     }
@@ -163,8 +156,7 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
                     break;
             }
 
-            if (matchFound)
-            {
+            if (matchFound) {
                 result = index;
                 if (fromBeginning)
                     break;
@@ -183,15 +175,13 @@ export function mono_wasm_index_of(culture: MonoStringRef, needlePtr: number, ne
         exceptionRoot.release();
     }
 
-    function check_match_found(str1: string, str2: string, locale: string | undefined, casePicker: number) : boolean
-    {
+    function check_match_found(str1: string, str2: string, locale: string | undefined, casePicker: number): boolean {
         return compare_strings(str1, str2, locale, casePicker) === 0;
     }
 }
 
-function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number) : number{
-    switch (casePicker)
-    {
+function compare_strings(string1: string, string2: string, locale: string | undefined, casePicker: number): number {
+    switch (casePicker) {
         case 0:
             // 0: None - default algorithm for the platform OR
             //    StringSort - for ICU it gives the same result as None, see: https://github.com/dotnet/dotnet-api-docs/issues
@@ -282,14 +272,12 @@ function compare_strings(string1: string, string2: string, locale: string | unde
     }
 }
 
-function decode_to_clean_string(strPtr: number, strLen: number)
-{
-    const str = string_decoder.decode(<any>strPtr, <any>(strPtr + 2*strLen));
+function decode_to_clean_string(strPtr: number, strLen: number) {
+    const str = utf16ToString(<any>strPtr, <any>(strPtr + 2 * strLen));
     return clean_string(str);
 }
 
-function clean_string(str: string)
-{
+function clean_string(str: string) {
     const nStr = str.normalize();
     return nStr.replace(/[\u200B-\u200D\uFEFF\0]/g, "");
 }
