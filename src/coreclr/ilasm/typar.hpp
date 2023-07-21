@@ -16,7 +16,7 @@ public:
     {
         m_pbsBounds = NULL;
         m_wzName = NULL;
-        m_pbsType = 0;
+        m_dwType = 0;
         m_dwAttrs = 0;
     };
     ~TyParDescr()
@@ -28,7 +28,7 @@ public:
     void Init(BinStr* bounds, DWORD type, LPCUTF8 name, DWORD attrs)
     {
         m_pbsBounds = bounds;
-        m_pbsType = type;
+        m_dwType = type;
         ULONG               cTemp = (ULONG)strlen(name)+1;
         WCHAR *pwzName;
         m_wzName = pwzName = new WCHAR[cTemp];
@@ -40,7 +40,7 @@ public:
         m_dwAttrs = attrs;
     };
     BinStr* Bounds() { return m_pbsBounds; };
-    DWORD   Type() { return m_pbsType; };
+    DWORD   Type() { return m_dwType; };
     LPCWSTR Name() { return m_wzName; };
     DWORD   Attrs() { return m_dwAttrs; };
     mdToken Token() { return m_token; };
@@ -52,7 +52,7 @@ public:
 
 private:
     BinStr* m_pbsBounds;
-    DWORD   m_pbsType;
+    DWORD   m_dwType;
     LPCWSTR m_wzName;
     DWORD   m_dwAttrs;
     mdToken m_token;
@@ -143,7 +143,6 @@ public:
                 attr[i] = tp->attrs;
             // to avoid deletion by destructor
             tp->bound = 0;
-            tp->type = 0;
             i++;
             tp = tp->next;
         }
@@ -175,7 +174,6 @@ public:
                     pTPD[i].Init(tp->bound,tp->type,tp->name,tp->attrs);
                     // to avoid deletion by destructor
                     tp->bound = 0;
-                    tp->type = 0;
                     i++;
                     tp = tp->next;
                 }

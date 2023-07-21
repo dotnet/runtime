@@ -1770,7 +1770,7 @@ HRESULT RegMeta::_SetGenericParamProps(     // S_OK or error.
         GenericParamRec *pGenericParam,     // [IN] GenericParam record ptr
         DWORD        dwParamFlags,          // [IN] Flags, for future use (e.g. variance)
         LPCWSTR      szName,                // [IN] Optional name
-        mdToken      tkType,                // [IN] Option type
+        mdToken      tkType,                // [IN] Optional type
         mdToken      rtkConstraints[])      // [IN] Array of type constraints (TypeDef,TypeRef,TypeSpec)
 {
 #ifdef FEATURE_METADATA_EMIT_IN_DEBUGGER
