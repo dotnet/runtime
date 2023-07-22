@@ -64,12 +64,12 @@
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeMessage">
         <source>Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</source>
-        <target state="new">Validation attribute '{0}' on the member '{1}' is inaccessible from the validator type '{2}'.</target>
+        <target state="translated">Auf das Validierungsattribut "{0}" für den Member "{1}" kann vom Validierungssteuerelementtyp "{2}" nicht zugegriffen werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="InaccessibleValidationAttributeTitle">
         <source>Validation attribute on the member is inaccessible from the validator type..</source>
-        <target state="new">Validation attribute on the member is inaccessible from the validator type..</target>
+        <target state="translated">Auf das Validierungsattribut für den Member kann vom Validierungssteuerelementtyp nicht zugegriffen werden.</target>
         <note />
       </trans-unit>
       <trans-unit id="MemberIsInaccessibleMessage">

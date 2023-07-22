@@ -468,7 +468,8 @@ public:
         return NULL;
     }
 
-    virtual PCODE GetReturnAddress()
+    // ASAN doesn't like us messing with the return address.
+    virtual DISABLE_ASAN PCODE GetReturnAddress()
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();
@@ -482,7 +483,8 @@ public:
         return NULL;
     }
 
-    void SetReturnAddress(TADDR val)
+    // ASAN doesn't like us messing with the return address.
+    void DISABLE_ASAN SetReturnAddress(TADDR val)
     {
         WRAPPER_NO_CONTRACT;
         TADDR ptr = GetReturnAddressPtr();

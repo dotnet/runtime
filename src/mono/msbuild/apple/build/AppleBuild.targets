@@ -143,7 +143,7 @@
       <MonoAOTCompilerDefaultAotArguments Include="nrgctx-fetch-trampolines=256" />
       <MonoAOTCompilerDefaultAotArguments Include="ngsharedvt-trampolines=4400" />
       <MonoAOTCompilerDefaultAotArguments Include="nftnptr-arg-trampolines=4000" />
-      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=50000" />
+      <MonoAOTCompilerDefaultAotArguments Include="nrgctx-trampolines=110000" />
 
       <MonoAOTCompilerDefaultProcessArguments Include="-O=gsharedvt" />
     </ItemGroup>
@@ -155,6 +155,10 @@
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
+      <_AssembliesToBundleInternal>
+        <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
+        <_IsNative>false</_IsNative>
+      </_AssembliesToBundleInternal>
 
       <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)" 
                            Condition="'%(_AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">

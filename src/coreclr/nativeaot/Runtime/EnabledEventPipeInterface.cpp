@@ -4,19 +4,14 @@
 #include "eventpipeadapter.h"
 #include "diagnosticserveradapter.h"
 
-#include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "SpinLock.h"
-
 void EventPipeAdapter_Initialize() { EventPipeAdapter::Initialize(); }
 
 bool DiagnosticServerAdapter_Initialize() { return DiagnosticServerAdapter::Initialize(); }
 void DiagnosticServerAdapter_PauseForDiagnosticsMonitor() { DiagnosticServerAdapter::PauseForDiagnosticsMonitor();}
 
-
 void EventPipeAdapter_FinishInitialize() { EventPipeAdapter::FinishInitialize(); }
+
+void EventPipe_ThreadShutdown() { ep_rt_aot_thread_exited(); }
 
 void EventPipeAdapter_Shutdown() { EventPipeAdapter::Shutdown(); }
 bool DiagnosticServerAdapter_Shutdown() { return DiagnosticServerAdapter::Shutdown(); }
