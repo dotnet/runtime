@@ -171,7 +171,7 @@ namespace Microsoft.Interop
             List<StatementSyntax> statements = new();
             var numElementsAssignment = CollectionSource.GetNumElementsAssignmentFromManagedValuesSource(info, context);
             statements.Add(numElementsAssignment);
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+            if (MarshallerHelpers.MarshalsOut(info, context))
             {
                 // #pragma warning disable CS9081
                 // <native_out> = stackalloc <unmanagedType>[numElementsExpression]
@@ -418,7 +418,7 @@ namespace Microsoft.Interop
                             IdentifierName(nativeSpanIdentifier),
                             IdentifierName("Clear")))));
             }
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context) && _isStateful)
+            if (MarshallerHelpers.MarshalsOut(info, context) && _isStateful)
             {
                 var elementType = _parameterPointedToType;//info.IsByRef ? PointerType(_unmanagedElementType) : _unmanagedElementType;
                 // <value_native_out> = (<nativeType>*)Unsafe.AsPointer(ref <nativeSpan>.GetPinnableReference());
@@ -620,7 +620,7 @@ namespace Microsoft.Interop
 
             var setNumElements = CollectionSource.GetNumElementsAssignmentFromManagedValuesDestination(info, context);
 
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+            if (MarshallerHelpers.MarshalsOut(info, context))
             {
                 // #pragma warning disable CS9081
                 // <native_out> = stackalloc <unmanagedType>[numElementsExpression]

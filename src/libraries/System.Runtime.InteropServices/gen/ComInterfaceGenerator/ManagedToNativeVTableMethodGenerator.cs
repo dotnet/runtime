@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -220,7 +221,8 @@ namespace Microsoft.Interop
                 allStatements.Add(MarshallerHelpers.CreateSetLastPInvokeErrorStatement(LastErrorIdentifier));
             }
 
-            allStatements.AddRange(statements.AssignOut);
+            // ManagedToUnmanaged shouldn't need AssignOut stage
+            Debug.Assert(statements.AssignOut.IsEmpty);
 
             // Return
             if (!_marshallers.IsManagedVoidReturn)

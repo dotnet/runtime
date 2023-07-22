@@ -77,7 +77,8 @@ namespace Microsoft.Interop
             /// In scenarios where necessary (unmanaged to managed stubs), assign marshalled values out to the parameters.
             /// Separating this from <see cref="Marshal"/> ensures parameters remain unmodified when the method returns a failing return value.
             /// </summary>
-            AssignOut
+            AssignOut,
+            CleanupFailure
         }
 
         /// <summary>

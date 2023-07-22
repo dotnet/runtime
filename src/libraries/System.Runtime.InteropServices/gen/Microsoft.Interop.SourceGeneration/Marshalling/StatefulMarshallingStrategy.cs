@@ -193,7 +193,10 @@ namespace Microsoft.Interop
         }
 
         public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
-            => this.GenerateDefaultAssignOutStatement(info, context);
+        {
+            Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
+            return MarshallerHelpers.GenerateDefaultAssignOutStatement(info, context);
+        }
     }
 
     /// <summary>
@@ -379,7 +382,7 @@ namespace Microsoft.Interop
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _innerMarshaller.AsNativeType(info);
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_cleanupElements && !(context is MarshalToLocalContext))
+            if (!_cleanupElements && !(context is MarshalOutContext))
             {
                 yield break;
             }
@@ -451,7 +454,7 @@ namespace Microsoft.Interop
                     InstanceIdentifier = numElementsIdentifier
                 }, context);
 
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context)
+            if (MarshallerHelpers.MarshalsOut(info, context)
                 && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
                 yield return LocalDeclarationStatement(VariableDeclaration(
@@ -507,7 +510,7 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
         public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
         {
-            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+            Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
             if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
                 yield return _elementsMarshalling.GenerateElementsAssignOutStatement(info, context);

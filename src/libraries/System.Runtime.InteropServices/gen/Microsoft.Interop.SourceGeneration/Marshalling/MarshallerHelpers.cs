@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -396,19 +397,28 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// Returns whether the parameter should be marshalled into a local variable.
-        /// This is necessary for scenarios with unmanaged callers where the parameter is expected to be modified If and Only If the method returns successfully.
+        /// Returns whether the parameter must be marshalled back to a native callee.
+        /// In COM, this means the parameter should be marshalled to a local variable in the Marshal and PinnedMarshal stages
+        /// and copied to the parameter value in the AssignOut stage.
         /// </summary>
-        public static bool MarshalsOutToLocal(TypePositionInfo info, StubCodeContext context)
-            => context.Direction is MarshalDirection.UnmanagedToManaged
-                && context.AdditionalTemporaryStateLivesAcrossStages
-                && (info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref
-                    || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
-                    || (info.IsManagedReturnPosition && !info.IsNativeReturnPosition));
+        public static bool MarshalsOut(TypePositionInfo info, StubCodeContext context)
+            => context.Direction is MarshalDirection.UnmanagedToManaged // UnamanagedToManaged is the only direction with a native callee
+                && context.AdditionalTemporaryStateLivesAcrossStages // if AdditionTempStateLivesAcrossStages is false, it is an element of an array
+                && ((info.IsByRef && info.RefKind is RefKind.Out or RefKind.Ref) // out and ref need to be marshalled back to the callee
+                    || info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out) // [Out] needs it's contents marshalled back to native
+                    || (info.IsManagedReturnPosition && !info.IsNativeReturnPosition)); // Managed returns on non-PreserveSig methods are 'out'
 
+        /// <summary>
+        /// Generates the following statements
+        /// <code>_ = <paramref name="identifier"/>;</code>
+        /// </summary>
         public static StatementSyntax CreateDiscardStatement(string identifier)
             => ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression, IdentifierName("_"), IdentifierName(identifier)));
 
+        /// <summary>
+        /// Generates the statement
+        /// <code>*<paramref name="pointerIdentifier"/> = <paramref name="valueIdentifier"/>;</code>
+        /// </summary>
         public static ExpressionStatementSyntax GenerateAssignmentToPointerValue(string pointerIdentifier, string valueIdentifier)
         {
             return ExpressionStatement(
@@ -416,6 +426,18 @@ namespace Microsoft.Interop
                     SyntaxKind.SimpleAssignmentExpression,
                     PrefixUnaryExpression(SyntaxKind.PointerIndirectionExpression, IdentifierName(pointerIdentifier)),
                     IdentifierName(valueIdentifier)));
+        }
+
+        /// <summary>
+        /// Returns the default AssignOut statement for pointer parameters.
+        /// Throws if <see cref="MarshalsOut(TypePositionInfo, StubCodeContext)"/> is false.
+        /// <inheritdoc cref="GenerateAssignmentToPointerValue(string, string)"/>
+        /// </summary>
+        public static ImmutableArray<ExpressionStatementSyntax> GenerateDefaultAssignOutStatement(TypePositionInfo info, AssignOutContext context)
+        {
+            if (!MarshalsOut(info, context))
+                throw new ArgumentException("Cannot make an AssignOut statement for a parameter that is not marshalled out");
+            return ImmutableArray.Create(GenerateAssignmentToPointerValue(context.ParameterIdentifier, context.GetIdentifiers(info).native));
         }
     }
 }

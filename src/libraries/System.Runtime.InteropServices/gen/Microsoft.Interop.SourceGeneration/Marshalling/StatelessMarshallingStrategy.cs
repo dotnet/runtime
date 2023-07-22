@@ -142,8 +142,8 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
         {
-            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
-            return this.GenerateDefaultAssignOutStatement(info, context);
+            Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
+            return MarshallerHelpers.GenerateDefaultAssignOutStatement(info, context);
         }
     }
 
@@ -327,8 +327,8 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
         {
-            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
-            return this.GenerateDefaultAssignOutStatement(info, context);
+            Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
+            return MarshallerHelpers.GenerateDefaultAssignOutStatement(info, context);
         }
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
@@ -570,7 +570,7 @@ namespace Microsoft.Interop
         public ManagedTypeInfo AsNativeType(TypePositionInfo info) => _unmanagedType;
         public IEnumerable<StatementSyntax> GenerateAssignOutStatements(TypePositionInfo info, AssignOutContext context)
         {
-            Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+            Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
             if (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
                 yield return _elementsMarshalling.GenerateElementsAssignOutStatement(info, context);
@@ -584,7 +584,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GenerateCleanupStatements(TypePositionInfo info, StubCodeContext context)
         {
-            if (!_cleanupElementsAndSpace && !(context is MarshalToLocalContext))
+            if (!_cleanupElementsAndSpace && !(context is MarshalOutContext))
             {
                 yield break;
             }
@@ -655,7 +655,7 @@ namespace Microsoft.Interop
             {
                 yield return elementsSetup;
             }
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context)
+            if (MarshallerHelpers.MarshalsOut(info, context)
                 && info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
             {
                 yield return LocalDeclarationStatement(VariableDeclaration(

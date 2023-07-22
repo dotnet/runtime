@@ -492,7 +492,7 @@ namespace Microsoft.Interop
             {
                 return FreeStrategy.FreeOriginal;
             }
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
+            if (MarshallerHelpers.MarshalsOut(info, context))
             {
                 return FreeStrategy.FreeTemp;
             }

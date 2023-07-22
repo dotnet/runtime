@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
@@ -34,36 +35,32 @@ namespace Microsoft.Interop
                     IsFunctionPointer: false);
             public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
             {
-                if (context.CurrentStage == StubCodeContext.Stage.AssignOut)
+                switch (context.CurrentStage)
                 {
-                    var assignOut = this.GeneratePointerAssignOut(info, context);
-                    if (assignOut != null)
-                    {
-                        yield return assignOut;
-                    }
-                    yield break;
+                    case StubCodeContext.Stage.Unmarshal:
+                        var (managed, native) = context.GetIdentifiers(info);
+                        // <managed> = ComWrappers.ComInterfaceDispatch.GetInstance<<managedType>>(<native>);
+                        yield return ExpressionStatement(
+                            AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(managed),
+                                InvocationExpression(
+                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                        ParseName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch),
+                                        GenericName(
+                                            Identifier("GetInstance"),
+                                            TypeArgumentList(SingletonSeparatedList(info.ManagedType.Syntax)))),
+                                    ArgumentList(
+                                        SingletonSeparatedList(
+                                            Argument(
+                                                IdentifierName(native)))))));
+                        yield break;
+                    case StubCodeContext.Stage.AssignOut:
+                        Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
+                        yield return this.GeneratePointerAssignOut(info, context);
+                        yield break;
+                    default:
+                        yield break;
                 }
-
-                if (context.CurrentStage != StubCodeContext.Stage.Unmarshal)
-                {
-                    yield break;
-                }
-
-                var (managed, native) = context.GetIdentifiers(info);
-                // <managed> = ComWrappers.ComInterfaceDispatch.GetInstance<<managedType>>(<native>);
-                yield return ExpressionStatement(
-                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                        IdentifierName(managed),
-                        InvocationExpression(
-                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                ParseName(TypeNames.System_Runtime_InteropServices_ComWrappers_ComInterfaceDispatch),
-                                GenericName(
-                                    Identifier("GetInstance"),
-                                    TypeArgumentList(SingletonSeparatedList(info.ManagedType.Syntax)))),
-                            ArgumentList(
-                                SingletonSeparatedList(
-                                    Argument(
-                                        IdentifierName(native)))))));
             }
 
             public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info) => SignatureBehavior.NativeType;

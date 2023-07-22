@@ -147,7 +147,7 @@ namespace Microsoft.Interop
                             (ValueBoundaryBehavior.NativeIdentifier or ValueBoundaryBehavior.CastNativeIdentifier))
                     {
                         TypeSyntax localType = marshaller.Generator.AsNativeType(info).Syntax;
-                        if (MarshallerHelpers.MarshalsOutToLocal(info, context)
+                        if (MarshallerHelpers.MarshalsOut(info, context)
                             && !info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out))
                         {
                             string outlocal = context.GetAdditionalIdentifier(info, "out");

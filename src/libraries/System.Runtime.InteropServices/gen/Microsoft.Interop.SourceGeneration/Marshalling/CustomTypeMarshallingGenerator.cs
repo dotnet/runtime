@@ -100,9 +100,8 @@ namespace Microsoft.Interop
                     }
                     break;
                 case StubCodeContext.Stage.Cleanup:
-                    // TODO: Correctly clean up the allocated contents that aren't transferred back to the caller
-                    // We don't correctly clean up the [out] parameters
-                    if (context is MarshalToLocalContext
+                    // We don't correctly clean up the [out] parameters https://github.com/dotnet/runtime/issues/88438
+                    if (context is MarshalOutContext
                         && (info.ByValueContentsMarshalKind.HasFlag(ByValueContentsMarshalKind.Out)
                             || info.RefKind is RefKind.Out))
                         break;
@@ -111,7 +110,7 @@ namespace Microsoft.Interop
                     else
                         return _nativeTypeMarshaller.GenerateCleanupStatements(info, context);
                 case StubCodeContext.Stage.AssignOut:
-                    Debug.Assert(MarshallerHelpers.MarshalsOutToLocal(info, context));
+                    Debug.Assert(MarshallerHelpers.MarshalsOut(info, context));
                     return _nativeTypeMarshaller.GenerateAssignOutStatements(info, (AssignOutContext)context);
                 default:
                     break;

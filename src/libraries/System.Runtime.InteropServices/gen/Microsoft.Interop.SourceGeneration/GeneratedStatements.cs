@@ -22,9 +22,7 @@ namespace Microsoft.Interop
         public ImmutableArray<StatementSyntax> NotifyForSuccessfulInvoke { get; init; }
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Cleanup { get; init; }
-        //public ImmutableArray<StatementSyntax> CleanupNativeOut { get; init; }
         public ImmutableArray<StatementSyntax> AssignOut { get; init; }
-
         public ImmutableArray<CatchClauseSyntax> ManagedExceptionCatchClauses { get; init; }
 
         public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context)
@@ -41,9 +39,8 @@ namespace Microsoft.Interop
                 NotifyForSuccessfulInvoke = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.NotifyForSuccessfulInvoke }),
                 GuaranteedUnmarshal = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.GuaranteedUnmarshal }),
                 Cleanup = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.Cleanup }),
-                //CleanupNativeOut = GenerateStatementsForStubContext(marshallers, new MarshalToLocalContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup })),
                 ManagedExceptionCatchClauses = GenerateCatchClauseForManagedException(marshallers, context),
-                AssignOut = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.AssignOut })
+                AssignOut = GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.AssignOut }),
             };
         }
         public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
@@ -76,23 +73,24 @@ namespace Microsoft.Interop
             foreach (BoundGenerator marshaller in marshallers.SignatureMarshallers)
             {
                 StubCodeContext localContext = context;
-                if (context.CurrentStage is StubCodeContext.Stage.Marshal or StubCodeContext.Stage.AssignOut or StubCodeContext.Stage.PinnedMarshal
-                    && MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
+                // Modify the context if we need to marshal out
+                switch (context.CurrentStage)
                 {
-                    localContext = new MarshalToLocalContext(context);
-                }
-                // Right now, MarshalsOutToLocal is the only way we determine if we assign out, so we can return early here for perf
-                if (context.CurrentStage is StubCodeContext.Stage.AssignOut)
-                {
-                    if (!MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
-                        continue;
-                    else
+                    case StubCodeContext.Stage.Marshal:
+                    case StubCodeContext.Stage.PinnedMarshal:
+                        if (MarshallerHelpers.MarshalsOut(marshaller.TypeInfo, context))
+                            localContext = new MarshalOutContext(context);
+                        break;
+                    case StubCodeContext.Stage.AssignOut:
+                        if (!MarshallerHelpers.MarshalsOut(marshaller.TypeInfo, context))
+                            continue;
                         localContext = new AssignOutContext(context, marshaller.Generator.AsParameter(marshaller.TypeInfo, context).Identifier.ToString());
-                }
-                if (context is MarshalToLocalContext && context.CurrentStage == StubCodeContext.Stage.Cleanup)
-                {
-                    if (!MarshallerHelpers.MarshalsOutToLocal(marshaller.TypeInfo, context))
-                        continue;
+                        break;
+                    case StubCodeContext.Stage.CleanupFailure:
+                        if (!MarshallerHelpers.MarshalsOut(marshaller.TypeInfo, context))
+                            continue;
+                        localContext = new MarshalOutContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup });
+                        break;
                 }
                 statementsToUpdate.AddRange(marshaller.Generator.Generate(marshaller.TypeInfo, localContext));
             }
@@ -187,10 +185,14 @@ namespace Microsoft.Interop
             catchClauseBuilder.AddRange(
                 managedExceptionMarshaller.Generator.Generate(
                     managedExceptionMarshaller.TypeInfo, context with { CurrentStage = StubCodeContext.Stage.PinnedMarshal }));
-            catchClauseBuilder.AddRange(GenerateStatementsForStubContext(marshallers, new MarshalToLocalContext(context with { CurrentStage = StubCodeContext.Stage.Cleanup })));
+            catchClauseBuilder.AddRange(GenerateStatementsForStubContext(marshallers, context with { CurrentStage = StubCodeContext.Stage.CleanupFailure }));
             if (!marshallers.IsUnmanagedVoidReturn)
             {
                 catchClauseBuilder.Add(ReturnStatement(IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native)));
+            }
+            else
+            {
+                catchClauseBuilder.Add(ReturnStatement());
             }
             return ImmutableArray.Create(
                 CatchClause(
@@ -211,6 +213,7 @@ namespace Microsoft.Interop
                 StubCodeContext.Stage.UnmarshalCapture => "Capture the native data into marshaller instances in case conversion to managed data throws an exception.",
                 StubCodeContext.Stage.Unmarshal => "Convert native data to managed data.",
                 StubCodeContext.Stage.Cleanup => "Perform required cleanup.",
+                StubCodeContext.Stage.CleanupFailure => "Perform required cleanup.",
                 StubCodeContext.Stage.NotifyForSuccessfulInvoke => "Keep alive any managed objects that need to stay alive across the call.",
                 StubCodeContext.Stage.GuaranteedUnmarshal => "Convert native data to managed data even in the case of an exception during the non-cleanup phases.",
                 StubCodeContext.Stage.AssignOut => "Assign to parameters",

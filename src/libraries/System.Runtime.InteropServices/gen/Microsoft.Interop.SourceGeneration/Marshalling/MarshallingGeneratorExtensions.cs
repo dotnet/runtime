@@ -269,15 +269,14 @@ namespace Microsoft.Interop
         }
 
         /// <summary>
-        /// If the parameter should marshal to a local and assign out, generates a statement to copy the pointed to value to the parameter. If the parameter does not need it, returns null
+        /// If the parameter should marshal to a local and assign out, generates a statement to copy the pointed to value to the parameter.
+        /// Throws if the arguments are not meant to be marshalled out to a native caller.
         /// </summary>
-        public static ExpressionStatementSyntax? GeneratePointerAssignOut(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
+        public static ExpressionStatementSyntax GeneratePointerAssignOut(this IMarshallingGenerator generator, TypePositionInfo info, StubCodeContext context)
         {
-            if (MarshallerHelpers.MarshalsOutToLocal(info, context))
-            {
-                return MarshallerHelpers.GenerateAssignmentToPointerValue(generator.AsParameter(info, context).Identifier.ToString(), context.GetIdentifiers(info).native);
-            }
-            return null;
+            if (!MarshallerHelpers.MarshalsOut(info, context))
+                throw new ArgumentException("");
+            return MarshallerHelpers.GenerateAssignmentToPointerValue(generator.AsParameter(info, context).Identifier.ToString(), context.GetIdentifiers(info).native);
         }
     }
 }
