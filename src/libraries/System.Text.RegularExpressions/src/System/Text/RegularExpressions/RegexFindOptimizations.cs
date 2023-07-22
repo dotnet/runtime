@@ -271,8 +271,6 @@ namespace System.Text.RegularExpressions
             public int Distance;
             /// <summary>As an alternative to <see cref="Chars"/>, a description of the single range the set represents, if it does.</summary>
             public (char LowInclusive, char HighInclusive)? Range;
-            /// <summary>As an alternative to <see cref="Chars"/>, a description of the set of ASCII characters it represents, if it does.</summary>
-            public char[]? AsciiSet;
         }
 
         /// <summary>When in literal after set loop node, gets the literal to search for and the RegexNode representing the leading loop.</summary>
@@ -593,7 +591,7 @@ namespace System.Text.RegularExpressions
                         char[]? chars = primarySet.Chars;
 
                         ReadOnlySpan<char> span = textSpan.Slice(pos);
-                        if (chars is not null)
+                        if (chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except} without SearchValues
                         {
                             int i = primarySet.Negated ? span.IndexOfAnyExcept(chars) : span.IndexOfAny(chars);
                             if (i >= 0)
@@ -660,7 +658,7 @@ namespace System.Text.RegularExpressions
 
                         int endMinusRequiredLength = textSpan.Length - Math.Max(1, MinRequiredLength);
 
-                        if (primarySet.Chars is not null)
+                        if (primarySet.Chars is { Length: <= 5 }) // 5 == currently the max length efficiently handled by IndexOfAny{Except}
                         {
                             for (int inputPosition = pos; inputPosition <= endMinusRequiredLength; inputPosition++)
                             {

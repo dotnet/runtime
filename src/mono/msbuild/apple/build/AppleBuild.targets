@@ -155,6 +155,10 @@
 
     <ItemGroup>
       <_AotExcludeAssemblies Include="*System.Runtime.WindowsRuntime.dll" />
+      <_AssembliesToBundleInternal>
+        <_InternalForceInterpret Condition="'$(MonoForceInterpreter)' == 'true' and '%(FileName)%(Extension)' != 'System.Private.CoreLib.dll'">true</_InternalForceInterpret>
+        <_IsNative>false</_IsNative>
+      </_AssembliesToBundleInternal>
 
       <_AotInputAssemblies Include="@(_AssembliesToBundleInternal)" 
                            Condition="'%(_AssembliesToBundleInternal._InternalForceInterpret)' != 'true'">
