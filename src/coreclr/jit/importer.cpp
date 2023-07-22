@@ -3151,7 +3151,7 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
             info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) == TypeCompareState::Must &&
             !lvaHaveManyLocals() && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
 
-        if (opts.OptimizationDisabled())
+        if (!dontShareBoxedTemps && opts.OptimizationDisabled())
         {
             // For minopts/debug code, try and minimize the total number
             // of box temps by reusing an existing temp when possible.
