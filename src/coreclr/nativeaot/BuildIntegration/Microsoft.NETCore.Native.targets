@@ -326,7 +326,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CustomLinkerArg Include="/OUT:&quot;$(NativeBinary)&quot;" Condition="'$(_targetOS)' == 'win'" />
       <CustomLinkerArg Include="/DEF:&quot;$(ExportsFile)&quot;" Condition="'$(_targetOS)' == 'win' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="/LIBPATH:&quot;%(AdditionalNativeLibraryDirectories.Identity)&quot;" Condition="'$(_targetOS)' == 'win' and '@(AdditionalNativeLibraryDirectories->Count())' &gt; 0" />
-      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and $(ExportsFile) != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list &quot;$(ExportsFile)&quot;" Condition="'$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' != ''" />
+      <CustomLinkerArg Include="-exported_symbols_list /dev/null" Condition="'$(OutputType)' == 'exe' and '$(_IsApplePlatform)' == 'true' and '$(ExportsFile)' == ''" />
       <CustomLinkerArg Include="-Wl,--version-script=$(ExportsFile)" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and $(ExportsFile) != ''" />
       <CustomLinkerArg Include="-Wl,--export-dynamic" Condition="'$(_targetOS)' != 'win' and '$(_IsApplePlatform)' != 'true' and '$(IlcExportUnmanagedEntrypoints)' == 'true' and '$(NativeLib)' == ''" />
       <CustomLinkerArg Include="@(LinkerArg)" />
