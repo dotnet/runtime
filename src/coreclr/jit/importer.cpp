@@ -3145,7 +3145,13 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // and the other you get
         //    *(temp+4) = expr
 
-        if (opts.OptimizationDisabled())
+        // NOTE: Don't re-use temps for boxed Enum values to, potentially, avoid boxing in Enum.HasFlag
+        const bool dontShareBoxed =
+            opts.OptimizationDisabled() && varTypeIsIntegral(exprToBox) &&
+            info.compCompHnd->isEnum(pResolvedToken->hClass, nullptr) == TypeCompareState::Must &&
+            !lvaHaveManyLocals() && !opts.compDbgCode && !opts.jitFlags->IsSet(JitFlags::JIT_FLAG_MIN_OPT);
+
+        if (!dontShareBoxed && opts.OptimizationDisabled())
         {
             // For minopts/debug code, try and minimize the total number
             // of box temps by reusing an existing temp when possible.

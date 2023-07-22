@@ -2580,6 +2580,10 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_RuntimeType_get_TypeHandle:
             case NI_System_RuntimeTypeHandle_ToIntPtr:
 
+            // This one is not simple, but it will help us
+            // to avoid some unnecessary boxing
+            case NI_System_Enum_HasFlag:
+
             // Most atomics are compiled to single instructions
             case NI_System_Threading_Interlocked_And:
             case NI_System_Threading_Interlocked_Or:
