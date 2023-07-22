@@ -37,8 +37,11 @@
 #define METAMODEL_MAJOR_VER_V2_0 2      // Major version for v2.0
 #define METAMODEL_MINOR_VER_V2_0 0      // Minor version for v2.0
 
+#define METAMODEL_MAJOR_VER_V2_1 2      // Major version for v2.1
+#define METAMODEL_MINOR_VER_V2_1 1      // Minor version for v2.1
+
 #define METAMODEL_MAJOR_VER 2
-#define METAMODEL_MINOR_VER 0
+#define METAMODEL_MINOR_VER 1
 
 // Metadata version number up through Whidbey Beta2
 #define METAMODEL_MAJOR_VER_B1 1
@@ -2018,10 +2021,9 @@ public:
     
     BOOL SupportsConstGenerics()
     {
-        return true;
         // Only 2.1 of the metadata support const generics
-        return (m_Schema.m_major > METAMODEL_MAJOR_VER_V2_0 ||
-                (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_0 && m_Schema.m_minor >= METAMODEL_MINOR_VER_B1));
+        return (m_Schema.m_major > METAMODEL_MAJOR_VER_V2_1 ||
+                (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_1 && m_Schema.m_minor >= METAMODEL_MINOR_VER_V2_1));
     }// SupportsConstGenerics
 
     protected:
