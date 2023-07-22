@@ -1989,6 +1989,7 @@ public:
     USHORT _GETFLD(GenericParam,Flags);
     mdToken _GETCDTKN(GenericParam,Owner,mdtTypeOrMethodDef);
     _GETSTR(GenericParam,Name);
+    mdToken _GETCDTKN(GenericParam,Type,mdtTypeDefOrRef)
 
     __checkReturn
     HRESULT getGenericParamConstraintsForGenericParam(RID rid, RID *pEnd, RID *pFoundRid)

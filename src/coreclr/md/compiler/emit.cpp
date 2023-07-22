@@ -1702,8 +1702,6 @@ STDMETHODIMP RegMeta::DefineGenericParam(   // S_OK or error.
             pGenericParam->SetNumber((USHORT)ulParamSeq);
             IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Owner,
                                                 pGenericParam, tkOwner));
-            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Type,
-                                                pGenericParam, tkType));
             tkRet = TokenFromRid(iGenericParam,mdtGenericParam);
         }
 
@@ -1786,7 +1784,7 @@ HRESULT RegMeta::_SetGenericParamProps(     // S_OK or error.
                                                 pGenericParam, szName));
         // If there is a type, set it
         if (tkType != NULL)
-            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_TypeRef, GenericParamRec::COL_Type,
+            IfFailGo(m_pStgdb->m_MiniMd.PutToken(TBL_GenericParam, GenericParamRec::COL_Type,
                                                 pGenericParam, tkType));
 
         // If there are new flags, set them.
