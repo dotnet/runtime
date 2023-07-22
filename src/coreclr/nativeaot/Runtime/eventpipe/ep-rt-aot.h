@@ -1385,6 +1385,10 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
+    if (len == (size_t) -1) {
+        len = strlen(str);
+    }
+
     if (len == 0) {
         // Return an empty string if the length is 0
         CHAR16_T * lpDestEmptyStr = reinterpret_cast<CHAR16_T *>(malloc(1 * sizeof(CHAR16_T)));
@@ -1393,11 +1397,6 @@ ep_rt_utf8_to_utf16le_string (
         }
         *lpDestEmptyStr = '\0';
         return reinterpret_cast<ep_char16_t*>(lpDestEmptyStr);
-    }
-
-    if (len == (size_t) -1) {
-        // Following the pattern used in EventPipe library where it allocates 1 extra character
-        len = strlen(str) + 1;
     }
 
     int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS | MINIPAL_TREAT_AS_LITTLE_ENDIAN;
@@ -1466,6 +1465,10 @@ ep_rt_utf16_to_utf8_string (
     if (!str)
         return NULL;
 
+    if (len == (size_t) -1) {
+        len = ep_rt_utf16_string_len (str);
+    }
+
     if (len == 0) {
         // Return an empty string if the length is 0
         char * lpDestEmptyStr = reinterpret_cast<char *>(malloc(1 * sizeof(char)));
@@ -1474,11 +1477,6 @@ ep_rt_utf16_to_utf8_string (
         }
         *lpDestEmptyStr = '\0';
         return reinterpret_cast<ep_char8_t*>(lpDestEmptyStr);
-    }
-
-    if (len == (size_t) -1) {
-        // Following the pattern used in EventPipe library where it allocates 1 extra character
-        len = ep_rt_utf16_string_len (str) + 1;
     }
 
     size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
