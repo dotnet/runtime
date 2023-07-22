@@ -19,10 +19,6 @@
 
 #include <minipal/random.h>
 
-// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
-// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
-// implemented in some manner that doesn't rely on the Thread class.
-
 #include "gcenv.h"
 
 #ifndef DIRECTORY_SEPARATOR_CHAR

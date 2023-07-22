@@ -1,5 +1,6 @@
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
+include(CheckSymbolExists)
 
 check_include_files("sys/auxv.h;asm/hwcap.h" HAVE_AUXV_HWCAP_H)
 check_function_exists(sysctlbyname HAVE_SYSCTLBYNAME)
