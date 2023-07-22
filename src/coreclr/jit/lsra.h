@@ -73,14 +73,6 @@ inline bool useFloatReg(var_types type)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Check to see if two RegisterTypes are equivalent
-//
-inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
-{
-    return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
-}
-
-//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -2064,7 +2056,14 @@ private:
     //
     static regMaskTP calleeSaveRegs(RegisterType rt)
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+        static const regMaskTP varTypeCalleeSaveRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeSaveRegs));
+        return varTypeCalleeSaveRegs[rt];
     }
 
     //------------------------------------------------------------------------
@@ -2072,7 +2071,14 @@ private:
     //
     regMaskTP callerSaveRegs(RegisterType rt) const
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+        static const regMaskTP varTypeCalleeTrashRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
+        return varTypeCalleeTrashRegs[rt];
     }
 };
 
