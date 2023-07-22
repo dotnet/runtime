@@ -1458,12 +1458,12 @@ void EEJitManager::SetCpuInfo()
 
 #if !defined(TARGET_WINDOWS)
     // Linux may still support no AdvSimd
-    if ((cpuFeatures & InstructionSet_AdvSimd) == 0)
+    if ((cpuFeatures & ARM64IntrinsicConstants_VectorT128) == 0)
     {
         EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, W("AdvSimd processor support required."));
     }
 #else
-    _ASSERTE((cpuFeatures & InstructionSet_AdvSimd) != 0);
+    _ASSERTE((cpuFeatures & ARM64IntrinsicConstants_VectorT128) != 0);
 #endif
 
     CPUCompileFlags.Set(InstructionSet_VectorT128);
