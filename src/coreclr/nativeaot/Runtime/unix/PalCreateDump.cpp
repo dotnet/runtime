@@ -289,7 +289,9 @@ CreateCrashDump(
         {
             // Ignore any error because on some CentOS and OpenSUSE distros, it isn't
             // supported but createdump works just fine.
+#ifdef _DEBUG
             fprintf(stderr, "CreateCrashDump: prctl() FAILED %s (%d)\n", strerror(errno), errno);
+#endif
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
         close(child_pipe);
@@ -568,7 +570,7 @@ PalCreateDumpInitialize()
         if (stat(program, &fileData) == -1 || !S_ISREG(fileData.st_mode))
         {
             fprintf(stderr, "DOTNET_DbgEnableMiniDump is set and the createdump binary does not exist: %s\n", program);
-            return false;
+            return true;
         }
         g_szCreateDumpPath = program;
 
