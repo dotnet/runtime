@@ -88,7 +88,7 @@
 %token _IMPORT NOMANGLE_ LASTERR_ WINAPI_ AS_ BESTFIT_ ON_ OFF_ CHARMAPERROR_
 
         /* instruction tokens (actually instruction groupings) */
-%token <opcode> INSTR_NONE INSTR_VAR INSTR_I INSTR_I8 INSTR_R INSTR_BRTARGET INSTR_METHOD INSTR_FIELD
+%token <opcode> INSTR_NONE INSTR_VAR INSTR_I INSTR_I8 INSTR_R INSTR_BRTARGET INSTR_METHOD INSTR_FIELD INSTR_TVAR
 %token <opcode> INSTR_TYPE INSTR_STRING INSTR_SIG INSTR_TOK
 %token <opcode> INSTR_SWITCH
 
@@ -178,7 +178,7 @@
 %type <exptAttr> exptAttr
 %type <manresAttr> manresAttr
 %type <cad> customDescr customDescrWithOwner
-%type <instr> instr_none instr_var instr_i instr_i8 instr_r instr_brtarget instr_method instr_field
+%type <instr> instr_none instr_var instr_i instr_i8 instr_r instr_brtarget instr_method instr_field instr_tvar
 %type <instr> instr_type instr_string instr_sig instr_tok instr_switch
 %type <instr> instr_r_head
 
@@ -1331,6 +1331,9 @@ instr_none              : INSTR_NONE                         { $$ = SetupInstr($
 instr_var               : INSTR_VAR                          { $$ = SetupInstr($1); }
                         ;
 
+instr_tvar              : INSTR_TVAR                         { $$ = SetupInstr($1); }
+                        ;
+
 instr_i                 : INSTR_I                            { $$ = SetupInstr($1); }
                         ;
 
@@ -1376,6 +1379,8 @@ instr_r_head            : instr_r '('                        { $$ = $1; bParsing
 instr                   : instr_none                         { PASM->EmitOpcode($1); }
                         | instr_var int32                    { PASM->EmitInstrVar($1, $2); }
                         | instr_var id                       { PASM->EmitInstrVarByName($1, $2); }
+                        | instr_tvar '!' id                  { PASM->EmitInstrTypeVarByName($1, ELEMENT_TYPE_CVAR, $3); }
+                        | instr_tvar '!' '!' id              { PASM->EmitInstrTypeVarByName($1, ELEMENT_TYPE_MCVAR, $4); }
                         | instr_i int32                      { PASM->EmitInstrI($1, $2); }
                         | instr_i8 int64                     { PASM->EmitInstrI8($1, $2); }
                         | instr_r float64                    { PASM->EmitInstrR($1, $2); delete ($2);}
@@ -1728,7 +1733,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                   $$ = new BinStr(); $$->appendInt8(ELEMENT_TYPE_VAR); corEmitInt($$, $2);
                                                                 //} else PASM->report->error("Type parameter '%d' outside class scope\n",$2);
                                                               }
-                        | CONST_ '!' '!' dottedName            { int eltype = ELEMENT_TYPE_MCVAR;
+                        | CONST_ '!' '!' dottedName           { int eltype = ELEMENT_TYPE_MCVAR;
                                                                 int n=-1;
                                                                 if(PASM->m_pCurMethod) n = PASM->m_pCurMethod->FindTyPar($4);
                                                                 else {
@@ -1758,7 +1763,7 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                                                                 n = 0x1FFFFFFF; }
                                                                 $$ = new BinStr(); $$->appendInt8(eltype); corEmitInt($$,n);
                                                               }
-                        | CONST_ '!' dottedName                { int eltype = ELEMENT_TYPE_CVAR;
+                        | CONST_ '!' dottedName               { int eltype = ELEMENT_TYPE_CVAR;
                                                                 int n=-1;
                                                                 if(PASM->m_pCurClass && !newclass) n = PASM->m_pCurClass->FindTyPar($3);
                                                                 else {

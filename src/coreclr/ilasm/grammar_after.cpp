@@ -41,6 +41,8 @@ static Keywords keywords[] = {
 #undef InlineTypeR
 #undef ShortInlineTypeI
 #undef ShortInlineTypeR
+#undef InlineTypeVar
+#undef ShortInlineTypeVar
 
 
 #define InlineNone              INSTR_NONE
@@ -65,6 +67,8 @@ static Keywords keywords[] = {
 #define InlineTypeR             INSTR_R
 #define ShortInlineTypeI        INSTR_I
 #define ShortInlineTypeR        INSTR_R
+#define InlineTypeVar           INSTR_TVAR
+#define ShortInlineTypeVar      INSTR_TVAR
 
 #define InlineVarTok            0
 #define NEW_INLINE_NAMES
