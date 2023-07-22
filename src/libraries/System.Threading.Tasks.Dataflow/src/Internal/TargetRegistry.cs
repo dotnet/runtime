@@ -20,7 +20,7 @@ namespace System.Threading.Tasks.Dataflow.Internal
     /// <summary>Stores targets registered with a source.</summary>
     /// <typeparam name="T">Specifies the type of data accepted by the targets.</typeparam>
     /// <remarks>This type is not thread-safe.</remarks>
-    [DebuggerDisplay("Count={Count}")]
+    [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(TargetRegistry<>.DebugView))]
     internal sealed class TargetRegistry<T>
     {

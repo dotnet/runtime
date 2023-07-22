@@ -91,7 +91,7 @@ namespace System.Threading
     /// completed.
     /// </para>
     /// </remarks>
-    [DebuggerDisplay("Participant Count={ParticipantCount},Participants Remaining={ParticipantsRemaining}")]
+    [DebuggerDisplay("Participant Count = {ParticipantCount}, Participants Remaining = {ParticipantsRemaining}")]
     public class Barrier : IDisposable
     {
         //This variable holds the basic barrier variables:
