@@ -1065,7 +1065,7 @@ DECLARE_INTERFACE_(IMetaDataImport2, IMetaDataImport)
         ULONG        *pulParamSeq,          // [OUT] Index of the type parameter
         DWORD        *pdwParamFlags,        // [OUT] Flags, for future use (e.g. variance)
         mdToken      *ptOwner,              // [OUT] Owner (TypeDef or MethodDef)
-        DWORD       *reserved,              // [OUT] For future use (e.g. non-type parameters)
+        mdToken      *ptType,               // [OUT] Type (TypeDefOrRef)
       _Out_writes_to_opt_(cchName, *pchName)
         LPWSTR       wzname,                // [OUT] Put name here
         ULONG        cchName,               // [IN] Size of buffer

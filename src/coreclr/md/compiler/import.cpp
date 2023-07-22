@@ -2816,7 +2816,7 @@ HRESULT RegMeta::GetGenericParamProps(        // S_OK or error.
         ULONG* pulSequence,                 // [OUT] Parameter sequence number
         DWORD* pdwAttr,                     // [OUT] Type parameter flags (for future use)
         mdToken *ptOwner,                   // [OUT] The owner (TypeDef or MethodDef)
-        DWORD *reserved,                    // [OUT] The kind (TypeDef/Ref/Spec, for future use)
+        mdToken *ptType,                    // [OUT] The type (TypeDef/Ref/Spec, for const generics use)
         _Out_writes_opt_ (cchName) LPWSTR szName, // [OUT] The name
         ULONG cchName,                      // [IN] Size of name buffer
         ULONG *pchName)                     // [OUT] Actual size of name
@@ -2846,6 +2846,8 @@ HRESULT RegMeta::GetGenericParamProps(        // S_OK or error.
           *pdwAttr = pMiniMd->getFlagsOfGenericParam(pGenericParamRec);
         if (ptOwner)
           *ptOwner = pMiniMd->getOwnerOfGenericParam(pGenericParamRec);
+        if (ptType)
+          *ptType = pMiniMd->getTypeOfGenericParam(pGenericParamRec);
         // This call has to be last to set 'hr', so CLDB_S_TRUNCATION is not rewritten with S_OK
         if (pchName || szName)
             IfFailGo(pMiniMd->getNameOfGenericParam(pGenericParamRec, szName, cchName, pchName));

@@ -601,7 +601,7 @@ public:
         ULONG        *pulParamSeq,          // [OUT] Index of the type parameter
         DWORD        *pdwParamFlags,        // [OUT] Flags, for future use (e.g. variance)
         mdToken      *ptOwner,              // [OUT] Owner (TypeDef or MethodDef)
-        DWORD        *reserved,              // [OUT] For future use (e.g. non-type parameters)
+        mdToken      *ptType,               // [OUT] Type (TypeDefOrRef)
         _Out_writes_opt_ (cchName) LPWSTR wzname, // [OUT] Put name here
         ULONG        cchName,               // [IN] Size of buffer
         ULONG        *pchName);             // [OUT] Put size of name (wide chars) here.

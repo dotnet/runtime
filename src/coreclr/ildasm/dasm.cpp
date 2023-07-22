@@ -3043,6 +3043,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
     ULONG           ulSequence;
     DWORD           attr;
     mdToken         tkOwner;
+    mdToken         tkType;
     HCORENUM        hEnumTyPar = NULL;
     HCORENUM        hEnumTyParConstr = NULL;
     char*           szptr = &szString[strlen(szString)];
@@ -3058,7 +3059,7 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
 
       for (i = 1; NumTyPars != 0; i++)
       {
-        g_pPubImport->GetGenericParamProps(tkTyPar, &ulSequence, &attr, &tkOwner, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
+        g_pPubImport->GetGenericParamProps(tkTyPar, &ulSequence, &attr, &tkOwner, &tkType, wzArgName, UNIBUF_SIZE/2, &chName);
         //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
         hEnumTyParConstr = NULL;
@@ -3116,6 +3117,11 @@ char *DumpGenericPars(_Inout_updates_(SZSTRING_SIZE) char* szString, mdToken tok
         g_pPubImport->GetGenericParamProps(tkTyPar, NULL, &attr, NULL, NULL, wzArgName, UNIBUF_SIZE/2, &chName);
         //if(u16_strlen(wzArgName) >= MAX_CLASSNAME_LENGTH)
         //    wzArgName[MAX_CLASSNAME_LENGTH-1] = 0;
+        if (RidFromToken(tkType))
+        {
+            CQuickBytes out;
+            szptr += sprintf_s(szptr,SZSTRING_REMAINING_SIZE(szptr),"%s ",PrettyPrintClass(&out, tkType, g_pImport));
+        }
         if (chName)
         {
             char* sz = (char*)(&wzUniBuf[UNIBUF_SIZE/2]);
