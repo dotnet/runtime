@@ -684,7 +684,7 @@ BOOL Assembler::EmitMethod(Method *pMethod)
         mdGenericParam tkGP = mdTokenNil;
         for(i = 0; i < pMethod->m_NumTyPars; i++)
         {
-            if (FAILED(m_pEmitter->DefineGenericParam(MethodToken, i, pMethod->m_TyPars[i].Attrs(), pMethod->m_TyPars[i].Name(), 0, &tkNil, &tkGP)))
+            if (FAILED(m_pEmitter->DefineGenericParam(MethodToken, i, pMethod->m_TyPars[i].Attrs(), pMethod->m_TyPars[i].Name(), pMethod->m_TyPars[i].Type(), &tkNil, &tkGP)))
             {
                 report->error("Unable to define generic param: %s'\n", pMethod->m_TyPars[i].Name());
             }
