@@ -17,7 +17,7 @@
 #include "thread.h"
 #include "threadstore.h"
 
-extern uint8_t* g_CrashInfoBuffer;
+extern uint8_t g_CrashInfoBuffer[];
 GPTR_DECL(MethodTable, g_pFreeObjectEEType);
 
 struct DebugTypeEntry
