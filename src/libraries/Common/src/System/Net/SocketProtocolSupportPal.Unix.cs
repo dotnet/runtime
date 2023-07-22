@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Net.Internals;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 
@@ -21,7 +20,11 @@ namespace System.Net
             IntPtr socket = invalid;
             try
             {
+#if SYSTEM_NET_SOCKETS_DLL
                 Interop.Error result = Interop.Sys.Socket(af, SocketType.Dgram, 0, &socket);
+#else
+                Interop.Error result = Interop.Sys.Socket((int)af, (int)Internals.SocketType.Dgram, 0, &socket);
+#endif
                 // we get EAFNOSUPPORT when family is not supported by Kernel, EPROTONOSUPPORT may come from policy enforcement like FreeBSD jail()
                 return result != Interop.Error.EAFNOSUPPORT && result != Interop.Error.EPROTONOSUPPORT;
             }

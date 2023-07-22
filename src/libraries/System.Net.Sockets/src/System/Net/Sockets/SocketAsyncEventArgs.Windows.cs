@@ -873,7 +873,7 @@ namespace System.Net.Sockets
             }
 
             // Pin down the new one.
-            _socketAddressGCHandle = GCHandle.Alloc(_socketAddress!.Buffer, GCHandleType.Pinned);
+            _socketAddressGCHandle = GCHandle.Alloc(_socketAddress!.InternalBuffer, GCHandleType.Pinned);
             _socketAddress.CopyAddressSizeIntoBuffer();
             _pinnedSocketAddress = _socketAddress;
         }

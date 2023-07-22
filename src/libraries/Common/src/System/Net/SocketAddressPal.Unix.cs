@@ -92,7 +92,7 @@ namespace System.Net
             return port;
         }
 
-        public static unsafe void SetPort(byte[] buffer, ushort port)
+        public static unsafe void SetPort(Span<byte> buffer, ushort port)
         {
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
@@ -130,7 +130,7 @@ namespace System.Net
             scope = localScope;
         }
 
-        public static unsafe void SetIPv4Address(byte[] buffer, uint address)
+        public static unsafe void SetIPv4Address(Span<byte> buffer, uint address)
         {
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
@@ -141,21 +141,22 @@ namespace System.Net
             ThrowOnFailure(err);
         }
 
-        public static unsafe void SetIPv4Address(byte[] buffer, byte* address)
+        public static unsafe void SetIPv4Address(Span<byte> buffer, byte* address)
         {
             uint addr = (uint)System.Runtime.InteropServices.Marshal.ReadInt32((IntPtr)address);
             SetIPv4Address(buffer, addr);
         }
 
-        public static unsafe void SetIPv6Address(byte[] buffer, Span<byte> address, uint scope)
+        public static unsafe void SetIPv6Address(Span<byte> buffer, Span<byte> address, uint scope)
         {
+
             fixed (byte* rawInput = &MemoryMarshal.GetReference(address))
             {
                 SetIPv6Address(buffer, rawInput, address.Length, scope);
             }
         }
 
-        public static unsafe void SetIPv6Address(byte[] buffer, byte* address, int addressLength, uint scope)
+        public static unsafe void SetIPv6Address(Span<byte> buffer, byte* address, int addressLength, uint scope)
         {
             Interop.Error err;
             fixed (byte* rawAddress = buffer)
