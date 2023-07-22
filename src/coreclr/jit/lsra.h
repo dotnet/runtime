@@ -2066,21 +2066,14 @@ private:
     //
     static regMaskTP calleeSaveRegs(RegisterType rt)
     {
-        if (varTypeUsesIntReg(rt))
-        {
-            return RBM_INT_CALLEE_SAVED;
-        }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-        else if (varTypeUsesMaskReg(rt))
-        {
-            return RBM_MSK_CALLEE_SAVED;
-        }
-#endif // TARGET_XARCH && FEATURE_SIMD
-        else
-        {
-            assert(varTypeUsesFloatReg(rt));
-            return RBM_FLT_CALLEE_SAVED;
-        }
+        static const regMaskTP varTypeCalleeSaveRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeSaveRegs));
+        return varTypeCalleeSaveRegs[rt];
     }
 
     //------------------------------------------------------------------------
@@ -2088,21 +2081,14 @@ private:
     //
     regMaskTP callerSaveRegs(RegisterType rt) const
     {
-        if (varTypeUsesIntReg(rt))
-        {
-            return RBM_INT_CALLEE_TRASH;
-        }
-#if defined(TARGET_XARCH) && defined(FEATURE_SIMD)
-        else if (varTypeUsesMaskReg(rt))
-        {
-            return RBM_MSK_CALLEE_TRASH;
-        }
-#endif // TARGET_XARCH && FEATURE_SIMD
-        else
-        {
-            assert(varTypeUsesFloatReg(rt));
-            return RBM_FLT_CALLEE_TRASH;
-        }
+        static const regMaskTP varTypeCalleeTrashRegs[] = {
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+        };
+
+        assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
+        return varTypeCalleeTrashRegs[rt];
     }
 };
 
