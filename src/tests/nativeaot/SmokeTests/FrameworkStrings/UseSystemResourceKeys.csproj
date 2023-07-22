@@ -6,7 +6,7 @@
     <DefineConstants>$(DefineConstants);RESOURCE_KEYS</DefineConstants>
     
     <!-- Requires the framework to also be compiled with UseSystemResourceKeys -->
-    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true'">true</CLRTestTargetUnsupported>
+    <CLRTestTargetUnsupported Condition="'$(IlcMultiModule)' == 'true' or '$(TargetsAppleMobile)' == 'true'">true</CLRTestTargetUnsupported>
   </PropertyGroup>
 
   <ItemGroup>
