@@ -11,6 +11,7 @@ namespace System.Buffers
 {
     internal static class TeddyBucketizer
     {
+        // This method is the same as GenerateBucketizedFingerprint below, but each bucket only contains 1 value.
         public static (Vector512<byte> Low, Vector512<byte> High) GenerateNonBucketizedFingerprint(ReadOnlySpan<string> values, int offset)
         {
             Debug.Assert(values.Length <= 8);
@@ -37,6 +38,13 @@ namespace System.Buffers
             return (DuplicateTo512(low), DuplicateTo512(high));
         }
 
+        // We can have up to 8 buckets, and their positions are encoded by 1 bit each.
+        // Every bitmap encodes a mapping of each of the possible 16 nibble values into an 8-bit bitmap.
+        // For example if bucket 0 contains strings ["foo", "bar"], the bitmaps will have the first bit (0th bucket) set like the following:
+        // 'f' is 0x66, 'b' is 0x62, so n0Low has the bit set at index 2 and  6, n0High has it set at index 6.
+        // 'o' is 0x6F, 'a' is 0x61, so n1Low has the bit set at index 1 and 15, n1High has it set at index 6.
+        // 'o' is 0x6F, 'r' is 0x72, so n2Low has the bit set at index 2 and 15, n2High has it set at index 6 and 7.
+        // We repeat this for each bucket and then OR together the bitmaps (fingerprints) of each bucket to generate a single bitmap for each nibble.
         public static (Vector512<byte> Low, Vector512<byte> High) GenerateBucketizedFingerprint(string[][] valueBuckets, int offset)
         {
             Debug.Assert(valueBuckets.Length <= 8);

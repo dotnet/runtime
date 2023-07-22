@@ -10,11 +10,8 @@ namespace System.Buffers
 {
     /// <summary>
     /// Contains the implementation of core vectorized Teddy matching operations.
+    /// They determine which buckets contain potential matches for each input position.
     /// </summary>
-    /// <remarks>
-    /// TODO: Reworded explanation of how the algorithm works.
-    /// https://github.com/jneem/teddy#teddy-1 is a good starting point.
-    /// </remarks>
     internal static class TeddyHelper
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -26,15 +23,23 @@ namespace System.Buffers
             Vector128<byte> n0Low, Vector128<byte> n0High,
             Vector128<byte> n1Low, Vector128<byte> n1High)
         {
+            // See the full description of ProcessInputN3 below for more details.
+            // This method follows the same pattern as ProcessInputN3, but compares 2 bytes of each bucket at a time instead of 3.
+            // We are dealing with 4 input nibble bitmaps instead of 6, and only 1 result from the previous iteration instead of 2.
             (Vector128<byte> low, Vector128<byte> high) = GetNibbles(input);
 
+            // Shuffle each nibble with the 2 corresponding bitmaps to determine which positions match any bucket.
             Vector128<byte> match0 = Shuffle(n0Low, n0High, low, high);
             Vector128<byte> result1 = Shuffle(n1Low, n1High, low, high);
 
+            // RightShift1 shifts the match0 vector to the right by 1 place and shifts in 1 byte from the previous iteration.
             Vector128<byte> result0 = RightShift1(prev0, match0);
 
+            // AND the results together to obtain a list of only buckets that match at all 4 nibble positions.
             Vector128<byte> result = result0 & result1;
 
+            // Return the result and the current matches for byte 0.
+            // The next loop iteration, 'match0' will be passed back to this method as 'prev0'.
             return (result, match0);
         }
 
@@ -46,6 +51,8 @@ namespace System.Buffers
             Vector256<byte> n0Low, Vector256<byte> n0High,
             Vector256<byte> n1Low, Vector256<byte> n1High)
         {
+            // See comments in 'ProcessInputN2' for Vector128<byte> above.
+            // This method is the same, but operates on 32 input characters at a time.
             (Vector256<byte> low, Vector256<byte> high) = GetNibbles(input);
 
             Vector256<byte> match0 = Shuffle(n0Low, n0High, low, high);
@@ -66,6 +73,8 @@ namespace System.Buffers
             Vector512<byte> n0Low, Vector512<byte> n0High,
             Vector512<byte> n1Low, Vector512<byte> n1High)
         {
+            // See comments in 'ProcessInputN2' for Vector128<byte> above.
+            // This method is the same, but operates on 64 input characters at a time.
             (Vector512<byte> low, Vector512<byte> high) = GetNibbles(input);
 
             Vector512<byte> match0 = Shuffle(n0Low, n0High, low, high);
@@ -88,17 +97,63 @@ namespace System.Buffers
             Vector128<byte> n1Low, Vector128<byte> n1High,
             Vector128<byte> n2Low, Vector128<byte> n2High)
         {
+            // This is the core operation of the Teddy algorithm that determines which of the buckets contain potential matches.
+            // Every input bitmap argument (n0Low, n0High, ...) encodes a mapping of each of the possible 16 nibble values into an 8-bit bitmap.
+            // We test each nibble in the input against these bitmaps to determine which buckets match a given nibble.
+            // We then AND together these results to obtain only a list of buckets that match at all 6 nibble positions.
+            // Each byte of the result represents an 8-bit bitmask of buckets that may match at each position.
             (Vector128<byte> low, Vector128<byte> high) = GetNibbles(input);
 
+            // Shuffle each nibble with the 3 corresponding bitmaps to determine which positions match any bucket.
             Vector128<byte> match0 = Shuffle(n0Low, n0High, low, high);
             Vector128<byte> match1 = Shuffle(n1Low, n1High, low, high);
             Vector128<byte> result2 = Shuffle(n2Low, n2High, low, high);
 
+            // match0 contain the information for bucket matches at position 0.
+            // match1 contain the information for bucket matches at position 1.
+            // result2 contain the information for bucket matches at position 2.
+            // If we imagine that we only have 1 bucket with 1 string "ABC", the bitmaps we've just obtained encode the following information:
+            // match0 tells us at which positions we matched the letter 'A'
+            // match1 tells us at which positions we matched the letter 'B'
+            // result2 tells us at which positions we matched the letter 'C'
+            // If input represents the text "BC text ABC text", they would contain:
+            // input:   [B, C,  , t, e, x, t,  , A, B, C,  , t, e, x, t]
+            // match0:  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+            // match1:  [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+            // result2: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+            //                                   ^  ^  ^
+            // Note how the input contains the string ABC, but the matches are not aligned, so we can't just AND them together.
+            // To solve this, we shift 'match0' to the right by 2 places and 'match1' to the right by 1 place.
+            // result0: [?, ?, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]
+            // result1: [?, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]
+            // result2: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+            //           ^  ^                          ^
+            // The results are now aligned, but we don't know whether the first two positions matched result0 and result1.
+            // To replace the missing bytes, we remember the matches from the previous loop iteration, and look at their last 2 bytes.
+            // If the previous loop iteration ended on the character 'A', we might even have an earlier match.
+            // For example, if the previous input was "Random strings A":
+            // prev0:   [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+            // result0: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            //                                                     ^  ^
+            // We will merge the last two bytes of 'prev0' into 'result0' and the last byte of 'prev1' into 'result1'
+            // result0: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+            // result1: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+            // result2: [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+            //
+            // RightShift1 and RightShift2 perform the above operation of shifting the match vectors
+            // to the right by 1 and 2 places and shifting in the bytes from the previous iteration.
             Vector128<byte> result0 = RightShift2(prev0, match0);
             Vector128<byte> result1 = RightShift1(prev1, match1);
 
+            // AND the results together to obtain a list of only buckets that match at all 6 nibble positions.
+            // result:  [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0]
+            //              ^                          ^
+            // Note that we found the match at index 1, even though that match started 2 bytes earlier, at the end of the previous iteration.
+            // The caller must account for that when verifying potential matches, see 'MatchStartOffsetN3 = 2' in 'AsciiStringSearchValuesTeddyBase'.
             Vector128<byte> result = result0 & result1 & result2;
 
+            // Return the result and the current matches for byte 0 and 1.
+            // The next loop iteration, 'match0' and 'match1' will be passed back to this method as 'prev0' and 'prev1'.
             return (result, match0, match1);
         }
 
@@ -111,6 +166,8 @@ namespace System.Buffers
             Vector256<byte> n1Low, Vector256<byte> n1High,
             Vector256<byte> n2Low, Vector256<byte> n2High)
         {
+            // See comments in 'ProcessInputN3' for Vector128<byte> above.
+            // This method is the same, but operates on 32 input characters at a time.
             (Vector256<byte> low, Vector256<byte> high) = GetNibbles(input);
 
             Vector256<byte> match0 = Shuffle(n0Low, n0High, low, high);
@@ -134,6 +191,8 @@ namespace System.Buffers
             Vector512<byte> n1Low, Vector512<byte> n1High,
             Vector512<byte> n2Low, Vector512<byte> n2High)
         {
+            // See comments in 'ProcessInputN3' for Vector128<byte> above.
+            // This method is the same, but operates on 64 input characters at a time.
             (Vector512<byte> low, Vector512<byte> high) = GetNibbles(input);
 
             Vector512<byte> match0 = Shuffle(n0Low, n0High, low, high);
@@ -148,6 +207,8 @@ namespace System.Buffers
             return (result, match0, match1);
         }
 
+        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
+        // On X86, characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Sse2))]
         [CompExactlyDependsOn(typeof(AdvSimd))]
@@ -161,6 +222,8 @@ namespace System.Buffers
                 : AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(source0), source1);
         }
 
+        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
+        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx2))]
         public static Vector256<byte> LoadAndPack32AsciiChars(ref char source)
@@ -173,6 +236,8 @@ namespace System.Buffers
             return PackedSpanHelpers.FixUpPackedVector256Result(packed);
         }
 
+        // Read two Vector512<ushort> and concatenate their lower bytes together into a single Vector512<byte>.
+        // Characters above 32767 are turned into 0, but we account for that by not using Teddy if any of the string values contain a 0.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Avx512BW))]
         public static Vector512<byte> LoadAndPack64AsciiChars(ref char source)
@@ -264,6 +329,10 @@ namespace System.Buffers
             }
             else
             {
+                // We create a temporary 'leftShifted' vector where the 1st element is the 16th element of the input.
+                // We then use TBX to shuffle all the elements one place to the left.
+                // 0xFF is used for the first element to replace it with the one from 'leftShifted'.
+
                 Vector128<byte> leftShifted = Vector128.Shuffle(left, Vector128.Create(15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).AsByte());
                 return AdvSimd.Arm64.VectorTableLookupExtension(leftShifted, right, Vector128.Create(0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14));
             }
@@ -286,6 +355,10 @@ namespace System.Buffers
             }
             else
             {
+                // We create a temporary 'leftShifted' vector where the 1st and 2nd element are the 15th and 16th element of the input.
+                // We then use TBX to shuffle all the elements two places to the left.
+                // 0xFF is used for the first two elements to replace them with the ones from 'leftShifted'.
+
                 Vector128<byte> leftShifted = Vector128.Shuffle(left, Vector128.Create(14, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).AsByte());
                 return AdvSimd.Arm64.VectorTableLookupExtension(leftShifted, right, Vector128.Create(0xFF, 0xFF, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13));
             }
