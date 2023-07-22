@@ -244,6 +244,7 @@ namespace System.Net.Http
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
+        public static System.Net.Http.HttpMethod Parse(ReadOnlySpan<char> method) { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed class HttpProtocolException : System.Net.Http.HttpIOException
@@ -272,8 +273,8 @@ namespace System.Net.Http
         public HttpRequestException(string? message) { }
         public HttpRequestException(string? message, System.Exception? inner) { }
         public HttpRequestException(string? message, System.Exception? inner, System.Net.HttpStatusCode? statusCode) { }
-        public HttpRequestException(string? message, System.Exception? inner = null, System.Net.HttpStatusCode? statusCode = null, System.Net.Http.HttpRequestError? httpRequestError = null) { }
-        public System.Net.Http.HttpRequestError? HttpRequestError { get { throw null; } }
+        public HttpRequestException(System.Net.Http.HttpRequestError httpRequestError, string? message = null, System.Exception? inner = null, System.Net.HttpStatusCode? statusCode = null) { }
+        public System.Net.Http.HttpRequestError HttpRequestError { get { throw null; } }
         public System.Net.HttpStatusCode? StatusCode { get { throw null; } }
     }
     public partial class HttpRequestMessage : System.IDisposable

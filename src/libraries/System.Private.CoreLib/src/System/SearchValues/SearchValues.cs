@@ -140,7 +140,29 @@ namespace System.Buffers
                 return new Latin1CharSearchValues(values);
             }
 
-            return new ProbabilisticCharSearchValues(values);
+            scoped ReadOnlySpan<char> probabilisticValues = values;
+
+            if (Vector128.IsHardwareAccelerated && values.Length < 8)
+            {
+                // ProbabilisticMap does a Span.Contains check to confirm potential matches.
+                // If we have fewer than 8 values, pad them with existing ones to make the verification faster.
+                Span<char> newValues = stackalloc char[8];
+                newValues.Fill(values[0]);
+                values.CopyTo(newValues);
+                probabilisticValues = newValues;
+            }
+
+            if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && minInclusive < 128)
+            {
+                // If we have both ASCII and non-ASCII characters, use an implementation that
+                // does an optimistic ASCII fast-path and then falls back to the ProbabilisticMap.
+
+                return (Ssse3.IsSupported || PackedSimd.IsSupported) && probabilisticValues.Contains('\0')
+                    ? new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Ssse3AndWasmHandleZeroInNeedle>(probabilisticValues)
+                    : new ProbabilisticWithAsciiCharSearchValues<IndexOfAnyAsciiSearcher.Default>(probabilisticValues);
+            }
+
+            return new ProbabilisticCharSearchValues(probabilisticValues);
         }
 
         private static bool TryGetSingleRange<T>(ReadOnlySpan<T> values, out T minInclusive, out T maxInclusive)

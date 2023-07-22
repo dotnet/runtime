@@ -9,6 +9,7 @@
     <PublishAot>{PublishAot}</PublishAot>
     <AppHostSourcePath>{AppHostSourcePath}</AppHostSourcePath>
     <SingleFileHostSourcePath>{SingleFileHostSourcePath}</SingleFileHostSourcePath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 
     <!-- wasm specific -->
     <MonoAOTCompilerDir>{MonoAOTCompilerDir}</MonoAOTCompilerDir>

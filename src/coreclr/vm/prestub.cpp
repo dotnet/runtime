@@ -1266,13 +1266,12 @@ namespace
 
         MethodDesc* targetMaybe = NULL;
 
-        // Following the iteration pattern found in MemberLoader::FindMethod().
-        // Reverse order is recommended - see comments in MemberLoader::FindMethod().
-        MethodTable::MethodIterator iter(targetType.AsMethodTable());
-        iter.MoveToEnd();
-        for (; iter.IsValid(); iter.Prev())
+        // Following a similar iteration pattern found in MemberLoader::FindMethod().
+        // However, we are only operating on the current type not walking the type hierarchy.
+        MethodTable::IntroducedMethodIterator iter(targetType.AsMethodTable());
+        for (; iter.IsValid(); iter.Next())
         {
-            MethodDesc* curr = iter.GetDeclMethodDesc();
+            MethodDesc* curr = iter.GetMethodDesc();
 
             // Check the target and current method match static/instance state.
             if (cxt.IsTargetStatic != (!!curr->IsStatic()))
