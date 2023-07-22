@@ -1393,6 +1393,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             }
 
             case ShortInlineI:
+            case ShortInlineTypeI:
             case ShortInlineVar:
             {
                 unsigned char  ch= pCode[PC];
@@ -1506,6 +1507,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             }
 
             case InlineI:
+            case InlineTypeI:
             case InlineRVA:
             {
                 DWORD v = pCode[PC] + (pCode[PC+1] << 8) + (pCode[PC+2] << 16) + (pCode[PC+3] << 24);
@@ -1522,6 +1524,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             }
 
             case InlineI8:
+            case InlineTypeI8:
             {
                 __int64 v = (__int64) pCode[PC] +
                             (((__int64) pCode[PC+1]) << 8) +
@@ -1548,6 +1551,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             }
 
             case ShortInlineR:
+            case ShortInlineTypeR:
             {
                 __int32 v = (__int32) pCode[PC] +
                             (((__int32) pCode[PC+1]) << 8) +
@@ -1582,6 +1586,7 @@ BOOL Disassemble(IMDInternalImport *pImport, BYTE *ILHeader, void *GUICookie, md
             }
 
             case InlineR:
+            case InlineTypeR:
             {
                 __int64 v = (__int64) pCode[PC] +
                             (((__int64) pCode[PC+1]) << 8) +

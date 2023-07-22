@@ -535,6 +535,11 @@ PCCOR_SIGNATURE PrettyPrintType(
             case ELEMENT_TYPE_CLASS         :
                 str = "class ";
                 goto DO_CLASS;
+            case ELEMENT_TYPE_CONSTTYPE    :
+                str = "const ";
+                appendStr(out, KEYWORD((char*)str));
+                Reiterate = TRUE;
+                break;
 
             DO_CLASS:
                 appendStr(out, KEYWORD((char*)str));
@@ -614,7 +619,9 @@ PCCOR_SIGNATURE PrettyPrintType(
 #endif
                 }
                 } break;
-
+                
+            case ELEMENT_TYPE_CVAR        :
+                appendStr(out, KEYWORD("const "));
             case ELEMENT_TYPE_VAR        :
                 appendChar(out, '!');
                 n  = CorSigUncompressData(typePtr);
@@ -623,7 +630,9 @@ PCCOR_SIGNATURE PrettyPrintType(
 #endif
                     appendStrNum(out, n);
                 break;
-
+                
+            case ELEMENT_TYPE_MCVAR        :
+                appendStr(out, KEYWORD("const "));
             case ELEMENT_TYPE_MVAR        :
                 appendChar(out, '!');
                 appendChar(out, '!');

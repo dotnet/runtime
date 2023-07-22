@@ -162,6 +162,7 @@ HRESULT CeeFileGenWriter::MapTokensForMethod(
             case ShortInlineI:
             case ShortInlineVar:
             case ShortInlineBrTarget:
+            case ShortInlineTypeI:
             PC++;
             break;
 
@@ -173,11 +174,15 @@ HRESULT CeeFileGenWriter::MapTokensForMethod(
             case ShortInlineR:
             case InlineBrTarget:
             case InlineRVA:
+            case InlineTypeI:
+            case ShortInlineTypeR:
             PC += 4;
             break;
 
             case InlineI8:
             case InlineR:
+            case InlineTypeI8:
+            case InlineTypeR:
             PC += 8;
             break;
 

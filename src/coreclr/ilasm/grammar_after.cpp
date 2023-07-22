@@ -36,6 +36,11 @@ static Keywords keywords[] = {
 #undef InlineTok
 #undef InlineSwitch
 #undef InlineVarTok
+#undef InlineTypeI
+#undef InlineTypeI8
+#undef InlineTypeR
+#undef ShortInlineTypeI
+#undef ShortInlineTypeR
 
 
 #define InlineNone              INSTR_NONE
@@ -47,7 +52,7 @@ static Keywords keywords[] = {
 #define InlineR                 INSTR_R
 #define ShortInlineR            INSTR_R
 #define InlineBrTarget          INSTR_BRTARGET
-#define ShortInlineBrTarget             INSTR_BRTARGET
+#define ShortInlineBrTarget     INSTR_BRTARGET
 #define InlineMethod            INSTR_METHOD
 #define InlineField             INSTR_FIELD
 #define InlineType              INSTR_TYPE
@@ -55,6 +60,11 @@ static Keywords keywords[] = {
 #define InlineSig               INSTR_SIG
 #define InlineTok               INSTR_TOK
 #define InlineSwitch            INSTR_SWITCH
+#define InlineTypeI             INSTR_I
+#define InlineTypeI8            INSTR_I8
+#define InlineTypeR             INSTR_R
+#define ShortInlineTypeI        INSTR_I
+#define ShortInlineTypeR        INSTR_R
 
 #define InlineVarTok            0
 #define NEW_INLINE_NAMES
@@ -1360,8 +1370,9 @@ AGAIN:
                 /* do nothing */
                 break;
 
-        case ELEMENT_TYPE_VALUETYPE   :
+        case ELEMENT_TYPE_VALUETYPE    :
         case ELEMENT_TYPE_CLASS        :
+        case ELEMENT_TYPE_CONSTTYPE    :
                 ptr += CorSigUncompressToken(ptr, &tk);
                 break;
 
@@ -1404,11 +1415,15 @@ AGAIN:
 
         case ELEMENT_TYPE_VAR:
         case ELEMENT_TYPE_MVAR:
+        case ELEMENT_TYPE_CVAR:
+        case ELEMENT_TYPE_MCVAR:
                 CorSigUncompressData((PCCOR_SIGNATURE&) ptr);  // bound
                 break;
 
         case ELEMENT_TYPE_VARFIXUP:
         case ELEMENT_TYPE_MVARFIXUP:
+        case ELEMENT_TYPE_CVARFIXUP:
+        case ELEMENT_TYPE_MCVARFIXUP:
                 if(fFixupType)
                 {
                     BYTE* pb = ptr-1; // ptr incremented in switch
@@ -1530,7 +1545,6 @@ AGAIN:
                    }
                }
                break;
-
         default:
         case ELEMENT_TYPE_END                   :
                 _ASSERTE(!"Unknown Type");
@@ -1772,6 +1786,14 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
     ret->appendInt8(kind);
     unsigned cnt = CorSigCompressToken(tk, ret->getBuff(5));
     ret->remove(5 - cnt);
+    return(ret);
+}
+/********************************************************************************/
+BinStr* AsmParse::MakeConstTypeClass(BinStr* type)
+{
+    BinStr* ret = new BinStr();
+    ret->appendInt8(ELEMENT_TYPE_CONSTTYPE);
+    ret->append(type);
     return(ret);
 }
 /**************************************************************************/
