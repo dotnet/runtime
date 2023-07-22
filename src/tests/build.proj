@@ -403,18 +403,17 @@
   <!-- This target builds a Native AOT iOS App -->
   <Target Name="BuildNativeAOTiOSApp" DependsOnTargets="SetupOSSpecificProps">
     <PropertyGroup>
-      <EntryPoint>$([System.IO.Path]::GetFileName($(_CMDDIR)))</EntryPoint>
-      <_CMDDIR>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</_CMDDIR>
       <CategoryPath>$([System.IO.Path]::GetDirectoryName($([System.IO.Path]::GetDirectoryName($(_CMDDIR)))))</CategoryPath>
       <CategoryName>$([System.IO.Path]::GetFileName($(CategoryPath)))</CategoryName>
       <TestRelativePath>$(CategoryName)/$([System.String]::Copy('$(_CMDDIR)').Replace("$(CategoryPath)/",""))</TestRelativePath>
+      <TestName>$([System.IO.Path]::GetFileName($(_CMDDIR)))</TestName>
       <AppName>$([System.String]::Copy('$(TestRelativePath)').Replace('/','_'))</AppName>
       <AppleBuildDir>$(IntermediateOutputPath)\iOSApps\$(AppName)</AppleBuildDir>
       <FinalPath>$(XUnitTestBinBase)$(TestRelativePath)\$(AppName).app</FinalPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(EntryPoint)\native\$(EntryPoint).o</NativeDependencies>
+      <NativeDependencies>$(IntermediateOutputPath)\..\$(TestRelativePath)\$(TestName)\native\$(TestName).o</NativeDependencies>
       <DevTeamProvisioning>-</DevTeamProvisioning>
       <AppleGenerateAppBundle>true</AppleGenerateAppBundle>
       <GenerateXcodeProject>true</GenerateXcodeProject>
@@ -454,7 +453,9 @@
   </Target>
 
   <Target Name="BuildAlliOSApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
-    <ItemGroup Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'">
+    <ItemGroup>
+      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
+      <TestDirectories Remove="$([System.IO.Path]::GetDirectoryName('%(TestExclusions.Identity)'))" />
       <RunProj Include="$(MSBuildProjectFile)">
         <Properties>_CMDDIR=%(TestDirectories.Identity)</Properties>
       </RunProj>
@@ -465,15 +466,6 @@
       BuildInParallel="true"
       Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' != 'nativeaot'"
     />
-
-    <ItemGroup Condition="'@(TestDirectories)' != '' and '$(TestBuildMode)' == 'nativeaot'">
-      <TestExclusions Include="@(ExcludeList->Metadata('FullPath'))" Condition="$(HaveExcludes)" />
-      <TestDirectories Remove="$([System.IO.Path]::GetDirectoryName('%(TestExclusions.Identity)'))" />
-      <EntryPoints Include="$([System.IO.Directory]::GetDirectories('%(TestDirectories.Identity)'))" />
-      <RunProj Include="$(MSBuildProjectFile)">
-        <Properties>_CMDDIR=%(EntryPoints.Identity)</Properties>
-      </RunProj>
-    </ItemGroup>
 
     <MSBuild
       Projects="@(RunProj)"
