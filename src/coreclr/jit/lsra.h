@@ -73,14 +73,6 @@ inline bool useFloatReg(var_types type)
 }
 
 //------------------------------------------------------------------------
-// registerTypesEquivalent: Check to see if two RegisterTypes are equivalent
-//
-inline bool registerTypesEquivalent(RegisterType a, RegisterType b)
-{
-    return varTypeIsIntegralOrI(a) == varTypeIsIntegralOrI(b);
-}
-
-//------------------------------------------------------------------------
 // RefInfo: Captures the necessary information for a definition that is "in-flight"
 //          during `buildIntervals` (i.e. a tree-node definition has been encountered,
 //          but not its use). This includes the RefPosition and its associated
@@ -2064,7 +2056,16 @@ private:
     //
     static regMaskTP calleeSaveRegs(RegisterType rt)
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_SAVED : RBM_FLT_CALLEE_SAVED;
+        if (varTypeUsesIntReg(rt))
+        {
+            return RBM_INT_CALLEE_SAVED;
+        }
+        else
+        {
+            // TODO-AVX512: Mask registers should have their own path
+            assert(varTypeUsesFloatReg(rt) || varTypeUsesMaskReg(rt));
+            return RBM_FLT_CALLEE_SAVED;
+        }
     }
 
     //------------------------------------------------------------------------
@@ -2072,7 +2073,16 @@ private:
     //
     regMaskTP callerSaveRegs(RegisterType rt) const
     {
-        return varTypeIsIntegralOrI(rt) ? RBM_INT_CALLEE_TRASH : RBM_FLT_CALLEE_TRASH;
+        if (varTypeUsesIntReg(rt))
+        {
+            return RBM_INT_CALLEE_TRASH;
+        }
+        else
+        {
+            // TODO-AVX512: Mask registers should have their own path
+            assert(varTypeUsesFloatReg(rt) || varTypeUsesMaskReg(rt));
+            return RBM_FLT_CALLEE_TRASH;
+        }
     }
 };
 
