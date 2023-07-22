@@ -196,10 +196,7 @@ namespace System.Buffers
                 ? input
                 : input & Vector128.Create((byte)0xF);
 
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector128<byte> high = AdvSimd.IsSupported
-                ? AdvSimd.ShiftRightLogical(input, 4)
-                : (input.AsInt32() >>> 4).AsByte() & Vector128.Create((byte)0xF);
+            Vector128<byte> high = input >>> 4;
 
             return (low, high);
         }
@@ -211,8 +208,7 @@ namespace System.Buffers
             // of doing an implicit 'AND 0xF' in order to skip the redundant AND.
             Vector256<byte> low = input;
 
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector256<byte> high = (input.AsInt32() >>> 4).AsByte() & Vector256.Create((byte)0xF);
+            Vector256<byte> high = input >>> 4;
 
             return (low, high);
         }
@@ -224,8 +220,7 @@ namespace System.Buffers
             // of doing an implicit 'AND 0xF' in order to skip the redundant AND.
             Vector512<byte> low = input;
 
-            // X86 doesn't have a logical right shift intrinsic for bytes: https://github.com/dotnet/runtime/issues/82564
-            Vector512<byte> high = (input.AsInt32() >>> 4).AsByte() & Vector512.Create((byte)0xF);
+            Vector512<byte> high = input >>> 4;
 
             return (low, high);
         }
