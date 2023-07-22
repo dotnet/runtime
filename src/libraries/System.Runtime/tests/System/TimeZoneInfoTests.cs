@@ -2432,17 +2432,16 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        [PlatformSpecific(~TestPlatforms.Windows & ~TestPlatforms.Browser)]
+        private static bool SupportICUWithUtcAlias => PlatformDetection.IsIcuGlobalization && PlatformDetection.IsNotAppleMobile && PlatformDetection.IsNotBrowser;
+
+        [ConditionalFact(nameof(SupportICUWithUtcAlias))]
         public static void UtcAliases_MapToUtc()
         {
-            TimeZoneInfo.AdjustmentRule[] expectedAdjustmentRules = TimeZoneInfo.Utc.GetAdjustmentRules();
-
-            foreach (var alias in s_UtcAliases)
+            foreach (string alias in s_UtcAliases)
             {
                 TimeZoneInfo actualUtc = TimeZoneInfo.FindSystemTimeZoneById(alias);
-                Assert.Equal(TimeZoneInfo.Utc.BaseUtcOffset, actualUtc.BaseUtcOffset);
-                Assert.Equal(expectedAdjustmentRules, actualUtc.GetAdjustmentRules());
+                Assert.True(TimeZoneInfo.Utc.HasSameRules(actualUtc));
+                Assert.True(actualUtc.HasSameRules(TimeZoneInfo.Utc));
             }
         }
 
