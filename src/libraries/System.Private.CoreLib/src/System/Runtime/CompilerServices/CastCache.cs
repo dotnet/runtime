@@ -36,13 +36,6 @@ namespace System.Runtime.CompilerServices
         private int _initialCacheSize;
         private int _maxCacheSize;
 
-        // wraps existing table
-        public CastCache(int[] table)
-        {
-            _table = table;
-        }
-
-        // creates a new cache instance
         public CastCache(int initialCacheSize, int maxCacheSize)
         {
             Debug.Assert(BitOperations.PopCount((uint)initialCacheSize) == 1 && initialCacheSize > 1);
