@@ -37,11 +37,11 @@
 #define METAMODEL_MAJOR_VER_V2_0 2      // Major version for v2.0
 #define METAMODEL_MINOR_VER_V2_0 0      // Minor version for v2.0
 
-#define METAMODEL_MAJOR_VER_V2_1 2      // Major version for v2.1
-#define METAMODEL_MINOR_VER_V2_1 1      // Minor version for v2.1
+#define METAMODEL_MAJOR_VER_V3_0 3      // Major version for v3.0
+#define METAMODEL_MINOR_VER_V3_0 0      // Minor version for v3.0
 
-#define METAMODEL_MAJOR_VER 2
-#define METAMODEL_MINOR_VER 1
+#define METAMODEL_MAJOR_VER 3
+#define METAMODEL_MINOR_VER 0
 
 // Metadata version number up through Whidbey Beta2
 #define METAMODEL_MAJOR_VER_B1 1
@@ -52,9 +52,10 @@ typedef enum MetadataVersion
 {
     MDVersion1          = 0x00000001,
     MDVersion2          = 0x00000002,
+    MDVersion3          = 0x00000003,
 
     // @TODO - this value should be updated when we increase the version number
-    MDDefaultVersion      = 0x00000002
+    MDDefaultVersion      = 0x00000003
 } MetadataVersion;
 
 
@@ -2022,8 +2023,8 @@ public:
     BOOL SupportsConstGenerics()
     {
         // Only 2.1 of the metadata support const generics
-        return (m_Schema.m_major > METAMODEL_MAJOR_VER_V2_1 ||
-                (m_Schema.m_major >= METAMODEL_MAJOR_VER_V2_1 && m_Schema.m_minor >= METAMODEL_MINOR_VER_V2_1));
+        return (m_Schema.m_major >= METAMODEL_MAJOR_VER_V3_0 ||
+                (m_Schema.m_major == METAMODEL_MAJOR_VER_V3_0 && m_Schema.m_minor >= METAMODEL_MINOR_VER_V3_0));
     }// SupportsConstGenerics
 
     protected:

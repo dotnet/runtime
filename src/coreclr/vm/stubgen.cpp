@@ -213,6 +213,7 @@ static const BYTE s_rgbOpcodeSizes[] =
     ((l) + (oprType)),
 
 #define InlineNone            0
+#define ShortInlineTypeVar    2
 #define ShortInlineVar        1
 #define ShortInlineI          1
 #define InlineI               4
@@ -228,12 +229,14 @@ static const BYTE s_rgbOpcodeSizes[] =
 #define InlineString          4
 #define InlineField           4
 #define InlineTok             4
+#define InlineTypeVar         4
 #define InlineVar             2
 
 #include "opcode.def"
 
 #undef OPDEF
 #undef InlineNone
+#undef ShortInlineTypeVar
 #undef ShortInlineVar
 #undef ShortInlineI
 #undef InlineI
@@ -249,6 +252,7 @@ static const BYTE s_rgbOpcodeSizes[] =
 #undef InlineString
 #undef InlineField
 #undef InlineTok
+#undef InlineTypeVar
 #undef InlineVar
 
 };

@@ -7,9 +7,11 @@
 //
 //*****************************************************************************
 
+#if METAMODEL_MAJOR_VER != 3
 #if METAMODEL_MAJOR_VER != 2
 #if METAMODEL_MAJOR_VER != 1
-#error "METAMODEL_MAJOR_VER other than 1 or 2 is not implemented"
+#error "METAMODEL_MAJOR_VER other than 1, 2 or 3 is not implemented"
+#endif
 #endif
 #endif
     //
@@ -369,6 +371,15 @@
     SCHEMA_ITEM_CDTKN(GenericParam, Owner, TypeOrMethodDef)
     SCHEMA_ITEM_STRING(GenericParam, Name)
     SCHEMA_ITEM_CDTKN(GenericParam, Type, TypeDefOrRef)
+    SCHEMA_TABLE_END(GenericParam)
+        
+    //-------------------------------------------------------------------------
+    // Transitional table for Metadata v2.0 for GenericParam
+    SCHEMA_TABLE_START(GenericParamV2_0)
+    SCHEMA_ITEM(GenericParam, USHORT, Number)
+    SCHEMA_ITEM(GenericParam, USHORT, Flags)
+    SCHEMA_ITEM_CDTKN(GenericParam, Owner, TypeOrMethodDef)
+    SCHEMA_ITEM_STRING(GenericParam, Name)
     SCHEMA_TABLE_END(GenericParam)
 
     //-------------------------------------------------------------------------
