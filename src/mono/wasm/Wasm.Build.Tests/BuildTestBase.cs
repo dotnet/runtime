@@ -592,28 +592,6 @@ namespace Wasm.Build.Tests
                             string ProjectFileContents,
                             string? ExtraBuildArgs);
     public record BuildProduct(string ProjectDir, string LogFile, bool Result, string BuildOutput);
-    public record FileStat(bool Exists, DateTime LastWriteTimeUtc, long Length, string FullPath);
-    public record BuildPaths(string ObjWasmDir, string ObjDir, string BinDir, string BundleDir);
-
-    public record BlazorBuildOptions
-    (
-        string Id,
-        string Config,
-        NativeFilesType ExpectedFileType,
-        string TargetFramework = BuildTestBase.DefaultTargetFrameworkForBlazor,
-        bool WarnAsError = true,
-        bool ExpectRelinkDirWhenPublishing = false,
-        bool ExpectFingerprintOnDotnetJs = false,
-        RuntimeVariant RuntimeType = RuntimeVariant.SingleThreaded
-    );
-
-    public enum GlobalizationMode
-    {
-        Invariant,       // no icu
-        FullIcu,         // full icu data: icudt.dat is loaded
-        PredefinedIcu,   // user set WasmIcuDataFileName value and we are loading that file
-        Hybrid           // reduced icu, missing data is provided by platform-native functions (web api for wasm)
-    };
 
     public enum NativeFilesType { FromRuntimePack, Relinked, AOT };
 }
