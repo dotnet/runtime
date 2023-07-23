@@ -1815,7 +1815,8 @@ FORCEINLINE ULONG CorSigUncompressData(
     return CorSigUncompressBigData(pData);
 }
 
-inline ULONG CorSigUncompressConstTypeArgData(PCCOR_SIGNATURE & pData)
+inline ULONG CorSigUncompressConstTypeArgData(
+    PCCOR_SIGNATURE & pData)    // [IN,OUT] compressed const type argument data
 {
     ULONG size = 1;
     switch (*pData++)
@@ -1848,7 +1849,7 @@ inline ULONG CorSigUncompressConstTypeArgData(PCCOR_SIGNATURE & pData)
             size = 0;
             break;
     }
-    pData += size;
+
     return size;
 }
 
