@@ -1365,7 +1365,6 @@ AGAIN:
 
         case ELEMENT_TYPE_VALUETYPE    :
         case ELEMENT_TYPE_CLASS        :
-        case ELEMENT_TYPE_CONSTTYPE    :
                 ptr += CorSigUncompressToken(ptr, &tk);
                 break;
         case ELEMENT_TYPE_CTARG        :
@@ -1781,14 +1780,6 @@ BinStr* AsmParse::MakeTypeClass(CorElementType kind, mdToken tk)
     ret->appendInt8(kind);
     unsigned cnt = CorSigCompressToken(tk, ret->getBuff(5));
     ret->remove(5 - cnt);
-    return(ret);
-}
-/********************************************************************************/
-BinStr* AsmParse::MakeConstTypeClass(BinStr* type)
-{
-    BinStr* ret = new BinStr();
-    ret->appendInt8(ELEMENT_TYPE_CONSTTYPE);
-    ret->append(type);
     return(ret);
 }
 /**************************************************************************/

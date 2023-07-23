@@ -297,7 +297,6 @@ private:
     BinStr* MakeSig(unsigned callConv, BinStr* retType, BinStr* args, int ntyargs = 0);
     BinStr* MakeTypeClass(CorElementType kind, mdToken tk);
     BinStr* MakeTypeArray(CorElementType kind, BinStr* elemType, BinStr* bounds);
-    BinStr* MakeConstTypeClass(BinStr* type);
 
     char* fillBuff(_In_opt_z_ char* curPos);   // refill the input buffer
     HANDLE hstdout;

@@ -869,7 +869,7 @@ public:
     void SetStdMapping(BOOL val = TRUE) { m_fStdMapping = val; };
 
     //--------------------------------------------------------------------------------
-    BOOL isShort(unsigned instr) { return ((OpcodeInfo[instr].Type & 16) != 0); };
+    BOOL isShort(unsigned instr) { return ((OpcodeInfo[instr].Type & opcode_format_t::ShortInline) != 0); };
     unsigned ShortOf(unsigned opcode);
     void SetErrorReporter(ErrorReporter* aReport) { report = aReport; if(m_pManifest) m_pManifest->SetErrorReporter(aReport); }
 

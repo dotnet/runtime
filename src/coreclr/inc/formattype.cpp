@@ -604,10 +604,6 @@ PCCOR_SIGNATURE PrettyPrintType(
             case ELEMENT_TYPE_CLASS         :
                 str = "class ";
                 goto DO_CLASS;
-            case ELEMENT_TYPE_CONSTTYPE    :
-                appendStr(out, KEYWORD("const "));
-                Reiterate = TRUE;
-                break;
             case ELEMENT_TYPE_CTARG        :
                 appendStr(out, KEYWORD("const "));
                 Reiterate = TRUE;

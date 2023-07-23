@@ -1677,7 +1677,6 @@ AGAIN:
 
         case ELEMENT_TYPE_VALUETYPE    :
         case ELEMENT_TYPE_CLASS        :
-        case ELEMENT_TYPE_CONSTTYPE    :
                 ptr += CorSigUncompressToken(ptr, &tk);
                 break;
         case ELEMENT_TYPE_CTARG        :

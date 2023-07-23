@@ -915,10 +915,9 @@ typedef enum CorElementType
     ELEMENT_TYPE_CVAR           = 0x22,    // a class const type variable CVAR <number>
     ELEMENT_TYPE_MCVAR          = 0x23,     // a method const type variable MCVAR <number>
 
-    ELEMENT_TYPE_CONSTTYPE      = 0x24,     // const <class Token>
-    ELEMENT_TYPE_CTARG          = 0x25,     // const <class Token> <number>
+    ELEMENT_TYPE_CTARG          = 0x24,     // const <class Token> <data>
     // Note that this is the max of base type excluding modifiers
-    ELEMENT_TYPE_MAX            = 0x26,     // first invalid element type
+    ELEMENT_TYPE_MAX            = 0x25,     // first invalid element type
 
 
     ELEMENT_TYPE_MODIFIER       = 0x40,

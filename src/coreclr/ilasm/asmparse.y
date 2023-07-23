@@ -1733,7 +1733,6 @@ type                    : CLASS_ className                    { if($2 == PASM->m
                         | VALUE_ CLASS_ className             { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $3); }
                         | VALUETYPE_ className                { $$ = parser->MakeTypeClass(ELEMENT_TYPE_VALUETYPE, $2); }
                         | CONST_ constTypeArg                 { $$ = $2; $$->insertInt8(ELEMENT_TYPE_CTARG); }
-                        | CONST_ simpleType                   { $$ = parser->MakeConstTypeClass($2); }
                         | type '[' ']'                        { $$ = $1; $$->insertInt8(ELEMENT_TYPE_SZARRAY); }
                         | type '[' bounds1 ']'                { $$ = parser->MakeTypeArray(ELEMENT_TYPE_ARRAY, $1, $3); }
                         | type '&'                            { $$ = $1; $$->insertInt8(ELEMENT_TYPE_BYREF); }
