@@ -85,6 +85,9 @@ namespace System.Buffers
             int i = 0;
 
         FastScan:
+            Debug.Assert(nodeIndex == 0);
+            // We are currently in the root node and trying to find the next position of any starting character.
+            // If all the values start with an ASCII character, use a vectorized helper to quickly skip over characters that can't start a match.
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && typeof(TFastScanVariant) == typeof(IndexOfAnyAsciiFastScan))
             {
                 int remainingLength = span.Length - i;
@@ -116,6 +119,7 @@ namespace System.Buffers
             }
 
         LoopWithoutRangeCheck:
+            // Read the next input character and either find the next potential match prefix or transition back to the root node.
             Debug.Assert(i < span.Length);
             char c = TCaseSensitivity.TransformInput(Unsafe.Add(ref MemoryMarshal.GetReference(span), i));
 
@@ -126,11 +130,14 @@ namespace System.Buffers
 
                 if (node.TryGetChild(c, out int childIndex))
                 {
+                    // We were able to extend the current match. If this node contains a potential match, remember that.
                     nodeIndex = childIndex;
 
                     int matchLength = Unsafe.Add(ref nodes, (uint)nodeIndex).MatchLength;
                     if (matchLength != 0)
                     {
+                        // Any result we find from here on out may only be lower (longer match with a start closer to the beginning of the input).
+                        Debug.Assert(result == -1 || result >= i + 1 - matchLength);
                         result = i + 1 - matchLength;
                     }
 
@@ -140,23 +147,30 @@ namespace System.Buffers
 
                 if (nodeIndex == 0)
                 {
+                    // We are back at the root node and none of the values start with the current character.
                     if (result >= 0)
                     {
+                        // If we've already found a match, we can't find an earlier one anymore. This is the result
                         goto Return;
                     }
 
+                    // Go back to searching for the next possible starting character.
                     i++;
                     goto FastScan;
                 }
 
+                // Follow the next suffix link.
                 nodeIndex = node.SuffixLink;
 
                 if (nodeIndex < 0)
                 {
+                    // A node with a suffix link of -1 indicates a match, see AhoCorasickBuilder.AddSuffixLinks.
                     Debug.Assert(nodeIndex == -1);
                     Debug.Assert(result >= 0);
                     goto Return;
                 }
+
+                // Try to match the current character again at the suffix link node.
             }
 
         Return:
@@ -176,10 +190,14 @@ namespace System.Buffers
             char lowSurrogateUpper = LowSurrogateNotSet;
 
         FastScan:
+            // We are currently in the root node and trying to find the next position of any starting character.
+            // If all the values start with an ASCII character, use a vectorized helper to quickly skip over characters that can't start a match.
             if (IndexOfAnyAsciiSearcher.IsVectorizationSupported && typeof(TFastScanVariant) == typeof(IndexOfAnyAsciiFastScan))
             {
                 if (lowSurrogateUpper != LowSurrogateNotSet)
                 {
+                    // We read a surrogate pair in the previous loop iteration and processed the high surrogate.
+                    // Continue with the stored low surrogate.
                     goto LoopWithoutRangeCheck;
                 }
 
@@ -209,15 +227,18 @@ namespace System.Buffers
             }
 
         LoopWithoutRangeCheck:
+            // Read the next input character and either find the next potential match prefix or transition back to the root node.
             Debug.Assert(i < span.Length);
             char c;
             if (lowSurrogateUpper != LowSurrogateNotSet)
             {
+                // We have just processed the high surrogate. Continue with the low surrogate we read in the previous iteration.
                 c = lowSurrogateUpper;
                 lowSurrogateUpper = LowSurrogateNotSet;
             }
             else
             {
+                // Read the next character, check if it's a high surrogate, and transform it to its Ordinal uppercase representation.
                 c = Unsafe.Add(ref MemoryMarshal.GetReference(span), i);
                 char lowSurrogate;
 
@@ -242,7 +263,7 @@ namespace System.Buffers
                 }
 
 #if DEBUG
-                // This logic must match Ordinal.ToUpperOrdinal exactly.
+                // The above logic must match Ordinal.ToUpperOrdinal exactly.
                 Span<char> destination = new char[2]; // Avoid stackalloc in a loop
                 Ordinal.ToUpperOrdinal(span.Slice(i, i + 1 == span.Length ? 1 : 2), destination);
                 Debug.Assert(c == destination[0]);
@@ -257,11 +278,14 @@ namespace System.Buffers
 
                 if (node.TryGetChild(c, out int childIndex))
                 {
+                    // We were able to extend the current match. If this node contains a potential match, remember that.
                     nodeIndex = childIndex;
 
                     int matchLength = Unsafe.Add(ref nodes, (uint)nodeIndex).MatchLength;
                     if (matchLength != 0)
                     {
+                        // Any result we find from here on out may only be lower (longer match with a start closer to the beginning of the input).
+                        Debug.Assert(result == -1 || result >= i + 1 - matchLength);
                         result = i + 1 - matchLength;
                     }
 
@@ -271,23 +295,30 @@ namespace System.Buffers
 
                 if (nodeIndex == 0)
                 {
+                    // We are back at the root node and none of the values start with the current character.
                     if (result >= 0)
                     {
+                        // If we've already found a match, we can't find an earlier one anymore. This is the result
                         goto Return;
                     }
 
+                    // Go back to searching for the next possible starting character.
                     i++;
                     goto FastScan;
                 }
 
+                // Follow the next suffix link.
                 nodeIndex = node.SuffixLink;
 
                 if (nodeIndex < 0)
                 {
+                    // A node with a suffix link of -1 indicates a match, see AhoCorasickBuilder.AddSuffixLinks.
                     Debug.Assert(nodeIndex == -1);
                     Debug.Assert(result >= 0);
                     goto Return;
                 }
+
+                // Try to match the current character again at the suffix link node.
             }
 
         Return:

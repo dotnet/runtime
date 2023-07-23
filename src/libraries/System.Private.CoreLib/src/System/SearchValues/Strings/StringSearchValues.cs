@@ -123,6 +123,7 @@ namespace System.Buffers
                 return searchValues;
             }
 
+            // Fall back to Aho-Corasick for all other multi-value sets.
             AhoCorasick ahoCorasick = ahoCorasickBuilder.Build();
 
             if (!ignoreCase)

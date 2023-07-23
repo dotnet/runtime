@@ -90,7 +90,7 @@ namespace System.Buffers
                     if (node.MatchLength != 0)
                     {
                         // A previous value is an exact prefix of this one.
-                        // We're looking for the index of the first match, not necessarily the longest one, we can skip this value.
+                        // We're looking for the index of the first match, not necessarily the longest one, so we can skip this value.
                         // We've already normalized the values, so we can do ordinal comparisons here.
                         unreachableValues ??= new HashSet<string>(StringComparer.Ordinal);
                         unreachableValues.Add(value);
@@ -108,6 +108,33 @@ namespace System.Buffers
 
         private void AddSuffixLinks()
         {
+            // Besides the list of children which continue the current value, each node also contains a suffix link
+            // which points to the node with the longest suffix of the current node.
+            // When we're searching and can't find a child to extend the current string with, we will follow
+            // suffix links to find the longest string that does match up until the current point.
+            //
+            // For example if we have strings "DOTNET" and "OTTER", we want
+            // the 'O' and 'T' in "dotnet" to point into 'O' and 'T' in "OTTER".
+            // If our text contains the word "dotter", we will walk it character by character.
+            // Once we get to "DOTNET" and read the next character 'T', we can no longer continue with "DOTNET",
+            // and will instead follow the suffix link to "ot" in "OTTER" where we can continue the search.
+            //
+            // We also remember when a node's suffix link points to the end of a different value, such that it is itself a match.
+            // If we also had the word "POTTERY", the 'R' would contain a suffix link to the 'R' in "OTTER",
+            // but also mark that it is already a length=5 match.
+            //
+            //       +---> D  O  T  N  E  T
+            //       |        |  |
+            //       |     +--+  |
+            // root--+     |     |
+            //       |     |  +--+
+            //       |     v  v
+            //       +---> O  T  T  E  R
+            //       |     ^  ^  ^  ^  ^
+            //       |     |  |  |  |  | -- this is also a length=5 match
+            //       |     |  |  |  |  |
+            //       +> P  O  T  T  E  R  Y
+
             var queue = new Queue<(char Char, int Index)>();
             queue.Enqueue(((char)0, 0));
 
@@ -117,6 +144,8 @@ namespace System.Buffers
                 int parent = _parents[trieNode.Index];
                 int suffixLink = _nodes[parent].SuffixLink;
 
+                // If this node doesn't represent the first character of a value (doesn't immediately follow the root node),
+                // it may have a have a non-zero suffix link.
                 if (parent != 0)
                 {
                     while (suffixLink >= 0)
@@ -140,10 +169,13 @@ namespace System.Buffers
 
                 if (node.MatchLength != 0)
                 {
+                    // This node represents the end of a match.
+                    // Mark it in a special way we can recognize when searching.
                     node.SuffixLink = -1;
 
-                    // If a node is a match, there's no need to assign suffix links to its children.
-                    // If a child does not match, such that we would look at its suffix link, we already saw an earlier match node.
+                    // If a node is a match, there is no need to assign suffix links to its children.
+                    // If a child does not match, such that we would look at its suffix link,
+                    // we have already saw an earlier match node that is definitely the earliest possible match.
                 }
                 else
                 {
@@ -151,6 +183,7 @@ namespace System.Buffers
 
                     if (suffixLink >= 0)
                     {
+                        // Remember if this node's suffix link points to a node that is itself a match.
                         node.MatchLength = _nodes[suffixLink].MatchLength;
                     }
 
@@ -159,6 +192,8 @@ namespace System.Buffers
             }
         }
 
+        // If all the values start with ASCII characters, we can use IndexOfAnyAsciiSearcher
+        // to quickly skip to the next possible starting location in the input.
         private void GenerateStartingAsciiCharsBitmap()
         {
             scoped ValueListBuilder<char> startingChars = new ValueListBuilder<char>(stackalloc char[128]);

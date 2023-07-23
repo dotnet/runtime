@@ -31,6 +31,8 @@ namespace System.Buffers
         public static bool StartsWith<TCaseSensitivity>(ref char matchStart, int lengthRemaining, string candidate)
             where TCaseSensitivity : struct, ICaseSensitivity
         {
+            Debug.Assert(lengthRemaining > 0);
+
             if (lengthRemaining < candidate.Length)
             {
                 return false;

@@ -15,6 +15,8 @@ namespace System.Buffers
         public int SuffixLink;
         public int MatchLength;
 
+        // This is not a radix tree so we may have a lot of very sparse nodes (single child).
+        // We save 1 child separately to avoid allocating a separate collection in such cases.
         private int _firstChildChar;
         private int _firstChildIndex;
         private object _children; // Either int[] or Dictionary<char, int>
@@ -89,6 +91,10 @@ namespace System.Buffers
                         queue.Enqueue((childChar, childIndex));
                     }
                 }
+                else
+                {
+                    Debug.Assert(ReferenceEquals(_children, EmptyChildrenSentinel));
+                }
             }
         }
 
@@ -100,6 +106,8 @@ namespace System.Buffers
 
                 float frequency = -2;
 
+                // We have the _firstChildChar field that will always be checked first.
+                // Improve throughput by setting it to the child character with the highest frequency.
                 foreach ((char childChar, int childIndex) in children)
                 {
                     float newFrequency = char.IsAscii(childChar) ? CharacterFrequencyHelper.AsciiFrequency[childChar] : -1;
@@ -122,7 +130,10 @@ namespace System.Buffers
 
             static bool TryCreateJumpTable(Dictionary<char, int> children, [NotNullWhen(true)] out int[]? table)
             {
-                // Sacrifice some memory usage in exchange for faster lookup performance
+                // We can use either a Dictionary<char, int> or int[] to map child characters to node indexes.
+                // int[] is generally faster but consumes more memory for characters with high values.
+                // We try to find the right balance between memory usage and lookup performance.
+                // Currently we will sacrifice up to ~2x the memory consumption to use int[] for faster lookups.
                 const int AcceptableSizeMultiplier = 2;
 
                 Debug.Assert(children.Count > 0);
@@ -134,8 +145,8 @@ namespace System.Buffers
                     maxValue = Math.Max(maxValue, childChar);
                 }
 
-                int tableSize = TableBytesEstimate(maxValue);
-                int dictionarySize = DictionaryBytesEstimate(children.Count);
+                int tableSize = TableMemoryFootprintBytesEstimate(maxValue);
+                int dictionarySize = DictionaryMemoryFootprintBytesEstimate(children.Count);
 
                 if (tableSize > dictionarySize * AcceptableSizeMultiplier)
                 {
@@ -154,7 +165,7 @@ namespace System.Buffers
 
                 return true;
 
-                static int TableBytesEstimate(int maxValue)
+                static int TableMemoryFootprintBytesEstimate(int maxValue)
                 {
                     // An approximate number of bytes consumed by an
                     // int[] table with a known number of entries.
@@ -162,7 +173,7 @@ namespace System.Buffers
                     return 32 + (maxValue * sizeof(int));
                 }
 
-                static int DictionaryBytesEstimate(int childCount)
+                static int DictionaryMemoryFootprintBytesEstimate(int childCount)
                 {
                     // An approximate number of bytes consumed by a
                     // Dictionary<char, int> with a known number of entries.
