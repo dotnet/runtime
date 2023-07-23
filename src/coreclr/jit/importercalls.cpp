@@ -4079,16 +4079,15 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             assert(sig->sigInst.methInstCount == 2);
 
             CORINFO_CLASS_HANDLE fromTypeHnd = sig->sigInst.methInst[0];
-            CORINFO_CLASS_HANDLE toTypeHnd   = sig->sigInst.methInst[1];
+            ClassLayout*         fromLayout  = nullptr;
+            var_types            fromType    = TypeHandleToVarType(fromTypeHnd, &fromLayout);
 
-            if (fromTypeHnd == toTypeHnd)
-            {
-                // Handle the easy case of matching type handles, such as `int` to `int`
-                return impPopStack().val;
-            }
+            CORINFO_CLASS_HANDLE toTypeHnd = sig->sigInst.methInst[1];
+            ClassLayout*         toLayout  = nullptr;
+            var_types            toType    = TypeHandleToVarType(toTypeHnd, &toLayout);
 
-            unsigned fromSize = info.compCompHnd->getClassSize(fromTypeHnd);
-            unsigned toSize   = info.compCompHnd->getClassSize(toTypeHnd);
+            unsigned fromSize = fromLayout != nullptr ? fromLayout->GetSize() : genTypeSize(fromType);
+            unsigned toSize   = toLayout != nullptr ? toLayout->GetSize() : genTypeSize(toType);
 
             // Runtime requires all types to be at least 1-byte
             assert((fromSize != 0) && (toSize != 0));
@@ -4099,57 +4098,41 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                 return nullptr;
             }
 
-            CorInfoType fromJitType = info.compCompHnd->asCorInfoType(fromTypeHnd);
-            var_types   fromType    = JITtype2varType(fromJitType);
+            assert((fromType != TYP_REF) && (toType != TYP_REF));
 
-            CorInfoType toJitType = info.compCompHnd->asCorInfoType(toTypeHnd);
-            var_types   toType    = JITtype2varType(toJitType);
+            GenTree* op1 = impPopStack().val;
 
-            bool involvesStructType = false;
+            op1 = impImplicitR4orR8Cast(op1, fromType);
+            op1 = impImplicitIorI4Cast(op1, fromType);
 
-            if (fromType == TYP_STRUCT)
+            var_types valType      = op1->gtType;
+            GenTree*  effectiveVal = op1->gtEffectiveVal();
+            if (effectiveVal->OperIs(GT_LCL_VAR))
             {
-                involvesStructType = true;
+                valType = lvaGetDesc(effectiveVal->AsLclVar()->GetLclNum())->TypeGet();
+            }
 
-                if (toType == TYP_STRUCT)
+            // Handle matching handles, compatible struct layouts or integrals where we can simply return op1
+            if (varTypeIsSmall(toType))
+            {
+                if (genActualTypeIsInt(valType))
                 {
-                    ClassLayout* fromLayout = typGetObjLayout(fromTypeHnd);
-                    ClassLayout* toLayout   = typGetObjLayout(toTypeHnd);
-
-                    if (ClassLayout::AreCompatible(fromLayout, toLayout))
+                    if (fgCastNeeded(op1, toType))
                     {
-                        // Handle compatible struct layouts where we can simply return op1
-                        return impPopStack().val;
+                        op1 = gtNewCastNode(TYP_INT, op1, false, toType);
                     }
+                    return op1;
                 }
             }
-            else if (toType == TYP_STRUCT)
+            else if (((toType != TYP_STRUCT) && (genActualType(valType) == toType)) ||
+                     ClassLayout::AreCompatible(fromLayout, toLayout))
             {
-                involvesStructType = true;
+                return op1;
             }
 
-            if (involvesStructType)
+            // Handle bitcasting between floating and same sized integral, such as `float` to `int`
+            if (varTypeIsFloating(fromType) && varTypeIsIntegral(toType))
             {
-                // TODO-CQ: Handle this by getting the address of `op1` and then dereferencing
-                // that as TTo, much as `Unsafe.As<TFrom, TTo>(ref op1)` would work.
-                return nullptr;
-            }
-
-            if (varTypeIsFloating(fromType))
-            {
-                // Handle bitcasting from floating to same sized integral, such as `float` to `int`
-                assert(varTypeIsIntegral(toType));
-
-#if !TARGET_64BIT
-                if ((fromType == TYP_DOUBLE) && !impStackTop().val->IsCnsFltOrDbl())
-                {
-                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
-                    return nullptr;
-                }
-#endif // !TARGET_64BIT
-
-                GenTree* op1 = impPopStack().val;
-
                 if (op1->IsCnsFltOrDbl())
                 {
                     if (fromType == TYP_DOUBLE)
@@ -4164,30 +4147,15 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                         return gtNewIconNode(static_cast<int32_t>(BitOperations::SingleToUInt32Bits(f32Cns)));
                     }
                 }
-                else
+                // TODO-CQ: We should support this on 32-bit via decomposition
+                else if (TargetArchitecture::Is64Bit || (fromType == TYP_FLOAT))
                 {
                     toType = varTypeToSigned(toType);
-                    op1    = impImplicitR4orR8Cast(op1, fromType);
                     return gtNewBitCastNode(toType, op1);
                 }
-                break;
             }
-
-            if (varTypeIsFloating(toType))
+            else if (varTypeIsIntegral(fromType) && varTypeIsFloating(toType))
             {
-                // Handle bitcasting from integral to same sized floating, such as `int` to `float`
-                assert(varTypeIsIntegral(fromType));
-
-#if !TARGET_64BIT
-                if ((toType == TYP_DOUBLE) && !impStackTop().val->IsIntegralConst())
-                {
-                    // TODO-Cleanup: We should support this on 32-bit but it requires decomposition work
-                    return nullptr;
-                }
-#endif // !TARGET_64BIT
-
-                GenTree* op1 = impPopStack().val;
-
                 if (op1->IsIntegralConst())
                 {
                     if (toType == TYP_DOUBLE)
@@ -4204,14 +4172,33 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
                         return gtNewDconNode(FloatingPointUtils::convertToDouble(f32Cns), TYP_FLOAT);
                     }
                 }
-                else
+                // TODO-CQ: We should support this on 32-bit via decomposition
+                else if (TargetArchitecture::Is64Bit || (toType == TYP_FLOAT))
                 {
                     return gtNewBitCastNode(toType, op1);
                 }
             }
 
-            // Handle bitcasting for same sized integrals, such as `int` to `uint`
-            return impPopStack().val;
+            GenTree*     addr;
+            GenTreeFlags indirFlags = GTF_EMPTY;
+            if (varTypeIsIntegral(valType) && (genTypeSize(valType) < fromSize))
+            {
+                unsigned lclNum = lvaGrabTemp(true DEBUGARG("bitcast small type extension"));
+                impStoreTemp(lclNum, op1, CHECK_SPILL_ALL);
+                addr = gtNewLclVarAddrNode(lclNum, TYP_I_IMPL);
+            }
+            else
+            {
+                addr = impGetNodeAddr(op1, CHECK_SPILL_ALL, &indirFlags);
+            }
+
+            if (info.compCompHnd->getClassAlignmentRequirement(fromTypeHnd) <
+                info.compCompHnd->getClassAlignmentRequirement(toTypeHnd))
+            {
+                indirFlags |= GTF_IND_UNALIGNED;
+            }
+
+            return gtNewLoadValueNode(toType, toLayout, addr, indirFlags);
         }
 
         case NI_SRCS_UNSAFE_ByteOffset:
@@ -4244,7 +4231,14 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             // stobj !!T
             // ret
 
-            return nullptr;
+            CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+            ClassLayout*         layout  = nullptr;
+            var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+
+            GenTree* source = impPopStack().val;
+            GenTree* dest   = impPopStack().val;
+
+            return gtNewStoreValueNode(type, layout, dest, gtNewLoadValueNode(type, layout, source));
         }
 
         case NI_SRCS_UNSAFE_CopyBlock:
@@ -4363,26 +4357,21 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
         }
 
         case NI_SRCS_UNSAFE_Read:
-        {
-            assert(sig->sigInst.methInstCount == 1);
-
-            // ldarg.0
-            // ldobj !!T
-            // ret
-
-            return nullptr;
-        }
-
         case NI_SRCS_UNSAFE_ReadUnaligned:
         {
             assert(sig->sigInst.methInstCount == 1);
 
             // ldarg.0
-            // unaligned. 0x1
+            // if NI_SRCS_UNSAFE_ReadUnaligned: unaligned. 0x1
             // ldobj !!T
             // ret
 
-            return nullptr;
+            CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+            ClassLayout*         layout  = nullptr;
+            var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+            GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_ReadUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
+
+            return gtNewLoadValueNode(type, layout, impPopStack().val, flags);
         }
 
         case NI_SRCS_UNSAFE_SizeOf:
@@ -4473,28 +4462,30 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
         }
 
         case NI_SRCS_UNSAFE_Write:
-        {
-            assert(sig->sigInst.methInstCount == 1);
-
-            // ldarg.0
-            // ldarg.1
-            // stobj !!T
-            // ret
-
-            return nullptr;
-        }
-
         case NI_SRCS_UNSAFE_WriteUnaligned:
         {
             assert(sig->sigInst.methInstCount == 1);
 
             // ldarg.0
             // ldarg.1
-            // unaligned. 0x01
+            // if NI_SRCS_UNSAFE_WriteUnaligned: unaligned. 0x01
             // stobj !!T
             // ret
 
-            return nullptr;
+            CORINFO_CLASS_HANDLE typeHnd = sig->sigInst.methInst[0];
+            ClassLayout*         layout  = nullptr;
+            var_types            type    = TypeHandleToVarType(typeHnd, &layout);
+            GenTreeFlags         flags   = intrinsic == NI_SRCS_UNSAFE_WriteUnaligned ? GTF_IND_UNALIGNED : GTF_EMPTY;
+
+            GenTree* value = impPopStack().val;
+            GenTree* addr  = impPopStack().val;
+
+            GenTree* store = gtNewStoreValueNode(type, layout, addr, value, flags);
+            if (varTypeIsStruct(store))
+            {
+                store = impStoreStruct(store, CHECK_SPILL_ALL);
+            }
+            return store;
         }
 
         default:

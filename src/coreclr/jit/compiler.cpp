@@ -9647,9 +9647,9 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_ITERATOR]");
                 }
-                if (tree->gtFlags & GTF_VAR_CLONED)
+                if (tree->gtFlags & GTF_VAR_MOREUSES)
                 {
-                    chars += printf("[VAR_CLONED]");
+                    chars += printf("[VAR_MOREUSES]");
                 }
                 if (!comp->lvaGetDesc(tree->AsLclVarCommon())->lvPromoted)
                 {
