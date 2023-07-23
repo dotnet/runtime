@@ -74,7 +74,6 @@ namespace System.Buffers
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         protected int IndexOfAnyN2(ReadOnlySpan<char> span)
@@ -95,7 +94,6 @@ namespace System.Buffers
             return IndexOfAnyN2Vector128(span);
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         protected int IndexOfAnyN3(ReadOnlySpan<char> span)

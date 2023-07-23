@@ -16,7 +16,6 @@ namespace System.Buffers
             : base(buckets, values, uniqueValues, n: 2)
         { }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         [CompExactlyDependsOn(typeof(Ssse3))]
         [CompExactlyDependsOn(typeof(AdvSimd.Arm64))]
         internal override int IndexOfAnyMultiString(ReadOnlySpan<char> span) =>
