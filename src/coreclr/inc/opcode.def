@@ -299,7 +299,7 @@ OPDEF(CEE_CLT,                        "clt",              Pop1+Pop1,          Pu
 OPDEF(CEE_CLT_UN,                     "clt.un",           Pop1+Pop1,          PushI,       InlineNone,         IPrimitive,  2,  0xFE,    0x05,    NEXT)
 OPDEF(CEE_LDFTN,                      "ldftn",            Pop0,               PushI,       InlineMethod,       IPrimitive,  2,  0xFE,    0x06,    NEXT)
 OPDEF(CEE_LDVIRTFTN,                  "ldvirtftn",        PopRef,             PushI,       InlineMethod,       IPrimitive,  2,  0xFE,    0x07,    NEXT)
-OPDEF(CEE_LDCTARG,                    "ldctarg",          Pop0,               Push1,       InlineTypeVar,      IPrimitive,  2,  0xFF,    0x08,    NEXT)
+OPDEF(CEE_LDCTARG,                    "ldctarg",          Pop0,               Push1,       InlineTypeVar,      IPrimitive,  2,  0xFE,    0x08,    NEXT)
 OPDEF(CEE_LDARG,                      "ldarg",            Pop0,               Push1,       InlineVar,          IPrimitive,  2,  0xFE,    0x09,    NEXT)
 OPDEF(CEE_LDARGA,                     "ldarga",           Pop0,               PushI,       InlineVar,          IPrimitive,  2,  0xFE,    0x0A,    NEXT)
 OPDEF(CEE_STARG,                      "starg",            Pop1,               Push0,       InlineVar,          IPrimitive,  2,  0xFE,    0x0B,    NEXT)
