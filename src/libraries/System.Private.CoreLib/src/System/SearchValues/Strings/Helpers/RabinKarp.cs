@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using static System.Buffers.StringSearchValuesHelper;
 
 namespace System.Buffers
 {
@@ -31,7 +32,7 @@ namespace System.Buffers
         // We're using nuint as the rolling hash, so we can spread the hash over more bits on 64bit.
         private static int HashShiftPerElement => IntPtr.Size == 8 ? 2 : 1;
 
-        private readonly string[][] _buckets;
+        private readonly string[]?[] _buckets;
         private readonly int _hashLength;
         private readonly nuint _hashUpdateMultiplier;
 
@@ -58,7 +59,7 @@ namespace System.Buffers
                 return;
             }
 
-            string[][] buckets = _buckets = new string[BucketCount][];
+            string[]?[] buckets = _buckets = new string[BucketCount][];
 
             foreach (string value in values)
             {
@@ -71,6 +72,8 @@ namespace System.Buffers
                 nuint bucket = hash % BucketCount;
                 string[] newBucket;
 
+                // Start with a bucket containing 1 element and reallocate larger ones if needed.
+                // As MaxValues is similar to BucketCount, we will have 1 value per bucket on average.
                 if (buckets[bucket] is string[] existingBucket)
                 {
                     newBucket = new string[existingBucket.Length + 1];
@@ -88,18 +91,19 @@ namespace System.Buffers
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly int IndexOfAny<TCaseSensitivity>(ReadOnlySpan<char> span)
-            where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity
+            where TCaseSensitivity : struct, ICaseSensitivity
         {
-            return typeof(TCaseSensitivity) == typeof(StringSearchValuesHelper.CaseInsensitiveUnicode)
+            return typeof(TCaseSensitivity) == typeof(CaseInsensitiveUnicode)
                 ? IndexOfAnyCaseInsensitiveUnicode(span)
                 : IndexOfAnyCore<TCaseSensitivity>(span);
         }
 
         private readonly int IndexOfAnyCore<TCaseSensitivity>(ReadOnlySpan<char> span)
-            where TCaseSensitivity : struct, StringSearchValuesHelper.ICaseSensitivity
+            where TCaseSensitivity : struct, ICaseSensitivity
         {
-            Debug.Assert(typeof(TCaseSensitivity) != typeof(StringSearchValuesHelper.CaseInsensitiveUnicode));
+            Debug.Assert(typeof(TCaseSensitivity) != typeof(CaseInsensitiveUnicode));
             Debug.Assert(span.Length <= MaxInputLength, "Teddy should have handled short inputs.");
+            Debug.Assert(_buckets is not null);
 
             ref char current = ref MemoryMarshal.GetReference(span);
 
@@ -115,15 +119,15 @@ namespace System.Buffers
                     hash = (hash << HashShiftPerElement) + TCaseSensitivity.TransformInput(Unsafe.Add(ref current, i));
                 }
 
-                string[][] buckets = _buckets;
+                ref string[]? bucketsRef = ref MemoryMarshal.GetArrayDataReference(_buckets);
 
                 while (true)
                 {
-                    if (Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(buckets), hash % BucketCount) is string[] bucket)
+                    if (Unsafe.Add(ref bucketsRef, hash % BucketCount) is string[] bucket)
                     {
                         int startOffset = (int)((nuint)Unsafe.ByteOffset(ref MemoryMarshal.GetReference(span), ref current) / sizeof(char));
 
-                        if (StringSearchValuesHelper.StartsWith<TCaseSensitivity>(ref current, span.Length - startOffset, bucket))
+                        if (StartsWith<TCaseSensitivity>(ref current, span.Length - startOffset, bucket))
                         {
                             return startOffset;
                         }
@@ -162,7 +166,7 @@ namespace System.Buffers
             Debug.Assert(charsWritten == upperCase.Length);
 
             // CaseSensitive instead of CaseInsensitiveUnicode as we've already done the case conversion.
-            return IndexOfAnyCore<StringSearchValuesHelper.CaseSensitive>(upperCase);
+            return IndexOfAnyCore<CaseSensitive>(upperCase);
         }
     }
 }
