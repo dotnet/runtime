@@ -85,6 +85,65 @@ static void appendStrNum(CQuickBytes *out, int num) {
     appendStr(out, buff);
 }
 
+static void appendStrBlob(CQuickBytes *out, CorElementType type, PCCOR_SIGNATURE ptr, ULONG len) {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+    }
+    CONTRACTL_END;
+    ULONG buffSize = len + 42;
+    char* buff = new char[buffSize];
+    switch (type)
+    {
+        case ELEMENT_TYPE_BOOLEAN      :
+            sprintf_s(buff, buffSize, "%s", *(BOOLEAN*)ptr == 1 ? "true" : "false");
+            goto APPEND;
+        case ELEMENT_TYPE_CHAR         :
+            sprintf_s(buff, buffSize, "%c", *(CHAR*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_I1           :
+            sprintf_s(buff, buffSize, "%hhd", *(int8_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_U1           :
+            sprintf_s(buff, buffSize, "%hhu", *(uint8_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_I2           :
+            sprintf_s(buff, buffSize, "%hd", *(uint16_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_U2           :
+            sprintf_s(buff, buffSize, "%hu", *(uint16_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_I4           :
+        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+            sprintf_s(buff, buffSize, "%d", *(uint32_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_U4           :
+        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
+            sprintf_s(buff, buffSize, "%u", *(uint32_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_R4           :
+            sprintf_s(buff, buffSize, "%f", *(float*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_I8           :
+        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+            sprintf_s(buff, buffSize, "%lld", *(int64_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_U8           :
+        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
+            sprintf_s(buff, buffSize, "%llu", *(uint64_t*)ptr);
+            goto APPEND;
+        case ELEMENT_TYPE_R8           :
+            sprintf_s(buff, buffSize, "%lf", *(double*)ptr);
+            goto APPEND;
+        APPEND:
+            appendStr(out, buff);
+            break;
+    }
+
+    delete []buff;
+}
+
 PCCOR_SIGNATURE PrettyPrintSignature(
     PCCOR_SIGNATURE typePtr,            // type to convert,
     unsigned typeLen,                   // the length of 'typePtr'
@@ -484,6 +543,7 @@ PCCOR_SIGNATURE PrettyPrintType(
     CQuickBytes tmp;
     CQuickBytes Appendix;
     BOOL Reiterate;
+    BOOL HasData = FALSE;
     int n;
 
     do {
@@ -527,6 +587,15 @@ PCCOR_SIGNATURE PrettyPrintType(
                 str = "typedref"; goto APPEND;
             APPEND:
                 appendStr(out, KEYWORD((char*)str));
+                if (HasData)
+                {
+                    HasData = FALSE;
+                    appendChar(out, '(');
+                    typePtr--;
+                    ULONG size = CorSigUncompressConstTypeArgData(typePtr);
+                    appendStrBlob(out, (CorElementType)typ, typePtr - size, size);
+                    appendChar(out, ')');
+                }
                 break;
 
             case ELEMENT_TYPE_VALUETYPE    :
@@ -536,9 +605,13 @@ PCCOR_SIGNATURE PrettyPrintType(
                 str = "class ";
                 goto DO_CLASS;
             case ELEMENT_TYPE_CONSTTYPE    :
-                str = "const ";
-                appendStr(out, KEYWORD((char*)str));
+                appendStr(out, KEYWORD("const "));
                 Reiterate = TRUE;
+                break;
+            case ELEMENT_TYPE_CTARG        :
+                appendStr(out, KEYWORD("const "));
+                Reiterate = TRUE;
+                HasData = TRUE;
                 break;
 
             DO_CLASS:

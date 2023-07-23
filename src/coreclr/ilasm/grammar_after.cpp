@@ -36,11 +36,6 @@ static Keywords keywords[] = {
 #undef InlineTok
 #undef InlineSwitch
 #undef InlineVarTok
-#undef InlineTypeI
-#undef InlineTypeI8
-#undef InlineTypeR
-#undef ShortInlineTypeI
-#undef ShortInlineTypeR
 #undef InlineTypeVar
 #undef ShortInlineTypeVar
 
@@ -62,11 +57,6 @@ static Keywords keywords[] = {
 #define InlineSig               INSTR_SIG
 #define InlineTok               INSTR_TOK
 #define InlineSwitch            INSTR_SWITCH
-#define InlineTypeI             INSTR_I
-#define InlineTypeI8            INSTR_I8
-#define InlineTypeR             INSTR_R
-#define ShortInlineTypeI        INSTR_I
-#define ShortInlineTypeR        INSTR_R
 #define InlineTypeVar           INSTR_TVAR
 #define ShortInlineTypeVar      INSTR_TVAR
 
@@ -1343,7 +1333,6 @@ static void corEmitInt(BinStr* buff, unsigned data)
     buff->remove(5 - cnt);
 }
 
-
 /**************************************************************************/
 /* move 'ptr past the exactly one type description */
 
@@ -1379,7 +1368,9 @@ AGAIN:
         case ELEMENT_TYPE_CONSTTYPE    :
                 ptr += CorSigUncompressToken(ptr, &tk);
                 break;
-
+        case ELEMENT_TYPE_CTARG        :
+                ptr += CorSigUncompressConstTypeArgData((PCCOR_SIGNATURE&) ptr); // const type parameter
+                break;
         case ELEMENT_TYPE_CMOD_REQD    :
         case ELEMENT_TYPE_CMOD_OPT     :
                 ptr += CorSigUncompressToken(ptr, &tk);

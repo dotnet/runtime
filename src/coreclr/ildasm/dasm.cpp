@@ -1680,6 +1680,9 @@ AGAIN:
         case ELEMENT_TYPE_CONSTTYPE    :
                 ptr += CorSigUncompressToken(ptr, &tk);
                 break;
+        case ELEMENT_TYPE_CTARG        :
+                ptr += CorSigUncompressConstTypeArgData((PCCOR_SIGNATURE&) ptr); // const type parameter
+                break;
 
         case ELEMENT_TYPE_CMOD_REQD    :
         case ELEMENT_TYPE_CMOD_OPT     :

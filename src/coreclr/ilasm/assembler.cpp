@@ -1491,7 +1491,7 @@ unsigned Assembler::ShortOf(unsigned opcode)
         case CEE_LDARGA:    retcode=CEE_LDARGA_S;   break;
         case CEE_STARG:     retcode=CEE_STARG_S;    break;
 
-        case CEE_LDTARG:    retcode=CEE_LDTARG_S;   break;
+        case CEE_LDCTARG:    retcode=CEE_LDCTARG_S;   break;
 
         case CEE_LDLOC:     retcode=CEE_LDLOC_S;    break;
         case CEE_LDLOCA:    retcode=CEE_LDLOCA_S;   break;
@@ -1647,8 +1647,8 @@ void Assembler::EmitInstrTypeVarByName(Instr* instr, CorElementType type, _In_ _
     int idx = -1;
     switch(instr->opcode)
     {
-        case CEE_LDTARG:
-        case CEE_LDTARG_S:
+        case CEE_LDCTARG:
+        case CEE_LDCTARG_S:
             if(m_pCurMethod)
             {
                 _ASSERTE(type == CorElementType::ELEMENT_TYPE_CVAR || type == CorElementType::ELEMENT_TYPE_MCVAR);

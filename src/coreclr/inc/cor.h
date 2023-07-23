@@ -141,6 +141,14 @@ typedef UNALIGNED void const *UVCP_CONSTANT;
 #define TARGET_MAIN_CLR_DLL_NAME_W    MAKE_TARGET_DLLNAME_W(MAIN_CLR_MODULE_NAME_W)
 #define TARGET_MAIN_CLR_DLL_NAME_A    MAKE_TARGET_DLLNAME_A(MAIN_CLR_MODULE_NAME_A)
 
+#ifdef TARGET_64BIT
+#define IN_TARGET_64BIT(x)     x
+#define IN_TARGET_32BIT(x)
+#else
+#define IN_TARGET_64BIT(x)
+#define IN_TARGET_32BIT(x)     x
+#endif
+
 //*****************************************************************************
 //*****************************************************************************
 //
@@ -1807,6 +1815,43 @@ FORCEINLINE ULONG CorSigUncompressData(
     return CorSigUncompressBigData(pData);
 }
 
+inline ULONG CorSigUncompressConstTypeArgData(PCCOR_SIGNATURE & pData)
+{
+    ULONG size = 1;
+    switch (*pData++)
+    {
+        case ELEMENT_TYPE_BOOLEAN      :
+        case ELEMENT_TYPE_CHAR         :
+        case ELEMENT_TYPE_I1           :
+        case ELEMENT_TYPE_U1           :
+            break;
+        case ELEMENT_TYPE_I2           :
+        case ELEMENT_TYPE_U2           :
+            size = size << 1;
+            break;
+        case ELEMENT_TYPE_I4           :
+        case ELEMENT_TYPE_U4           :
+        case ELEMENT_TYPE_R4           :
+        IN_TARGET_32BIT(case ELEMENT_TYPE_U:)
+        IN_TARGET_32BIT(case ELEMENT_TYPE_I:)
+            size = size << 2;
+            break;
+        case ELEMENT_TYPE_I8           :
+        case ELEMENT_TYPE_U8           :
+        case ELEMENT_TYPE_R8           :
+        IN_TARGET_64BIT(case ELEMENT_TYPE_U:)
+        IN_TARGET_64BIT(case ELEMENT_TYPE_I:)
+            size = size << 3;
+            break;
+        default:
+            // _ASSERTE(!"Unsupported Const Type Argument");
+            size = 0;
+            break;
+    }
+    pData += size;
+    return size;
+}
+
 #ifdef HOST_WINDOWS
 inline HRESULT CorSigUncompressData(// return S_OK or E_BADIMAGEFORMAT if the signature is bad
     PCCOR_SIGNATURE pData,          // [IN] compressed data
@@ -1989,9 +2034,9 @@ inline ULONG CorSigUncompressToken( // return number of bytes of that compressed
 
 inline HRESULT CorSigUncompressToken(
     PCCOR_SIGNATURE pData,          // [IN] compressed data
-    uint32_t        dwLen,          // [IN] Remaining length of sigature
+    uint32_t        dwLen,          // [IN] Remaining length of signature
     mdToken *       pToken,         // [OUT] the expanded *pData
-    uint32_t *      dwTokenLength)  // [OUT] The length of the token in the sigature
+    uint32_t *      dwTokenLength)  // [OUT] The length of the token in the signature
 {
     mdToken tk;
     mdToken tkType;
@@ -2096,7 +2141,7 @@ inline ULONG CorSigUncompressElementType(   // Return number of bytes of that co
 //
 // Given an uncompressed unsigned integer (iLen), Store it to pDataOut in a compressed format.
 // Return value is the number of bytes that the integer occupies in the compressed format.
-// It is caller's responsibilityt to ensure *pDataOut has at least 4 bytes to write to.
+// It is caller's responsibility to ensure *pDataOut has at least 4 bytes to write to.
 //
 // Note that this function returns -1 if iLen is too big to be compressed. We currently can
 // only represent to 0x1FFFFFFF.
