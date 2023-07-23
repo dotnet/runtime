@@ -10,6 +10,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using System.Text;
+using System.Threading.Tasks;
+using System.Threading;
 
 #nullable enable
 
@@ -76,6 +78,9 @@ namespace Wasm.Build.NativeRebuild.Tests
             if (buildArgs.ProjectFileContents != newBuildArgs.ProjectFileContents)
                 File.WriteAllText(Path.Combine(_projectDir!, $"{buildArgs.ProjectName}.csproj"), buildArgs.ProjectFileContents);
             buildArgs = newBuildArgs;
+
+            // artificial delay to have new enough timestamps
+            Thread.Sleep(5000);
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
