@@ -150,7 +150,14 @@ namespace System.Runtime.CompilerServices
         internal CastResult TryGet(nuint source, nuint target)
         {
             // table is always initialized and is not null.
-            ref int tableData = ref TableData(_table!);
+            return TryGet(_table!, source, target);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static CastResult TryGet(int[] table, nuint source, nuint target)
+        {
+            // table is always initialized and is not null.
+            ref int tableData = ref TableData(table);
 
             int index = KeyToBucket(ref tableData, source, target);
             for (int i = 0; i < BUCKET_SIZE;)

@@ -11,42 +11,25 @@ using System.Numerics;
 
 namespace System.Runtime
 {
+    // Initialize the cache eagerly to avoid null checks.
+    [EagerStaticClassConstruction]
     public static class TypeLoaderExports
     {
-        public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
-        {
-            EETypePtr pEEType = new EETypePtr(pEETypePtr);
-
-            if (pEEType.IsValueType)
-            {
-                // Nothing else to do for value types.
-                return;
-            }
-
-            // For reference types, we need to:
-            //  1- Allocate the new object
-            //  2- Call its default ctor
-            //  3- Update ptrToData to point to that newly allocated object
-            ptrToData = RuntimeImports.RhNewObject(pEEType);
-
-            if (!TryGetFromCache(pEETypePtr, pEETypePtr, out var v))
-            {
-                v = CacheMiss(pEETypePtr, pEETypePtr,
-                        (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
-                        {
-                            IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
-                            if (result == IntPtr.Zero)
-                                result = RuntimeAugments.GetFallbackDefaultConstructor();
-                            return result;
-                        });
-            }
-
-            RawCalliHelper.Call(v._result, ptrToData);
-        }
-
         //
         // Generic lookup cache
         //
+
+#if DEBUG
+        // use smaller numbers to hit resizing/preempting logic in debug
+        private const int InitialCacheSize = 8; // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 512;
+#else
+        private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
+        private const int MaximumCacheSize = 128 * 1024;
+#endif // DEBUG
+
+        private static GenericCache<Key, Value> s_cache =
+            new GenericCache<Key, Value>(InitialCacheSize, MaximumCacheSize);
 
         private struct Key : IEquatable<Key>
         {
@@ -90,24 +73,35 @@ namespace System.Runtime
             }
         }
 
-        //
-        // Parameters and state used by generic lookup cache resizing algorithm
-        //
-
-#if DEBUG
-        // use smaller numbers to hit resizing/preempting logic in debug
-        private const int InitialCacheSize = 8; // MUST BE A POWER OF TWO
-        private const int MaximumCacheSize = 512;
-#else
-        private const int InitialCacheSize = 128; // MUST BE A POWER OF TWO
-        private const int MaximumCacheSize = 128 * 1024;
-#endif // DEBUG
-
-        // Initialize the cache eagerly to avoid null checks.
-        private static GenericCache<Key, Value> s_cache;
-        internal static void Initialize()
+        public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
         {
-            s_cache = new GenericCache<Key, Value>(InitialCacheSize, MaximumCacheSize);
+            EETypePtr pEEType = new EETypePtr(pEETypePtr);
+
+            if (pEEType.IsValueType)
+            {
+                // Nothing else to do for value types.
+                return;
+            }
+
+            // For reference types, we need to:
+            //  1- Allocate the new object
+            //  2- Call its default ctor
+            //  3- Update ptrToData to point to that newly allocated object
+            ptrToData = RuntimeImports.RhNewObject(pEEType);
+
+            if (!TryGetFromCache(pEETypePtr, pEETypePtr, out var v))
+            {
+                v = CacheMiss(pEETypePtr, pEETypePtr,
+                        (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
+                        {
+                            IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
+                            if (result == IntPtr.Zero)
+                                result = RuntimeAugments.GetFallbackDefaultConstructor();
+                            return result;
+                        });
+            }
+
+            RawCalliHelper.Call(v._result, ptrToData);
         }
 
         private static Value LookupOrAdd(IntPtr context, IntPtr signature)
