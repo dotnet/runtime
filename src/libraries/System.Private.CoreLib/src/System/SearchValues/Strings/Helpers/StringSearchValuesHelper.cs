@@ -8,6 +8,8 @@ using System.Runtime.Intrinsics;
 
 namespace System.Buffers
 {
+    // Provides implementations for helpers shared across multiple SearchValues<string> implementations,
+    // such as normalizing and matching values under different case sensitivity rules.
     internal static class StringSearchValuesHelper
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -61,6 +63,7 @@ namespace System.Buffers
             static abstract bool Equals(ref char matchStart, string candidate);
         }
 
+        // Performs no case transformations.
         public readonly struct CaseSensitive : ICaseSensitivity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -80,6 +83,8 @@ namespace System.Buffers
                 ScalarEquals<CaseSensitive>(ref matchStart, candidate);
         }
 
+        // Transforms inputs to their uppercase variants with the assumption that all input characters are ASCII letters.
+        // These helpers may produce wrong results for other characters, and the callers must account for that.
         public readonly struct CaseInsensitiveAsciiLetters : ICaseSensitivity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -99,6 +104,8 @@ namespace System.Buffers
                 ScalarEquals<CaseInsensitiveAsciiLetters>(ref matchStart, candidate);
         }
 
+        // Transforms inputs to their uppercase variants with the assumption that all input characters are ASCII.
+        // These helpers may produce wrong results for non-ASCII inputs, and the callers must account for that.
         public readonly struct CaseInsensitiveAscii : ICaseSensitivity
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -142,6 +149,8 @@ namespace System.Buffers
                 ScalarEquals<CaseInsensitiveAscii>(ref matchStart, candidate);
         }
 
+        // We can't efficiently map non-ASCII inputs to their Ordinal uppercase variants,
+        // so this helper is only used for the verification of the whole input.
         public readonly struct CaseInsensitiveUnicode : ICaseSensitivity
         {
             public static char TransformInput(char input) => throw new UnreachableException();
