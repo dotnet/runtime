@@ -103,7 +103,6 @@ namespace System.Buffers
         {
             Debug.Assert(typeof(TCaseSensitivity) != typeof(CaseInsensitiveUnicode));
             Debug.Assert(span.Length <= MaxInputLength, "Teddy should have handled short inputs.");
-            Debug.Assert(_buckets is not null);
 
             ref char current = ref MemoryMarshal.GetReference(span);
 
@@ -119,6 +118,7 @@ namespace System.Buffers
                     hash = (hash << HashShiftPerElement) + TCaseSensitivity.TransformInput(Unsafe.Add(ref current, i));
                 }
 
+                Debug.Assert(_buckets is not null);
                 ref string[]? bucketsRef = ref MemoryMarshal.GetArrayDataReference(_buckets);
 
                 while (true)

@@ -47,7 +47,7 @@ namespace System.Buffers
         {
             for (int i = 0; i < candidate.Length; i++)
             {
-                if (TCaseSensitivity.TransformInput(candidate[i]) != Unsafe.Add(ref matchStart, i))
+                if (TCaseSensitivity.TransformInput(Unsafe.Add(ref matchStart, i)) != candidate[i])
                 {
                     return false;
                 }

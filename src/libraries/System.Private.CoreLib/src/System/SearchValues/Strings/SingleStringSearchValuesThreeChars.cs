@@ -207,8 +207,6 @@ namespace System.Buffers
             }
 
         ShortInput:
-            Debug.Assert(searchSpaceLength < Vector128<ushort>.Count);
-
             string value = _value;
             char valueHead = value.GetRawStringData();
 
