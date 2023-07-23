@@ -42,50 +42,6 @@ namespace System.Buffers
         // This is only implemented and used by SearchValues<string>.
         internal virtual int IndexOfAnyMultiString(ReadOnlySpan<char> span) => throw new UnreachableException();
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.IndexOfAny(span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int IndexOfAnyExcept(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.IndexOfAnyExcept(span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAny(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.LastIndexOfAny(span);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static int LastIndexOfAnyExcept(ReadOnlySpan<T> span, SearchValues<T> values)
-        {
-            if (values is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
-            }
-
-            return values.LastIndexOfAnyExcept(span);
-        }
-
         private string DebuggerDisplay
         {
             get

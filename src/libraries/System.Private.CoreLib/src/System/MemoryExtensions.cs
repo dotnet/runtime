@@ -1035,8 +1035,15 @@ namespace System
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>? =>
-            SearchValues<T>.IndexOfAnyExcept(span, values);
+        public static int IndexOfAnyExcept<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
+        {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            return values.IndexOfAnyExcept(span);
+        }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value"/>.</summary>
         /// <typeparam name="T">The type of the span and values.</typeparam>
@@ -1338,8 +1345,15 @@ namespace System
         /// If all of the values are in <paramref name="values"/>, returns -1.
         /// </returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>? =>
-            SearchValues<T>.LastIndexOfAnyExcept(span, values);
+        public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
+        {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            return values.LastIndexOfAnyExcept(span);
+        }
 
         /// <inheritdoc cref="IndexOfAnyInRange{T}(ReadOnlySpan{T}, T, T)"/>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -2081,8 +2095,15 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>? =>
-            SearchValues<T>.IndexOfAny(span, values);
+        public static int IndexOfAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
+        {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            return values.IndexOfAny(span);
+        }
 
         /// <summary>
         /// Searches for the first index of any of the specified substring values.
@@ -2371,8 +2392,15 @@ namespace System
         /// <param name="span">The span to search.</param>
         /// <param name="values">The set of values to search for.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>? =>
-            SearchValues<T>.LastIndexOfAny(span, values);
+        public static int LastIndexOfAny<T>(this ReadOnlySpan<T> span, SearchValues<T> values) where T : IEquatable<T>?
+        {
+            if (values is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.values);
+            }
+
+            return values.LastIndexOfAny(span);
+        }
 
         /// <summary>
         /// Determines whether two sequences are equal by comparing the elements using IEquatable{T}.Equals(T).
