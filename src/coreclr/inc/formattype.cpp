@@ -595,6 +595,7 @@ PCCOR_SIGNATURE PrettyPrintType(
                     ULONG len = CorSigUncompressConstTypeArgData(typePtr);
                     appendStrBlob(out, (CorElementType)typ, typePtr, len);
                     appendChar(out, ')');
+                    typePtr += len;
                 }
                 break;
 
