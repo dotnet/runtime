@@ -150,25 +150,13 @@ namespace System.Text
             }
 
             /// <inheritdoc/>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public override bool TryGetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, out int bytesWritten)
             {
-                // returns -1 if the input couldn't be encoded or the output buffer was too small
-                int written = ReadUtf8(
-                    ref MemoryMarshal.GetReference(chars), chars.Length,
-                    ref MemoryMarshal.GetReference(bytes), bytes.Length);
-
-                if (written >= 0)
-                {
-                    bytesWritten = written;
-                    return true;
-                }
-                bytesWritten = 0;
-                return false;
+                return base.TryGetBytes(chars, bytes, out bytesWritten);
             }
 
             [MethodImpl(MethodImplOptions.NoInlining)]
-            [Intrinsic] // Can be unrolled by JIT if input points to a constant string (with constant inputLength).
+            [Intrinsic] // Can be unrolled by JIT
             internal static unsafe int ReadUtf8(ref char input, int inputLength, ref byte output, int outputLength)
             {
                 fixed (char* pInput = &input)
