@@ -9,9 +9,9 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPSocketAddressSizes")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetSocketAddressSizes")]
         [SuppressGCTransition]
-        internal static unsafe partial Error GetIPSocketAddressSizes(int* ipv4SocketAddressSize, int* ipv6SocketAddressSize);
+        internal static partial Error GetSocketAddressSizes(ref int ipv4SocketAddressSize, ref int ipv6SocketAddressSize, ref int udsSocketAddressSize, ref int maxSocketAddressSize);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAddressFamily")]
         [SuppressGCTransition]

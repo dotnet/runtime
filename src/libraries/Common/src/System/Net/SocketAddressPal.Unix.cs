@@ -11,23 +11,15 @@ namespace System.Net
 {
     internal static class SocketAddressPal
     {
-        public static readonly int IPv6AddressSize = GetIPv6AddressSize();
-        public static readonly int IPv4AddressSize = GetIPv4AddressSize();
+        public static readonly int IPv6AddressSize;
+        public static readonly int IPv4AddressSize;
+        public static readonly int UdsAddressSize;
+        public static readonly int MaxAddressSize;
 
-        private static unsafe int GetIPv6AddressSize()
+        static SocketAddressPal()
         {
-            int ipv6AddressSize, unused;
-            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&unused, &ipv6AddressSize);
+            Interop.Error err = Interop.Sys.GetSocketAddressSizes(ref IPv4AddressSize, ref IPv6AddressSize, ref UdsAddressSize, ref MaxAddressSize);
             Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
-            return ipv6AddressSize;
-        }
-
-        private static unsafe int GetIPv4AddressSize()
-        {
-            int ipv4AddressSize, unused;
-            Interop.Error err = Interop.Sys.GetIPSocketAddressSizes(&ipv4AddressSize, &unused);
-            Debug.Assert(err == Interop.Error.SUCCESS, $"Unexpected err: {err}");
-            return ipv4AddressSize;
         }
 
         private static void ThrowOnFailure(Interop.Error err)

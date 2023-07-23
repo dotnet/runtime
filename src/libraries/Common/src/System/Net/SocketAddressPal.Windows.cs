@@ -10,6 +10,8 @@ namespace System.Net
     {
         public const int IPv6AddressSize = 28;
         public const int IPv4AddressSize = 16;
+        public const int UdsAddressSize = 110;
+        public const int MaxAddressSize = 128;
 
         public static AddressFamily GetAddressFamily(ReadOnlySpan<byte> buffer)
         {

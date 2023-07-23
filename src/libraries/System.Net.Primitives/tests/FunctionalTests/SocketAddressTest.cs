@@ -14,7 +14,7 @@ namespace System.Net.Primitives.Functional.Tests
         {
             SocketAddress sa = new SocketAddress(AddressFamily.InterNetwork);
             Assert.Equal(AddressFamily.InterNetwork, sa.Family);
-            Assert.Equal(32, sa.Size);
+            Assert.Equal(16, sa.Size);
         }
 
         [Fact]

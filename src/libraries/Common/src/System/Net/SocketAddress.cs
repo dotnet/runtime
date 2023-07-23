@@ -20,18 +20,19 @@ namespace System.Net.Internals
 #else
     internal sealed
 #endif
-    class SocketAddress
+    class SocketAddress : System.IEquatable<SocketAddress>
     {
 #pragma warning disable CA1802 // these could be const on Windows but need to be static readonly for Unix
         internal static readonly int IPv6AddressSize = SocketAddressPal.IPv6AddressSize;
         internal static readonly int IPv4AddressSize = SocketAddressPal.IPv4AddressSize;
+        internal static readonly int UdsAddressSize = SocketAddressPal.UdsAddressSize;
+        internal static readonly int MaxAddressSize = SocketAddressPal.MaxAddressSize;
 #pragma warning restore CA1802
 
         internal int InternalSize;
         internal byte[] InternalBuffer;
 
         private const int MinSize = 2;
-        private const int MaxSize = 32; // IrDA requires 32 bytes
         private const int DataOffset = 2;
 
         public AddressFamily Family
@@ -80,7 +81,15 @@ namespace System.Net.Internals
             }
         }
 
-        public SocketAddress(AddressFamily family) : this(family, MaxSize)
+        public static int GetMaximumAddressSize(AddressFamily addressFamily) => addressFamily switch
+        {
+            AddressFamily.InterNetwork => IPv4AddressSize,
+            AddressFamily.InterNetworkV6 => IPv6AddressSize,
+            AddressFamily.Unix => UdsAddressSize,
+            _ => MaxAddressSize
+        };
+
+        public SocketAddress(AddressFamily family) : this(family, GetMaximumAddressSize(family))
         {
         }
 
@@ -207,8 +216,9 @@ namespace System.Net.Internals
 #endif
 
         public override bool Equals(object? comparand) =>
-            comparand is SocketAddress other &&
-            Buffer.Span.SequenceEqual(other.Buffer.Span);
+            comparand is SocketAddress other && Equals(other);
+
+        public bool Equals(SocketAddress? comparand) => comparand != null && Buffer.Span.SequenceEqual(comparand.Buffer.Span);
 
         public override int GetHashCode()
         {
