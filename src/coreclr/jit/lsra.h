@@ -2029,11 +2029,11 @@ private:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -2054,7 +2054,7 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
     {
         static const regMaskTP varTypeCalleeSaveRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
@@ -2069,7 +2069,7 @@ private:
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
-    regMaskTP callerSaveRegs(RegisterType rt) const
+    FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
     {
         static const regMaskTP varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
