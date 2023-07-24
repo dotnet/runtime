@@ -934,19 +934,16 @@ namespace ILCompiler
         }
     }
 
-    public struct MetadataMapping<TEntity>
+    public readonly struct MetadataMapping<TEntity>
     {
         public readonly TEntity Entity;
         public readonly int MetadataHandle;
 
         public MetadataMapping(TEntity entity, int metadataHandle)
-        {
-            Entity = entity;
-            MetadataHandle = metadataHandle;
-        }
+            => (Entity, MetadataHandle) = (entity, metadataHandle);
     }
 
-    public struct StackTraceMapping
+    public readonly struct StackTraceMapping
     {
         public readonly MethodDesc Method;
         public readonly int OwningTypeHandle;
@@ -959,7 +956,7 @@ namespace ILCompiler
             = (method, owningTypeHandle, methodSignatureHandle, methodNameHandle, methodInstantiationArgumentCollectionHandle);
     }
 
-    public struct StackTraceRecordData
+    public readonly struct StackTraceRecordData
     {
         public readonly MethodDesc Method;
         public readonly MetadataRecord OwningType;

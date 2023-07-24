@@ -84,6 +84,9 @@ namespace ILCompiler.DependencyAnalysis
             int currentSignature = 0;
             int currentName = 0;
 
+            // The first int contains the number of entries
+            objData.EmitInt(mapping.Count);
+
             foreach (var entry in mapping)
             {
                 var commandReservation = objData.ReserveByte();

@@ -146,7 +146,7 @@ namespace Internal.StackTraceMetadata
             /// <summary>
             /// Dictionary mapping method RVA's to tokens within the metadata blob.
             /// </summary>
-            private readonly Dictionary<int, StackTraceData> _methodRvaToTokenMap;
+            private readonly StackTraceData[] _stacktraceDatas;
 
             /// <summary>
             /// Metadata reader for the stack trace metadata.
@@ -197,9 +197,10 @@ namespace Internal.StackTraceMetadata
                 {
                     _metadataReader = new MetadataReader(new IntPtr(metadataBlob), (int)metadataBlobSize);
 
-                    // RVA to token map consists of pairs of integers (method RVA - token)
-                    _methodRvaToTokenMap = new Dictionary<int, StackTraceData>();
-                    PopulateRvaToTokenMap(handle, rvaToTokenMapBlob, rvaToTokenMapBlobSize);
+                    int entryCount = *(int*)rvaToTokenMapBlob;
+                    _stacktraceDatas = new StackTraceData[entryCount];
+
+                    PopulateRvaToTokenMap(handle, rvaToTokenMapBlob + sizeof(int), rvaToTokenMapBlobSize - sizeof(int));
                 }
             }
 
@@ -217,6 +218,7 @@ namespace Internal.StackTraceMetadata
                 ConstantStringValueHandle currentName = default;
                 ConstantStringArrayHandle currentMethodInst = default;
 
+                int current = 0;
                 byte* pCurrent = pMap;
                 while (pCurrent < pMap + length)
                 {
@@ -251,17 +253,22 @@ namespace Internal.StackTraceMetadata
                     Debug.Assert((nint)pMethod > handle.OsModuleBase);
                     int methodRva = (int)((nint)pMethod - handle.OsModuleBase);
 
-                    _methodRvaToTokenMap.Add(methodRva, new StackTraceData
+                    _stacktraceDatas[current++] = new StackTraceData
                     {
+                        Rva = methodRva,
                         OwningType = currentOwningType,
                         Name = currentName,
                         Signature = currentSignature,
                         GenericArguments = currentMethodInst,
-                    });
+                    };
 
                     static void* ReadRelPtr32(byte* address)
                         => address + *(int*)address;
                 }
+
+                Debug.Assert(current == _stacktraceDatas.Length);
+
+                Array.Sort(_stacktraceDatas);
             }
 
             /// <summary>
@@ -269,27 +276,32 @@ namespace Internal.StackTraceMetadata
             /// </summary>
             public string GetMethodNameFromRvaIfAvailable(int rva)
             {
-                if (_methodRvaToTokenMap == null)
+                if (_stacktraceDatas == null)
                 {
                     // No stack trace metadata for this module
                     return null;
                 }
 
-                if (!_methodRvaToTokenMap.TryGetValue(rva, out StackTraceData data))
+                int index = Array.BinarySearch(_stacktraceDatas, new StackTraceData() { Rva = rva });
+                if (index < 0)
                 {
                     // Method RVA not found in the map
                     return null;
                 }
 
+                StackTraceData data = _stacktraceDatas[index];
                 return MethodNameFormatter.FormatMethodName(_metadataReader, data.OwningType, data.Name, data.Signature, data.GenericArguments);
             }
 
-            private struct StackTraceData
+            private struct StackTraceData : IComparable<StackTraceData>
             {
+                public int Rva { get; init; }
                 public Handle OwningType { get; init; }
                 public ConstantStringValueHandle Name { get; init; }
                 public MethodSignatureHandle Signature { get; init; }
                 public ConstantStringArrayHandle GenericArguments { get; init; }
+
+                public int CompareTo(StackTraceData other) => Rva.CompareTo(other.Rva);
             }
         }
     }
