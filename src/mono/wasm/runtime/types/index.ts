@@ -26,6 +26,7 @@ export interface DotnetHostBuilder {
     run(): Promise<number>
 }
 
+// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfig = {
     /**
      * The subfolder containing managed assemblies and pdbs. This is relative to dotnet.js script.

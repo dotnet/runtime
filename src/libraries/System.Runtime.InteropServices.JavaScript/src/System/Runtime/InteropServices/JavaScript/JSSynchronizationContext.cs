@@ -60,7 +60,7 @@ namespace System.Runtime.InteropServices.JavaScript
 #if FEATURE_WASM_THREADS
             if (CurrentJSSynchronizationContext == null)
             {
-                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://github.com/dotnet/runtime/blob/main/src/mono/wasm/threads.md#JS-interop-on-dedicated-threads ");
+                throw new InvalidOperationException("Please use dedicated worker for working with JavaScript interop. See https://aka.ms/dotnet-JS-interop-threads");
             }
 #endif
         }

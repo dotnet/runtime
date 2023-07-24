@@ -16,6 +16,7 @@ const _use_finalization_registry = typeof globalThis.FinalizationRegistry === "f
 let _js_owned_object_registry: FinalizationRegistry<any>;
 
 // this is array, not map. We maintain list of gaps in _js_handle_free_list so that it could be as compact as possible
+// 0th element is always null, because JSHandle == 0 is invalid handle.
 const _cs_owned_objects_by_js_handle: any[] = [null];
 const _js_handle_free_list: JSHandle[] = [];
 let _next_js_handle = 1;

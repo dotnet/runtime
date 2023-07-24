@@ -67,6 +67,7 @@ export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | nu
         return ptr as T;
 }
 
+// when adding new fields, please consider if it should be impacting the snapshot hash. If not, please drop it in the snapshot getCacheKey()
 export type MonoConfigInternal = MonoConfig & {
     runtimeOptions?: string[], // array of runtime options as strings
     aotProfilerOptions?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
