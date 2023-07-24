@@ -216,7 +216,7 @@ namespace Microsoft.NET.HostModel
             const uint oneSectionHeaderSize = 40;
             // offset relative to Lfanew, which is pointer to first byte in header
             const uint optionalHeaderBase = peMagicSize + peHeaderSize;
-            const uint pe64InitializedDataSizeOffset = optionalHeaderBase + 12;
+            const uint pe64InitializedDataSizeOffset = optionalHeaderBase + 8;
             const uint pe64SizeOfImageOffset = optionalHeaderBase + 56;
             const uint pe64DataDirectoriesOffset = optionalHeaderBase + 112;
             const uint pe32InitializedDataSizeOffset = optionalHeaderBase + 12;
@@ -260,6 +260,7 @@ namespace Microsoft.NET.HostModel
                 image.PEOptionalHeader.NTSpecificFields.SectionAlignment);
             uint sectionBase = image.DOSHeader.Lfanew + peMagicSize + peHeaderSize + image.PEFileHeader.OptionalHeaderSize;
 
+            uint trailingSectionVirtualStart = resourceSection.VirtualAddress + resourceSection.VirtualSize;
             uint trailingSectionStart = resourceSection.PointerToRawData + resourceSection.SizeOfRawData;
             uint trailingSectionLength = (uint)stream.Length - trailingSectionStart;
 
@@ -296,13 +297,13 @@ namespace Microsoft.NET.HostModel
             {
                 // update size of .rsrc section
                 uint resourceSectionBase = sectionBase + oneSectionHeaderSize * (uint)resourceSectionIndex;
-                ModifyU32(buffer, resourceSectionBase + virtualSizeOffset, _ => newSectionVirtualSize);
+                ModifyU32(buffer, resourceSectionBase + virtualSizeOffset, _ => rsrcSectionDataSize);
                 ModifyU32(buffer, resourceSectionBase + rawSizeOffset, _ => newSectionSize);
 
                 void PatchRVA(uint offset)
                 {
                     ModifyU32(buffer, offset,
-                        pointer => pointer >= trailingSectionStart ? (uint)(pointer + virtualDelta) : pointer);
+                        pointer => pointer >= trailingSectionVirtualStart ? (uint)(pointer + virtualDelta) : pointer);
                 }
 
                 // fix header
@@ -317,11 +318,11 @@ namespace Microsoft.NET.HostModel
                     {
                         // fix RVA in DataDirectory
                         for (int i = 0; i < image.PEOptionalHeader.NTSpecificFields.NumberOfDataDir; i++)
-                            PatchRVA((uint)(pe64DataDirectoriesOffset + i * 8));
+                            PatchRVA((uint)(image.DOSHeader.Lfanew + pe64DataDirectoriesOffset + i * 8));
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    ModifyU32(buffer, pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe64DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
                 }
                 else
                 {
@@ -334,11 +335,11 @@ namespace Microsoft.NET.HostModel
                     {
                         // fix RVA in DataDirectory
                         for (int i = 0; i < image.PEOptionalHeader.NTSpecificFields.NumberOfDataDir; i++)
-                            PatchRVA((uint)(pe32DataDirectoriesOffset + i * 8));
+                            PatchRVA((uint)(image.DOSHeader.Lfanew + pe32DataDirectoriesOffset + i * 8));
                     }
 
                     // index of ResourceTable is 2 in DataDirectories
-                    ModifyU32(buffer, pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
+                    ModifyU32(buffer, image.DOSHeader.Lfanew + pe32DataDirectoriesOffset + 2 * 8 + 4, _ => rsrcSectionDataSize);
                 }
             }
 
