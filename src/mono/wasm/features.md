@@ -6,17 +6,17 @@ For full set of MSBuild properties [see top of](src\mono\wasm\build\WasmApp.targ
 For set of [browser WASM features see](https://webassembly.org/roadmap/)
 
 # Multi-threading
-Is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`. 
+Is enabled by `<WasmEnableThreads>true</WasmEnableThreads>`.
 It requires HTTP headers similar to `Cross-Origin-Embedder-Policy:require-corp` and `Cross-Origin-Opener-Policy:same-origin`.
 See also https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/SharedArrayBuffer#security_requirements
 
 # SIMD - Single instruction, multiple data
-Is performance optimization enabled by default. It requires recent version of browser. 
+Is performance optimization enabled by default. It requires recent version of browser.
 You can disable it by `<WasmEnableSIMD>false</WasmEnableSIMD><WasmBuildNative>true</WasmBuildNative>`.
 [See also](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md)
 
 # EH - Exception handling
-Is performance optimization enabled by default. It requires recent version of browser. 
+Is performance optimization enabled by default. It requires recent version of browser.
 You can disable it by `<WasmEnableExceptionHandling>false</WasmEnableExceptionHandling><WasmBuildNative>true</WasmBuildNative>`.
 [See also](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
