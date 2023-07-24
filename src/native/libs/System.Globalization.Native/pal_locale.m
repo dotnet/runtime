@@ -248,13 +248,6 @@ NULL,
 NULL
 };
 
-static const char* const DEPRECATED_LANGUAGES[]={
-    "in", "iw", "ji", "jw", "mo", NULL, NULL
-};
-static const char* const REPLACEMENT_LANGUAGES[]={
-    "id", "he", "yi", "jv", "ro", NULL, NULL
-};
-
 /**
  * Table of 3-letter language codes.
  *
@@ -426,14 +419,6 @@ NULL,
 NULL
 };
 
-static const char* const DEPRECATED_COUNTRIES[] = {
-    "AN", "BU", "CS", "DD", "DY", "FX", "HV", "NH", "RH", "SU", "TP", "UK", "VD", "YD", "YU", "ZR", NULL, NULL /* deprecated country list */
-};
-static const char* const REPLACEMENT_COUNTRIES[] = {
-/*  "AN", "BU", "CS", "DD", "DY", "FX", "HV", "NH", "RH", "SU", "TP", "UK", "VD", "YD", "YU", "ZR" */
-    "CW", "MM", "RS", "DE", "BJ", "FR", "BF", "VU", "ZW", "RU", "TL", "GB", "VN", "YE", "RS", "CD", NULL, NULL  /* replacement country codes */
-};
-
 /**
  * Table of 3-letter country codes.
  *
@@ -513,12 +498,6 @@ NULL,
     "ANT", "BUR", "SCG", "FXX", "ROM", "SUN", "TMP", "YMD", "YUG", "ZAR",
 NULL
 };
-
-/**
- * Useful constant for the maximum size of the language part of a locale ID.
- * (including the terminating NULL).
- */
-#define ULOC_LANG_CAPACITY 12
 
 /**
  * Lookup 'key' in the array 'list'.  The array 'list' should contain
