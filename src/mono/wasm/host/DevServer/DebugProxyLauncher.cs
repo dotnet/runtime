@@ -107,8 +107,8 @@ internal static class DebugProxyLauncher
         var assembly = Assembly.Load(environment.ApplicationName);
         var debugProxyPath = Path.Combine(
             Path.GetDirectoryName(assembly.Location)!,
-            "BlazorDebugProxy",
-            "BrowserDebugHost.dll");
+            "BrowserDebugHost.dll"
+        );
 
         if (!File.Exists(debugProxyPath))
         {
