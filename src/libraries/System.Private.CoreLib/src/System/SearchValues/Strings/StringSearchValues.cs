@@ -24,6 +24,17 @@ namespace System.Buffers
                 return new EmptySearchValues<string>();
             }
 
+            if (values.Length == 1)
+            {
+                // Avoid additional overheads for single-value inputs.
+                string value = values[0];
+                ArgumentNullException.ThrowIfNull(value, nameof(values));
+                string normalizedValue = NormalizeIfNeeded(value, ignoreCase);
+
+                AnalyzeValues(new ReadOnlySpan<string>(normalizedValue), ref ignoreCase, out bool ascii, out bool asciiLettersOnly, out _, out _);
+                return CreateForSingleValue(normalizedValue, uniqueValues: null, ignoreCase, ascii, asciiLettersOnly);
+            }
+
             var uniqueValues = new HashSet<string>(values.Length, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
             foreach (string value in values)
@@ -45,13 +56,6 @@ namespace System.Buffers
                 normalizedValues[i++] = NormalizeIfNeeded(value, ignoreCase);
             }
             Debug.Assert(i == normalizedValues.Length);
-
-            if (normalizedValues.Length == 1)
-            {
-                // Avoid the overhead of building the AhoCorasick trie for single-value inputs.
-                AnalyzeValues(normalizedValues, ref ignoreCase, out bool ascii, out bool asciiLettersOnly, out _, out _);
-                return CreateForSingleValue(normalizedValues[0], uniqueValues, ignoreCase, ascii, asciiLettersOnly);
-            }
 
             // Aho-Corasick's ctor expects values to be sorted by length.
             normalizedValues.Sort(static (a, b) => a.Length.CompareTo(b.Length));
@@ -285,7 +289,7 @@ namespace System.Buffers
 
         private static SearchValues<string> CreateForSingleValue(
             string value,
-            HashSet<string> uniqueValues,
+            HashSet<string>? uniqueValues,
             bool ignoreCase,
             bool allAscii,
             bool asciiLettersOnly)
@@ -297,25 +301,27 @@ namespace System.Buffers
             {
                 if (!ignoreCase)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseSensitive>(value, uniqueValues);
+                    return new SingleStringSearchValuesThreeChars<CaseSensitive>(value);
                 }
 
                 if (asciiLettersOnly)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(value, uniqueValues);
+                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAsciiLetters>(value);
                 }
 
                 if (allAscii)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAscii>(value, uniqueValues);
+                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveAscii>(value);
                 }
 
                 // When ignoring casing, all anchor chars we search for must be ASCII.
                 if (char.IsAscii(value[0]) && value.AsSpan().LastIndexOfAnyInRange((char)0, (char)127) > 0)
                 {
-                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveUnicode>(value, uniqueValues);
+                    return new SingleStringSearchValuesThreeChars<CaseInsensitiveUnicode>(value);
                 }
             }
+
+            uniqueValues ??= new HashSet<string>(1, ignoreCase ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal) { value };
 
             return ignoreCase
                 ? new SingleStringSearchValuesFallback<SearchValues.TrueConst>(value, uniqueValues)

@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -14,7 +13,7 @@ namespace System.Buffers
     // Based on SpanHelpers.IndexOf(ref char, int, ref char, int)
     // This implementation uses 3 precomputed anchor points when searching.
     // This implementation may also be used for length=2 values, in which case two anchors point at the same position.
-    internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : StringSearchValuesBase
+    internal sealed class SingleStringSearchValuesThreeChars<TCaseSensitivity> : SearchValues<string>
         where TCaseSensitivity : struct, ICaseSensitivity
     {
         private const ushort CaseConversionMask = unchecked((ushort)~0x20);
@@ -27,15 +26,14 @@ namespace System.Buffers
         private readonly ushort _ch2;
         private readonly ushort _ch3;
 
-        public SingleStringSearchValuesThreeChars(string value, HashSet<string> uniqueValues) : base(uniqueValues)
+        private static bool IgnoreCase => typeof(TCaseSensitivity) != typeof(CaseSensitive);
+
+        public SingleStringSearchValuesThreeChars(string value)
         {
             // We could have more than one entry in 'uniqueValues' if this value is an exact prefix of all the others.
             Debug.Assert(value.Length > 1);
-            Debug.Assert(uniqueValues.Count >= 1);
 
-            bool ignoreCase = typeof(TCaseSensitivity) != typeof(CaseSensitive);
-
-            CharacterFrequencyHelper.GetSingleStringMultiCharacterOffsets(value, ignoreCase, out int ch2Offset, out int ch3Offset);
+            CharacterFrequencyHelper.GetSingleStringMultiCharacterOffsets(value, IgnoreCase, out int ch2Offset, out int ch3Offset);
 
             Debug.Assert(ch3Offset == 0 || ch3Offset > ch2Offset);
 
@@ -46,7 +44,7 @@ namespace System.Buffers
             _ch2 = value[ch2Offset];
             _ch3 = value[ch3Offset];
 
-            if (ignoreCase)
+            if (IgnoreCase)
             {
                 _ch1 &= CaseConversionMask;
                 _ch2 &= CaseConversionMask;
@@ -349,6 +347,53 @@ namespace System.Buffers
 
             offsetFromStart = 0;
             return false;
+        }
+
+
+        internal override bool ContainsCore(string value) =>
+            _value.Equals(value, IgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+        internal override string[] GetValues() =>
+            new string[] { _value };
+
+        internal override int IndexOfAny(ReadOnlySpan<string> span) =>
+            IndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(span);
+
+        internal override int IndexOfAnyExcept(ReadOnlySpan<string> span) =>
+            IndexOfAny<IndexOfAnyAsciiSearcher.Negate>(span);
+
+        internal override int LastIndexOfAny(ReadOnlySpan<string> span) =>
+            LastIndexOfAny<IndexOfAnyAsciiSearcher.DontNegate>(span);
+
+        internal override int LastIndexOfAnyExcept(ReadOnlySpan<string> span) =>
+            LastIndexOfAny<IndexOfAnyAsciiSearcher.Negate>(span);
+
+        private int IndexOfAny<TNegator>(ReadOnlySpan<string> span)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (TNegator.NegateIfNeeded(ContainsCore(span[i])))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int LastIndexOfAny<TNegator>(ReadOnlySpan<string> span)
+            where TNegator : struct, IndexOfAnyAsciiSearcher.INegator
+        {
+            for (int i = span.Length - 1; i >= 0; i--)
+            {
+                if (TNegator.NegateIfNeeded(ContainsCore(span[i])))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
         }
     }
 }
