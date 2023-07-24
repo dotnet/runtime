@@ -413,28 +413,24 @@ namespace System.Text.Unicode
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // we want 'value' exposed to the JIT as a constant
             public bool AppendLiteral(string value)
             {
-                // The 99.999% for AppendLiteral is to be called with a const string.
-                // ReadUtf8 is a JIT intrinsic that can do the UTF8 encoding at JIT time.
-                if (RuntimeHelpers.IsKnownConstant(value) && value is not null)
+                if (value is not null)
                 {
                     Span<byte> dest = _destination.Slice(_pos);
+
+                    // The 99.999% for AppendLiteral is to be called with a const string.
+                    // ReadUtf8 is a JIT intrinsic that can do the UTF8 encoding at JIT time.
                     int bytesWritten = UTF8Encoding.UTF8EncodingSealed.ReadUtf8(
                         ref value.GetRawStringData(), value.Length,
                         ref MemoryMarshal.GetReference(dest), dest.Length);
-
-                    if (bytesWritten >= 0)
+                    if (bytesWritten < 0)
                     {
-                        _pos += bytesWritten;
-                        return true;
+                        return Fail();
                     }
 
-                    return Fail();
+                    _pos += bytesWritten;
                 }
 
-                // Fall back to formatting as a span (we don't want a literal string to be
-                // passed off to a custom formatter if there is one, and AppendFormatted for
-                // a span doesn't whereas it does for a string).
-                return AppendFormatted(value.AsSpan());
+                return true;
             }
 
             /// <summary>Writes the specified value to the handler.</summary>
