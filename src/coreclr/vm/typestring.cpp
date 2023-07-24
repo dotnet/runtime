@@ -837,7 +837,6 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             szPrefix = "!!";
 
         SmallStackSString pName(SString::Utf8, szPrefix);
-        pName.AppendUTF8(szPrefix);
         pName.AppendUTF8(szName);
         tnb.AddName(pName.GetUnicode());
         format &= ~FormatAssembly;
