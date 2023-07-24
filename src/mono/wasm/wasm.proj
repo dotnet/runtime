@@ -517,8 +517,20 @@
   </ItemGroup>
 
   <Target Name="SetMonoRollupEnvironment" DependsOnTargets="GetProductVersions">
+    <ItemGroup>
+      <_MonoRollupEnvironmentVariable Include="Configuration:$(Configuration)" />
+      <_MonoRollupEnvironmentVariable Include="NativeBinDir:$(NativeBinDir)" />
+      <_MonoRollupEnvironmentVariable Include="ProductVersion:$(ProductVersion)" />
+      <_MonoRollupEnvironmentVariable Include="MonoWasmThreads:$(MonoWasmThreads)" />
+      <_MonoRollupEnvironmentVariable Include="WasmEnableSIMD:$(WasmEnableSIMD)" />
+      <_MonoRollupEnvironmentVariable Include="WasmEnableExceptionHandling:$(WasmEnableExceptionHandling)" />
+      <_MonoRollupEnvironmentVariable Include="DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop)" />
+      <_MonoRollupEnvironmentVariable Include="MonoDiagnosticsMock:$(MonoDiagnosticsMock)" />
+      <_MonoRollupEnvironmentVariable Include="ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)" />
+    </ItemGroup>
+
     <PropertyGroup>
-      <MonoRollupEnvironment>Configuration:$(Configuration),NativeBinDir:$(NativeBinDir),ProductVersion:$(ProductVersion),MonoWasmThreads:$(MonoWasmThreads),WasmEnableSIMD:$(WasmEnableSIMD),WasmEnableExceptionHandling:$(WasmEnableExceptionHandling),DISABLE_LEGACY_JS_INTEROP:$(_DisableLegacyJsInterop),MonoDiagnosticsMock:$(MonoDiagnosticsMock),ContinuousIntegrationBuild:$(ContinuousIntegrationBuild)</MonoRollupEnvironment>
+      <MonoRollupEnvironment>@(_MonoRollupEnvironmentVariable, ',')</MonoRollupEnvironment>
     </PropertyGroup>
 
     <PropertyGroup>
