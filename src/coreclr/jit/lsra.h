@@ -2043,7 +2043,7 @@ private:
 
     unsigned availableRegCount;
 
-    unsigned get_AVAILABLE_REG_COUNT() const
+    FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
@@ -2066,20 +2066,30 @@ private:
         return varTypeCalleeSaveRegs[rt];
     }
 
+#if defined(TARGET_AMD64)
+    // Not all of the callee trash values are constant, so don't declare this as a method local static
+    // doing so results in significantly more complex codegen and we'd rather just initialize this once
+    // as part of initializing LSRA instead
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+#endif // TARGET_AMD64
+
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
     FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
     {
+#if !defined(TARGET_AMD64)
         static const regMaskTP varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
         };
+#endif // !TARGET_AMD64
 
         assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
         return varTypeCalleeTrashRegs[rt];
     }
+
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
