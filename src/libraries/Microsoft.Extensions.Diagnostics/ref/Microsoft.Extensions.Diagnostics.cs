@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -43,5 +44,15 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, Func<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
         public static MetricsEnableOptions EnableMetrics(this MetricsEnableOptions options, string? meterName, MeterScope scopes, Func<System.Diagnostics.Metrics.Instrument, bool> filter) => throw null!;
         public static MetricsEnableOptions EnableMetrics<T>(this MetricsEnableOptions options, string? meterName, MeterScope scopes, Func<System.Diagnostics.Metrics.Instrument, bool> filter) where T : IMetricsListener => throw null!;
+    }
+    public sealed class ConsoleMetricListener : IMetricsListener, IDisposable
+    {
+        internal TextWriter _textWriter;
+        public string Name { get; }
+        public System.Diagnostics.Metrics.MeasurementCallback<T> GetMeasurementHandler<T>() where T : struct => throw new NotImplementedException();
+        public object? InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument) => throw new NotImplementedException();
+        public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState) => throw new NotImplementedException();
+        public void SetSource(IMetricsSource source) => throw new NotImplementedException();
+        public void Dispose() => throw new NotImplementedException();
     }
 }

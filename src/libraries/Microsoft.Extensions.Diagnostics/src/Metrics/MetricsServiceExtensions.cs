@@ -25,6 +25,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 throw new ArgumentNullException(nameof(services));
             }
 
+            services.AddOptions();
+
             services.TryAddSingleton<IMeterFactory, DefaultMeterFactory>();
 
             return services;
@@ -45,7 +47,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddMetrics();
 
-            throw new NotImplementedException();
+            var builder = new MetricsBuilder(services);
+            configure(builder);
+
+            return services;
+        }
+
+        private sealed class MetricsBuilder(IServiceCollection services) : IMetricsBuilder
+        {
+            public IServiceCollection Services { get; } = services;
         }
     }
 }

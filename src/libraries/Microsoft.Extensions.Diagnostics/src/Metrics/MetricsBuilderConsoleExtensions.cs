@@ -1,6 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+
 namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     /// <summary>
@@ -13,6 +17,11 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         /// </summary>
         /// <param name="builder">The metrics builder.</param>
         /// <returns>The original metrics builder for chaining.</returns>
-        public static IMetricsBuilder AddConsole(this IMetricsBuilder builder) => throw null!;
+        public static IMetricsBuilder AddConsole(this IMetricsBuilder builder)
+        {
+            ThrowHelper.ThrowIfNull(builder);
+            builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IMetricsListener, ConsoleMetricListener>());
+            return builder;
+        }
     }
 }

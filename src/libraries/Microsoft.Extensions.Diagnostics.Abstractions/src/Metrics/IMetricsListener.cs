@@ -7,6 +7,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
 {
     public interface IMetricsListener
     {
+        public string Name { get; }
         public void SetSource(IMetricsSource source);
         public object? InstrumentPublished(Instrument instrument);
         public void MeasurementsCompleted(Instrument instrument, object? userState);

@@ -15,6 +15,7 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
     }
     public interface IMetricsListener
     {
+        public string Name { get; }
         public void SetSource(IMetricsSource source);
         public object? InstrumentPublished(System.Diagnostics.Metrics.Instrument instrument);
         public void MeasurementsCompleted(System.Diagnostics.Metrics.Instrument instrument, object? userState);

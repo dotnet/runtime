@@ -12,6 +12,10 @@ namespace Microsoft.Extensions.Diagnostics.Metrics
         public string? MeterName { get; } = meterName;
         public MeterScope Scopes { get; } = scopes;
         public string? InstrumentName { get; } = instrumentName;
+
+        /// <summary>
+        /// A filter callback that takes a listener name and can be used to enable or disable an instrument.
+        /// </summary>
         public Func<string?, Instrument, bool>? Filter { get; } = filter;
     }
 }

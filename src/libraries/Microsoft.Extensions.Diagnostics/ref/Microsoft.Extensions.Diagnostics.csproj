@@ -9,6 +9,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.Extensions.Diagnostics.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Diagnostics.Abstractions\ref\Microsoft.Extensions.Diagnostics.Abstractions.csproj" />
   </ItemGroup>
 
