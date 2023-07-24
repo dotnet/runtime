@@ -137,6 +137,7 @@ namespace System.Net.Http.Json
         {
             options ??= JsonSerializerOptions.Default;
             options.MakeReadOnly();
+
             var jsonTypeInfo = (JsonTypeInfo<TValue>)options.GetTypeInfo(typeof(TValue));
 
             return FromJsonStreamAsyncCore(client, requestUri, jsonTypeInfo, cancellationToken);
@@ -161,12 +162,12 @@ namespace System.Net.Http.Json
                 JsonTypeInfo<TValue> jsonTypeInfo,
                 [EnumeratorCancellation] CancellationToken cancellationToken)
             {
-                using HttpResponseMessage response = await s_getAsync(client, requestUri, cancellationToken)
+                Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
+
+                using HttpResponseMessage response = await client.GetAsync(requestUri, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                     .ConfigureAwait(false);
 
                 response.EnsureSuccessStatusCode();
-
-                Debug.Assert(client.MaxResponseContentBufferSize is > 0 and <= int.MaxValue);
 
                 using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(
                     response.Content, cancellationToken).ConfigureAwait(false);
