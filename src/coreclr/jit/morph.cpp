@@ -2246,7 +2246,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // "non-standard" (return buffer on ARM64) arguments. Fix args morphing and delete this code.
         if (argx->OperIs(GT_LCL_ADDR))
         {
-            argx->gtType = TYP_I_IMPL;
+//            argx->gtType = TYP_I_IMPL;
         }
 
         // Note we must use the signature types for making ABI decisions. This is especially important for structs,
@@ -3201,7 +3201,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
         // NOTE: We deferred this from the importer because of the inliner.
         if (argx->OperIs(GT_LCL_ADDR))
         {
-            argx->gtType = TYP_I_IMPL;
+//            argx->gtType = TYP_I_IMPL;
         }
 
         // Struct arguments may be morphed into a node that is not a struct type.
@@ -4008,7 +4008,7 @@ void Compiler::fgMakeOutgoingStructArgCopy(GenTreeCall* call, CallArg* arg)
                     uint16_t offs = lcl->GetLclOffs();
                     lcl->ChangeOper(GT_LCL_ADDR);
                     lcl->AsLclFld()->SetLclOffs(offs);
-                    lcl->gtType = TYP_I_IMPL;
+                    lcl->gtType = TYP_BYREF;
                     lcl->gtFlags &= ~GTF_ALL_EFFECT;
                     lvaSetVarAddrExposed(varNum DEBUGARG(AddressExposedReason::ESCAPE_ADDRESS));
 

@@ -2320,12 +2320,12 @@ void Compiler::impBashVarAddrsToI(GenTree* tree1, GenTree* tree2)
 {
     if (tree1->OperIs(GT_LCL_ADDR))
     {
-        tree1->gtType = TYP_I_IMPL;
+//        tree1->gtType = TYP_I_IMPL;
     }
 
     if (tree2 && tree2->OperIs(GT_LCL_ADDR))
     {
-        tree2->gtType = TYP_I_IMPL;
+//        tree2->gtType = TYP_I_IMPL;
     }
 }
 
