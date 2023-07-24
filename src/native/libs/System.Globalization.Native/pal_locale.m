@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 #include "pal_locale_internal.h"
 #include "pal_localeStringData.h"
@@ -611,6 +610,16 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
             value = [currentLocale.decimalSeparator UTF8String];
             // or value = [[currentLocale objectForKey:NSLocaleDecimalSeparator] UTF8String];
             break;
+        case LocaleString_Digits:
+        {
+            NSString *digitsString = @"0123456789";
+            NSNumberFormatter *nf1 = [[NSNumberFormatter alloc] init];
+            [nf1 setLocale:currentLocale];
+
+            NSNumber *newNum = [nf1 numberFromString:digitsString];
+            value = [[newNum stringValue] UTF8String];
+            break;
+        }
         case LocaleString_MonetarySymbol:
             value = [currentLocale.currencySymbol UTF8String];
             break;
@@ -624,6 +633,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         case LocaleString_CurrencyNativeName:
             value = [[currentLocale localizedStringForCurrencyCode:currentLocale.currencyCode] UTF8String];
             break;
+        case LocaleString_MonetaryDecimalSeparator:
+            value = [numberFormatter.currencyDecimalSeparator UTF8String];
+            break;
+        case LocaleString_MonetaryThousandSeparator:
+            value = [numberFormatter.currencyGroupingSeparator UTF8String];
+            break;
         case LocaleString_AMDesignator:
             value = [dateFormatter.AMSymbol UTF8String];
             break;
@@ -636,6 +651,24 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         case LocaleString_NegativeSign:
             value = [numberFormatter.minusSign UTF8String];
             break;
+        case LocaleString_Iso639LanguageTwoLetterName:
+            value = [[currentLocale objectForKey:NSLocaleLanguageCode] UTF8String];
+            break;
+        case LocaleString_Iso639LanguageThreeLetterName:
+        {
+            NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
+            value = GetISO3Language([iso639_2 UTF8String]);
+            break;
+        }
+        case LocaleString_Iso3166CountryName:
+            value = [[currentLocale objectForKey:NSLocaleCountryCode] UTF8String];
+            break;
+        case LocaleString_Iso3166CountryName2:
+        {
+            const char *countryCode = strdup([[currentLocale objectForKey:NSLocaleCountryCode] UTF8String]);
+            value = GetISO3Country(countryCode);
+            break;
+        }
         case LocaleString_NaNSymbol:
             value = [numberFormatter.notANumberSymbol UTF8String];
             break;
@@ -651,46 +684,12 @@ const char* GlobalizationNative_GetLocaleInfoStringNative(const char* localeName
         case LocaleString_PerMilleSymbol:
             value = [numberFormatter.perMillSymbol UTF8String];
             break;
-        case LocaleString_Iso639LanguageTwoLetterName:
-            value = [[currentLocale objectForKey:NSLocaleLanguageCode] UTF8String];
-            break;
-        case LocaleString_Iso3166CountryName:
-            value = [[currentLocale objectForKey:NSLocaleCountryCode] UTF8String];
-            break;
-        case LocaleString_Digits:
-        {
-            NSString *digitsString = @"0123456789";
-            NSNumberFormatter *nf1 = [[NSNumberFormatter alloc] init];
-            [nf1 setLocale:currentLocale];
-
-            NSNumber *newNum = [nf1 numberFromString:digitsString];
-            value = [[newNum stringValue] UTF8String];
-            break;
-        }
-        case LocaleString_MonetaryDecimalSeparator:
-            value = [numberFormatter.currencyDecimalSeparator UTF8String];
-            break;
-        case LocaleString_MonetaryThousandSeparator:
-            value = [numberFormatter.currencyGroupingSeparator UTF8String];
-            break;
-        case LocaleString_Iso639LanguageThreeLetterName:
-        {
-            NSString *iso639_2 = [currentLocale objectForKey:NSLocaleLanguageCode];
-            value = GetISO3Language([iso639_2 UTF8String]);
-            break;
-        }
         case LocaleString_ParentName:
         {
             char localeNameTemp[FULLNAME_CAPACITY];
             const char* lName = [currentLocale.localeIdentifier UTF8String];
             GetParent(lName, localeNameTemp, FULLNAME_CAPACITY);
             value = strdup(localeNameTemp);
-            break;
-        }
-        case LocaleString_Iso3166CountryName2:
-        {
-            const char *countryCode = strdup([[currentLocale objectForKey:NSLocaleCountryCode] UTF8String]);
-            value = GetISO3Country(countryCode);
             break;
         }
         default:
