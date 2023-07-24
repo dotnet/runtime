@@ -100,7 +100,7 @@ namespace System.Threading.ThreadPools.Tests
             Assert.True(c <= maxc);
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         [ActiveIssue("https://github.com/mono/mono/issues/15164", TestRuntimes.Mono)]
         public static void SetMinMaxThreadsTest()
         {
@@ -1109,7 +1109,7 @@ namespace System.Threading.ThreadPools.Tests
             }
         }
 
-        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported), nameof(UsePortableThreadPool))]
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
         public void ThreadPoolMinMaxThreadsEventTest()
         {
             // The ThreadPoolMinMaxThreads event is fired when the ThreadPool is created
