@@ -32,8 +32,8 @@ function verifyEnvironment() {
     }
     if (typeof globalThis.WebSocket !== "function") {
         const message = ENVIRONMENT_IS_NODE
-            ? "Please install `ws` npm package to enable networking support."
-            : "This browser doesn't support WebSocket API. Please use a modern browser.";
+            ? "Please install `ws` npm package to enable networking support. See also https://aka.ms/dotnet-wasm-features"
+            : "This browser doesn't support WebSocket API. Please use a modern browser. See also https://aka.ms/dotnet-wasm-features";
         throw new Error(message);
     }
 }
