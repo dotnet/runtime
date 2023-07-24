@@ -262,7 +262,6 @@ if defined RunCrossGen2 (
     echo -r:!CORE_ROOT!\xunit.*.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\mscorlib.dll>>!__ResponseFile!
     echo -r:!CORE_ROOT!\netstandard.dll>>!__ResponseFile!
-    echo -O>>!__ResponseFile!
 
     if not "$(__CreatePdb)" == "" (
         echo --pdb>>!__ResponseFile!

@@ -527,7 +527,6 @@ class CrossGenRunner:
         args.append(self.crossgen_executable_filename)
         args.append('-r')
         args.append('"' + platform_assemblies_paths + self.platform_directory_sep + '*.dll"' )
-        args.append('-O')
         args.append('--determinism-stress')
         args.append('6')
         args.append('--map')
