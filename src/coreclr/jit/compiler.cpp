@@ -3386,8 +3386,18 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     {
         rbmAllMask |= RBM_ALLMASK_EVEX;
         rbmMskCalleeTrash |= RBM_MSK_CALLEE_TRASH_EVEX;
-        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK;
+        cntCalleeTrashMask += CNT_CALLEE_TRASH_MASK_EVEX;
     }
+
+    // Make sure we copy the register info and initialize the
+    // trash regs after the underlying fields are initialized
+
+    const regMaskTP vtCalleeTrashRegs[TYP_COUNT]{
+#define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
+#include "typelist.h"
+#undef DEF_TP
+    };
+    memcpy(varTypeCalleeTrashRegs, vtCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
     codeGen->CopyRegisterInfo();
 #endif // TARGET_XARCH

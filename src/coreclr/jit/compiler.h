@@ -10899,15 +10899,15 @@ private:
     unsigned  cntCalleeTrashFloat;
 
 public:
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
-    unsigned get_CNT_CALLEE_TRASH_FLOAT() const
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_FLOAT() const
     {
         return this->cntCalleeTrashFloat;
     }
@@ -10935,17 +10935,18 @@ private:
     regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
     unsigned  cntCalleeTrashMask;
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
 
 public:
-    regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
-    unsigned get_CNT_CALLEE_TRASH_MASK() const
+    FORCEINLINE unsigned get_CNT_CALLEE_TRASH_MASK() const
     {
         return this->cntCalleeTrashMask;
     }

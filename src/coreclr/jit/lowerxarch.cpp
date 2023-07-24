@@ -2002,10 +2002,37 @@ GenTree* Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cm
 
                         default:
                         {
-                            maskIntrinsicId = NI_AVX512F_NotMask;
-                            maskNode        = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, maskIntrinsicId,
+                            // We don't have a well known intrinsic, so we need to inverse the mask keeping the upper
+                            // n-bits clear. If we have 1 element, then the upper 7-bits need to be cleared. If we have
+                            // 2, then the upper 6-bits, and if we have 4, then the upper 4-bits.
+                            //
+                            // There isn't necessarily a trivial way to do this outside not, shift-left by n,
+                            // shift-right by n. This preserves count bits, while clearing the upper n-bits
+
+                            GenTree* cnsNode;
+
+                            maskNode = comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, NI_AVX512F_NotMask,
                                                                       simdBaseJitType, simdSize);
                             BlockRange().InsertBefore(node, maskNode);
+
+                            cnsNode = comp->gtNewIconNode(8 - count);
+                            BlockRange().InsertAfter(maskNode, cnsNode);
+
+                            maskNode =
+                                comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512F_ShiftLeftMask,
+                                                               simdBaseJitType, simdSize);
+                            BlockRange().InsertAfter(cnsNode, maskNode);
+                            LowerNode(maskNode);
+
+                            cnsNode = comp->gtNewIconNode(8 - count);
+                            BlockRange().InsertAfter(maskNode, cnsNode);
+
+                            maskNode =
+                                comp->gtNewSimdHWIntrinsicNode(TYP_MASK, maskNode, cnsNode, NI_AVX512F_ShiftRightMask,
+                                                               simdBaseJitType, simdSize);
+                            BlockRange().InsertAfter(cnsNode, maskNode);
+
+                            maskIntrinsicId = NI_AVX512F_ShiftRightMask;
                             break;
                         }
                     }

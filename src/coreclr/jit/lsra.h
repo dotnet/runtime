@@ -2027,11 +2027,11 @@ private:
     regMaskTP rbmAllFloat;
     regMaskTP rbmFltCalleeTrash;
 
-    regMaskTP get_RBM_ALLFLOAT() const
+    FORCEINLINE regMaskTP get_RBM_ALLFLOAT() const
     {
         return this->rbmAllFloat;
     }
-    regMaskTP get_RBM_FLT_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_FLT_CALLEE_TRASH() const
     {
         return this->rbmFltCalleeTrash;
     }
@@ -2041,11 +2041,11 @@ private:
     regMaskTP rbmAllMask;
     regMaskTP rbmMskCalleeTrash;
 
-    regMaskTP get_RBM_ALLMASK() const
+    FORCEINLINE regMaskTP get_RBM_ALLMASK() const
     {
         return this->rbmAllMask;
     }
-    regMaskTP get_RBM_MSK_CALLEE_TRASH() const
+    FORCEINLINE regMaskTP get_RBM_MSK_CALLEE_TRASH() const
     {
         return this->rbmMskCalleeTrash;
     }
@@ -2053,7 +2053,7 @@ private:
 
     unsigned availableRegCount;
 
-    unsigned get_AVAILABLE_REG_COUNT() const
+    FORCEINLINE unsigned get_AVAILABLE_REG_COUNT() const
     {
         return this->availableRegCount;
     }
@@ -2064,7 +2064,7 @@ private:
     // NOTE: we currently don't need a LinearScan `this` pointer for this definition, and some callers
     // don't have one available, so make is static.
     //
-    static regMaskTP calleeSaveRegs(RegisterType rt)
+    static FORCEINLINE regMaskTP calleeSaveRegs(RegisterType rt)
     {
         static const regMaskTP varTypeCalleeSaveRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) csr,
@@ -2076,16 +2076,25 @@ private:
         return varTypeCalleeSaveRegs[rt];
     }
 
+#if defined(TARGET_XARCH)
+    // Not all of the callee trash values are constant, so don't declare this as a method local static
+    // doing so results in significantly more complex codegen and we'd rather just initialize this once
+    // as part of initializing LSRA instead
+    regMaskTP varTypeCalleeTrashRegs[TYP_COUNT];
+#endif // TARGET_XARCH
+
     //------------------------------------------------------------------------
     // callerSaveRegs: Get the set of caller-save registers of the given RegisterType
     //
-    regMaskTP callerSaveRegs(RegisterType rt) const
+    FORCEINLINE regMaskTP callerSaveRegs(RegisterType rt) const
     {
+#if !defined(TARGET_XARCH)
         static const regMaskTP varTypeCalleeTrashRegs[] = {
 #define DEF_TP(tn, nm, jitType, sz, sze, asze, st, al, regTyp, regFld, csr, ctr, tf) ctr,
 #include "typelist.h"
 #undef DEF_TP
         };
+#endif // !TARGET_XARCH
 
         assert((unsigned)rt < ArrLen(varTypeCalleeTrashRegs));
         return varTypeCalleeTrashRegs[rt];

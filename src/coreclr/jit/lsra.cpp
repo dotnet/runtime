@@ -716,11 +716,11 @@ LinearScan::LinearScan(Compiler* theCompiler)
 #if defined(TARGET_XARCH)
     rbmAllMask        = compiler->rbmAllMask;
     rbmMskCalleeTrash = compiler->rbmMskCalleeTrash;
+    memcpy(varTypeCalleeTrashRegs, compiler->varTypeCalleeTrashRegs, sizeof(regMaskTP) * TYP_COUNT);
 
     if (!compiler->canUseEvexEncoding())
     {
-        availableRegCount -= CNT_HIGHFLOAT;
-        availableRegCount -= CNT_MASK_REGS;
+        availableRegCount -= (CNT_HIGHFLOAT + CNT_MASK_REGS);
     }
 #endif // TARGET_XARCH
 

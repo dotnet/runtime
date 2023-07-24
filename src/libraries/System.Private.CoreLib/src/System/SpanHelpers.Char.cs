@@ -647,8 +647,9 @@ namespace System
 
                             Vector512<ushort> search = *(Vector512<ushort>*)(searchSpace + (nuint)offset);
 
-                            // Note that MoveMask has converted the equal vector elements into a set of bit flags,
-                            // So the bit position in 'matches' corresponds to the element offset.
+                            // AVX-512 returns comparison results in a mask register, so we want to optimize
+                            // the core check to simply be an "none match" check. This will slightly increase
+                            // the cost for the early match case, but greatly improves perf otherwise.
                             if (!Vector512.EqualsAny(search, Vector512<ushort>.Zero))
                             {
                                 // Zero flags set so no matches
@@ -657,6 +658,9 @@ namespace System
                                 continue;
                             }
 
+                            // Note that ExtractMostSignificantBits has converted the equal vector elements into a set of bit flags,
+                            // So the bit position in 'matches' corresponds to the element offset.
+                            //
                             // Find bitflag offset of first match and add to current offset,
                             // flags are in bytes so divide for chars
                             ulong matches = Vector512.Equals(search, Vector512<ushort>.Zero).ExtractMostSignificantBits();

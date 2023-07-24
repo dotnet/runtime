@@ -2136,6 +2136,39 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
             break;
         }
 
+        case NI_AVX512F_NotMask:
+        {
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            if (count <= 8)
+            {
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_knotb;
+            }
+            else if (count == 16)
+            {
+                ins = INS_knotw;
+            }
+            else if (count == 32)
+            {
+                ins = INS_knotd;
+            }
+            else
+            {
+                assert(count == 64);
+                ins = INS_knotq;
+            }
+
+            op1Reg = op1->GetRegNum();
+
+            assert(emitter::isMaskReg(targetReg));
+            assert(emitter::isMaskReg(op1Reg));
+
+            emit->emitIns_R_R(ins, EA_8BYTE, targetReg, op1Reg);
+            break;
+        }
+
         case NI_AVX512F_OrMask:
         {
             uint32_t simdSize = node->GetSimdSize();
@@ -2171,6 +2204,84 @@ void CodeGen::genAvxFamilyIntrinsic(GenTreeHWIntrinsic* node)
 
             // Use EA_32BYTE to ensure the VEX.L bit gets set
             emit->emitIns_R_R_R(ins, EA_32BYTE, targetReg, op1Reg, op2Reg);
+            break;
+        }
+
+        case NI_AVX512F_ShiftLeftMask:
+        {
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            if (count <= 8)
+            {
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_kshiftlb;
+            }
+            else if (count == 16)
+            {
+                ins = INS_kshiftlw;
+            }
+            else if (count == 32)
+            {
+                ins = INS_kshiftld;
+            }
+            else
+            {
+                assert(count == 64);
+                ins = INS_kshiftlq;
+            }
+
+            op1Reg = op1->GetRegNum();
+
+            GenTree* op2 = node->Op(2);
+            assert(op2->IsCnsIntOrI() && op2->isContained());
+
+            assert(emitter::isMaskReg(targetReg));
+            assert(emitter::isMaskReg(op1Reg));
+
+            ssize_t ival = op2->AsIntCon()->IconValue();
+            assert((ival >= 0) && (ival <= 255));
+
+            emit->emitIns_R_R_I(ins, EA_8BYTE, targetReg, op1Reg, (int8_t)ival);
+            break;
+        }
+
+        case NI_AVX512F_ShiftRightMask:
+        {
+            uint32_t simdSize = node->GetSimdSize();
+            uint32_t count    = simdSize / genTypeSize(baseType);
+
+            if (count <= 8)
+            {
+                assert((count == 2) || (count == 4) || (count == 8));
+                ins = INS_kshiftrb;
+            }
+            else if (count == 16)
+            {
+                ins = INS_kshiftrw;
+            }
+            else if (count == 32)
+            {
+                ins = INS_kshiftrd;
+            }
+            else
+            {
+                assert(count == 64);
+                ins = INS_kshiftrq;
+            }
+
+            op1Reg = op1->GetRegNum();
+
+            GenTree* op2 = node->Op(2);
+            assert(op2->IsCnsIntOrI() && op2->isContained());
+
+            assert(emitter::isMaskReg(targetReg));
+            assert(emitter::isMaskReg(op1Reg));
+
+            ssize_t ival = op2->AsIntCon()->IconValue();
+            assert((ival >= 0) && (ival <= 255));
+
+            emit->emitIns_R_R_I(ins, EA_8BYTE, targetReg, op1Reg, (int8_t)ival);
             break;
         }
 

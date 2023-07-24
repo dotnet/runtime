@@ -891,10 +891,10 @@ regMaskTP LinearScan::getKillSetForCall(GenTreeCall* call)
     // if there is no FP used, we can ignore the FP kills
     if (!compiler->compFloatingPointUsed)
     {
-        killMask &= ~RBM_FLT_CALLEE_TRASH;
-
 #if defined(TARGET_XARCH)
-        killMask &= ~RBM_MSK_CALLEE_TRASH;
+        killMask &= ~(RBM_FLT_CALLEE_TRASH | RBM_MSK_CALLEE_TRASH);
+#else
+        killMask &= ~RBM_FLT_CALLEE_TRASH;
 #endif // TARGET_XARCH
     }
 #ifdef TARGET_ARM
