@@ -16,6 +16,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday };
             }
+            else
             {
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, DayOfWeek.Sunday };
