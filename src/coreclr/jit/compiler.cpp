@@ -3038,6 +3038,10 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     if (opts.disAsm)
 #endif
     {
+        if (JitConfig.JitDisasmTesting())
+        {
+            opts.disTesting = true;
+        }
         if (JitConfig.JitDisasmWithAlignmentBoundaries())
         {
             opts.disAlignment = true;
