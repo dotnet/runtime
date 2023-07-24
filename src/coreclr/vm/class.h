@@ -66,6 +66,7 @@ class   ArrayClass;
 class   ArrayMethodDesc;
 class   Assembly;
 class   ClassLoader;
+class   ConstValueClass;
 class   DictionaryLayout;
 class   FCallMethodDesc;
 class   EEClass;
@@ -2025,6 +2026,37 @@ public:
 
 };
 
+typedef DPTR(ConstValueClass) PTR_ConstValueClass;
+
+class ConstValueClass : public EEClass
+{
+    struct const_value_t {
+        unsigned char m_byte[8];
+    };
+private:
+    DAC_ALIGNAS(EEClass)  // Align the first member to the alignment of the base class
+    const_value_t      m_value;
+    CorElementType     m_type;
+
+public:
+    CorElementType GetValueType() {
+        LIMITED_METHOD_CONTRACT;
+        return m_type;
+    }
+
+    template<typename T>
+    void SetValue(CorElementType type, T value) {
+        LIMITED_METHOD_CONTRACT;
+        m_value = *(const_value_t*)(void*)&value;
+        m_type = type;
+    }
+    
+    template<typename T>
+    T GetValue() {
+        LIMITED_METHOD_CONTRACT;
+        return *(T*)(void*)&m_value;
+    }
+};
 
 typedef DPTR(ArrayClass) PTR_ArrayClass;
 

@@ -34,6 +34,7 @@ class    AppDomain;
 class    ArrayClass;
 class    ArrayMethodDesc;
 class ClassLoader;
+class    ConstValueClass;
 class FCallMethodDesc;
 class    EEClass;
 class    EnCFieldDesc;
@@ -440,6 +441,10 @@ SystemVClassificationType CorInfoType2UnixAmd64Classification(CorElementType eeT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_REQD
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_CMOD_OPT
         SystemVClassificationTypeUnknown,               // ELEMENT_TYPE_INTERNAL
+        
+        SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_CVAR
+        SystemVClassificationTypeIntegerReference,      // ELEMENT_TYPE_MCVAR
+        SystemVClassificationTypeStruct,                // ELEMENT_TYPE_CTARG
     };
 
     _ASSERTE(sizeof(toSystemVAmd64ClassificationTypeMap) == ELEMENT_TYPE_MAX);
@@ -1013,11 +1018,39 @@ public:
 
     void DoFullyLoad(Generics::RecursionGraph * const pVisited, const ClassLoadLevel level, DFLPendingList * const pPending, BOOL * const pfBailed,
                      const InstantiationContext * const pInstContext);
+    
+    //-------------------------------------------------------------------
+    // METHOD TABLES AS CONST VALUES
+    //
+    // A MethodTable can represent a const value such as an integer
+    // or a floating-point
+    //
 
+    inline BOOL IsConstValue()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ConstValue;
+    }
+
+    inline void SetIsConstValue()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        _ASSERTE(GetFlag(enum_flag_Category_Mask) == 0);
+        SetFlag(enum_flag_Category_ConstValue);
+    }
+    
+    inline CorElementType GetConstValueType();
+
+    template<typename T>
+    inline T GetConstValue();
+    
+    template<typename T>
+    inline void SetConstValue(CorElementType type, T value);
+    
     //-------------------------------------------------------------------
     // METHOD TABLES AS TYPE DESCRIPTORS
     //
-    // A MethodTable can represeent a type such as "String" or an
+    // A MethodTable can represent a type such as "String" or an
     // instantiated type such as "List<String>".
     //
 
@@ -3415,7 +3448,7 @@ private:
         enum_flag_Category_IfArrayThenSzArray                   = 0x00020000, // sub-category of Array
 
         enum_flag_Category_Interface        = 0x000C0000,
-        enum_flag_Category_Unused_4         = 0x000D0000,
+        enum_flag_Category_ConstValue       = 0x000D0000,
         enum_flag_Category_Unused_5         = 0x000E0000,
         enum_flag_Category_Unused_6         = 0x000F0000,
 

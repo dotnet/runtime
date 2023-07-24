@@ -325,7 +325,7 @@ public:
 #ifndef DACCESS_COMPILE
 
     TypeVarTypeDesc(PTR_Module pModule, mdToken typeOrMethodDef, unsigned int index, mdGenericParam token) :
-        TypeDesc(TypeFromToken(typeOrMethodDef) == mdtTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR)
+        TypeDesc(GetTypeVarTokenType(pModule, typeOrMethodDef, token))
     {
         CONTRACTL
         {
@@ -346,6 +346,22 @@ public:
         m_constraints = NULL;
         m_numConstraints = (DWORD)-1;
     }
+
+    CorElementType GetTypeVarTokenType(PTR_Module pModule, mdToken typeOrMethodDef, mdGenericParam token)
+    {
+        mdToken tkType;
+        pModule->GetMDImport()->GetGenericParamProps(token, NULL, NULL, NULL, &tkType, NULL);
+        BOOL isTypeDef = TypeFromToken(typeOrMethodDef) == mdtTypeDef;
+        if (RidFromToken(tkType))
+        {
+            return isTypeDef ? ELEMENT_TYPE_CVAR : ELEMENT_TYPE_MCVAR;
+        }
+        else
+        {
+            return isTypeDef ? ELEMENT_TYPE_VAR : ELEMENT_TYPE_MVAR;
+        }
+    }
+
 #endif // #ifndef DACCESS_COMPILE
 
     // placement new operator

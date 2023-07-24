@@ -203,6 +203,8 @@ public:
 
     BOOL IsFnPtrType() const;
 
+    BOOL IsConstValue() const;
+
     inline PTR_MethodTable AsMethodTable() const;
 
     inline PTR_TypeDesc AsTypeDesc() const;

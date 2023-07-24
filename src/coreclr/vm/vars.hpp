@@ -74,6 +74,7 @@ class IGCHeap;
 class Object;
 class StringObject;
 class ArrayClass;
+class ConstValueClass;
 class MethodTable;
 class MethodDesc;
 class SyncBlockCache;

@@ -192,6 +192,7 @@ class MethodDesc
     friend class EEClass;
     friend class MethodTableBuilder;
     friend class ArrayClass;
+    friend class ConstValueClass;
     friend class NDirect;
     friend class MethodDescChunk;
     friend class InstantiatedMethodDesc;

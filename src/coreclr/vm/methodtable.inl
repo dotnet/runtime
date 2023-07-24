@@ -302,6 +302,52 @@ inline BOOL MethodTable::IsValueType()
     return GetFlag(enum_flag_Category_ValueType_Mask) == enum_flag_Category_ValueType;
 }
 
+/////==========================================================================================
+//// Is the type a const value (for const type argument)?
+//inline BOOL MethodTable::IsConstValue()
+//{
+//    LIMITED_METHOD_DAC_CONTRACT;
+//    return GetFlag(enum_flag_Category_Mask) == enum_flag_Category_ConstValue;
+//}
+//
+/////==========================================================================================
+//// Only used by const type argument
+//inline void MethodTable::SetIsConstValue()
+//{
+//    LIMITED_METHOD_DAC_CONTRACT;
+//    _ASSERTE(GetFlag(enum_flag_Category_Mask) == 0);
+//    SetFlag(enum_flag_Category_ConstValue);
+//}
+//    
+///==========================================================================================
+// Only used by const type argument
+inline CorElementType MethodTable::GetConstValueType()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE (IsConstValue());
+    return dac_cast<PTR_ConstValueClass>(GetClass())->GetValueType();
+}
+
+///==========================================================================================
+// Only used by const type argument
+template<typename T>
+inline T MethodTable::GetConstValue()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE (IsConstValue());
+    return dac_cast<PTR_ConstValueClass>(GetClass())->GetValue<T>();
+}
+
+///==========================================================================================
+// Only used by const type argument
+template<typename T>
+inline void MethodTable::SetConstValue(CorElementType type, T value)
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    _ASSERTE (IsConstValue());
+    dac_cast<PTR_ConstValueClass>(GetClass())->SetValue<T>(type, value);
+}
+    
 //==========================================================================================
 inline CorElementType MethodTable::GetArrayElementType()
 {

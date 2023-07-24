@@ -1036,6 +1036,13 @@ BOOL TypeHandle::IsFnPtrType() const
             (GetSignatureCorElementType() == ELEMENT_TYPE_FNPTR));
 }
 
+BOOL TypeHandle::IsConstValue() const
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+
+    return (!IsTypeDesc() && AsMethodTable()->IsConstValue());
+}
+
 BOOL TypeHandle::IsRestored_NoLogging() const
 {
     LIMITED_METHOD_CONTRACT;

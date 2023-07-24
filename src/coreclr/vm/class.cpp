@@ -925,9 +925,9 @@ EEClass::CheckVarianceInSig(
             uint32_t ntypars;
             IfFailThrow(psig.GetData(&ntypars));
 
-            // If this is a value type, or position == gpNonVariant, then
+            // If this is a value type or a const argument, or position == gpNonVariant, then
             // we're disallowing covariant and contravariant completely
-            if (typ == ELEMENT_TYPE_VALUETYPE || position == gpNonVariant)
+            if (typ == ELEMENT_TYPE_VALUETYPE  || typ == ELEMENT_TYPE_CTARG || position == gpNonVariant)
             {
                 for (unsigned i = 0; i < ntypars; i++)
                 {

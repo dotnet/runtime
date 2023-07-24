@@ -241,6 +241,26 @@ class SigParser
 
             return META_E_BAD_SIGNATURE;
         }
+        
+        __checkReturn
+        FORCEINLINE HRESULT GetConstTypeArg(CorElementType * etype, uint32_t* pcb, PCCOR_SIGNATURE *ppsig)
+        {
+            uint32_t cb;
+            if (SUCCEEDED(PeekElemTypeSize(&cb)))
+            {
+                if (SUCCEEDED(GetElemType(etype)))
+                {
+                    *pcb = cb;
+                    *ppsig = m_ptr;
+                    SkipBytes(cb);
+
+                    return S_OK;
+                }
+            }
+            
+            *etype = ELEMENT_TYPE_END;
+            return META_E_BAD_SIGNATURE;
+        }
 
         // Inlined version
         __checkReturn
@@ -253,7 +273,10 @@ class SigParser
             {
                 CorElementType typ = (CorElementType) * m_ptr;
 
-                if (typ < ELEMENT_TYPE_CMOD_REQD) // fast path with no modifiers: single byte
+                if (typ < ELEMENT_TYPE_CMOD_REQD
+                    || typ == ELEMENT_TYPE_CVAR
+                    || typ == ELEMENT_TYPE_MCVAR
+                    || typ == ELEMENT_TYPE_CTARG) // fast path with no modifiers: single byte
                 {
                     if (etype != NULL)
                     {
@@ -360,7 +383,10 @@ class SigParser
             {
                 CorElementType typ = (CorElementType) * m_ptr;
 
-                if (typ < ELEMENT_TYPE_CMOD_REQD) // fast path with no modifiers: single byte
+                if (typ < ELEMENT_TYPE_CMOD_REQD
+                    || typ == ELEMENT_TYPE_CVAR
+                    || typ == ELEMENT_TYPE_MCVAR
+                    || typ == ELEMENT_TYPE_CTARG) // fast path with no modifiers: single byte
                 {
                     if ((typ == ELEMENT_TYPE_STRING) || (typ == ELEMENT_TYPE_OBJECT))
                     {
