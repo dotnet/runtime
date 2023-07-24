@@ -4218,8 +4218,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic          intrinsic,
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
-            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
-            return gtNewOperNode(GT_SUB, type, op2, op1);
+            return gtNewOperNode(GT_SUB, TYP_I_IMPL, op2, op1);
         }
 
         case NI_SRCS_UNSAFE_Copy:
