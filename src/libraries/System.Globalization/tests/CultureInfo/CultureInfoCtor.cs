@@ -254,8 +254,8 @@ namespace System.Globalization.Tests
             yield return new object[] { "pa-IN", new [] { "pa-IN" }};
             yield return new object[] { "pl", new [] { "pl" } };
             yield return new object[] { "pl-PL", new [] { "pl-PL" } };
-            yield return new object[] { "prs", new [] { "prs" }};
-            yield return new object[] { "prs-AF", new [] { "prs-AF" }};
+            yield return new object[] { "prs", new [] { "prs", "fa" } };
+            yield return new object[] { "prs-AF", new [] { "prs-AF", "fa-AF" }};
             yield return new object[] { "ps", new [] { "ps" }};
             yield return new object[] { "ps-AF", new [] { "ps-AF" }};
             yield return new object[] { "pt", new [] { "pt" } };
@@ -386,7 +386,6 @@ namespace System.Globalization.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_String_TestData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/79867", typeof(PlatformDetection), nameof(PlatformDetection.IsArm64Process), nameof(PlatformDetection.IsWindows))]
         public void Ctor_String(string name, string[] expectedNames)
         {
             CultureInfo culture = new CultureInfo(name);
@@ -458,7 +457,7 @@ namespace System.Globalization.Tests
         [InlineData("qps-plocm", "qps-PLOCM")] // ICU normalize this name to "qps--plocm" which we normalize it back to "qps-plocm"
         [InlineData("zh_CN", "zh_cn")]
         [InlineData("km_KH", "km_kh")]
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization), nameof(PlatformDetection.IsNotWindowsServerCore))]
         public void TestCreationWithICUNormalizedNames(string cultureName, string expectedCultureName)
         {
             CultureInfo ci = CultureInfo.GetCultureInfo(cultureName);

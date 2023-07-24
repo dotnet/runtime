@@ -2396,9 +2396,11 @@ void LinearScan::checkLastUses(BasicBlock* block)
     VARSET_TP liveInNotComputedLive(VarSetOps::Diff(compiler, block->bbLiveIn, computedLive));
 
     // We may have exception vars in the liveIn set of exception blocks that are not computed live.
-    if (compiler->ehBlockHasExnFlowDsc(block))
+    if (block->HasPotentialEHSuccs(compiler))
     {
-        VarSetOps::DiffD(compiler, liveInNotComputedLive, compiler->fgGetHandlerLiveVars(block));
+        VARSET_TP ehHandlerLiveVars(VarSetOps::MakeEmpty(compiler));
+        compiler->fgAddHandlerLiveVars(block, ehHandlerLiveVars);
+        VarSetOps::DiffD(compiler, liveInNotComputedLive, ehHandlerLiveVars);
     }
     VarSetOps::Iter liveInNotComputedLiveIter(compiler, liveInNotComputedLive);
     unsigned        liveInNotComputedLiveIndex = 0;

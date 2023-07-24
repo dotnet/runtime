@@ -2764,6 +2764,7 @@ void __stdcall Thread::RedirectedHandledJITCase(RedirectReason reason)
     LOG((LF_SYNC, LL_INFO1000, "Resuming execution with RtlRestoreContext\n"));
     SetLastError(dwLastError); // END_PRESERVE_LAST_ERROR
 
+    __asan_handle_no_return();
 #ifdef TARGET_X86
     g_pfnRtlRestoreContext(pCtx, NULL);
 #else
@@ -3931,6 +3932,7 @@ ThrowControlForThread(
                 _ASSERTE(!"Should not reach here");
             }
 #else // FEATURE_EH_FUNCLETS
+            __asan_handle_no_return();
             RtlRestoreContext(pThread->m_OSContext, NULL);
 #endif // !FEATURE_EH_FUNCLETS
             _ASSERTE(!"Should not reach here");

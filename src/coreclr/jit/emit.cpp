@@ -8050,7 +8050,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 
     if (attr == EA_4BYTE)
     {
-        f        = forceCastToFloat(constValue);
+        f        = FloatingPointUtils::convertToSingle(constValue);
         cnsAddr  = &f;
         dataType = TYP_FLOAT;
     }
