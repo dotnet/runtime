@@ -1660,6 +1660,9 @@ mono_arch_emit_outarg_vt (MonoCompile *cfg, MonoInst *ins, MonoInst *src)
 		}
 		break;
 	case ArgVtypeByRef: {
+		MONO_INST_NEW (cfg, load, OP_NOP);
+		MONO_ADD_INS (cfg->cbb, load);
+		return;
 		MonoInst *vtaddr, *arg;
 		/* Pass the vtype address in a reg/on the stack */
 		// if (ainfo->gsharedvt) {
