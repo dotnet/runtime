@@ -332,5 +332,10 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
+
+        public static long GetGenerationBudget(int generation)
+        {
+            return 0;
+        }
     }
 }

@@ -48376,6 +48376,17 @@ enable_no_gc_region_callback_status GCHeap::EnableNoGCRegionCallback(NoGCRegionC
     return gc_heap::enable_no_gc_callback(callback, callback_threshold);
 }
 
+uint64_t GCHeap::GetGenerationBudget(int generation)
+{
+#ifdef MULTIPLE_HEAPS
+    gc_heap* hp = gc_heap::g_heaps[0];
+#else
+    gc_heap* hp = __this; // TODO, AndrewAu, what is the conventional way of doing this again?
+#endif
+    dynamic_data* dd = hp->dynamic_data_of (generation);
+    return dd_desired_allocation (dd);
+}
+
 FinalizerWorkItem* GCHeap::GetExtraWorkForFinalization()
 {
     return Interlocked::ExchangePointer(&gc_heap::finalizer_work, nullptr);

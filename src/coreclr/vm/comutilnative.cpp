@@ -1181,6 +1181,31 @@ enable_no_gc_region_callback_status GCInterface::EnableNoGCRegionCallback(NoGCRe
     return GCHeapUtilities::GetGCHeap()->EnableNoGCRegionCallback(callback, totalSize);
 }
 
+extern "C" uint64_t QCALLTYPE GCInterface_GetGenerationBudget(int generation)
+{
+    uint64_t result = 0;
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+    result = GCInterface::GetGenerationBudget(generation);
+    END_QCALL;
+
+    return result;
+}
+
+uint64_t GCInterface::GetGenerationBudget(int generation)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    return GCHeapUtilities::GetGCHeap()->GetGenerationBudget(generation);
+}
+
 FORCEINLINE UINT64 GCInterface::InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend) {
     WRAPPER_NO_CONTRACT;
 

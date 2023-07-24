@@ -2724,6 +2724,7 @@ namespace System
         public static System.Collections.Generic.IReadOnlyDictionary<string, object> GetConfigurationVariables() { throw null; }
         [System.Runtime.Versioning.RequiresPreviewFeaturesAttribute("RefreshMemoryLimit is in preview.")]
         public static void RefreshMemoryLimit() { throw null; }
+        public static long GetGenerationBudget(int generation) { throw null; }
     }
 
     public enum GCCollectionMode

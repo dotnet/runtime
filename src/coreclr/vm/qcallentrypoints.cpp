@@ -214,6 +214,7 @@ static const Entry s_QCall[] =
     DllImportEntry(GCInterface_Collect)
     DllImportEntry(GCInterface_WaitForPendingFinalizers)
     DllImportEntry(GCInterface_AddMemoryPressure)
+    DllImportEntry(GCInterface_GetGenerationBudget)
     DllImportEntry(GCInterface_RemoveMemoryPressure)
 #ifdef FEATURE_BASICFREEZE
     DllImportEntry(GCInterface_RegisterFrozenSegment)

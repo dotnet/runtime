@@ -914,5 +914,10 @@ namespace System
             }
             Debug.Assert(status == RefreshMemoryStatus.Succeeded);
         }
+
+        public static long GetGenerationBudget(int generation)
+        {
+            return RuntimeImports.RhGetGenerationBudget(generation);
+        }
     }
 }
