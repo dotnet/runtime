@@ -810,18 +810,35 @@ namespace System.ComponentModel.Tests
             AssertExtensions.Throws<ArgumentNullException>("type", () => provider.IsSupportedType(null));
         }
 
-        [Fact]
-        public async void GetConverter_ByMultithread_ReturnsExpected()
+        public static IEnumerable<object[]> GetConverter_ByMultithread_ReturnsExpected_TestData()
+        {
+            yield return new object[] { typeof(MyClass), typeof(MyTypeConverter) };
+            yield return new object[] { typeof(MyInheritedClassWithCustomTypeDescriptionProvider), typeof(MyInheritedClassWithCustomTypeDescriptionProviderConverter) };
+            yield return new object[] { typeof(MyInheritedClassWithInheritedTypeDescriptionProvider), typeof(MyTypeConverter) };
+        }
+
+        [Theory]
+        [MemberData(nameof(GetConverter_ByMultithread_ReturnsExpected_TestData))]
+        public async void GetConverter_ByMultithread_ReturnsExpected(Type typeForGetConverter, Type expectedConverterType)
         {
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 100).Select(_ =>
-                    Task.Run(() => TypeDescriptor.GetConverter(typeof(MyClass)))));
+                    Task.Run(() => TypeDescriptor.GetConverter(typeForGetConverter))));
             Assert.All(actualConverters,
-                currentConverter => Assert.IsType<MyTypeConverter>(currentConverter));
+                currentConverter => Assert.IsType(expectedConverterType, currentConverter));
         }
 
-        [Fact]
-        public async void GetConverterWithAddProvider_ByMultithread_Success()
+        public static IEnumerable<object[]> GetConverterWithAddProvider_ByMultithread_Success_TestData()
+        {
+            foreach (object[] currentTestCase in GetConverter_ByMultithread_ReturnsExpected_TestData())
+            {
+                yield return currentTestCase;
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(GetConverterWithAddProvider_ByMultithread_Success_TestData))]
+        public async void GetConverterWithAddProvider_ByMultithread_Success(Type typeForGetConverter, Type expectedConverterType)
         {
             TypeConverter[] actualConverters = await Task.WhenAll(
                 Enumerable.Range(0, 200).Select(_ =>
@@ -830,14 +847,23 @@ namespace System.ComponentModel.Tests
                         var mockProvider = new Mock<TypeDescriptionProvider>(MockBehavior.Strict);
                         var someInstance = new object();
                         TypeDescriptor.AddProvider(mockProvider.Object, someInstance);
-                        return TypeDescriptor.GetConverter(typeof(MyClass));
+                        return TypeDescriptor.GetConverter(typeForGetConverter);
                     })));
             Assert.All(actualConverters,
-                currentConverter => Assert.IsType<MyTypeConverter>(currentConverter));
+                currentConverter => Assert.IsType(expectedConverterType, currentConverter));
         }
 
         [TypeDescriptionProvider(typeof(MyClassTypeDescriptionProvider))]
         public class MyClass
+        {
+        }
+
+        [TypeDescriptionProvider(typeof(MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptionProvider))]
+        public class MyInheritedClassWithCustomTypeDescriptionProvider : MyClass
+        {
+        }
+
+        public class MyInheritedClassWithInheritedTypeDescriptionProvider : MyClass
         {
         }
 
@@ -849,6 +875,14 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        public class MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptionProvider : TypeDescriptionProvider
+        {
+            public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
+            {
+                return new MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptor();
+            }
+        }
+
         public class MyClassTypeDescriptor : CustomTypeDescriptor
         {
             public override TypeConverter GetConverter()
@@ -857,7 +891,19 @@ namespace System.ComponentModel.Tests
             }
         }
 
+        public class MyInheritedClassWithCustomTypeDescriptionProviderTypeDescriptor : CustomTypeDescriptor
+        {
+            public override TypeConverter GetConverter()
+            {
+                return new MyInheritedClassWithCustomTypeDescriptionProviderConverter();
+            }
+        }
+
         public class MyTypeConverter : TypeConverter
+        {
+        }
+
+        public class MyInheritedClassWithCustomTypeDescriptionProviderConverter : TypeConverter
         {
         }
 

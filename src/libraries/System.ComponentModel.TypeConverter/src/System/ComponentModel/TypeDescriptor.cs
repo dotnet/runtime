@@ -293,22 +293,17 @@ namespace System.ComponentModel
                         contextForAdd = new ResetEventContext(resetEventForAdd, Environment.CurrentManagedThreadId);
                         s_processedTypes.Add(type, contextForAdd);
 
-                        // Always use core reflection when checking for
-                        // the default provider attribute. If there is a
-                        // provider, we probably don't want to build up our
-                        // own cache state against the type. There shouldn't be
-                        // more than one of these, but walk anyway. Walk in
-                        // reverse order so that the most derived takes precidence.
-                        var attrs = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false)
-                            .ToArray();
+                        var providerAttr = type.GetCustomAttributes<TypeDescriptionProviderAttribute>(false)
+                            .SingleOrDefault();
                         bool providerAdded = false;
-                        for (int i = 0; i != attrs.Length; i++)
+
+                        if (providerAttr != null)
                         {
-                            Type? providerType = Type.GetType(attrs[i].TypeName);
+                            Type? providerType = Type.GetType(providerAttr.TypeName);
                             if (providerType != null && typeof(TypeDescriptionProvider).IsAssignableFrom(providerType))
                             {
-                                TypeDescriptionProvider prov = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
-                                AddProvider(prov, type);
+                                TypeDescriptionProvider provider = (TypeDescriptionProvider)Activator.CreateInstance(providerType)!;
+                                AddProvider(provider, type);
                                 providerAdded = true;
                             }
                         }
