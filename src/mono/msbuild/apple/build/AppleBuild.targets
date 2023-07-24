@@ -125,12 +125,8 @@
         Condition="'$(RuntimeComponents)' != '' and '$(RuntimeComponents)' != '*'"
         Include="$(RuntimeComponents)" />
 
-      <_RuntimeLibraries 
-        Include="$(AppleBuildDir)\*-stub-static.a" />
-      <_RuntimeLibraries 
-        Include="$(AppleBuildDir)\*.a"
-        Exclude="$(AppleBuildDir)\*-static.a" />
-
+      <_RuntimeLibraries Include="$(AppleBuildDir)\*.a" Exclude="$(AppleBuildDir)\libmono-component-*.a" />
+      <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-*-stub-static.a" />
       <_RuntimeLibraries Remove="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-stub-static.a" />
       <_RuntimeLibraries Include="$(AppleBuildDir)\libmono-component-%(_UsedComponents.Identity)-static.a" />
     </ItemGroup>
