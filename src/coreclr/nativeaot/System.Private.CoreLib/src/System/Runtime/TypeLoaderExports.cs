@@ -73,37 +73,6 @@ namespace System.Runtime
             }
         }
 
-        public static unsafe void ActivatorCreateInstanceAny(ref object ptrToData, IntPtr pEETypePtr)
-        {
-            EETypePtr pEEType = new EETypePtr(pEETypePtr);
-
-            if (pEEType.IsValueType)
-            {
-                // Nothing else to do for value types.
-                return;
-            }
-
-            // For reference types, we need to:
-            //  1- Allocate the new object
-            //  2- Call its default ctor
-            //  3- Update ptrToData to point to that newly allocated object
-            ptrToData = RuntimeImports.RhNewObject(pEEType);
-
-            if (!TryGetFromCache(pEETypePtr, pEETypePtr, out var v))
-            {
-                v = CacheMiss(pEETypePtr, pEETypePtr,
-                        (IntPtr context, IntPtr signature, object contextObject, ref IntPtr auxResult) =>
-                        {
-                            IntPtr result = RuntimeAugments.TypeLoaderCallbacks.TryGetDefaultConstructorForType(new RuntimeTypeHandle(new EETypePtr(context)));
-                            if (result == IntPtr.Zero)
-                                result = RuntimeAugments.GetFallbackDefaultConstructor();
-                            return result;
-                        });
-            }
-
-            RawCalliHelper.Call(v._result, ptrToData);
-        }
-
         private static Value LookupOrAdd(IntPtr context, IntPtr signature)
         {
             if (!TryGetFromCache(context, signature, out var v))
