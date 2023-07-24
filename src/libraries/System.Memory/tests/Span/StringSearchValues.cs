@@ -20,8 +20,13 @@ namespace System.Memory.Tests.Span
         public static bool CanTestNls => RemoteExecutor.IsSupported && OperatingSystem.IsWindows();
 
         [Theory]
+        [InlineData(StringComparison.Ordinal, "a")]
+        [InlineData(StringComparison.Ordinal, "A")]
         [InlineData(StringComparison.Ordinal, "a", "ab", "abc", "bc")]
         [InlineData(StringComparison.Ordinal, "A", "ab", "aBc", "Bc")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, "a")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, "A")]
+        [InlineData(StringComparison.OrdinalIgnoreCase, "A", "a")]
         [InlineData(StringComparison.OrdinalIgnoreCase, "a", "Ab", "abc", "bC")]
         public static void Values_ImplementsSearchValuesBase(StringComparison comparisonType, params string[] values)
         {
