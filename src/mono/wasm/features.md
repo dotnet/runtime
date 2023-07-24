@@ -1,6 +1,6 @@
 # Browser or JS engine features
 
-dotnet for wasm could be compiled with various MsBuild flags which enable use of browser features. If you need to target older version of the browser, you may need to disable some of the dotnet features or optimizations.
+dotnet for wasm can be compiled with various MSBuild flags which enable the use of browser features. If you need to target an older version of the browser, then you may need to disable some of the dotnet features or optimizations.
 
 For full set of MSBuild properties [see top of](src\mono\wasm\build\WasmApp.targets)
 For set of [browser WASM features see](https://webassembly.org/roadmap/)
