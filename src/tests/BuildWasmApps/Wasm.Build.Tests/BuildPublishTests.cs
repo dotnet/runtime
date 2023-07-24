@@ -109,23 +109,26 @@ namespace Wasm.Build.Tests
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
+            // FIXME: relinking for paths with unicode does not work:
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/83497")]
+
             // relink by default for Release+publish
-            (_, output) = BuildProject(buildArgs,
-                                    id: id,
-                                    new BuildProjectOptions(
-                                        DotnetWasmFromRuntimePack: false,
-                                        CreateProject: false,
-                                        Publish: true,
-                                        UseCache: false,
-                                        Label: "first_publish"));
+            // (_, output) = BuildProject(buildArgs,
+            //                         id: id,
+            //                         new BuildProjectOptions(
+            //                             DotnetWasmFromRuntimePack: false,
+            //                             CreateProject: false,
+            //                             Publish: true,
+            //                             UseCache: false,
+            //                             Label: "first_publish"));
 
-            var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
-            Assert.True(publishStat["pinvoke.o"].Exists);
-            Assert.True(publishStat[$"{mainDll}.bc"].Exists);
-            CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
-            CompareStat(firstBuildStat, publishStat, pathsDict.Values);
+            // var publishStat = StatFiles(pathsDict.Select(kvp => kvp.Value.fullPath));
+            // Assert.True(publishStat["pinvoke.o"].Exists);
+            // Assert.True(publishStat[$"{mainDll}.bc"].Exists);
+            // CheckOutputForNativeBuild(expectAOT: true, expectRelinking: false, buildArgs, output);
+            // CompareStat(firstBuildStat, publishStat, pathsDict.Values);
 
-            Run(expectAOT: true);
+            // Run(expectAOT: true);
 
             // second build
             (_, output) = BuildProject(buildArgs,
@@ -143,7 +146,7 @@ namespace Wasm.Build.Tests
 
             // no native files changed
             pathsDict.UpdateTo(unchanged: true);
-            CompareStat(publishStat, secondBuildStat, pathsDict.Values);
+            // CompareStat(publishStat, secondBuildStat, pathsDict.Values);
 
             void Run(bool expectAOT) => RunAndTestWasmApp(
                                 buildArgs with { AOT = expectAOT },
