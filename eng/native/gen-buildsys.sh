@@ -104,6 +104,21 @@ if [[ "$host_arch" == "wasm" ]]; then
     fi
 fi
 
+cmake_args_to_cache="$scan_build\n$SCAN_BUILD_COMMAND\n$generator\n$__UnprocessedCMakeArgs"
+cmake_args_cache_file=
+if [[ -z "$__ConfigureOnly" ]]; then
+    cmake_args_cache_file="$2/cmake_cmd_line.txt"
+    if [[ -e "$cmake_args_cache_file" ]]; then
+        cmake_args_cache=$(<"$cmake_args_cache_file")
+        if [[ "$cmake_args_cache" == "$cmake_args_to_cache" ]]; then
+            echo "The CMake command line is the same as the last run. Skipping running CMake."
+            exit 0
+        else
+            echo "The CMake command line differs from the last run. Running CMake again."
+        fi
+    fi
+fi
+
 # We have to be able to build with CMake 3.6.2, so we can't use the -S or -B options
 pushd "$2"
 
@@ -117,3 +132,7 @@ $cmake_command \
   "$1"
 
 popd
+
+if [[ -n "$cmake_args_cache_file" ]]; then
+    echo $cmake_args_to_cache > $cmake_args_cache_file
+fi
