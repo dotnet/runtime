@@ -172,14 +172,10 @@ namespace System.Net.Http.Json
                 using Stream contentStream = await HttpContentJsonExtensions.GetContentStreamAsync(
                     response.Content, cancellationToken).ConfigureAwait(false);
 
-                using LengthLimitReadStream readStream = new(contentStream, (int)client.MaxResponseContentBufferSize);
-
                 await foreach (TValue? value in JsonSerializer.DeserializeAsyncEnumerable<TValue>(
-                    readStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
+                    contentStream, jsonTypeInfo, cancellationToken).ConfigureAwait(false))
                 {
                     yield return value;
-
-                    readStream.ResetCount();
                 }
             }
         }
