@@ -1966,7 +1966,7 @@ void CodeGen::genEmitMachineCode()
     trackedStackPtrsContig = !compiler->opts.compDbgEnC;
 #endif
 
-    if (compiler->opts.disAsm)
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; BEGIN METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
@@ -1990,7 +1990,7 @@ void CodeGen::genEmitMachineCode()
         ((double)compiler->info.compTotalColdCodeSize * (double)PERFSCORE_CODESIZE_COST_COLD);
 #endif // DEBUG || LATE_DISASM
 
-    if (compiler->opts.disAsm)
+    if (compiler->opts.disAsm && compiler->opts.disTesting)
     {
         printf("; END METHOD %s\n", compiler->eeGetMethodFullName(compiler->info.compMethodHnd));
     }
