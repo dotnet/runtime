@@ -107,7 +107,7 @@ namespace System.Buffers
 
                 if (!prefixToBucket.TryGetValue(prefix, out int bucketIndex))
                 {
-                    // TODO: We currently merge values with different prefixes into buckets randomly (round-robin).
+                    // Potential optimization: We currently merge values with different prefixes into buckets randomly (round-robin).
                     // We could employ a more sophisticated strategy here, e.g. by trying to minimize the number of
                     // values in each bucket, or by minimizing the PopCount of final merged fingerprints.
                     // Example of the latter: https://gist.github.com/MihaZupan/831324d1d646b69ae0ba4b54e3446a49

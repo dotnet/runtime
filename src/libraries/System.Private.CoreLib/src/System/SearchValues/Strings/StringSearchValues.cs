@@ -272,7 +272,7 @@ namespace System.Buffers
             {
                 string[][] buckets = TeddyBucketizer.Bucketize(values, bucketCount: 8, n);
 
-                // TODO: We don't have to pick the first N characters for the fingerprint.
+                // Potential optimization: We don't have to pick the first N characters for the fingerprint.
                 // Different offset selection can noticeably improve throughput (e.g. 2x).
 
                 return n == 2
@@ -347,7 +347,7 @@ namespace System.Buffers
                 minLength = Math.Min(minLength, value.Length);
             }
 
-            // TODO: Not all characters participate in Unicode case conversion.
+            // Potential optimization: Not all characters participate in Unicode case conversion.
             // If we can determine that none of the non-ASCII characters do, we can make searching faster
             // by using the same paths as we do for ASCII-only values.
             nonAsciiAffectedByCaseConversion = ignoreCase && !allAscii;
