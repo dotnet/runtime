@@ -4,15 +4,15 @@
 #ifndef HAVE_MINIPAL_CPUID_H
 #define HAVE_MINIPAL_CPUID_H
 
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
+#if defined(HOST_X86) || defined(HOST_AMD64)
 
-#if defined(TARGET_WINDOWS)
+#if defined(HOST_WINDOWS)
 
 #include <intrin.h>
 
-#endif // TARGET_WINDOWS
+#endif // HOST_WINDOWS
 
-#if defined(TARGET_UNIX)
+#if defined(HOST_UNIX)
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
 //
@@ -48,7 +48,7 @@ static void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #endif
 
-#endif // TARGET_UNIX
-#endif // defined(TARGET_X86) || defined(TARGET_AMD64)
+#endif // HOST_UNIX
+#endif // defined(HOST_X86) || defined(HOST_AMD64)
 
 #endif

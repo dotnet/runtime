@@ -7670,6 +7670,16 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 #endif
     }
 
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) != 0)
+    {
+        if (lookupNamedIntrinsic(call->AsCall()->gtCallMethHnd) ==
+            NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
+        {
+            // Expanded in fgVNBasedIntrinsicExpansion
+            setMethodHasSpecialIntrinsics();
+        }
+    }
+
     if (((call->gtCallMoreFlags & (GTF_CALL_M_SPECIAL_INTRINSIC | GTF_CALL_M_LDVIRTFTN_INTERFACE)) == 0) &&
         (call->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR)
 #ifdef FEATURE_READYTORUN
@@ -10078,8 +10088,20 @@ GenTree* Compiler::fgOptimizeCastOnStore(GenTree* store)
     if (!src->OperIs(GT_CAST))
         return store;
 
-    if (store->OperIs(GT_STORE_LCL_VAR) && !lvaGetDesc(store->AsLclVarCommon())->lvNormalizeOnLoad())
-        return store;
+    if (store->OperIs(GT_STORE_LCL_VAR))
+    {
+        LclVarDsc* varDsc = lvaGetDesc(store->AsLclVarCommon()->GetLclNum());
+
+        // We can make this transformation only under the assumption that NOL locals are always normalized before they
+        // are used,
+        // however this is not always the case: the JIT will utilize subrange assertions for NOL locals to make
+        // normalization
+        // assumptions -- see fgMorphLeafLocal. Thus we can only do this for cases where we know for sure that
+        // subsequent uses
+        // will normalize, which we can only guarantee when the local is address exposed.
+        if (!varDsc->lvNormalizeOnLoad() || !varDsc->IsAddressExposed())
+            return store;
+    }
 
     if (src->gtOverflow())
         return store;

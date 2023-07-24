@@ -116,9 +116,8 @@ PhaseStatus Compiler::fgExpandRuntimeLookups()
 bool Compiler::fgExpandRuntimeLookupsForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
-    assert(call->IsHelperCall());
 
-    if (!call->IsExpRuntimeLookup())
+    if (!call->IsHelperCall() || !call->IsExpRuntimeLookup())
     {
         return false;
     }
@@ -472,8 +471,8 @@ PhaseStatus Compiler::fgExpandThreadLocalAccess()
 bool Compiler::fgExpandThreadLocalAccessForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
-    assert(call->IsHelperCall());
-    if (!call->IsExpTLSFieldAccess())
+
+    if (!call->IsHelperCall() || !call->IsExpTLSFieldAccess())
     {
         return false;
     }
@@ -874,7 +873,7 @@ bool Compiler::fgExpandHelperForBlock(BasicBlock** pBlock)
 
         for (GenTree* const tree : stmt->TreeList())
         {
-            if (!tree->IsHelperCall())
+            if (!tree->IsCall())
             {
                 continue;
             }
@@ -942,7 +941,10 @@ PhaseStatus Compiler::fgExpandStaticInit()
 bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
 {
     BasicBlock* block = *pBlock;
-    assert(call->IsHelperCall());
+    if (!call->IsHelperCall())
+    {
+        return false;
+    }
 
     bool                    isGc       = false;
     StaticHelperReturnValue retValKind = {};
@@ -1175,5 +1177,338 @@ bool Compiler::fgExpandStaticInitForCall(BasicBlock** pBlock, Statement* stmt, G
 
     // Clear gtInitClsHnd as a mark that we've already visited this call
     call->gtInitClsHnd = NO_CLASS_HANDLE;
+    return true;
+}
+
+//------------------------------------------------------------------------------
+// fgVNBasedIntrinsicExpansion: Expand specific calls marked as intrinsics using VN.
+//
+// Returns:
+//    PhaseStatus indicating what, if anything, was changed.
+//
+PhaseStatus Compiler::fgVNBasedIntrinsicExpansion()
+{
+    PhaseStatus result = PhaseStatus::MODIFIED_NOTHING;
+
+    if (!doesMethodHaveSpecialIntrinsics() || opts.OptimizationDisabled())
+    {
+        return result;
+    }
+
+    // TODO: Replace with opts.compCodeOpt once it's fixed
+    const bool preferSize = opts.jitFlags->IsSet(JitFlags::JIT_FLAG_SIZE_OPT);
+    if (preferSize)
+    {
+        // The optimization comes with a codegen size increase
+        JITDUMP("Optimized for size - bail out.\n")
+        return result;
+    }
+    return fgExpandHelper<&Compiler::fgVNBasedIntrinsicExpansionForCall>(true);
+}
+
+//------------------------------------------------------------------------------
+// fgVNBasedIntrinsicExpansionForCall : Expand specific calls marked as intrinsics using VN.
+//
+// Arguments:
+//    block - Block containing the intrinsic call to expand
+//    stmt  - Statement containing the call
+//    call  - The intrinsic call
+//
+// Returns:
+//    True if expanded, false otherwise.
+//
+bool Compiler::fgVNBasedIntrinsicExpansionForCall(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    if ((call->gtCallMoreFlags & GTF_CALL_M_SPECIAL_INTRINSIC) == 0)
+    {
+        return false;
+    }
+
+    NamedIntrinsic ni = lookupNamedIntrinsic(call->gtCallMethHnd);
+    if (ni == NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8)
+    {
+        return fgVNBasedIntrinsicExpansionForCall_ReadUtf8(pBlock, stmt, call);
+    }
+
+    // TODO: Expand IsKnownConstant here
+    // Also, move various unrollings here
+
+    return false;
+}
+
+//------------------------------------------------------------------------------
+// fgVNBasedIntrinsicExpansionForCall_ReadUtf8 : Expand NI_System_Text_UTF8Encoding_UTF8EncodingSealed_ReadUtf8
+//    when src data is a string literal (UTF16) that can be narrowed to ASCII (UTF8), e.g.:
+//
+//      string str = "Hello, world!";
+//      int bytesWritten = ReadUtf8(ref str[0], str.Length, buffer, buffer.Length);
+//
+//    becomes:
+//
+//      bytesWritten = 0; // default value
+//      if (buffer.Length >= 13)
+//      {
+//          memcpy(buffer, "Hello, world!"u8, 13); // note the u8 suffix
+//          bytesWritten = 13;
+//      }
+//
+// Arguments:
+//    block - Block containing the intrinsic call to expand
+//    stmt  - Statement containing the call
+//    call  - The intrinsic call
+//
+// Returns:
+//    True if expanded, false otherwise.
+//
+bool Compiler::fgVNBasedIntrinsicExpansionForCall_ReadUtf8(BasicBlock** pBlock, Statement* stmt, GenTreeCall* call)
+{
+    BasicBlock* block = *pBlock;
+
+    assert(call->gtArgs.CountUserArgs() == 4);
+
+    GenTree* srcPtr = call->gtArgs.GetUserArgByIndex(0)->GetNode();
+
+    // We're interested in a case when srcPtr is a string literal and srcLen is a constant
+    // srcLen doesn't have to match the srcPtr's length, but it should not exceed it.
+    ssize_t               strObjOffset = 0;
+    CORINFO_OBJECT_HANDLE strObj       = nullptr;
+    if (!GetObjectHandleAndOffset(srcPtr, &strObjOffset, &strObj) || ((size_t)strObjOffset > INT_MAX))
+    {
+        // We might want to support more cases here, e.g. ROS<char> RVA data.
+        // Also, we check that strObjOffset (which is in most cases is expected to be just
+        // OFFSETOF__CORINFO_String__chars) doesn't exceed INT_MAX since we'll need to cast
+        // it to int for getObjectContent API.
+        JITDUMP("ReadUtf8: srcPtr is not an object handle\n")
+        return false;
+    }
+
+    // We mostly expect string literal objects here, but let's be more agile just in case
+    if (!info.compCompHnd->isObjectImmutable(strObj))
+    {
+        JITDUMP("ReadUtf8: srcPtr is not immutable (not a frozen string object?)\n")
+        return false;
+    }
+
+    GenTree* srcLen = call->gtArgs.GetUserArgByIndex(1)->GetNode();
+    if (!srcLen->gtVNPair.BothEqual() || !vnStore->IsVNInt32Constant(srcLen->gtVNPair.GetLiberal()))
+    {
+        JITDUMP("ReadUtf8: srcLen is not constant\n")
+        return false;
+    }
+
+    const int      MaxPossibleUnrollThreshold = 256;
+    const unsigned unrollThreshold            = min(getUnrollThreshold(UnrollKind::Memcpy), MaxPossibleUnrollThreshold);
+    const unsigned srcLenCns                  = (unsigned)vnStore->GetConstantInt32(srcLen->gtVNPair.GetLiberal());
+    if ((srcLenCns == 0) || (srcLenCns > unrollThreshold))
+    {
+        // TODO: handle srcLenCns == 0 if it's a common case
+        JITDUMP("ReadUtf8: srcLenCns is out of unrollable range\n")
+        return false;
+    }
+
+    // Read the string literal (UTF16) into a local buffer (UTF8)
+    assert(strObj != nullptr);
+    uint16_t bufferU16[MaxPossibleUnrollThreshold];
+    uint8_t  bufferU8[MaxPossibleUnrollThreshold]; // twice smaller because of narrowing
+
+    // Both must be within [0..INT_MAX] range as we're going to cast them to int
+    assert((unsigned)srcLenCns <= INT_MAX);
+    assert((unsigned)strObjOffset <= INT_MAX);
+
+    // getObjectContent is expected to validate the offset and length
+    if (!info.compCompHnd->getObjectContent(strObj, (uint8_t*)bufferU16, (int)srcLenCns * 2, (int)strObjOffset))
+    {
+        JITDUMP("ReadUtf8: getObjectContent returned false.\n")
+        return false;
+    }
+
+    for (unsigned charIndex = 0; charIndex < srcLenCns; charIndex++)
+    {
+        // Buffer keeps the original utf16 chars
+        uint16_t ch = bufferU16[charIndex];
+        if (ch > 127)
+        {
+            // Only ASCII is supported.
+            JITDUMP("ReadUtf8: %dth char is not ASCII.\n", charIndex)
+            return false;
+        }
+
+        // Narrow U16 to U8 in the same buffer
+        bufferU8[charIndex] = (uint8_t)ch;
+    }
+
+    DebugInfo debugInfo = stmt->GetDebugInfo();
+
+    // Split block right before the call tree (this is a standard pattern we use in helperexpansion.cpp)
+    BasicBlock* prevBb       = block;
+    GenTree**   callUse      = nullptr;
+    Statement*  newFirstStmt = nullptr;
+    block                    = fgSplitBlockBeforeTree(block, stmt, call, &newFirstStmt, &callUse);
+    assert(prevBb != nullptr && block != nullptr);
+    *pBlock = block;
+
+    // If we suddenly need to use these arguments, we'll have to reload them from the call
+    // after the split, so let's null them to prevent accidental use.
+    srcLen = nullptr;
+    srcPtr = nullptr;
+
+    // Block ops inserted by the split need to be morphed here since we are after morph.
+    // We cannot morph stmt yet as we may modify it further below, and the morphing
+    // could invalidate callUse
+    while ((newFirstStmt != nullptr) && (newFirstStmt != stmt))
+    {
+        fgMorphStmtBlockOps(block, newFirstStmt);
+        newFirstStmt = newFirstStmt->GetNextStmt();
+    }
+
+    // We don't need this flag anymore.
+    call->gtCallMoreFlags &= ~GTF_CALL_M_SPECIAL_INTRINSIC;
+
+    // Grab a temp to store the result.
+    // The result corresponds the number of bytes written to dstPtr (int32).
+    assert(call->TypeIs(TYP_INT));
+    const unsigned resultLclNum   = lvaGrabTemp(true DEBUGARG("local for result"));
+    lvaTable[resultLclNum].lvType = TYP_INT;
+    *callUse                      = gtNewLclvNode(resultLclNum, TYP_INT);
+    fgMorphStmtBlockOps(block, stmt);
+    gtUpdateStmtSideEffects(stmt);
+
+    // srcLenCns is the length of the string literal in chars (UTF16)
+    // but we're going to use the same value as the "bytesWritten" result in the fast path and in the length check.
+    GenTree* srcLenCnsNode = gtNewIconNode(srcLenCns);
+    fgValueNumberTreeConst(srcLenCnsNode);
+
+    // We're going to insert the following blocks:
+    //
+    //  prevBb:
+    //
+    //  lengthCheckBb:
+    //      bytesWritten = -1;
+    //      if (dstLen <srcLen)
+    //          goto block;
+    //
+    //  fastpathBb:
+    //      <unrolled block copy>
+    //      bytesWritten = srcLenCns * 2;
+    //
+    //  block:
+    //      use(bytesWritten)
+    //
+
+    //
+    // Block 1: lengthCheckBb (we check that dstLen < srcLen)
+    //
+    BasicBlock* lengthCheckBb = fgNewBBafter(BBJ_COND, prevBb, true);
+    lengthCheckBb->bbFlags |= BBF_INTERNAL;
+
+    // Set bytesWritten -1 by default, if the fast path is not taken we'll return it as the result.
+    GenTree* bytesWrittenDefaultVal = gtNewStoreLclVarNode(resultLclNum, gtNewIconNode(-1));
+    fgInsertStmtAtEnd(lengthCheckBb, fgNewStmtFromTree(bytesWrittenDefaultVal, debugInfo));
+
+    GenTree* dstLen      = call->gtArgs.GetUserArgByIndex(3)->GetNode();
+    GenTree* lengthCheck = gtNewOperNode(GT_LT, TYP_INT, gtCloneExpr(dstLen), srcLenCnsNode);
+    lengthCheck->gtFlags |= GTF_RELOP_JMP_USED;
+    Statement* lengthCheckStmt = fgNewStmtFromTree(gtNewOperNode(GT_JTRUE, TYP_VOID, lengthCheck), debugInfo);
+    fgInsertStmtAtEnd(lengthCheckBb, lengthCheckStmt);
+    lengthCheckBb->bbCodeOffs    = block->bbCodeOffsEnd;
+    lengthCheckBb->bbCodeOffsEnd = block->bbCodeOffsEnd;
+
+    //
+    // Block 2: fastpathBb - unrolled loop that copies the UTF8 const data to the destination
+    //
+    // We're going to emit a series of loads and stores to copy the data.
+    // In theory, we could just emit the const U8 data to the data section and use GT_BLK here
+    // but that would be a bit less efficient since we would have to load the data from memory.
+    //
+    BasicBlock* fastpathBb = fgNewBBafter(BBJ_NONE, lengthCheckBb, true);
+    fastpathBb->bbFlags |= BBF_INTERNAL;
+
+    // The widest type we can use for loads
+    const var_types maxLoadType = roundDownMaxType(srcLenCns);
+    assert(genTypeSize(maxLoadType) > 0);
+
+    // How many iterations we need to copy UTF8 const data to the destination
+    unsigned iterations = srcLenCns / genTypeSize(maxLoadType);
+
+    // Add one more iteration if we have a remainder
+    iterations += (srcLenCns % genTypeSize(maxLoadType) == 0) ? 0 : 1;
+
+    GenTree* dstPtr = call->gtArgs.GetUserArgByIndex(2)->GetNode();
+    for (unsigned i = 0; i < iterations; i++)
+    {
+        ssize_t offset = (ssize_t)i * genTypeSize(maxLoadType);
+
+        // Last iteration: overlap with previous load if needed
+        if (i == iterations - 1)
+        {
+            offset = (ssize_t)srcLenCns - genTypeSize(maxLoadType);
+        }
+
+        // We're going to emit the following tree (in case of SIMD16 load):
+        //
+        // -A-XG------         *  STOREIND  simd16 (copy)
+        // -------N---         +--*  ADD       byref
+        // -----------         |  +--*  LCL_VAR   byref
+        // -----------         |  \--*  CNS_INT   int
+        // -----------         \--*  CNS_VEC   simd16
+
+        GenTreeIntCon* offsetNode = gtNewIconNode(offset, TYP_I_IMPL);
+        fgValueNumberTreeConst(offsetNode);
+
+        // Grab a chunk from srcUtf8cnsData for the given offset and width
+        GenTree* utf8cnsChunkNode = gtNewGenericCon(maxLoadType, bufferU8 + offset);
+        fgValueNumberTreeConst(utf8cnsChunkNode);
+
+        GenTree*   dstAddOffsetNode = gtNewOperNode(GT_ADD, dstPtr->TypeGet(), gtCloneExpr(dstPtr), offsetNode);
+        GenTreeOp* storeInd         = gtNewStoreIndNode(maxLoadType, dstAddOffsetNode, utf8cnsChunkNode);
+        fgInsertStmtAtEnd(fastpathBb, fgNewStmtFromTree(storeInd, debugInfo));
+    }
+
+    // Finally, store the number of bytes written to the resultLcl local
+    Statement* finalStmt = fgNewStmtFromTree(gtNewStoreLclVarNode(resultLclNum, gtCloneExpr(srcLenCnsNode)), debugInfo);
+    fgInsertStmtAtEnd(fastpathBb, finalStmt);
+    fastpathBb->bbCodeOffs    = block->bbCodeOffsEnd;
+    fastpathBb->bbCodeOffsEnd = block->bbCodeOffsEnd;
+
+    //
+    // Update preds in all new blocks
+    //
+    // block is no longer a predecessor of prevBb
+    fgRemoveRefPred(block, prevBb);
+    // prevBb flows into lengthCheckBb
+    fgAddRefPred(lengthCheckBb, prevBb);
+    // lengthCheckBb has two successors: block and fastpathBb
+    fgAddRefPred(fastpathBb, lengthCheckBb);
+    fgAddRefPred(block, lengthCheckBb);
+    // fastpathBb flows into block
+    fgAddRefPred(block, fastpathBb);
+    // lengthCheckBb jumps to block if condition is met
+    lengthCheckBb->bbJumpDest = block;
+
+    //
+    // Re-distribute weights
+    //
+    lengthCheckBb->inheritWeight(prevBb);
+    fastpathBb->inheritWeight(lengthCheckBb);
+    block->inheritWeight(prevBb);
+
+    //
+    // Update bbNatLoopNum for all new blocks
+    //
+    lengthCheckBb->bbNatLoopNum = prevBb->bbNatLoopNum;
+    fastpathBb->bbNatLoopNum    = prevBb->bbNatLoopNum;
+
+    // All blocks are expected to be in the same EH region
+    assert(BasicBlock::sameEHRegion(prevBb, block));
+    assert(BasicBlock::sameEHRegion(prevBb, lengthCheckBb));
+    assert(BasicBlock::sameEHRegion(prevBb, fastpathBb));
+
+    // Extra step: merge prevBb with lengthCheckBb if possible
+    if (fgCanCompactBlocks(prevBb, lengthCheckBb))
+    {
+        fgCompactBlocks(prevBb, lengthCheckBb);
+    }
+
+    JITDUMP("ReadUtf8: succesfully expanded!\n")
     return true;
 }
