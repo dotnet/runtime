@@ -2847,7 +2847,7 @@ HRESULT RegMeta::GetGenericParamProps(        // S_OK or error.
         if (ptOwner)
           *ptOwner = pMiniMd->getOwnerOfGenericParam(pGenericParamRec);
         if (ptType)
-          *ptType = pMiniMd->getTypeOfGenericParam(pGenericParamRec);
+          *ptType = pMiniMd->SupportsConstGenerics() ? pMiniMd->getTypeOfGenericParam(pGenericParamRec) : NULL;
         // This call has to be last to set 'hr', so CLDB_S_TRUNCATION is not rewritten with S_OK
         if (pchName || szName)
             IfFailGo(pMiniMd->getNameOfGenericParam(pGenericParamRec, szName, cchName, pchName));

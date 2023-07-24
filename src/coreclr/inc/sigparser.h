@@ -888,7 +888,26 @@ public:
 
         return GetTypeInfo_NoThrow(type).isGenVar;
     }
+    FORCEINLINE static BOOL IsConstGenericVariable(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
 
+        return GetTypeInfo(type).isGenVar &&
+            (type == CorElementType::ELEMENT_TYPE_CVAR || type == CorElementType::ELEMENT_TYPE_MCVAR);
+    }
+    FORCEINLINE static BOOL IsConstGenericVariable_NoThrow(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return GetTypeInfo_NoThrow(type).isGenVar &&
+            (type == CorElementType::ELEMENT_TYPE_CVAR || type == CorElementType::ELEMENT_TYPE_MCVAR);
+    }
+    FORCEINLINE static BOOL IsConstGenericTypeArgument_NoThrow(CorElementType type)
+    {
+        WRAPPER_NO_CONTRACT;
+
+        return type == CorElementType::ELEMENT_TYPE_CTARG;
+    }
     FORCEINLINE static BOOL IsArray(CorElementType type)
     {
         WRAPPER_NO_CONTRACT;

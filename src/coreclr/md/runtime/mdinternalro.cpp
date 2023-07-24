@@ -2464,8 +2464,8 @@ HRESULT MDInternalRO::GetGenericParamProps(        // S_OK or error.
         ULONG* pulSequence,                 // [OUT] Parameter sequence number
         DWORD* pdwAttr,                     // [OUT] Type parameter flags (for future use)
         mdToken *ptOwner,                   // [OUT] The owner (TypeDef or MethodDef)
-        DWORD *reserved,                    // [OUT] The kind (TypeDef/Ref/Spec, for future use)
-        LPCSTR *szName)                      // [OUT] The name
+        mdToken *ptType,                    // [OUT] Type (const generic parameter)
+        LPCSTR *szName)                     // [OUT] The name
 {
     HRESULT           hr = NOERROR;
     GenericParamRec * pGenericParamRec = NULL;
@@ -2488,6 +2488,8 @@ HRESULT MDInternalRO::GetGenericParamProps(        // S_OK or error.
         *pdwAttr = m_LiteWeightStgdb.m_MiniMd.getFlagsOfGenericParam(pGenericParamRec);
     if (ptOwner)
         *ptOwner = m_LiteWeightStgdb.m_MiniMd.getOwnerOfGenericParam(pGenericParamRec);
+    if (ptType)
+        *ptType = m_LiteWeightStgdb.m_MiniMd.SupportsConstGenerics() ? m_LiteWeightStgdb.m_MiniMd.getTypeOfGenericParam(pGenericParamRec) : NULL;
     if (szName != NULL)
     {
         IfFailGo(m_LiteWeightStgdb.m_MiniMd.getNameOfGenericParam(pGenericParamRec, szName));

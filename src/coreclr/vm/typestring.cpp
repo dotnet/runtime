@@ -767,10 +767,66 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
 
         LPCSTR szName = NULL;
         mdToken mdOwner;
+        mdToken mdType;
 
-        IfFailThrow(ty.GetModule()->GetMDImport()->GetGenericParamProps(token, NULL, NULL, &mdOwner, NULL, &szName));
+        IfFailThrow(ty.GetModule()->GetMDImport()->GetGenericParamProps(token, NULL, NULL, &mdOwner, &mdType, &szName));
 
         _ASSERTE(TypeFromToken(mdOwner) == mdtTypeDef || TypeFromToken(mdOwner) == mdtMethodDef);
+
+        if (RidFromToken(mdType))
+        {
+            _ASSERTE(TypeFromToken(mdType) == mdtTypeSpec);
+            tnb.Append(W("const "));
+            ULONG cb;
+            PCCOR_SIGNATURE sig;
+            IfFailThrow(ty.GetModule()->GetMDImport()->GetTypeSpecFromToken(mdType, &sig, &cb));
+            _ASSERTE(cb == 1);
+            LPCWSTR cnsTypeName;
+            switch (*sig)
+            {
+                case ELEMENT_TYPE_BOOLEAN:
+                    cnsTypeName = W("bool");
+                    break;
+                case ELEMENT_TYPE_CHAR:
+                    cnsTypeName = W("char");
+                    break;
+                case ELEMENT_TYPE_I1:
+                    cnsTypeName = W("sbyte");
+                    break;
+                case ELEMENT_TYPE_U1:
+                    cnsTypeName = W("byte");
+                    break;
+                case ELEMENT_TYPE_I2:
+                    cnsTypeName = W("short");
+                    break;
+                case ELEMENT_TYPE_U2:
+                    cnsTypeName = W("ushort");
+                    break;
+                case ELEMENT_TYPE_I4:
+                    cnsTypeName = W("int");
+                    break;
+                case ELEMENT_TYPE_U4:
+                    cnsTypeName = W("uint");
+                    break;
+                case ELEMENT_TYPE_I8:
+                    cnsTypeName = W("long");
+                    break;
+                case ELEMENT_TYPE_U8:
+                    cnsTypeName = W("ulong");
+                    break;
+                case ELEMENT_TYPE_R4:
+                    cnsTypeName = W("float");
+                    break;
+                case ELEMENT_TYPE_R8:
+                    cnsTypeName = W("double");
+                    break;
+                default:
+                    cnsTypeName = W("/* UNKNOWN TYPE */");
+                    break;
+            }
+            tnb.Append(cnsTypeName);
+            tnb.Append(W(" "));
+        }
 
         LPCSTR szPrefix;
         if (!(format & FormatGenericParam))
@@ -781,9 +837,9 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
             szPrefix = "!!";
 
         SmallStackSString pName(SString::Utf8, szPrefix);
+        pName.AppendUTF8(szPrefix);
         pName.AppendUTF8(szName);
         tnb.AddName(pName.GetUnicode());
-
         format &= ~FormatAssembly;
     }
 

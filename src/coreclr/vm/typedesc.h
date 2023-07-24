@@ -103,6 +103,9 @@ public:
     // VAR, MVAR
     BOOL IsGenericVariable();
 
+    // CVAR, MCVAR
+    BOOL IsConstGenericVariable();
+
     // ELEMENT_TYPE_FNPTR
     BOOL IsFnPtr();
 

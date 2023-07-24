@@ -476,6 +476,9 @@ public:
 
     // VAR or MVAR
     BOOL IsGenericVariable() const;
+    
+    // CVAR, MCVAR
+    BOOL IsConstGenericVariable() const;
 
     // BYREF
     BOOL IsByRef() const;

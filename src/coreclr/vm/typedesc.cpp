@@ -279,6 +279,12 @@ BOOL TypeDesc::IsGenericVariable()
     return CorTypeInfo::IsGenericVariable_NoThrow(GetInternalCorElementType());
 }
 
+BOOL TypeDesc::IsConstGenericVariable()
+{
+    LIMITED_METHOD_DAC_CONTRACT;
+    return CorTypeInfo::IsConstGenericVariable_NoThrow(GetInternalCorElementType());
+}
+
 BOOL TypeDesc::IsFnPtr()
 {
     LIMITED_METHOD_DAC_CONTRACT;
