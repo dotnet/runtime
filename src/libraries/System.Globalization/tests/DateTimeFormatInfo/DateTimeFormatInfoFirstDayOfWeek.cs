@@ -11,10 +11,11 @@ namespace System.Globalization.Tests
         public static IEnumerable<object[]> FirstDayOfWeek_Get_TestData()
         {
             yield return new object[] { DateTimeFormatInfo.InvariantInfo, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
-            yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday };
-
-            if (PlatformDetection.IsHybridGlobalizationOnBrowser)
+            if (!PlatformDetection.IsHybridGlobalizationOnBrowser)
+            {
+                yield return new object[] { new CultureInfo("en-US", false).DateTimeFormat, DayOfWeek.Sunday };
+                yield return new object[] { new CultureInfo("fr-FR", false).DateTimeFormat, DayOfWeek.Monday };
+            }
             {
                 yield return new object[] { new CultureInfo("ar-SA").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, DayOfWeek.Sunday };
