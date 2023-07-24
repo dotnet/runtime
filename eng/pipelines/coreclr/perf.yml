@@ -52,7 +52,11 @@ extends:
           collectHelixLogsScript: ${{ variables._wasmCollectHelixLogsScript }}
           ${{ or(and(ne(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'Schedule')), parameters.TestHybridGlobalization) }}:
             runProfile: 'non-v8'
+            TestHybridGlobalization: ${{ parameters.TestHybridGlobalization }}
           ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'Schedule')) }}:
             runProfile: 'v8'
+            TestHybridGlobalization: ${{ parameters.TestHybridGlobalization }}
 
       - template: /eng/pipelines/coreclr/perf-non-wasm-jobs.yml
+        parameters:
+          TestHybridGlobalization: ${{ parameters.TestHybridGlobalization }}

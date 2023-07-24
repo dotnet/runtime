@@ -8,6 +8,7 @@ parameters:
   downloadSpecificBuild: null # { buildId, pipeline, branchName, project }
   collectHelixLogsScript: ''
   perfForkToUse: {} # url, branch
+  TestHybridGlobalization: false
 
 jobs:
 
@@ -192,3 +193,4 @@ jobs:
         logicalmachine: 'perftiger'
         downloadSpecificBuild: ${{ parameters.downloadSpecificBuild }}
         perfForkToUse: ${{ parameters.perfForkToUse }}
+        hybridGlobalization: true
