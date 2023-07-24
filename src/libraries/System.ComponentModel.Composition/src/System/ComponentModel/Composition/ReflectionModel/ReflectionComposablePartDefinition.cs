@@ -185,13 +185,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
                                 }
                                 else
                                 {
-                                    if (candidates.Contains(candidatePart))
+                                    if (!candidates.Add(candidatePart))
                                     {
                                         alreadyProcessed = true;
-                                    }
-                                    else
-                                    {
-                                        candidates.Add(candidatePart);
                                     }
                                 }
                                 if (!alreadyProcessed)
