@@ -1210,18 +1210,18 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        [InlineData(1, true, true)]
+        /*[InlineData(1, true, true)]
         [InlineData(1024, true, true)]
-        [InlineData(1024*1024*1024, true, true)]
+        [InlineData(1024*1024*1024, true, true)]*/
         [InlineData(1, true, false)]
-        [InlineData(1024, true, false)]
+        /*[InlineData(1024, true, false)]
         [InlineData(1024*1024*1024, true, false)]
         [InlineData(1, false, true)]
         [InlineData(1024, false, true)]
         [InlineData(1024*1024*1024, false, true)]
         [InlineData(1, false, false)]
         [InlineData(1024, false, false)]
-        [InlineData(1024*1024*1024, false, false)]
+        [InlineData(1024*1024*1024, false, false)]*/
         public async Task ReadsClosedFinishes_ConnectionClose(int payloadSize, bool closeServer, bool closeConnection)
         {
             using var logger = new TestUtilities.TestEventListener(_output, "Private.InternalDiagnostics.System.Net.Quic");

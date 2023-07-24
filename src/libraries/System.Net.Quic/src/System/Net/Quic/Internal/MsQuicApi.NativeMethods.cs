@@ -314,6 +314,10 @@ internal sealed unsafe partial class MsQuicApi
         try
         {
             stream.DangerousAddRef(ref success);
+            if (NetEventSource.Log.IsEnabled())
+            {
+                NetEventSource.Info(stream, $"{stream} StreamShutdown({flags}).");
+            }
             return ApiTable->StreamShutdown(stream.QuicHandle, flags, code);
         }
         finally
