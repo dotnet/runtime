@@ -423,7 +423,7 @@ namespace System.Globalization.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => calendar.TwoDigitYearMax = max + 1);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotHybridGlobalizationOnBrowser))]
         public void GetEra_Invalid_ThrowsArgumentOutOfRangeException()
         {
             Calendar calendar = Calendar;

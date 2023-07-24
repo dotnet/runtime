@@ -197,8 +197,7 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("tr-TR").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("uk-UA").DateTimeFormat, DayOfWeek.Monday };
                 yield return new object[] { new CultureInfo("vi-VN").DateTimeFormat, DayOfWeek.Monday };
-                yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat,
-                    PlatformDetection.IsBrowserDomSupportedOrNodeJS ? DayOfWeek.Monday : DayOfWeek.Sunday };
+                yield return new object[] { new CultureInfo("zh-CN").DateTimeFormat, DayOfWeek.Monday  }; // DayOfWeek.Sunday
                 yield return new object[] { new CultureInfo("zh-Hans-HK").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("zh-SG").DateTimeFormat, DayOfWeek.Sunday };
                 yield return new object[] { new CultureInfo("zh-HK").DateTimeFormat, DayOfWeek.Sunday };

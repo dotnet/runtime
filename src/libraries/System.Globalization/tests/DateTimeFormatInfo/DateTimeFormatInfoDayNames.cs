@@ -42,9 +42,7 @@ namespace System.Globalization.Tests
             yield return new object[] { new CultureInfo("es-419").DateTimeFormat, new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
             yield return new object[] { new CultureInfo("es-ES").DateTimeFormat, new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
             yield return new object[] { new CultureInfo("es-MX").DateTimeFormat, new string[] { "domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado" } };
-            yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, PlatformDetection.IsBrowserDomSupportedOrNodeJS ?
-                new string[] { "pühapäev", "esmaspäev", "teisipäev", "kolmapäev", "neljapäev", "reede", "laupäev" } :
-                new string[] { "Pühapäev", "Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede", "Laupäev" } }; // should not be capitalized, v8 has a bug
+            yield return new object[] { new CultureInfo("et-EE").DateTimeFormat, new string[] { "Pühapäev", "Esmaspäev", "Teisipäev", "Kolmapäev", "Neljapäev", "Reede", "Laupäev" } };
             yield return new object[] { new CultureInfo("fa-IR").DateTimeFormat, new string[] { "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنجشنبه", "جمعه", "شنبه" } };
             yield return new object[] { new CultureInfo("fi-FI").DateTimeFormat, new string[] { "sunnuntai", "maanantai", "tiistai", "keskiviikko", "torstai", "perjantai", "lauantai" } };
             yield return new object[] { new CultureInfo("fil-PH").DateTimeFormat, new string[] { "Linggo", "Lunes", "Martes", "Miyerkules", "Huwebes", "Biyernes", "Sabado" } };
