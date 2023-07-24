@@ -98,11 +98,12 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
 
                 foreach (TypeSpec type in types)
                 {
-                    TypeSpecKind kind = type.SpecKind;
+                    TypeSpec effectiveType = type.EffectiveType;
+                    TypeSpecKind kind = effectiveType.SpecKind;
 
                     EmitStartBlock($"if (type == typeof({type.MinimalDisplayString}))");
 
-                    if (type is ParsableFromStringSpec stringParsableType)
+                    if (effectiveType is ParsableFromStringSpec stringParsableType)
                     {
                         EmitCastToIConfigurationSection();
                         EmitBindLogicFromString(
@@ -113,9 +114,9 @@ namespace Microsoft.Extensions.Configuration.Binder.SourceGeneration
                             checkForNullSectionValue: stringParsableType.StringParsableTypeKind is not StringParsableTypeKind.AssignFromSectionValue,
                             useIncrementalStringValueIdentifier: false);
                     }
-                    else if (!EmitInitException(type))
+                    else if (!EmitInitException(effectiveType))
                     {
-                        EmitBindCoreCall(type, Identifier.obj, Identifier.configuration, InitializationKind.Declaration);
+                        EmitBindCoreCall(effectiveType, Identifier.obj, Identifier.configuration, InitializationKind.Declaration);
                         _writer.WriteLine($"return {Identifier.obj};");
                     }
 
