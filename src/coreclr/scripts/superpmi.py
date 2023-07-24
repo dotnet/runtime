@@ -606,7 +606,8 @@ class AsyncSubprocessHelper:
             else:
                 loop = asyncio.new_event_loop()
 
-        asyncio.set_event_loop(loop)
+            asyncio.set_event_loop(loop)
+            
         loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.clear()
         os.environ.update(reset_env)
