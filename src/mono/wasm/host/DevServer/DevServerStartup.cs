@@ -79,7 +79,7 @@ internal sealed class DevServerStartup
             });
         });
 
-        ServerURLsProvider.Hook(app, logger, applicationLifetime, realUrlsAvailableTcs);
+        ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs);
     }
 
     private static void EnableConfiguredPathbase(IApplicationBuilder app, IConfiguration configuration)

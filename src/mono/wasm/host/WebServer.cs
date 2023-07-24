@@ -71,16 +71,14 @@ public record ServerURLs(string Http, string? Https);
 
 public static class ServerURLsProvider
 {
-    public static void Hook(IApplicationBuilder app, ILogger logger, IHostApplicationLifetime applicationLifetime, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs)
+    public static void ResolveServerUrlsOnApplicationStarted(IApplicationBuilder app, ILogger logger, IHostApplicationLifetime applicationLifetime, TaskCompletionSource<ServerURLs> realUrlsAvailableTcs)
     {
         applicationLifetime.ApplicationStarted.Register(() =>
         {
             TaskCompletionSource<ServerURLs> tcs = realUrlsAvailableTcs;
             try
             {
-                ICollection<string>? addresses = app.ServerFeatures
-                                                    .Get<IServerAddressesFeature>()
-                                                    ?.Addresses;
+                ICollection<string>? addresses = app.ServerFeatures.Get<IServerAddressesFeature>()?.Addresses;
 
                 string? ipAddress = null;
                 string? ipAddressSecure = null;
@@ -102,12 +100,11 @@ public static class ServerURLsProvider
                 throw;
             }
 
-            static string? GetHttpServerAddress(ICollection<string> addresses, bool secure)
-                => addresses?
-                        .Where(a => a.StartsWith(secure ? "https:" : "http:", StringComparison.InvariantCultureIgnoreCase))
-                        .Select(a => new Uri(a))
-                        .Select(uri => uri.ToString())
-                        .FirstOrDefault();
+            static string? GetHttpServerAddress(ICollection<string> addresses, bool secure) => addresses?
+                .Where(a => a.StartsWith(secure ? "https:" : "http:", StringComparison.InvariantCultureIgnoreCase))
+                .Select(a => new Uri(a))
+                .Select(uri => uri.ToString())
+                .FirstOrDefault();
         });
     }
 }

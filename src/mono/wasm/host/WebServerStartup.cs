@@ -168,6 +168,6 @@ internal sealed class WebServerStartup
             });
         });
 
-        ServerURLsProvider.Hook(app, logger, applicationLifetime, realUrlsAvailableTcs);
+        ServerURLsProvider.ResolveServerUrlsOnApplicationStarted(app, logger, applicationLifetime, realUrlsAvailableTcs);
     }
 }

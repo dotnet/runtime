@@ -57,6 +57,7 @@ public abstract class AppTestBase : BlazorWasmTestBase
 
     protected async Task<RunResult> RunSdkStyleApp(RunOptions options)
     {
+        // FIXME: Remove GenerateRuntimeConfigurationFiles after SDK flow to installer
         string runArgs = $"run -c {options.Configuration} -p:GenerateRuntimeConfigurationFiles=true";
         string workingDirectory = _projectDir;
 
