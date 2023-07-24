@@ -17,16 +17,7 @@
 #include <unistd.h>
 #endif
 
-// The regdisplay.h, StackFrameIterator.h, and thread.h includes are present only to access the Thread
-// class and can be removed if it turns out that the required ep_rt_thread_handle_t can be
-// implemented in some manner that doesn't rely on the Thread class.
-
 #include "gcenv.h"
-#include "regdisplay.h"
-#include "StackFrameIterator.h"
-#include "thread.h"
-#include "holder.h"
-#include "SpinLock.h"
 
 #ifndef DIRECTORY_SEPARATOR_CHAR
 #ifdef TARGET_UNIX
@@ -34,14 +25,6 @@
 #else // TARGET_UNIX
 #define DIRECTORY_SEPARATOR_CHAR '\\'
 #endif // TARGET_UNIX
-#endif
-
-#ifdef TARGET_UNIX
-// Per module (1 for NativeAOT), key that will be used to implement TLS in Unix
-pthread_key_t eventpipe_tls_key;
-__thread EventPipeThreadHolder* eventpipe_tls_instance;
-#else
-thread_local EventPipeAotThreadHolderTLS EventPipeAotThreadHolderTLS::g_threadHolderTLS;
 #endif
 
 // Uses _rt_aot_lock_internal_t that has CrstStatic as a field
@@ -179,6 +162,46 @@ ep_rt_aot_diagnostics_command_line_get (void)
 #else
     return "";
 #endif
+}
+
+namespace
+{
+    #ifdef TARGET_UNIX
+    __thread EventPipeThreadHolder* eventpipe_tls_instance;
+    #else
+    thread_local EventPipeThreadHolder* eventpipe_tls_instance;
+    #endif
+
+    void free_thread_holder ()
+    {
+        EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+        if (thread_holder != NULL) {
+            thread_holder_free_func (thread_holder);
+            eventpipe_tls_instance = NULL;
+        }
+    }
+}
+
+EventPipeThread* ep_rt_aot_thread_get (void)
+{
+    EventPipeThreadHolder *thread_holder = eventpipe_tls_instance;
+    return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
+}
+
+EventPipeThread* ep_rt_aot_thread_get_or_create (void)
+{
+    EventPipeThread *thread = ep_rt_thread_get ();
+    if (thread != NULL)
+        return thread;
+
+    eventpipe_tls_instance = thread_holder_alloc_func ();
+    return ep_thread_holder_get_thread (eventpipe_tls_instance);
+}
+
+void
+ep_rt_aot_thread_exited (void)
+{
+    free_thread_holder ();
 }
 
 uint32_t
@@ -679,17 +702,6 @@ ep_rt_aot_volatile_store_ptr_without_barrier (
     VolatileStoreWithoutBarrier<void *> ((void **)ptr, value);
 }
 
-void unix_tls_callback_fn(void *value) 
-{
-    if (value) {
-        // we need to do the unallocation here
-        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);    
-        // @TODO - inline
-        thread_holder_free_func (thread_holder_old);
-        value = NULL;
-    }
-}
-
 void ep_rt_aot_init (void)
 {
     extern ep_rt_lock_handle_t _ep_rt_aot_config_lock_handle;
@@ -697,11 +709,6 @@ void ep_rt_aot_init (void)
 
     _ep_rt_aot_config_lock_handle.lock = &_ep_rt_aot_config_lock;
     _ep_rt_aot_config_lock_handle.lock->InitNoThrow (CrstType::CrstEventPipeConfig);
-
-    // Initialize the pthread key used for TLS in Unix
-    #ifdef TARGET_UNIX
-    pthread_key_create(&eventpipe_tls_key, unix_tls_callback_fn);
-    #endif
 }
 
 bool ep_rt_aot_lock_acquire (ep_rt_lock_handle_t *lock)

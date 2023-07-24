@@ -501,15 +501,13 @@ private:
 
         if (m_store->OperIs(GT_STORE_BLK))
         {
-            addr = m_store->AsIndir()->Addr();
-            indirFlags =
-                m_store->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+            addr       = m_store->AsIndir()->Addr();
+            indirFlags = m_store->gtFlags & GTF_IND_COPYABLE_FLAGS;
         }
         else if (m_src->OperIs(GT_BLK))
         {
-            addr = m_src->AsIndir()->Addr();
-            indirFlags =
-                m_src->gtFlags & (GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_UNALIGNED | GTF_IND_INITCLASS);
+            addr       = m_src->AsIndir()->Addr();
+            indirFlags = m_src->gtFlags & GTF_IND_COPYABLE_FLAGS;
         }
 
         int numAddrUses = 0;

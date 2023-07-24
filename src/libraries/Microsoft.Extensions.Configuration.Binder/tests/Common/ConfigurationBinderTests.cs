@@ -1939,9 +1939,18 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
 
             Geolocation obj = configuration.Get<IDictionary<string, Geolocation>>()["First"];
             ValidateGeolocation(obj);
-
             obj = configuration.Get<IReadOnlyDictionary<string, Geolocation>>()["First"];
             ValidateGeolocation(obj);
+
+            GeolocationClass obj1 = configuration.Get<IDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj1);
+
+            GeolocationRecord obj2 = configuration.Get<IDictionary<string, GeolocationRecord>>()["First"];
+            ValidateGeolocation(obj2);
+            obj1 = configuration.Get<IReadOnlyDictionary<string, GeolocationClass>>()["First"];
+            ValidateGeolocation(obj2);
         }
 
         [Fact]
@@ -1960,7 +1969,7 @@ if (!System.Diagnostics.Debugger.IsAttached) { System.Diagnostics.Debugger.Launc
             ValidateGeolocation(obj);
         }
 
-        private void ValidateGeolocation(Geolocation location)
+        private void ValidateGeolocation(IGeolocation location)
         {
             Assert.Equal(3, location.Latitude);
             Assert.Equal(4, location.Longitude);

@@ -244,6 +244,7 @@ namespace System.Net.Http
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
         public static bool operator !=(System.Net.Http.HttpMethod? left, System.Net.Http.HttpMethod? right) { throw null; }
+        public static System.Net.Http.HttpMethod Parse(ReadOnlySpan<char> method) { throw null; }
         public override string ToString() { throw null; }
     }
     public sealed class HttpProtocolException : System.Net.Http.HttpIOException

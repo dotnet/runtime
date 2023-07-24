@@ -11,6 +11,11 @@
     <PackageDescription>A set of .NET APIs that are included in the default .NET application model. Contains reference assemblies, documentation, and other design-time assets.</PackageDescription>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(BuildNativeAOTRuntimePack)' == 'true'">
+    <SkipInstallerBuild>true</SkipInstallerBuild>
+    <SkipArchivesBuild>true</SkipArchivesBuild>
+  </PropertyGroup>
+
   <Target Name="AddFrameworkFilesToPackage" DependsOnTargets="ResolveLibrariesFromLocalBuild" BeforeTargets="GetFilesToPackage">
     <ItemGroup>
       <ReferencePath Include="@(LibrariesRefAssemblies)" />

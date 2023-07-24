@@ -8,8 +8,9 @@
 #include <ctype.h>  // For isspace
 #ifdef TARGET_UNIX
 #include <sys/time.h>
-#include <pthread.h>
 #endif
+
+#include <minipal/utf8.h>
 
 #include <eventpipe/ep-rt-config.h>
 #ifdef ENABLE_PERFTRACING
@@ -51,10 +52,7 @@
 #define _TEXT(s) #s
 #define STRINGIFY(s) _TEXT(s)
 
-#ifdef TARGET_UNIX
-extern pthread_key_t eventpipe_tls_key;
-extern __thread EventPipeThreadHolder* eventpipe_tls_instance;
-#endif
+extern void ep_rt_aot_thread_exited (void);
 
 // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
 // TODO: The NativeAOT ALIGN_UP is defined in a tangled manner that generates linker errors if
@@ -1375,6 +1373,7 @@ ep_rt_utf8_string_replace (
     return false;
 }
 
+
 static
 ep_char16_t *
 ep_rt_utf8_to_utf16le_string (
@@ -1386,22 +1385,35 @@ ep_rt_utf8_to_utf16le_string (
     if (!str)
         return NULL;
 
-    // Shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Implementation would just use strlen and malloc to make a new buffer, and would then copy the string chars one by one.
-    // Assumes that only ASCII is used for ep_char8_t
-    size_t len_utf8 = strlen(str);
-    ep_char16_t *str_utf16 = reinterpret_cast<ep_char16_t *>(malloc ((len_utf8 + 1) * sizeof (ep_char16_t)));
-    if (!str_utf16)
-        return NULL;
-
-    for (size_t i = 0; i < len_utf8; i++)
-    {
-        EP_ASSERT(isascii(str[i]));
-         str_utf16[i] = str[i];
+    if (len == (size_t) -1) {
+        len = strlen(str);
     }
 
-    str_utf16[len_utf8] = 0;
-    return str_utf16;
+    if (len == 0) {
+        // Return an empty string if the length is 0
+        CHAR16_T * lpDestEmptyStr = reinterpret_cast<CHAR16_T *>(malloc(1 * sizeof(CHAR16_T)));
+        if(lpDestEmptyStr==NULL) {
+            return NULL;
+        }
+        *lpDestEmptyStr = '\0';
+        return reinterpret_cast<ep_char16_t*>(lpDestEmptyStr);
+    }
+
+    int32_t flags = MINIPAL_MB_NO_REPLACE_INVALID_CHARS | MINIPAL_TREAT_AS_LITTLE_ENDIAN;
+
+    size_t ret = minipal_get_length_utf8_to_utf16 (str, len, flags);
+
+    if (ret <= 0)
+        return NULL;
+
+    CHAR16_T * lpDestStr = reinterpret_cast<CHAR16_T *>(malloc((ret + 1) * sizeof(CHAR16_T)));
+    if(lpDestStr==NULL) {
+        return NULL;
+    }
+    ret = minipal_convert_utf8_to_utf16 (str, len, lpDestStr, ret, flags);
+    lpDestStr[ret] = '\0';
+
+    return reinterpret_cast<ep_char16_t*>(lpDestStr);
 }
 
 static
@@ -1450,27 +1462,36 @@ ep_rt_utf16_to_utf8_string (
     size_t len)
 {
     STATIC_CONTRACT_NOTHROW;
-
     if (!str)
         return NULL;
-    
-    // shipping criteria: no EVENTPIPE-NATIVEAOT-TODO left in the codebase
-    // Simple implementation to create a utf8 string from a utf16 one
-    size_t len_utf16 = len;
-    if(len_utf16 == (size_t)-1)
-        len_utf16 = ep_rt_utf16_string_len (str);
 
-    ep_char8_t *str_utf8 = reinterpret_cast<ep_char8_t *>(malloc ((len_utf16 + 1) * sizeof (ep_char8_t)));
-    if (!str_utf8)
-        return NULL;
-
-    for (size_t i = 0; i < len_utf16; i++)
-    {
-         str_utf8[i] = (char)str[i];
+    if (len == (size_t) -1) {
+        len = ep_rt_utf16_string_len (str);
     }
 
-    str_utf8[len_utf16] = 0;
-    return str_utf8;
+    if (len == 0) {
+        // Return an empty string if the length is 0
+        char * lpDestEmptyStr = reinterpret_cast<char *>(malloc(1 * sizeof(char)));
+        if(lpDestEmptyStr==NULL) {
+            return NULL;
+        }
+        *lpDestEmptyStr = '\0';
+        return reinterpret_cast<ep_char8_t*>(lpDestEmptyStr);
+    }
+
+    size_t ret = minipal_get_length_utf16_to_utf8 (reinterpret_cast<const CHAR16_T *>(str), len, 0);
+
+    if (ret <= 0)
+        return NULL;
+
+    char* lpDestStr = reinterpret_cast<char *>(malloc((ret + 1) * sizeof(char)));
+    if(lpDestStr==NULL) {
+        return NULL;
+    }
+    ret = minipal_convert_utf16_to_utf8 (reinterpret_cast<const CHAR16_T*>(str), len, lpDestStr, ret, 0);
+    lpDestStr[ret] = '\0';
+
+    return reinterpret_cast<ep_char8_t*>(lpDestStr);
 }
 
 static
@@ -1542,46 +1563,6 @@ thread_holder_free_func (EventPipeThreadHolder * thread_holder)
     }
 }
 
-class EventPipeAotThreadHolderTLS {
-public:
-    EventPipeAotThreadHolderTLS ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-    }
-
-    ~EventPipeAotThreadHolderTLS ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-
-        if (m_threadHolder) {
-            thread_holder_free_func (m_threadHolder);
-            m_threadHolder = NULL;
-        }
-    }
-
-    static inline EventPipeThreadHolder * getThreadHolder ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-        return g_threadHolderTLS.m_threadHolder;
-    }
-
-    static inline EventPipeThreadHolder * createThreadHolder ()
-    {
-        STATIC_CONTRACT_NOTHROW;
-
-        if (g_threadHolderTLS.m_threadHolder) {
-            thread_holder_free_func (g_threadHolderTLS.m_threadHolder);
-            g_threadHolderTLS.m_threadHolder = NULL;
-        }
-        g_threadHolderTLS.m_threadHolder = thread_holder_alloc_func ();
-        return g_threadHolderTLS.m_threadHolder;
-    }
-
-private:
-    EventPipeThreadHolder *m_threadHolder;
-    static thread_local EventPipeAotThreadHolderTLS g_threadHolderTLS;
-};
-
 static
 void
 ep_rt_thread_setup (void)
@@ -1594,44 +1575,6 @@ ep_rt_thread_setup (void)
     // EP_ASSERT (thread_handle != NULL);
 }
 
-#ifdef TARGET_UNIX
-static
-inline
-EventPipeThreadHolder *
-pthread_getThreadHolder (void)
-{
-    void *value = eventpipe_tls_instance;
-    if (value) {
-        EventPipeThreadHolder *thread_holder = static_cast<EventPipeThreadHolder*>(value);    
-        return thread_holder;
-    }
-    return NULL;
-}
-
-static
-inline
-EventPipeThreadHolder *
-pthread_createThreadHolder (void)
-{
-    void *value = eventpipe_tls_instance;
-    if (value) {
-        // we need to do the unallocation here
-        EventPipeThreadHolder *thread_holder_old = static_cast<EventPipeThreadHolder*>(value);
-        thread_holder_free_func(thread_holder_old);
-        eventpipe_tls_instance = NULL;
-
-        value = NULL;
-    }
-    EventPipeThreadHolder *instance = thread_holder_alloc_func();
-    if (instance){
-        // We need to know when the thread is no longer in use to clean up EventPipeThreadHolder instance and will use pthread destructor function to get notification when that happens.
-        pthread_setspecific(eventpipe_tls_key, instance);
-        eventpipe_tls_instance = instance;
-    }
-    return instance;
-}
-#endif
-
 static
 inline
 EventPipeThread *
@@ -1639,12 +1582,8 @@ ep_rt_thread_get (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
-    EventPipeThreadHolder *thread_holder = pthread_getThreadHolder ();
-#else
-    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();
-#endif    
-    return thread_holder ? ep_thread_holder_get_thread (thread_holder) : NULL;
+    extern EventPipeThread* ep_rt_aot_thread_get (void);
+    return ep_rt_aot_thread_get ();
 }
 
 static
@@ -1654,17 +1593,8 @@ ep_rt_thread_get_or_create (void)
 {
     STATIC_CONTRACT_NOTHROW;
 
-#ifdef TARGET_UNIX
-    EventPipeThreadHolder *thread_holder = pthread_getThreadHolder ();
-    if (!thread_holder)
-        thread_holder = pthread_createThreadHolder ();
-#else
-    EventPipeThreadHolder *thread_holder = EventPipeAotThreadHolderTLS::getThreadHolder ();    
-    if (!thread_holder)
-        thread_holder = EventPipeAotThreadHolderTLS::createThreadHolder ();
-#endif        
-
-    return ep_thread_holder_get_thread (thread_holder);
+    extern EventPipeThread* ep_rt_aot_thread_get_or_create (void);
+    return ep_rt_aot_thread_get_or_create ();
 }
 
 static
