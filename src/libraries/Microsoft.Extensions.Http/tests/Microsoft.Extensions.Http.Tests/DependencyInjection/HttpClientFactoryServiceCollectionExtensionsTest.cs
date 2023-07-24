@@ -1390,7 +1390,7 @@ namespace Microsoft.Extensions.DependencyInjection
             Assert.Same(testCredentials, ((HttpClientHandler)testBuilder.PrimaryHandler).Credentials);
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddHttpClient_ConfigureAdditionalHttpMessageHandlers_ModifyAdditionalHandlers()
         {
             // Arrange
