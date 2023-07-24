@@ -366,7 +366,6 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
             case GlobalizationMode.PredefinedIcu:
                 if (string.IsNullOrEmpty(assertOptions.PredefinedIcudt))
                     throw new ArgumentException("WasmBuildTest is invalid, value for predefinedIcudt is required when GlobalizationMode=PredefinedIcu.");
-                expected.Add(assertOptions.PredefinedIcudt);
                 // predefined ICU name can be identical with the icu files from runtime pack
                 switch (assertOptions.PredefinedIcudt)
                 {
@@ -381,6 +380,9 @@ public abstract class ProjectProviderBase(ITestOutputHelper _testOutput, string?
                         break;
                     case "icudt_no_CJK.dat":
                         expectNOCJK = true;
+                        break;
+                    default:
+                        expected.Add(assertOptions.PredefinedIcudt);
                         break;
                 }
                 break;
