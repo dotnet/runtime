@@ -31,10 +31,10 @@ namespace System.Globalization.Tests
                 yield return new object[] { new CultureInfo("am-ET").DateTimeFormat, 1, "ዓ/ም" };
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 0, "сл.Хр." };
                 yield return new object[] { new CultureInfo("bg-BG").DateTimeFormat, 1, "сл.Хр." };
-                yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 0, PlatformDetection.IsBrowserDomSupportedOrNodeJS ? "খৃষ্টাব্দ" : "খ্রিঃ" };
-                yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 1, PlatformDetection.IsBrowserDomSupportedOrNodeJS ? "খৃষ্টাব্দ" : "খ্রিঃ" };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 0, PlatformDetection.IsBrowserDomSupportedOrNodeJS ? "খ্রিঃ" : "খৃষ্টাব্দ" };
-                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, PlatformDetection.IsBrowserDomSupportedOrNodeJS ? "খ্রিঃ" : "খৃষ্টাব্দ" };
+                yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 0, "খৃষ্টাব্দ" };
+                yield return new object[] { new CultureInfo("bn-BD").DateTimeFormat, 1, "খৃষ্টাব্দ" };
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 0, "খ্রিঃ" };
+                yield return new object[] { new CultureInfo("bn-IN").DateTimeFormat, 1, "খ্রিঃ" };
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 0, "dC" };
                 yield return new object[] { new CultureInfo("ca-AD").DateTimeFormat, 1, "dC" };
                 yield return new object[] { new CultureInfo("ca-ES").DateTimeFormat, 0, "dC" };
