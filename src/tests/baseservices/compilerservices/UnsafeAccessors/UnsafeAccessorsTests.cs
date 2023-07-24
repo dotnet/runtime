@@ -485,9 +485,10 @@ static unsafe class UnsafeAccessorsTests
     }
 
     [Fact]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/86040", TestRuntimes.Mono)]
     public static void Verify_InvalidTargetUnsafeAccessorAmbiguousMatch()
     {
+        Console.WriteLine($"Running {nameof(Verify_InvalidTargetUnsafeAccessorAmbiguousMatch)}");
+
         Assert.Throws<AmbiguousMatchException>(
             () => CallAmbiguousMethod(CallPrivateConstructorClass(), null));
 

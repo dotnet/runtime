@@ -649,8 +649,11 @@ find_method_simple (MonoClass *klass, const char *name, const char *qname, const
 					gboolean found = ignore_cmods ? mono_metadata_signature_equal_ignore_custom_modifier (sig, other_sig) : mono_metadata_signature_equal (sig, other_sig);
 					if (found) {
 						if (method_maybe != NULL) {
-							if (ignore_cmods)
-								return find_method_simple (klass, name, qname, fqname, sig, from_class, FALSE, error);
+							if (ignore_cmods) {
+								MonoMethod *precise_match = find_method_simple (klass, name, qname, fqname, sig, from_class, FALSE, error);
+								if (precise_match)
+									return precise_match;
+							}
 							mono_error_set_generic_error (error, "System.Reflection", "AmbiguousMatchException", "Ambiguity in binding of UnsafeAccessorAttribute.");
 							return NULL;
 						}
@@ -715,8 +718,11 @@ find_method_slow (MonoClass *klass, const char *name, const char *qname, const c
 		
 		if (found) {
 			if (matched) {
-				if (ignore_cmods)
-					return find_method_slow (klass, name, qname, fqname, sig, FALSE, error);
+				if (ignore_cmods) {
+					MethodLookupResultInfo *precise_match = find_method_slow (klass, name, qname, fqname, sig, FALSE, error);
+					if (precise_match->m)
+						return precise_match;
+				}
 				mono_error_set_generic_error (error, "System.Reflection", "AmbiguousMatchException", "Ambiguity in binding of UnsafeAccessorAttribute.");
 				return NULL;
 			}
